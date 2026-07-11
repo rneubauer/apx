@@ -1,0 +1,30 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+jobs:
+  verify:
+    strategy:
+      matrix:
+        os: [ubuntu-latest, windows-latest]
+    runs-on: ${{ matrix.os }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+      - run: npm ci
+      - name: Vendor integrity (APDS 4.1 verbatim)
+        run: npm run vendor:check
+      - name: Spec lint
+        run: npm run spec:lint
+      - name: Spec bundle
+        run: npm run spec:bundle
+      - name: Spec conventions (Spectral)
+        run: npm run spec:style
+      - name: Workspace tests
+        run: npm test --workspaces --if-present

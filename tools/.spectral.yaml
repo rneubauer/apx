@@ -1,0 +1,32 @@
+# Spectral ruleset encoding APX conventions.
+# Runs against the BUNDLED artifact (spec/dist/apx-v1.yaml) so $refs are resolved.
+extends: []
+
+rules:
+  apx-topic-format:
+    description: Webhook keys must be APX topics (apx.<domain>.<event>.vN) or APDS EventTypeEnum values (PascalCase).
+    severity: error
+    given: $.webhooks
+    then:
+      field: "@key"
+      function: pattern
+      functionOptions:
+        match: "^(apx\\.[a-z0-9-]+(\\.[a-z0-9-]+)+\\.v\\d+|[A-Z][A-Za-z]+)$"
+
+  apx-path-casing:
+    description: APX paths are lowercase kebab-case (APDS-native paths inherited verbatim are already compliant).
+    severity: error
+    given: $.paths
+    then:
+      field: "@key"
+      function: pattern
+      functionOptions:
+        match: "^\\/((\\.well-known|[a-z0-9\\-{}._]+)\\/?)*$"
+
+  apx-operation-description:
+    description: Every operation needs a description (normative text lives in the spec too).
+    severity: warn
+    given: "$.paths[*][get,post,put,patch,delete]"
+    then:
+      field: description
+      function: truthy

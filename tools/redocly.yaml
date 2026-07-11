@@ -1,0 +1,16 @@
+# Redocly configuration for the APX standard.
+# Lints the modular source spec and produces bundled single-file artifacts.
+extends:
+  - recommended
+
+rules:
+  # The vendored APDS 4.1 spec is not ours to fix; APDS schemas arrive via $ref
+  # and only the APX root is linted directly.
+  no-unused-components: warn
+  operation-4xx-response: warn
+  info-license: error
+  no-ambiguous-paths: error
+  no-identical-paths: error
+  operation-operationId: error
+  operation-summary: error
+  tag-description: warn

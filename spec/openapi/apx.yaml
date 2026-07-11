@@ -1,0 +1,107 @@
+openapi: 3.1.0
+
+info:
+  title: APX — APDS Parking eXtensions
+  version: 0.1.0
+  summary: An open companion standard to APDS 4.1
+  description: |-
+    **APX (APDS Parking eXtensions)** is an additive companion standard to the
+    [APDS 4.1 API](https://github.com/parkingdata/spec) (Alliance for Parking
+    Data Standards, published as ISO/TS 5206-1).
+
+    APX follows an **APDS-first prime directive**: wherever APDS 4.1 already
+    defines a route, schema, or convention, APX uses it verbatim (by `$ref`
+    into the vendored, unmodified `apds-api-4.1.yaml`). APX only adds what
+    APDS deliberately leaves out:
+
+    - **Data profile** — Full/Change update semantics, tombstones, and a
+      cursor-based change feed as additive parameters on APDS's native routes
+    - **Delivery fabric** — a superset-compatible profile of APDS `/webhooks`
+      (HMAC signing, normative retries, delivery ledger, SSE)
+    - **Control** — command plane for gates/PARCS/devices with idempotency,
+      lifecycle, and immutable audit
+    - **Alerts** — operational alerting with open taxonomies via APDS
+      UserDefinedCodeLists
+    - **Discovery** — credential-scoped capability documents
+    - **Accounts & payments, LPR, reservations, permits, tolling** — profiles
+      and additive resources over APDS entities
+
+    Extension identity follows the official APDS extension convention:
+    `apds-ext:apx:<class>@<version>` (Use Case Document §C.2.5), with
+    extensionName `apx`.
+  license:
+    name: MIT
+    url: https://opensource.org/licenses/MIT
+  contact:
+    name: APX Standard Working Group (stewarded by Umojo)
+    email: rneubauer@umojo.com
+  x-apds-extension:
+    extensionName: apx
+    extensionVersion: "1.0"
+    apdsVersion: "4.1"
+
+servers:
+  - url: /apx/v1
+    description: APX API root (APDS-native routes are served at their own verbatim paths)
+
+tags:
+  - name: Discovery
+    description: Bootstrap and credential-scoped capability discovery.
+
+paths:
+  /.well-known/apx-configuration:
+    get:
+      operationId: get-well-known-apx-configuration
+      tags: [Discovery]
+      summary: Bootstrap configuration document
+      security: []
+      description: |-
+        Unauthenticated bootstrap document. Advertises the token endpoint,
+        the APDS version this implementation extends, supported APX
+        conformance classes, and code-list registry locations.
+
+        Served at the server root (NOT under `/apx/v1`), per RFC 8615.
+      responses:
+        "200":
+          description: Bootstrap configuration
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApxConfiguration"
+
+components:
+  schemas:
+    ApxConfiguration:
+      type: object
+      description: Unauthenticated bootstrap configuration document.
+      required:
+        - apxVersion
+        - apdsVersion
+        - tokenEndpoint
+        - conformanceClasses
+      properties:
+        apxVersion:
+          type: string
+          description: APX standard version implemented (semver).
+          examples: ["0.1.0"]
+        apdsVersion:
+          type: string
+          description: APDS version this implementation extends.
+          examples: ["4.1"]
+        tokenEndpoint:
+          type: string
+          format: uri
+          description: OAuth2 token endpoint (client-credentials grant).
+        conformanceClasses:
+          type: array
+          description: APX conformance classes this implementation supports.
+          items:
+            type: string
+          examples:
+            - ["apx-data", "apx-events", "apx-control", "apx-alerts", "apx-discovery"]
+        registries:
+          type: object
+          description: Locations of the published UserDefinedCodeList registries.
+          additionalProperties:
+            type: string
+            format: uri
