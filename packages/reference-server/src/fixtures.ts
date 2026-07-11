@@ -135,6 +135,18 @@ export function seed(store: Store): void {
     ],
   });
 
+  // A monthly-parker account (2018 requirements ⑥–⑨).
+  store.for('Account').create({
+    id: 'e4000000-0000-4000-8000-000000000001',
+    holder: { id: 'e4000000-0000-4000-8000-000000000011', className: 'RightHolder' },
+    name: 'Jordan Sample (synthetic)',
+    phone: '+13125550100',
+    cardNumber: 'MC-0777',
+    plates: ['SYN-1234'],
+    balance: { type: 'USD', value: 45 },
+    accountStatus: 'enabled',
+  });
+
   // Validation providers at the garage (2018 requirement ⑤).
   store.for('ValidationProvider').create({
     id: 'a2000000-0000-4000-8000-000000000001',

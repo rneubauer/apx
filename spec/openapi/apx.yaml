@@ -59,6 +59,10 @@ tags:
     description: Operational alerting (net-new APX domain). See written standard Part 7.
   - name: Control
     description: Command plane, lane inquiry, validations, device status. See written standard Part 6.
+  - name: Accounts
+    description: Accounts, payments, accounting write-back, payment history. See written standard Part 13.
+  - name: LPR
+    description: Plate/ticket cross-lookup over APDS Observations. See written standard Part 13.
 
 paths:
   # ===== APDS 4.1 native routes, mounted VERBATIM from the vendored spec ===== #
@@ -431,6 +435,142 @@ paths:
                     type: array
                     items: { $ref: "#/components/schemas/ValidationProvider" }
 
+  # ===== Accounts, payments, LPR (optional classes; Part 13) ===== #
+  /apx/v1/accounts:
+    get:
+      operationId: get-apx-v1-accounts
+      tags: [Accounts]
+      summary: Look up accounts by name/phone/card/plate
+      description: Any combination of filters; returns accounts with balances and status.
+      parameters:
+        - { name: name, in: query, schema: { type: string } }
+        - { name: phone, in: query, schema: { type: string } }
+        - { name: card, in: query, schema: { type: string } }
+        - { name: plate, in: query, schema: { type: string } }
+      responses:
+        "200":
+          description: Matching accounts.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    type: array
+                    items: { $ref: "#/components/schemas/Account" }
+
+  /apx/v1/accounts/{id}:
+    get:
+      operationId: get-apx-v1-accounts-id
+      tags: [Accounts]
+      summary: Full account info
+      description: Returns the account including balance and status.
+      parameters:
+        - { name: id, in: path, required: true, schema: { type: string, format: uuid } }
+      responses:
+        "200":
+          description: The account.
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/Account" }
+        "404":
+          description: No such account.
+          content:
+            application/problem+json:
+              schema: { $ref: "#/components/schemas/Problem" }
+
+  /apx/v1/payments:
+    post:
+      operationId: post-apx-v1-payments
+      tags: [Accounts]
+      summary: Take a payment (idempotent)
+      description: |-
+        Takes a payment against an account or ticket. Idempotency-Key
+        REQUIRED. autoAttendant method = PCI-compliant IVR captures the card
+        out of band; APX never carries PANs. Declines are 422.
+      parameters:
+        - { name: Idempotency-Key, in: header, required: true, schema: { type: string } }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/PaymentRecord" }
+      responses:
+        "201":
+          description: Approved payment with transactionID.
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/PaymentRecord" }
+        "422":
+          description: Payment declined.
+          content:
+            application/problem+json:
+              schema: { $ref: "#/components/schemas/Problem" }
+    get:
+      operationId: get-apx-v1-payments
+      tags: [Accounts]
+      summary: Payment history by ticket
+      description: |-
+        Payments made on a ticket. Privacy rule: last-4 lookup without a
+        date is constrained to the last 8 hours.
+      parameters:
+        - { name: ticketLast4, in: query, schema: { type: string } }
+        - { name: date, in: query, schema: { type: string, format: date } }
+      responses:
+        "200":
+          description: Matching payments.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    type: array
+                    items: { $ref: "#/components/schemas/PaymentRecord" }
+
+  /apx/v1/payments/{id}/postings:
+    post:
+      operationId: post-apx-v1-payments-id-postings
+      tags: [Accounts]
+      summary: Accounting write-back (PARIS-style)
+      description: Posts the payment to the monthly-parking/AR system; returns confirmation and new balance.
+      parameters:
+        - { name: id, in: path, required: true, schema: { type: string, format: uuid } }
+      responses:
+        "201":
+          description: Posting result.
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/Posting" }
+        "404":
+          description: No such payment.
+          content:
+            application/problem+json:
+              schema: { $ref: "#/components/schemas/Problem" }
+
+  /apx/v1/lpr/reads:
+    get:
+      operationId: get-apx-v1-lpr-reads
+      tags: [LPR]
+      summary: Bidirectional plate/ticket cross-lookup
+      description: |-
+        plate → ticket/session with accuracy + screenshot; ticket → plate.
+        A pure profile over APDS Observations (ingest = native POST /observations).
+      parameters:
+        - { name: plate, in: query, schema: { type: string } }
+        - { name: ticket, in: query, schema: { type: string } }
+      responses:
+        "200":
+          description: Matching reads.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    type: array
+                    items: { $ref: "#/components/schemas/LprRead" }
+
   # ===== Alerts (conformance class apx-alerts) ===== #
   /apx/v1/alerts:
     post:
@@ -690,6 +830,14 @@ components:
       $ref: "./domains/control/schemas.yaml#/LaneStatus"
     ValidationProvider:
       $ref: "./domains/control/schemas.yaml#/ValidationProvider"
+    Account:
+      $ref: "./domains/accounts/schemas.yaml#/Account"
+    PaymentRecord:
+      $ref: "./domains/accounts/schemas.yaml#/PaymentRecord"
+    Posting:
+      $ref: "./domains/accounts/schemas.yaml#/Posting"
+    LprRead:
+      $ref: "./domains/lpr/schemas.yaml#/LprRead"
 
     ApxConfiguration:
       type: object

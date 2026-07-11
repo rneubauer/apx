@@ -7,6 +7,8 @@ import { registerDataRoutes } from './routes/data.js';
 import { registerWebhookRoutes } from './routes/webhooks.js';
 import { registerAlertRoutes } from './routes/alerts.js';
 import { registerControlRoutes } from './routes/control.js';
+import { registerAccountRoutes } from './routes/accounts.js';
+import { registerLprRoutes } from './routes/lpr.js';
 import { DeviceSimulator } from './devices-sim.js';
 
 export interface AppOptions {
@@ -56,7 +58,16 @@ export function buildApp(options: AppOptions = {}): AppContext {
       apxVersion: '0.1.0',
       apdsVersion: '4.1',
       tokenEndpoint: '/oauth/token',
-      conformanceClasses: ['apx-data', 'apx-events', 'apx-events-sse', 'apx-alerts', 'apx-control'],
+      conformanceClasses: [
+        'apx-data',
+        'apx-events',
+        'apx-events-sse',
+        'apx-alerts',
+        'apx-control',
+        'apx-accounts',
+        'apx-payment-history',
+        'apx-lpr',
+      ],
       registries: {
         'apx-command-types': 'https://apx-standard.org/registries/apx-command-types.json',
         'apx-alert-types': 'https://apx-standard.org/registries/apx-alert-types.json',
@@ -92,6 +103,8 @@ export function buildApp(options: AppOptions = {}): AppContext {
   registerWebhookRoutes(app, dispatcher);
   registerAlertRoutes(app, store, dispatcher);
   registerControlRoutes(app, store, dispatcher, devices, options.dispatchDelayMs ?? 0);
+  registerAccountRoutes(app, store);
+  registerLprRoutes(app, store);
 
   return { app, store, dispatcher, devices };
 }

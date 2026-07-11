@@ -1,0 +1,28 @@
+# APX LPR domain — optional conformance class apx-lpr (2018 requirement ⑩).
+# A pure PROFILE over APDS Observation/Confidence/Image: reads are stored and
+# ingested as native Observations (POST /observations); this adds the
+# bidirectional plate↔ticket cross-lookup.
+
+LprRead:
+  title: LprRead
+  description: One plate read joined with its ticket/session context.
+  type: object
+  required: [plate]
+  properties:
+    plate: { type: string }
+    confidence:
+      type: number
+      minimum: 0
+      maximum: 1
+      description: Read accuracy (APDS 4.1 Confidence).
+    observation:
+      description: The underlying APDS Observation.
+      $ref: "../../../vendor/apds/4.1/apds-api-4.1.yaml#/components/schemas/Reference"
+    observationDateTime:
+      $ref: "../../../vendor/apds/4.1/apds-api-4.1.yaml#/components/schemas/DateTime"
+    ticketNumber: { type: string }
+    session:
+      $ref: "../../../vendor/apds/4.1/apds-api-4.1.yaml#/components/schemas/Reference"
+    imageLink:
+      description: Screenshot/still of the read (APDS Image).
+      $ref: "../../../vendor/apds/4.1/apds-api-4.1.yaml#/components/schemas/Url"

@@ -1,0 +1,78 @@
+# APX accounts & payments — optional conformance classes apx-accounts and
+# apx-payment-history (2018 requirements ⑥–⑨). Anchored on APDS RightHolder,
+# Credential, and Payment concepts.
+
+Account:
+  title: Account
+  description: A billable parking account (monthly parker, fleet…), anchored on an APDS RightHolder.
+  type: object
+  required: [id, version, accountStatus]
+  properties:
+    id: { type: string, format: uuid }
+    version: { type: integer, minimum: 1 }
+    holder:
+      description: Reference to the APDS RightHolder.
+      $ref: "../../../vendor/apds/4.1/apds-api-4.1.yaml#/components/schemas/Reference"
+    name: { type: string }
+    phone: { type: string }
+    cardNumber:
+      type: string
+      description: Access credential number (NOT a payment card PAN).
+    plates:
+      type: array
+      items: { type: string }
+    balance:
+      description: Current balance due.
+      $ref: "../../../vendor/apds/4.1/apds-api-4.1.yaml#/components/schemas/AmountInCurrency"
+    accountStatus:
+      type: string
+      enum: [enabled, disabled]
+    recordInfo:
+      $ref: "../common/schemas.yaml#/RecordInfo"
+    extensions:
+      $ref: "../common/schemas.yaml#/Extensions"
+
+PaymentRecord:
+  title: PaymentRecord
+  description: A payment taken through APX (maps to the APDS Payment concept; card capture stays in the implementer's PCI scope).
+  type: object
+  required: [id, transactionID, dateCollected, amount, paymentStatus]
+  properties:
+    id: { type: string, format: uuid }
+    transactionID: { type: string }
+    dateCollected:
+      $ref: "../../../vendor/apds/4.1/apds-api-4.1.yaml#/components/schemas/DateTime"
+    amount:
+      $ref: "../../../vendor/apds/4.1/apds-api-4.1.yaml#/components/schemas/AmountInCurrency"
+    method:
+      type: string
+      description: card | autoAttendant | cash | other (implementer code list). autoAttendant = PCI-compliant IVR captures the card out of band.
+    paymentStatus:
+      type: string
+      enum: [approved, declined, reversed]
+    account:
+      $ref: "../../../vendor/apds/4.1/apds-api-4.1.yaml#/components/schemas/Reference"
+    ticketNumber: { type: string }
+    postings:
+      type: array
+      description: Accounting write-backs (PARIS-style) applied for this payment.
+      items:
+        $ref: "#/Posting"
+    extensions:
+      $ref: "../common/schemas.yaml#/Extensions"
+
+Posting:
+  title: Posting
+  description: An accounting write-back of a payment to a monthly-parking/AR system (2018 requirement ⑨).
+  type: object
+  required: [confirmationNumber, accountUpdated]
+  properties:
+    confirmationNumber: { type: string }
+    accountUpdated: { type: boolean }
+    newBalance:
+      $ref: "../../../vendor/apds/4.1/apds-api-4.1.yaml#/components/schemas/AmountInCurrency"
+    postedTo:
+      type: string
+      description: Target accounting system identifier (e.g. "paris").
+    time:
+      $ref: "../../../vendor/apds/4.1/apds-api-4.1.yaml#/components/schemas/DateTime"
