@@ -50,10 +50,17 @@ function sendKnownError(reply: FastifyReply, error: unknown): boolean {
   return false;
 }
 
+export type WriteHook = (
+  verb: 'Created' | 'Updated' | 'Deleted',
+  className: string,
+  entity: Record<string, unknown>
+) => void;
+
 export function registerDataRoutes(
   app: FastifyInstance,
   store: Store,
-  dispatcher?: Dispatcher
+  dispatcher?: Dispatcher,
+  onWrite?: WriteHook
 ): void {
   for (const route of DATA_ROUTES) {
     const entities = () => store.for(route.className);
@@ -62,6 +69,7 @@ export function registerDataRoutes(
       return ref?.id ? [ref.id] : route.className === 'Place' ? [String(entity.id)] : [];
     };
     const emit = (verb: 'Created' | 'Updated' | 'Deleted', entity: Record<string, unknown>) => {
+      onWrite?.(verb, route.className, entity);
       if (!dispatcher || !route.eventBase) return;
       dispatcher.publish(
         dispatcher.makeEnvelope(

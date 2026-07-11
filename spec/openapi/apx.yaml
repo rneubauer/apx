@@ -63,6 +63,8 @@ tags:
     description: Accounts, payments, accounting write-back, payment history. See written standard Part 13.
   - name: LPR
     description: Plate/ticket cross-lookup over APDS Observations. See written standard Part 13.
+  - name: Permits
+    description: Pooled permit issuance over RightSpecification/RightPool. See written standard Part 14.
 
 paths:
   # ===== APDS 4.1 native routes, mounted VERBATIM from the vendored spec ===== #
@@ -434,6 +436,55 @@ paths:
                   data:
                     type: array
                     items: { $ref: "#/components/schemas/ValidationProvider" }
+
+  # ===== Reservations & permits (optional classes; Part 14) ===== #
+  # Reservations use NATIVE routes (/quotes, /rights/assigned) with the
+  # apds-ext:apx:reservation@1.0 extension; only permits add endpoints.
+  /apx/v1/permits/pools/{rightSpecId}/availability:
+    get:
+      operationId: get-apx-v1-permits-pools-rightspecid-availability
+      tags: [Permits]
+      summary: Pool availability for a pooled RightSpecification
+      description: Profile over APDS RightPool — capacity, issued, available.
+      parameters:
+        - { name: rightSpecId, in: path, required: true, schema: { type: string, format: uuid } }
+      responses:
+        "200":
+          description: Availability.
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/PoolAvailability" }
+        "404":
+          description: No pool for this RightSpecification.
+          content:
+            application/problem+json:
+              schema: { $ref: "#/components/schemas/Problem" }
+
+  /apx/v1/permits/issue:
+    post:
+      operationId: post-apx-v1-permits-issue
+      tags: [Permits]
+      summary: Issue a permit from a pool (multi-vehicle credentials)
+      description: |-
+        Creates a native AssignedRight (APDS annual-permit pattern — one
+        right, many vehicles). Pool exhaustion is 409 pool-exhausted.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/PermitIssueRequest" }
+      responses:
+        "201":
+          description: The issued AssignedRight (native APDS entity).
+          content:
+            application/json:
+              schema:
+                $ref: "../vendor/apds/4.1/apds-api-4.1.yaml#/components/schemas/AssignedRight"
+        "409":
+          description: Pool exhausted.
+          content:
+            application/problem+json:
+              schema: { $ref: "#/components/schemas/Problem" }
 
   # ===== Accounts, payments, LPR (optional classes; Part 13) ===== #
   /apx/v1/accounts:
@@ -838,6 +889,12 @@ components:
       $ref: "./domains/accounts/schemas.yaml#/Posting"
     LprRead:
       $ref: "./domains/lpr/schemas.yaml#/LprRead"
+    ReservationExtension:
+      $ref: "./domains/reservations/schemas.yaml#/ReservationExtension"
+    PoolAvailability:
+      $ref: "./domains/reservations/schemas.yaml#/PoolAvailability"
+    PermitIssueRequest:
+      $ref: "./domains/reservations/schemas.yaml#/PermitIssueRequest"
 
     ApxConfiguration:
       type: object

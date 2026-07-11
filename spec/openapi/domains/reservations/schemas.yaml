@@ -1,0 +1,64 @@
+# APX reservations & permits — THIN PROFILES over APDS native machinery.
+# Reservations: quote via /quotes, book = POST /rights/assigned, amend/cancel
+# via native PUT/DELETE. Permits: RightSpecification + RightPool + Credential.
+
+ReservationExtension:
+  title: ReservationExtension
+  description: |-
+    The apds-ext:apx:reservation@1.0 extension object attached to a native
+    AssignedRight. Presence of this extension marks the AssignedRight as a
+    reservation; state transitions follow Part 14.
+  type: object
+  required: [reservationState]
+  properties:
+    reservationState:
+      type: string
+      enum: [confirmed, amended, cancelled, checkedIn, noShow]
+    plannedStart:
+      $ref: "../../../vendor/apds/4.1/apds-api-4.1.yaml#/components/schemas/DateTime"
+    plannedEnd:
+      $ref: "../../../vendor/apds/4.1/apds-api-4.1.yaml#/components/schemas/DateTime"
+    checkInSession:
+      description: Set when a Session referencing this AssignedRight is created.
+      $ref: "../../../vendor/apds/4.1/apds-api-4.1.yaml#/components/schemas/Reference"
+
+PoolAvailability:
+  title: PoolAvailability
+  description: Availability of a pooled RightSpecification (APDS RightPool profile).
+  type: object
+  required: [rightSpecification, capacity, issued, available]
+  properties:
+    rightSpecification:
+      $ref: "../../../vendor/apds/4.1/apds-api-4.1.yaml#/components/schemas/VersionedReference"
+    capacity: { type: integer, minimum: 0 }
+    issued: { type: integer, minimum: 0 }
+    available: { type: integer, minimum: 0 }
+
+PermitIssueRequest:
+  title: PermitIssueRequest
+  description: |-
+    Issue a permit from a pooled RightSpecification — creates a native
+    AssignedRight with (possibly multiple) vehicle credentials, per the APDS
+    annual-permit use case (one right, multiple vehicles).
+  type: object
+  required: [rightSpecification, holder]
+  properties:
+    rightSpecification:
+      $ref: "../../../vendor/apds/4.1/apds-api-4.1.yaml#/components/schemas/VersionedReference"
+    holder:
+      $ref: "../../../vendor/apds/4.1/apds-api-4.1.yaml#/components/schemas/Reference"
+    credentials:
+      type: array
+      description: Vehicle credentials (e.g. plates) usable under this one permit.
+      items:
+        type: object
+        properties:
+          credentialType: { type: string }
+          credentialIdentification: { type: string }
+    validity:
+      type: object
+      properties:
+        start:
+          $ref: "../../../vendor/apds/4.1/apds-api-4.1.yaml#/components/schemas/DateTime"
+        end:
+          $ref: "../../../vendor/apds/4.1/apds-api-4.1.yaml#/components/schemas/DateTime"

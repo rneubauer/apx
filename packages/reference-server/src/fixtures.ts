@@ -17,6 +17,8 @@ export const IDS = {
   assignedRight: 'e2000000-0000-4000-8000-000000000001',
   session: 'f1000000-0000-4000-8000-000000000001',
   observation: 'f2000000-0000-4000-8000-000000000001',
+  pooledRightSpec: 'e1000000-0000-4000-8000-000000000002',
+  rightPool: 'e5000000-0000-4000-8000-000000000001',
 } as const;
 
 export const ALL_SCOPES = [
@@ -116,6 +118,18 @@ export function seed(store: Store): void {
     name: 'Transient parking (synthetic)',
     placeRef: { id: IDS.place, className: 'Place' },
     rateTables: [{ id: IDS.rateTable, version: 1, className: 'RateTable' }],
+  });
+
+  // Pooled RightSpecification for permits (capacity 2 for testability).
+  store.for('RightSpecification').create({
+    id: IDS.pooledRightSpec,
+    name: 'Monthly permit — pooled (synthetic)',
+    placeRef: { id: IDS.place, className: 'Place' },
+  });
+  store.for('RightPool').create({
+    id: IDS.rightPool,
+    rightSpecification: { id: IDS.pooledRightSpec, version: 1, className: 'RightSpecification' },
+    capacity: 2,
   });
 
   store.for('AssignedRight').create({

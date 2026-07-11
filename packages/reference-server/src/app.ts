@@ -9,6 +9,7 @@ import { registerAlertRoutes } from './routes/alerts.js';
 import { registerControlRoutes } from './routes/control.js';
 import { registerAccountRoutes } from './routes/accounts.js';
 import { registerLprRoutes } from './routes/lpr.js';
+import { makeCheckInHook, registerReservationRoutes } from './routes/reservations.js';
 import { DeviceSimulator } from './devices-sim.js';
 
 export interface AppOptions {
@@ -67,6 +68,8 @@ export function buildApp(options: AppOptions = {}): AppContext {
         'apx-accounts',
         'apx-payment-history',
         'apx-lpr',
+        'apx-reservations',
+        'apx-permits',
       ],
       registries: {
         'apx-command-types': 'https://apx-standard.org/registries/apx-command-types.json',
@@ -99,12 +102,13 @@ export function buildApp(options: AppOptions = {}): AppContext {
   };
   const devices = new DeviceSimulator(store, dispatcher, options.deviceDelayMs ?? 500, raiseAlert);
 
-  registerDataRoutes(app, store, dispatcher);
+  registerDataRoutes(app, store, dispatcher, makeCheckInHook(store));
   registerWebhookRoutes(app, dispatcher);
   registerAlertRoutes(app, store, dispatcher);
   registerControlRoutes(app, store, dispatcher, devices, options.dispatchDelayMs ?? 0);
   registerAccountRoutes(app, store);
   registerLprRoutes(app, store);
+  registerReservationRoutes(app, store, dispatcher);
 
   return { app, store, dispatcher, devices };
 }
