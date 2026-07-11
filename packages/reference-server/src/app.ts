@@ -5,6 +5,7 @@ import { issueToken, problem } from './auth.js';
 import { Dispatcher } from './events/dispatcher.js';
 import { registerDataRoutes } from './routes/data.js';
 import { registerWebhookRoutes } from './routes/webhooks.js';
+import { registerAlertRoutes } from './routes/alerts.js';
 
 export interface AppOptions {
   /** Override the normative webhook retry schedule (tests use a short one). */
@@ -48,7 +49,7 @@ export function buildApp(options: AppOptions = {}): AppContext {
       apxVersion: '0.1.0',
       apdsVersion: '4.1',
       tokenEndpoint: '/oauth/token',
-      conformanceClasses: ['apx-data', 'apx-events', 'apx-events-sse'],
+      conformanceClasses: ['apx-data', 'apx-events', 'apx-events-sse', 'apx-alerts'],
       registries: {
         'apx-command-types': 'https://apx-standard.org/registries/apx-command-types.json',
         'apx-alert-types': 'https://apx-standard.org/registries/apx-alert-types.json',
@@ -62,6 +63,7 @@ export function buildApp(options: AppOptions = {}): AppContext {
 
   registerDataRoutes(app, store, dispatcher);
   registerWebhookRoutes(app, dispatcher);
+  registerAlertRoutes(app, store, dispatcher);
 
   return { app, store, dispatcher };
 }

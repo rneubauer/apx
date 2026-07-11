@@ -55,6 +55,8 @@ tags:
       APX delivery fabric — a superset-compatible profile of the APDS 4.1
       /webhooks subscription endpoint (stock EventSubscription bodies work
       unmodified). See written standard Part 8.
+  - name: Alerts
+    description: Operational alerting (net-new APX domain). See written standard Part 7.
 
 paths:
   # ===== APDS 4.1 native routes, mounted VERBATIM from the vendored spec ===== #
@@ -244,6 +246,158 @@ paths:
               schema:
                 type: string
 
+  # ===== Alerts (conformance class apx-alerts) ===== #
+  /apx/v1/alerts:
+    post:
+      operationId: post-apx-v1-alerts
+      tags: [Alerts]
+      summary: Raise an alert (idempotent)
+      description: |-
+        Raises an alert. The `Idempotency-Key` header is REQUIRED: replaying
+        the same key with the same body returns the original alert (200);
+        the same key with a different body is 409 idempotency-conflict.
+      parameters:
+        - name: Idempotency-Key
+          in: header
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/Alert"
+      responses:
+        "201":
+          description: Alert raised.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Alert"
+        "400":
+          description: Missing Idempotency-Key or invalid alert.
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+        "409":
+          description: Idempotency-Key replayed with a different body.
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+    get:
+      operationId: get-apx-v1-alerts
+      tags: [Alerts]
+      summary: List/filter alerts
+      description: Filter by status, severityFloor, type, place (subtree-inclusive), since.
+      parameters:
+        - name: status
+          in: query
+          schema: { type: string, enum: [raised, acknowledged, resolved, expired] }
+        - name: severityFloor
+          in: query
+          schema: { type: string, enum: [info, warning, minor, major, critical] }
+        - name: type
+          in: query
+          schema: { type: string }
+        - name: place
+          in: query
+          schema: { type: string, format: uuid }
+        - name: since
+          in: query
+          schema: { type: string, format: date-time }
+      responses:
+        "200":
+          description: Paginated alerts (APDS PaginatedList shape).
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  meta:
+                    $ref: "../vendor/apds/4.1/apds-api-4.1.yaml#/components/schemas/PaginatedListMeta"
+                  data:
+                    type: array
+                    items:
+                      $ref: "#/components/schemas/Alert"
+
+  /apx/v1/alerts/{id}:
+    get:
+      operationId: get-apx-v1-alerts-id
+      tags: [Alerts]
+      summary: Read an alert
+      description: Returns the alert including its immutable statusHistory.
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema: { type: string, format: uuid }
+      responses:
+        "200":
+          description: The alert.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Alert"
+        "404":
+          description: No such alert.
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+
+  /apx/v1/alerts/{id}/acknowledge:
+    post:
+      operationId: post-apx-v1-alerts-id-acknowledge
+      tags: [Alerts]
+      summary: Acknowledge an alert
+      description: "Transition raised → acknowledged. Illegal transitions are 409."
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema: { type: string, format: uuid }
+      responses:
+        "200":
+          description: Acknowledged alert.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Alert"
+        "409":
+          description: Illegal transition.
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+
+  /apx/v1/alerts/{id}/resolve:
+    post:
+      operationId: post-apx-v1-alerts-id-resolve
+      tags: [Alerts]
+      summary: Resolve an alert
+      description: "Transition raised|acknowledged → resolved. Illegal transitions are 409."
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema: { type: string, format: uuid }
+      responses:
+        "200":
+          description: Resolved alert.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Alert"
+        "409":
+          description: Illegal transition.
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+
   # ===== APX routes ===== #
   /.well-known/apx-configuration:
     get:
@@ -341,6 +495,8 @@ components:
       $ref: "./domains/events/schemas.yaml#/ApxEventSubscription"
     DeliveryRecord:
       $ref: "./domains/events/schemas.yaml#/DeliveryRecord"
+    Alert:
+      $ref: "./domains/alerts/schemas.yaml#/Alert"
 
     ApxConfiguration:
       type: object
