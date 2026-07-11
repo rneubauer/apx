@@ -10,6 +10,7 @@ import { registerControlRoutes } from './routes/control.js';
 import { registerAccountRoutes } from './routes/accounts.js';
 import { registerLprRoutes } from './routes/lpr.js';
 import { makeCheckInHook, registerReservationRoutes } from './routes/reservations.js';
+import { registerTollingRoutes } from './routes/tolling.js';
 import { DeviceSimulator } from './devices-sim.js';
 
 export interface AppOptions {
@@ -70,6 +71,7 @@ export function buildApp(options: AppOptions = {}): AppContext {
         'apx-lpr',
         'apx-reservations',
         'apx-permits',
+        'apx-tolling',
       ],
       registries: {
         'apx-command-types': 'https://apx-standard.org/registries/apx-command-types.json',
@@ -109,6 +111,7 @@ export function buildApp(options: AppOptions = {}): AppContext {
   registerAccountRoutes(app, store);
   registerLprRoutes(app, store);
   registerReservationRoutes(app, store, dispatcher);
+  registerTollingRoutes(app, store, dispatcher);
 
   return { app, store, dispatcher, devices };
 }

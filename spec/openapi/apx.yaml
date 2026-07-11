@@ -65,6 +65,8 @@ tags:
     description: Plate/ticket cross-lookup over APDS Observations. See written standard Part 13.
   - name: Permits
     description: Pooled permit issuance over RightSpecification/RightPool. See written standard Part 14.
+  - name: Tolling
+    description: Toll transactions binding Observations to pricing and Payments. See written standard Part 15.
 
 paths:
   # ===== APDS 4.1 native routes, mounted VERBATIM from the vendored spec ===== #
@@ -436,6 +438,121 @@ paths:
                   data:
                     type: array
                     items: { $ref: "#/components/schemas/ValidationProvider" }
+
+  # ===== Tolling (optional class; Part 15) ===== #
+  /apx/v1/tolling/transactions:
+    post:
+      operationId: post-apx-v1-tolling-transactions
+      tags: [Tolling]
+      summary: Create a toll transaction (idempotent)
+      description: Binds Observation refs + credential + pricing. Idempotency-Key REQUIRED.
+      parameters:
+        - { name: Idempotency-Key, in: header, required: true, schema: { type: string } }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/TollTransaction" }
+      responses:
+        "201":
+          description: Created toll transaction.
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/TollTransaction" }
+    get:
+      operationId: get-apx-v1-tolling-transactions
+      tags: [Tolling]
+      summary: List/filter toll transactions
+      description: Filter by plate and status.
+      parameters:
+        - { name: plate, in: query, schema: { type: string } }
+        - { name: status, in: query, schema: { type: string } }
+      responses:
+        "200":
+          description: Matching transactions.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    type: array
+                    items: { $ref: "#/components/schemas/TollTransaction" }
+
+  /apx/v1/tolling/transactions/{id}:
+    get:
+      operationId: get-apx-v1-tolling-transactions-id
+      tags: [Tolling]
+      summary: Read a toll transaction
+      description: Includes dispute state and the immutable statusHistory.
+      parameters:
+        - { name: id, in: path, required: true, schema: { type: string, format: uuid } }
+      responses:
+        "200":
+          description: The transaction.
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/TollTransaction" }
+        "404":
+          description: No such transaction.
+          content:
+            application/problem+json:
+              schema: { $ref: "#/components/schemas/Problem" }
+
+  /apx/v1/tolling/transactions/{id}/payment:
+    post:
+      operationId: post-apx-v1-tolling-transactions-id-payment
+      tags: [Tolling]
+      summary: Attach the settling Payment reference
+      description: Transitions the transaction to paid.
+      parameters:
+        - { name: id, in: path, required: true, schema: { type: string, format: uuid } }
+      responses:
+        "200":
+          description: Paid transaction.
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/TollTransaction" }
+
+  /apx/v1/tolling/transactions/{id}/disputes:
+    post:
+      operationId: post-apx-v1-tolling-transactions-id-disputes
+      tags: [Tolling]
+      summary: Open a dispute
+      description: Re-disputing a resolved/voided transaction is 409 dispute-closed.
+      parameters:
+        - { name: id, in: path, required: true, schema: { type: string, format: uuid } }
+      responses:
+        "200":
+          description: Disputed transaction.
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/TollTransaction" }
+        "409":
+          description: Dispute closed.
+          content:
+            application/problem+json:
+              schema: { $ref: "#/components/schemas/Problem" }
+
+  /apx/v1/tolling/transactions/{id}/disputes/resolve:
+    post:
+      operationId: post-apx-v1-tolling-transactions-id-disputes-resolve
+      tags: [Tolling]
+      summary: Resolve a dispute
+      description: Resolution values (upheld/refunded/adjusted) are implementer code lists.
+      parameters:
+        - { name: id, in: path, required: true, schema: { type: string, format: uuid } }
+      responses:
+        "200":
+          description: Resolved transaction.
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/TollTransaction" }
+        "409":
+          description: No open dispute.
+          content:
+            application/problem+json:
+              schema: { $ref: "#/components/schemas/Problem" }
 
   # ===== Reservations & permits (optional classes; Part 14) ===== #
   # Reservations use NATIVE routes (/quotes, /rights/assigned) with the
@@ -895,6 +1012,8 @@ components:
       $ref: "./domains/reservations/schemas.yaml#/PoolAvailability"
     PermitIssueRequest:
       $ref: "./domains/reservations/schemas.yaml#/PermitIssueRequest"
+    TollTransaction:
+      $ref: "./domains/tolling/schemas.yaml#/TollTransaction"
 
     ApxConfiguration:
       type: object
