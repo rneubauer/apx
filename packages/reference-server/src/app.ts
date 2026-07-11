@@ -11,6 +11,22 @@ import { registerAccountRoutes } from './routes/accounts.js';
 import { registerLprRoutes } from './routes/lpr.js';
 import { makeCheckInHook, registerReservationRoutes } from './routes/reservations.js';
 import { registerTollingRoutes } from './routes/tolling.js';
+import { registerDiscoveryRoutes } from './routes/discovery.js';
+
+const CONFORMANCE_CLASSES = [
+  'apx-data',
+  'apx-events',
+  'apx-events-sse',
+  'apx-alerts',
+  'apx-control',
+  'apx-accounts',
+  'apx-payment-history',
+  'apx-lpr',
+  'apx-reservations',
+  'apx-permits',
+  'apx-tolling',
+  'apx-discovery',
+];
 import { DeviceSimulator } from './devices-sim.js';
 
 export interface AppOptions {
@@ -60,19 +76,7 @@ export function buildApp(options: AppOptions = {}): AppContext {
       apxVersion: '0.1.0',
       apdsVersion: '4.1',
       tokenEndpoint: '/oauth/token',
-      conformanceClasses: [
-        'apx-data',
-        'apx-events',
-        'apx-events-sse',
-        'apx-alerts',
-        'apx-control',
-        'apx-accounts',
-        'apx-payment-history',
-        'apx-lpr',
-        'apx-reservations',
-        'apx-permits',
-        'apx-tolling',
-      ],
+      conformanceClasses: CONFORMANCE_CLASSES,
       registries: {
         'apx-command-types': 'https://apx-standard.org/registries/apx-command-types.json',
         'apx-alert-types': 'https://apx-standard.org/registries/apx-alert-types.json',
@@ -112,6 +116,7 @@ export function buildApp(options: AppOptions = {}): AppContext {
   registerLprRoutes(app, store);
   registerReservationRoutes(app, store, dispatcher);
   registerTollingRoutes(app, store, dispatcher);
+  registerDiscoveryRoutes(app, CONFORMANCE_CLASSES);
 
   return { app, store, dispatcher, devices };
 }

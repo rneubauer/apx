@@ -891,6 +891,29 @@ paths:
               schema:
                 $ref: "#/components/schemas/Problem"
 
+  # ===== Discovery (optional class apx-discovery; Part 16) ===== #
+  /apx/v1/discovery:
+    get:
+      operationId: get-apx-v1-discovery
+      tags: [Discovery]
+      summary: Credential-scoped capability document
+      description: |-
+        Reflects the presented token's scopes and grants exactly: the
+        endpoints, command types, topics, and place subtrees THIS client can
+        use. Soundness rule: everything listed is callable; APX endpoints
+        not listed fail with 403.
+      responses:
+        "200":
+          description: The capability document for this credential.
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/DiscoveryDocument" }
+        "401":
+          description: Missing/invalid token.
+          content:
+            application/problem+json:
+              schema: { $ref: "#/components/schemas/Problem" }
+
   # ===== APX routes ===== #
   /.well-known/apx-configuration:
     get:
@@ -1014,6 +1037,8 @@ components:
       $ref: "./domains/reservations/schemas.yaml#/PermitIssueRequest"
     TollTransaction:
       $ref: "./domains/tolling/schemas.yaml#/TollTransaction"
+    DiscoveryDocument:
+      $ref: "./domains/discovery/schemas.yaml#/DiscoveryDocument"
 
     ApxConfiguration:
       type: object
