@@ -1,0 +1,20 @@
+{
+  "name": "@apx/conformance",
+  "version": "0.1.0",
+  "private": true,
+  "description": "APX conformance harness — partner self-certification against any base URL. Suites map 1:1 to conformance classes.",
+  "license": "MIT",
+  "type": "module",
+  "scripts": {
+    "conformance": "tsx src/cli.ts",
+    "test": "vitest run",
+    "typecheck": "tsc --noEmit"
+  },
+  "devDependencies": {
+    "@types/node": "^22.10.0",
+    "fastify": "^5.2.0",
+    "tsx": "^4.19.0",
+    "typescript": "^5.8.0",
+    "vitest": "^3.0.0"
+  }
+}

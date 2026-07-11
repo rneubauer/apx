@@ -56,8 +56,16 @@ Requires Node 20+. No Docker, no native modules.
 
 ## Status
 
-Pre-release — v1 draft under active development. See the milestone plan in the
-project docs.
+**v0.1.0 — complete v1 draft.** All domains specified and implemented:
+data profile, delivery fabric, control, alerts, discovery, accounts &
+payments, LPR, reservations, permits, tolling. 37 passing tests; the
+conformance harness passes 14/14 checks against the reference server and
+fails against a deliberately broken implementation.
+
+```powershell
+npm run demo           # flagship call-center flow, end to end
+npm run conformance -w @apx/conformance -- --base-url http://localhost:4100
+```
 
 ## License
 
