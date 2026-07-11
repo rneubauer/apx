@@ -11,7 +11,7 @@ rules:
       field: "@key"
       function: pattern
       functionOptions:
-        match: "^(apx\\.[a-z0-9-]+(\\.[a-z0-9-]+)+\\.v\\d+|[A-Z][A-Za-z]+)$"
+        match: "^(apx\\.[a-z0-9-]+(\\.[a-z0-9-]+)+\\.v\\d+|[A-Z][A-Za-z]+|apx-[a-z0-9-]+)$"
 
   apx-path-casing:
     description: APX paths are lowercase kebab-case (APDS-native paths inherited verbatim are already compliant).

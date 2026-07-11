@@ -2,16 +2,27 @@ import Fastify, { type FastifyInstance } from 'fastify';
 import { Store } from './store.js';
 import { CLIENTS, seed } from './fixtures.js';
 import { issueToken, problem } from './auth.js';
+import { Dispatcher } from './events/dispatcher.js';
 import { registerDataRoutes } from './routes/data.js';
+import { registerWebhookRoutes } from './routes/webhooks.js';
+
+export interface AppOptions {
+  /** Override the normative webhook retry schedule (tests use a short one). */
+  retryScheduleMs?: number[];
+}
 
 export interface AppContext {
   app: FastifyInstance;
   store: Store;
+  dispatcher: Dispatcher;
 }
 
-export function buildApp(): AppContext {
+export function buildApp(options: AppOptions = {}): AppContext {
   const app = Fastify({ logger: false });
   const store = new Store();
+  const dispatcher = options.retryScheduleMs
+    ? new Dispatcher(options.retryScheduleMs)
+    : new Dispatcher();
   seed(store);
 
   // --- Toy OAuth2 token endpoint (sandbox only, loudly non-production) ---
@@ -37,7 +48,7 @@ export function buildApp(): AppContext {
       apxVersion: '0.1.0',
       apdsVersion: '4.1',
       tokenEndpoint: '/oauth/token',
-      conformanceClasses: ['apx-data'],
+      conformanceClasses: ['apx-data', 'apx-events', 'apx-events-sse'],
       registries: {
         'apx-command-types': 'https://apx-standard.org/registries/apx-command-types.json',
         'apx-alert-types': 'https://apx-standard.org/registries/apx-alert-types.json',
@@ -49,7 +60,8 @@ export function buildApp(): AppContext {
     });
   });
 
-  registerDataRoutes(app, store);
+  registerDataRoutes(app, store, dispatcher);
+  registerWebhookRoutes(app, dispatcher);
 
-  return { app, store };
+  return { app, store, dispatcher };
 }

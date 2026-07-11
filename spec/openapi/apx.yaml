@@ -41,12 +41,20 @@ info:
     apdsVersion: "4.1"
 
 servers:
-  - url: /apx/v1
-    description: APX API root (APDS-native routes are served at their own verbatim paths)
+  - url: https://api.example.com
+    description: |-
+      One host serves both surfaces: APDS-native routes at their verbatim
+      paths (/places, /sessions, /webhooks, …) and APX routes under the
+      explicit /apx/v1 prefix.
 
 tags:
   - name: Discovery
     description: Bootstrap and credential-scoped capability discovery.
+  - name: Subscription
+    description: |-
+      APX delivery fabric — a superset-compatible profile of the APDS 4.1
+      /webhooks subscription endpoint (stock EventSubscription bodies work
+      unmodified). See written standard Part 8.
 
 paths:
   # ===== APDS 4.1 native routes, mounted VERBATIM from the vendored spec ===== #
@@ -81,6 +89,161 @@ paths:
   /quotes:
     $ref: "../vendor/apds/4.1/apds-api-4.1.yaml#/paths/~1quotes"
 
+  # ===== Delivery fabric: superset profile of APDS /webhooks ===== #
+  /webhooks:
+    post:
+      operationId: post-webhooks
+      tags: [Subscription]
+      summary: Subscribe to event topics (APDS-compatible superset)
+      description: |-
+        Creates a subscription. A stock APDS 4.1 `EventSubscription`
+        (`{endpoint, topics[]}` with EventTypeEnum values) is a valid body;
+        APX fields (transport, filters, secret) are additive. The signing
+        secret is returned exactly once, in this response.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ApxEventSubscription"
+      responses:
+        "201":
+          description: Subscription created (includes the signing secret, once).
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApxEventSubscription"
+        "400":
+          description: Missing/unknown topics or endpoint.
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+    get:
+      operationId: get-webhooks
+      tags: [Subscription]
+      summary: List subscriptions (APX additive operation)
+      description: Lists subscriptions visible to the caller. Secrets are never returned.
+      responses:
+        "200":
+          description: Paginated subscription list (APDS PaginatedList shape).
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  meta:
+                    $ref: "../vendor/apds/4.1/apds-api-4.1.yaml#/components/schemas/PaginatedListMeta"
+                  data:
+                    type: array
+                    items:
+                      $ref: "#/components/schemas/ApxEventSubscription"
+
+  /webhooks/{id}:
+    parameters:
+      - name: id
+        in: path
+        required: true
+        schema:
+          type: string
+        description: Unique identifier for the existing subscription
+    patch:
+      operationId: patch-webhooks-id
+      tags: [Subscription]
+      summary: Update a subscription (APX additive operation)
+      description: Update topics, endpoint, filters, status (resume a failed subscription), or rotate the secret.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ApxEventSubscription"
+      responses:
+        "200":
+          description: Updated subscription (secret never returned).
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApxEventSubscription"
+        "404":
+          description: No such subscription.
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+    delete:
+      operationId: delete-webhooks-id
+      tags: [Subscription]
+      summary: Revoke (delete) existing subscription
+      description: Native APDS 4.1 operation, unchanged (APDS ResponseStatus shape).
+      responses:
+        "200":
+          description: Subscription deleted.
+          content:
+            application/json:
+              schema:
+                $ref: "../vendor/apds/4.1/apds-api-4.1.yaml#/components/schemas/ResponseStatus"
+        "404":
+          description: Subscription not found.
+          content:
+            application/json:
+              schema:
+                $ref: "../vendor/apds/4.1/apds-api-4.1.yaml#/components/schemas/ResponseStatus"
+
+  /webhooks/{id}/deliveries:
+    get:
+      operationId: get-webhooks-id-deliveries
+      tags: [Subscription]
+      summary: Delivery ledger for a subscription
+      description: Returns the delivery records (attempts, status, last HTTP code) for auditing.
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          description: Delivery records.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    type: array
+                    items:
+                      $ref: "#/components/schemas/DeliveryRecord"
+
+  /apx/v1/events/stream:
+    get:
+      operationId: get-apx-v1-events-stream
+      tags: [Subscription]
+      summary: Server-Sent Events stream (conformance class apx-events-sse)
+      description: |-
+        Streams EventEnvelopes for a subscription with `transport: sse`.
+        Each SSE event carries `id:` = per-subscription sequence and `data:`
+        = the envelope JSON. Reconnect with `Last-Event-ID` to resume.
+      parameters:
+        - name: subscription
+          in: query
+          required: true
+          schema:
+            type: string
+            format: uuid
+        - name: Last-Event-ID
+          in: header
+          required: false
+          schema:
+            type: string
+      responses:
+        "200":
+          description: text/event-stream of EventEnvelope objects.
+          content:
+            text/event-stream:
+              schema:
+                type: string
+
   # ===== APX routes ===== #
   /.well-known/apx-configuration:
     get:
@@ -104,6 +267,27 @@ paths:
 
 security:
   - apxOAuth: []
+
+webhooks:
+  apx-event:
+    post:
+      operationId: receive-apx-event
+      summary: Signed APX event delivery
+      description: |-
+        Every webhook delivery POSTs one EventEnvelope with headers
+        `APX-Signature` (v1=HMAC-SHA256(secret, timestamp + "." + body)),
+        `APX-Timestamp` (RFC 3339, ±5 min replay window), and
+        `APX-Delivery-Id` (unique per attempt; envelope `id` is stable
+        across retries). Respond 2xx to acknowledge; anything else triggers
+        the normative retry schedule (Part 8).
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/EventEnvelope"
+      responses:
+        "200":
+          description: Acknowledged.
 
 components:
   parameters:
@@ -153,6 +337,10 @@ components:
       $ref: "./domains/common/schemas.yaml#/CodeListValue"
     ChangeFeedPage:
       $ref: "./domains/data/schemas.yaml#/ChangeFeedPage"
+    ApxEventSubscription:
+      $ref: "./domains/events/schemas.yaml#/ApxEventSubscription"
+    DeliveryRecord:
+      $ref: "./domains/events/schemas.yaml#/DeliveryRecord"
 
     ApxConfiguration:
       type: object

@@ -14,21 +14,24 @@ import {
   type Store,
 } from '../store.js';
 import { problem, requireScope } from '../auth.js';
+import type { Dispatcher } from '../events/dispatcher.js';
 
 interface RouteSpec {
   path: string;
   className: string;
   idParam: string;
+  /** APDS EventTypeEnum base name (undefined = no native events for this class). */
+  eventBase?: string;
 }
 
 export const DATA_ROUTES: RouteSpec[] = [
-  { path: '/places', className: 'Place', idParam: 'id' },
+  { path: '/places', className: 'Place', idParam: 'id', eventBase: 'Place' },
   { path: '/observations', className: 'Observation', idParam: 'id' },
-  { path: '/contacts', className: 'Contact', idParam: 'contactId' },
-  { path: '/rights/specs', className: 'RightSpecification', idParam: 'id' },
-  { path: '/rates', className: 'RateTable', idParam: 'id' },
-  { path: '/sessions', className: 'Session', idParam: 'id' },
-  { path: '/rights/assigned', className: 'AssignedRight', idParam: 'id' },
+  { path: '/contacts', className: 'Contact', idParam: 'contactId', eventBase: 'Organisation' },
+  { path: '/rights/specs', className: 'RightSpecification', idParam: 'id', eventBase: 'RightSpecification' },
+  { path: '/rates', className: 'RateTable', idParam: 'id', eventBase: 'Rate' },
+  { path: '/sessions', className: 'Session', idParam: 'id', eventBase: 'Session' },
+  { path: '/rights/assigned', className: 'AssignedRight', idParam: 'id', eventBase: 'AssignedRight' },
 ];
 
 function sendKnownError(reply: FastifyReply, error: unknown): boolean {
@@ -47,9 +50,28 @@ function sendKnownError(reply: FastifyReply, error: unknown): boolean {
   return false;
 }
 
-export function registerDataRoutes(app: FastifyInstance, store: Store): void {
+export function registerDataRoutes(
+  app: FastifyInstance,
+  store: Store,
+  dispatcher?: Dispatcher
+): void {
   for (const route of DATA_ROUTES) {
     const entities = () => store.for(route.className);
+    const placeIdsOf = (entity: Record<string, unknown>): string[] => {
+      const ref = entity.placeRef as { id?: string } | undefined;
+      return ref?.id ? [ref.id] : route.className === 'Place' ? [String(entity.id)] : [];
+    };
+    const emit = (verb: 'Created' | 'Updated' | 'Deleted', entity: Record<string, unknown>) => {
+      if (!dispatcher || !route.eventBase) return;
+      dispatcher.publish(
+        dispatcher.makeEnvelope(
+          `${route.eventBase}${verb}`,
+          entity,
+          { id: String(entity.id), className: route.className }
+        ),
+        placeIdsOf(entity)
+      );
+    };
 
     app.get(route.path, async (request, reply) => {
       if (!requireScope(request, reply, 'apx.data:read')) return;
@@ -107,6 +129,7 @@ export function registerDataRoutes(app: FastifyInstance, store: Store): void {
       if (!requireScope(request, reply, 'apx.data:write')) return;
       try {
         const entity = entities().create(request.body as Record<string, unknown>);
+        emit('Created', entity);
         return await reply.status(201).send(entity);
       } catch (error) {
         if (sendKnownError(reply, error)) return;
@@ -133,6 +156,7 @@ export function registerDataRoutes(app: FastifyInstance, store: Store): void {
         const body = request.body as Record<string, unknown>;
         const entity =
           mode === 'change' ? entities().applyChange(id, body) : entities().replace(id, body);
+        emit('Updated', entity);
         return await reply.send(entity);
       } catch (error) {
         if (sendKnownError(reply, error)) return;
@@ -144,7 +168,9 @@ export function registerDataRoutes(app: FastifyInstance, store: Store): void {
       if (!requireScope(request, reply, 'apx.data:write')) return;
       const id = (request.params as Record<string, string>)[route.idParam]!;
       try {
+        const existing = entities().get(id);
         entities().delete(id);
+        emit('Deleted', existing);
         return await reply.send({ status: 'ok', code: 200, message: 'deleted' });
       } catch (error) {
         if (sendKnownError(reply, error)) return;
