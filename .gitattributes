@@ -1,0 +1,7 @@
+# Vendored artifacts are byte-exact (checksum-guarded) — never re-encode.
+spec/vendor/** -text
+
+# Everything else: normalize to LF in repo and working tree for cross-platform hash stability.
+* text=auto eol=lf
+*.png binary
+*.jpg binary
