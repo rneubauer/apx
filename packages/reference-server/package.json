@@ -1,0 +1,22 @@
+{
+  "name": "@apx/reference-server",
+  "version": "0.1.0",
+  "private": true,
+  "description": "APX reference implementation — spec-driven Fastify sandbox. Toy auth, in-memory store: NOT for production.",
+  "license": "MIT",
+  "type": "module",
+  "scripts": {
+    "sandbox": "tsx src/index.ts",
+    "test": "vitest run",
+    "typecheck": "tsc --noEmit"
+  },
+  "dependencies": {
+    "fastify": "^5.2.0"
+  },
+  "devDependencies": {
+    "@types/node": "^22.10.0",
+    "tsx": "^4.19.0",
+    "typescript": "^5.8.0",
+    "vitest": "^3.0.0"
+  }
+}

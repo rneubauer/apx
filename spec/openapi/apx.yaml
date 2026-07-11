@@ -49,6 +49,39 @@ tags:
     description: Bootstrap and credential-scoped capability discovery.
 
 paths:
+  # ===== APDS 4.1 native routes, mounted VERBATIM from the vendored spec ===== #
+  # The APX data profile (Part 5) adds additive query parameters (mode, cursor)
+  # to the list operations; plain APDS clients are unaffected.
+  /places:
+    $ref: "../vendor/apds/4.1/apds-api-4.1.yaml#/paths/~1places"
+  /places/{id}:
+    $ref: "../vendor/apds/4.1/apds-api-4.1.yaml#/paths/~1places~1{id}"
+  /observations:
+    $ref: "../vendor/apds/4.1/apds-api-4.1.yaml#/paths/~1observations"
+  /contacts:
+    $ref: "../vendor/apds/4.1/apds-api-4.1.yaml#/paths/~1contacts"
+  /contacts/{contactId}:
+    $ref: "../vendor/apds/4.1/apds-api-4.1.yaml#/paths/~1contacts~1{contactId}"
+  /rights/specs:
+    $ref: "../vendor/apds/4.1/apds-api-4.1.yaml#/paths/~1rights~1specs"
+  /rights/specs/{id}:
+    $ref: "../vendor/apds/4.1/apds-api-4.1.yaml#/paths/~1rights~1specs~1{id}"
+  /rates:
+    $ref: "../vendor/apds/4.1/apds-api-4.1.yaml#/paths/~1rates"
+  /rates/{id}:
+    $ref: "../vendor/apds/4.1/apds-api-4.1.yaml#/paths/~1rates~1{id}"
+  /sessions:
+    $ref: "../vendor/apds/4.1/apds-api-4.1.yaml#/paths/~1sessions"
+  /sessions/{id}:
+    $ref: "../vendor/apds/4.1/apds-api-4.1.yaml#/paths/~1sessions~1{id}"
+  /rights/assigned:
+    $ref: "../vendor/apds/4.1/apds-api-4.1.yaml#/paths/~1rights~1assigned"
+  /rights/assigned/{id}:
+    $ref: "../vendor/apds/4.1/apds-api-4.1.yaml#/paths/~1rights~1assigned~1{id}"
+  /quotes:
+    $ref: "../vendor/apds/4.1/apds-api-4.1.yaml#/paths/~1quotes"
+
+  # ===== APX routes ===== #
   /.well-known/apx-configuration:
     get:
       operationId: get-well-known-apx-configuration
@@ -73,6 +106,12 @@ security:
   - apxOAuth: []
 
 components:
+  parameters:
+    ModeParam:
+      $ref: "./domains/data/schemas.yaml#/ModeParam"
+    CursorParam:
+      $ref: "./domains/data/schemas.yaml#/CursorParam"
+
   securitySchemes:
     apxOAuth:
       type: oauth2
@@ -112,6 +151,8 @@ components:
       $ref: "./domains/common/schemas.yaml#/EventEnvelope"
     CodeListValue:
       $ref: "./domains/common/schemas.yaml#/CodeListValue"
+    ChangeFeedPage:
+      $ref: "./domains/data/schemas.yaml#/ChangeFeedPage"
 
     ApxConfiguration:
       type: object

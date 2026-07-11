@@ -1,0 +1,14 @@
+{
+  "name": "@apx/types",
+  "version": "0.1.0",
+  "private": true,
+  "description": "TypeScript types generated from the bundled APX OpenAPI document.",
+  "license": "MIT",
+  "types": "dist/apx.d.ts",
+  "scripts": {
+    "typegen": "openapi-typescript ../../spec/dist/apx-v1.json -o dist/apx.d.ts"
+  },
+  "devDependencies": {
+    "openapi-typescript": "^7.6.0"
+  }
+}

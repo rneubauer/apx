@@ -21,7 +21,7 @@ rules:
       field: "@key"
       function: pattern
       functionOptions:
-        match: "^\\/((\\.well-known|[a-z0-9\\-{}._]+)\\/?)*$"
+        match: "^\\/((\\.well-known|[a-z0-9\\-._]+|\\{[a-zA-Z][a-zA-Z0-9]*\\})\\/?)*$"
 
   apx-operation-description:
     description: Every operation needs a description (normative text lives in the spec too).
