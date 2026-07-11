@@ -1,0 +1,21 @@
+{
+  "id": "1c2d3e4f-5a6b-4c7d-8e9f-0a1b2c3d4e5f",
+  "version": 1,
+  "name": "apx-alert-types",
+  "creator": { "id": "a1000000-0000-4000-8000-000000000001", "className": "Organisation" },
+  "locator": "https://apx-standard.org/registries/apx-alert-types.json",
+  "userDefinedCodeListEntries": [
+    { "definedValue": "noCheckOut", "entryDescription": "Vehicle/right shows no check-out for a completed stay (APDS Use Case C.2.2 transaction exception).", "entryIndex": 0 },
+    { "definedValue": "wrongSpace", "entryDescription": "Vehicle occupies a different space than reserved/checked-in (C.2.2 transaction exception).", "entryIndex": 1 },
+    { "definedValue": "occupiedWithoutCheckIn", "entryDescription": "Space occupied with no matching check-in/session (C.2.2 space status).", "entryIndex": 2 },
+    { "definedValue": "iceInEvSpace", "entryDescription": "Non-EV vehicle occupying an EV charging space (C.2.2 transaction exception).", "entryIndex": 3 },
+    { "definedValue": "overstay", "entryDescription": "Session exceeds its right's validity or maximum stay.", "entryIndex": 4 },
+    { "definedValue": "deviceFault", "entryDescription": "A device reports a fault state.", "entryIndex": 5 },
+    { "definedValue": "deviceOffline", "entryDescription": "A device stopped communicating (lastCommunication exceeded threshold).", "entryIndex": 6 },
+    { "definedValue": "laneBlocked", "entryDescription": "A lane is blocked (vehicle stuck, barrier obstruction).", "entryIndex": 7 },
+    { "definedValue": "occupancyThresholdExceeded", "entryDescription": "Occupancy demand crossed a configured threshold for a place element.", "entryIndex": 8 },
+    { "definedValue": "paymentException", "entryDescription": "A payment failed, was reversed, or requires attention.", "entryIndex": 9 },
+    { "definedValue": "intercomRequest", "entryDescription": "A customer requested assistance at a lane/device intercom.", "entryIndex": 10 },
+    { "definedValue": "webhookDeliveryFailed", "entryDescription": "A subscription exhausted its delivery retry schedule and was marked failed (self-referential alert).", "entryIndex": 11 }
+  ]
+}

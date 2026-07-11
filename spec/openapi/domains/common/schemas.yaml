@@ -1,0 +1,158 @@
+# APX common schemas — the conventions every APX domain reuses.
+# This file is a bare schema map, $ref'd from the root apx.yaml.
+# APDS entities are ALWAYS reached by $ref into the vendored spec, never redefined.
+
+RecordInfo:
+  title: RecordInfo
+  description: |-
+    Provenance metadata for an APX resource, aligned to the APDS Information
+    Model's RecordType (creationTime/creator/lastUpdate). All timestamps are
+    RFC 3339 (APDS DateTime).
+  type: object
+  properties:
+    creationTime:
+      $ref: "../../../vendor/apds/4.1/apds-api-4.1.yaml#/components/schemas/DateTime"
+    creator:
+      description: Reference to the creating Organisation or Contact.
+      $ref: "../../../vendor/apds/4.1/apds-api-4.1.yaml#/components/schemas/Reference"
+    creationUser:
+      type: string
+      description: Human or system principal that created the record.
+    lastUpdate:
+      $ref: "../../../vendor/apds/4.1/apds-api-4.1.yaml#/components/schemas/DateTime"
+    lastUpdateUser:
+      type: string
+      description: Human or system principal that last updated the record.
+
+Extensions:
+  title: Extensions
+  description: |-
+    The official APDS extension container (Use Case Document §C.2.5).
+    Keys MUST follow `apds-ext:<namespace>:<class>@<major>.<minor>`.
+    Implementations MUST preserve unknown extension keys on round-trip
+    (tolerant reader, faithful writer).
+  type: object
+  propertyNames:
+    pattern: "^apds-ext:[a-z0-9-]+:[a-z0-9-]+@[0-9]+\\.[0-9]+$"
+  additionalProperties:
+    type: object
+
+ApxResourceCore:
+  title: ApxResourceCore
+  description: |-
+    Identity core shared by every APX-defined resource. Shaped so any APX
+    resource can itself be the target of an APDS Reference or
+    VersionedReference (RFC 4122 UUID identifier + integer version).
+  type: object
+  required:
+    - id
+    - version
+  properties:
+    id:
+      type: string
+      format: uuid
+      description: RFC 4122 UUID, unique within the resource class.
+    version:
+      type: integer
+      minimum: 1
+      description: Monotonically increasing object version.
+    recordInfo:
+      $ref: "#/RecordInfo"
+    extensions:
+      $ref: "#/Extensions"
+
+Problem:
+  title: Problem
+  description: |-
+    RFC 9457 problem details. APX problem `type` URIs are registered in the
+    APX problem-type registry. Used for all APX error responses; APDS-native
+    routes may alternatively use the APDS ResponseStatus shape.
+  type: object
+  required:
+    - type
+    - title
+    - status
+  properties:
+    type:
+      type: string
+      format: uri
+      description: Problem type URI from the APX problem registry.
+      examples: ["https://apx-standard.org/problems/insufficient-grant"]
+    title:
+      type: string
+      description: Short human-readable summary of the problem type.
+    status:
+      type: integer
+      minimum: 100
+      maximum: 599
+      description: HTTP status code.
+    detail:
+      type: string
+      description: Human-readable explanation specific to this occurrence.
+    instance:
+      type: string
+      format: uri-reference
+      description: URI reference identifying this specific occurrence.
+  additionalProperties: true
+
+EventEnvelope:
+  title: EventEnvelope
+  description: |-
+    The single envelope for all APX asynchronous delivery (webhooks and SSE).
+    Attribute names are aligned with CloudEvents 1.0 (informative mapping in
+    the standard's annex); `subject` carries an APDS Reference so events bind
+    to APDS/APX entities natively.
+  type: object
+  required:
+    - id
+    - type
+    - source
+    - time
+    - data
+  properties:
+    id:
+      type: string
+      format: uuid
+      description: Unique event id (delivery-stable; retries reuse it).
+    type:
+      type: string
+      description: |-
+        Event topic. Either an APX topic (`apx.<domain>.<event>.vN`) or an
+        APDS EventTypeEnum value (e.g. `SessionCreated`).
+      examples: ["apx.alert.raised.v1", "SessionCreated"]
+    source:
+      type: string
+      format: uri-reference
+      description: Identifies the publishing implementation/site.
+    time:
+      $ref: "../../../vendor/apds/4.1/apds-api-4.1.yaml#/components/schemas/DateTime"
+    subject:
+      description: The entity this event is about.
+      $ref: "../../../vendor/apds/4.1/apds-api-4.1.yaml#/components/schemas/Reference"
+    dataschema:
+      type: string
+      format: uri
+      description: Optional URI of the schema that `data` validates against.
+    data:
+      description: Event payload. For APDS EventTypeEnum topics this is the APDS EventData shape.
+      type: object
+    extensions:
+      $ref: "#/Extensions"
+
+CodeListValue:
+  title: CodeListValue
+  description: |-
+    A value drawn from an APX or implementer UserDefinedCodeList — carries the
+    defined value plus an optional ReferencedCodeListEntry-style pointer to
+    the list that defines it.
+  type: object
+  required:
+    - value
+  properties:
+    value:
+      type: string
+      description: The definedValue from the code list entry.
+      examples: ["vendGate"]
+    codeListId:
+      description: VersionedReference to the defining UserDefinedCodeList.
+      $ref: "../../../vendor/apds/4.1/apds-api-4.1.yaml#/components/schemas/VersionedReference"

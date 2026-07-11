@@ -1,0 +1,17 @@
+{
+  "id": "3e4f5a6b-7c8d-4e9f-0a1b-2c3d4e5f6a7b",
+  "version": 1,
+  "name": "apx-topics",
+  "creator": { "id": "a1000000-0000-4000-8000-000000000001", "className": "Organisation" },
+  "locator": "https://apx-standard.org/registries/apx-topics.json",
+  "userDefinedCodeListEntries": [
+    { "definedValue": "apx.control.command.status.v1", "entryDescription": "A command transitioned lifecycle state (data: Command).", "entryIndex": 0 },
+    { "definedValue": "apx.control.device.state.v1", "entryDescription": "A device changed state (data: DeviceStatus).", "entryIndex": 1 },
+    { "definedValue": "apx.alert.raised.v1", "entryDescription": "An alert was raised (data: Alert).", "entryIndex": 2 },
+    { "definedValue": "apx.alert.status.v1", "entryDescription": "An alert changed lifecycle state (data: Alert).", "entryIndex": 3 },
+    { "definedValue": "apx.reservation.noshow.v1", "entryDescription": "A reservation reached its no-show condition (data: AssignedRight reference + reservation state).", "entryIndex": 4 },
+    { "definedValue": "apx.tolling.transaction.created.v1", "entryDescription": "A toll transaction was created (data: TollTransaction).", "entryIndex": 5 },
+    { "definedValue": "apx.tolling.transaction.status.v1", "entryDescription": "A toll transaction changed status, including disputes (data: TollTransaction).", "entryIndex": 6 },
+    { "definedValue": "apx.subscription.failed.v1", "entryDescription": "A subscription exhausted its retry schedule and was marked failed (data: subscription reference).", "entryIndex": 7 }
+  ]
+}

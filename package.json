@@ -15,13 +15,17 @@
     "spec:bundle": "redocly bundle spec/openapi/apx.yaml --config tools/redocly.yaml -o spec/dist/apx-v1.yaml && redocly bundle spec/openapi/apx.yaml --config tools/redocly.yaml -o spec/dist/apx-v1.json",
     "spec:style": "spectral lint spec/dist/apx-v1.yaml --ruleset tools/.spectral.yaml",
     "vendor:check": "node tools/check-vendor.mjs",
+    "registries:check": "node tools/check-registries.mjs",
+    "examples:check": "node tools/validate-examples.mjs",
     "typegen": "npm run spec:bundle && npm run typegen -w packages/types",
-    "test": "npm run vendor:check && npm run spec:lint && npm run spec:bundle && npm run spec:style && npm test --workspaces --if-present",
+    "test": "npm run vendor:check && npm run registries:check && npm run spec:lint && npm run spec:bundle && npm run spec:style && npm run examples:check && npm test --workspaces --if-present",
     "sandbox": "npm run sandbox -w packages/reference-server"
   },
   "devDependencies": {
     "@redocly/cli": "^1.34.0",
     "@stoplight/spectral-cli": "^6.14.2",
+    "ajv": "^8.17.0",
+    "ajv-formats": "^3.0.0",
     "typescript": "^5.8.0"
   }
 }

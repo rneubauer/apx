@@ -1,0 +1,18 @@
+{
+  "id": "0b1f8a4e-1c2d-4e5f-9a6b-7c8d9e0f1a2b",
+  "version": 1,
+  "name": "apx-command-types",
+  "creator": { "id": "a1000000-0000-4000-8000-000000000001", "className": "Organisation" },
+  "locator": "https://apx-standard.org/registries/apx-command-types.json",
+  "userDefinedCodeListEntries": [
+    { "definedValue": "vendGate", "entryDescription": "Open (vend) a gate/barrier at the target lane once for one vehicle.", "entryIndex": 0 },
+    { "definedValue": "holdGateOpen", "entryDescription": "Hold the gate/barrier at the target lane open until released by a subsequent setDeviceState or closeLane command.", "entryIndex": 1 },
+    { "definedValue": "closeLane", "entryDescription": "Close the target lane to further entries/exits.", "entryIndex": 2 },
+    { "definedValue": "lostTicket", "entryDescription": "Issue a lost-ticket transaction at the target lane using the lost-ticket method given in parameters.", "entryIndex": 3 },
+    { "definedValue": "pushRate", "entryDescription": "Apply the RateTable referenced in parameters to the target lane or place.", "entryIndex": 4 },
+    { "definedValue": "applyValidation", "entryDescription": "Apply a validation from the given validation provider to the ticket/session referenced in parameters.", "entryIndex": 5 },
+    { "definedValue": "setDeviceState", "entryDescription": "Request the target device transition to the state given in parameters.", "entryIndex": 6 },
+    { "definedValue": "displayMessage", "entryDescription": "Display the message given in parameters on the target device (VMS, lane display).", "entryIndex": 7 },
+    { "definedValue": "restartDevice", "entryDescription": "Restart (reboot) the target device.", "entryIndex": 8 }
+  ]
+}

@@ -1,0 +1,15 @@
+{
+  "id": "2d3e4f5a-6b7c-4d8e-9f0a-1b2c3d4e5f6a",
+  "version": 1,
+  "name": "apx-device-states",
+  "creator": { "id": "a1000000-0000-4000-8000-000000000001", "className": "Organisation" },
+  "locator": "https://apx-standard.org/registries/apx-device-states.json",
+  "userDefinedCodeListEntries": [
+    { "definedValue": "available", "entryDescription": "Device is operational and idle/ready (mirrors APDS RefillPointStatusEnum style).", "entryIndex": 0 },
+    { "definedValue": "occupied", "entryDescription": "Device is operational and currently serving a vehicle/transaction.", "entryIndex": 1 },
+    { "definedValue": "inoperative", "entryDescription": "Device is not operating (planned: maintenance window, closed hours).", "entryIndex": 2 },
+    { "definedValue": "outOfService", "entryDescription": "Device removed from service by operator action.", "entryIndex": 3 },
+    { "definedValue": "fault", "entryDescription": "Device reports an error condition requiring attention.", "entryIndex": 4 },
+    { "definedValue": "unknown", "entryDescription": "Device state cannot be determined (e.g. communication lost).", "entryIndex": 5 }
+  ]
+}

@@ -69,8 +69,50 @@ paths:
               schema:
                 $ref: "#/components/schemas/ApxConfiguration"
 
+security:
+  - apxOAuth: []
+
 components:
+  securitySchemes:
+    apxOAuth:
+      type: oauth2
+      description: |-
+        OAuth 2.0 client-credentials (aligned with APDS 4.1's `oAuth` scheme).
+        APX scopes follow `apx.<domain>:<verb>`. Grants are carried in the
+        normative token claims `apx_org` (Organisation reference) and
+        `apx_places` (HierarchyElement UUID subtree grants; absent = all).
+      flows:
+        clientCredentials:
+          tokenUrl: https://auth.example.com/oauth2/token
+          scopes:
+            apx.data:read: Read parking data via APDS-native routes
+            apx.data:write: Create/update parking data via APDS-native routes
+            apx.control:read: Read commands, lanes, and device status
+            apx.control:execute: Execute commands (vend gate, lost ticket, push rate, apply validation…)
+            apx.alerts:read: Read alerts
+            apx.alerts:write: Raise, acknowledge, and resolve alerts
+            apx.subscriptions:manage: Create and manage event subscriptions
+            apx.accounts:read: Look up accounts and balances
+            apx.payments:write: Take payments and post accounting write-backs
+            apx.lpr:read: LPR plate/ticket cross-lookup
+            apx.reservations:manage: Quote, book, amend, cancel reservations
+            apx.permits:manage: Issue and manage permits
+            apx.tolling:manage: Create and manage toll transactions
+
   schemas:
+    RecordInfo:
+      $ref: "./domains/common/schemas.yaml#/RecordInfo"
+    Extensions:
+      $ref: "./domains/common/schemas.yaml#/Extensions"
+    ApxResourceCore:
+      $ref: "./domains/common/schemas.yaml#/ApxResourceCore"
+    Problem:
+      $ref: "./domains/common/schemas.yaml#/Problem"
+    EventEnvelope:
+      $ref: "./domains/common/schemas.yaml#/EventEnvelope"
+    CodeListValue:
+      $ref: "./domains/common/schemas.yaml#/CodeListValue"
+
     ApxConfiguration:
       type: object
       description: Unauthenticated bootstrap configuration document.
