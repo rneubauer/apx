@@ -6,16 +6,23 @@ import { Dispatcher } from './events/dispatcher.js';
 import { registerDataRoutes } from './routes/data.js';
 import { registerWebhookRoutes } from './routes/webhooks.js';
 import { registerAlertRoutes } from './routes/alerts.js';
+import { registerControlRoutes } from './routes/control.js';
+import { DeviceSimulator } from './devices-sim.js';
 
 export interface AppOptions {
   /** Override the normative webhook retry schedule (tests use a short one). */
   retryScheduleMs?: number[];
+  /** Simulated device action delay (default 500ms; tests use a short one). */
+  deviceDelayMs?: number;
+  /** Delay before a command is dispatched (cancellation window). */
+  dispatchDelayMs?: number;
 }
 
 export interface AppContext {
   app: FastifyInstance;
   store: Store;
   dispatcher: Dispatcher;
+  devices: DeviceSimulator;
 }
 
 export function buildApp(options: AppOptions = {}): AppContext {
@@ -49,7 +56,7 @@ export function buildApp(options: AppOptions = {}): AppContext {
       apxVersion: '0.1.0',
       apdsVersion: '4.1',
       tokenEndpoint: '/oauth/token',
-      conformanceClasses: ['apx-data', 'apx-events', 'apx-events-sse', 'apx-alerts'],
+      conformanceClasses: ['apx-data', 'apx-events', 'apx-events-sse', 'apx-alerts', 'apx-control'],
       registries: {
         'apx-command-types': 'https://apx-standard.org/registries/apx-command-types.json',
         'apx-alert-types': 'https://apx-standard.org/registries/apx-alert-types.json',
@@ -61,9 +68,30 @@ export function buildApp(options: AppOptions = {}): AppContext {
     });
   });
 
+  // Auto-raise alerts from simulated device faults (Part 6 §6.4 SHOULD).
+  const raiseAlert = (data: Record<string, unknown>) => {
+    const now = new Date().toISOString();
+    const alert = store.for('Alert').create({
+      ...data,
+      status: 'raised',
+      detectionTime: now,
+      statusHistory: [{ state: 'raised', time: now, actor: 'facility-sim' }],
+    });
+    const source = data.source as { place?: string } | undefined;
+    dispatcher.publish(
+      dispatcher.makeEnvelope('apx.alert.raised.v1', alert, {
+        id: String(alert.id),
+        className: 'Alert',
+      }),
+      source?.place ? [source.place] : []
+    );
+  };
+  const devices = new DeviceSimulator(store, dispatcher, options.deviceDelayMs ?? 500, raiseAlert);
+
   registerDataRoutes(app, store, dispatcher);
   registerWebhookRoutes(app, dispatcher);
   registerAlertRoutes(app, store, dispatcher);
+  registerControlRoutes(app, store, dispatcher, devices, options.dispatchDelayMs ?? 0);
 
-  return { app, store, dispatcher };
+  return { app, store, dispatcher, devices };
 }

@@ -57,6 +57,8 @@ tags:
       unmodified). See written standard Part 8.
   - name: Alerts
     description: Operational alerting (net-new APX domain). See written standard Part 7.
+  - name: Control
+    description: Command plane, lane inquiry, validations, device status. See written standard Part 6.
 
 paths:
   # ===== APDS 4.1 native routes, mounted VERBATIM from the vendored spec ===== #
@@ -245,6 +247,189 @@ paths:
             text/event-stream:
               schema:
                 type: string
+
+  # ===== Control (conformance class apx-control) ===== #
+  /apx/v1/commands:
+    post:
+      operationId: post-apx-v1-commands
+      tags: [Control]
+      summary: Execute a command (idempotent, perishable, audited)
+      description: |-
+        Requests an operational action (vendGate, lostTicket, pushRate,
+        applyValidation, …). Idempotency-Key REQUIRED. Returns 202 with the
+        Command; poll GET /apx/v1/commands/{id} or subscribe to
+        apx.control.command.status.v1. Requires scope apx.control:execute
+        AND a place grant covering the target.
+      parameters:
+        - name: Idempotency-Key
+          in: header
+          required: true
+          schema: { type: string }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/Command"
+      responses:
+        "202":
+          description: Command accepted for asynchronous execution.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Command"
+        "400":
+          description: Missing Idempotency-Key, unknown commandType, or missing target.
+          content:
+            application/problem+json:
+              schema: { $ref: "#/components/schemas/Problem" }
+        "403":
+          description: Insufficient scope or place grant.
+          content:
+            application/problem+json:
+              schema: { $ref: "#/components/schemas/Problem" }
+        "409":
+          description: Idempotency-Key replayed with a different body.
+          content:
+            application/problem+json:
+              schema: { $ref: "#/components/schemas/Problem" }
+
+  /apx/v1/commands/{id}:
+    get:
+      operationId: get-apx-v1-commands-id
+      tags: [Control]
+      summary: Read a command (lifecycle + audit trail)
+      description: Returns the Command including its immutable statusHistory.
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema: { type: string, format: uuid }
+      responses:
+        "200":
+          description: The command.
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/Command" }
+        "404":
+          description: No such command.
+          content:
+            application/problem+json:
+              schema: { $ref: "#/components/schemas/Problem" }
+
+  /apx/v1/commands/{id}/cancel:
+    post:
+      operationId: post-apx-v1-commands-id-cancel
+      tags: [Control]
+      summary: Cancel a command before dispatch
+      description: Allowed in received/accepted states; afterwards 409 command-not-cancellable.
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema: { type: string, format: uuid }
+      responses:
+        "200":
+          description: Cancelled command.
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/Command" }
+        "409":
+          description: Not cancellable from the current state.
+          content:
+            application/problem+json:
+              schema: { $ref: "#/components/schemas/Problem" }
+
+  /apx/v1/devices:
+    get:
+      operationId: get-apx-v1-devices
+      tags: [Control]
+      summary: List device status overlays
+      description: Live DeviceStatus for every SupplementalEquipment the caller may see.
+      responses:
+        "200":
+          description: Device status list.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    type: array
+                    items: { $ref: "#/components/schemas/DeviceStatus" }
+
+  /apx/v1/devices/{id}:
+    get:
+      operationId: get-apx-v1-devices-id
+      tags: [Control]
+      summary: Read one device's status overlay
+      description: DeviceStatus keyed by the SupplementalEquipment id.
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema: { type: string, format: uuid }
+      responses:
+        "200":
+          description: Device status.
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/DeviceStatus" }
+        "404":
+          description: No such device.
+          content:
+            application/problem+json:
+              schema: { $ref: "#/components/schemas/Problem" }
+
+  /apx/v1/lanes/{id}/current:
+    get:
+      operationId: get-apx-v1-lanes-id-current
+      tags: [Control]
+      summary: Lane inquiry — current transaction context (screen-pop)
+      description: |-
+        The ticket/credential currently in the machine at this lane, amount
+        due, applied validations, latest LPR read, and monthly-credential
+        context including the last 10 activity events (2018 requirement ①).
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema: { type: string, format: uuid }
+          description: VehicularAccess (lane) UUID.
+      responses:
+        "200":
+          description: Current lane status.
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/LaneStatus" }
+        "404":
+          description: No such lane or no live state.
+          content:
+            application/problem+json:
+              schema: { $ref: "#/components/schemas/Problem" }
+
+  /apx/v1/validations/providers:
+    get:
+      operationId: get-apx-v1-validations-providers
+      tags: [Control]
+      summary: List validation providers for a place
+      description: The venues allowed to validate tickets at the place (2018 requirement ⑤).
+      parameters:
+        - name: place
+          in: query
+          required: true
+          schema: { type: string, format: uuid }
+      responses:
+        "200":
+          description: Validation providers.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    type: array
+                    items: { $ref: "#/components/schemas/ValidationProvider" }
 
   # ===== Alerts (conformance class apx-alerts) ===== #
   /apx/v1/alerts:
@@ -497,6 +682,14 @@ components:
       $ref: "./domains/events/schemas.yaml#/DeliveryRecord"
     Alert:
       $ref: "./domains/alerts/schemas.yaml#/Alert"
+    Command:
+      $ref: "./domains/control/schemas.yaml#/Command"
+    DeviceStatus:
+      $ref: "./domains/control/schemas.yaml#/DeviceStatus"
+    LaneStatus:
+      $ref: "./domains/control/schemas.yaml#/LaneStatus"
+    ValidationProvider:
+      $ref: "./domains/control/schemas.yaml#/ValidationProvider"
 
     ApxConfiguration:
       type: object

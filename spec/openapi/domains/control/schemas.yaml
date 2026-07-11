@@ -1,0 +1,177 @@
+# APX control domain — command plane, lane inquiry, validations, device status.
+# Net-new surface: APDS models devices (SupplementalEquipment) but no actuation.
+
+Command:
+  title: Command
+  description: |-
+    A request for an operational action against a lane/device/place.
+    Perishable (expiryTime), idempotent (Idempotency-Key), fully audited
+    (immutable statusHistory).
+  type: object
+  required:
+    - id
+    - version
+    - commandType
+    - target
+    - status
+  properties:
+    id:
+      type: string
+      format: uuid
+    version:
+      type: integer
+      minimum: 1
+    commandType:
+      type: string
+      description: definedValue from apx-command-types (vendGate, lostTicket, pushRate, applyValidation, …).
+      examples: [vendGate]
+    target:
+      description: |-
+        Reference to the target — SupplementalEquipment (device) or a
+        VehicularAccess/Place HierarchyElement (lane/place scope).
+      $ref: "../../../vendor/apds/4.1/apds-api-4.1.yaml#/components/schemas/Reference"
+    parameters:
+      type: object
+      description: |-
+        Command-type-specific parameters. Normative parameter schemas per
+        commandType are given in Part 6 (e.g. lostTicket.method,
+        pushRate.rateTable VersionedReference, applyValidation.ticket +
+        provider, displayMessage.message, setDeviceState.state).
+    requestedBy:
+      description: The agent/organisation requesting the action (defaults to the token's apx_org).
+      $ref: "../../../vendor/apds/4.1/apds-api-4.1.yaml#/components/schemas/Reference"
+    reason:
+      type: string
+      description: Free-text or code-list reason for the action (audit).
+    expiryTime:
+      description: Commands are perishable — MUST NOT be dispatched after this instant.
+      $ref: "../../../vendor/apds/4.1/apds-api-4.1.yaml#/components/schemas/DateTime"
+    priority:
+      type: string
+      enum: [normal, high]
+      default: normal
+    status:
+      type: string
+      enum: [received, accepted, rejected, dispatched, executing, succeeded, failed, expired, cancelled]
+    statusHistory:
+      type: array
+      description: Immutable, append-only lifecycle audit — THE audit trail (Part 4 §4.2).
+      items:
+        type: object
+        required: [state, time, actor]
+        properties:
+          state: { type: string }
+          time:
+            $ref: "../../../vendor/apds/4.1/apds-api-4.1.yaml#/components/schemas/DateTime"
+          actor: { type: string }
+          detail: { type: string }
+    recordInfo:
+      $ref: "../common/schemas.yaml#/RecordInfo"
+    extensions:
+      $ref: "../common/schemas.yaml#/Extensions"
+
+DeviceStatus:
+  title: DeviceStatus
+  description: |-
+    Live state overlay keyed by Reference to an APDS SupplementalEquipment —
+    never duplicates its descriptive fields. deviceState values mirror the
+    RefillPointStatusEnum style (registry apx-device-states). Attachable to
+    APDS payloads as apds-ext:apx:devicestatus@1.0.
+  type: object
+  required:
+    - device
+    - deviceState
+  properties:
+    device:
+      $ref: "../../../vendor/apds/4.1/apds-api-4.1.yaml#/components/schemas/Reference"
+    deviceState:
+      type: string
+      description: definedValue from apx-device-states.
+      examples: [available]
+    lastCommunication:
+      $ref: "../../../vendor/apds/4.1/apds-api-4.1.yaml#/components/schemas/DateTime"
+    stateChangedTime:
+      $ref: "../../../vendor/apds/4.1/apds-api-4.1.yaml#/components/schemas/DateTime"
+    extensions:
+      $ref: "../common/schemas.yaml#/Extensions"
+
+LaneStatus:
+  title: LaneStatus
+  description: |-
+    The transaction context at a lane right now (2018 requirement ① —
+    call-center screen-pop). Composes APDS references and data; adds no
+    parallel entities.
+  type: object
+  required:
+    - lane
+  properties:
+    lane:
+      $ref: "../../../vendor/apds/4.1/apds-api-4.1.yaml#/components/schemas/Reference"
+    currentTicket:
+      type: object
+      description: The ticket/credential currently in the machine, if any.
+      properties:
+        ticketNumber: { type: string }
+        session:
+          $ref: "../../../vendor/apds/4.1/apds-api-4.1.yaml#/components/schemas/Reference"
+        issuedTime:
+          $ref: "../../../vendor/apds/4.1/apds-api-4.1.yaml#/components/schemas/DateTime"
+        amountDue:
+          $ref: "../../../vendor/apds/4.1/apds-api-4.1.yaml#/components/schemas/AmountInCurrency"
+        paidInFull: { type: boolean }
+        validations:
+          type: array
+          items:
+            type: object
+            properties:
+              provider:
+                $ref: "../../../vendor/apds/4.1/apds-api-4.1.yaml#/components/schemas/Reference"
+              appliedTime:
+                $ref: "../../../vendor/apds/4.1/apds-api-4.1.yaml#/components/schemas/DateTime"
+        lpr:
+          type: object
+          description: Latest plate read at this lane (APDS Observation-derived).
+          properties:
+            plate: { type: string }
+            confidence: { type: number }
+            observation:
+              $ref: "../../../vendor/apds/4.1/apds-api-4.1.yaml#/components/schemas/Reference"
+            imageLink:
+              $ref: "../../../vendor/apds/4.1/apds-api-4.1.yaml#/components/schemas/Url"
+    monthlyCredential:
+      type: object
+      description: Monthly-parker credential context at the lane, if presented.
+      properties:
+        credential:
+          $ref: "../../../vendor/apds/4.1/apds-api-4.1.yaml#/components/schemas/Reference"
+        cardNumber: { type: string }
+        accessGranted: { type: boolean }
+        denialReason: { type: string }
+        lastActivity:
+          $ref: "../../../vendor/apds/4.1/apds-api-4.1.yaml#/components/schemas/DateTime"
+        recentEvents:
+          type: array
+          maxItems: 10
+          description: The last 10 activity events on this credential (trend view).
+          items:
+            type: object
+            properties:
+              time:
+                $ref: "../../../vendor/apds/4.1/apds-api-4.1.yaml#/components/schemas/DateTime"
+              event: { type: string }
+              lane:
+                $ref: "../../../vendor/apds/4.1/apds-api-4.1.yaml#/components/schemas/Reference"
+
+ValidationProvider:
+  title: ValidationProvider
+  description: A venue/organisation allowed to validate tickets at a place (2018 requirement ⑤).
+  type: object
+  required:
+    - provider
+  properties:
+    provider:
+      $ref: "../../../vendor/apds/4.1/apds-api-4.1.yaml#/components/schemas/Reference"
+    name: { type: string }
+    validationType:
+      type: string
+      description: e.g. flat discount, hours comped — implementer code list.

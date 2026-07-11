@@ -55,6 +55,13 @@ export const CLIENTS: SandboxClient[] = [
     org: { id: IDS.org, className: 'Organisation' },
     places: [IDS.place],
   },
+  {
+    clientId: 'other-operator',
+    clientSecret: 'other-secret',
+    scopes: ['apx.control:read', 'apx.control:execute'],
+    org: { id: 'a1000000-0000-4000-8000-000000000099', className: 'Organisation' },
+    places: ['b9999999-0000-4000-8000-000000000001'], // a different site — no grant here
+  },
 ];
 
 export function seed(store: Store): void {
@@ -126,6 +133,54 @@ export function seed(store: Store): void {
         actualStart: '2026-07-11T08:00:00Z',
       },
     ],
+  });
+
+  // Validation providers at the garage (2018 requirement ⑤).
+  store.for('ValidationProvider').create({
+    id: 'a2000000-0000-4000-8000-000000000001',
+    provider: { id: 'a2000000-0000-4000-8000-000000000011', className: 'Organisation' },
+    name: 'Lakeside Cinema (synthetic)',
+    validationType: 'twoHoursComped',
+    placeRef: { id: IDS.place, className: 'Place' },
+  });
+  store.for('ValidationProvider').create({
+    id: 'a2000000-0000-4000-8000-000000000002',
+    provider: { id: 'a2000000-0000-4000-8000-000000000012', className: 'Organisation' },
+    name: 'Harbor Restaurant (synthetic)',
+    validationType: 'flatDiscount',
+    placeRef: { id: IDS.place, className: 'Place' },
+  });
+
+  // Live lane context for the screen-pop inquiry (2018 requirement ①).
+  store.for('LaneState').create({
+    id: IDS.laneExit,
+    lane: { id: IDS.laneExit, className: 'VehicularAccess' },
+    currentTicket: {
+      ticketNumber: 'T-1001',
+      session: { id: IDS.session, className: 'Session' },
+      issuedTime: '2026-07-11T08:00:00Z',
+      amountDue: { type: 'USD', value: 9.0 },
+      paidInFull: false,
+      validations: [],
+      lpr: {
+        plate: 'SYN-1234',
+        confidence: 0.97,
+        observation: { id: IDS.observation, className: 'Observation' },
+        imageLink: 'https://sandbox.invalid/lpr/f2000000.jpg',
+      },
+    },
+    monthlyCredential: {
+      credential: { id: 'e3000000-0000-4000-8000-000000000001', className: 'Credential' },
+      cardNumber: 'MC-0777',
+      accessGranted: false,
+      denialReason: 'account past due (synthetic)',
+      lastActivity: '2026-07-10T18:22:00Z',
+      recentEvents: Array.from({ length: 10 }, (_, i) => ({
+        time: `2026-07-${String(10 - (i % 3)).padStart(2, '0')}T0${i % 10}:15:00Z`,
+        event: i % 2 === 0 ? 'entry' : 'exit',
+        lane: { id: i % 2 === 0 ? IDS.laneEntry : IDS.laneExit, className: 'VehicularAccess' },
+      })),
+    },
   });
 
   store.for('Observation').create({
