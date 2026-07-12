@@ -87,6 +87,24 @@ export function registerControlRoutes(
       return problem(reply, 403, 'insufficient-grant', 'Target outside your place grant');
     }
 
+    // applyValidation MUST name a provider authorized at the target's place
+    // (APX Part 6 §6.3; problem registry: validation-provider-unknown).
+    if (commandType === 'applyValidation') {
+      const provider = (body.parameters as { provider?: { id?: string } } | undefined)?.provider;
+      const authorized = store
+        .for('ValidationProvider')
+        .list()
+        .some((p) => (p.provider as { id?: string } | undefined)?.id === provider?.id);
+      if (!authorized) {
+        return problem(
+          reply,
+          422,
+          'validation-provider-unknown',
+          'Provider is not authorized to validate at this place'
+        );
+      }
+    }
+
     const now = new Date().toISOString();
     const expiryTime = typeof body.expiryTime === 'string' ? body.expiryTime : undefined;
     const command = commands().create({

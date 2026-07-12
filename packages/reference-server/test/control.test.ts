@@ -244,6 +244,66 @@ describe('command plane rules', () => {
     expect((await pollUntilTerminal(good.json().id)).status).toBe('succeeded');
   });
 
+  it('rejects applyValidation from a provider not on the place list (422 validation-provider-unknown)', async () => {
+    const response = await ctx.app.inject({
+      method: 'POST',
+      url: '/apx/v1/commands',
+      headers: auth({ 'idempotency-key': 'val-unknown' }),
+      payload: {
+        commandType: 'applyValidation',
+        target: { id: IDS.laneExit, className: 'VehicularAccess' },
+        parameters: {
+          ticket: 'T-1001',
+          provider: { id: '00000000-0000-4000-8000-00000000bad1', className: 'Organisation' },
+        },
+      },
+    });
+    expect(response.statusCode).toBe(422);
+    expect(response.json().type).toContain('validation-provider-unknown');
+  });
+
+  it('an authorized validation lands on the lane state and reduces the amount due', async () => {
+    const before = (
+      await ctx.app.inject({
+        method: 'GET',
+        url: `/apx/v1/lanes/${IDS.laneExit}/current`,
+        headers: auth(),
+      })
+    ).json();
+    const validationsBefore = before.currentTicket.validations.length;
+    const dueBefore = before.currentTicket.amountDue.value;
+
+    const providers = (
+      await ctx.app.inject({
+        method: 'GET',
+        url: `/apx/v1/validations/providers?place=${IDS.place}`,
+        headers: auth(),
+      })
+    ).json().data;
+
+    const command = await ctx.app.inject({
+      method: 'POST',
+      url: '/apx/v1/commands',
+      headers: auth({ 'idempotency-key': 'val-lane-state' }),
+      payload: {
+        commandType: 'applyValidation',
+        target: { id: IDS.laneExit, className: 'VehicularAccess' },
+        parameters: { ticket: 'T-1001', provider: providers[1].provider }, // flatDiscount = -$3
+      },
+    });
+    expect((await pollUntilTerminal(command.json().id)).status).toBe('succeeded');
+
+    const after = (
+      await ctx.app.inject({
+        method: 'GET',
+        url: `/apx/v1/lanes/${IDS.laneExit}/current`,
+        headers: auth(),
+      })
+    ).json();
+    expect(after.currentTicket.validations).toHaveLength(validationsBefore + 1);
+    expect(after.currentTicket.amountDue.value).toBe(Math.max(0, dueBefore - 3));
+  });
+
   it('enforces place grants (403 insufficient-grant for out-of-grant operator)', async () => {
     const otherToken = await getToken('other-operator', 'other-secret');
     const response = await ctx.app.inject({

@@ -106,8 +106,44 @@ export class DeviceSimulator {
           }
           return { ok: true, detail: `rate ${rate.id} applied` };
         }
-        case 'applyValidation':
-          return { ok: true, detail: 'validation applied' };
+        case 'applyValidation': {
+          // Apply to the live lane state: append the validation and reduce
+          // the amount due (sandbox pricing: twoHoursComped = $6, else $3).
+          const ticket = String(parameters.ticket ?? '');
+          const provider = parameters.provider as { id?: string } | undefined;
+          const laneState = this.store
+            .for('LaneState')
+            .list()
+            .find(
+              (l) =>
+                (l.currentTicket as { ticketNumber?: string } | undefined)?.ticketNumber === ticket
+            );
+          if (!laneState) return { ok: false, detail: `no active ticket ${ticket} at any lane` };
+          const providerRecord = this.store
+            .for('ValidationProvider')
+            .list()
+            .find((p) => (p.provider as { id?: string } | undefined)?.id === provider?.id);
+          const currentTicket = {
+            ...(laneState.currentTicket as Record<string, unknown>),
+          } as {
+            validations?: unknown[];
+            amountDue?: { type: string; value: number };
+            paidInFull?: boolean;
+          };
+          const reduction = providerRecord?.validationType === 'twoHoursComped' ? 6 : 3;
+          const newValue = Math.max(0, (currentTicket.amountDue?.value ?? 0) - reduction);
+          currentTicket.validations = [
+            ...(currentTicket.validations ?? []),
+            { provider, appliedTime: new Date().toISOString() },
+          ];
+          currentTicket.amountDue = {
+            type: currentTicket.amountDue?.type ?? 'USD',
+            value: newValue,
+          };
+          currentTicket.paidInFull = newValue === 0;
+          this.store.for('LaneState').applyChange(laneState.id, { currentTicket });
+          return { ok: true, detail: `validation applied, amount due now ${newValue}` };
+        }
         case 'setDeviceState': {
           if (!state) return { ok: false, detail: 'no device at target' };
           this.setState(state.device.id, String(parameters.state ?? 'available'));

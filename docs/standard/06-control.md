@@ -56,6 +56,17 @@ screenshot link — an APDS Observation), and monthly-credential context
   `parameters.ticket` and `parameters.provider`. On success the lane's
   `currentTicket.validations[]` gains an entry and `amountDue` is
   recalculated.
+- **Enforcement (normative):** servers MUST reject an `applyValidation`
+  whose `provider` is not on the place's provider list with
+  `422 validation-provider-unknown` — the list is authoritative, not
+  advisory.
+- **APDS alignment (informative):** APDS 4.1 records that a validation
+  *happened* (`PaymentTypeEnum: validation`, `Segment.validationType/
+  validationId`, `RateTable.validation`) but defines no provider registry —
+  that registry is exactly what this section adds. Implementations SHOULD
+  record an applied validation in APDS-native terms: a Payment of type
+  `validation` and the segment's `validationId`, so downstream APDS
+  consumers see it without speaking APX.
 
 ## 6.4 Device status
 
