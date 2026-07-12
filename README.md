@@ -6,6 +6,8 @@ Standards / ISO TS 5206-1). One API that PARCS, LPR, tolling, permitting, and
 reservations vendors implement — adding what APDS deliberately leaves out,
 while reusing everything it defines.
 
+**New here?** Read the [executive summary](docs/executive-summary.md) (shareable, non-technical) or the [quickstart](docs/quickstart.md).
+
 ## Prime directive: APDS-first
 
 Wherever APDS 4.1 already defines a route, schema, or convention, APX uses it
