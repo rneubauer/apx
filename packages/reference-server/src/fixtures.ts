@@ -167,6 +167,7 @@ export function seed(store: Store): void {
     provider: { id: 'a2000000-0000-4000-8000-000000000011', className: 'Organisation' },
     name: 'Lakeside Cinema (synthetic)',
     validationType: 'twoHoursComped',
+    benefit: { description: 'First two hours comped', duration: 'PT2H' },
     placeRef: { id: IDS.place, className: 'Place' },
   });
   store.for('ValidationProvider').create({
@@ -174,6 +175,7 @@ export function seed(store: Store): void {
     provider: { id: 'a2000000-0000-4000-8000-000000000012', className: 'Organisation' },
     name: 'Harbor Restaurant (synthetic)',
     validationType: 'flatDiscount',
+    benefit: { description: '$3.00 off', amount: { type: 'USD', value: 3 } },
     placeRef: { id: IDS.place, className: 'Place' },
   });
 

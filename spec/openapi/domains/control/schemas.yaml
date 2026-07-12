@@ -135,6 +135,9 @@ LaneStatus:
               validationId:
                 type: string
                 description: Unique id of this applied validation — maps to APDS Segment.validationId.
+              amountReduced:
+                description: The ACTUAL value this validation removed from the amount due (dispute evidence).
+                $ref: "../../../vendor/apds/4.1/apds-api-4.1.yaml#/components/schemas/AmountInCurrency"
               appliedTime:
                 $ref: "../../../vendor/apds/4.1/apds-api-4.1.yaml#/components/schemas/DateTime"
         lpr:
@@ -184,3 +187,21 @@ ValidationProvider:
     validationType:
       type: string
       description: e.g. flat discount, hours comped — implementer code list.
+    benefit:
+      type: object
+      description: |-
+        What the validation is WORTH — disclosed in the lookup so agents can
+        answer disputes. Exactly one of amount (money off) or duration
+        (comped time, priced at the applicable rate) applies.
+      required: [description]
+      properties:
+        description:
+          type: string
+          description: Human-readable statement of the benefit.
+          examples: ["$3.00 off", "First two hours comped"]
+        amount:
+          description: Fixed money off.
+          $ref: "../../../vendor/apds/4.1/apds-api-4.1.yaml#/components/schemas/AmountInCurrency"
+        duration:
+          description: Comped parking time (ISO 8601), valued at the applicable rate.
+          $ref: "../../../vendor/apds/4.1/apds-api-4.1.yaml#/components/schemas/Duration"

@@ -303,11 +303,16 @@ describe('command plane rules', () => {
     expect(after.currentTicket.validations).toHaveLength(validationsBefore + 1);
     expect(after.currentTicket.amountDue.value).toBe(Math.max(0, dueBefore - 3));
 
-    // The applied entry carries the vendor identity, not just a UUID.
+    // The lookup discloses what each validation is WORTH (dispute evidence).
+    expect(providers[0].benefit).toMatchObject({ description: 'First two hours comped', duration: 'PT2H' });
+    expect(providers[1].benefit).toMatchObject({ amount: { type: 'USD', value: 3 } });
+
+    // The applied entry carries the vendor identity AND the actual value taken off.
     const applied = after.currentTicket.validations.at(-1);
     expect(applied.providerName).toBe('Harbor Restaurant (synthetic)');
     expect(applied.validationType).toBe('flatDiscount');
     expect(applied.validationId).toMatch(/^VAL-/);
+    expect(applied.amountReduced).toMatchObject({ type: 'USD', value: Math.min(3, dueBefore) });
   });
 
   it('enforces place grants (403 insufficient-grant for out-of-grant operator)', async () => {

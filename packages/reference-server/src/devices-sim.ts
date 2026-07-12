@@ -130,7 +130,15 @@ export class DeviceSimulator {
             amountDue?: { type: string; value: number };
             paidInFull?: boolean;
           };
-          const reduction = providerRecord?.validationType === 'twoHoursComped' ? 6 : 3;
+          // The reduction comes from the provider's DISCLOSED benefit:
+          // fixed money off, or comped time valued at the sandbox rate ($3/h).
+          const benefit = providerRecord?.benefit as
+            | { amount?: { value?: number }; duration?: string }
+            | undefined;
+          const HOURLY_RATE = 3;
+          const compedHours = /^PT(\d+)H$/.exec(benefit?.duration ?? '')?.[1];
+          const reduction =
+            benefit?.amount?.value ?? (compedHours ? Number(compedHours) * HOURLY_RATE : 0);
           const newValue = Math.max(0, (currentTicket.amountDue?.value ?? 0) - reduction);
           currentTicket.validations = [
             ...(currentTicket.validations ?? []),
@@ -140,6 +148,10 @@ export class DeviceSimulator {
               validationType: providerRecord?.validationType,
               // Unique id for THIS applied validation — maps to APDS Segment.validationId.
               validationId: `VAL-${Date.now().toString(36).toUpperCase()}`,
+              amountReduced: {
+                type: currentTicket.amountDue?.type ?? 'USD',
+                value: Math.min(reduction, currentTicket.amountDue?.value ?? 0),
+              },
               appliedTime: new Date().toISOString(),
             },
           ];
