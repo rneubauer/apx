@@ -133,6 +133,11 @@ describe('LPR cross-lookup (apx-lpr)', () => {
     expect(read.confidence).toBeCloseTo(0.97);
     expect(read.session).toMatchObject({ id: IDS.session, className: 'Session' });
 
+    // The customer's reservation history rides along (newest first).
+    expect(read.recentReservations).toHaveLength(2);
+    expect(read.recentReservations[0].reservationState).toBe('checkedIn');
+    expect(read.recentReservations[1].reservationState).toBe('noShow');
+
     const byTicket = await ctx.app.inject({
       method: 'GET',
       url: '/apx/v1/lpr/reads?ticket=T-1001',
@@ -141,6 +146,7 @@ describe('LPR cross-lookup (apx-lpr)', () => {
     const reverse = byTicket.json().data[0];
     expect(reverse.plate).toBe('SYN-1234');
     expect(reverse.imageLink).toContain('https://');
+    expect(reverse.recentReservations).toHaveLength(2);
   });
 
   it('LPR ingest is the native APDS observations route', async () => {

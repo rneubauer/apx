@@ -22,6 +22,22 @@ ReservationExtension:
       description: Set when a Session referencing this AssignedRight is created.
       $ref: "../../../vendor/apds/4.1/apds-api-4.1.yaml#/components/schemas/Reference"
 
+ReservationSummary:
+  title: ReservationSummary
+  description: Compact view of one past/current reservation, for customer-history lookups.
+  type: object
+  required: [reservation]
+  properties:
+    reservation:
+      $ref: "../../../vendor/apds/4.1/apds-api-4.1.yaml#/components/schemas/Reference"
+    reservationState:
+      type: string
+      enum: [confirmed, amended, cancelled, checkedIn, noShow]
+    plannedStart:
+      $ref: "../../../vendor/apds/4.1/apds-api-4.1.yaml#/components/schemas/DateTime"
+    plannedEnd:
+      $ref: "../../../vendor/apds/4.1/apds-api-4.1.yaml#/components/schemas/DateTime"
+
 PoolAvailability:
   title: PoolAvailability
   description: Availability of a pooled RightSpecification (APDS RightPool profile).

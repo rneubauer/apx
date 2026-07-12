@@ -140,6 +140,58 @@ describe('reservations (thin profile over native routes)', () => {
   });
 });
 
+describe('customer reservation history', () => {
+  it('returns the same customer’s reservations by plate, newest first, capped at 10', async () => {
+    const byPlate = await ctx.app.inject({
+      method: 'GET',
+      url: '/apx/v1/reservations/recent?plate=SYN-1234',
+      headers: auth(),
+    });
+    const initial = byPlate.json().data;
+    expect(initial).toHaveLength(2);
+    expect(initial[0].reservationState).toBe('checkedIn'); // 2026-07-01 before 2026-06-15
+    expect(initial[0].plannedStart > initial[1].plannedStart).toBe(true);
+
+    // Requires plate or holder.
+    const bad = await ctx.app.inject({
+      method: 'GET',
+      url: '/apx/v1/reservations/recent',
+      headers: auth(),
+    });
+    expect(bad.statusCode).toBe(400);
+
+    // Cap: create 11 more for the same holder → lookup returns exactly 10.
+    for (let i = 1; i <= 11; i += 1) {
+      await ctx.app.inject({
+        method: 'POST',
+        url: '/rights/assigned',
+        headers: auth(),
+        payload: {
+          rightSpecification: { id: IDS.rightSpec, version: 1, className: 'RightSpecification' },
+          issuer: { id: IDS.org, className: 'Organisation' },
+          assignedRightHolder: {
+            id: 'e4000000-0000-4000-8000-000000000011',
+            className: 'RightHolder',
+          },
+          extensions: {
+            [RESERVATION_EXT]: {
+              reservationState: 'confirmed',
+              plannedStart: `2027-03-${String(i).padStart(2, '0')}T09:00:00Z`,
+            },
+          },
+        },
+      });
+    }
+    const capped = await ctx.app.inject({
+      method: 'GET',
+      url: '/apx/v1/reservations/recent?plate=SYN-1234',
+      headers: auth(),
+    });
+    expect(capped.json().data).toHaveLength(10);
+    expect(capped.json().data[0].plannedStart).toBe('2027-03-11T09:00:00Z');
+  });
+});
+
 describe('permits (pooled RightSpecifications)', () => {
   it('pool availability → multi-vehicle issuance → exhaustion 409', async () => {
     const availability = await ctx.app.inject({

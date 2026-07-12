@@ -557,6 +557,36 @@ paths:
   # ===== Reservations & permits (optional classes; Part 14) ===== #
   # Reservations use NATIVE routes (/quotes, /rights/assigned) with the
   # apds-ext:apx:reservation@1.0 extension; only permits add endpoints.
+  /apx/v1/reservations/recent:
+    get:
+      operationId: get-apx-v1-reservations-recent
+      tags: [Permits]
+      summary: A customer's last 10 reservations
+      description: |-
+        Customer history for screen-pops and dispute handling: the same
+        holder's most recent reservations (newest planned start first),
+        resolved from a plate or an explicit RightHolder id.
+      parameters:
+        - { name: plate, in: query, schema: { type: string } }
+        - { name: holder, in: query, schema: { type: string, format: uuid } }
+      responses:
+        "200":
+          description: Up to 10 reservation summaries.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    type: array
+                    maxItems: 10
+                    items: { $ref: "#/components/schemas/ReservationSummary" }
+        "400":
+          description: Neither plate nor holder given.
+          content:
+            application/problem+json:
+              schema: { $ref: "#/components/schemas/Problem" }
+
   /apx/v1/permits/pools/{rightSpecId}/availability:
     get:
       operationId: get-apx-v1-permits-pools-rightspecid-availability
@@ -1031,6 +1061,8 @@ components:
       $ref: "./domains/lpr/schemas.yaml#/LprRead"
     ReservationExtension:
       $ref: "./domains/reservations/schemas.yaml#/ReservationExtension"
+    ReservationSummary:
+      $ref: "./domains/reservations/schemas.yaml#/ReservationSummary"
     PoolAvailability:
       $ref: "./domains/reservations/schemas.yaml#/PoolAvailability"
     PermitIssueRequest:

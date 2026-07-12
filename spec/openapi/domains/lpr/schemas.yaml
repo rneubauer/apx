@@ -26,3 +26,12 @@ LprRead:
     imageLink:
       description: Screenshot/still of the read (APDS Image).
       $ref: "../../../vendor/apds/4.1/apds-api-4.1.yaml#/components/schemas/Url"
+    recentReservations:
+      type: array
+      maxItems: 10
+      description: |-
+        The same customer's last 10 reservations (newest first) — customer
+        resolved from the plate via the account registry or the
+        reservation's own vehicle credentials.
+      items:
+        $ref: "../reservations/schemas.yaml#/ReservationSummary"

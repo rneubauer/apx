@@ -5,6 +5,7 @@
 import type { FastifyInstance } from 'fastify';
 import type { Store } from '../store.js';
 import { problem, requireScope } from '../auth.js';
+import { recentReservationsFor, type ReservationSummary } from './reservations.js';
 
 interface LprRead {
   plate: string;
@@ -14,6 +15,8 @@ interface LprRead {
   ticketNumber?: string;
   session?: { id: string; className: 'Session' };
   imageLink?: string;
+  /** The same customer's last 10 reservations (newest first). */
+  recentReservations?: ReservationSummary[];
 }
 
 export function registerLprRoutes(app: FastifyInstance, store: Store): void {
@@ -58,6 +61,7 @@ export function registerLprRoutes(app: FastifyInstance, store: Store): void {
           observation: { id: observation.id, className: 'Observation' },
           observationDateTime: String(observation.observationDateTime ?? ''),
           ...contextFor(plate),
+          recentReservations: recentReservationsFor(store, { plate }),
         });
       }
     } else if (ticket) {
@@ -86,6 +90,7 @@ export function registerLprRoutes(app: FastifyInstance, store: Store): void {
             ? { id: currentTicket.session.id, className: 'Session' }
             : undefined,
           imageLink: currentTicket.lpr.imageLink,
+          recentReservations: recentReservationsFor(store, { plate: currentTicket.lpr.plate }),
         });
       }
     }

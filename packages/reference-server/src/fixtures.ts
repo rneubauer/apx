@@ -149,6 +149,36 @@ export function seed(store: Store): void {
     ],
   });
 
+  // Reservation history for the sample customer (RightHolder e4…11) so the
+  // LPR/reservation lookups have a past to show.
+  const RESERVATION_EXT_KEY = 'apds-ext:apx:reservation@1.0';
+  store.for('AssignedRight').create({
+    id: 'e2000000-0000-4000-8000-000000000011',
+    rightSpecification: { id: IDS.rightSpec, version: 1, className: 'RightSpecification' },
+    issuer: { id: IDS.org, className: 'Organisation' },
+    assignedRightHolder: { id: 'e4000000-0000-4000-8000-000000000011', className: 'RightHolder' },
+    extensions: {
+      [RESERVATION_EXT_KEY]: {
+        reservationState: 'checkedIn',
+        plannedStart: '2026-07-01T09:00:00Z',
+        plannedEnd: '2026-07-01T17:00:00Z',
+      },
+    },
+  });
+  store.for('AssignedRight').create({
+    id: 'e2000000-0000-4000-8000-000000000012',
+    rightSpecification: { id: IDS.rightSpec, version: 1, className: 'RightSpecification' },
+    issuer: { id: IDS.org, className: 'Organisation' },
+    assignedRightHolder: { id: 'e4000000-0000-4000-8000-000000000011', className: 'RightHolder' },
+    extensions: {
+      [RESERVATION_EXT_KEY]: {
+        reservationState: 'noShow',
+        plannedStart: '2026-06-15T09:00:00Z',
+        plannedEnd: '2026-06-15T17:00:00Z',
+      },
+    },
+  });
+
   // A monthly-parker account (2018 requirements ⑥–⑨).
   store.for('Account').create({
     id: 'e4000000-0000-4000-8000-000000000001',

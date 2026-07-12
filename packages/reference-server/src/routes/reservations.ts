@@ -47,6 +47,61 @@ export function makeCheckInHook(store: Store) {
   };
 }
 
+export interface ReservationSummary {
+  reservation: { id: string; className: 'AssignedRight' };
+  reservationState?: string;
+  plannedStart?: string;
+  plannedEnd?: string;
+}
+
+/**
+ * The customer's most recent reservations (default: last 10, newest planned
+ * start first). "Same customer" = same RightHolder — resolved from an
+ * explicit holder id, or from a plate via the Account registry / the
+ * reservation's own vehicle credentials.
+ */
+export function recentReservationsFor(
+  store: Store,
+  query: { plate?: string; holderId?: string },
+  limit = 10
+): ReservationSummary[] {
+  let holderId = query.holderId;
+  if (!holderId && query.plate) {
+    const account = store
+      .for('Account')
+      .list()
+      .find((a) => (a.plates as string[] | undefined)?.includes(query.plate!));
+    holderId = (account?.holder as { id?: string } | undefined)?.id;
+  }
+  return store
+    .for('AssignedRight')
+    .list()
+    .filter((right) => {
+      const ext = reservationExt(right);
+      if (!ext) return false;
+      const rightHolder = (right.assignedRightHolder as { id?: string } | undefined)?.id;
+      const holderMatch = Boolean(holderId && rightHolder === holderId);
+      const plateMatch = Boolean(
+        query.plate &&
+          (right.credentials as Array<{ credentialIdentification?: string }> | undefined)?.some(
+            (c) => c.credentialIdentification === query.plate
+          )
+      );
+      return holderMatch || plateMatch;
+    })
+    .map((right) => {
+      const ext = reservationExt(right) as Ext & { plannedEnd?: string };
+      return {
+        reservation: { id: right.id, className: 'AssignedRight' as const },
+        reservationState: ext.reservationState,
+        plannedStart: ext.plannedStart,
+        plannedEnd: ext.plannedEnd,
+      };
+    })
+    .sort((a, b) => String(b.plannedStart ?? '').localeCompare(String(a.plannedStart ?? '')))
+    .slice(0, limit);
+}
+
 export function registerReservationRoutes(
   app: FastifyInstance,
   store: Store,
@@ -121,6 +176,16 @@ export function registerReservationRoutes(
       [IDS.place]
     );
     return reply.status(201).send(permit);
+  });
+
+  // --- Customer reservation history (last 10, newest first) ---
+  app.get('/apx/v1/reservations/recent', async (request, reply) => {
+    if (!requireScope(request, reply, 'apx.reservations:manage')) return;
+    const { plate, holder } = request.query as { plate?: string; holder?: string };
+    if (!plate && !holder) {
+      return problem(reply, 400, 'target-not-found', 'plate or holder query parameter required');
+    }
+    return reply.send({ data: recentReservationsFor(store, { plate, holderId: holder }) });
   });
 
   // --- Reservations: sandbox no-show sweep (grace period = plannedStart passed) ---
