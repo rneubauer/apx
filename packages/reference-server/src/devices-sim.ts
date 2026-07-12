@@ -134,7 +134,14 @@ export class DeviceSimulator {
           const newValue = Math.max(0, (currentTicket.amountDue?.value ?? 0) - reduction);
           currentTicket.validations = [
             ...(currentTicket.validations ?? []),
-            { provider, appliedTime: new Date().toISOString() },
+            {
+              provider,
+              providerName: providerRecord?.name,
+              validationType: providerRecord?.validationType,
+              // Unique id for THIS applied validation — maps to APDS Segment.validationId.
+              validationId: `VAL-${Date.now().toString(36).toUpperCase()}`,
+              appliedTime: new Date().toISOString(),
+            },
           ];
           currentTicket.amountDue = {
             type: currentTicket.amountDue?.type ?? 'USD',

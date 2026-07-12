@@ -302,6 +302,12 @@ describe('command plane rules', () => {
     ).json();
     expect(after.currentTicket.validations).toHaveLength(validationsBefore + 1);
     expect(after.currentTicket.amountDue.value).toBe(Math.max(0, dueBefore - 3));
+
+    // The applied entry carries the vendor identity, not just a UUID.
+    const applied = after.currentTicket.validations.at(-1);
+    expect(applied.providerName).toBe('Harbor Restaurant (synthetic)');
+    expect(applied.validationType).toBe('flatDiscount');
+    expect(applied.validationId).toMatch(/^VAL-/);
   });
 
   it('enforces place grants (403 insufficient-grant for out-of-grant operator)', async () => {

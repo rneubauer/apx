@@ -126,6 +126,15 @@ LaneStatus:
             properties:
               provider:
                 $ref: "../../../vendor/apds/4.1/apds-api-4.1.yaml#/components/schemas/Reference"
+              providerName:
+                type: string
+                description: Human-readable vendor name (from the place's ValidationProvider list).
+              validationType:
+                type: string
+                description: The provider's validation type at time of application.
+              validationId:
+                type: string
+                description: Unique id of this applied validation — maps to APDS Segment.validationId.
               appliedTime:
                 $ref: "../../../vendor/apds/4.1/apds-api-4.1.yaml#/components/schemas/DateTime"
         lpr:
