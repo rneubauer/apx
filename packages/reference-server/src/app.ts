@@ -1,4 +1,9 @@
+import { existsSync, readFileSync } from 'node:fs';
+import { dirname, join } from 'node:path';
+import { fileURLToPath } from 'node:url';
 import Fastify, { type FastifyInstance } from 'fastify';
+import swagger from '@fastify/swagger';
+import swaggerUi from '@fastify/swagger-ui';
 import { Store } from './store.js';
 import { CLIENTS, seed } from './fixtures.js';
 import { issueToken, problem } from './auth.js';
@@ -45,8 +50,38 @@ export interface AppContext {
   devices: DeviceSimulator;
 }
 
+const BUNDLE_PATH = join(
+  dirname(fileURLToPath(import.meta.url)),
+  '..',
+  '..',
+  '..',
+  'spec',
+  'dist',
+  'apx-v1.json'
+);
+
 export function buildApp(options: AppOptions = {}): AppContext {
   const app = Fastify({ logger: false });
+
+  // --- API docs: Swagger UI at /docs + raw spec at /openapi.json ---
+  // Serves the BUNDLED normative spec (run `npm run spec:bundle` to refresh).
+  if (existsSync(BUNDLE_PATH)) {
+    const spec = JSON.parse(readFileSync(BUNDLE_PATH, 'utf8'));
+    // Point try-it-out at this sandbox instead of the placeholder host.
+    spec.servers = [{ url: '/', description: 'This sandbox' }];
+    void app.register(swagger, { mode: 'static', specification: { document: spec } });
+    void app.register(swaggerUi, {
+      routePrefix: '/docs',
+      uiConfig: { docExpansion: 'list', deepLinking: true },
+    });
+    app.get('/openapi.json', async (_request, reply) => reply.send(spec));
+  } else {
+    app.get('/docs', async (_request, reply) =>
+      reply
+        .status(503)
+        .send({ message: 'Spec bundle missing — run `npm run spec:bundle` and restart.' })
+    );
+  }
   const store = new Store();
   const dispatcher = options.retryScheduleMs
     ? new Dispatcher(options.retryScheduleMs)
