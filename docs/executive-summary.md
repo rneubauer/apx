@@ -53,6 +53,10 @@ The result: every PARCS, LPR, tolling, permitting, and reservations vendor still
 
 All automated checks pass: the full test suite, spec validation, and 14/14 conformance checks.
 
+> **Want the full picture?** The companion [APX API Overview](apx-overview.md)
+> walks every route in plain language with the design rationale — written so
+> a reader who has never opened the APDS standard needs nothing else.
+
 ## What we're asking of partners
 
 1. **Review** the specification and written standard (a working sandbox is available to try today)
