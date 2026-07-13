@@ -569,6 +569,14 @@ paths:
       parameters:
         - { name: plate, in: query, schema: { type: string } }
         - { name: holder, in: query, schema: { type: string, format: uuid } }
+        - name: place
+          in: query
+          description: |-
+            Scope results to one location (for implementations fronting
+            multiple places). Holder ids are LOCAL to each implementation —
+            there is no central user catalog; cross-system correlation is
+            by plate (Part 14 §14.1a).
+          schema: { type: string, format: uuid }
       responses:
         "200":
           description: Up to 10 reservation summaries.

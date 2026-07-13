@@ -24,6 +24,22 @@ The reservation lifecycle rides entirely on native routes:
 Events: native APDS `AssignedRightCreated/Updated/Deleted` topics carry the
 reservation payloads; only no-show adds an APX topic.
 
+## 14.1a Customer identity is per-system (normative)
+
+**APX assumes NO central catalog of users.** In real deployments each
+location may run a different PARCS, each with its own user/permit database;
+an APX endpoint speaks only for the system behind it. Therefore:
+
+1. RightHolder identifiers are LOCAL to the issuing implementation. Clients
+   MUST NOT assume a holder id from one APX endpoint resolves at another.
+2. Cross-location/cross-system customer correlation is done by
+   **credential** — in practice the license plate — by the CALLER, which
+   queries each endpoint (e.g. `GET /apx/v1/reservations/recent?plate=…`)
+   and merges the results.
+3. History/lookup endpoints return only what the queried system knows, and
+   accept an optional `place` parameter so aggregating implementations
+   (one endpoint fronting many locations) can scope results per location.
+
 ## 14.2 `apx-permits`
 
 Permits = pooled RightSpecifications:

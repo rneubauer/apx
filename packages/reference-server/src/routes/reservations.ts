@@ -62,9 +62,19 @@ export interface ReservationSummary {
  */
 export function recentReservationsFor(
   store: Store,
-  query: { plate?: string; holderId?: string },
+  query: { plate?: string; holderId?: string; placeId?: string },
   limit = 10
 ): ReservationSummary[] {
+  // Optional per-location scoping: reservation → RightSpecification → place.
+  const specsAtPlace = query.placeId
+    ? new Set(
+        store
+          .for('RightSpecification')
+          .list()
+          .filter((s) => (s.placeRef as { id?: string } | undefined)?.id === query.placeId)
+          .map((s) => s.id)
+      )
+    : undefined;
   let holderId = query.holderId;
   if (!holderId && query.plate) {
     const account = store
@@ -79,6 +89,10 @@ export function recentReservationsFor(
     .filter((right) => {
       const ext = reservationExt(right);
       if (!ext) return false;
+      if (specsAtPlace) {
+        const specId = (right.rightSpecification as { id?: string } | undefined)?.id;
+        if (!specId || !specsAtPlace.has(specId)) return false;
+      }
       const rightHolder = (right.assignedRightHolder as { id?: string } | undefined)?.id;
       const holderMatch = Boolean(holderId && rightHolder === holderId);
       const plateMatch = Boolean(
@@ -181,11 +195,17 @@ export function registerReservationRoutes(
   // --- Customer reservation history (last 10, newest first) ---
   app.get('/apx/v1/reservations/recent', async (request, reply) => {
     if (!requireScope(request, reply, 'apx.reservations:manage')) return;
-    const { plate, holder } = request.query as { plate?: string; holder?: string };
+    const { plate, holder, place } = request.query as {
+      plate?: string;
+      holder?: string;
+      place?: string;
+    };
     if (!plate && !holder) {
       return problem(reply, 400, 'target-not-found', 'plate or holder query parameter required');
     }
-    return reply.send({ data: recentReservationsFor(store, { plate, holderId: holder }) });
+    return reply.send({
+      data: recentReservationsFor(store, { plate, holderId: holder, placeId: place }),
+    });
   });
 
   // --- Reservations: sandbox no-show sweep (grace period = plannedStart passed) ---
