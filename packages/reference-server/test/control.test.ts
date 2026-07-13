@@ -167,7 +167,16 @@ describe('command plane rules', () => {
     expect(replay.json().id).toBe(first.json().id);
   });
 
-  it('lostTicket issues a lane ticket carrying the lost-ticket fee', async () => {
+  it('lostTicket issues a lane ticket carrying the lost-ticket fee from the RATE DECK', async () => {
+    // The fee is part of the rate deck, visible via the native /rates lookup.
+    const rates = await ctx.app.inject({
+      method: 'GET',
+      url: `/rates/${IDS.rateTable}`,
+      headers: auth(),
+    });
+    const lines = rates.json().rateLineCollections[0].rateLines;
+    const feeLine = lines.find((l: { description?: string }) => l.description === 'lostTicketFee');
+    expect(feeLine).toMatchObject({ rateLineType: 'flatRate', value: 25 });
     const command = await ctx.app.inject({
       method: 'POST',
       url: '/apx/v1/commands',

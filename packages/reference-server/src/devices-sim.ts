@@ -97,13 +97,24 @@ export class DeviceSimulator {
         case 'lostTicket': {
           // Issue a lost ticket AT THE LANE with the place's lost-ticket fee
           // as the amount due — payment/validation/vend then proceed normally.
-          const place = this.store.for('Place').list()[0];
-          const policy = (
-            place?.extensions as
-              | Record<string, { fee?: { type: string; value: number } }>
-              | undefined
-          )?.['apds-ext:apx:lostticketpolicy@1.0'];
-          const fee = policy?.fee ?? { type: 'USD', value: 25 };
+          // The fee comes from the RATE DECK: the flat RateLine identified
+          // as lostTicketFee (queryable via the native /rates lookup).
+          let fee: { type: string; value: number } | undefined;
+          for (const rateTable of this.store.for('RateTable').list()) {
+            const collections = rateTable.rateLineCollections as
+              | Array<{
+                  applicableCurrency?: string;
+                  rateLines?: Array<{ description?: string; value?: number }>;
+                }>
+              | undefined;
+            for (const collection of collections ?? []) {
+              const line = collection.rateLines?.find((l) => l.description === 'lostTicketFee');
+              if (line?.value !== undefined) {
+                fee = { type: collection.applicableCurrency ?? 'USD', value: line.value };
+              }
+            }
+          }
+          if (!fee) return { ok: false, detail: 'no lostTicketFee rate line in the rate deck' };
           const laneId = this.states.has(targetId)
             ? ((this.store.for('SupplementalEquipment').get(targetId).laneRef as { id?: string }) ?? {})
                 .id

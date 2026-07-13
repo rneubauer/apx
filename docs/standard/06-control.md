@@ -40,15 +40,18 @@ publish `apx.control.command.status.v1`.
 **Authorization:** scope `apx.control:execute` AND the token's `apx_places`
 grant must cover the target (else `403 insufficient-grant`).
 
-**Lost-ticket fee semantics (normative):** a successful `lostTicket` command
-issues a new lost ticket AT the target lane whose `amountDue` is the
-operator's lost-ticket fee — disclosed per place via the
-`apds-ext:apx:lostticketpolicy@1.0` decoration (`fee: AmountInCurrency`).
-The command result names the issued ticket and fee; the lane inquiry (§6.2)
-then shows it as the current ticket, and the normal flow applies: take a
-payment (Part 13), apply a validation (§6.3), or vend (§6.1). The fee is
-never silently waived — reducing it is an explicit validation or payment
-event on the audit record.
+**Lost-ticket fee semantics (normative):** the lost-ticket fee is **part of
+the rate deck** — a flat RateLine identified by `description:
+"lostTicketFee"` in the place's applicable RateTable, queryable like any
+rate via the native `/rates` lookup and updated like any rate (including
+via `pushRate`). A successful `lostTicket` command issues a new lost ticket
+AT the target lane whose `amountDue` is that fee (in the rate line
+collection's currency); a rate deck with no lostTicketFee line makes the
+command fail rather than guess. The command result names the issued ticket
+and fee; the lane inquiry (§6.2) then shows it as the current ticket, and
+the normal flow applies: take a payment (Part 13), apply a validation
+(§6.3), or vend (§6.1). The fee is never silently waived — reducing it is
+an explicit validation or payment event on the audit record.
 
 ## 6.2 Lane inquiry (2018 requirement ① — screen-pop)
 
