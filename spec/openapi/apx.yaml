@@ -721,6 +721,13 @@ paths:
         date is constrained to the last 8 hours.
       parameters:
         - { name: ticketLast4, in: query, schema: { type: string } }
+        - name: cardLast4
+          in: query
+          description: |-
+            Truncated payment-card digits — the transient-parker lookup of
+            last resort (no LPR, no readable ticket). Same recent-window
+            privacy rule as ticketLast4.
+          schema: { type: string }
         - { name: date, in: query, schema: { type: string, format: date } }
       responses:
         "200":

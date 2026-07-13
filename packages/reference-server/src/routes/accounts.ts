@@ -123,10 +123,20 @@ export function registerAccountRoutes(app: FastifyInstance, store: Store): void 
     if (!requireScope(request, reply, 'apx.accounts:read')) return;
     const query = request.query as Record<string, string | undefined>;
     let list = payments().list();
+    let truncatedLookup = false;
     if (query.ticketLast4) {
+      truncatedLookup = true;
       list = list.filter((p) => String(p.ticketNumber ?? '').endsWith(query.ticketLast4!));
+    }
+    if (query.cardLast4) {
+      // The transient-parker lookup of last resort: no LPR, no readable
+      // ticket — only the tail digits of the card they paid with.
+      truncatedLookup = true;
+      list = list.filter((p) => String(p.cardLast4 ?? '').endsWith(query.cardLast4!));
+    }
+    if (truncatedLookup) {
       if (!query.date) {
-        // Privacy rule: last-4-only lookups are constrained to the last 8 hours.
+        // Privacy rule: truncated-key lookups are constrained to the last 8 hours.
         const cutoff = new Date(Date.now() - EIGHT_HOURS_MS).toISOString();
         list = list.filter((p) => String(p.dateCollected) >= cutoff);
       } else {

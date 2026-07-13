@@ -100,8 +100,22 @@ describe('accounts & payments (2018 Desirable tier)', () => {
       method: 'POST',
       url: '/apx/v1/payments',
       headers: auth({ 'idempotency-key': 'pay-ticket' }),
-      payload: { ticketNumber: 'T-1001', amount: { type: 'USD', value: 9 }, method: 'card' },
+      payload: {
+        ticketNumber: 'T-1001',
+        amount: { type: 'USD', value: 9 },
+        method: 'card',
+        cardLast4: '4123',
+      },
     });
+
+    // Transient lookup of last resort: card tail digits (works with 3 digits too).
+    const byCard = await ctx.app.inject({
+      method: 'GET',
+      url: '/apx/v1/payments?cardLast4=123',
+      headers: auth(),
+    });
+    expect(byCard.json().data).toHaveLength(1);
+    expect(byCard.json().data[0].ticketNumber).toBe('T-1001');
 
     const recent = await ctx.app.inject({
       method: 'GET',

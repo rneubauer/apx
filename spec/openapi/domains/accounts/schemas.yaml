@@ -53,6 +53,13 @@ PaymentRecord:
     account:
       $ref: "../../../vendor/apds/4.1/apds-api-4.1.yaml#/components/schemas/Reference"
     ticketNumber: { type: string }
+    cardLast4:
+      type: string
+      pattern: "^[0-9]{2,4}$"
+      description: |-
+        Truncated payment-card digits (PCI-permitted). For transient parkers
+        with no LPR and no readable ticket, this is often the ONLY key a
+        caller can provide — the lookup of last resort.
     postings:
       type: array
       description: Accounting write-backs (PARIS-style) applied for this payment.

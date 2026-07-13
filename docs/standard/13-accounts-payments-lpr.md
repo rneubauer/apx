@@ -22,10 +22,13 @@ Three optional conformance classes covering the 2018 "Desirable" tier.
 
 ## 13.2 `apx-payment-history`
 
-- `GET /apx/v1/payments?ticketLast4=&date=` — payments made on a ticket
-  (2018 requirement ⑧). **Privacy rule (normative):** last-4 lookup without
-  a `date` is constrained to the last 8 hours; older records require the
-  full ticket number or an account-scoped query.
+- `GET /apx/v1/payments?ticketLast4=&cardLast4=&date=` — payments made on a
+  ticket (2018 requirement ⑧). `cardLast4` (truncated PAN, PCI-permitted) is
+  the **transient-parker lookup of last resort**: at locations without LPR,
+  a caller who cannot read their ticket usually has nothing else.
+  **Privacy rule (normative):** truncated-key lookups (`ticketLast4` or
+  `cardLast4`) without a `date` are constrained to the last 8 hours; older
+  records require the full ticket number or an account-scoped query.
 
 ## 13.3 `apx-lpr`
 

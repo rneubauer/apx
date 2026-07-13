@@ -32,10 +32,13 @@ an APX endpoint speaks only for the system behind it. Therefore:
 
 1. RightHolder identifiers are LOCAL to the issuing implementation. Clients
    MUST NOT assume a holder id from one APX endpoint resolves at another.
-2. Cross-location/cross-system customer correlation is done by
-   **credential** — in practice the license plate — by the CALLER, which
-   queries each endpoint (e.g. `GET /apx/v1/reservations/recent?plate=…`)
-   and merges the results.
+2. Cross-location/cross-system customer correlation is done by the CALLER
+   using the **strongest credential available for the parker segment**:
+   permits and reservations carry a plate/credential on file; transient
+   parkers at LPR-equipped locations are correlated by camera reads; and
+   transient parkers WITHOUT LPR are findable only by ticket number or
+   truncated payment-card digits (Part 13 §13.2) — often nothing at all
+   until they present the ticket at a lane (Part 6 lane inquiry).
 3. History/lookup endpoints return only what the queried system knows, and
    accept an optional `place` parameter so aggregating implementations
    (one endpoint fronting many locations) can scope results per location.
