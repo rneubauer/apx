@@ -167,6 +167,35 @@ describe('command plane rules', () => {
     expect(replay.json().id).toBe(first.json().id);
   });
 
+  it('lostTicket issues a lane ticket carrying the lost-ticket fee', async () => {
+    const command = await ctx.app.inject({
+      method: 'POST',
+      url: '/apx/v1/commands',
+      headers: auth({ 'idempotency-key': 'lt-fee-1' }),
+      payload: {
+        commandType: 'lostTicket',
+        target: { id: IDS.laneEntry, className: 'VehicularAccess' },
+        parameters: { method: 'flatFee' },
+      },
+    });
+    const done = await pollUntilTerminal(command.json().id);
+    expect(done.status).toBe('succeeded');
+    const detail = (done.statusHistory as Array<{ detail?: string }>).at(-1)?.detail ?? '';
+    expect(detail).toContain('fee 25 USD due');
+
+    // The lane inquiry now shows the lost ticket with the fee as amount due.
+    const lane = await ctx.app.inject({
+      method: 'GET',
+      url: `/apx/v1/lanes/${IDS.laneEntry}/current`,
+      headers: auth(),
+    });
+    const ticket = lane.json().currentTicket;
+    expect(ticket.ticketNumber).toMatch(/^LT-/);
+    expect(ticket.amountDue).toMatchObject({ type: 'USD', value: 25 });
+    expect(ticket.paidInFull).toBe(false);
+    expect(ticket.lostTicketMethod).toBe('flatFee');
+  });
+
   it('expires perishable commands instead of firing late', async () => {
     const response = await ctx.app.inject({
       method: 'POST',

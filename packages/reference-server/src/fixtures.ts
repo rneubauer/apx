@@ -82,6 +82,10 @@ export function seed(store: Store): void {
       { id: IDS.laneExit, className: 'VehicularAccess', flow: 'exit' },
     ],
     characteristics: { accessControlled: true },
+    // Operator policy (APX decoration): the fee charged when a ticket is lost.
+    extensions: {
+      'apds-ext:apx:lostticketpolicy@1.0': { fee: { type: 'USD', value: 25 } },
+    },
   });
 
   store.for('SupplementalEquipment').create({

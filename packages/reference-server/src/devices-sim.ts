@@ -94,11 +94,48 @@ export class DeviceSimulator {
           if (!state) return { ok: false, detail: 'no device at target' };
           this.setState(state.device.id, commandType === 'closeLane' ? 'outOfService' : 'occupied');
           return { ok: true, detail: commandType };
-        case 'lostTicket':
+        case 'lostTicket': {
+          // Issue a lost ticket AT THE LANE with the place's lost-ticket fee
+          // as the amount due — payment/validation/vend then proceed normally.
+          const place = this.store.for('Place').list()[0];
+          const policy = (
+            place?.extensions as
+              | Record<string, { fee?: { type: string; value: number } }>
+              | undefined
+          )?.['apds-ext:apx:lostticketpolicy@1.0'];
+          const fee = policy?.fee ?? { type: 'USD', value: 25 };
+          const laneId = this.states.has(targetId)
+            ? ((this.store.for('SupplementalEquipment').get(targetId).laneRef as { id?: string }) ?? {})
+                .id
+            : targetId;
+          if (!laneId) return { ok: false, detail: 'no lane at target' };
+          const ticketNumber = `LT-${Date.now().toString(36).toUpperCase()}`;
+          const lostTicket = {
+            ticketNumber,
+            issuedTime: new Date().toISOString(),
+            amountDue: fee,
+            paidInFull: false,
+            validations: [],
+            lostTicketMethod: String(parameters.method ?? 'flatFee'),
+          };
+          const existing = this.store
+            .for('LaneState')
+            .list()
+            .find((l) => l.id === laneId);
+          if (existing) {
+            this.store.for('LaneState').applyChange(laneId, { currentTicket: lostTicket });
+          } else {
+            this.store.for('LaneState').create({
+              id: laneId,
+              lane: { id: laneId, className: 'VehicularAccess' },
+              currentTicket: lostTicket,
+            });
+          }
           return {
             ok: true,
-            detail: `lost ticket issued (method=${parameters.method ?? 'default'})`,
+            detail: `lost ticket ${ticketNumber} issued, fee ${fee.value} ${fee.type} due (method=${parameters.method ?? 'flatFee'})`,
           };
+        }
         case 'pushRate': {
           const rate = parameters.rateTable as { id?: string } | undefined;
           if (!rate?.id || !this.storeHasRate(rate.id)) {
