@@ -6,7 +6,7 @@ Standards / ISO TS 5206-1). One API that PARCS, LPR, tolling, permitting, and
 reservations vendors implement — adding what APDS deliberately leaves out,
 while reusing everything it defines.
 
-**New here?** Read the [executive summary](docs/executive-summary.md) (shareable, non-technical), the [complete API overview](docs/apx-overview.md) (every route + the reasoning, no APDS knowledge needed), or the [quickstart](docs/quickstart.md).
+**New here?** Read the [executive summary](docs/executive-summary.md) (shareable, non-technical), the [complete API overview](docs/apx-overview.md) (every route + the reasoning, no APDS knowledge needed), or the [quickstart](docs/quickstart.md). **PARCS vendor?** Start with the [PARCS Starter Profile](docs/parcs-starter-profile.md) — the minimum ~25-endpoint surface, with a slim importable spec (`spec/dist/apx-parcs.json`).
 
 ## Prime directive: APDS-first
 

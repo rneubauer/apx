@@ -16,9 +16,10 @@
     "spec:style": "spectral lint spec/dist/apx-v1.yaml --ruleset tools/.spectral.yaml",
     "vendor:check": "node tools/check-vendor.mjs",
     "registries:check": "node tools/check-registries.mjs",
+    "spec:profile": "node tools/build-profile-spec.mjs",
     "examples:check": "node tools/validate-examples.mjs",
     "typegen": "npm run spec:bundle && npm run typegen -w packages/types",
-    "test": "npm run vendor:check && npm run registries:check && npm run spec:lint && npm run spec:bundle && npm run spec:style && npm run examples:check && npm test --workspaces --if-present",
+    "test": "npm run vendor:check && npm run registries:check && npm run spec:lint && npm run spec:bundle && npm run spec:profile && npm run spec:style && npm run examples:check && npm test --workspaces --if-present",
     "sandbox": "npm run spec:bundle && npm run sandbox -w packages/reference-server",
     "demo": "node examples/demo.mjs"
   },
