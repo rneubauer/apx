@@ -135,7 +135,7 @@ export function registerReservationRoutes(
       .filter((r) => (r.rightSpecification as { id?: string } | undefined)?.id === rightSpecId)
       .length;
 
-  app.get('/apx/v1/permits/pools/:rightSpecId/availability', async (request, reply) => {
+  app.get('/v1/permits/pools/:rightSpecId/availability', async (request, reply) => {
     if (!requireScope(request, reply, 'apx.permits:manage')) return;
     const { rightSpecId } = request.params as { rightSpecId: string };
     const pool = poolFor(rightSpecId);
@@ -152,7 +152,7 @@ export function registerReservationRoutes(
     });
   });
 
-  app.post('/apx/v1/permits/issue', async (request, reply) => {
+  app.post('/v1/permits/issue', async (request, reply) => {
     const principal = requireScope(request, reply, 'apx.permits:manage');
     if (!principal) return;
     const body = request.body as Record<string, unknown>;
@@ -193,7 +193,7 @@ export function registerReservationRoutes(
   });
 
   // --- Customer reservation history (last 10, newest first) ---
-  app.get('/apx/v1/reservations/recent', async (request, reply) => {
+  app.get('/v1/reservations/recent', async (request, reply) => {
     if (!requireScope(request, reply, 'apx.reservations:manage')) return;
     const { plate, holder, place } = request.query as {
       plate?: string;

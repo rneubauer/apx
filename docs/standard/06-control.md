@@ -6,7 +6,7 @@ actuation. This Part adds it, referencing APDS entities throughout.
 
 ## 6.1 Commands
 
-`POST /apx/v1/commands` (scope `apx.control:execute`):
+`POST /v1/commands` (scope `apx.control:execute`):
 
 - **`Idempotency-Key` header REQUIRED** — same key + same body returns the
   original command; same key + different body is `409`.
@@ -33,8 +33,8 @@ immutable `statusHistory[]` (state, time, actor, detail) — this satisfies
 the 2018 "all transactions are tracked" audit requirement. Transitions
 publish `apx.control.command.status.v1`.
 
-- `GET /apx/v1/commands/{id}` — poll state (scope `apx.control:read`).
-- `POST /apx/v1/commands/{id}/cancel` — allowed until `dispatched`;
+- `GET /v1/commands/{id}` — poll state (scope `apx.control:read`).
+- `POST /v1/commands/{id}/cancel` — allowed until `dispatched`;
   afterwards `409 command-not-cancellable`.
 
 **Authorization:** scope `apx.control:execute` AND the token's `apx_places`
@@ -55,7 +55,7 @@ an explicit validation or payment event on the audit record.
 
 ## 6.2 Lane inquiry (2018 requirement ① — screen-pop)
 
-`GET /apx/v1/lanes/{id}/current` (scope `apx.control:read`) returns
+`GET /v1/lanes/{id}/current` (scope `apx.control:read`) returns
 `LaneStatus`: the ticket currently in the machine (issued time, amount due,
 applied validations, paid-in-full), the latest LPR read (plate, confidence,
 screenshot link — an APDS Observation), and monthly-credential context
@@ -63,7 +63,7 @@ screenshot link — an APDS Observation), and monthly-credential context
 
 ## 6.3 Validations (2018 requirement ⑤)
 
-- `GET /apx/v1/validations/providers?place={uuid}` — the venues allowed to
+- `GET /v1/validations/providers?place={uuid}` — the venues allowed to
   validate tickets at that place (`ValidationProvider[]`).
 - Applying a validation = `applyValidation` command with
   `parameters.ticket` and `parameters.provider`. On success the lane's
@@ -83,7 +83,7 @@ screenshot link — an APDS Observation), and monthly-credential context
 
 ## 6.4 Device status
 
-- `GET /apx/v1/devices` / `GET /apx/v1/devices/{id}` (scope
+- `GET /v1/devices` / `GET /v1/devices/{id}` (scope
   `apx.control:read`) — `DeviceStatus` overlay keyed by Reference to the
   APDS SupplementalEquipment. States (registry `apx-device-states`) mirror
   the RefillPointStatusEnum style: `available, occupied, inoperative,

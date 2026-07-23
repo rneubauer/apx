@@ -65,18 +65,18 @@ try {
       },
     });
 
-  const lane = await (await authed(`/apx/v1/lanes/${LANE_EXIT}/current`)).json();
+  const lane = await (await authed(`/v1/lanes/${LANE_EXIT}/current`)).json();
   log(
     'Screen-pop (lane inquiry)',
     `ticket ${lane.currentTicket.ticketNumber}, due ${lane.currentTicket.amountDue.value} ${lane.currentTicket.amountDue.type}, plate ${lane.currentTicket.lpr.plate}, monthly access: ${lane.monthlyCredential.accessGranted} (${lane.monthlyCredential.denialReason})`
   );
 
-  const providers = (await (await authed(`/apx/v1/validations/providers?place=${PLACE}`)).json())
+  const providers = (await (await authed(`/v1/validations/providers?place=${PLACE}`)).json())
     .data;
   log('Validation providers', providers.map((p) => p.name).join(' | '));
 
   const validation = await (
-    await authed('/apx/v1/commands', {
+    await authed('/v1/commands', {
       method: 'POST',
       headers: { 'idempotency-key': `demo-val-${Date.now()}` },
       body: JSON.stringify({
@@ -89,7 +89,7 @@ try {
   log('applyValidation command', `202 accepted, id ${validation.id}`);
 
   const vend = await (
-    await authed('/apx/v1/commands', {
+    await authed('/v1/commands', {
       method: 'POST',
       headers: { 'idempotency-key': `demo-vend-${Date.now()}` },
       body: JSON.stringify({
@@ -103,7 +103,7 @@ try {
   let final = vend;
   for (let i = 0; i < 40 && !['succeeded', 'failed'].includes(final.status); i += 1) {
     await sleep(100);
-    final = await (await authed(`/apx/v1/commands/${vend.id}`)).json();
+    final = await (await authed(`/v1/commands/${vend.id}`)).json();
   }
   log('vendGate lifecycle (immutable audit)', final.statusHistory.map((h) => h.state).join(' -> '));
 
@@ -111,7 +111,7 @@ try {
     method: 'POST',
     body: JSON.stringify({ state: 'fault' }),
   });
-  const alerts = (await (await authed('/apx/v1/alerts?type=deviceFault')).json()).data;
+  const alerts = (await (await authed('/v1/alerts?type=deviceFault')).json()).data;
   log(
     'Forced pay-station fault -> auto-raised alert',
     alerts.length

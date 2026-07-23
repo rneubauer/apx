@@ -29,7 +29,7 @@ Pick a short lowercase namespace (your company): `acmecorp`. Then:
 ## What gets you rejected
 
 - Unregistered keys outside `extensions` containers.
-- Squatting `apx.` topics, `/apx/v1` paths, or the `apx` namespace.
+- Squatting `apx.` topics, `/v1` paths, or the `apx` namespace.
 - Changing semantics of existing fields/values.
 - Redefining anything APDS or APX already models (identity, money,
   timestamps, references, place hierarchy).

@@ -34,13 +34,13 @@ const PARCS_PATHS = [
   '/webhooks/{id}',
   '/webhooks/{id}/deliveries',
   // apx-control: commands, lane inquiry, validations, device status
-  '/apx/v1/commands',
-  '/apx/v1/commands/{id}',
-  '/apx/v1/commands/{id}/cancel',
-  '/apx/v1/lanes/{id}/current',
-  '/apx/v1/validations/providers',
-  '/apx/v1/devices',
-  '/apx/v1/devices/{id}',
+  '/v1/commands',
+  '/v1/commands/{id}',
+  '/v1/commands/{id}/cancel',
+  '/v1/lanes/{id}/current',
+  '/v1/validations/providers',
+  '/v1/devices',
+  '/v1/devices/{id}',
 ];
 
 const output = {

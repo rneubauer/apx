@@ -34,7 +34,7 @@ async function pollUntilTerminal(id: string, timeoutMs = 2000): Promise<Record<s
   for (;;) {
     const response = await ctx.app.inject({
       method: 'GET',
-      url: `/apx/v1/commands/${id}`,
+      url: `/v1/commands/${id}`,
       headers: auth(),
     });
     const command = response.json();
@@ -49,7 +49,7 @@ describe('flagship call-center flow (2018 Required tier)', () => {
     // 1. Lane inquiry (screen-pop).
     const lane = await ctx.app.inject({
       method: 'GET',
-      url: `/apx/v1/lanes/${IDS.laneExit}/current`,
+      url: `/v1/lanes/${IDS.laneExit}/current`,
       headers: auth(),
     });
     expect(lane.statusCode).toBe(200);
@@ -63,7 +63,7 @@ describe('flagship call-center flow (2018 Required tier)', () => {
     // 2. Validation providers at the place.
     const providers = await ctx.app.inject({
       method: 'GET',
-      url: `/apx/v1/validations/providers?place=${IDS.place}`,
+      url: `/v1/validations/providers?place=${IDS.place}`,
       headers: auth(),
     });
     expect(providers.json().data).toHaveLength(2);
@@ -72,7 +72,7 @@ describe('flagship call-center flow (2018 Required tier)', () => {
     // 3. Apply a validation to the ticket.
     const validation = await ctx.app.inject({
       method: 'POST',
-      url: '/apx/v1/commands',
+      url: '/v1/commands',
       headers: auth({ 'idempotency-key': 'val-1' }),
       payload: {
         commandType: 'applyValidation',
@@ -87,7 +87,7 @@ describe('flagship call-center flow (2018 Required tier)', () => {
     // 4. Vend the exit gate.
     const vend = await ctx.app.inject({
       method: 'POST',
-      url: '/apx/v1/commands',
+      url: '/v1/commands',
       headers: auth({ 'idempotency-key': 'vend-1' }),
       payload: {
         commandType: 'vendGate',
@@ -112,7 +112,7 @@ describe('flagship call-center flow (2018 Required tier)', () => {
 
     const alerts = await ctx.app.inject({
       method: 'GET',
-      url: '/apx/v1/alerts?type=deviceFault',
+      url: '/v1/alerts?type=deviceFault',
       headers: auth(),
     });
     const found = alerts
@@ -126,7 +126,7 @@ describe('flagship call-center flow (2018 Required tier)', () => {
     // 6. Device status overlay reflects the fault.
     const device = await ctx.app.inject({
       method: 'GET',
-      url: `/apx/v1/devices/${IDS.payStation}`,
+      url: `/v1/devices/${IDS.payStation}`,
       headers: auth(),
     });
     expect(device.json().deviceState).toBe('fault');
@@ -137,7 +137,7 @@ describe('command plane rules', () => {
   it('requires Idempotency-Key and deduplicates', async () => {
     const noKey = await ctx.app.inject({
       method: 'POST',
-      url: '/apx/v1/commands',
+      url: '/v1/commands',
       headers: auth(),
       payload: {
         commandType: 'vendGate',
@@ -153,13 +153,13 @@ describe('command plane rules', () => {
     };
     const first = await ctx.app.inject({
       method: 'POST',
-      url: '/apx/v1/commands',
+      url: '/v1/commands',
       headers: auth({ 'idempotency-key': 'lt-1' }),
       payload,
     });
     const replay = await ctx.app.inject({
       method: 'POST',
-      url: '/apx/v1/commands',
+      url: '/v1/commands',
       headers: auth({ 'idempotency-key': 'lt-1' }),
       payload,
     });
@@ -179,7 +179,7 @@ describe('command plane rules', () => {
     expect(feeLine).toMatchObject({ rateLineType: 'flatRate', value: 25 });
     const command = await ctx.app.inject({
       method: 'POST',
-      url: '/apx/v1/commands',
+      url: '/v1/commands',
       headers: auth({ 'idempotency-key': 'lt-fee-1' }),
       payload: {
         commandType: 'lostTicket',
@@ -195,7 +195,7 @@ describe('command plane rules', () => {
     // The lane inquiry now shows the lost ticket with the fee as amount due.
     const lane = await ctx.app.inject({
       method: 'GET',
-      url: `/apx/v1/lanes/${IDS.laneEntry}/current`,
+      url: `/v1/lanes/${IDS.laneEntry}/current`,
       headers: auth(),
     });
     const ticket = lane.json().currentTicket;
@@ -208,7 +208,7 @@ describe('command plane rules', () => {
   it('expires perishable commands instead of firing late', async () => {
     const response = await ctx.app.inject({
       method: 'POST',
-      url: '/apx/v1/commands',
+      url: '/v1/commands',
       headers: auth({ 'idempotency-key': 'exp-1' }),
       payload: {
         commandType: 'vendGate',
@@ -223,7 +223,7 @@ describe('command plane rules', () => {
   it('cancels within the dispatch window; refuses after terminal', async () => {
     const created = await ctx.app.inject({
       method: 'POST',
-      url: '/apx/v1/commands',
+      url: '/v1/commands',
       headers: auth({ 'idempotency-key': 'cancel-1' }),
       payload: {
         commandType: 'displayMessage',
@@ -233,7 +233,7 @@ describe('command plane rules', () => {
     });
     const cancelled = await ctx.app.inject({
       method: 'POST',
-      url: `/apx/v1/commands/${created.json().id}/cancel`,
+      url: `/v1/commands/${created.json().id}/cancel`,
       headers: auth(),
     });
     expect(cancelled.json().status).toBe('cancelled');
@@ -242,14 +242,14 @@ describe('command plane rules', () => {
     await new Promise((resolve) => setTimeout(resolve, 60));
     const after = await ctx.app.inject({
       method: 'GET',
-      url: `/apx/v1/commands/${created.json().id}`,
+      url: `/v1/commands/${created.json().id}`,
       headers: auth(),
     });
     expect(after.json().status).toBe('cancelled');
 
     const again = await ctx.app.inject({
       method: 'POST',
-      url: `/apx/v1/commands/${created.json().id}/cancel`,
+      url: `/v1/commands/${created.json().id}/cancel`,
       headers: auth(),
     });
     expect(again.statusCode).toBe(409);
@@ -258,7 +258,7 @@ describe('command plane rules', () => {
   it('pushRate validates the RateTable reference', async () => {
     const bad = await ctx.app.inject({
       method: 'POST',
-      url: '/apx/v1/commands',
+      url: '/v1/commands',
       headers: auth({ 'idempotency-key': 'rate-bad' }),
       payload: {
         commandType: 'pushRate',
@@ -271,7 +271,7 @@ describe('command plane rules', () => {
 
     const good = await ctx.app.inject({
       method: 'POST',
-      url: '/apx/v1/commands',
+      url: '/v1/commands',
       headers: auth({ 'idempotency-key': 'rate-good' }),
       payload: {
         commandType: 'pushRate',
@@ -285,7 +285,7 @@ describe('command plane rules', () => {
   it('rejects applyValidation from a provider not on the place list (422 validation-provider-unknown)', async () => {
     const response = await ctx.app.inject({
       method: 'POST',
-      url: '/apx/v1/commands',
+      url: '/v1/commands',
       headers: auth({ 'idempotency-key': 'val-unknown' }),
       payload: {
         commandType: 'applyValidation',
@@ -304,7 +304,7 @@ describe('command plane rules', () => {
     const before = (
       await ctx.app.inject({
         method: 'GET',
-        url: `/apx/v1/lanes/${IDS.laneExit}/current`,
+        url: `/v1/lanes/${IDS.laneExit}/current`,
         headers: auth(),
       })
     ).json();
@@ -314,14 +314,14 @@ describe('command plane rules', () => {
     const providers = (
       await ctx.app.inject({
         method: 'GET',
-        url: `/apx/v1/validations/providers?place=${IDS.place}`,
+        url: `/v1/validations/providers?place=${IDS.place}`,
         headers: auth(),
       })
     ).json().data;
 
     const command = await ctx.app.inject({
       method: 'POST',
-      url: '/apx/v1/commands',
+      url: '/v1/commands',
       headers: auth({ 'idempotency-key': 'val-lane-state' }),
       payload: {
         commandType: 'applyValidation',
@@ -334,7 +334,7 @@ describe('command plane rules', () => {
     const after = (
       await ctx.app.inject({
         method: 'GET',
-        url: `/apx/v1/lanes/${IDS.laneExit}/current`,
+        url: `/v1/lanes/${IDS.laneExit}/current`,
         headers: auth(),
       })
     ).json();
@@ -357,7 +357,7 @@ describe('command plane rules', () => {
     const otherToken = await getToken('other-operator', 'other-secret');
     const response = await ctx.app.inject({
       method: 'POST',
-      url: '/apx/v1/commands',
+      url: '/v1/commands',
       headers: { authorization: `Bearer ${otherToken}`, 'idempotency-key': 'grant-1' },
       payload: {
         commandType: 'vendGate',

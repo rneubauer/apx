@@ -55,7 +55,7 @@ and a **Device** (gate, pay station, camera — physical equipment at a place).
 |---|---|
 | `GET /.well-known/apx-configuration` | **Start here, no login needed.** Returns where to get a token, which optional features this server supports, and where its vocabularies are published |
 | `POST /oauth/token` | Standard OAuth2 client-credentials: trade your client ID + secret for a bearer token |
-| `GET /apx/v1/discovery` | **Ask what YOU can do.** Returns exactly the endpoints, commands, event topics, and facilities available to *your* credential |
+| `GET /v1/discovery` | **Ask what YOU can do.** Returns exactly the endpoints, commands, event topics, and facilities available to *your* credential |
 
 **Why this way:** onboarding a new integration partner usually means emailed
 PDFs and guesswork. In APX a partner needs exactly one thing — a hostname.
@@ -124,7 +124,7 @@ Instead of polling, subscribe:
 | `POST /webhooks` | Subscribe an HTTPS endpoint (or an SSE stream) to named **topics** — e.g. `SessionCreated`, `apx.alert.raised.v1` |
 | `GET /webhooks` · `PATCH /webhooks/{id}` · `DELETE /webhooks/{id}` | List, update (pause/resume, rotate secrets, change filters), revoke |
 | `GET /webhooks/{id}/deliveries` | The delivery ledger: every attempt, its result, and the response code |
-| `GET /apx/v1/events/stream` | Live **Server-Sent Events** stream of the same events, with resume-after-disconnect |
+| `GET /v1/events/stream` | Live **Server-Sent Events** stream of the same events, with resume-after-disconnect |
 
 Every delivery is one uniform envelope (`id`, `type`, `time`, `subject` —
 which object it's about — and `data`), **cryptographically signed** (HMAC)
@@ -148,12 +148,12 @@ The part no data standard covers — actually operating the facility:
 
 | Route | What it does |
 |---|---|
-| `POST /apx/v1/commands` | Execute an action: **vendGate**, **lostTicket**, **pushRate**, **applyValidation**, holdGateOpen, closeLane, setDeviceState, displayMessage, restartDevice |
-| `GET /apx/v1/commands/{id}` | Follow the command's lifecycle |
-| `POST /apx/v1/commands/{id}/cancel` | Cancel before it dispatches |
-| `GET /apx/v1/lanes/{id}/current` | **Screen-pop:** the ticket in the machine right now — amount due, applied validations, the plate photo, and (for monthly parkers) whether access was denied and why, with the last 10 events |
-| `GET /apx/v1/devices` · `/{id}` | Live device state (available/occupied/fault/…) for every gate, pay station, camera |
-| `GET /apx/v1/validations/providers?place=…` | Which businesses may validate tickets at this facility |
+| `POST /v1/commands` | Execute an action: **vendGate**, **lostTicket**, **pushRate**, **applyValidation**, holdGateOpen, closeLane, setDeviceState, displayMessage, restartDevice |
+| `GET /v1/commands/{id}` | Follow the command's lifecycle |
+| `POST /v1/commands/{id}/cancel` | Cancel before it dispatches |
+| `GET /v1/lanes/{id}/current` | **Screen-pop:** the ticket in the machine right now — amount due, applied validations, the plate photo, and (for monthly parkers) whether access was denied and why, with the last 10 events |
+| `GET /v1/devices` · `/{id}` | Live device state (available/occupied/fault/…) for every gate, pay station, camera |
+| `GET /v1/validations/providers?place=…` | Which businesses may validate tickets at this facility |
 
 Commands are **asynchronous** (you get `202 Accepted`, then follow status:
 `received → accepted → dispatched → executing → succeeded/failed`), and three
@@ -182,9 +182,9 @@ faulted" from "your command expired" — and prove it later.
 
 | Route | What it does |
 |---|---|
-| `POST /apx/v1/alerts` | Raise an alert (idempotent — device retry storms can't create duplicates) |
-| `GET /apx/v1/alerts` | Filter by status, severity floor, type, facility, time |
-| `POST /apx/v1/alerts/{id}/acknowledge` · `/resolve` | Work the alert; every transition is recorded |
+| `POST /v1/alerts` | Raise an alert (idempotent — device retry storms can't create duplicates) |
+| `GET /v1/alerts` | Filter by status, severity floor, type, facility, time |
+| `POST /v1/alerts/{id}/acknowledge` · `/resolve` | Work the alert; every transition is recorded |
 
 An alert has an **open** type (deviceFault, laneBlocked, overstay,
 occupiedWithoutCheckIn… — operators can publish their own types) and a
@@ -205,10 +205,10 @@ disagreeing.
 
 | Route | What it does |
 |---|---|
-| `GET /apx/v1/accounts?name=\|phone=\|card=\|plate=` | Find a (monthly) parker's account and balance by whatever the caller knows |
-| `POST /apx/v1/payments` | Take a payment (idempotent). `method: autoAttendant` = a PCI-compliant phone system captures the card out of band |
-| `POST /apx/v1/payments/{id}/postings` | Write the payment back to the accounting system (e.g. PARIS) → confirmation number + new balance |
-| `GET /apx/v1/payments?ticketLast4=…` | Payment history on a ticket |
+| `GET /v1/accounts?name=\|phone=\|card=\|plate=` | Find a (monthly) parker's account and balance by whatever the caller knows |
+| `POST /v1/payments` | Take a payment (idempotent). `method: autoAttendant` = a PCI-compliant phone system captures the card out of band |
+| `POST /v1/payments/{id}/postings` | Write the payment back to the accounting system (e.g. PARIS) → confirmation number + new balance |
+| `GET /v1/payments?ticketLast4=…` | Payment history on a ticket |
 
 **Why this way:** the flow mirrors the real call: *"I can't get out"* →
 look up the account by phone number → see the balance → take payment via the
@@ -225,7 +225,7 @@ feature can't be used to trawl history.
 | Route | What it does |
 |---|---|
 | `POST /observations` | How camera reads enter the system (a standard data route — nothing special to build) |
-| `GET /apx/v1/lpr/reads?plate=…` or `?ticket=…` | The cross-lookup: plate → ticket/session (with confidence score and the photo), or ticket → plate |
+| `GET /v1/lpr/reads?plate=…` or `?ticket=…` | The cross-lookup: plate → ticket/session (with confidence score and the photo), or ticket → plate |
 
 **Why this way:** LPR vendors shouldn't need a bespoke ingestion API — a
 plate read *is* an observation, so ingest is the standard route every data
@@ -250,8 +250,8 @@ for a 280-space garage"):
 
 | Route | What it does |
 |---|---|
-| `GET /apx/v1/permits/pools/{id}/availability` | capacity / issued / available |
-| `POST /apx/v1/permits/issue` | Issue a permit — one permit can carry **multiple vehicle plates** (family/fleet), refused cleanly when the pool is exhausted |
+| `GET /v1/permits/pools/{id}/availability` | capacity / issued / available |
+| `POST /v1/permits/issue` | Issue a permit — one permit can carry **multiple vehicle plates** (family/fleet), refused cleanly when the pool is exhausted |
 
 **Why this way:** every parallel "booking object" ever invented eventually
 disagrees with the ticket system it shadows. By making the reservation *be*
@@ -266,7 +266,7 @@ The one fully new domain — connecting roadside reads to money:
 
 | Route | What it does |
 |---|---|
-| `POST /apx/v1/tolling/transactions` | Create a toll charge from plate/transponder reads + a price (idempotent — gantries retry) |
+| `POST /v1/tolling/transactions` | Create a toll charge from plate/transponder reads + a price (idempotent — gantries retry) |
 | `GET …?plate=&status=` · `GET …/{id}` | Query transactions |
 | `POST …/{id}/payment` | Attach the settling payment |
 | `POST …/{id}/disputes` · `…/disputes/resolve` | The dispute lifecycle ("that wasn't my car") with a full audit history |

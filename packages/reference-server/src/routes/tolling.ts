@@ -45,7 +45,7 @@ export function registerTollingRoutes(
     return updated;
   };
 
-  app.post('/apx/v1/tolling/transactions', async (request, reply) => {
+  app.post('/v1/tolling/transactions', async (request, reply) => {
     const principal = requireScope(request, reply, 'apx.tolling:manage');
     if (!principal) return;
     const key = request.headers['idempotency-key'] as string | undefined;
@@ -78,7 +78,7 @@ export function registerTollingRoutes(
     return reply.status(201).send(transaction);
   });
 
-  app.get('/apx/v1/tolling/transactions', async (request, reply) => {
+  app.get('/v1/tolling/transactions', async (request, reply) => {
     if (!requireScope(request, reply, 'apx.tolling:manage')) return;
     const query = request.query as Record<string, string | undefined>;
     let list = transactions().list();
@@ -93,7 +93,7 @@ export function registerTollingRoutes(
     return reply.send({ data: list });
   });
 
-  app.get('/apx/v1/tolling/transactions/:id', async (request, reply) => {
+  app.get('/v1/tolling/transactions/:id', async (request, reply) => {
     if (!requireScope(request, reply, 'apx.tolling:manage')) return;
     const { id } = request.params as { id: string };
     try {
@@ -103,7 +103,7 @@ export function registerTollingRoutes(
     }
   });
 
-  app.post('/apx/v1/tolling/transactions/:id/payment', async (request, reply) => {
+  app.post('/v1/tolling/transactions/:id/payment', async (request, reply) => {
     if (!requireScope(request, reply, 'apx.tolling:manage')) return;
     const { id } = request.params as { id: string };
     try {
@@ -116,7 +116,7 @@ export function registerTollingRoutes(
     return reply.send(transition(id, 'paid', 'server', { payment }));
   });
 
-  app.post('/apx/v1/tolling/transactions/:id/disputes', async (request, reply) => {
+  app.post('/v1/tolling/transactions/:id/disputes', async (request, reply) => {
     const principal = requireScope(request, reply, 'apx.tolling:manage');
     if (!principal) return;
     const { id } = request.params as { id: string };
@@ -138,7 +138,7 @@ export function registerTollingRoutes(
     );
   });
 
-  app.post('/apx/v1/tolling/transactions/:id/disputes/resolve', async (request, reply) => {
+  app.post('/v1/tolling/transactions/:id/disputes/resolve', async (request, reply) => {
     const principal = requireScope(request, reply, 'apx.tolling:manage');
     if (!principal) return;
     const { id } = request.params as { id: string };

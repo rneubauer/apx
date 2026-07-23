@@ -46,7 +46,7 @@ export function registerAlertRoutes(
     );
   };
 
-  app.post('/apx/v1/alerts', async (request, reply) => {
+  app.post('/v1/alerts', async (request, reply) => {
     const principal = requireScope(request, reply, 'apx.alerts:write');
     if (!principal) return;
     const key = request.headers['idempotency-key'] as string | undefined;
@@ -77,7 +77,7 @@ export function registerAlertRoutes(
     return reply.status(201).send(alert);
   });
 
-  app.get('/apx/v1/alerts', async (request, reply) => {
+  app.get('/v1/alerts', async (request, reply) => {
     if (!requireScope(request, reply, 'apx.alerts:read')) return;
     const query = request.query as Record<string, string | undefined>;
     let list = alerts().list();
@@ -109,7 +109,7 @@ export function registerAlertRoutes(
     });
   });
 
-  app.get('/apx/v1/alerts/:id', async (request, reply) => {
+  app.get('/v1/alerts/:id', async (request, reply) => {
     if (!requireScope(request, reply, 'apx.alerts:read')) return;
     const { id } = request.params as { id: string };
     try {
@@ -123,7 +123,7 @@ export function registerAlertRoutes(
     ['acknowledge', 'acknowledged', ['raised']],
     ['resolve', 'resolved', ['raised', 'acknowledged']],
   ] as const) {
-    app.post(`/apx/v1/alerts/:id/${action}`, async (request, reply) => {
+    app.post(`/v1/alerts/:id/${action}`, async (request, reply) => {
       const principal = requireScope(request, reply, 'apx.alerts:write');
       if (!principal) return;
       const { id } = request.params as { id: string };

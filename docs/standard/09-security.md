@@ -33,7 +33,7 @@ Two token claims bound a client's world:
   `https://apx-standard.org/problems/insufficient-grant` — even when the
   scope check passes.
 
-Discovery (`GET /apx/v1/discovery`) MUST reflect scopes and grants exactly:
+Discovery (`GET /v1/discovery`) MUST reflect scopes and grants exactly:
 a client can call everything its discovery document lists, and nothing more.
 
 ## 9.4 Webhook authenticity

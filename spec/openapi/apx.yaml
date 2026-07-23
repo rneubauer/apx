@@ -45,7 +45,7 @@ servers:
     description: |-
       One host serves both surfaces: APDS-native routes at their verbatim
       paths (/places, /sessions, /webhooks, …) and APX routes under the
-      explicit /apx/v1 prefix.
+      explicit /v1 prefix.
 
 tags:
   - name: Discovery
@@ -227,7 +227,7 @@ paths:
                     items:
                       $ref: "#/components/schemas/DeliveryRecord"
 
-  /apx/v1/events/stream:
+  /v1/events/stream:
     get:
       operationId: get-apx-v1-events-stream
       tags: [Subscription]
@@ -257,7 +257,7 @@ paths:
                 type: string
 
   # ===== Control (conformance class apx-control) ===== #
-  /apx/v1/commands:
+  /v1/commands:
     post:
       operationId: post-apx-v1-commands
       tags: [Control]
@@ -265,7 +265,7 @@ paths:
       description: |-
         Requests an operational action (vendGate, lostTicket, pushRate,
         applyValidation, …). Idempotency-Key REQUIRED. Returns 202 with the
-        Command; poll GET /apx/v1/commands/{id} or subscribe to
+        Command; poll GET /v1/commands/{id} or subscribe to
         apx.control.command.status.v1. Requires scope apx.control:execute
         AND a place grant covering the target.
       parameters:
@@ -302,7 +302,7 @@ paths:
             application/problem+json:
               schema: { $ref: "#/components/schemas/Problem" }
 
-  /apx/v1/commands/{id}:
+  /v1/commands/{id}:
     get:
       operationId: get-apx-v1-commands-id
       tags: [Control]
@@ -325,7 +325,7 @@ paths:
             application/problem+json:
               schema: { $ref: "#/components/schemas/Problem" }
 
-  /apx/v1/commands/{id}/cancel:
+  /v1/commands/{id}/cancel:
     post:
       operationId: post-apx-v1-commands-id-cancel
       tags: [Control]
@@ -348,7 +348,7 @@ paths:
             application/problem+json:
               schema: { $ref: "#/components/schemas/Problem" }
 
-  /apx/v1/devices:
+  /v1/devices:
     get:
       operationId: get-apx-v1-devices
       tags: [Control]
@@ -366,7 +366,7 @@ paths:
                     type: array
                     items: { $ref: "#/components/schemas/DeviceStatus" }
 
-  /apx/v1/devices/{id}:
+  /v1/devices/{id}:
     get:
       operationId: get-apx-v1-devices-id
       tags: [Control]
@@ -389,7 +389,7 @@ paths:
             application/problem+json:
               schema: { $ref: "#/components/schemas/Problem" }
 
-  /apx/v1/lanes/{id}/current:
+  /v1/lanes/{id}/current:
     get:
       operationId: get-apx-v1-lanes-id-current
       tags: [Control]
@@ -416,7 +416,7 @@ paths:
             application/problem+json:
               schema: { $ref: "#/components/schemas/Problem" }
 
-  /apx/v1/validations/providers:
+  /v1/validations/providers:
     get:
       operationId: get-apx-v1-validations-providers
       tags: [Control]
@@ -440,7 +440,7 @@ paths:
                     items: { $ref: "#/components/schemas/ValidationProvider" }
 
   # ===== Tolling (optional class; Part 15) ===== #
-  /apx/v1/tolling/transactions:
+  /v1/tolling/transactions:
     post:
       operationId: post-apx-v1-tolling-transactions
       tags: [Tolling]
@@ -479,7 +479,7 @@ paths:
                     type: array
                     items: { $ref: "#/components/schemas/TollTransaction" }
 
-  /apx/v1/tolling/transactions/{id}:
+  /v1/tolling/transactions/{id}:
     get:
       operationId: get-apx-v1-tolling-transactions-id
       tags: [Tolling]
@@ -499,7 +499,7 @@ paths:
             application/problem+json:
               schema: { $ref: "#/components/schemas/Problem" }
 
-  /apx/v1/tolling/transactions/{id}/payment:
+  /v1/tolling/transactions/{id}/payment:
     post:
       operationId: post-apx-v1-tolling-transactions-id-payment
       tags: [Tolling]
@@ -514,7 +514,7 @@ paths:
             application/json:
               schema: { $ref: "#/components/schemas/TollTransaction" }
 
-  /apx/v1/tolling/transactions/{id}/disputes:
+  /v1/tolling/transactions/{id}/disputes:
     post:
       operationId: post-apx-v1-tolling-transactions-id-disputes
       tags: [Tolling]
@@ -534,7 +534,7 @@ paths:
             application/problem+json:
               schema: { $ref: "#/components/schemas/Problem" }
 
-  /apx/v1/tolling/transactions/{id}/disputes/resolve:
+  /v1/tolling/transactions/{id}/disputes/resolve:
     post:
       operationId: post-apx-v1-tolling-transactions-id-disputes-resolve
       tags: [Tolling]
@@ -557,7 +557,7 @@ paths:
   # ===== Reservations & permits (optional classes; Part 14) ===== #
   # Reservations use NATIVE routes (/quotes, /rights/assigned) with the
   # apds-ext:apx:reservation@1.0 extension; only permits add endpoints.
-  /apx/v1/reservations/recent:
+  /v1/reservations/recent:
     get:
       operationId: get-apx-v1-reservations-recent
       tags: [Permits]
@@ -595,7 +595,7 @@ paths:
             application/problem+json:
               schema: { $ref: "#/components/schemas/Problem" }
 
-  /apx/v1/permits/pools/{rightSpecId}/availability:
+  /v1/permits/pools/{rightSpecId}/availability:
     get:
       operationId: get-apx-v1-permits-pools-rightspecid-availability
       tags: [Permits]
@@ -615,7 +615,7 @@ paths:
             application/problem+json:
               schema: { $ref: "#/components/schemas/Problem" }
 
-  /apx/v1/permits/issue:
+  /v1/permits/issue:
     post:
       operationId: post-apx-v1-permits-issue
       tags: [Permits]
@@ -642,7 +642,7 @@ paths:
               schema: { $ref: "#/components/schemas/Problem" }
 
   # ===== Accounts, payments, LPR (optional classes; Part 13) ===== #
-  /apx/v1/accounts:
+  /v1/accounts:
     get:
       operationId: get-apx-v1-accounts
       tags: [Accounts]
@@ -665,7 +665,7 @@ paths:
                     type: array
                     items: { $ref: "#/components/schemas/Account" }
 
-  /apx/v1/accounts/{id}:
+  /v1/accounts/{id}:
     get:
       operationId: get-apx-v1-accounts-id
       tags: [Accounts]
@@ -685,7 +685,7 @@ paths:
             application/problem+json:
               schema: { $ref: "#/components/schemas/Problem" }
 
-  /apx/v1/payments:
+  /v1/payments:
     post:
       operationId: post-apx-v1-payments
       tags: [Accounts]
@@ -741,7 +741,7 @@ paths:
                     type: array
                     items: { $ref: "#/components/schemas/PaymentRecord" }
 
-  /apx/v1/payments/{id}/postings:
+  /v1/payments/{id}/postings:
     post:
       operationId: post-apx-v1-payments-id-postings
       tags: [Accounts]
@@ -761,7 +761,7 @@ paths:
             application/problem+json:
               schema: { $ref: "#/components/schemas/Problem" }
 
-  /apx/v1/lpr/reads:
+  /v1/lpr/reads:
     get:
       operationId: get-apx-v1-lpr-reads
       tags: [LPR]
@@ -785,7 +785,7 @@ paths:
                     items: { $ref: "#/components/schemas/LprRead" }
 
   # ===== Alerts (conformance class apx-alerts) ===== #
-  /apx/v1/alerts:
+  /v1/alerts:
     post:
       operationId: post-apx-v1-alerts
       tags: [Alerts]
@@ -861,7 +861,7 @@ paths:
                     items:
                       $ref: "#/components/schemas/Alert"
 
-  /apx/v1/alerts/{id}:
+  /v1/alerts/{id}:
     get:
       operationId: get-apx-v1-alerts-id
       tags: [Alerts]
@@ -886,7 +886,7 @@ paths:
               schema:
                 $ref: "#/components/schemas/Problem"
 
-  /apx/v1/alerts/{id}/acknowledge:
+  /v1/alerts/{id}/acknowledge:
     post:
       operationId: post-apx-v1-alerts-id-acknowledge
       tags: [Alerts]
@@ -911,7 +911,7 @@ paths:
               schema:
                 $ref: "#/components/schemas/Problem"
 
-  /apx/v1/alerts/{id}/resolve:
+  /v1/alerts/{id}/resolve:
     post:
       operationId: post-apx-v1-alerts-id-resolve
       tags: [Alerts]
@@ -937,7 +937,7 @@ paths:
                 $ref: "#/components/schemas/Problem"
 
   # ===== Discovery (optional class apx-discovery; Part 16) ===== #
-  /apx/v1/discovery:
+  /v1/discovery:
     get:
       operationId: get-apx-v1-discovery
       tags: [Discovery]
@@ -971,7 +971,7 @@ paths:
         the APDS version this implementation extends, supported APX
         conformance classes, and code-list registry locations.
 
-        Served at the server root (NOT under `/apx/v1`), per RFC 8615.
+        Served at the server root (NOT under `/v1`), per RFC 8615.
       responses:
         "200":
           description: Bootstrap configuration

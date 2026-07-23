@@ -55,11 +55,11 @@ When data changes or a command progresses, POST one JSON envelope
 
 | Endpoint | Maps to your existing function |
 |---|---|
-| `POST /apx/v1/commands` — `vendGate` | Open the gate once |
+| `POST /v1/commands` — `vendGate` | Open the gate once |
 | — `lostTicket` | Issue lost ticket; fee = the `lostTicketFee` flat line in your rate deck |
 | — `pushRate` | Apply a rate table to a lane |
 | — `applyValidation` | Apply a merchant validation to a ticket (reject unknown providers: 422) |
-| `GET /apx/v1/commands/{id}` · `POST …/cancel` | Status polling / cancel before dispatch |
+| `GET /v1/commands/{id}` · `POST …/cancel` | Status polling / cancel before dispatch |
 
 Three rules on every command: **require `Idempotency-Key`** (replay returns
 the original, never re-executes), **honor `expiryTime`** (a stale gate-vend
@@ -70,9 +70,9 @@ must not fire), **append every state change to `statusHistory`**
 
 | Endpoint | What it returns |
 |---|---|
-| `GET /apx/v1/lanes/{id}/current` | The ticket in the machine now: amount due, validations, paid-in-full (+ monthly-credential context if presented) |
-| `GET /apx/v1/validations/providers?place=` | Who may validate here, and what each validation is worth |
-| `GET /apx/v1/devices` · `/{id}` | Live state per device: `available / occupied / inoperative / outOfService / fault / unknown` |
+| `GET /v1/lanes/{id}/current` | The ticket in the machine now: amount due, validations, paid-in-full (+ monthly-credential context if presented) |
+| `GET /v1/validations/providers?place=` | Who may validate here, and what each validation is worth |
+| `GET /v1/devices` · `/{id}` | Live state per device: `available / occupied / inoperative / outOfService / fault / unknown` |
 
 ## Prove it
 

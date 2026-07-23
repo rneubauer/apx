@@ -55,7 +55,7 @@ export function registerControlRoutes(
     return updated;
   };
 
-  app.post('/apx/v1/commands', async (request, reply) => {
+  app.post('/v1/commands', async (request, reply) => {
     const principal = requireScope(request, reply, 'apx.control:execute');
     if (!principal) return;
     const key = request.headers['idempotency-key'] as string | undefined;
@@ -151,7 +151,7 @@ export function registerControlRoutes(
     return reply.status(202).send(commands().get(command.id));
   });
 
-  app.get('/apx/v1/commands/:id', async (request, reply) => {
+  app.get('/v1/commands/:id', async (request, reply) => {
     if (!requireScope(request, reply, 'apx.control:read')) return;
     const { id } = request.params as { id: string };
     try {
@@ -161,7 +161,7 @@ export function registerControlRoutes(
     }
   });
 
-  app.post('/apx/v1/commands/:id/cancel', async (request, reply) => {
+  app.post('/v1/commands/:id/cancel', async (request, reply) => {
     const principal = requireScope(request, reply, 'apx.control:execute');
     if (!principal) return;
     const { id } = request.params as { id: string };
@@ -178,12 +178,12 @@ export function registerControlRoutes(
   });
 
   // --- Device status overlay ---
-  app.get('/apx/v1/devices', async (request, reply) => {
+  app.get('/v1/devices', async (request, reply) => {
     if (!requireScope(request, reply, 'apx.control:read')) return;
     return reply.send({ data: devices.list() });
   });
 
-  app.get('/apx/v1/devices/:id', async (request, reply) => {
+  app.get('/v1/devices/:id', async (request, reply) => {
     if (!requireScope(request, reply, 'apx.control:read')) return;
     const { id } = request.params as { id: string };
     const state = devices.get(id);
@@ -192,7 +192,7 @@ export function registerControlRoutes(
   });
 
   // --- Lane inquiry (screen-pop) ---
-  app.get('/apx/v1/lanes/:id/current', async (request, reply) => {
+  app.get('/v1/lanes/:id/current', async (request, reply) => {
     if (!requireScope(request, reply, 'apx.control:read')) return;
     const { id } = request.params as { id: string };
     try {
@@ -204,7 +204,7 @@ export function registerControlRoutes(
   });
 
   // --- Validation providers ---
-  app.get('/apx/v1/validations/providers', async (request, reply) => {
+  app.get('/v1/validations/providers', async (request, reply) => {
     if (!requireScope(request, reply, 'apx.control:read')) return;
     const { place } = request.query as { place?: string };
     if (!place) return problem(reply, 400, 'target-not-found', 'place query parameter required');

@@ -144,7 +144,7 @@ describe('customer reservation history', () => {
   it('returns the same customer’s reservations by plate, newest first, capped at 10', async () => {
     const byPlate = await ctx.app.inject({
       method: 'GET',
-      url: '/apx/v1/reservations/recent?plate=SYN-1234',
+      url: '/v1/reservations/recent?plate=SYN-1234',
       headers: auth(),
     });
     const initial = byPlate.json().data;
@@ -155,7 +155,7 @@ describe('customer reservation history', () => {
     // Requires plate or holder.
     const bad = await ctx.app.inject({
       method: 'GET',
-      url: '/apx/v1/reservations/recent',
+      url: '/v1/reservations/recent',
       headers: auth(),
     });
     expect(bad.statusCode).toBe(400);
@@ -184,7 +184,7 @@ describe('customer reservation history', () => {
     }
     const capped = await ctx.app.inject({
       method: 'GET',
-      url: '/apx/v1/reservations/recent?plate=SYN-1234',
+      url: '/v1/reservations/recent?plate=SYN-1234',
       headers: auth(),
     });
     expect(capped.json().data).toHaveLength(10);
@@ -196,7 +196,7 @@ describe('permits (pooled RightSpecifications)', () => {
   it('pool availability → multi-vehicle issuance → exhaustion 409', async () => {
     const availability = await ctx.app.inject({
       method: 'GET',
-      url: `/apx/v1/permits/pools/${IDS.pooledRightSpec}/availability`,
+      url: `/v1/permits/pools/${IDS.pooledRightSpec}/availability`,
       headers: auth(),
     });
     expect(availability.json()).toMatchObject({ capacity: 2, issued: 0, available: 2 });
@@ -204,7 +204,7 @@ describe('permits (pooled RightSpecifications)', () => {
     // Issue one permit valid for TWO vehicles (APDS annual-permit pattern).
     const issued = await ctx.app.inject({
       method: 'POST',
-      url: '/apx/v1/permits/issue',
+      url: '/v1/permits/issue',
       headers: auth(),
       payload: {
         rightSpecification: {
@@ -224,7 +224,7 @@ describe('permits (pooled RightSpecifications)', () => {
 
     const after = await ctx.app.inject({
       method: 'GET',
-      url: `/apx/v1/permits/pools/${IDS.pooledRightSpec}/availability`,
+      url: `/v1/permits/pools/${IDS.pooledRightSpec}/availability`,
       headers: auth(),
     });
     expect(after.json()).toMatchObject({ issued: 1, available: 1 });
@@ -232,7 +232,7 @@ describe('permits (pooled RightSpecifications)', () => {
     // Fill the pool, then expect exhaustion.
     await ctx.app.inject({
       method: 'POST',
-      url: '/apx/v1/permits/issue',
+      url: '/v1/permits/issue',
       headers: auth(),
       payload: {
         rightSpecification: {
@@ -245,7 +245,7 @@ describe('permits (pooled RightSpecifications)', () => {
     });
     const exhausted = await ctx.app.inject({
       method: 'POST',
-      url: '/apx/v1/permits/issue',
+      url: '/v1/permits/issue',
       headers: auth(),
       payload: {
         rightSpecification: {

@@ -14,7 +14,7 @@ export function registerAccountRoutes(app: FastifyInstance, store: Store): void 
   const payments = () => store.for('PaymentRecord');
   const idempotency = new Map<string, { bodyHash: string; paymentId: string }>();
 
-  app.get('/apx/v1/accounts', async (request, reply) => {
+  app.get('/v1/accounts', async (request, reply) => {
     if (!requireScope(request, reply, 'apx.accounts:read')) return;
     const query = request.query as Record<string, string | undefined>;
     let list = accounts().list();
@@ -29,7 +29,7 @@ export function registerAccountRoutes(app: FastifyInstance, store: Store): void 
     return reply.send({ data: list });
   });
 
-  app.get('/apx/v1/accounts/:id', async (request, reply) => {
+  app.get('/v1/accounts/:id', async (request, reply) => {
     if (!requireScope(request, reply, 'apx.accounts:read')) return;
     const { id } = request.params as { id: string };
     try {
@@ -39,7 +39,7 @@ export function registerAccountRoutes(app: FastifyInstance, store: Store): void 
     }
   });
 
-  app.post('/apx/v1/payments', async (request, reply) => {
+  app.post('/v1/payments', async (request, reply) => {
     if (!requireScope(request, reply, 'apx.payments:write')) return;
     const key = request.headers['idempotency-key'] as string | undefined;
     if (!key) {
@@ -88,7 +88,7 @@ export function registerAccountRoutes(app: FastifyInstance, store: Store): void 
     return reply.status(201).send(payment);
   });
 
-  app.post('/apx/v1/payments/:id/postings', async (request, reply) => {
+  app.post('/v1/payments/:id/postings', async (request, reply) => {
     if (!requireScope(request, reply, 'apx.payments:write')) return;
     const { id } = request.params as { id: string };
     let payment;
@@ -119,7 +119,7 @@ export function registerAccountRoutes(app: FastifyInstance, store: Store): void 
     return reply.status(201).send(posting);
   });
 
-  app.get('/apx/v1/payments', async (request, reply) => {
+  app.get('/v1/payments', async (request, reply) => {
     if (!requireScope(request, reply, 'apx.accounts:read')) return;
     const query = request.query as Record<string, string | undefined>;
     let list = payments().list();

@@ -33,7 +33,7 @@ describe('accounts & payments (2018 Desirable tier)', () => {
     // Lookup by phone, card, and plate all find the same account.
     const byPhone = await ctx.app.inject({
       method: 'GET',
-      url: '/apx/v1/accounts?phone=%2B13125550100',
+      url: '/v1/accounts?phone=%2B13125550100',
       headers: auth(),
     });
     expect(byPhone.json().data).toHaveLength(1);
@@ -42,7 +42,7 @@ describe('accounts & payments (2018 Desirable tier)', () => {
 
     const byPlate = await ctx.app.inject({
       method: 'GET',
-      url: '/apx/v1/accounts?plate=SYN-1234',
+      url: '/v1/accounts?plate=SYN-1234',
       headers: auth(),
     });
     expect(byPlate.json().data[0].id).toBe(account.id);
@@ -50,7 +50,7 @@ describe('accounts & payments (2018 Desirable tier)', () => {
     // Take a payment against the account.
     const payment = await ctx.app.inject({
       method: 'POST',
-      url: '/apx/v1/payments',
+      url: '/v1/payments',
       headers: auth({ 'idempotency-key': 'pay-1' }),
       payload: {
         account: { id: account.id, className: 'Account' },
@@ -66,7 +66,7 @@ describe('accounts & payments (2018 Desirable tier)', () => {
     // Accounting write-back (PARIS-style).
     const posting = await ctx.app.inject({
       method: 'POST',
-      url: `/apx/v1/payments/${record.id}/postings`,
+      url: `/v1/payments/${record.id}/postings`,
       headers: auth(),
       payload: { postedTo: 'paris', account: { id: account.id, className: 'Account' } },
     });
@@ -79,7 +79,7 @@ describe('accounts & payments (2018 Desirable tier)', () => {
   it('declines invalid payments and enforces idempotency', async () => {
     const declined = await ctx.app.inject({
       method: 'POST',
-      url: '/apx/v1/payments',
+      url: '/v1/payments',
       headers: auth({ 'idempotency-key': 'pay-decline' }),
       payload: { amount: { type: 'USD', value: 13.13 }, method: 'card' },
     });
@@ -88,7 +88,7 @@ describe('accounts & payments (2018 Desirable tier)', () => {
 
     const noKey = await ctx.app.inject({
       method: 'POST',
-      url: '/apx/v1/payments',
+      url: '/v1/payments',
       headers: auth(),
       payload: { amount: { type: 'USD', value: 5 } },
     });
@@ -98,7 +98,7 @@ describe('accounts & payments (2018 Desirable tier)', () => {
   it('payment history by ticket last-4 honors the 8-hour privacy window', async () => {
     await ctx.app.inject({
       method: 'POST',
-      url: '/apx/v1/payments',
+      url: '/v1/payments',
       headers: auth({ 'idempotency-key': 'pay-ticket' }),
       payload: {
         ticketNumber: 'T-1001',
@@ -111,7 +111,7 @@ describe('accounts & payments (2018 Desirable tier)', () => {
     // Transient lookup of last resort: card tail digits (works with 3 digits too).
     const byCard = await ctx.app.inject({
       method: 'GET',
-      url: '/apx/v1/payments?cardLast4=123',
+      url: '/v1/payments?cardLast4=123',
       headers: auth(),
     });
     expect(byCard.json().data).toHaveLength(1);
@@ -119,7 +119,7 @@ describe('accounts & payments (2018 Desirable tier)', () => {
 
     const recent = await ctx.app.inject({
       method: 'GET',
-      url: '/apx/v1/payments?ticketLast4=1001',
+      url: '/v1/payments?ticketLast4=1001',
       headers: auth(),
     });
     expect(recent.json().data).toHaveLength(1);
@@ -128,7 +128,7 @@ describe('accounts & payments (2018 Desirable tier)', () => {
     // A date-scoped query for an old day returns nothing (no fabrication).
     const old = await ctx.app.inject({
       method: 'GET',
-      url: '/apx/v1/payments?ticketLast4=1001&date=2020-01-01',
+      url: '/v1/payments?ticketLast4=1001&date=2020-01-01',
       headers: auth(),
     });
     expect(old.json().data).toHaveLength(0);
@@ -139,7 +139,7 @@ describe('LPR cross-lookup (apx-lpr)', () => {
   it('plate → ticket and ticket → plate round-trip with screenshot', async () => {
     const byPlate = await ctx.app.inject({
       method: 'GET',
-      url: '/apx/v1/lpr/reads?plate=SYN-1234',
+      url: '/v1/lpr/reads?plate=SYN-1234',
       headers: auth(),
     });
     const read = byPlate.json().data[0];
@@ -154,7 +154,7 @@ describe('LPR cross-lookup (apx-lpr)', () => {
 
     const byTicket = await ctx.app.inject({
       method: 'GET',
-      url: '/apx/v1/lpr/reads?ticket=T-1001',
+      url: '/v1/lpr/reads?ticket=T-1001',
       headers: auth(),
     });
     const reverse = byTicket.json().data[0];
@@ -182,7 +182,7 @@ describe('LPR cross-lookup (apx-lpr)', () => {
 
     const lookup = await ctx.app.inject({
       method: 'GET',
-      url: '/apx/v1/lpr/reads?plate=SYN-5678',
+      url: '/v1/lpr/reads?plate=SYN-5678',
       headers: auth(),
     });
     expect(lookup.json().data[0].confidence).toBeCloseTo(0.88);

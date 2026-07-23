@@ -19,14 +19,14 @@ See the `Alert` schema. Key rules:
 
 ## 7.2 Endpoints
 
-- `POST /apx/v1/alerts` — raise. **`Idempotency-Key` header REQUIRED**
+- `POST /v1/alerts` — raise. **`Idempotency-Key` header REQUIRED**
   (device retry storms must not duplicate alerts): replaying the same key
   with the same body returns the original alert; the same key with a
   different body is `409 idempotency-conflict`. Scope `apx.alerts:write`.
-- `GET /apx/v1/alerts` — filters: `status`, `severityFloor`, `type`,
+- `GET /v1/alerts` — filters: `status`, `severityFloor`, `type`,
   `place` (subtree), `since` (detectionTime ≥). Scope `apx.alerts:read`.
-- `GET /apx/v1/alerts/{id}`.
-- `POST /apx/v1/alerts/{id}/acknowledge` and `/resolve` — lifecycle
+- `GET /v1/alerts/{id}`.
+- `POST /v1/alerts/{id}/acknowledge` and `/resolve` — lifecycle
   transitions (scope `apx.alerts:write`). Illegal transitions (e.g.
   resolving a resolved alert) are `409`.
 

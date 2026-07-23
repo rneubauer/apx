@@ -74,7 +74,7 @@ export function registerWebhookRoutes(app: FastifyInstance, dispatcher: Dispatch
   });
 
   // --- SSE stream (apx-events-sse) ---
-  app.get('/apx/v1/events/stream', async (request, reply) => {
+  app.get('/v1/events/stream', async (request, reply) => {
     if (!requireScope(request, reply, 'apx.subscriptions:manage')) return;
     const { subscription: subscriptionId } = request.query as { subscription?: string };
     const subscription = subscriptionId ? dispatcher.subscriptions.get(subscriptionId) : undefined;

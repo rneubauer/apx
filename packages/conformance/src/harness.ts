@@ -205,7 +205,7 @@ export async function runConformance(options: HarnessOptions): Promise<CheckResu
 
   // --- apx-alerts ---
   if (claimed.has('apx-alerts')) {
-    const noKey = await authed('/apx/v1/alerts', {
+    const noKey = await authed('/v1/alerts', {
       method: 'POST',
       body: JSON.stringify({ alertType: 'deviceFault', severity: 'info' }),
     });
@@ -213,13 +213,13 @@ export async function runConformance(options: HarnessOptions): Promise<CheckResu
 
     const key = `conf-${randomUUID()}`;
     const payload = JSON.stringify({ alertType: 'deviceFault', severity: 'info' });
-    const first = await authed('/apx/v1/alerts', {
+    const first = await authed('/v1/alerts', {
       method: 'POST',
       headers: { 'idempotency-key': key },
       body: payload,
     });
     const firstBody = await first.json().catch(() => ({}));
-    const replay = await authed('/apx/v1/alerts', {
+    const replay = await authed('/v1/alerts', {
       method: 'POST',
       headers: { 'idempotency-key': key },
       body: payload,
@@ -231,7 +231,7 @@ export async function runConformance(options: HarnessOptions): Promise<CheckResu
       first.status === 201 && replay.status === 200 && firstBody.id === replayBody.id
     );
 
-    const resolve = await authed(`/apx/v1/alerts/${firstBody.id}/resolve`, { method: 'POST' });
+    const resolve = await authed(`/v1/alerts/${firstBody.id}/resolve`, { method: 'POST' });
     const resolveBody = await resolve.json().catch(() => ({}));
     record(
       'alert lifecycle transition appends to statusHistory',
@@ -245,7 +245,7 @@ export async function runConformance(options: HarnessOptions): Promise<CheckResu
 
   // --- apx-control ---
   if (claimed.has('apx-control')) {
-    const noKey = await authed('/apx/v1/commands', {
+    const noKey = await authed('/v1/commands', {
       method: 'POST',
       body: JSON.stringify({
         commandType: 'displayMessage',
@@ -256,13 +256,13 @@ export async function runConformance(options: HarnessOptions): Promise<CheckResu
 
     // Find a real device target through the device overlay.
     let targetId: string | undefined;
-    const devices = await authed('/apx/v1/devices');
+    const devices = await authed('/v1/devices');
     if (devices.ok) {
       const body = await devices.json().catch(() => ({}));
       targetId = body.data?.[0]?.device?.id;
     }
     if (targetId) {
-      const command = await authed('/apx/v1/commands', {
+      const command = await authed('/v1/commands', {
         method: 'POST',
         headers: { 'idempotency-key': `conf-${randomUUID()}` },
         body: JSON.stringify({
@@ -275,7 +275,7 @@ export async function runConformance(options: HarnessOptions): Promise<CheckResu
       let terminal = false;
       const deadline = Date.now() + 5000;
       while (!terminal && Date.now() < deadline) {
-        const poll = await authed(`/apx/v1/commands/${commandBody.id}`);
+        const poll = await authed(`/v1/commands/${commandBody.id}`);
         const state = (await poll.json().catch(() => ({}))).status;
         terminal = ['succeeded', 'failed', 'expired', 'cancelled', 'rejected'].includes(state);
         if (!terminal) await new Promise((resolve) => setTimeout(resolve, 100));
@@ -297,7 +297,7 @@ export async function runConformance(options: HarnessOptions): Promise<CheckResu
 
   // --- apx-discovery ---
   if (claimed.has('apx-discovery')) {
-    const discovery = await authed('/apx/v1/discovery');
+    const discovery = await authed('/v1/discovery');
     const doc = await discovery.json().catch(() => ({}));
     record(
       'discovery document reflects this credential',

@@ -43,7 +43,7 @@ CloudEvents-aligned). For APDS EventTypeEnum topics, `data` is the APDS
 
 ## 8.4 SSE (optional class `apx-events-sse`)
 
-- `GET /apx/v1/events/stream?subscription={id}` with `Accept:
+- `GET /v1/events/stream?subscription={id}` with `Accept:
   text/event-stream`, authenticated like any APX call. The subscription
   MUST have `transport: sse`.
 - Each event: `id:` = a monotonically increasing per-subscription sequence,

@@ -33,6 +33,6 @@ Green = you may claim the classes you advertise.
 
 1. `GET /.well-known/apx-configuration` → token endpoint + classes.
 2. OAuth2 client-credentials → bearer token (scopes `apx.<domain>:<verb>`).
-3. `GET /apx/v1/discovery` → exactly what YOUR credential can do.
+3. `GET /v1/discovery` → exactly what YOUR credential can do.
 4. Pull data via the native APDS routes; keep in sync with
    `mode=change&cursor=…`; subscribe at `/webhooks` for push.

@@ -17,7 +17,7 @@ builds on them. `apx-events-sse`, `apx-discovery`, `apx-accounts`,
 
 ## 3.2 Versioning
 
-- The APX major version is carried in the URL (`/apx/v1`). APDS-native routes
+- The APX major version is carried in the URL (`/v1`). APDS-native routes
   are versioned by APDS itself.
 - Within a major version, all changes are **additive only**: new optional
   fields, new endpoints, new code-list entries, new conformance classes.

@@ -14,14 +14,14 @@ non-voided transaction to `disputed`, resolution to `resolved` (with
 
 ## 15.2 Endpoints (scope `apx.tolling:manage`)
 
-- `POST /apx/v1/tolling/transactions` — create from Observation refs +
+- `POST /v1/tolling/transactions` — create from Observation refs +
   credential + pricing. **Idempotency-Key REQUIRED** (gantry retry storms).
-- `GET /apx/v1/tolling/transactions?plate=&status=` / `GET …/{id}`.
-- `POST /apx/v1/tolling/transactions/{id}/payment` — attach the settling
+- `GET /v1/tolling/transactions?plate=&status=` / `GET …/{id}`.
+- `POST /v1/tolling/transactions/{id}/payment` — attach the settling
   Payment reference → `paid`.
-- `POST /apx/v1/tolling/transactions/{id}/disputes` — open a dispute
+- `POST /v1/tolling/transactions/{id}/disputes` — open a dispute
   (`reason`). Re-opening a resolved dispute is `409 dispute-closed`.
-- `POST /apx/v1/tolling/transactions/{id}/disputes/resolve` — resolve with
+- `POST /v1/tolling/transactions/{id}/disputes/resolve` — resolve with
   `resolution`.
 
 ## 15.3 Eventing

@@ -57,7 +57,7 @@ describe('conformance harness', () => {
       reply.status(201).send({ id: 'always-same' })
     );
     broken.get('/contacts/:id', async () => ({ id: 'always-same' }));
-    broken.post('/apx/v1/alerts', async (_request, reply) =>
+    broken.post('/v1/alerts', async (_request, reply) =>
       reply.status(201).send({ id: 'no-key-needed', status: 'raised' })
     );
     await broken.listen({ port: 0, host: '127.0.0.1' });

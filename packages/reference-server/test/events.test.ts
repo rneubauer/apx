@@ -219,7 +219,7 @@ describe('delivery fabric', () => {
     const address = ctx.app.server.address();
     const port = typeof address === 'object' && address ? address.port : 0;
     const response = await fetch(
-      `http://127.0.0.1:${port}/apx/v1/events/stream?subscription=${subscription.id}`,
+      `http://127.0.0.1:${port}/v1/events/stream?subscription=${subscription.id}`,
       { headers: { ...auth(), 'last-event-id': '1', accept: 'text/event-stream' } }
     );
     expect(response.headers.get('content-type')).toContain('text/event-stream');

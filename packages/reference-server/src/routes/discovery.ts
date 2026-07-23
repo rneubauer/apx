@@ -30,31 +30,31 @@ const ENDPOINTS: EndpointSpec[] = [
   { path: '/webhooks', methods: ['GET', 'POST'], scope: 'apx.subscriptions:manage' },
   { path: '/webhooks/{id}', methods: ['PATCH', 'DELETE'], scope: 'apx.subscriptions:manage' },
   { path: '/webhooks/{id}/deliveries', methods: ['GET'], scope: 'apx.subscriptions:manage' },
-  { path: '/apx/v1/events/stream', methods: ['GET'], scope: 'apx.subscriptions:manage' },
-  { path: '/apx/v1/commands', methods: ['POST'], scope: 'apx.control:execute' },
-  { path: '/apx/v1/commands/{id}', methods: ['GET'], scope: 'apx.control:read' },
-  { path: '/apx/v1/commands/{id}/cancel', methods: ['POST'], scope: 'apx.control:execute' },
-  { path: '/apx/v1/devices', methods: ['GET'], scope: 'apx.control:read' },
-  { path: '/apx/v1/devices/{id}', methods: ['GET'], scope: 'apx.control:read' },
-  { path: '/apx/v1/lanes/{id}/current', methods: ['GET'], scope: 'apx.control:read' },
-  { path: '/apx/v1/validations/providers', methods: ['GET'], scope: 'apx.control:read' },
-  { path: '/apx/v1/alerts', methods: ['GET'], scope: 'apx.alerts:read' },
-  { path: '/apx/v1/alerts', methods: ['POST'], scope: 'apx.alerts:write' },
-  { path: '/apx/v1/alerts/{id}/acknowledge', methods: ['POST'], scope: 'apx.alerts:write' },
-  { path: '/apx/v1/alerts/{id}/resolve', methods: ['POST'], scope: 'apx.alerts:write' },
-  { path: '/apx/v1/accounts', methods: ['GET'], scope: 'apx.accounts:read' },
-  { path: '/apx/v1/accounts/{id}', methods: ['GET'], scope: 'apx.accounts:read' },
-  { path: '/apx/v1/payments', methods: ['GET'], scope: 'apx.accounts:read' },
-  { path: '/apx/v1/payments', methods: ['POST'], scope: 'apx.payments:write' },
-  { path: '/apx/v1/payments/{id}/postings', methods: ['POST'], scope: 'apx.payments:write' },
-  { path: '/apx/v1/lpr/reads', methods: ['GET'], scope: 'apx.lpr:read' },
+  { path: '/v1/events/stream', methods: ['GET'], scope: 'apx.subscriptions:manage' },
+  { path: '/v1/commands', methods: ['POST'], scope: 'apx.control:execute' },
+  { path: '/v1/commands/{id}', methods: ['GET'], scope: 'apx.control:read' },
+  { path: '/v1/commands/{id}/cancel', methods: ['POST'], scope: 'apx.control:execute' },
+  { path: '/v1/devices', methods: ['GET'], scope: 'apx.control:read' },
+  { path: '/v1/devices/{id}', methods: ['GET'], scope: 'apx.control:read' },
+  { path: '/v1/lanes/{id}/current', methods: ['GET'], scope: 'apx.control:read' },
+  { path: '/v1/validations/providers', methods: ['GET'], scope: 'apx.control:read' },
+  { path: '/v1/alerts', methods: ['GET'], scope: 'apx.alerts:read' },
+  { path: '/v1/alerts', methods: ['POST'], scope: 'apx.alerts:write' },
+  { path: '/v1/alerts/{id}/acknowledge', methods: ['POST'], scope: 'apx.alerts:write' },
+  { path: '/v1/alerts/{id}/resolve', methods: ['POST'], scope: 'apx.alerts:write' },
+  { path: '/v1/accounts', methods: ['GET'], scope: 'apx.accounts:read' },
+  { path: '/v1/accounts/{id}', methods: ['GET'], scope: 'apx.accounts:read' },
+  { path: '/v1/payments', methods: ['GET'], scope: 'apx.accounts:read' },
+  { path: '/v1/payments', methods: ['POST'], scope: 'apx.payments:write' },
+  { path: '/v1/payments/{id}/postings', methods: ['POST'], scope: 'apx.payments:write' },
+  { path: '/v1/lpr/reads', methods: ['GET'], scope: 'apx.lpr:read' },
   {
-    path: '/apx/v1/permits/pools/{rightSpecId}/availability',
+    path: '/v1/permits/pools/{rightSpecId}/availability',
     methods: ['GET'],
     scope: 'apx.permits:manage',
   },
-  { path: '/apx/v1/permits/issue', methods: ['POST'], scope: 'apx.permits:manage' },
-  { path: '/apx/v1/tolling/transactions', methods: ['GET', 'POST'], scope: 'apx.tolling:manage' },
+  { path: '/v1/permits/issue', methods: ['POST'], scope: 'apx.permits:manage' },
+  { path: '/v1/tolling/transactions', methods: ['GET', 'POST'], scope: 'apx.tolling:manage' },
 ];
 
 const CLASS_SCOPES: Record<string, string[]> = {
@@ -141,7 +141,7 @@ export function buildDiscoveryDocument(
 }
 
 export function registerDiscoveryRoutes(app: FastifyInstance, serverClasses: string[]): void {
-  app.get('/apx/v1/discovery', async (request, reply) => {
+  app.get('/v1/discovery', async (request, reply) => {
     const principal = getPrincipal(request);
     if (!principal) {
       return problem(reply, 401, 'unauthenticated', 'Missing or invalid bearer token');

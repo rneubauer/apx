@@ -47,9 +47,9 @@ an APX endpoint speaks only for the system behind it. Therefore:
 
 Permits = pooled RightSpecifications:
 
-- **Pool availability** — `GET /apx/v1/permits/pools/{rightSpecId}/availability`
+- **Pool availability** — `GET /v1/permits/pools/{rightSpecId}/availability`
   → `{capacity, issued, available}` (profile over APDS RightPool).
-- **Issue** — `POST /apx/v1/permits/issue` creates a native AssignedRight
+- **Issue** — `POST /v1/permits/issue` creates a native AssignedRight
   with multiple vehicle `credentials[]` (APDS annual-permit pattern: one
   right, many vehicles). Pool exhaustion is `409` with problem type
   `https://apx-standard.org/problems/pool-exhausted`.

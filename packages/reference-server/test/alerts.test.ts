@@ -32,7 +32,7 @@ const auth = (extra: Record<string, string> = {}) => ({
 function raise(payload: Record<string, unknown>, key: string) {
   return ctx.app.inject({
     method: 'POST',
-    url: '/apx/v1/alerts',
+    url: '/v1/alerts',
     headers: auth({ 'idempotency-key': key }),
     payload,
   });
@@ -79,7 +79,7 @@ describe('alerts', () => {
 
     const acknowledged = await ctx.app.inject({
       method: 'POST',
-      url: `/apx/v1/alerts/${alert.id}/acknowledge`,
+      url: `/v1/alerts/${alert.id}/acknowledge`,
       headers: auth(),
       payload: { detail: 'tech dispatched' },
     });
@@ -87,7 +87,7 @@ describe('alerts', () => {
 
     const resolved = await ctx.app.inject({
       method: 'POST',
-      url: `/apx/v1/alerts/${alert.id}/resolve`,
+      url: `/v1/alerts/${alert.id}/resolve`,
       headers: auth(),
     });
     expect(resolved.json().status).toBe('resolved');
@@ -102,7 +102,7 @@ describe('alerts', () => {
     // Terminal state: further transitions conflict.
     const again = await ctx.app.inject({
       method: 'POST',
-      url: `/apx/v1/alerts/${alert.id}/resolve`,
+      url: `/v1/alerts/${alert.id}/resolve`,
       headers: auth(),
     });
     expect(again.statusCode).toBe(409);
@@ -113,7 +113,7 @@ describe('alerts', () => {
   it('requires Idempotency-Key and deduplicates replays', async () => {
     const noKey = await ctx.app.inject({
       method: 'POST',
-      url: '/apx/v1/alerts',
+      url: '/v1/alerts',
       headers: auth(),
       payload: { alertType: 'overstay', severity: 'warning' },
     });
@@ -142,7 +142,7 @@ describe('alerts', () => {
 
     const bySeverity = await ctx.app.inject({
       method: 'GET',
-      url: '/apx/v1/alerts?severityFloor=major',
+      url: '/v1/alerts?severityFloor=major',
       headers: auth(),
     });
     const severities = bySeverity.json().data.map((a: { severity: string }) => a.severity);
@@ -151,7 +151,7 @@ describe('alerts', () => {
     // Subtree: alerts on the entry LANE are found via the parent PLACE id.
     const byPlace = await ctx.app.inject({
       method: 'GET',
-      url: `/apx/v1/alerts?place=${IDS.place}`,
+      url: `/v1/alerts?place=${IDS.place}`,
       headers: auth(),
     });
     const types = byPlace.json().data.map((a: { alertType: string }) => a.alertType);

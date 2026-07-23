@@ -10,7 +10,7 @@ locations. This is how a client with nothing but a hostname gets started.
 
 ## 16.2 Credential-scoped capability document (the optional class)
 
-`GET /apx/v1/discovery` (authenticated, any APX scope):
+`GET /v1/discovery` (authenticated, any APX scope):
 
 - MUST reflect the presented token exactly — scopes, `apx_org`,
   `apx_places` — and return only what THIS client can use: conformance

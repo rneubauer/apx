@@ -29,14 +29,14 @@ describe('credential-scoped discovery (apx-discovery)', () => {
     const operatorDoc = (
       await ctx.app.inject({
         method: 'GET',
-        url: '/apx/v1/discovery',
+        url: '/v1/discovery',
         headers: { authorization: `Bearer ${operatorToken}` },
       })
     ).json();
     const lprDoc = (
       await ctx.app.inject({
         method: 'GET',
-        url: '/apx/v1/discovery',
+        url: '/v1/discovery',
         headers: { authorization: `Bearer ${lprToken}` },
       })
     ).json();
@@ -46,7 +46,7 @@ describe('credential-scoped discovery (apx-discovery)', () => {
     expect(operatorDoc.commandTypes).toContain('vendGate');
     expect(operatorDoc.conformanceClasses).toContain('apx-control');
     expect(operatorDoc.endpoints.map((e: { path: string }) => e.path)).toContain(
-      '/apx/v1/commands'
+      '/v1/commands'
     );
 
     // LPR vendor: place-limited, no control surface at all.
@@ -54,8 +54,8 @@ describe('credential-scoped discovery (apx-discovery)', () => {
     expect(lprDoc.commandTypes).toEqual([]);
     expect(lprDoc.conformanceClasses).not.toContain('apx-control');
     const lprPaths = lprDoc.endpoints.map((e: { path: string }) => e.path);
-    expect(lprPaths).toContain('/apx/v1/lpr/reads');
-    expect(lprPaths).not.toContain('/apx/v1/commands');
+    expect(lprPaths).toContain('/v1/lpr/reads');
+    expect(lprPaths).not.toContain('/v1/commands');
     expect(lprDoc.topics).toEqual([]); // no subscriptions:manage scope
 
     expect(JSON.stringify(operatorDoc)).not.toEqual(JSON.stringify(lprDoc));
@@ -65,18 +65,18 @@ describe('credential-scoped discovery (apx-discovery)', () => {
     const lprToken = await getToken('lpr-vendor', 'lpr-secret');
     const headers = { authorization: `Bearer ${lprToken}` };
 
-    // Advertised: /apx/v1/lpr/reads works.
+    // Advertised: /v1/lpr/reads works.
     const advertised = await ctx.app.inject({
       method: 'GET',
-      url: '/apx/v1/lpr/reads?plate=SYN-1234',
+      url: '/v1/lpr/reads?plate=SYN-1234',
       headers,
     });
     expect(advertised.statusCode).toBe(200);
 
-    // Not advertised: POST /apx/v1/commands is 403 for this client.
+    // Not advertised: POST /v1/commands is 403 for this client.
     const unadvertised = await ctx.app.inject({
       method: 'POST',
-      url: '/apx/v1/commands',
+      url: '/v1/commands',
       headers: { ...headers, 'idempotency-key': 'nope' },
       payload: {
         commandType: 'vendGate',
@@ -87,7 +87,7 @@ describe('credential-scoped discovery (apx-discovery)', () => {
   });
 
   it('requires authentication and advertises the class in the bootstrap', async () => {
-    const anonymous = await ctx.app.inject({ method: 'GET', url: '/apx/v1/discovery' });
+    const anonymous = await ctx.app.inject({ method: 'GET', url: '/v1/discovery' });
     expect(anonymous.statusCode).toBe(401);
 
     const bootstrap = await ctx.app.inject({

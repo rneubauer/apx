@@ -20,7 +20,7 @@ interface LprRead {
 }
 
 export function registerLprRoutes(app: FastifyInstance, store: Store): void {
-  app.get('/apx/v1/lpr/reads', async (request, reply) => {
+  app.get('/v1/lpr/reads', async (request, reply) => {
     if (!requireScope(request, reply, 'apx.lpr:read')) return;
     const { plate, ticket } = request.query as { plate?: string; ticket?: string };
     if (!plate && !ticket) {

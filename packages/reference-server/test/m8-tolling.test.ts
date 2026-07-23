@@ -68,7 +68,7 @@ describe('tolling (net-new surface, APDS conventions)', () => {
     };
     const created = await ctx.app.inject({
       method: 'POST',
-      url: '/apx/v1/tolling/transactions',
+      url: '/v1/tolling/transactions',
       headers: auth({ 'idempotency-key': 'toll-1' }),
       payload,
     });
@@ -79,7 +79,7 @@ describe('tolling (net-new surface, APDS conventions)', () => {
     // Idempotent replay returns the same transaction.
     const replay = await ctx.app.inject({
       method: 'POST',
-      url: '/apx/v1/tolling/transactions',
+      url: '/v1/tolling/transactions',
       headers: auth({ 'idempotency-key': 'toll-1' }),
       payload,
     });
@@ -89,7 +89,7 @@ describe('tolling (net-new surface, APDS conventions)', () => {
     // 3. Attach the settling payment.
     const paid = await ctx.app.inject({
       method: 'POST',
-      url: `/apx/v1/tolling/transactions/${transaction.id}/payment`,
+      url: `/v1/tolling/transactions/${transaction.id}/payment`,
       headers: auth(),
       payload: {
         payment: { id: '77777777-0000-4000-8000-000000000001', className: 'PaymentRecord' },
@@ -100,7 +100,7 @@ describe('tolling (net-new surface, APDS conventions)', () => {
     // 4. Dispute open → resolve.
     const disputed = await ctx.app.inject({
       method: 'POST',
-      url: `/apx/v1/tolling/transactions/${transaction.id}/disputes`,
+      url: `/v1/tolling/transactions/${transaction.id}/disputes`,
       headers: auth(),
       payload: { reason: 'wrong plate match' },
     });
@@ -108,7 +108,7 @@ describe('tolling (net-new surface, APDS conventions)', () => {
 
     const resolved = await ctx.app.inject({
       method: 'POST',
-      url: `/apx/v1/tolling/transactions/${transaction.id}/disputes/resolve`,
+      url: `/v1/tolling/transactions/${transaction.id}/disputes/resolve`,
       headers: auth(),
       payload: { resolution: 'refunded' },
     });
@@ -118,7 +118,7 @@ describe('tolling (net-new surface, APDS conventions)', () => {
     // Closed disputes stay closed.
     const again = await ctx.app.inject({
       method: 'POST',
-      url: `/apx/v1/tolling/transactions/${transaction.id}/disputes`,
+      url: `/v1/tolling/transactions/${transaction.id}/disputes`,
       headers: auth(),
       payload: { reason: 'retry' },
     });
@@ -134,7 +134,7 @@ describe('tolling (net-new surface, APDS conventions)', () => {
 
     const byPlate = await ctx.app.inject({
       method: 'GET',
-      url: '/apx/v1/tolling/transactions?plate=SYN-TOLL1',
+      url: '/v1/tolling/transactions?plate=SYN-TOLL1',
       headers: auth(),
     });
     expect(byPlate.json().data).toHaveLength(1);
