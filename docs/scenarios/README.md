@@ -12,6 +12,7 @@ comment is machine-validated against the bundled spec by
 | [03](03-data-sync-and-webhooks.md) | Data sync & signed webhooks | `apx-data`, `apx-events` |
 | [04](04-lpr-lost-ticket.md) | LPR transient parker with a lost ticket | `apx-lpr`, `apx-accounts`, `apx-payment-history`, `apx-control` |
 | [05](05-reservation-lifecycle.md) | Reservation lifecycle — quote to check-in to no-show | `apx-reservations`, `apx-events` |
+| [06](06-reservation-set-time-extension.md) | Reservation for a set time, then extending it — pre-arrival, mid-stay, and declined | `apx-reservations` |
 
 ## Conventions
 
