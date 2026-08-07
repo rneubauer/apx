@@ -1,0 +1,76 @@
+# APX alerts domain — fully net-new surface (no APDS alert/event classes exist).
+
+Alert:
+  title: Alert
+  description: |-
+    An operational condition requiring attention. Alert types are OPEN
+    (UserDefinedCodeList `apx-alert-types`, seeded from APDS Use Case C.2.2
+    transaction exceptions and space statuses); severity is CLOSED.
+  type: object
+  required:
+    - id
+    - version
+    - alertType
+    - severity
+    - status
+    - detectionTime
+  properties:
+    id:
+      type: string
+      format: uuid
+    version:
+      type: integer
+      minimum: 1
+    alertType:
+      type: string
+      description: definedValue from apx-alert-types or an implementer code list.
+      examples: [deviceFault]
+    severity:
+      type: string
+      enum: [info, warning, minor, major, critical]
+    status:
+      type: string
+      enum: [raised, acknowledged, resolved, expired]
+      description: "Lifecycle: raised → acknowledged → resolved | expired."
+    source:
+      type: object
+      description: Where the condition was detected.
+      properties:
+        device:
+          description: Reference to a SupplementalEquipment.
+          $ref: "../../../vendor/apds/4.1/apds-api-4.1.yaml#/components/schemas/Reference"
+        place:
+          type: string
+          format: uuid
+          description: HierarchyElement UUID (subtree semantics for filtering).
+    relatedEntity:
+      description: The APDS/APX entity this alert concerns (Session, AssignedRight, Command…).
+      $ref: "../../../vendor/apds/4.1/apds-api-4.1.yaml#/components/schemas/Reference"
+    occurrenceTime:
+      description: When the condition actually occurred (may precede detection).
+      $ref: "../../../vendor/apds/4.1/apds-api-4.1.yaml#/components/schemas/DateTime"
+    detectionTime:
+      $ref: "../../../vendor/apds/4.1/apds-api-4.1.yaml#/components/schemas/DateTime"
+    description:
+      description: Human-readable detail.
+      $ref: "../../../vendor/apds/4.1/apds-api-4.1.yaml#/components/schemas/MultilingualString"
+    statusHistory:
+      type: array
+      description: Immutable, append-only lifecycle audit (Part 4 §4.2).
+      items:
+        type: object
+        required: [state, time, actor]
+        properties:
+          state:
+            type: string
+          time:
+            $ref: "../../../vendor/apds/4.1/apds-api-4.1.yaml#/components/schemas/DateTime"
+          actor:
+            type: string
+            description: Client/agent principal that caused the transition.
+          detail:
+            type: string
+    recordInfo:
+      $ref: "../common/schemas.yaml#/RecordInfo"
+    extensions:
+      $ref: "../common/schemas.yaml#/Extensions"

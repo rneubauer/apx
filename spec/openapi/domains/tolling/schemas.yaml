@@ -1,0 +1,63 @@
+# APX tolling — the one NET-NEW surface (APDS has no toll entities).
+# Built to APDS conventions: toll point = SupplementalEquipment ref, toll
+# read = native Observation, money = AmountInCurrency, payment = Payment ref.
+
+TollTransaction:
+  title: TollTransaction
+  description: |-
+    A toll charge assembled from plate/transponder reads: Observation refs →
+    pricing → Payment ref, with a dispute lifecycle.
+  type: object
+  required: [id, version, tollPoint, transactionStatus]
+  properties:
+    id: { type: string, format: uuid }
+    version: { type: integer, minimum: 1 }
+    tollPoint:
+      description: Reference to the toll point (SupplementalEquipment).
+      $ref: "../../../vendor/apds/4.1/apds-api-4.1.yaml#/components/schemas/Reference"
+    observations:
+      type: array
+      description: The underlying APDS Observations (plate/transponder reads).
+      items:
+        $ref: "../../../vendor/apds/4.1/apds-api-4.1.yaml#/components/schemas/Reference"
+    credential:
+      type: object
+      description: The credential observed (licensePlate, rfid transponder…).
+      properties:
+        credentialType: { type: string }
+        credentialIdentification: { type: string }
+    pricing:
+      $ref: "../../../vendor/apds/4.1/apds-api-4.1.yaml#/components/schemas/AmountInCurrency"
+    payment:
+      description: Reference to the settling PaymentRecord/APDS Payment.
+      $ref: "../../../vendor/apds/4.1/apds-api-4.1.yaml#/components/schemas/Reference"
+    transactionStatus:
+      type: string
+      enum: [created, priced, paid, disputed, resolved, voided]
+    dispute:
+      type: object
+      properties:
+        reason: { type: string }
+        openedTime:
+          $ref: "../../../vendor/apds/4.1/apds-api-4.1.yaml#/components/schemas/DateTime"
+        resolvedTime:
+          $ref: "../../../vendor/apds/4.1/apds-api-4.1.yaml#/components/schemas/DateTime"
+        resolution:
+          type: string
+          description: upheld | refunded | adjusted (implementer code list).
+    statusHistory:
+      type: array
+      description: Immutable lifecycle audit (Part 4 §4.2).
+      items:
+        type: object
+        required: [state, time, actor]
+        properties:
+          state: { type: string }
+          time:
+            $ref: "../../../vendor/apds/4.1/apds-api-4.1.yaml#/components/schemas/DateTime"
+          actor: { type: string }
+          detail: { type: string }
+    recordInfo:
+      $ref: "../common/schemas.yaml#/RecordInfo"
+    extensions:
+      $ref: "../common/schemas.yaml#/Extensions"

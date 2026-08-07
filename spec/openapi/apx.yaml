@@ -1,0 +1,1123 @@
+openapi: 3.1.0
+
+info:
+  title: APX — APDS Parking eXtensions
+  version: 0.1.0
+  summary: An open companion standard to APDS 4.1
+  description: |-
+    **APX (APDS Parking eXtensions)** is an additive companion standard to the
+    [APDS 4.1 API](https://github.com/parkingdata/spec) (Alliance for Parking
+    Data Standards, published as ISO/TS 5206-1).
+
+    APX follows an **APDS-first prime directive**: wherever APDS 4.1 already
+    defines a route, schema, or convention, APX uses it verbatim (by `$ref`
+    into the vendored, unmodified `apds-api-4.1.yaml`). APX only adds what
+    APDS deliberately leaves out:
+
+    - **Data profile** — Full/Change update semantics, tombstones, and a
+      cursor-based change feed as additive parameters on APDS's native routes
+    - **Delivery fabric** — a superset-compatible profile of APDS `/webhooks`
+      (HMAC signing, normative retries, delivery ledger, SSE)
+    - **Control** — command plane for gates/PARCS/devices with idempotency,
+      lifecycle, and immutable audit
+    - **Alerts** — operational alerting with open taxonomies via APDS
+      UserDefinedCodeLists
+    - **Discovery** — credential-scoped capability documents
+    - **Accounts & payments, LPR, reservations, permits, tolling** — profiles
+      and additive resources over APDS entities
+
+    Extension identity follows the official APDS extension convention:
+    `apds-ext:apx:<class>@<version>` (Use Case Document §C.2.5), with
+    extensionName `apx`.
+  license:
+    name: MIT
+    url: https://opensource.org/licenses/MIT
+  contact:
+    name: APX Standard Working Group (stewarded by Umojo)
+    email: rneubauer@umojo.com
+  x-apds-extension:
+    extensionName: apx
+    extensionVersion: "1.0"
+    apdsVersion: "4.1"
+
+servers:
+  - url: https://api.example.com
+    description: |-
+      One host serves both surfaces: APDS-native routes at their verbatim
+      paths (/places, /sessions, /webhooks, …) and APX routes under the
+      explicit /v1 prefix.
+
+tags:
+  - name: Discovery
+    description: Bootstrap and credential-scoped capability discovery.
+  - name: Subscription
+    description: |-
+      APX delivery fabric — a superset-compatible profile of the APDS 4.1
+      /webhooks subscription endpoint (stock EventSubscription bodies work
+      unmodified). See written standard Part 8.
+  - name: Alerts
+    description: Operational alerting (net-new APX domain). See written standard Part 7.
+  - name: Control
+    description: Command plane, lane inquiry, validations, device status. See written standard Part 6.
+  - name: Accounts
+    description: Accounts, payments, accounting write-back, payment history. See written standard Part 13.
+  - name: LPR
+    description: Plate/ticket cross-lookup over APDS Observations. See written standard Part 13.
+  - name: Permits
+    description: Pooled permit issuance over RightSpecification/RightPool. See written standard Part 14.
+  - name: Tolling
+    description: Toll transactions binding Observations to pricing and Payments. See written standard Part 15.
+
+paths:
+  # ===== APDS 4.1 native routes, mounted VERBATIM from the vendored spec ===== #
+  # The APX data profile (Part 5) adds additive query parameters (mode, cursor)
+  # to the list operations; plain APDS clients are unaffected.
+  /places:
+    $ref: "../vendor/apds/4.1/apds-api-4.1.yaml#/paths/~1places"
+  /places/{id}:
+    $ref: "../vendor/apds/4.1/apds-api-4.1.yaml#/paths/~1places~1{id}"
+  /observations:
+    $ref: "../vendor/apds/4.1/apds-api-4.1.yaml#/paths/~1observations"
+  /contacts:
+    $ref: "../vendor/apds/4.1/apds-api-4.1.yaml#/paths/~1contacts"
+  /contacts/{contactId}:
+    $ref: "../vendor/apds/4.1/apds-api-4.1.yaml#/paths/~1contacts~1{contactId}"
+  /rights/specs:
+    $ref: "../vendor/apds/4.1/apds-api-4.1.yaml#/paths/~1rights~1specs"
+  /rights/specs/{id}:
+    $ref: "../vendor/apds/4.1/apds-api-4.1.yaml#/paths/~1rights~1specs~1{id}"
+  /rates:
+    $ref: "../vendor/apds/4.1/apds-api-4.1.yaml#/paths/~1rates"
+  /rates/{id}:
+    $ref: "../vendor/apds/4.1/apds-api-4.1.yaml#/paths/~1rates~1{id}"
+  /sessions:
+    $ref: "../vendor/apds/4.1/apds-api-4.1.yaml#/paths/~1sessions"
+  /sessions/{id}:
+    $ref: "../vendor/apds/4.1/apds-api-4.1.yaml#/paths/~1sessions~1{id}"
+  /rights/assigned:
+    $ref: "../vendor/apds/4.1/apds-api-4.1.yaml#/paths/~1rights~1assigned"
+  /rights/assigned/{id}:
+    $ref: "../vendor/apds/4.1/apds-api-4.1.yaml#/paths/~1rights~1assigned~1{id}"
+  /quotes:
+    $ref: "../vendor/apds/4.1/apds-api-4.1.yaml#/paths/~1quotes"
+
+  # ===== Delivery fabric: superset profile of APDS /webhooks ===== #
+  /webhooks:
+    post:
+      operationId: post-webhooks
+      tags: [Subscription]
+      summary: Subscribe to event topics (APDS-compatible superset)
+      description: |-
+        Creates a subscription. A stock APDS 4.1 `EventSubscription`
+        (`{endpoint, topics[]}` with EventTypeEnum values) is a valid body;
+        APX fields (transport, filters, secret) are additive. The signing
+        secret is returned exactly once, in this response.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ApxEventSubscription"
+      responses:
+        "201":
+          description: Subscription created (includes the signing secret, once).
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApxEventSubscription"
+        "400":
+          description: Missing/unknown topics or endpoint.
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+    get:
+      operationId: get-webhooks
+      tags: [Subscription]
+      summary: List subscriptions (APX additive operation)
+      description: Lists subscriptions visible to the caller. Secrets are never returned.
+      responses:
+        "200":
+          description: Paginated subscription list (APDS PaginatedList shape).
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  meta:
+                    $ref: "../vendor/apds/4.1/apds-api-4.1.yaml#/components/schemas/PaginatedListMeta"
+                  data:
+                    type: array
+                    items:
+                      $ref: "#/components/schemas/ApxEventSubscription"
+
+  /webhooks/{id}:
+    parameters:
+      - name: id
+        in: path
+        required: true
+        schema:
+          type: string
+        description: Unique identifier for the existing subscription
+    patch:
+      operationId: patch-webhooks-id
+      tags: [Subscription]
+      summary: Update a subscription (APX additive operation)
+      description: Update topics, endpoint, filters, status (resume a failed subscription), or rotate the secret.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ApxEventSubscription"
+      responses:
+        "200":
+          description: Updated subscription (secret never returned).
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApxEventSubscription"
+        "404":
+          description: No such subscription.
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+    delete:
+      operationId: delete-webhooks-id
+      tags: [Subscription]
+      summary: Revoke (delete) existing subscription
+      description: Native APDS 4.1 operation, unchanged (APDS ResponseStatus shape).
+      responses:
+        "200":
+          description: Subscription deleted.
+          content:
+            application/json:
+              schema:
+                $ref: "../vendor/apds/4.1/apds-api-4.1.yaml#/components/schemas/ResponseStatus"
+        "404":
+          description: Subscription not found.
+          content:
+            application/json:
+              schema:
+                $ref: "../vendor/apds/4.1/apds-api-4.1.yaml#/components/schemas/ResponseStatus"
+
+  /webhooks/{id}/deliveries:
+    get:
+      operationId: get-webhooks-id-deliveries
+      tags: [Subscription]
+      summary: Delivery ledger for a subscription
+      description: Returns the delivery records (attempts, status, last HTTP code) for auditing.
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          description: Delivery records.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    type: array
+                    items:
+                      $ref: "#/components/schemas/DeliveryRecord"
+
+  /v1/events/stream:
+    get:
+      operationId: get-apx-v1-events-stream
+      tags: [Subscription]
+      summary: Server-Sent Events stream (conformance class apx-events-sse)
+      description: |-
+        Streams EventEnvelopes for a subscription with `transport: sse`.
+        Each SSE event carries `id:` = per-subscription sequence and `data:`
+        = the envelope JSON. Reconnect with `Last-Event-ID` to resume.
+      parameters:
+        - name: subscription
+          in: query
+          required: true
+          schema:
+            type: string
+            format: uuid
+        - name: Last-Event-ID
+          in: header
+          required: false
+          schema:
+            type: string
+      responses:
+        "200":
+          description: text/event-stream of EventEnvelope objects.
+          content:
+            text/event-stream:
+              schema:
+                type: string
+
+  # ===== Control (conformance class apx-control) ===== #
+  /v1/commands:
+    post:
+      operationId: post-apx-v1-commands
+      tags: [Control]
+      summary: Execute a command (idempotent, perishable, audited)
+      description: |-
+        Requests an operational action (vendGate, lostTicket, pushRate,
+        applyValidation, …). Idempotency-Key REQUIRED. Returns 202 with the
+        Command; poll GET /v1/commands/{id} or subscribe to
+        apx.control.command.status.v1. Requires scope apx.control:execute
+        AND a place grant covering the target.
+      parameters:
+        - name: Idempotency-Key
+          in: header
+          required: true
+          schema: { type: string }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/Command"
+      responses:
+        "202":
+          description: Command accepted for asynchronous execution.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Command"
+        "400":
+          description: Missing Idempotency-Key, unknown commandType, or missing target.
+          content:
+            application/problem+json:
+              schema: { $ref: "#/components/schemas/Problem" }
+        "403":
+          description: Insufficient scope or place grant.
+          content:
+            application/problem+json:
+              schema: { $ref: "#/components/schemas/Problem" }
+        "409":
+          description: Idempotency-Key replayed with a different body.
+          content:
+            application/problem+json:
+              schema: { $ref: "#/components/schemas/Problem" }
+
+  /v1/commands/{id}:
+    get:
+      operationId: get-apx-v1-commands-id
+      tags: [Control]
+      summary: Read a command (lifecycle + audit trail)
+      description: Returns the Command including its immutable statusHistory.
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema: { type: string, format: uuid }
+      responses:
+        "200":
+          description: The command.
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/Command" }
+        "404":
+          description: No such command.
+          content:
+            application/problem+json:
+              schema: { $ref: "#/components/schemas/Problem" }
+
+  /v1/commands/{id}/cancel:
+    post:
+      operationId: post-apx-v1-commands-id-cancel
+      tags: [Control]
+      summary: Cancel a command before dispatch
+      description: Allowed in received/accepted states; afterwards 409 command-not-cancellable.
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema: { type: string, format: uuid }
+      responses:
+        "200":
+          description: Cancelled command.
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/Command" }
+        "409":
+          description: Not cancellable from the current state.
+          content:
+            application/problem+json:
+              schema: { $ref: "#/components/schemas/Problem" }
+
+  /v1/devices:
+    get:
+      operationId: get-apx-v1-devices
+      tags: [Control]
+      summary: List device status overlays
+      description: Live DeviceStatus for every SupplementalEquipment the caller may see.
+      responses:
+        "200":
+          description: Device status list.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    type: array
+                    items: { $ref: "#/components/schemas/DeviceStatus" }
+
+  /v1/devices/{id}:
+    get:
+      operationId: get-apx-v1-devices-id
+      tags: [Control]
+      summary: Read one device's status overlay
+      description: DeviceStatus keyed by the SupplementalEquipment id.
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema: { type: string, format: uuid }
+      responses:
+        "200":
+          description: Device status.
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/DeviceStatus" }
+        "404":
+          description: No such device.
+          content:
+            application/problem+json:
+              schema: { $ref: "#/components/schemas/Problem" }
+
+  /v1/lanes/{id}/current:
+    get:
+      operationId: get-apx-v1-lanes-id-current
+      tags: [Control]
+      summary: Lane inquiry — current transaction context (screen-pop)
+      description: |-
+        The ticket/credential currently in the machine at this lane, amount
+        due, applied validations, latest LPR read, and monthly-credential
+        context including the last 10 activity events (2018 requirement ①).
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema: { type: string, format: uuid }
+          description: VehicularAccess (lane) UUID.
+      responses:
+        "200":
+          description: Current lane status.
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/LaneStatus" }
+        "404":
+          description: No such lane or no live state.
+          content:
+            application/problem+json:
+              schema: { $ref: "#/components/schemas/Problem" }
+
+  /v1/validations/providers:
+    get:
+      operationId: get-apx-v1-validations-providers
+      tags: [Control]
+      summary: List validation providers for a place
+      description: The venues allowed to validate tickets at the place (2018 requirement ⑤).
+      parameters:
+        - name: place
+          in: query
+          required: true
+          schema: { type: string, format: uuid }
+      responses:
+        "200":
+          description: Validation providers.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    type: array
+                    items: { $ref: "#/components/schemas/ValidationProvider" }
+
+  # ===== Tolling (optional class; Part 15) ===== #
+  /v1/tolling/transactions:
+    post:
+      operationId: post-apx-v1-tolling-transactions
+      tags: [Tolling]
+      summary: Create a toll transaction (idempotent)
+      description: Binds Observation refs + credential + pricing. Idempotency-Key REQUIRED.
+      parameters:
+        - { name: Idempotency-Key, in: header, required: true, schema: { type: string } }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/TollTransaction" }
+      responses:
+        "201":
+          description: Created toll transaction.
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/TollTransaction" }
+    get:
+      operationId: get-apx-v1-tolling-transactions
+      tags: [Tolling]
+      summary: List/filter toll transactions
+      description: Filter by plate and status.
+      parameters:
+        - { name: plate, in: query, schema: { type: string } }
+        - { name: status, in: query, schema: { type: string } }
+      responses:
+        "200":
+          description: Matching transactions.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    type: array
+                    items: { $ref: "#/components/schemas/TollTransaction" }
+
+  /v1/tolling/transactions/{id}:
+    get:
+      operationId: get-apx-v1-tolling-transactions-id
+      tags: [Tolling]
+      summary: Read a toll transaction
+      description: Includes dispute state and the immutable statusHistory.
+      parameters:
+        - { name: id, in: path, required: true, schema: { type: string, format: uuid } }
+      responses:
+        "200":
+          description: The transaction.
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/TollTransaction" }
+        "404":
+          description: No such transaction.
+          content:
+            application/problem+json:
+              schema: { $ref: "#/components/schemas/Problem" }
+
+  /v1/tolling/transactions/{id}/payment:
+    post:
+      operationId: post-apx-v1-tolling-transactions-id-payment
+      tags: [Tolling]
+      summary: Attach the settling Payment reference
+      description: Transitions the transaction to paid.
+      parameters:
+        - { name: id, in: path, required: true, schema: { type: string, format: uuid } }
+      responses:
+        "200":
+          description: Paid transaction.
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/TollTransaction" }
+
+  /v1/tolling/transactions/{id}/disputes:
+    post:
+      operationId: post-apx-v1-tolling-transactions-id-disputes
+      tags: [Tolling]
+      summary: Open a dispute
+      description: Re-disputing a resolved/voided transaction is 409 dispute-closed.
+      parameters:
+        - { name: id, in: path, required: true, schema: { type: string, format: uuid } }
+      responses:
+        "200":
+          description: Disputed transaction.
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/TollTransaction" }
+        "409":
+          description: Dispute closed.
+          content:
+            application/problem+json:
+              schema: { $ref: "#/components/schemas/Problem" }
+
+  /v1/tolling/transactions/{id}/disputes/resolve:
+    post:
+      operationId: post-apx-v1-tolling-transactions-id-disputes-resolve
+      tags: [Tolling]
+      summary: Resolve a dispute
+      description: Resolution values (upheld/refunded/adjusted) are implementer code lists.
+      parameters:
+        - { name: id, in: path, required: true, schema: { type: string, format: uuid } }
+      responses:
+        "200":
+          description: Resolved transaction.
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/TollTransaction" }
+        "409":
+          description: No open dispute.
+          content:
+            application/problem+json:
+              schema: { $ref: "#/components/schemas/Problem" }
+
+  # ===== Reservations & permits (optional classes; Part 14) ===== #
+  # Reservations use NATIVE routes (/quotes, /rights/assigned) with the
+  # apds-ext:apx:reservation@1.0 extension; only permits add endpoints.
+  /v1/reservations/recent:
+    get:
+      operationId: get-apx-v1-reservations-recent
+      tags: [Permits]
+      summary: A customer's last 10 reservations
+      description: |-
+        Customer history for screen-pops and dispute handling: the same
+        holder's most recent reservations (newest planned start first),
+        resolved from a plate or an explicit RightHolder id.
+      parameters:
+        - { name: plate, in: query, schema: { type: string } }
+        - { name: holder, in: query, schema: { type: string, format: uuid } }
+        - name: place
+          in: query
+          description: |-
+            Scope results to one location (for implementations fronting
+            multiple places). Holder ids are LOCAL to each implementation —
+            there is no central user catalog; cross-system correlation is
+            by plate (Part 14 §14.1a).
+          schema: { type: string, format: uuid }
+      responses:
+        "200":
+          description: Up to 10 reservation summaries.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    type: array
+                    maxItems: 10
+                    items: { $ref: "#/components/schemas/ReservationSummary" }
+        "400":
+          description: Neither plate nor holder given.
+          content:
+            application/problem+json:
+              schema: { $ref: "#/components/schemas/Problem" }
+
+  /v1/permits/pools/{rightSpecId}/availability:
+    get:
+      operationId: get-apx-v1-permits-pools-rightspecid-availability
+      tags: [Permits]
+      summary: Pool availability for a pooled RightSpecification
+      description: Profile over APDS RightPool — capacity, issued, available.
+      parameters:
+        - { name: rightSpecId, in: path, required: true, schema: { type: string, format: uuid } }
+      responses:
+        "200":
+          description: Availability.
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/PoolAvailability" }
+        "404":
+          description: No pool for this RightSpecification.
+          content:
+            application/problem+json:
+              schema: { $ref: "#/components/schemas/Problem" }
+
+  /v1/permits/issue:
+    post:
+      operationId: post-apx-v1-permits-issue
+      tags: [Permits]
+      summary: Issue a permit from a pool (multi-vehicle credentials)
+      description: |-
+        Creates a native AssignedRight (APDS annual-permit pattern — one
+        right, many vehicles). Pool exhaustion is 409 pool-exhausted.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/PermitIssueRequest" }
+      responses:
+        "201":
+          description: The issued AssignedRight (native APDS entity).
+          content:
+            application/json:
+              schema:
+                $ref: "../vendor/apds/4.1/apds-api-4.1.yaml#/components/schemas/AssignedRight"
+        "409":
+          description: Pool exhausted.
+          content:
+            application/problem+json:
+              schema: { $ref: "#/components/schemas/Problem" }
+
+  # ===== Accounts, payments, LPR (optional classes; Part 13) ===== #
+  /v1/accounts:
+    get:
+      operationId: get-apx-v1-accounts
+      tags: [Accounts]
+      summary: Look up accounts by name/phone/card/plate
+      description: Any combination of filters; returns accounts with balances and status.
+      parameters:
+        - { name: name, in: query, schema: { type: string } }
+        - { name: phone, in: query, schema: { type: string } }
+        - { name: card, in: query, schema: { type: string } }
+        - { name: plate, in: query, schema: { type: string } }
+      responses:
+        "200":
+          description: Matching accounts.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    type: array
+                    items: { $ref: "#/components/schemas/Account" }
+
+  /v1/accounts/{id}:
+    get:
+      operationId: get-apx-v1-accounts-id
+      tags: [Accounts]
+      summary: Full account info
+      description: Returns the account including balance and status.
+      parameters:
+        - { name: id, in: path, required: true, schema: { type: string, format: uuid } }
+      responses:
+        "200":
+          description: The account.
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/Account" }
+        "404":
+          description: No such account.
+          content:
+            application/problem+json:
+              schema: { $ref: "#/components/schemas/Problem" }
+
+  /v1/payments:
+    post:
+      operationId: post-apx-v1-payments
+      tags: [Accounts]
+      summary: Take a payment (idempotent)
+      description: |-
+        Takes a payment against an account or ticket. Idempotency-Key
+        REQUIRED. autoAttendant method = PCI-compliant IVR captures the card
+        out of band; APX never carries PANs. Declines are 422.
+      parameters:
+        - { name: Idempotency-Key, in: header, required: true, schema: { type: string } }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/PaymentRecord" }
+      responses:
+        "201":
+          description: Approved payment with transactionID.
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/PaymentRecord" }
+        "422":
+          description: Payment declined.
+          content:
+            application/problem+json:
+              schema: { $ref: "#/components/schemas/Problem" }
+    get:
+      operationId: get-apx-v1-payments
+      tags: [Accounts]
+      summary: Payment history by ticket
+      description: |-
+        Payments made on a ticket. Privacy rule: last-4 lookup without a
+        date is constrained to the last 8 hours.
+      parameters:
+        - { name: ticketLast4, in: query, schema: { type: string } }
+        - name: cardLast4
+          in: query
+          description: |-
+            Truncated payment-card digits — the transient-parker lookup of
+            last resort (no LPR, no readable ticket). Same recent-window
+            privacy rule as ticketLast4.
+          schema: { type: string }
+        - { name: date, in: query, schema: { type: string, format: date } }
+      responses:
+        "200":
+          description: Matching payments.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    type: array
+                    items: { $ref: "#/components/schemas/PaymentRecord" }
+
+  /v1/payments/{id}/postings:
+    post:
+      operationId: post-apx-v1-payments-id-postings
+      tags: [Accounts]
+      summary: Accounting write-back (PARIS-style)
+      description: Posts the payment to the monthly-parking/AR system; returns confirmation and new balance.
+      parameters:
+        - { name: id, in: path, required: true, schema: { type: string, format: uuid } }
+      responses:
+        "201":
+          description: Posting result.
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/Posting" }
+        "404":
+          description: No such payment.
+          content:
+            application/problem+json:
+              schema: { $ref: "#/components/schemas/Problem" }
+
+  /v1/lpr/reads:
+    get:
+      operationId: get-apx-v1-lpr-reads
+      tags: [LPR]
+      summary: Bidirectional plate/ticket cross-lookup
+      description: |-
+        plate → ticket/session with accuracy + screenshot; ticket → plate.
+        A pure profile over APDS Observations (ingest = native POST /observations).
+      parameters:
+        - { name: plate, in: query, schema: { type: string } }
+        - { name: ticket, in: query, schema: { type: string } }
+      responses:
+        "200":
+          description: Matching reads.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    type: array
+                    items: { $ref: "#/components/schemas/LprRead" }
+
+  # ===== Alerts (conformance class apx-alerts) ===== #
+  /v1/alerts:
+    post:
+      operationId: post-apx-v1-alerts
+      tags: [Alerts]
+      summary: Raise an alert (idempotent)
+      description: |-
+        Raises an alert. The `Idempotency-Key` header is REQUIRED: replaying
+        the same key with the same body returns the original alert (200);
+        the same key with a different body is 409 idempotency-conflict.
+      parameters:
+        - name: Idempotency-Key
+          in: header
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/Alert"
+      responses:
+        "201":
+          description: Alert raised.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Alert"
+        "400":
+          description: Missing Idempotency-Key or invalid alert.
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+        "409":
+          description: Idempotency-Key replayed with a different body.
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+    get:
+      operationId: get-apx-v1-alerts
+      tags: [Alerts]
+      summary: List/filter alerts
+      description: Filter by status, severityFloor, type, place (subtree-inclusive), since.
+      parameters:
+        - name: status
+          in: query
+          schema: { type: string, enum: [raised, acknowledged, resolved, expired] }
+        - name: severityFloor
+          in: query
+          schema: { type: string, enum: [info, warning, minor, major, critical] }
+        - name: type
+          in: query
+          schema: { type: string }
+        - name: place
+          in: query
+          schema: { type: string, format: uuid }
+        - name: since
+          in: query
+          schema: { type: string, format: date-time }
+      responses:
+        "200":
+          description: Paginated alerts (APDS PaginatedList shape).
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  meta:
+                    $ref: "../vendor/apds/4.1/apds-api-4.1.yaml#/components/schemas/PaginatedListMeta"
+                  data:
+                    type: array
+                    items:
+                      $ref: "#/components/schemas/Alert"
+
+  /v1/alerts/{id}:
+    get:
+      operationId: get-apx-v1-alerts-id
+      tags: [Alerts]
+      summary: Read an alert
+      description: Returns the alert including its immutable statusHistory.
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema: { type: string, format: uuid }
+      responses:
+        "200":
+          description: The alert.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Alert"
+        "404":
+          description: No such alert.
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+
+  /v1/alerts/{id}/acknowledge:
+    post:
+      operationId: post-apx-v1-alerts-id-acknowledge
+      tags: [Alerts]
+      summary: Acknowledge an alert
+      description: "Transition raised → acknowledged. Illegal transitions are 409."
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema: { type: string, format: uuid }
+      responses:
+        "200":
+          description: Acknowledged alert.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Alert"
+        "409":
+          description: Illegal transition.
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+
+  /v1/alerts/{id}/resolve:
+    post:
+      operationId: post-apx-v1-alerts-id-resolve
+      tags: [Alerts]
+      summary: Resolve an alert
+      description: "Transition raised|acknowledged → resolved. Illegal transitions are 409."
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema: { type: string, format: uuid }
+      responses:
+        "200":
+          description: Resolved alert.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Alert"
+        "409":
+          description: Illegal transition.
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+
+  # ===== Discovery (optional class apx-discovery; Part 16) ===== #
+  /v1/discovery:
+    get:
+      operationId: get-apx-v1-discovery
+      tags: [Discovery]
+      summary: Credential-scoped capability document
+      description: |-
+        Reflects the presented token's scopes and grants exactly: the
+        endpoints, command types, topics, and place subtrees THIS client can
+        use. Soundness rule: everything listed is callable; APX endpoints
+        not listed fail with 403.
+      responses:
+        "200":
+          description: The capability document for this credential.
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/DiscoveryDocument" }
+        "401":
+          description: Missing/invalid token.
+          content:
+            application/problem+json:
+              schema: { $ref: "#/components/schemas/Problem" }
+
+  # ===== APX routes ===== #
+  /.well-known/apx-configuration:
+    get:
+      operationId: get-well-known-apx-configuration
+      tags: [Discovery]
+      summary: Bootstrap configuration document
+      security: []
+      description: |-
+        Unauthenticated bootstrap document. Advertises the token endpoint,
+        the APDS version this implementation extends, supported APX
+        conformance classes, and code-list registry locations.
+
+        Served at the server root (NOT under `/v1`), per RFC 8615.
+      responses:
+        "200":
+          description: Bootstrap configuration
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApxConfiguration"
+
+security:
+  - apxOAuth: []
+
+webhooks:
+  apx-event:
+    post:
+      operationId: receive-apx-event
+      summary: Signed APX event delivery
+      description: |-
+        Every webhook delivery POSTs one EventEnvelope with headers
+        `APX-Signature` (v1=HMAC-SHA256(secret, timestamp + "." + body)),
+        `APX-Timestamp` (RFC 3339, ±5 min replay window), and
+        `APX-Delivery-Id` (unique per attempt; envelope `id` is stable
+        across retries). Respond 2xx to acknowledge; anything else triggers
+        the normative retry schedule (Part 8).
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/EventEnvelope"
+      responses:
+        "200":
+          description: Acknowledged.
+
+components:
+  parameters:
+    ModeParam:
+      $ref: "./domains/data/schemas.yaml#/ModeParam"
+    CursorParam:
+      $ref: "./domains/data/schemas.yaml#/CursorParam"
+
+  securitySchemes:
+    apxOAuth:
+      type: oauth2
+      description: |-
+        OAuth 2.0 client-credentials (aligned with APDS 4.1's `oAuth` scheme).
+        APX scopes follow `apx.<domain>:<verb>`. Grants are carried in the
+        normative token claims `apx_org` (Organisation reference) and
+        `apx_places` (HierarchyElement UUID subtree grants; absent = all).
+      flows:
+        clientCredentials:
+          tokenUrl: https://auth.example.com/oauth2/token
+          scopes:
+            apx.data:read: Read parking data via APDS-native routes
+            apx.data:write: Create/update parking data via APDS-native routes
+            apx.control:read: Read commands, lanes, and device status
+            apx.control:execute: Execute commands (vend gate, lost ticket, push rate, apply validation…)
+            apx.alerts:read: Read alerts
+            apx.alerts:write: Raise, acknowledge, and resolve alerts
+            apx.subscriptions:manage: Create and manage event subscriptions
+            apx.accounts:read: Look up accounts and balances
+            apx.payments:write: Take payments and post accounting write-backs
+            apx.lpr:read: LPR plate/ticket cross-lookup
+            apx.reservations:manage: Quote, book, amend, cancel reservations
+            apx.permits:manage: Issue and manage permits
+            apx.tolling:manage: Create and manage toll transactions
+
+  schemas:
+    RecordInfo:
+      $ref: "./domains/common/schemas.yaml#/RecordInfo"
+    Extensions:
+      $ref: "./domains/common/schemas.yaml#/Extensions"
+    ApxResourceCore:
+      $ref: "./domains/common/schemas.yaml#/ApxResourceCore"
+    Problem:
+      $ref: "./domains/common/schemas.yaml#/Problem"
+    EventEnvelope:
+      $ref: "./domains/common/schemas.yaml#/EventEnvelope"
+    CodeListValue:
+      $ref: "./domains/common/schemas.yaml#/CodeListValue"
+    ChangeFeedPage:
+      $ref: "./domains/data/schemas.yaml#/ChangeFeedPage"
+    ApxEventSubscription:
+      $ref: "./domains/events/schemas.yaml#/ApxEventSubscription"
+    DeliveryRecord:
+      $ref: "./domains/events/schemas.yaml#/DeliveryRecord"
+    Alert:
+      $ref: "./domains/alerts/schemas.yaml#/Alert"
+    Command:
+      $ref: "./domains/control/schemas.yaml#/Command"
+    DeviceStatus:
+      $ref: "./domains/control/schemas.yaml#/DeviceStatus"
+    LaneStatus:
+      $ref: "./domains/control/schemas.yaml#/LaneStatus"
+    ValidationProvider:
+      $ref: "./domains/control/schemas.yaml#/ValidationProvider"
+    Account:
+      $ref: "./domains/accounts/schemas.yaml#/Account"
+    PaymentRecord:
+      $ref: "./domains/accounts/schemas.yaml#/PaymentRecord"
+    Posting:
+      $ref: "./domains/accounts/schemas.yaml#/Posting"
+    LprRead:
+      $ref: "./domains/lpr/schemas.yaml#/LprRead"
+    ReservationExtension:
+      $ref: "./domains/reservations/schemas.yaml#/ReservationExtension"
+    ReservationSummary:
+      $ref: "./domains/reservations/schemas.yaml#/ReservationSummary"
+    PoolAvailability:
+      $ref: "./domains/reservations/schemas.yaml#/PoolAvailability"
+    PermitIssueRequest:
+      $ref: "./domains/reservations/schemas.yaml#/PermitIssueRequest"
+    TollTransaction:
+      $ref: "./domains/tolling/schemas.yaml#/TollTransaction"
+    DiscoveryDocument:
+      $ref: "./domains/discovery/schemas.yaml#/DiscoveryDocument"
+
+    ApxConfiguration:
+      type: object
+      description: Unauthenticated bootstrap configuration document.
+      required:
+        - apxVersion
+        - apdsVersion
+        - tokenEndpoint
+        - conformanceClasses
+      properties:
+        apxVersion:
+          type: string
+          description: APX standard version implemented (semver).
+          examples: ["0.1.0"]
+        apdsVersion:
+          type: string
+          description: APDS version this implementation extends.
+          examples: ["4.1"]
+        tokenEndpoint:
+          type: string
+          format: uri
+          description: OAuth2 token endpoint (client-credentials grant).
+        conformanceClasses:
+          type: array
+          description: APX conformance classes this implementation supports.
+          items:
+            type: string
+          examples:
+            - ["apx-data", "apx-events", "apx-control", "apx-alerts", "apx-discovery"]
+        registries:
+          type: object
+          description: Locations of the published UserDefinedCodeList registries.
+          additionalProperties:
+            type: string
+            format: uri

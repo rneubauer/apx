@@ -1,0 +1,69 @@
+# APX data profile — schemas and parameters layered ONTO the native APDS routes.
+# The routes themselves are the vendored APDS 4.1 paths, mounted verbatim in apx.yaml.
+
+ChangeFeedPage:
+  title: ChangeFeedPage
+  description: |-
+    Response of a native APDS list route when called with `mode=change`.
+    Items are VERBATIM APDS entities carrying only changed fields plus
+    identity (change semantics per Part 5: explicit null = clear the field,
+    absent = unchanged — generalizing APDS Use Case C.1.1.6). Deletions are
+    APDS DeletedReferences (tombstones).
+  type: object
+  required:
+    - publicationTime
+    - updateMode
+    - items
+    - cursor
+  properties:
+    publicationTime:
+      $ref: "../../../vendor/apds/4.1/apds-api-4.1.yaml#/components/schemas/DateTime"
+    publisher:
+      description: The publishing Organisation.
+      $ref: "../../../vendor/apds/4.1/apds-api-4.1.yaml#/components/schemas/Reference"
+    updateMode:
+      type: string
+      const: change
+    items:
+      type: array
+      description: Changed APDS entities of the route's class (verbatim APDS schemas).
+      items:
+        type: object
+    deleted:
+      type: array
+      description: Tombstones for deleted entities.
+      items:
+        $ref: "../../../vendor/apds/4.1/apds-api-4.1.yaml#/components/schemas/DeletedReference"
+    cursor:
+      type: string
+      description: Opaque cursor to resume AFTER the last change in this page.
+    next:
+      type: [string, "null"]
+      format: uri-reference
+      description: Link to the next page when more changes are immediately available; null otherwise.
+
+# --- Reusable additive parameters (applied by implementations to native list routes) ---
+
+ModeParam:
+  name: mode
+  in: query
+  required: false
+  description: |-
+    APX data profile: `full` (default — behaves exactly like stock APDS 4.1)
+    or `change` (return a ChangeFeedPage of deltas since `cursor`/`since`).
+  schema:
+    type: string
+    enum: [full, change]
+    default: full
+
+CursorParam:
+  name: cursor
+  in: query
+  required: false
+  description: Opaque change-feed cursor from a previous ChangeFeedPage. Only meaningful with `mode=change`.
+  schema:
+    type: string
+
+# NOTE: there is deliberately no APX "since" parameter — APDS 4.1 natively
+# provides `modified_since` on list routes (returning `deletedReferences`
+# tombstones in PaginatedList). APX reuses it as the coarse fallback.

@@ -1,0 +1,54 @@
+# APX discovery — credential-scoped capability documents (class apx-discovery).
+
+DiscoveryDocument:
+  title: DiscoveryDocument
+  description: |-
+    What THIS credential can do: exactly the endpoints, commands, topics,
+    and places reachable with the presented token's scopes and grants.
+    Two clients with different grants receive different documents; a client
+    can call everything its document lists and nothing more.
+  type: object
+  required: [client, conformanceClasses, scopes, endpoints]
+  properties:
+    client:
+      type: string
+      description: The OAuth client id this document was computed for.
+    organisation:
+      description: The client's Organisation (token claim apx_org).
+      $ref: "../../../vendor/apds/4.1/apds-api-4.1.yaml#/components/schemas/Reference"
+    conformanceClasses:
+      type: array
+      description: Server classes usable by this client (intersection with its scopes).
+      items: { type: string }
+    scopes:
+      type: array
+      items: { type: string }
+    places:
+      type: array
+      description: |-
+        Granted HierarchyElement subtree roots (token claim apx_places).
+        An empty array means ALL places are visible to this client.
+      items: { type: string, format: uuid }
+    endpoints:
+      type: array
+      description: Concrete callable endpoints (APDS-native + APX).
+      items:
+        type: object
+        required: [path, methods]
+        properties:
+          path: { type: string }
+          methods:
+            type: array
+            items: { type: string }
+    commandTypes:
+      type: array
+      description: Command types this client may execute (empty without apx.control:execute).
+      items: { type: string }
+    topics:
+      type: array
+      description: Topics this client may subscribe to.
+      items: { type: string }
+    rateLimits:
+      type: object
+      description: Advisory per-client limits.
+      additionalProperties: { type: integer }

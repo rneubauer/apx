@@ -1,0 +1,6 @@
+node_modules/
+spec/dist/
+packages/*/dist/
+*.tsbuildinfo
+.env
+coverage/

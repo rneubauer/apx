@@ -1,0 +1,91 @@
+# APX delivery fabric — a superset-compatible profile of APDS /webhooks.
+
+ApxEventSubscription:
+  title: ApxEventSubscription
+  description: |-
+    Superset of the APDS 4.1 EventSubscription. A stock APDS client sending
+    only `{endpoint, topics}` (EventTypeEnum values) gets stock behavior;
+    the APX fields are additive and optional.
+  type: object
+  required:
+    - topics
+  properties:
+    id:
+      type: string
+      format: uuid
+      description: Assigned at creation; used with DELETE/PATCH /webhooks/{id}.
+    version:
+      type: integer
+      minimum: 1
+    endpoint:
+      description: Client endpoint URL for webhook deliveries (required for transport=webhook).
+      $ref: "../../../vendor/apds/4.1/apds-api-4.1.yaml#/components/schemas/Url"
+    topics:
+      type: array
+      minItems: 1
+      description: |-
+        APDS EventTypeEnum values (e.g. SessionCreated) and/or APX topics
+        (apx.<domain>.<event>.vN) — freely mixed.
+      items:
+        type: string
+    transport:
+      type: string
+      enum: [webhook, sse]
+      default: webhook
+    filters:
+      type: object
+      description: Server-side delivery filtering.
+      properties:
+        places:
+          type: array
+          description: Only events bound to these HierarchyElement subtrees are delivered.
+          items:
+            type: string
+            format: uuid
+        severityFloor:
+          type: string
+          description: For alert topics — minimum severity delivered.
+          enum: [info, warning, minor, major, critical]
+    secret:
+      type: string
+      description: |-
+        HMAC signing secret (write-only; server-generated when absent and
+        returned once in the creation response).
+    status:
+      type: string
+      enum: [active, paused, failed]
+      description: failed = retry schedule exhausted; PATCH status=active to resume.
+    recordInfo:
+      $ref: "../common/schemas.yaml#/RecordInfo"
+    extensions:
+      $ref: "../common/schemas.yaml#/Extensions"
+
+DeliveryRecord:
+  title: DeliveryRecord
+  description: One entry in a subscription's delivery ledger.
+  type: object
+  required:
+    - deliveryId
+    - eventId
+    - attempts
+    - status
+    - time
+  properties:
+    deliveryId:
+      type: string
+      format: uuid
+    eventId:
+      type: string
+      format: uuid
+      description: EventEnvelope.id delivered (stable across retries).
+    attempts:
+      type: integer
+      minimum: 1
+    status:
+      type: string
+      enum: [delivered, retrying, failed]
+    lastCode:
+      type: integer
+      description: Last HTTP status code received from the endpoint (0 = network error).
+    time:
+      $ref: "../../../vendor/apds/4.1/apds-api-4.1.yaml#/components/schemas/DateTime"

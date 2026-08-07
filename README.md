@@ -1,0 +1,67 @@
+# APX — APDS Parking eXtensions
+
+**APX** is an open, additive companion standard to
+[APDS 4.1](https://github.com/parkingdata/spec) (Alliance for Parking Data
+Standards / ISO TS 5206-1). One API that PARCS, LPR, tolling, permitting, and
+reservations vendors implement — adding what APDS deliberately leaves out,
+while reusing everything it defines.
+
+**New here?** Read the [executive summary](docs/executive-summary.md) (shareable, non-technical), the [complete API overview](docs/apx-overview.md) (every route + the reasoning, no APDS knowledge needed), or the [quickstart](docs/quickstart.md). **PARCS vendor?** Start with the [PARCS Starter Profile](docs/parcs-starter-profile.md) — the minimum ~25-endpoint surface, with a slim importable spec (`spec/dist/apx-parcs.json`).
+
+## Prime directive: APDS-first
+
+Wherever APDS 4.1 already defines a route, schema, or convention, APX uses it
+**verbatim** — the official `apds-api-4.1.yaml` is vendored unmodified (MIT,
+checksum-guarded) and reused by `$ref`. A plain APDS 4.1 client works against
+an APX implementation without changes. APX adds only what APDS lacks:
+
+| Domain | What APX adds | Anchored on |
+|---|---|---|
+| Data profile | Full/Change updates, tombstones, cursor change feed | APDS native routes (`/places`, `/sessions`, `/rates`, `/rights/*`, `/observations`, `/quotes`) |
+| Delivery fabric | HMAC-signed webhooks, normative retries, delivery ledger, SSE | APDS `/webhooks` + `EventSubscription` (superset-compatible) |
+| Control | Command plane (vend gate, lost ticket, rate push, validations…), lane inquiry, device status | `SupplementalEquipment`, `HierarchyElementReference` |
+| Alerts | Alert lifecycle + open taxonomies | `UserDefinedCodeList`, Use Case C.2.2 exception vocabulary |
+| Discovery | Credential-scoped capability documents | OAuth2 scopes + place grants |
+| Accounts & payments | Balance lookup, take-payment, accounting write-back, payment history | `RightHolder`, `Payment` |
+| LPR | Plate↔ticket cross-lookup with confidence + imagery | `Observation`, `Confidence`, `Image` (4.1) |
+| Reservations | Quote→book→amend→check-in conventions | `Quote*`, `AssignedRight`, `PlannedUse` |
+| Permits | Pooled issuance, multi-vehicle credentials | `RightSpecification`, `RightPool`, `Credential` |
+| Tolling | TollTransaction + dispute lifecycle (net-new) | `Observation` → pricing → `Payment` |
+
+Extension identity follows the official APDS convention (Use Case §C.2.5):
+`apds-ext:apx:<class>@<version>`.
+
+## Repository
+
+| Path | Contents |
+|---|---|
+| `spec/openapi/` | **The standard** — modular OpenAPI 3.1 (`apx.yaml` root; one directory per domain) |
+| `spec/vendor/apds/4.1/` | APDS 4.1 vendored verbatim (MIT) — never edited, checksum-guarded |
+| `spec/registries/` | UserDefinedCodeList registries (alert types, command types, device states, topics, conformance classes) |
+| `docs/standard/` | The written standard (normative, RFC 2119) |
+| `tools/` | Spec tooling — lint/bundle configs, vendor integrity check, registry + example validators |
+
+## Development
+
+```powershell
+npm install
+npm run vendor:check   # verify vendored APDS artifacts are untouched
+npm run spec:lint      # Redocly lint (modular source)
+npm run spec:bundle    # produce spec/dist/apx-v1.{yaml,json}
+npm run spec:style     # Spectral APX conventions (bundled artifact)
+npm test               # all of the above + registry, profile, and example validation
+```
+
+Requires Node 20+. No Docker, no native modules.
+
+## Status
+
+**v0.1.0 — complete v1 draft.** All domains specified: data profile,
+delivery fabric, control, alerts, discovery, accounts & payments, LPR,
+reservations, permits, tolling. This repository contains the specification
+and written standard only — implementations live elsewhere.
+
+## License
+
+MIT. Portions reference the APDS API Specification (MIT, © Alliance for
+Parking Data Standards).
