@@ -28,3 +28,5 @@ jobs:
         run: npm run spec:style
       - name: Registries + profile subset + example validation
         run: npm run registries:check && npm run spec:profile && npm run examples:check
+      - name: Scenario payload validation
+        run: npm run scenarios:check

@@ -15,7 +15,8 @@
     "registries:check": "node tools/check-registries.mjs",
     "spec:profile": "node tools/build-profile-spec.mjs",
     "examples:check": "node tools/validate-examples.mjs",
-    "test": "npm run vendor:check && npm run registries:check && npm run spec:lint && npm run spec:bundle && npm run spec:profile && npm run spec:style && npm run examples:check"
+    "scenarios:check": "node tools/validate-scenarios.mjs",
+    "test": "npm run vendor:check && npm run registries:check && npm run spec:lint && npm run spec:bundle && npm run spec:profile && npm run spec:style && npm run examples:check && npm run scenarios:check"
   },
   "devDependencies": {
     "@redocly/cli": "^1.34.0",
