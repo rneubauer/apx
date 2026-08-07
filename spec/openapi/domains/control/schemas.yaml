@@ -18,9 +18,11 @@ Command:
     id:
       type: string
       format: uuid
+      readOnly: true
     version:
       type: integer
       minimum: 1
+      readOnly: true
     commandType:
       type: string
       description: definedValue from apx-command-types (vendGate, lostTicket, pushRate, applyValidation, …).
@@ -53,6 +55,7 @@ Command:
     status:
       type: string
       enum: [received, accepted, rejected, dispatched, executing, succeeded, failed, expired, cancelled]
+      readOnly: true
     statusHistory:
       type: array
       description: Immutable, append-only lifecycle audit — THE audit trail (Part 4 §4.2).

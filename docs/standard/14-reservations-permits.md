@@ -12,7 +12,9 @@ The reservation lifecycle rides entirely on native routes:
    `apds-ext:apx:reservation@1.0` extension (`reservationState: confirmed`,
    `plannedStart/plannedEnd` — the APDS PlannedUse concept).
 3. **Amend** — native `PUT /rights/assigned/{id}` (change mode);
-   `reservationState: amended`.
+   `reservationState: amended`. Amendments made **after** check-in retain
+   `reservationState: checkedIn` — `checkInSession` remains the normative
+   linkage and only the planned times change.
 4. **Cancel** — native `DELETE` or state `cancelled`.
 5. **Check-in** — creating a native Session whose segment references the
    AssignedRight transitions the reservation to `checkedIn` and sets

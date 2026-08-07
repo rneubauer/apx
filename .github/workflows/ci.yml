@@ -30,3 +30,5 @@ jobs:
         run: npm run registries:check && npm run spec:profile && npm run examples:check
       - name: Scenario payload validation
         run: npm run scenarios:check
+      - name: Committed bundle is fresh (spec/dist matches source)
+        run: git diff --exit-code spec/dist

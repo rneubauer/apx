@@ -38,10 +38,11 @@ PaymentRecord:
   type: object
   required: [id, transactionID, dateCollected, amount, paymentStatus]
   properties:
-    id: { type: string, format: uuid }
-    transactionID: { type: string }
+    id: { type: string, format: uuid, readOnly: true }
+    transactionID: { type: string, readOnly: true }
     dateCollected:
       $ref: "../../../vendor/apds/4.1/apds-api-4.1.yaml#/components/schemas/DateTime"
+      readOnly: true
     amount:
       $ref: "../../../vendor/apds/4.1/apds-api-4.1.yaml#/components/schemas/AmountInCurrency"
     method:
@@ -50,6 +51,7 @@ PaymentRecord:
     paymentStatus:
       type: string
       enum: [approved, declined, reversed]
+      readOnly: true
     account:
       $ref: "../../../vendor/apds/4.1/apds-api-4.1.yaml#/components/schemas/Reference"
     ticketNumber: { type: string }

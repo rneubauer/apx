@@ -10,8 +10,8 @@ TollTransaction:
   type: object
   required: [id, version, tollPoint, transactionStatus]
   properties:
-    id: { type: string, format: uuid }
-    version: { type: integer, minimum: 1 }
+    id: { type: string, format: uuid, readOnly: true }
+    version: { type: integer, minimum: 1, readOnly: true }
     tollPoint:
       description: Reference to the toll point (SupplementalEquipment).
       $ref: "../../../vendor/apds/4.1/apds-api-4.1.yaml#/components/schemas/Reference"
@@ -34,6 +34,7 @@ TollTransaction:
     transactionStatus:
       type: string
       enum: [created, priced, paid, disputed, resolved, voided]
+      readOnly: true
     dispute:
       type: object
       properties:

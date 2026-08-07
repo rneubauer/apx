@@ -25,3 +25,19 @@
 - **CloudEvents 1.0** — informative mapping for the APX EventEnvelope
 - **CEN/TS 16157-6 (DATEX II parking)** — related European data exchange
 - **HTML Server-Sent Events** (WHATWG) — SSE transport
+
+## 1.3 Known APDS 4.1 errata
+
+APX vendors the APDS 4.1 OpenAPI document **verbatim** (checksum-guarded),
+including its defects. Implementers validating payloads against the raw
+schemas should be aware of:
+
+1. **`Reference` is unsatisfiable as written.** The schema declares
+   `maxProperties: 1` while requiring *both* `id` and `className` — no
+   object can satisfy it. APX follows the schema's stated intent (and every
+   APDS example): a reference is `{"id", "className"}`. Validators MUST
+   relax the `minProperties`/`maxProperties` constraints on `Reference`
+   (see `tools/validate-scenarios.mjs` for the reference treatment). This
+   erratum should be reported to APDS
+   (https://github.com/parkingdata/spec) and this section removed once a
+   corrected upstream release is vendored.

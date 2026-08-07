@@ -18,9 +18,11 @@ Alert:
     id:
       type: string
       format: uuid
+      readOnly: true
     version:
       type: integer
       minimum: 1
+      readOnly: true
     alertType:
       type: string
       description: definedValue from apx-alert-types or an implementer code list.
@@ -31,6 +33,7 @@ Alert:
     status:
       type: string
       enum: [raised, acknowledged, resolved, expired]
+      readOnly: true
       description: "Lifecycle: raised → acknowledged → resolved | expired."
     source:
       type: object
