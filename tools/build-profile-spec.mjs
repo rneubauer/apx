@@ -29,6 +29,7 @@ const PARCS_PATHS = [
   '/rights/assigned',
   '/rights/assigned/{id}',
   '/quotes',
+  '/v1/places/{id}/occupancy',
   // apx-events: subscriptions + ledger (SSE is optional and excluded)
   '/webhooks',
   '/webhooks/{id}',

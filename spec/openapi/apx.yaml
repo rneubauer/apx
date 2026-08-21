@@ -50,6 +50,11 @@ servers:
 tags:
   - name: Discovery
     description: Bootstrap and credential-scoped capability discovery.
+  - name: Data
+    description: |-
+      APX data profile — additive reads over the APDS Place hierarchy
+      (occupancy snapshot). The pull/push routes themselves are the native
+      APDS paths, mounted verbatim. See written standard Part 5.
   - name: Subscription
     description: |-
       APX delivery fabric — a superset-compatible profile of the APDS 4.1
@@ -100,6 +105,38 @@ paths:
     $ref: "../vendor/apds/4.1/apds-api-4.1.yaml#/paths/~1rights~1assigned~1{id}"
   /quotes:
     $ref: "../vendor/apds/4.1/apds-api-4.1.yaml#/paths/~1quotes"
+
+  # ===== Data profile: additive convenience reads (Part 5) ===== #
+  /v1/places/{id}/occupancy:
+    get:
+      operationId: get-apx-v1-places-id-occupancy
+      tags: [Data]
+      summary: Current occupancy snapshot for a place element
+      description: |-
+        "How full is it right now" for one HierarchyElement, without pulling
+        the Place hierarchy. A pure convenience READ over the APDS occupancy
+        model (Supply + DemandTable) — the Place payload remains the source
+        of truth. Fields the implementation does not know are simply absent.
+        Threshold crossings publish apx.data.occupancy.v1 and SHOULD raise
+        an occupancyThresholdExceeded alert (Part 7). Scope apx.data:read;
+        the place grant must cover the element.
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema: { type: string, format: uuid }
+          description: HierarchyElement UUID (Place, Level, Area, …).
+      responses:
+        "200":
+          description: The occupancy snapshot.
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/OccupancySnapshot" }
+        "404":
+          description: No such place element.
+          content:
+            application/problem+json:
+              schema: { $ref: "#/components/schemas/Problem" }
 
   # ===== Delivery fabric: superset profile of APDS /webhooks ===== #
   /webhooks:
@@ -1052,6 +1089,8 @@ components:
       $ref: "./domains/common/schemas.yaml#/CodeListValue"
     ChangeFeedPage:
       $ref: "./domains/data/schemas.yaml#/ChangeFeedPage"
+    OccupancySnapshot:
+      $ref: "./domains/data/schemas.yaml#/OccupancySnapshot"
     ApxEventSubscription:
       $ref: "./domains/events/schemas.yaml#/ApxEventSubscription"
     DeliveryRecord:

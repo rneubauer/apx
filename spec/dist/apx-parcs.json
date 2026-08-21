@@ -36,6 +36,10 @@
       "description": "Bootstrap and credential-scoped capability discovery."
     },
     {
+      "name": "Data",
+      "description": "APX data profile — additive reads over the APDS Place hierarchy\n(occupancy snapshot). The pull/push routes themselves are the native\nAPDS paths, mounted verbatim. See written standard Part 5."
+    },
+    {
       "name": "Subscription",
       "description": "APX delivery fabric — a superset-compatible profile of the APDS 4.1\n/webhooks subscription endpoint (stock EventSubscription bodies work\nunmodified). See written standard Part 8."
     },
@@ -2788,6 +2792,50 @@
         }
       }
     },
+    "/v1/places/{id}/occupancy": {
+      "get": {
+        "operationId": "get-apx-v1-places-id-occupancy",
+        "tags": [
+          "Data"
+        ],
+        "summary": "Current occupancy snapshot for a place element",
+        "description": "\"How full is it right now\" for one HierarchyElement, without pulling\nthe Place hierarchy. A pure convenience READ over the APDS occupancy\nmodel (Supply + DemandTable) — the Place payload remains the source\nof truth. Fields the implementation does not know are simply absent.\nThreshold crossings publish apx.data.occupancy.v1 and SHOULD raise\nan occupancyThresholdExceeded alert (Part 7). Scope apx.data:read;\nthe place grant must cover the element.",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            },
+            "description": "HierarchyElement UUID (Place, Level, Area, …)."
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The occupancy snapshot.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/OccupancySnapshot"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "No such place element.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/webhooks": {
       "post": {
         "operationId": "post-webhooks",
@@ -4389,6 +4437,87 @@
         "x-package": "Quotes",
         "x-tags": "Quotes"
       },
+      "OccupancySnapshot": {
+        "title": "OccupancySnapshot",
+        "description": "Current occupancy for one HierarchyElement, computed from the APDS\noccupancy model (Supply + DemandTable) that natively lives in the Place\nhierarchy. A convenience READ (Part 5 §5.5): the Place payload remains\nthe source of truth; this answers \"how full is it right now\" without\npulling the hierarchy. Composed entirely of verbatim APDS occupancy\nclasses — APX adds no parallel occupancy datatypes.",
+        "type": "object",
+        "required": [
+          "place",
+          "computedAt"
+        ],
+        "properties": {
+          "place": {
+            "description": "The HierarchyElement (Place, Level, Area, …) this snapshot describes.",
+            "$ref": "#/components/schemas/Reference"
+          },
+          "computedAt": {
+            "description": "When this snapshot was computed.",
+            "$ref": "#/components/schemas/DateTime"
+          },
+          "supply": {
+            "description": "The element's supply (verbatim APDS Supply).",
+            "$ref": "#/components/schemas/Supply"
+          },
+          "demand": {
+            "description": "The latest area demand record (verbatim APDS DemandType — count,\npercentage, occupancyCalculation, recordDateTime).",
+            "$ref": "#/components/schemas/DemandType"
+          },
+          "available": {
+            "type": [
+              "integer",
+              "null"
+            ],
+            "minimum": 0,
+            "description": "Convenience derivation: supply.supplyQuantity − demand.count when\nboth are known; null when either side is unknown. Never negative —\noverfull facilities clamp to 0 (the demand record still shows the\ntrue count).",
+            "examples": [
+              59
+            ]
+          },
+          "extensions": {
+            "$ref": "#/components/schemas/Extensions"
+          }
+        }
+      },
+      "Problem": {
+        "title": "Problem",
+        "description": "RFC 9457 problem details. APX problem `type` URIs are registered in the\nAPX problem-type registry. Used for all APX error responses; APDS-native\nroutes may alternatively use the APDS ResponseStatus shape.",
+        "type": "object",
+        "required": [
+          "type",
+          "title",
+          "status"
+        ],
+        "properties": {
+          "type": {
+            "type": "string",
+            "format": "uri",
+            "description": "Problem type URI from the APX problem registry.",
+            "examples": [
+              "https://apx-standard.org/problems/insufficient-grant"
+            ]
+          },
+          "title": {
+            "type": "string",
+            "description": "Short human-readable summary of the problem type."
+          },
+          "status": {
+            "type": "integer",
+            "minimum": 100,
+            "maximum": 599,
+            "description": "HTTP status code."
+          },
+          "detail": {
+            "type": "string",
+            "description": "Human-readable explanation specific to this occurrence."
+          },
+          "instance": {
+            "type": "string",
+            "format": "uri-reference",
+            "description": "URI reference identifying this specific occurrence."
+          }
+        },
+        "additionalProperties": true
+      },
       "ApxEventSubscription": {
         "title": "ApxEventSubscription",
         "description": "Superset of the APDS 4.1 EventSubscription. A stock APDS client sending\nonly `{endpoint, topics}` (EventTypeEnum values) gets stock behavior;\nthe APX fields are additive and optional.",
@@ -4471,46 +4600,6 @@
             "$ref": "#/components/schemas/Extensions"
           }
         }
-      },
-      "Problem": {
-        "title": "Problem",
-        "description": "RFC 9457 problem details. APX problem `type` URIs are registered in the\nAPX problem-type registry. Used for all APX error responses; APDS-native\nroutes may alternatively use the APDS ResponseStatus shape.",
-        "type": "object",
-        "required": [
-          "type",
-          "title",
-          "status"
-        ],
-        "properties": {
-          "type": {
-            "type": "string",
-            "format": "uri",
-            "description": "Problem type URI from the APX problem registry.",
-            "examples": [
-              "https://apx-standard.org/problems/insufficient-grant"
-            ]
-          },
-          "title": {
-            "type": "string",
-            "description": "Short human-readable summary of the problem type."
-          },
-          "status": {
-            "type": "integer",
-            "minimum": 100,
-            "maximum": 599,
-            "description": "HTTP status code."
-          },
-          "detail": {
-            "type": "string",
-            "description": "Human-readable explanation specific to this occurrence."
-          },
-          "instance": {
-            "type": "string",
-            "format": "uri-reference",
-            "description": "URI reference identifying this specific occurrence."
-          }
-        },
-        "additionalProperties": true
       },
       "DeliveryRecord": {
         "title": "DeliveryRecord",
@@ -6250,52 +6339,6 @@
         "x-package": "Quotes",
         "x-tags": "Quotes"
       },
-      "RecordInfo": {
-        "title": "RecordInfo",
-        "description": "Provenance metadata for an APX resource, aligned to the APDS Information\nModel's RecordType (creationTime/creator/lastUpdate). All timestamps are\nRFC 3339 (APDS DateTime).",
-        "type": "object",
-        "properties": {
-          "creationTime": {
-            "$ref": "#/components/schemas/DateTime"
-          },
-          "creator": {
-            "description": "Reference to the creating Organisation or Contact.",
-            "$ref": "#/components/schemas/Reference"
-          },
-          "creationUser": {
-            "type": "string",
-            "description": "Human or system principal that created the record."
-          },
-          "lastUpdate": {
-            "$ref": "#/components/schemas/DateTime"
-          },
-          "lastUpdateUser": {
-            "type": "string",
-            "description": "Human or system principal that last updated the record."
-          }
-        }
-      },
-      "Extensions": {
-        "title": "Extensions",
-        "description": "The official APDS extension container (Use Case Document §C.2.5).\nKeys MUST follow `apds-ext:<namespace>:<class>@<major>.<minor>`.\nImplementations MUST preserve unknown extension keys on round-trip\n(tolerant reader, faithful writer).",
-        "type": "object",
-        "propertyNames": {
-          "pattern": "^apds-ext:[a-z0-9-]+:[a-z0-9-]+@[0-9]+\\.[0-9]+$"
-        },
-        "additionalProperties": {
-          "type": "object"
-        }
-      },
-      "DateTime": {
-        "title": "DateTime",
-        "description": "ISO-8601 format definition of a date and time - format YYYY-MM-DDTHH:MM:SSZ.",
-        "type": "string",
-        "x-package": "common",
-        "format": "date-time",
-        "examples": [
-          "2024-03-09T15:35:08Z"
-        ]
-      },
       "Reference": {
         "title": "Reference",
         "description": "Represents a reference to an identifiable object where the identifier is unique. It is composed of an unique identifier and a string identifying the class of the referenced object. If multiple versions exists for the object, the latest version is considered.",
@@ -6324,6 +6367,109 @@
           "id",
           "className"
         ]
+      },
+      "DateTime": {
+        "title": "DateTime",
+        "description": "ISO-8601 format definition of a date and time - format YYYY-MM-DDTHH:MM:SSZ.",
+        "type": "string",
+        "x-package": "common",
+        "format": "date-time",
+        "examples": [
+          "2024-03-09T15:35:08Z"
+        ]
+      },
+      "Supply": {
+        "title": "Supply",
+        "description": "A class defining concepts relating the parameters of the supply of parking. \nThis is the total number of spaces usable for parking or other mobility operations. \nIt can be defined as demarcated spaces or non-demarcated.",
+        "type": "object",
+        "x-package": "place.occupancy",
+        "properties": {
+          "supplyViewType": {
+            "$ref": "#/components/schemas/SupplyViewTypeEnum"
+          },
+          "supplyQuantity": {
+            "type": "integer",
+            "description": "Indicates the numeric value of available parking or other space uses."
+          },
+          "supplyValidityStart": {
+            "description": "Valid start date/time for the supply",
+            "$ref": "#/components/schemas/DateTime"
+          },
+          "supplyValidityEnd": {
+            "description": "Valid end date/time for the supply",
+            "$ref": "#/components/schemas/DateTime"
+          }
+        },
+        "required": [
+          "supplyQuantity",
+          "supplyViewType"
+        ]
+      },
+      "DemandType": {
+        "title": "DemandType",
+        "description": "This table is dedicated to reporting on actual occupancy in an area.",
+        "type": "object",
+        "x-package": "place.occupancy",
+        "properties": {
+          "count": {
+            "type": "integer",
+            "description": "Number of occupied spaces.",
+            "minimum": 0
+          },
+          "occupancyCalculation": {
+            "$ref": "#/components/schemas/CalculationTypeEnum"
+          },
+          "percentage": {
+            "type": "number",
+            "description": "Percent of spaces occupied.",
+            "format": "float",
+            "minimum": 0,
+            "maximum": 100
+          },
+          "recordDateTime": {
+            "description": "When data in the record was compiled.",
+            "$ref": "#/components/schemas/DateTime"
+          }
+        },
+        "required": [
+          "recordDateTime"
+        ]
+      },
+      "Extensions": {
+        "title": "Extensions",
+        "description": "The official APDS extension container (Use Case Document §C.2.5).\nKeys MUST follow `apds-ext:<namespace>:<class>@<major>.<minor>`.\nImplementations MUST preserve unknown extension keys on round-trip\n(tolerant reader, faithful writer).",
+        "type": "object",
+        "propertyNames": {
+          "pattern": "^apds-ext:[a-z0-9-]+:[a-z0-9-]+@[0-9]+\\.[0-9]+$"
+        },
+        "additionalProperties": {
+          "type": "object"
+        }
+      },
+      "RecordInfo": {
+        "title": "RecordInfo",
+        "description": "Provenance metadata for an APX resource, aligned to the APDS Information\nModel's RecordType (creationTime/creator/lastUpdate). All timestamps are\nRFC 3339 (APDS DateTime).",
+        "type": "object",
+        "properties": {
+          "creationTime": {
+            "$ref": "#/components/schemas/DateTime"
+          },
+          "creator": {
+            "description": "Reference to the creating Organisation or Contact.",
+            "$ref": "#/components/schemas/Reference"
+          },
+          "creationUser": {
+            "type": "string",
+            "description": "Human or system principal that created the record."
+          },
+          "lastUpdate": {
+            "$ref": "#/components/schemas/DateTime"
+          },
+          "lastUpdateUser": {
+            "type": "string",
+            "description": "Human or system principal that last updated the record."
+          }
+        }
       },
       "StructureTypeEnum": {
         "title": "StructureTypeEnum",
@@ -6560,33 +6706,6 @@
             }
           }
         }
-      },
-      "Supply": {
-        "title": "Supply",
-        "description": "A class defining concepts relating the parameters of the supply of parking. \nThis is the total number of spaces usable for parking or other mobility operations. \nIt can be defined as demarcated spaces or non-demarcated.",
-        "type": "object",
-        "x-package": "place.occupancy",
-        "properties": {
-          "supplyViewType": {
-            "$ref": "#/components/schemas/SupplyViewTypeEnum"
-          },
-          "supplyQuantity": {
-            "type": "integer",
-            "description": "Indicates the numeric value of available parking or other space uses."
-          },
-          "supplyValidityStart": {
-            "description": "Valid start date/time for the supply",
-            "$ref": "#/components/schemas/DateTime"
-          },
-          "supplyValidityEnd": {
-            "description": "Valid end date/time for the supply",
-            "$ref": "#/components/schemas/DateTime"
-          }
-        },
-        "required": [
-          "supplyQuantity",
-          "supplyViewType"
-        ]
       },
       "ReferencedCodeListEntry": {
         "title": "ReferencedCodeListEntry",
@@ -7159,6 +7278,28 @@
         "x-package": "Quotes",
         "x-tags": "Quotes"
       },
+      "SupplyViewTypeEnum": {
+        "title": "SupplyViewTypeEnum",
+        "description": "Define if space quantity is demarcated or estimated.\n* spaceView : Each space is physically marked and identifiable.\n* vehicleView :  The vehicle capacity in an area is estimated based on calculating a capacity (i.e. curb length divided by a length of vehicle). The\ndistributing party decides on the appropriate length of vehicle to use.",
+        "type": "string",
+        "x-package": "place.occupancy.enums",
+        "enum": [
+          "spaceView",
+          "vehicleView"
+        ]
+      },
+      "CalculationTypeEnum": {
+        "title": "CalculationTypeEnum",
+        "description": "A list of the supported calculation types for demand.\n* counted : Physical determination if a space is occupied\n* derived : Space occupancy is estimated by using related data such as active payments or sold permits.\n* expected : Future prediction of occupancy levels.\n* verified : Defines an occupancy report that is considered a verified report.",
+        "type": "string",
+        "x-package": "place.occupancy.enums",
+        "enum": [
+          "counted",
+          "derived",
+          "expected",
+          "verified"
+        ]
+      },
       "PlaceCharacteristics": {
         "title": "PlaceCharacteristics",
         "description": "Defines information concerning characteristics related to a parking facility.",
@@ -7455,36 +7596,6 @@
           "valetOnly"
         ]
       },
-      "DemandType": {
-        "title": "DemandType",
-        "description": "This table is dedicated to reporting on actual occupancy in an area.",
-        "type": "object",
-        "x-package": "place.occupancy",
-        "properties": {
-          "count": {
-            "type": "integer",
-            "description": "Number of occupied spaces.",
-            "minimum": 0
-          },
-          "occupancyCalculation": {
-            "$ref": "#/components/schemas/CalculationTypeEnum"
-          },
-          "percentage": {
-            "type": "number",
-            "description": "Percent of spaces occupied.",
-            "format": "float",
-            "minimum": 0,
-            "maximum": 100
-          },
-          "recordDateTime": {
-            "description": "When data in the record was compiled.",
-            "$ref": "#/components/schemas/DateTime"
-          }
-        },
-        "required": [
-          "recordDateTime"
-        ]
-      },
       "DemandSpaceType": {
         "title": "DemandSpaceType",
         "description": "Identifies when a space was occupied and for how long.",
@@ -7520,16 +7631,6 @@
         },
         "required": [
           "detectionUpdateTime"
-        ]
-      },
-      "SupplyViewTypeEnum": {
-        "title": "SupplyViewTypeEnum",
-        "description": "Define if space quantity is demarcated or estimated.\n* spaceView : Each space is physically marked and identifiable.\n* vehicleView :  The vehicle capacity in an area is estimated based on calculating a capacity (i.e. curb length divided by a length of vehicle). The\ndistributing party decides on the appropriate length of vehicle to use.",
-        "type": "string",
-        "x-package": "place.occupancy.enums",
-        "enum": [
-          "spaceView",
-          "vehicleView"
         ]
       },
       "Period": {
@@ -8176,18 +8277,6 @@
         "enum": [
           "poundsWeight",
           "tonnesMetric"
-        ]
-      },
-      "CalculationTypeEnum": {
-        "title": "CalculationTypeEnum",
-        "description": "A list of the supported calculation types for demand.\n* counted : Physical determination if a space is occupied\n* derived : Space occupancy is estimated by using related data such as active payments or sold permits.\n* expected : Future prediction of occupancy levels.\n* verified : Defines an occupancy report that is considered a verified report.",
-        "type": "string",
-        "x-package": "place.occupancy.enums",
-        "enum": [
-          "counted",
-          "derived",
-          "expected",
-          "verified"
         ]
       },
       "DayWeekMonth": {

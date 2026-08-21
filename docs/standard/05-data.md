@@ -61,9 +61,34 @@ Change events are delivered over the fabric (Part 8) using APDS's own
 subscriber holding a cursor MAY treat events as wake-ups and pull via
 `mode=change` (recommended for exactly-once processing).
 
-## 5.5 Conformance
+## 5.5 Occupancy snapshot (convenience read)
+
+Occupancy natively lives inside the Place hierarchy (APDS `Supply` +
+`DemandTable`), which makes "how full is this garage right now" an
+expensive question — pull the hierarchy, walk to the element, read the
+demand table. APX adds one convenience read:
+
+- `GET /v1/places/{id}/occupancy` (scope `apx.data:read`; the `apx_places`
+  grant must cover the element) returns an `OccupancySnapshot`: the
+  element Reference, `computedAt`, the verbatim APDS `Supply` and latest
+  `DemandType` record, and a derived `available` count
+  (`supplyQuantity − count`, clamped at 0, `null` when either side is
+  unknown).
+- The snapshot is a **read-model, not a resource**: it has no id/version,
+  is never written directly, and MUST be derivable from the Place
+  hierarchy — the hierarchy stays the source of truth (§5.3). Fields the
+  implementation does not know are absent, never guessed.
+- Material occupancy changes (threshold crossings or publisher-defined
+  deltas) publish `apx.data.occupancy.v1` (data: OccupancySnapshot) over
+  the Part 8 fabric. Where `apx-alerts` is implemented, a configured
+  threshold crossing SHOULD also raise an `occupancyThresholdExceeded`
+  alert (Part 7).
+
+## 5.6 Conformance
 
 `apx-data` requires: the eight native routes; §5.1 modes on writes; §5.2
 change feed on `/places`, `/sessions`, `/rates`, `/rights/assigned`; the
 stock-APDS compatibility guarantee (a client sending no APX headers/params
-observes pure APDS 4.1 behavior).
+observes pure APDS 4.1 behavior). Implementations that hold occupancy data
+for an element MUST serve §5.5 for it; implementations with no occupancy
+data MAY omit the endpoint entirely (discovery then does not list it).

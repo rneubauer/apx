@@ -73,6 +73,7 @@ must not fire), **append every state change to `statusHistory`**
 | `GET /v1/lanes/{id}/current` | The ticket in the machine now: amount due, validations, paid-in-full (+ monthly-credential context if presented) |
 | `GET /v1/validations/providers?place=` | Who may validate here, and what each validation is worth |
 | `GET /v1/devices` · `/{id}` | Live state per device: `available / occupied / inoperative / outOfService / fault / unknown` |
+| `GET /v1/places/{id}/occupancy` | "How full is it right now": supply, latest demand count, derived `available` (required only if you hold occupancy data) |
 
 ## Prove it
 

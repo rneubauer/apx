@@ -24,6 +24,11 @@ OpenAPI viewer. PARCS vendors can start from the slim profile subset,
    requirements in Part 3 of the written standard for every class you
    advertise. Only claim the classes you fully satisfy.
 
+Coming from a conventional REST design and can't find the endpoint you
+expected? See the [route map](route-map.md) — it maps intuitive routes
+(`/places/{id}/sessions`, `POST /devices/{id}/command`, …) to the actual
+APDS/APX paths, with curl examples.
+
 ## Consume APX (as a client)
 
 1. `GET /.well-known/apx-configuration` → token endpoint + classes.

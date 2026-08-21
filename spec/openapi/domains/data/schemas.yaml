@@ -42,6 +42,46 @@ ChangeFeedPage:
       format: uri-reference
       description: Link to the next page when more changes are immediately available; null otherwise.
 
+OccupancySnapshot:
+  title: OccupancySnapshot
+  description: |-
+    Current occupancy for one HierarchyElement, computed from the APDS
+    occupancy model (Supply + DemandTable) that natively lives in the Place
+    hierarchy. A convenience READ (Part 5 §5.5): the Place payload remains
+    the source of truth; this answers "how full is it right now" without
+    pulling the hierarchy. Composed entirely of verbatim APDS occupancy
+    classes — APX adds no parallel occupancy datatypes.
+  type: object
+  required:
+    - place
+    - computedAt
+  properties:
+    place:
+      description: The HierarchyElement (Place, Level, Area, …) this snapshot describes.
+      $ref: "../../../vendor/apds/4.1/apds-api-4.1.yaml#/components/schemas/Reference"
+    computedAt:
+      description: When this snapshot was computed.
+      $ref: "../../../vendor/apds/4.1/apds-api-4.1.yaml#/components/schemas/DateTime"
+    supply:
+      description: The element's supply (verbatim APDS Supply).
+      $ref: "../../../vendor/apds/4.1/apds-api-4.1.yaml#/components/schemas/Supply"
+    demand:
+      description: |-
+        The latest area demand record (verbatim APDS DemandType — count,
+        percentage, occupancyCalculation, recordDateTime).
+      $ref: "../../../vendor/apds/4.1/apds-api-4.1.yaml#/components/schemas/DemandType"
+    available:
+      type: [integer, "null"]
+      minimum: 0
+      description: |-
+        Convenience derivation: supply.supplyQuantity − demand.count when
+        both are known; null when either side is unknown. Never negative —
+        overfull facilities clamp to 0 (the demand record still shows the
+        true count).
+      examples: [59]
+    extensions:
+      $ref: "../common/schemas.yaml#/Extensions"
+
 # --- Reusable additive parameters (applied by implementations to native list routes) ---
 
 ModeParam:

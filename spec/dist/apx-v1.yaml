@@ -49,6 +49,11 @@ security:
 tags:
   - name: Discovery
     description: Bootstrap and credential-scoped capability discovery.
+  - name: Data
+    description: |-
+      APX data profile — additive reads over the APDS Place hierarchy
+      (occupancy snapshot). The pull/push routes themselves are the native
+      APDS paths, mounted verbatim. See written standard Part 5.
   - name: Subscription
     description: |-
       APX delivery fabric — a superset-compatible profile of the APDS 4.1
@@ -1715,6 +1720,41 @@ paths:
                           oneOf:
                             - $ref: '#/components/schemas/QuoteRightResponse'
                             - $ref: '#/components/schemas/QuoteSessionExtensionResponse'
+  /v1/places/{id}/occupancy:
+    get:
+      operationId: get-apx-v1-places-id-occupancy
+      tags:
+        - Data
+      summary: Current occupancy snapshot for a place element
+      description: |-
+        "How full is it right now" for one HierarchyElement, without pulling
+        the Place hierarchy. A pure convenience READ over the APDS occupancy
+        model (Supply + DemandTable) — the Place payload remains the source
+        of truth. Fields the implementation does not know are simply absent.
+        Threshold crossings publish apx.data.occupancy.v1 and SHOULD raise
+        an occupancyThresholdExceeded alert (Part 7). Scope apx.data:read;
+        the place grant must cover the element.
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+          description: HierarchyElement UUID (Place, Level, Area, …).
+      responses:
+        '200':
+          description: The occupancy snapshot.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/OccupancySnapshot'
+        '404':
+          description: No such place element.
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
   /webhooks:
     post:
       operationId: post-webhooks
@@ -3285,6 +3325,48 @@ components:
             - 'null'
           format: uri-reference
           description: Link to the next page when more changes are immediately available; null otherwise.
+    OccupancySnapshot:
+      title: OccupancySnapshot
+      description: |-
+        Current occupancy for one HierarchyElement, computed from the APDS
+        occupancy model (Supply + DemandTable) that natively lives in the Place
+        hierarchy. A convenience READ (Part 5 §5.5): the Place payload remains
+        the source of truth; this answers "how full is it right now" without
+        pulling the hierarchy. Composed entirely of verbatim APDS occupancy
+        classes — APX adds no parallel occupancy datatypes.
+      type: object
+      required:
+        - place
+        - computedAt
+      properties:
+        place:
+          description: The HierarchyElement (Place, Level, Area, …) this snapshot describes.
+          $ref: '#/components/schemas/Reference'
+        computedAt:
+          description: When this snapshot was computed.
+          $ref: '#/components/schemas/DateTime'
+        supply:
+          description: The element's supply (verbatim APDS Supply).
+          $ref: '#/components/schemas/Supply'
+        demand:
+          description: |-
+            The latest area demand record (verbatim APDS DemandType — count,
+            percentage, occupancyCalculation, recordDateTime).
+          $ref: '#/components/schemas/DemandType'
+        available:
+          type:
+            - integer
+            - 'null'
+          minimum: 0
+          description: |-
+            Convenience derivation: supply.supplyQuantity − demand.count when
+            both are known; null when either side is unknown. Never negative —
+            overfull facilities clamp to 0 (the demand record still shows the
+            true count).
+          examples:
+            - 59
+        extensions:
+          $ref: '#/components/schemas/Extensions'
     ApxEventSubscription:
       title: ApxEventSubscription
       description: |-
