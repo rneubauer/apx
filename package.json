@@ -15,11 +15,14 @@
     "registries:check": "node tools/check-registries.mjs",
     "spec:profile": "node tools/build-profile-spec.mjs",
     "examples:check": "node tools/validate-examples.mjs",
+    "mock": "prism mock spec/dist/apx-v1.yaml --port 4010",
+    "docs:build": "redocly build-docs spec/dist/apx-v1.yaml -o site/index.html && redocly build-docs spec/dist/apx-parcs.json -o site/parcs.html",
     "scenarios:check": "node tools/validate-scenarios.mjs",
     "test": "npm run vendor:check && npm run registries:check && npm run spec:lint && npm run spec:bundle && npm run spec:profile && npm run spec:style && npm run examples:check && npm run scenarios:check"
   },
   "devDependencies": {
     "@redocly/cli": "^1.34.0",
+    "@stoplight/prism-cli": "^5.15.11",
     "@stoplight/spectral-cli": "^6.14.2",
     "ajv": "^8.17.0",
     "ajv-formats": "^3.0.0"

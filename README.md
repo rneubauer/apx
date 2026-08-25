@@ -1,5 +1,8 @@
 # APX — APDS Parking eXtensions
 
+[![CI](https://github.com/rneubauer/apx/actions/workflows/ci.yml/badge.svg)](https://github.com/rneubauer/apx/actions/workflows/ci.yml)
+[![Docs](https://github.com/rneubauer/apx/actions/workflows/docs.yml/badge.svg)](https://rneubauer.github.io/apx/)
+
 **APX** is an open, additive companion standard to
 [APDS 4.1](https://github.com/parkingdata/spec) (Alliance for Parking Data
 Standards / ISO TS 5206-1). One API that PARCS, LPR, tolling, permitting, and
@@ -51,9 +54,17 @@ npm run spec:lint      # Redocly lint (modular source)
 npm run spec:bundle    # produce spec/dist/apx-v1.{yaml,json}
 npm run spec:style     # Spectral APX conventions (bundled artifact)
 npm test               # all of the above + registry, profile, and example validation
+npm run mock           # Prism mock server on :4010 — schema-valid fake responses
+npm run docs:build     # render browsable HTML reference docs into site/
 ```
 
 Requires Node 20+. No Docker, no native modules.
+
+**Browsable docs** are published from `main` at
+<https://rneubauer.github.io/apx/> (full standard) and
+<https://rneubauer.github.io/apx/parcs.html> (PARCS starter profile).
+CI validates every push and PR; pull requests are additionally gated by an
+oasdiff breaking-change check against the base branch's bundle.
 
 ## Status
 

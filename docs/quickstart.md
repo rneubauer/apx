@@ -9,7 +9,25 @@ npm test               # lint, bundle, and validate the full spec
 
 Then import `spec/dist/apx-v1.yaml` into Postman, Swagger UI, or any
 OpenAPI viewer. PARCS vendors can start from the slim profile subset,
-`spec/dist/apx-parcs.json` (~25 endpoints).
+`spec/dist/apx-parcs.json` (~25 endpoints). Browsable reference docs are
+published from `main` at <https://rneubauer.github.io/apx/> (full standard)
+and <https://rneubauer.github.io/apx/parcs.html> (PARCS profile).
+
+## Try it against a mock server
+
+```powershell
+npm run mock    # Prism serves schema-valid fake responses on :4010
+```
+
+Then hit any endpoint — no auth, no hardware:
+
+```powershell
+curl http://127.0.0.1:4010/v1/devices
+curl http://127.0.0.1:4010/v1/places/98bccb9c-2ffe-4ca4-8e7f-eb1ae4439c29/occupancy
+```
+
+Responses are generated from the spec's schemas, so what you integrate
+against is exactly what a conformant server returns.
 
 ## Implement APX (the short version)
 

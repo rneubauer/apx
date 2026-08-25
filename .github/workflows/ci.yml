@@ -32,3 +32,23 @@ jobs:
         run: npm run scenarios:check
       - name: Committed bundle is fresh (spec/dist matches source)
         run: git diff --exit-code spec/dist
+
+  # A standard's cardinal sin is silently breaking the contract. Gate every
+  # PR on an API-diff of the committed bundle against the base branch.
+  breaking-changes:
+    if: github.event_name == 'pull_request'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Extract base-branch bundle
+        run: |
+          git fetch --depth=1 origin "$BASE_REF"
+          git show "origin/$BASE_REF:spec/dist/apx-v1.yaml" > /tmp/base-apx-v1.yaml
+        env:
+          BASE_REF: ${{ github.base_ref }}
+      - name: Breaking-change gate (oasdiff)
+        uses: oasdiff/oasdiff-action/breaking@main
+        with:
+          base: /tmp/base-apx-v1.yaml
+          revision: spec/dist/apx-v1.yaml
+          fail-on: ERR
