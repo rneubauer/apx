@@ -105,6 +105,7 @@ APX adds three additive mechanisms to the routes above:
 | **Change feed** | `GET /sessions?mode=change&cursor=…` | Only what changed since your cursor — ordered, gapless, exactly-once. Includes **tombstones** for deletions |
 | **Partial writes** | `PUT /rates/{id}` with header `APX-Update-Mode: change` | Send only the fields you're changing. Setting a field to `null` explicitly clears it; omitting it leaves it alone |
 | **Coarse catch-up** | `GET /places?modified_since=…` | Everything changed since a timestamp (for clients that lost their cursor) |
+| **Occupancy snapshot** | `GET /v1/places/{id}/occupancy` | "How full is it right now" for one garage/level/zone — supply, latest demand count, and a derived `available` — without pulling the whole Place hierarchy |
 
 **Why this way:** the cursor feed means a partner that goes offline for an
 hour replays exactly what it missed — no re-downloading, no gaps, no
@@ -139,6 +140,14 @@ deduplication, and an auditable ledger. Subscriptions can filter by facility
 and severity so partners receive only their world. SSE exists because plenty
 of parking equipment sits behind NAT and can't accept inbound calls — it
 gets the same events over an outbound connection instead.
+
+**For analytics platforms:** one subscription can carry a location's entire
+story — session lifecycle (APDS's native topics), every recorded payment
+(`apx.accounts.payment.recorded.v1`), every camera/sensor read
+(`apx.data.observation.created.v1`), occupancy movement
+(`apx.data.occupancy.v1`), plus alerts and command outcomes. Pair that with
+the §4 change feed for backfill and a BI engine gets full-fidelity data on
+a facility — financial, LPR, utilization — with no bespoke exports.
 
 ---
 
@@ -216,7 +225,9 @@ secure IVR → post it back → the gate opens. **APX never carries card
 numbers** — the standard deliberately keeps every implementer out of PCI
 scope by referencing payments, not processing them. One privacy rule is
 baked in: last-4 ticket lookups only reach back 8 hours, so the convenience
-feature can't be used to trawl history.
+feature can't be used to trawl history. Every recorded payment also
+publishes `apx.accounts.payment.recorded.v1`, so finance and BI systems get
+the revenue stream in real time instead of scraping reports.
 
 ---
 
@@ -230,7 +241,9 @@ feature can't be used to trawl history.
 **Why this way:** LPR vendors shouldn't need a bespoke ingestion API — a
 plate read *is* an observation, so ingest is the standard route every data
 integration already uses. The only genuinely new need is the *join* ("which
-ticket goes with this plate?"), so that's the only new endpoint.
+ticket goes with this plate?"), so that's the only new endpoint. Each
+ingested read also publishes `apx.data.observation.created.v1`, so analytics
+consumers can stream the raw sensor feed rather than polling.
 
 ---
 

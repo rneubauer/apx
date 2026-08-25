@@ -37,3 +37,30 @@ Three optional conformance classes covering the 2018 "Desirable" tier.
 - `GET /v1/lpr/reads?plate=|ticket=` — the bidirectional cross-lookup
   (2018 requirement ⑩): plate → ticket/session (+ accuracy + screenshot),
   ticket → plate. Scope `apx.lpr:read`.
+
+## 13.4 Eventing — the analytics feed
+
+APDS's native `EventTypeEnum` publishes entity lifecycle events for
+Sessions, Places, Rates, Rights, and Organisations — but **not** for
+payments or observations, the two highest-value streams for financial and
+LPR analytics. APX closes both gaps (registry `apx-topics`):
+
+- `apx.accounts.payment.recorded.v1` — published for every recorded
+  payment, whether taken via `POST /v1/payments` or ingested from a lane
+  device. Event `data` is the PaymentRecord. Implementations claiming
+  `apx-accounts` MUST publish it.
+- `apx.data.observation.created.v1` — published for every ingested
+  Observation (LPR read, RFID hit, sensor event). Event `data` is the
+  APDS Observation; `subject` references it. Implementations claiming
+  `apx-lpr` MUST publish it; implementations serving `POST /observations`
+  writes SHOULD publish it regardless.
+
+**The full-fidelity export recipe (informative).** An analytics platform
+that wants *everything* about a location combines three mechanisms, all
+already normative: (1) bulk/exactly-once history via the Part 5 change
+feed (`mode=change&cursor=…`) on every native route — sessions, rates,
+rights, observations; (2) real-time push via one Part 8 subscription
+mixing APDS EventTypeEnum topics with the APX topics above plus
+`apx.data.occupancy.v1`, alert, and command topics; (3) point-in-time
+convenience reads (occupancy §5.5, lane inquiry §6.2). Nothing about a
+place that APX models is unreachable by feed.

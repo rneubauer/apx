@@ -4,7 +4,7 @@
 build, nothing you don't.**
 
 You implement three conformance classes: `apx-data`, `apx-events`,
-`apx-control`. That's ~25 endpoints, and if your system already speaks
+`apx-control`. That's 26 endpoints, and if your system already speaks
 APDS 4.1, more than half are already done. Import the slim spec —
 `spec/dist/apx-parcs.json` — into Postman/your codegen; it contains *only*
 what this profile needs and is byte-identical to the full standard.
@@ -87,5 +87,5 @@ at the end.
 
 UUIDs + integer `version` on every object · typed references
 `{"id","className"}` · RFC 3339 UTC timestamps · money
-`{"type":"USD","value":9.00}` · errors are `application/problem+json` with
+`{"currencyType":"USD","currencyValue":9.00}` · errors are `application/problem+json` with
 a documented `type` URI · unknown `extensions` keys must survive round-trips.

@@ -9,7 +9,7 @@ Standards / ISO TS 5206-1). One API that PARCS, LPR, tolling, permitting, and
 reservations vendors implement — adding what APDS deliberately leaves out,
 while reusing everything it defines.
 
-**New here?** Read the [executive summary](docs/executive-summary.md) (shareable, non-technical), the [complete API overview](docs/apx-overview.md) (every route + the reasoning, no APDS knowledge needed), the [sample scenarios](docs/scenarios/README.md) (real wire exchanges, story first), or the [quickstart](docs/quickstart.md). **PARCS vendor?** Start with the [PARCS Starter Profile](docs/parcs-starter-profile.md) — the minimum ~25-endpoint surface, with a slim importable spec (`spec/dist/apx-parcs.json`).
+**New here?** Read the [executive summary](docs/executive-summary.md) (shareable, non-technical), the [complete API overview](docs/apx-overview.md) (every route + the reasoning, no APDS knowledge needed), the [sample scenarios](docs/scenarios/README.md) (real wire exchanges, story first), or the [quickstart](docs/quickstart.md). **PARCS vendor?** Start with the [PARCS Starter Profile](docs/parcs-starter-profile.md) — the minimum 26-endpoint surface, with a slim importable spec (`spec/dist/apx-parcs.json`).
 
 ## Prime directive: APDS-first
 
@@ -66,9 +66,14 @@ Requires Node 20+. No Docker, no native modules.
 CI validates every push and PR; pull requests are additionally gated by an
 oasdiff breaking-change check against the base branch's bundle.
 
+## Contributing & history
+
+Change process, ground rules, and merge gates: [CONTRIBUTING.md](CONTRIBUTING.md).
+Version history: [CHANGELOG.md](CHANGELOG.md).
+
 ## Status
 
-**v0.1.0 — complete v1 draft.** All domains specified: data profile,
+**v0.1.1 — complete v1 draft.** All domains specified: data profile,
 delivery fabric, control, alerts, discovery, accounts & payments, LPR,
 reservations, permits, tolling. This repository contains the specification
 and written standard only — implementations live elsewhere.

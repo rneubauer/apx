@@ -2,7 +2,7 @@
   "openapi": "3.1.0",
   "info": {
     "title": "APX — APDS Parking eXtensions",
-    "version": "0.1.0",
+    "version": "0.1.1",
     "summary": "An open companion standard to APDS 4.1",
     "description": "**APX (APDS Parking eXtensions)** is an additive companion standard to the\n[APDS 4.1 API](https://github.com/parkingdata/spec) (Alliance for Parking\nData Standards, published as ISO/TS 5206-1).\n\nAPX follows an **APDS-first prime directive**: wherever APDS 4.1 already\ndefines a route, schema, or convention, APX uses it verbatim (by `$ref`\ninto the vendored, unmodified `apds-api-4.1.yaml`). APX only adds what\nAPDS deliberately leaves out:\n\n- **Data profile** — Full/Change update semantics, tombstones, and a\n  cursor-based change feed as additive parameters on APDS's native routes\n- **Delivery fabric** — a superset-compatible profile of APDS `/webhooks`\n  (HMAC signing, normative retries, delivery ledger, SSE)\n- **Control** — command plane for gates/PARCS/devices with idempotency,\n  lifecycle, and immutable audit\n- **Alerts** — operational alerting with open taxonomies via APDS\n  UserDefinedCodeLists\n- **Discovery** — credential-scoped capability documents\n- **Accounts & payments, LPR, reservations, permits, tolling** — profiles\n  and additive resources over APDS entities\n\nExtension identity follows the official APDS extension convention:\n`apds-ext:apx:<class>@<version>` (Use Case Document §C.2.5), with\nextensionName `apx`.",
     "license": {

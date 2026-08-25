@@ -63,6 +63,10 @@ payments, LPR, reservations, permits, tolling).
 | 10 | 10-extensibility.md | Extension rules for implementers and vendors |
 | 11 | 11-registries.md | Code-list registries |
 | 12 | 12-errors.md | Error model |
+| 13 | 13-accounts-payments-lpr.md | Accounts, payments, LPR, analytics eventing |
+| 14 | 14-reservations-permits.md | Reservations and pooled permits |
+| 15 | 15-tolling.md | Toll transactions and disputes |
+| 16 | 16-discovery.md | Credential-scoped discovery |
 
 The machine-readable OpenAPI 3.1 document (`spec/openapi/apx.yaml`, bundled
 as `spec/dist/apx-v1.*`) is **normative**. Where prose and OpenAPI disagree,

@@ -1,0 +1,38 @@
+name: Release
+
+# Pushing a version tag (v0.1.1, v1.0.0, …) validates the spec and publishes
+# a GitHub Release with the bundled artifacts attached — the single
+# downloadable a committee or vendor needs.
+
+on:
+  push:
+    tags: ["v*"]
+
+permissions:
+  contents: write
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+      - run: npm ci
+      - name: Full validation gate
+        run: npm test
+      - name: Publish release with spec bundles
+        uses: softprops/action-gh-release@v2
+        with:
+          generate_release_notes: true
+          body: |
+            Machine-readable artifacts for this version of the APX standard:
+            - `apx-v1.yaml` / `apx-v1.json` — the full bundled OpenAPI 3.1 spec (normative)
+            - `apx-parcs.json` — the PARCS Starter Profile subset
+            See `CHANGELOG.md` for what changed.
+          files: |
+            spec/dist/apx-v1.yaml
+            spec/dist/apx-v1.json
+            spec/dist/apx-parcs.json

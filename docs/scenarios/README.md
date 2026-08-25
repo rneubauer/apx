@@ -1,6 +1,6 @@
 # APX Scenarios — the API at work
 
-Five end-to-end stories showing real wire exchanges against an APX
+Seven end-to-end stories showing real wire exchanges against an APX
 implementation. Every JSON payload marked with an `<!-- apx:validate … -->`
 comment is machine-validated against the bundled spec by
 `npm run scenarios:check` — the samples cannot drift from the standard.
@@ -13,6 +13,7 @@ comment is machine-validated against the bundled spec by
 | [04](04-lpr-lost-ticket.md) | LPR transient parker with a lost ticket | `apx-lpr`, `apx-accounts`, `apx-payment-history`, `apx-control` |
 | [05](05-reservation-lifecycle.md) | Reservation lifecycle — quote to check-in to no-show | `apx-reservations`, `apx-events` |
 | [06](06-reservation-set-time-extension.md) | Reservation for a set time, then extending it — pre-arrival, mid-stay, and declined | `apx-reservations` |
+| [07](07-analytics-occupancy-feed.md) | The analytics feed — occupancy, payments, plate reads into a BI warehouse | `apx-data`, `apx-events`, `apx-accounts`, `apx-lpr` |
 
 ## Conventions
 
