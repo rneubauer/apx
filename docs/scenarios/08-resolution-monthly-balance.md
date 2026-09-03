@@ -25,11 +25,15 @@ Content-Type: application/json
 
 ```json
 {
+  "interactionId": "interaction-938383",
   "correlationId": "7c9e6679-7425-40de-944b-e07fc1f90ae7",
   "channel": "intercom",
   "lane": { "id": "b2000000-0000-4000-8000-000000000002", "className": "VehicularAccess" }
 }
 ```
+
+(`interactionId` is opaque to APX — the platform knows it's a SIP call;
+APX never does.)
 
 The server resolves lane → current denial → credential → account, and
 answers with the assembled context:
@@ -41,6 +45,7 @@ answers with the assembled context:
   "version": 1,
   "computedAt": "2026-09-02T21:14:05Z",
   "status": "full",
+  "interactionId": "interaction-938383",
   "correlationId": "7c9e6679-7425-40de-944b-e07fc1f90ae7",
   "issue": {
     "code": "accountBalanceDenied",
@@ -72,17 +77,21 @@ answers with the assembled context:
   ],
   "allowedActions": [
     {
-      "command": "sendPaymentLink",
+      "action": "post-apx-v1-payment-links",
+      "display": "Send payment link",
       "target": { "id": "c2000000-0000-4000-8000-000000000004", "className": "Account" },
       "allowed": true,
-      "requiresApproval": false
+      "requiresApproval": false,
+      "execution": { "type": "domain", "operationId": "post-apx-v1-payment-links" }
     },
     {
-      "command": "courtesyExit",
+      "action": "courtesyExit",
+      "display": "Courtesy exit",
       "target": { "id": "b2000000-0000-4000-8000-000000000002", "className": "VehicularAccess" },
       "allowed": false,
       "requiresApproval": true,
       "approvalRole": "supervisor",
+      "execution": { "type": "control", "command": "courtesyExit" },
       "reason": {
         "code": "courtesyLimitReached",
         "display": "Two courtesy exits have already been provided within the previous 48 hours.",
@@ -91,59 +100,65 @@ answers with the assembled context:
     }
   ],
   "recommendedAction": {
-    "command": "sendPaymentLink",
+    "action": "post-apx-v1-payment-links",
     "reason": "Courtesy threshold exceeded; balance payment clears the hold immediately."
   }
 }
 ```
 
+Note the `execution` descriptors: the agent sees one uniform action list;
+whether an action runs as a Part 6 control command or a domain operation
+is APX's concern, not the agent's (Part 17 §17.4).
+
 Everything the console renders — and everything the AI is permitted to
 reason about doing — is in that one response. The AI did not decide the
 courtesy exit was off the table; the policy layer did (Part 17 §17.3).
 
-## Step 2 — The allowed action executes through the ordinary command plane
+## Step 2 — The allowed action executes through its owning domain
 
-The customer opts to pay. The agent executes the recommended action — a
-stock Part 6 command, carrying the context and correlation chain:
+The customer opts to pay. Sending a payment link is a *financial* action,
+so it runs on the payment surface (Part 13 §13.1a) — not the command
+plane — exactly as the AllowedAction's `execution` descriptor said:
 
 ```http
-POST /v1/commands HTTP/1.1
+POST /v1/payment-links HTTP/1.1
 Idempotency-Key: ctx-e5000000-payment-link
 Content-Type: application/json
 
 {
-  "commandType": "sendPaymentLink",
-  "target": { "id": "c2000000-0000-4000-8000-000000000004", "className": "Account" },
-  "parameters": { "channel": "sms" },
-  "reason": "Balance hold at exit; customer chose to pay by link.",
+  "place": { "id": "b1000000-0000-4000-8000-000000000001", "className": "Place" },
+  "account": { "id": "c2000000-0000-4000-8000-000000000004", "className": "Account" },
+  "channel": "sms",
   "resolutionContext": { "id": "e5000000-0000-4000-8000-000000000001", "className": "ResolutionContext" },
   "correlationId": "7c9e6679-7425-40de-944b-e07fc1f90ae7"
 }
 ```
 
-<!-- apx:validate Command -->
+<!-- apx:validate PaymentLink -->
 ```json
 {
   "id": "e6000000-0000-4000-8000-000000000002",
-  "version": 2,
-  "commandType": "sendPaymentLink",
-  "target": { "id": "c2000000-0000-4000-8000-000000000004", "className": "Account" },
-  "parameters": { "channel": "sms" },
-  "reason": "Balance hold at exit; customer chose to pay by link.",
+  "version": 1,
+  "place": { "id": "b1000000-0000-4000-8000-000000000001", "className": "Place" },
+  "account": { "id": "c2000000-0000-4000-8000-000000000004", "className": "Account" },
+  "amount": { "currencyType": "USD", "currencyValue": 185.00 },
+  "channel": "sms",
+  "sentTo": "+1•••••••4567",
+  "status": "sent",
+  "expiresAt": "2026-09-02T22:15:41Z",
   "resolutionContext": { "id": "e5000000-0000-4000-8000-000000000001", "className": "ResolutionContext" },
-  "correlationId": "7c9e6679-7425-40de-944b-e07fc1f90ae7",
-  "status": "succeeded",
-  "statusHistory": [
-    { "state": "received", "time": "2026-09-02T21:15:40Z", "actor": "callcenter-ai-agent-07" },
-    { "state": "succeeded", "time": "2026-09-02T21:15:41Z", "actor": "lakeside-parcs", "detail": "Payment link sent via sms" }
-  ]
+  "correlationId": "7c9e6679-7425-40de-944b-e07fc1f90ae7"
 }
 ```
 
-Had the agent tried `courtesyExit` instead, the server would have rejected
-it — `403 approval-required` — because the context's AllowedAction said so.
-The payment arrives as `apx.accounts.payment.recorded.v1` (Scenario 07),
-the hold clears, and the gate vends on the retry.
+Had the agent tried `courtesyExit` instead — a *control* command — the
+command plane would have rejected it (`403 approval-required`) because the
+context's AllowedAction said so. And if a supervisor had approved a gate
+vend, the returned Command's `confirmationLevel` tells the agent exactly
+what it may claim: "the open command was accepted" is not "the gate is
+open" (Part 6 §6.1). The payment arrives as
+`apx.accounts.payment.recorded.v1` (Scenario 07), the hold clears, and the
+gate vends on the retry.
 
 ## Step 3 — The interaction is recorded for next time
 
@@ -170,9 +185,10 @@ Content-Type: application/json
     "account": { "id": "c2000000-0000-4000-8000-000000000004", "className": "Account" },
     "plate": "SYN-1234"
   },
-  "commands": [
-    { "id": "e6000000-0000-4000-8000-000000000002", "className": "Command" }
+  "actions": [
+    { "id": "e6000000-0000-4000-8000-000000000002", "className": "PaymentLink" }
   ],
+  "interactionId": "interaction-938383",
   "resolution": { "code": "resolved", "display": "Paid and exited" },
   "correlationId": "7c9e6679-7425-40de-944b-e07fc1f90ae7"
 }

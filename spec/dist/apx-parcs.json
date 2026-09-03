@@ -4937,6 +4937,16 @@
             ],
             "readOnly": true
           },
+          "confirmationLevel": {
+            "type": "string",
+            "enum": [
+              "accepted",
+              "deviceAcknowledged",
+              "physicallyConfirmed"
+            ],
+            "readOnly": true,
+            "description": "How far success is actually confirmed (Part 6 §6.1): the command was\naccepted; the device acknowledged it; or the physical outcome was\nverified (e.g. gate-state sensor). Consumers — AI agents especially —\nMUST NOT claim a physical outcome (\"the gate is open\") beyond this\nlevel (\"the open command was accepted\")."
+          },
           "statusHistory": {
             "type": "array",
             "description": "Immutable, append-only lifecycle audit — THE audit trail (Part 4 §4.2).",

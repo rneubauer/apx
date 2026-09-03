@@ -4221,6 +4221,420 @@
         }
       }
     },
+    "/v1/payments/{id}/refund": {
+      "post": {
+        "operationId": "post-apx-v1-payments-id-refund",
+        "tags": [
+          "Accounts"
+        ],
+        "summary": "Refund a payment (financial domain action)",
+        "description": "Refunds the payment fully, or partially per `amount`. A financial\naction per Part 17 §17.4 — never a control command. Idempotency-Key\nREQUIRED; approval evidence required when the resolution context's\nAllowedAction said so. Scope apx.payments:write.",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "Idempotency-Key",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": false,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "amount": {
+                    "$ref": "#/components/schemas/AmountInCurrency"
+                  },
+                  "reason": {
+                    "type": "string"
+                  },
+                  "approval": {
+                    "type": "object",
+                    "properties": {
+                      "approvedBy": {
+                        "type": "string"
+                      },
+                      "approvedAt": {
+                        "$ref": "#/components/schemas/DateTime"
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "The payment, now reversed/partially refunded.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PaymentRecord"
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "404": {
+            "description": "No such payment.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Not refundable in its current state, or Idempotency-Key replayed with a different body.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/payments/{id}/void": {
+      "post": {
+        "operationId": "post-apx-v1-payments-id-void",
+        "tags": [
+          "Accounts"
+        ],
+        "summary": "Void an authorized, uncaptured payment",
+        "description": "Financial domain action (Part 17 §17.4). Idempotency-Key REQUIRED. Scope apx.payments:write.",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "Idempotency-Key",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The voided payment.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PaymentRecord"
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "404": {
+            "description": "No such payment.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Already captured or otherwise not voidable.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/payments/{id}/capture": {
+      "post": {
+        "operationId": "post-apx-v1-payments-id-capture",
+        "tags": [
+          "Accounts"
+        ],
+        "summary": "Capture a previously authorized payment",
+        "description": "Financial domain action (Part 17 §17.4). Idempotency-Key REQUIRED. Scope apx.payments:write.",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "Idempotency-Key",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": false,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "amount": {
+                    "$ref": "#/components/schemas/AmountInCurrency"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "The captured payment.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PaymentRecord"
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "404": {
+            "description": "No such payment.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Not capturable in its current state.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/payment-links": {
+      "post": {
+        "operationId": "post-apx-v1-payment-links",
+        "tags": [
+          "Accounts",
+          "Resolution"
+        ],
+        "summary": "Send a hosted payment link",
+        "description": "The customer-service payment action of first resort (Part 13\n§13.1a): sends a hosted payment link via the given channel for an\naccount, ticket, or session. APX never carries PANs. Idempotency-Key\nREQUIRED. Scope apx.payments:write. Payment completion arrives as\napx.accounts.payment.recorded.v1.",
+        "parameters": [
+          {
+            "name": "Idempotency-Key",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/PaymentLink"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "The link, sent.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PaymentLink"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "No account/ticket/session to settle, or unsupported channel.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "409": {
+            "description": "Idempotency-Key replayed with a different body.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/sessions/{id}/plate": {
+      "put": {
+        "operationId": "put-apx-v1-sessions-id-plate",
+        "tags": [
+          "LPR",
+          "Resolution"
+        ],
+        "summary": "Associate or correct the plate on a session",
+        "description": "The write side of plate correction (Part 17 §17.5): sets the\nsession's plate, optionally citing the chosen Observation candidate\n(GET /v1/lpr/candidates). A transactional domain action — not a\ncontrol command. Naturally idempotent (PUT). Scope apx.data:write.",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            },
+            "description": "APDS Session UUID."
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": [
+                  "plate"
+                ],
+                "properties": {
+                  "plate": {
+                    "type": "string"
+                  },
+                  "jurisdiction": {
+                    "type": "string",
+                    "examples": [
+                      "US-FL"
+                    ]
+                  },
+                  "observation": {
+                    "description": "The Observation candidate this correction is based on.",
+                    "$ref": "#/components/schemas/Reference"
+                  },
+                  "reason": {
+                    "type": "string"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "The corrected association.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": [
+                    "session",
+                    "plate"
+                  ],
+                  "properties": {
+                    "session": {
+                      "$ref": "#/components/schemas/Reference"
+                    },
+                    "plate": {
+                      "type": "string"
+                    },
+                    "jurisdiction": {
+                      "type": "string"
+                    },
+                    "observation": {
+                      "$ref": "#/components/schemas/Reference"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "404": {
+            "description": "No such session.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/v1/lpr/reads": {
       "get": {
         "operationId": "get-apx-v1-lpr-reads",
@@ -6117,6 +6531,16 @@
             ],
             "readOnly": true
           },
+          "confirmationLevel": {
+            "type": "string",
+            "enum": [
+              "accepted",
+              "deviceAcknowledged",
+              "physicallyConfirmed"
+            ],
+            "readOnly": true,
+            "description": "How far success is actually confirmed (Part 6 §6.1): the command was\naccepted; the device acknowledged it; or the physical outcome was\nverified (e.g. gate-state sensor). Consumers — AI agents especially —\nMUST NOT claim a physical outcome (\"the gate is open\") beyond this\nlevel (\"the open command was accepted\")."
+          },
           "statusHistory": {
             "type": "array",
             "description": "Immutable, append-only lifecycle audit — THE audit trail (Part 4 §4.2).",
@@ -6505,6 +6929,90 @@
           },
           "time": {
             "$ref": "#/components/schemas/DateTime"
+          }
+        }
+      },
+      "PaymentLink": {
+        "title": "PaymentLink",
+        "description": "A hosted payment link sent to a customer (Part 13 §13.1a) — the\ncustomer-service payment action of first resort. APX carries the link's\nlifecycle, never card data; the hosted page is the implementer's PCI\nscope.",
+        "type": "object",
+        "required": [
+          "id",
+          "version",
+          "place",
+          "channel",
+          "status"
+        ],
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid",
+            "readOnly": true
+          },
+          "version": {
+            "type": "integer",
+            "minimum": 1,
+            "readOnly": true
+          },
+          "place": {
+            "description": "Site binding (Part 13 §13.5).",
+            "$ref": "#/components/schemas/Reference"
+          },
+          "account": {
+            "description": "The account the payment settles (or omit and use ticketNumber).",
+            "$ref": "#/components/schemas/Reference"
+          },
+          "ticketNumber": {
+            "type": "string"
+          },
+          "session": {
+            "$ref": "#/components/schemas/Reference"
+          },
+          "amount": {
+            "description": "Requested amount; omit to charge the current amount due.",
+            "$ref": "#/components/schemas/AmountInCurrency"
+          },
+          "channel": {
+            "type": "string",
+            "description": "Delivery channel (sms | email | other implementer code list).",
+            "examples": [
+              "sms"
+            ]
+          },
+          "sentTo": {
+            "type": "string",
+            "description": "Masked destination (e.g. \"+1•••••••4567\"). PII-minimized."
+          },
+          "status": {
+            "type": "string",
+            "enum": [
+              "sent",
+              "opened",
+              "paid",
+              "expired",
+              "cancelled"
+            ],
+            "readOnly": true
+          },
+          "payment": {
+            "description": "The resulting PaymentRecord once paid.",
+            "$ref": "#/components/schemas/Reference"
+          },
+          "expiresAt": {
+            "$ref": "#/components/schemas/DateTime"
+          },
+          "correlationId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "resolutionContext": {
+            "$ref": "#/components/schemas/Reference"
+          },
+          "recordInfo": {
+            "$ref": "#/components/schemas/RecordInfo"
+          },
+          "extensions": {
+            "$ref": "#/components/schemas/Extensions"
           }
         }
       },
@@ -6929,6 +7437,13 @@
               "type": "string"
             }
           },
+          "interactionId": {
+            "type": "string",
+            "description": "Echo of the caller's opaque interaction identifier.",
+            "examples": [
+              "interaction-938383"
+            ]
+          },
           "correlationId": {
             "type": "string",
             "format": "uuid"
@@ -7068,16 +7583,16 @@
           },
           "recommendedAction": {
             "type": "object",
-            "description": "The server's suggested next step (advisory, never binding).",
+            "description": "The server's suggested next step (advisory, never binding). MUST be one of allowedActions.",
             "required": [
-              "command"
+              "action"
             ],
             "properties": {
-              "command": {
+              "action": {
                 "type": "string",
-                "description": "definedValue from apx-command-types.",
+                "description": "The AllowedAction.action value being recommended.",
                 "examples": [
-                  "sendPaymentLink"
+                  "post-apx-v1-payment-links"
                 ]
               },
               "reason": {
@@ -7099,6 +7614,13 @@
         "type": "object",
         "minProperties": 1,
         "properties": {
+          "interactionId": {
+            "type": "string",
+            "description": "OPAQUE identifier of the calling application's customer interaction\n(a call, chat, SMS session…). APX never interprets it — it only\nechoes it for correlation (Part 17 §17.7). Not an identifier for\nresolution.",
+            "examples": [
+              "interaction-938383"
+            ]
+          },
           "correlationId": {
             "type": "string",
             "format": "uuid",
@@ -7166,22 +7688,29 @@
       },
       "AllowedAction": {
         "title": "AllowedAction",
-        "description": "One policy decision about one command type, evaluated for THIS context,\nTHIS credential, and THIS moment (Part 17 §17.3). The server — never\nthe consuming agent, human or AI — decides permissibility. Approval\nrequirements are policy-dependent, which is why they live here at\nruntime and not in the command-type registry.",
+        "description": "One policy decision about one action, evaluated for THIS context, THIS\ncredential, and THIS moment (Part 17 §17.3). The server — never the\nconsuming agent, human or AI — decides permissibility. Approval\nrequirements are policy-dependent, which is why they live here at\nruntime and not in a registry.\n\nThe `execution` descriptor abstracts HOW the action runs — a Part 6\ncontrol command or a domain API operation — so the agent sees one\nunified action list and never needs to know which APX module executes\nit. Servers MUST NOT list an action the implementation does not\nsupport (Part 17 §17.3).",
         "type": "object",
         "required": [
-          "command",
+          "action",
           "allowed"
         ],
         "properties": {
-          "command": {
+          "action": {
             "type": "string",
-            "description": "definedValue from apx-command-types.",
+            "description": "Logical action identifier: the apx-command-types value for control\nactions, or the effective-spec operationId for domain actions.",
             "examples": [
-              "sendPaymentLink"
+              "courtesyExit"
+            ]
+          },
+          "display": {
+            "type": "string",
+            "description": "Agent-facing label.",
+            "examples": [
+              "Courtesy exit"
             ]
           },
           "target": {
-            "description": "The Reference the command should be executed against.",
+            "description": "The Reference the action should be executed against.",
             "$ref": "#/components/schemas/Reference"
           },
           "allowed": {
@@ -7190,7 +7719,7 @@
           "requiresApproval": {
             "type": "boolean",
             "default": false,
-            "description": "When true, POST /v1/commands for this action MUST carry approval evidence (Part 17 §17.3)."
+            "description": "When true, the executing request MUST carry approval evidence (Part 17 §17.3)."
           },
           "approvalRole": {
             "type": "string",
@@ -7198,6 +7727,36 @@
             "examples": [
               "supervisor"
             ]
+          },
+          "execution": {
+            "type": "object",
+            "description": "How to execute (RECOMMENDED). Exactly one of command/operationId per type.",
+            "required": [
+              "type"
+            ],
+            "properties": {
+              "type": {
+                "type": "string",
+                "enum": [
+                  "control",
+                  "domain"
+                ]
+              },
+              "command": {
+                "type": "string",
+                "description": "For type=control — the apx-command-types value for POST /v1/commands.",
+                "examples": [
+                  "courtesyExit"
+                ]
+              },
+              "operationId": {
+                "type": "string",
+                "description": "For type=domain — the operationId of the executing operation in the effective OpenAPI description.",
+                "examples": [
+                  "post-apx-v1-payment-links"
+                ]
+              }
+            }
           },
           "reason": {
             "type": "object",
@@ -7448,12 +8007,19 @@
               }
             }
           },
-          "commands": {
+          "actions": {
             "type": "array",
-            "description": "References to Commands executed during the interaction.",
+            "description": "References to actions executed during the interaction (Commands, PaymentLinks, domain mutations).",
             "items": {
               "$ref": "#/components/schemas/Reference"
             }
+          },
+          "interactionId": {
+            "type": "string",
+            "description": "The calling application's opaque interaction identifier.",
+            "examples": [
+              "interaction-938383"
+            ]
           },
           "resolution": {
             "type": "object",

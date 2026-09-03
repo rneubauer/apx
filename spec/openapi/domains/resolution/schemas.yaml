@@ -27,31 +27,59 @@ ResolutionIssue:
 AllowedAction:
   title: AllowedAction
   description: |-
-    One policy decision about one command type, evaluated for THIS context,
-    THIS credential, and THIS moment (Part 17 §17.3). The server — never
-    the consuming agent, human or AI — decides permissibility. Approval
+    One policy decision about one action, evaluated for THIS context, THIS
+    credential, and THIS moment (Part 17 §17.3). The server — never the
+    consuming agent, human or AI — decides permissibility. Approval
     requirements are policy-dependent, which is why they live here at
-    runtime and not in the command-type registry.
+    runtime and not in a registry.
+
+    The `execution` descriptor abstracts HOW the action runs — a Part 6
+    control command or a domain API operation — so the agent sees one
+    unified action list and never needs to know which APX module executes
+    it. Servers MUST NOT list an action the implementation does not
+    support (Part 17 §17.3).
   type: object
-  required: [command, allowed]
+  required: [action, allowed]
   properties:
-    command:
+    action:
       type: string
-      description: definedValue from apx-command-types.
-      examples: [sendPaymentLink]
+      description: |-
+        Logical action identifier: the apx-command-types value for control
+        actions, or the effective-spec operationId for domain actions.
+      examples: [courtesyExit]
+    display:
+      type: string
+      description: Agent-facing label.
+      examples: ["Courtesy exit"]
     target:
-      description: The Reference the command should be executed against.
+      description: The Reference the action should be executed against.
       $ref: "../../../vendor/apds/4.1/apds-api-4.1.yaml#/components/schemas/Reference"
     allowed:
       type: boolean
     requiresApproval:
       type: boolean
       default: false
-      description: When true, POST /v1/commands for this action MUST carry approval evidence (Part 17 §17.3).
+      description: When true, the executing request MUST carry approval evidence (Part 17 §17.3).
     approvalRole:
       type: string
       description: Role that can approve (implementer/operator code list).
       examples: [supervisor]
+    execution:
+      type: object
+      description: How to execute (RECOMMENDED). Exactly one of command/operationId per type.
+      required: [type]
+      properties:
+        type:
+          type: string
+          enum: [control, domain]
+        command:
+          type: string
+          description: For type=control — the apx-command-types value for POST /v1/commands.
+          examples: [courtesyExit]
+        operationId:
+          type: string
+          description: For type=domain — the operationId of the executing operation in the effective OpenAPI description.
+          examples: [post-apx-v1-payment-links]
     reason:
       type: object
       description: Why the action is denied or gated. REQUIRED when allowed=false or requiresApproval=true.
@@ -199,11 +227,15 @@ SupportInteraction:
         reservation:
           $ref: "../../../vendor/apds/4.1/apds-api-4.1.yaml#/components/schemas/Reference"
         plate: { type: string }
-    commands:
+    actions:
       type: array
-      description: References to Commands executed during the interaction.
+      description: References to actions executed during the interaction (Commands, PaymentLinks, domain mutations).
       items:
         $ref: "../../../vendor/apds/4.1/apds-api-4.1.yaml#/components/schemas/Reference"
+    interactionId:
+      type: string
+      description: The calling application's opaque interaction identifier.
+      examples: [interaction-938383]
     resolution:
       type: object
       description: How the interaction ended.
@@ -236,6 +268,14 @@ ResolutionResolveRequest:
   type: object
   minProperties: 1
   properties:
+    interactionId:
+      type: string
+      description: |-
+        OPAQUE identifier of the calling application's customer interaction
+        (a call, chat, SMS session…). APX never interprets it — it only
+        echoes it for correlation (Part 17 §17.7). Not an identifier for
+        resolution.
+      examples: [interaction-938383]
     correlationId:
       type: string
       format: uuid
@@ -289,6 +329,10 @@ ResolutionContext:
       type: array
       description: Names of sources still resolving when status=partial (implementer-defined identifiers).
       items: { type: string }
+    interactionId:
+      type: string
+      description: Echo of the caller's opaque interaction identifier.
+      examples: [interaction-938383]
     correlationId:
       type: string
       format: uuid
@@ -375,13 +419,13 @@ ResolutionContext:
         $ref: "#/AllowedAction"
     recommendedAction:
       type: object
-      description: The server's suggested next step (advisory, never binding).
-      required: [command]
+      description: The server's suggested next step (advisory, never binding). MUST be one of allowedActions.
+      required: [action]
       properties:
-        command:
+        action:
           type: string
-          description: definedValue from apx-command-types.
-          examples: [sendPaymentLink]
+          description: The AllowedAction.action value being recommended.
+          examples: [post-apx-v1-payment-links]
         reason:
           type: string
     recordInfo:

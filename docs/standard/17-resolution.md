@@ -6,24 +6,26 @@ log into another system, find the facility, find the lane, find the
 transaction, and reconstruct what happened. One call assembles the context;
 the server — not the agent — decides which actions are permitted.
 
-The architecture is five layers, each already grounded in an existing Part:
+The architecture, each layer grounded in an existing Part:
 
-| Layer | Where it lives |
-|---|---|
-| DISCOVERY | Parts 5, 16 — Place hierarchy, `/v1/discovery` |
-| CONTEXT | §17.2 — the ResolutionContext aggregation |
-| POLICY | §17.3 — AllowedActions, evaluated server-side |
-| ACTIONS | Part 6 — the existing command plane (new command types §17.4) |
-| EVENTS | Part 8 — two new topics (§17.6) |
+| Layer | Answers | Where it lives |
+|---|---|---|
+| DISCOVERY | What exists? | Parts 5, 16 — Place hierarchy, `/v1/discovery` |
+| DOMAIN | What is true? | Parts 5, 13–15 — sessions, payments, rights, rates |
+| CONTEXT | What is happening? | §17.2 — the ResolutionContext aggregation |
+| POLICY | What may be done? | §17.3 — AllowedActions, evaluated server-side |
+| ACTIONS | Do it | Part 6 control commands OR domain operations (§17.4) |
+| EVENTS | What just happened? | Part 8 — two new topics (§17.6) |
 
-**Implementability floor.** This class deliberately adds only SIX endpoints.
-All writes reuse the Part 6 command plane an `apx-control` implementation
-already has; the context is composed of schemas other classes already
-define. A minimal conforming implementation is: the three
-`/v1/resolution/*` reads plus policy evaluation over the command types it
-already supports. Every context section beyond the required core (id,
-version, computedAt, status, place, allowedActions) is optional — include
-what you know, omit what you don't.
+**Implementability floor.** The class itself adds only the three
+`/v1/resolution/*` reads plus a handful of small reads/writes owned by the
+domains that already exist (passback, plate candidates/correction, payment
+lifecycle, support history); the context is composed of schemas other
+classes already define. A minimal conforming implementation is: the three
+resolution reads plus policy evaluation over the actions it already
+supports. Every context section beyond the required core (id, version,
+computedAt, status, place, allowedActions) is optional — include what you
+know, omit what you don't.
 
 ## 17.1 Identifier resolution
 
@@ -88,37 +90,48 @@ is the policy layer's interoperable surface:
 4. `recommendedAction` is advisory, never binding, and MUST be one of the
    allowed actions.
 
-## 17.4 Command additions
+## 17.4 Action categories (normative)
 
-New `apx-command-types` entries (registry v2) — all executed through the
-existing Part 6 plane with its idempotency, perishability, grants, and
-audit:
+Not every action is a control command. Actions split by what they touch,
+and each category is owned by the module that already models it:
 
-- `resetPassback`, `forceIn`, `forceOut` — anti-passback correction;
-  parameters: `credential` (Reference). Read side:
-  `GET /v1/credentials/{id}/passback` → `PassbackStatus`.
-- `courtesyExit` — a gate vend recorded as a tracked courtesy against the
-  account/holder in parameters; servers MUST count it toward courtesy
-  policy and surface it in `recentOverrides`.
-- `associatePlate` — attach/correct a plate on a session; parameters:
-  `session` (Reference), `plate`, optional `observation` (Reference to the
-  chosen candidate). Read side: `GET /v1/lpr/candidates`.
-- `sendPaymentLink` — hosted payment link via `channel` in parameters
-  (sms/email); APX never carries PANs.
-- `refundPayment`, `voidPayment`, `capturePayment` — lifecycle verbs on an
-  existing `PaymentRecord` (Reference in parameters); refunds SHOULD
-  require approval by default operator policy.
+1. **Operational/physical → Part 6 Control.** Gate and device actuation,
+   access state. New `apx-command-types` entries (registry v2):
+   `resetPassback`, `forceIn`, `forceOut` (anti-passback correction;
+   parameters: `credential`; read side `GET /v1/credentials/{id}/passback`)
+   and `courtesyExit` (a gate vend recorded as a tracked courtesy against
+   the account/holder in parameters — servers MUST count it toward
+   courtesy policy and surface it in `recentOverrides`). Control MUST NOT
+   become a dumping ground for non-physical writes.
+2. **Transactional/business → the owning domain API.** Plate correction is
+   `PUT /v1/sessions/{id}/plate` (§17.5); validations are §6.3; rates are
+   the native `/rates` machinery.
+3. **Financial/customer-service → the payment surface (Part 13 §13.1a).**
+   `POST /v1/payment-links`, `POST /v1/payments/{id}/refund|void|capture`.
+   Refunds SHOULD require approval by default operator policy.
 
-Commands gain three optional fields (additive): `resolutionContext`
-(Reference), `correlationId`, and `approval` (evidence per §17.3).
+The consumer never needs this taxonomy: every `AllowedAction` carries an
+`execution` descriptor (`type: control` + command, or `type: domain` +
+operationId), so human and AI agents see one uniform action list and the
+right APX surface executes it.
+
+Commands gain four optional fields (additive): `resolutionContext`
+(Reference), `correlationId`, `approval` (evidence per §17.3), and
+`confirmationLevel` — how far success is physically confirmed (`accepted`
+→ `deviceAcknowledged` → `physicallyConfirmed`). Consumers MUST NOT report
+an outcome stronger than the confirmation level ("the gate is open" vs
+"the open command was accepted") — this distinction is load-bearing for AI
+agents speaking to customers.
 
 ## 17.5 Plate candidates and correction
 
 `GET /v1/lpr/candidates?session=|lane=` returns `PlateCandidate[]`
 (confidence, capture time, access-controlled imagery links per Part 9
-§9.6). The agent picks the right one and executes `associatePlate`. This
-closes the reservation/plate-mismatch loop: find reservation → find
-session → correct plate → link → retry access, every step audited.
+§9.6). The agent picks the right one and writes it with
+`PUT /v1/sessions/{id}/plate` (a transactional domain action, naturally
+idempotent, optionally citing the chosen Observation). This closes the
+reservation/plate-mismatch loop: find reservation → find session → correct
+plate → link → retry access, every step audited.
 
 ## 17.6 Support interactions and topics
 
@@ -132,12 +145,18 @@ session → correct plate → link → retry access, every step audited.
 
 ## 17.7 Correlation (normative)
 
-A caller MAY mint a `correlationId` (UUID) at first contact. Every
-resolution request, context, command, event envelope (as
-`extensions["apds-ext:apx:correlation@1.0"]` or the schema field where one
-exists), and support interaction in the same episode SHOULD carry it, so
-one id reconstructs: call → context → policy decision → command → gate
-event → interaction record.
+Two identifiers, two owners:
+
+- `interactionId` — OPAQUE, minted and understood only by the calling
+  application (it may denote a Teams call, SIP leg, SMS thread, chatbot
+  session — APX does not care and MUST NOT interpret it). Echoed on the
+  context and recordable on support interactions.
+- `correlationId` — a UUID a caller MAY mint at first contact. Every
+  resolution request, context, command, payment link, event envelope (as
+  `extensions["apds-ext:apx:correlation@1.0"]` or the schema field where
+  one exists), and support interaction in the same episode SHOULD carry
+  it, so one id reconstructs: interaction → context → policy decision →
+  action → gate event → interaction record.
 
 ## 17.8 Conformance
 

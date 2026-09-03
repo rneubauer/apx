@@ -22,6 +22,25 @@ integration over live PARCS state.
   ID to the AR system and returns `{confirmationNumber, accountUpdated,
   newBalance}`.
 
+## 13.1a Payment lifecycle and payment links (financial actions)
+
+Customer-service financial actions are domain operations here — never
+control commands (Part 17 §17.4):
+
+- `POST /v1/payment-links` — send a hosted payment link (sms/email) for an
+  account, ticket, or session; returns the `PaymentLink` lifecycle
+  resource (`sent → opened → paid | expired | cancelled`). The action of
+  first resort when policy blocks a gate override. APX never carries PANs;
+  `sentTo` is masked.
+- `POST /v1/payments/{id}/refund` — full, or partial per `amount`.
+  Refunds SHOULD require approval by default operator policy; approval
+  evidence rides the request when the resolution context demanded it.
+- `POST /v1/payments/{id}/void` / `POST /v1/payments/{id}/capture` —
+  authorization lifecycle where the implementation models it.
+
+All four take a REQUIRED `Idempotency-Key`. Completion of a link-initiated
+payment publishes `apx.accounts.payment.recorded.v1` like any other.
+
 ## 13.2 `apx-payment-history`
 
 - `GET /v1/payments?ticketLast4=&cardLast4=&date=` — payments made on a
