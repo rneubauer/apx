@@ -2704,12 +2704,7 @@ paths:
                 reason:
                   type: string
                 approval:
-                  type: object
-                  properties:
-                    approvedBy:
-                      type: string
-                    approvedAt:
-                      $ref: '#/components/schemas/DateTime'
+                  $ref: '#/components/schemas/Approval'
       responses:
         '200':
           description: The payment, now reversed/partially refunded.
@@ -2886,6 +2881,13 @@ paths:
         session's plate, optionally citing the chosen Observation candidate
         (GET /v1/lpr/candidates). A transactional domain action — not a
         control command. Naturally idempotent (PUT). Scope apx.data:write.
+
+        NORMATIVE (Part 17 §17.5): the correction MUST materialize in the
+        underlying APDS Session (identifiedCredentials /
+        identifiedVehicle), MUST publish SessionUpdated, and MUST be
+        visible to plain APDS clients reading /sessions/{id} — this route
+        is a business-action façade over APDS-modeled state, never a
+        parallel store.
       parameters:
         - name: id
           in: path
@@ -2905,10 +2907,15 @@ paths:
               properties:
                 plate:
                   type: string
-                jurisdiction:
+                country:
                   type: string
                   examples:
-                    - US-FL
+                    - US
+                  description: APDS VehicleAncillaryIdentification.country vocabulary.
+                stateProvince:
+                  type: string
+                  examples:
+                    - FL
                 observation:
                   description: The Observation candidate this correction is based on.
                   $ref: '#/components/schemas/Reference'
@@ -2929,7 +2936,9 @@ paths:
                     $ref: '#/components/schemas/Reference'
                   plate:
                     type: string
-                  jurisdiction:
+                  country:
+                    type: string
+                  stateProvince:
                     type: string
                   observation:
                     $ref: '#/components/schemas/Reference'
@@ -3290,7 +3299,7 @@ paths:
       description: |-
         Candidate plate reads (with confidence and imagery links) for a
         session or lane — the read side of plate correction (Part 17
-        §17.5); the write is an `associatePlate` command. Scope apx.lpr:read.
+        §17.5); the write is PUT /v1/sessions/{id}/plate. Scope apx.lpr:read.
       parameters:
         - name: session
           in: query
@@ -4359,21 +4368,7 @@ components:
           format: uuid
           description: Correlation chain id (Part 17 §17.7) — one id connects call → context → command → events → support interaction.
         approval:
-          type: object
-          description: |-
-            Approval evidence, REQUIRED when the context's AllowedAction said
-            requiresApproval (Part 17 §17.3). Servers MUST reject a
-            requires-approval command without it (403 approval-required).
-          required:
-            - approvedBy
-          properties:
-            approvedBy:
-              type: string
-              description: The approving principal (role per AllowedAction.approvalRole).
-            approvedAt:
-              $ref: '#/components/schemas/DateTime'
-            note:
-              type: string
+          $ref: '#/components/schemas/Approval'
         expiryTime:
           description: Commands are perishable — MUST NOT be dispatched after this instant.
           $ref: '#/components/schemas/DateTime'
@@ -4431,6 +4426,24 @@ components:
           $ref: '#/components/schemas/RecordInfo'
         extensions:
           $ref: '#/components/schemas/Extensions'
+    Approval:
+      title: Approval
+      description: |-
+        Approval evidence, REQUIRED on a write whose AllowedAction said
+        requiresApproval (Part 17 §17.3). Servers MUST reject a
+        requires-approval action without it (403 approval-required). One shared
+        shape for control commands and domain actions (e.g. refunds).
+      type: object
+      required:
+        - approvedBy
+      properties:
+        approvedBy:
+          type: string
+          description: The approving principal (role per AllowedAction.approvalRole).
+        approvedAt:
+          $ref: '#/components/schemas/DateTime'
+        note:
+          type: string
     DeviceStatus:
       title: DeviceStatus
       description: |-
@@ -5131,18 +5144,23 @@ components:
           $ref: '#/components/schemas/LaneStatus'
         vehicle:
           type: object
-          description: The vehicle as best resolved (usually via LPR).
+          description: The vehicle as best resolved (usually via LPR). Plate vocabulary follows APDS VehicleAncillaryIdentification (country/stateProvince).
           properties:
             plate:
               type: string
-            jurisdiction:
+            country:
               type: string
               examples:
-                - US-FL
+                - US
+            stateProvince:
+              type: string
+              examples:
+                - FL
             confidence:
               type: number
               minimum: 0
               maximum: 1
+              description: Projection of APDS Confidence.overallConfidence (0–1).
             plateImage:
               $ref: '#/components/schemas/Url'
         session:
@@ -5438,20 +5456,27 @@ components:
       required:
         - plate
         - confidence
-        - capturedAt
+        - observationDateTime
       properties:
         plate:
           type: string
-        jurisdiction:
+        country:
           type: string
-          description: Plate issuing jurisdiction (e.g. ISO 3166-2 subdivision).
+          description: Plate issuing country (APDS VehicleAncillaryIdentification.country vocabulary).
           examples:
-            - US-FL
+            - US
+        stateProvince:
+          type: string
+          description: Plate issuing state/province (APDS VehicleAncillaryIdentification.stateProvince vocabulary).
+          examples:
+            - FL
         confidence:
           type: number
           minimum: 0
           maximum: 1
-        capturedAt:
+          description: Projection of APDS Confidence.overallConfidence (0–1) for the read.
+        observationDateTime:
+          description: When the read was captured (aligned with LprRead.observationDateTime; APDS ObservationElement.observationStartTime).
           $ref: '#/components/schemas/DateTime'
         lane:
           $ref: '#/components/schemas/Reference'
@@ -5501,9 +5526,11 @@ components:
         id:
           type: string
           format: uuid
+          readOnly: true
         version:
           type: integer
           minimum: 1
+          readOnly: true
         channel:
           type: string
           description: voice | chat | email | sms | other (implementer code list).

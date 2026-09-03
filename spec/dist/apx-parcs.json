@@ -4892,23 +4892,7 @@
             "description": "Correlation chain id (Part 17 §17.7) — one id connects call → context → command → events → support interaction."
           },
           "approval": {
-            "type": "object",
-            "description": "Approval evidence, REQUIRED when the context's AllowedAction said\nrequiresApproval (Part 17 §17.3). Servers MUST reject a\nrequires-approval command without it (403 approval-required).",
-            "required": [
-              "approvedBy"
-            ],
-            "properties": {
-              "approvedBy": {
-                "type": "string",
-                "description": "The approving principal (role per AllowedAction.approvalRole)."
-              },
-              "approvedAt": {
-                "$ref": "#/components/schemas/DateTime"
-              },
-              "note": {
-                "type": "string"
-              }
-            }
+            "$ref": "#/components/schemas/Approval"
           },
           "expiryTime": {
             "description": "Commands are perishable — MUST NOT be dispatched after this instant.",
@@ -6726,6 +6710,26 @@
           "lastUpdateUser": {
             "type": "string",
             "description": "Human or system principal that last updated the record."
+          }
+        }
+      },
+      "Approval": {
+        "title": "Approval",
+        "description": "Approval evidence, REQUIRED on a write whose AllowedAction said\nrequiresApproval (Part 17 §17.3). Servers MUST reject a\nrequires-approval action without it (403 approval-required). One shared\nshape for control commands and domain actions (e.g. refunds).",
+        "type": "object",
+        "required": [
+          "approvedBy"
+        ],
+        "properties": {
+          "approvedBy": {
+            "type": "string",
+            "description": "The approving principal (role per AllowedAction.approvalRole)."
+          },
+          "approvedAt": {
+            "$ref": "#/components/schemas/DateTime"
+          },
+          "note": {
+            "type": "string"
           }
         }
       },

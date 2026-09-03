@@ -133,6 +133,16 @@ idempotent, optionally citing the chosen Observation). This closes the
 reservation/plate-mismatch loop: find reservation → find session → correct
 plate → link → retry access, every step audited.
 
+**Materialization (normative).** The correction MUST materialize in the
+underlying APDS Session — `identifiedCredentials[]` /
+`identifiedVehicle` — and MUST publish `SessionUpdated`, so a plain APDS
+client reading `/sessions/{id}` sees the corrected plate. The APX route is
+a business-action façade (adding audit fields: the cited Observation, the
+reason) over APDS-modeled state; it MUST NOT create a parallel plate
+store. Plate vocabulary follows APDS `VehicleAncillaryIdentification`
+(`country` + `stateProvince`); confidence values are projections of APDS
+`Confidence.overallConfidence`.
+
 ## 17.6 Support interactions and topics
 
 - `POST /v1/support/interactions` / `GET /v1/support/interactions?…`

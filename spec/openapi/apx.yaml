@@ -910,11 +910,7 @@ paths:
                   $ref: "../vendor/apds/4.1/apds-api-4.1.yaml#/components/schemas/AmountInCurrency"
                 reason: { type: string }
                 approval:
-                  type: object
-                  properties:
-                    approvedBy: { type: string }
-                    approvedAt:
-                      $ref: "../vendor/apds/4.1/apds-api-4.1.yaml#/components/schemas/DateTime"
+                  $ref: "#/components/schemas/Approval"
       responses:
         "200":
           description: The payment, now reversed/partially refunded.
@@ -1046,6 +1042,13 @@ paths:
         session's plate, optionally citing the chosen Observation candidate
         (GET /v1/lpr/candidates). A transactional domain action — not a
         control command. Naturally idempotent (PUT). Scope apx.data:write.
+
+        NORMATIVE (Part 17 §17.5): the correction MUST materialize in the
+        underlying APDS Session (identifiedCredentials /
+        identifiedVehicle), MUST publish SessionUpdated, and MUST be
+        visible to plain APDS clients reading /sessions/{id} — this route
+        is a business-action façade over APDS-modeled state, never a
+        parallel store.
       parameters:
         - { name: id, in: path, required: true, schema: { type: string, format: uuid }, description: APDS Session UUID. }
       requestBody:
@@ -1057,7 +1060,8 @@ paths:
               required: [plate]
               properties:
                 plate: { type: string }
-                jurisdiction: { type: string, examples: [US-FL] }
+                country: { type: string, examples: [US], description: APDS VehicleAncillaryIdentification.country vocabulary. }
+                stateProvince: { type: string, examples: [FL] }
                 observation:
                   description: The Observation candidate this correction is based on.
                   $ref: "../vendor/apds/4.1/apds-api-4.1.yaml#/components/schemas/Reference"
@@ -1074,7 +1078,8 @@ paths:
                   session:
                     $ref: "../vendor/apds/4.1/apds-api-4.1.yaml#/components/schemas/Reference"
                   plate: { type: string }
-                  jurisdiction: { type: string }
+                  country: { type: string }
+                  stateProvince: { type: string }
                   observation:
                     $ref: "../vendor/apds/4.1/apds-api-4.1.yaml#/components/schemas/Reference"
         "401": { $ref: "#/components/responses/Unauthorized" }
@@ -1371,7 +1376,7 @@ paths:
       description: |-
         Candidate plate reads (with confidence and imagery links) for a
         session or lane — the read side of plate correction (Part 17
-        §17.5); the write is an `associatePlate` command. Scope apx.lpr:read.
+        §17.5); the write is PUT /v1/sessions/{id}/plate. Scope apx.lpr:read.
       parameters:
         - { name: session, in: query, schema: { type: string, format: uuid }, description: Session UUID. }
         - { name: lane, in: query, schema: { type: string, format: uuid }, description: VehicularAccess UUID. }
@@ -1633,6 +1638,8 @@ components:
       $ref: "./domains/alerts/schemas.yaml#/Alert"
     Command:
       $ref: "./domains/control/schemas.yaml#/Command"
+    Approval:
+      $ref: "./domains/control/schemas.yaml#/Approval"
     DeviceStatus:
       $ref: "./domains/control/schemas.yaml#/DeviceStatus"
     LaneStatus:

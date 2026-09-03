@@ -54,7 +54,7 @@ answers with the assembled context:
   "place": { "id": "b1000000-0000-4000-8000-000000000001", "className": "Place" },
   "placeDisplay": "Lakeside Garage",
   "lane": { "id": "b2000000-0000-4000-8000-000000000002", "className": "VehicularAccess" },
-  "vehicle": { "plate": "SYN-1234", "jurisdiction": "US-FL", "confidence": 0.98 },
+  "vehicle": { "plate": "SYN-1234", "country": "US", "stateProvince": "FL", "confidence": 0.98 },
   "holder": { "id": "c1000000-0000-4000-8000-000000000003", "className": "RightHolder" },
   "holderDisplay": "J. Smith",
   "account": {

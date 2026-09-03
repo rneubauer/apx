@@ -4262,15 +4262,7 @@
                     "type": "string"
                   },
                   "approval": {
-                    "type": "object",
-                    "properties": {
-                      "approvedBy": {
-                        "type": "string"
-                      },
-                      "approvedAt": {
-                        "$ref": "#/components/schemas/DateTime"
-                      }
-                    }
+                    "$ref": "#/components/schemas/Approval"
                   }
                 }
               }
@@ -4543,7 +4535,7 @@
           "Resolution"
         ],
         "summary": "Associate or correct the plate on a session",
-        "description": "The write side of plate correction (Part 17 §17.5): sets the\nsession's plate, optionally citing the chosen Observation candidate\n(GET /v1/lpr/candidates). A transactional domain action — not a\ncontrol command. Naturally idempotent (PUT). Scope apx.data:write.",
+        "description": "The write side of plate correction (Part 17 §17.5): sets the\nsession's plate, optionally citing the chosen Observation candidate\n(GET /v1/lpr/candidates). A transactional domain action — not a\ncontrol command. Naturally idempotent (PUT). Scope apx.data:write.\n\nNORMATIVE (Part 17 §17.5): the correction MUST materialize in the\nunderlying APDS Session (identifiedCredentials /\nidentifiedVehicle), MUST publish SessionUpdated, and MUST be\nvisible to plain APDS clients reading /sessions/{id} — this route\nis a business-action façade over APDS-modeled state, never a\nparallel store.",
         "parameters": [
           {
             "name": "id",
@@ -4569,10 +4561,17 @@
                   "plate": {
                     "type": "string"
                   },
-                  "jurisdiction": {
+                  "country": {
                     "type": "string",
                     "examples": [
-                      "US-FL"
+                      "US"
+                    ],
+                    "description": "APDS VehicleAncillaryIdentification.country vocabulary."
+                  },
+                  "stateProvince": {
+                    "type": "string",
+                    "examples": [
+                      "FL"
                     ]
                   },
                   "observation": {
@@ -4605,7 +4604,10 @@
                     "plate": {
                       "type": "string"
                     },
-                    "jurisdiction": {
+                    "country": {
+                      "type": "string"
+                    },
+                    "stateProvince": {
                       "type": "string"
                     },
                     "observation": {
@@ -5142,7 +5144,7 @@
           "Resolution"
         ],
         "summary": "Plate candidates for correction workflows",
-        "description": "Candidate plate reads (with confidence and imagery links) for a\nsession or lane — the read side of plate correction (Part 17\n§17.5); the write is an `associatePlate` command. Scope apx.lpr:read.",
+        "description": "Candidate plate reads (with confidence and imagery links) for a\nsession or lane — the read side of plate correction (Part 17\n§17.5); the write is PUT /v1/sessions/{id}/plate. Scope apx.lpr:read.",
         "parameters": [
           {
             "name": "session",
@@ -6486,23 +6488,7 @@
             "description": "Correlation chain id (Part 17 §17.7) — one id connects call → context → command → events → support interaction."
           },
           "approval": {
-            "type": "object",
-            "description": "Approval evidence, REQUIRED when the context's AllowedAction said\nrequiresApproval (Part 17 §17.3). Servers MUST reject a\nrequires-approval command without it (403 approval-required).",
-            "required": [
-              "approvedBy"
-            ],
-            "properties": {
-              "approvedBy": {
-                "type": "string",
-                "description": "The approving principal (role per AllowedAction.approvalRole)."
-              },
-              "approvedAt": {
-                "$ref": "#/components/schemas/DateTime"
-              },
-              "note": {
-                "type": "string"
-              }
-            }
+            "$ref": "#/components/schemas/Approval"
           },
           "expiryTime": {
             "description": "Commands are perishable — MUST NOT be dispatched after this instant.",
@@ -6572,6 +6558,26 @@
           },
           "extensions": {
             "$ref": "#/components/schemas/Extensions"
+          }
+        }
+      },
+      "Approval": {
+        "title": "Approval",
+        "description": "Approval evidence, REQUIRED on a write whose AllowedAction said\nrequiresApproval (Part 17 §17.3). Servers MUST reject a\nrequires-approval action without it (403 approval-required). One shared\nshape for control commands and domain actions (e.g. refunds).",
+        "type": "object",
+        "required": [
+          "approvedBy"
+        ],
+        "properties": {
+          "approvedBy": {
+            "type": "string",
+            "description": "The approving principal (role per AllowedAction.approvalRole)."
+          },
+          "approvedAt": {
+            "$ref": "#/components/schemas/DateTime"
+          },
+          "note": {
+            "type": "string"
           }
         }
       },
@@ -7471,21 +7477,28 @@
           },
           "vehicle": {
             "type": "object",
-            "description": "The vehicle as best resolved (usually via LPR).",
+            "description": "The vehicle as best resolved (usually via LPR). Plate vocabulary follows APDS VehicleAncillaryIdentification (country/stateProvince).",
             "properties": {
               "plate": {
                 "type": "string"
               },
-              "jurisdiction": {
+              "country": {
                 "type": "string",
                 "examples": [
-                  "US-FL"
+                  "US"
+                ]
+              },
+              "stateProvince": {
+                "type": "string",
+                "examples": [
+                  "FL"
                 ]
               },
               "confidence": {
                 "type": "number",
                 "minimum": 0,
-                "maximum": 1
+                "maximum": 1,
+                "description": "Projection of APDS Confidence.overallConfidence (0–1)."
               },
               "plateImage": {
                 "$ref": "#/components/schemas/Url"
@@ -7861,25 +7874,34 @@
         "required": [
           "plate",
           "confidence",
-          "capturedAt"
+          "observationDateTime"
         ],
         "properties": {
           "plate": {
             "type": "string"
           },
-          "jurisdiction": {
+          "country": {
             "type": "string",
-            "description": "Plate issuing jurisdiction (e.g. ISO 3166-2 subdivision).",
+            "description": "Plate issuing country (APDS VehicleAncillaryIdentification.country vocabulary).",
             "examples": [
-              "US-FL"
+              "US"
+            ]
+          },
+          "stateProvince": {
+            "type": "string",
+            "description": "Plate issuing state/province (APDS VehicleAncillaryIdentification.stateProvince vocabulary).",
+            "examples": [
+              "FL"
             ]
           },
           "confidence": {
             "type": "number",
             "minimum": 0,
-            "maximum": 1
+            "maximum": 1,
+            "description": "Projection of APDS Confidence.overallConfidence (0–1) for the read."
           },
-          "capturedAt": {
+          "observationDateTime": {
+            "description": "When the read was captured (aligned with LprRead.observationDateTime; APDS ObservationElement.observationStartTime).",
             "$ref": "#/components/schemas/DateTime"
           },
           "lane": {
@@ -7943,11 +7965,13 @@
         "properties": {
           "id": {
             "type": "string",
-            "format": "uuid"
+            "format": "uuid",
+            "readOnly": true
           },
           "version": {
             "type": "integer",
-            "minimum": 1
+            "minimum": 1,
+            "readOnly": true
           },
           "channel": {
             "type": "string",

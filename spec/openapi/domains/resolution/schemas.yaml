@@ -138,18 +138,24 @@ PlateCandidate:
     a projection over APDS Observations, imagery as access-controlled
     links (Part 9 §9.6).
   type: object
-  required: [plate, confidence, capturedAt]
+  required: [plate, confidence, observationDateTime]
   properties:
     plate: { type: string }
-    jurisdiction:
+    country:
       type: string
-      description: Plate issuing jurisdiction (e.g. ISO 3166-2 subdivision).
-      examples: [US-FL]
+      description: Plate issuing country (APDS VehicleAncillaryIdentification.country vocabulary).
+      examples: [US]
+    stateProvince:
+      type: string
+      description: Plate issuing state/province (APDS VehicleAncillaryIdentification.stateProvince vocabulary).
+      examples: [FL]
     confidence:
       type: number
       minimum: 0
       maximum: 1
-    capturedAt:
+      description: Projection of APDS Confidence.overallConfidence (0–1) for the read.
+    observationDateTime:
+      description: When the read was captured (aligned with LprRead.observationDateTime; APDS ObservationElement.observationStartTime).
       $ref: "../../../vendor/apds/4.1/apds-api-4.1.yaml#/components/schemas/DateTime"
     lane:
       $ref: "../../../vendor/apds/4.1/apds-api-4.1.yaml#/components/schemas/Reference"
@@ -189,8 +195,8 @@ SupportInteraction:
   type: object
   required: [id, version, channel, agentType, startedAt, place]
   properties:
-    id: { type: string, format: uuid }
-    version: { type: integer, minimum: 1 }
+    id: { type: string, format: uuid, readOnly: true }
+    version: { type: integer, minimum: 1, readOnly: true }
     channel:
       type: string
       description: voice | chat | email | sms | other (implementer code list).
@@ -352,11 +358,16 @@ ResolutionContext:
       $ref: "../control/schemas.yaml#/LaneStatus"
     vehicle:
       type: object
-      description: The vehicle as best resolved (usually via LPR).
+      description: The vehicle as best resolved (usually via LPR). Plate vocabulary follows APDS VehicleAncillaryIdentification (country/stateProvince).
       properties:
         plate: { type: string }
-        jurisdiction: { type: string, examples: [US-FL] }
-        confidence: { type: number, minimum: 0, maximum: 1 }
+        country: { type: string, examples: [US] }
+        stateProvince: { type: string, examples: [FL] }
+        confidence:
+          type: number
+          minimum: 0
+          maximum: 1
+          description: Projection of APDS Confidence.overallConfidence (0–1).
         plateImage:
           $ref: "../../../vendor/apds/4.1/apds-api-4.1.yaml#/components/schemas/Url"
     session:

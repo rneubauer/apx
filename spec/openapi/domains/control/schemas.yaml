@@ -53,20 +53,7 @@ Command:
       format: uuid
       description: Correlation chain id (Part 17 §17.7) — one id connects call → context → command → events → support interaction.
     approval:
-      type: object
-      description: |-
-        Approval evidence, REQUIRED when the context's AllowedAction said
-        requiresApproval (Part 17 §17.3). Servers MUST reject a
-        requires-approval command without it (403 approval-required).
-      required: [approvedBy]
-      properties:
-        approvedBy:
-          type: string
-          description: The approving principal (role per AllowedAction.approvalRole).
-        approvedAt:
-          $ref: "../../../vendor/apds/4.1/apds-api-4.1.yaml#/components/schemas/DateTime"
-        note:
-          type: string
+      $ref: "#/Approval"
     expiryTime:
       description: Commands are perishable — MUST NOT be dispatched after this instant.
       $ref: "../../../vendor/apds/4.1/apds-api-4.1.yaml#/components/schemas/DateTime"
@@ -104,6 +91,24 @@ Command:
       $ref: "../common/schemas.yaml#/RecordInfo"
     extensions:
       $ref: "../common/schemas.yaml#/Extensions"
+
+Approval:
+  title: Approval
+  description: |-
+    Approval evidence, REQUIRED on a write whose AllowedAction said
+    requiresApproval (Part 17 §17.3). Servers MUST reject a
+    requires-approval action without it (403 approval-required). One shared
+    shape for control commands and domain actions (e.g. refunds).
+  type: object
+  required: [approvedBy]
+  properties:
+    approvedBy:
+      type: string
+      description: The approving principal (role per AllowedAction.approvalRole).
+    approvedAt:
+      $ref: "../../../vendor/apds/4.1/apds-api-4.1.yaml#/components/schemas/DateTime"
+    note:
+      type: string
 
 DeviceStatus:
   title: DeviceStatus
