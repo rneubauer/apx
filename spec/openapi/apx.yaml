@@ -117,6 +117,8 @@ paths:
   /v1/places/{id}/occupancy:
     get:
       operationId: get-apx-v1-places-id-occupancy
+      security:
+        - apxOAuth: ["apx.data:read"]
       tags: [Data]
       summary: Current occupancy snapshot for a place element
       description: |-
@@ -149,6 +151,9 @@ paths:
   /webhooks:
     post:
       operationId: post-webhooks
+      security:
+        - apxOAuth: ["apx.subscriptions:manage"]
+        - oAuth: [po, sp, ad]
       tags: [Subscription]
       summary: Subscribe to event topics (APDS-compatible superset)
       description: |-
@@ -213,9 +218,14 @@ paths:
                 $ref: "#/components/schemas/Problem"
     get:
       operationId: get-webhooks
+      security:
+        - apxOAuth: ["apx.subscriptions:manage"]
+        - oAuth: [po, sp, ad]
       tags: [Subscription]
       summary: List subscriptions (APX additive operation)
       description: Lists subscriptions visible to the caller. Secrets are never returned.
+      parameters:
+        - $ref: "../vendor/apds/4.1/apds-api-4.1.yaml#/components/parameters/page"
       responses:
         "200":
           description: Paginated subscription list (APDS PaginatedList shape).
@@ -232,6 +242,7 @@ paths:
                       $ref: "#/components/schemas/ApxEventSubscription"
         "401": { $ref: "#/components/responses/Unauthorized" }
         "403": { $ref: "#/components/responses/Forbidden" }
+        "429": { $ref: "#/components/responses/TooManyRequests" }
 
   /webhooks/{id}:
     parameters:
@@ -243,6 +254,9 @@ paths:
         description: Unique identifier for the existing subscription
     patch:
       operationId: patch-webhooks-id
+      security:
+        - apxOAuth: ["apx.subscriptions:manage"]
+        - oAuth: [po, sp, ad]
       tags: [Subscription]
       summary: Update a subscription (APX additive operation)
       description: Update topics, endpoint, filters, status (resume a failed subscription), or rotate the secret.
@@ -267,6 +281,9 @@ paths:
                 $ref: "#/components/schemas/Problem"
     delete:
       operationId: delete-webhooks-id
+      security:
+        - apxOAuth: ["apx.subscriptions:manage"]
+        - oAuth: [po, sp, ad]
       tags: [Subscription]
       summary: Revoke (delete) existing subscription
       description: Native APDS 4.1 operation, unchanged (APDS ResponseStatus shape).
@@ -287,6 +304,9 @@ paths:
   /webhooks/{id}/deliveries:
     get:
       operationId: get-webhooks-id-deliveries
+      security:
+        - apxOAuth: ["apx.subscriptions:manage"]
+        - oAuth: [po, sp, ad]
       tags: [Subscription]
       summary: Delivery ledger for a subscription
       description: Returns the delivery records (attempts, status, last HTTP code) for auditing.
@@ -296,6 +316,7 @@ paths:
           required: true
           schema:
             type: string
+        - $ref: "../vendor/apds/4.1/apds-api-4.1.yaml#/components/parameters/page"
       responses:
         "200":
           description: Delivery records.
@@ -304,12 +325,15 @@ paths:
               schema:
                 type: object
                 properties:
+                  meta:
+                    $ref: "../vendor/apds/4.1/apds-api-4.1.yaml#/components/schemas/PaginatedListMeta"
                   data:
                     type: array
                     items:
                       $ref: "#/components/schemas/DeliveryRecord"
         "401": { $ref: "#/components/responses/Unauthorized" }
         "403": { $ref: "#/components/responses/Forbidden" }
+        "429": { $ref: "#/components/responses/TooManyRequests" }
         "404":
           description: No such subscription.
           content:
@@ -319,6 +343,8 @@ paths:
   /v1/events/stream:
     get:
       operationId: get-apx-v1-events-stream
+      security:
+        - apxOAuth: ["apx.subscriptions:manage"]
       tags: [Subscription]
       summary: Server-Sent Events stream (conformance class apx-events-sse)
       description: |-
@@ -346,8 +372,14 @@ paths:
                 type: string
         "401": { $ref: "#/components/responses/Unauthorized" }
         "403": { $ref: "#/components/responses/Forbidden" }
+        "429": { $ref: "#/components/responses/TooManyRequests" }
         "404":
           description: No such subscription, or subscription transport is not sse.
+          content:
+            application/problem+json:
+              schema: { $ref: "#/components/schemas/Problem" }
+        "410":
+          description: Subscription exhausted its retry schedule and is failed (`subscription-failed`, Part 12).
           content:
             application/problem+json:
               schema: { $ref: "#/components/schemas/Problem" }
@@ -356,6 +388,8 @@ paths:
   /v1/commands:
     post:
       operationId: post-apx-v1-commands
+      security:
+        - apxOAuth: ["apx.control:execute"]
       tags: [Control]
       summary: Execute a command (idempotent, perishable, audited)
       description: |-
@@ -376,6 +410,12 @@ paths:
             schema:
               $ref: "#/components/schemas/Command"
       responses:
+        "200":
+          description: Idempotent replay — same key + same body returns the ORIGINAL command (Part 6 §6.1).
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Command"
         "202":
           description: Command accepted for asynchronous execution.
           content:
@@ -387,8 +427,13 @@ paths:
           content:
             application/problem+json:
               schema: { $ref: "#/components/schemas/Problem" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
         "403":
-          description: Insufficient scope or place grant.
+          description: |-
+            Insufficient scope or place grant (Part 9), the current
+            resolution context evaluated the action as not allowed
+            (`action-not-allowed`), or approval evidence is missing
+            (`approval-required`) — Part 17 §17.3.
           content:
             application/problem+json:
               schema: { $ref: "#/components/schemas/Problem" }
@@ -397,10 +442,18 @@ paths:
           content:
             application/problem+json:
               schema: { $ref: "#/components/schemas/Problem" }
+        "422":
+          description: Command expired before dispatch (`command-expired`) or unknown validation provider (`validation-provider-unknown`) — Part 12.
+          content:
+            application/problem+json:
+              schema: { $ref: "#/components/schemas/Problem" }
+        "429": { $ref: "#/components/responses/TooManyRequests" }
 
   /v1/commands/{id}:
     get:
       operationId: get-apx-v1-commands-id
+      security:
+        - apxOAuth: ["apx.control:read"]
       tags: [Control]
       summary: Read a command (lifecycle + audit trail)
       description: Returns the Command including its immutable statusHistory.
@@ -424,6 +477,8 @@ paths:
   /v1/commands/{id}/cancel:
     post:
       operationId: post-apx-v1-commands-id-cancel
+      security:
+        - apxOAuth: ["apx.control:execute"]
       tags: [Control]
       summary: Cancel a command before dispatch
       description: Allowed in received/accepted states; afterwards 409 command-not-cancellable.
@@ -447,9 +502,13 @@ paths:
   /v1/devices:
     get:
       operationId: get-apx-v1-devices
+      security:
+        - apxOAuth: ["apx.control:read"]
       tags: [Control]
       summary: List device status overlays
       description: Live DeviceStatus for every SupplementalEquipment the caller may see.
+      parameters:
+        - $ref: "../vendor/apds/4.1/apds-api-4.1.yaml#/components/parameters/page"
       responses:
         "200":
           description: Device status list.
@@ -458,15 +517,20 @@ paths:
               schema:
                 type: object
                 properties:
+                  meta:
+                    $ref: "../vendor/apds/4.1/apds-api-4.1.yaml#/components/schemas/PaginatedListMeta"
                   data:
                     type: array
                     items: { $ref: "#/components/schemas/DeviceStatus" }
         "401": { $ref: "#/components/responses/Unauthorized" }
         "403": { $ref: "#/components/responses/Forbidden" }
+        "429": { $ref: "#/components/responses/TooManyRequests" }
 
   /v1/devices/{id}:
     get:
       operationId: get-apx-v1-devices-id
+      security:
+        - apxOAuth: ["apx.control:read"]
       tags: [Control]
       summary: Read one device's status overlay
       description: DeviceStatus keyed by the SupplementalEquipment id.
@@ -490,6 +554,8 @@ paths:
   /v1/lanes/{id}/current:
     get:
       operationId: get-apx-v1-lanes-id-current
+      security:
+        - apxOAuth: ["apx.control:read"]
       tags: [Control]
       summary: Lane inquiry — current transaction context (screen-pop)
       description: |-
@@ -517,6 +583,8 @@ paths:
   /v1/validations/providers:
     get:
       operationId: get-apx-v1-validations-providers
+      security:
+        - apxOAuth: ["apx.control:read"]
       tags: [Control]
       summary: List validation providers for a place
       description: The venues allowed to validate tickets at the place.
@@ -525,6 +593,7 @@ paths:
           in: query
           required: true
           schema: { type: string, format: uuid }
+        - $ref: "../vendor/apds/4.1/apds-api-4.1.yaml#/components/parameters/page"
       responses:
         "200":
           description: Validation providers.
@@ -533,16 +602,21 @@ paths:
               schema:
                 type: object
                 properties:
+                  meta:
+                    $ref: "../vendor/apds/4.1/apds-api-4.1.yaml#/components/schemas/PaginatedListMeta"
                   data:
                     type: array
                     items: { $ref: "#/components/schemas/ValidationProvider" }
         "401": { $ref: "#/components/responses/Unauthorized" }
         "403": { $ref: "#/components/responses/Forbidden" }
+        "429": { $ref: "#/components/responses/TooManyRequests" }
 
   # ===== Tolling (optional class; Part 15) ===== #
   /v1/tolling/transactions:
     post:
       operationId: post-apx-v1-tolling-transactions
+      security:
+        - apxOAuth: ["apx.tolling:manage"]
       tags: [Tolling]
       summary: Create a toll transaction (idempotent)
       description: Binds Observation refs + credential + pricing. Idempotency-Key REQUIRED.
@@ -554,6 +628,11 @@ paths:
           application/json:
             schema: { $ref: "#/components/schemas/TollTransaction" }
       responses:
+        "200":
+          description: Idempotent replay — same key + same body returns the ORIGINAL transaction.
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/TollTransaction" }
         "201":
           description: Created toll transaction.
           content:
@@ -566,6 +645,7 @@ paths:
               schema: { $ref: "#/components/schemas/Problem" }
         "401": { $ref: "#/components/responses/Unauthorized" }
         "403": { $ref: "#/components/responses/Forbidden" }
+        "429": { $ref: "#/components/responses/TooManyRequests" }
         "409":
           description: Idempotency-Key replayed with a different body.
           content:
@@ -573,12 +653,15 @@ paths:
               schema: { $ref: "#/components/schemas/Problem" }
     get:
       operationId: get-apx-v1-tolling-transactions
+      security:
+        - apxOAuth: ["apx.tolling:manage"]
       tags: [Tolling]
       summary: List/filter toll transactions
       description: Filter by plate and status.
       parameters:
         - { name: plate, in: query, schema: { type: string } }
         - { name: status, in: query, schema: { type: string } }
+        - $ref: "../vendor/apds/4.1/apds-api-4.1.yaml#/components/parameters/page"
       responses:
         "200":
           description: Matching transactions.
@@ -587,15 +670,20 @@ paths:
               schema:
                 type: object
                 properties:
+                  meta:
+                    $ref: "../vendor/apds/4.1/apds-api-4.1.yaml#/components/schemas/PaginatedListMeta"
                   data:
                     type: array
                     items: { $ref: "#/components/schemas/TollTransaction" }
         "401": { $ref: "#/components/responses/Unauthorized" }
         "403": { $ref: "#/components/responses/Forbidden" }
+        "429": { $ref: "#/components/responses/TooManyRequests" }
 
   /v1/tolling/transactions/{id}:
     get:
       operationId: get-apx-v1-tolling-transactions-id
+      security:
+        - apxOAuth: ["apx.tolling:manage"]
       tags: [Tolling]
       summary: Read a toll transaction
       description: Includes dispute state and the immutable statusHistory.
@@ -616,11 +704,18 @@ paths:
   /v1/tolling/transactions/{id}/payment:
     post:
       operationId: post-apx-v1-tolling-transactions-id-payment
+      security:
+        - apxOAuth: ["apx.tolling:manage"]
       tags: [Tolling]
       summary: Attach the settling Payment reference
       description: Transitions the transaction to paid.
       parameters:
         - { name: id, in: path, required: true, schema: { type: string, format: uuid } }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/TollPaymentAttachment" }
       responses:
         "200":
           description: Paid transaction.
@@ -629,6 +724,7 @@ paths:
               schema: { $ref: "#/components/schemas/TollTransaction" }
         "401": { $ref: "#/components/responses/Unauthorized" }
         "403": { $ref: "#/components/responses/Forbidden" }
+        "429": { $ref: "#/components/responses/TooManyRequests" }
         "404":
           description: No such transaction.
           content:
@@ -638,11 +734,18 @@ paths:
   /v1/tolling/transactions/{id}/disputes:
     post:
       operationId: post-apx-v1-tolling-transactions-id-disputes
+      security:
+        - apxOAuth: ["apx.tolling:manage"]
       tags: [Tolling]
       summary: Open a dispute
       description: Re-disputing a resolved/voided transaction is 409 dispute-closed.
       parameters:
         - { name: id, in: path, required: true, schema: { type: string, format: uuid } }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/TollDisputeOpen" }
       responses:
         "200":
           description: Disputed transaction.
@@ -658,11 +761,18 @@ paths:
   /v1/tolling/transactions/{id}/disputes/resolve:
     post:
       operationId: post-apx-v1-tolling-transactions-id-disputes-resolve
+      security:
+        - apxOAuth: ["apx.tolling:manage"]
       tags: [Tolling]
       summary: Resolve a dispute
       description: Resolution values (upheld/refunded/adjusted) are implementer code lists.
       parameters:
         - { name: id, in: path, required: true, schema: { type: string, format: uuid } }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/TollDisputeResolution" }
       responses:
         "200":
           description: Resolved transaction.
@@ -681,6 +791,8 @@ paths:
   /v1/reservations/recent:
     get:
       operationId: get-apx-v1-reservations-recent
+      security:
+        - apxOAuth: ["apx.reservations:manage"]
       tags: [Permits]
       summary: A customer's last 10 reservations
       description: |-
@@ -719,6 +831,8 @@ paths:
   /v1/permits/pools/{rightSpecId}/availability:
     get:
       operationId: get-apx-v1-permits-pools-rightspecid-availability
+      security:
+        - apxOAuth: ["apx.permits:manage"]
       tags: [Permits]
       summary: Pool availability for a pooled RightSpecification
       description: Profile over APDS RightPool — capacity, issued, available.
@@ -739,6 +853,8 @@ paths:
   /v1/permits/issue:
     post:
       operationId: post-apx-v1-permits-issue
+      security:
+        - apxOAuth: ["apx.permits:manage"]
       tags: [Permits]
       summary: Issue a permit from a pool (multi-vehicle credentials)
       description: |-
@@ -766,6 +882,8 @@ paths:
   /v1/accounts:
     get:
       operationId: get-apx-v1-accounts
+      security:
+        - apxOAuth: ["apx.accounts:read"]
       tags: [Accounts]
       summary: Look up accounts by name/phone/card/plate
       description: Any combination of filters; returns accounts with balances and status.
@@ -774,6 +892,7 @@ paths:
         - { name: phone, in: query, schema: { type: string } }
         - { name: card, in: query, schema: { type: string } }
         - { name: plate, in: query, schema: { type: string } }
+        - $ref: "../vendor/apds/4.1/apds-api-4.1.yaml#/components/parameters/page"
       responses:
         "200":
           description: Matching accounts.
@@ -782,15 +901,20 @@ paths:
               schema:
                 type: object
                 properties:
+                  meta:
+                    $ref: "../vendor/apds/4.1/apds-api-4.1.yaml#/components/schemas/PaginatedListMeta"
                   data:
                     type: array
                     items: { $ref: "#/components/schemas/Account" }
         "401": { $ref: "#/components/responses/Unauthorized" }
         "403": { $ref: "#/components/responses/Forbidden" }
+        "429": { $ref: "#/components/responses/TooManyRequests" }
 
   /v1/accounts/{id}:
     get:
       operationId: get-apx-v1-accounts-id
+      security:
+        - apxOAuth: ["apx.accounts:read"]
       tags: [Accounts]
       summary: Full account info
       description: Returns the account including balance and status.
@@ -811,6 +935,8 @@ paths:
   /v1/payments:
     post:
       operationId: post-apx-v1-payments
+      security:
+        - apxOAuth: ["apx.payments:write"]
       tags: [Accounts]
       summary: Take a payment (idempotent)
       description: |-
@@ -825,18 +951,38 @@ paths:
           application/json:
             schema: { $ref: "#/components/schemas/PaymentRecord" }
       responses:
+        "200":
+          description: Idempotent replay — same key + same body returns the ORIGINAL payment.
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/PaymentRecord" }
         "201":
           description: Approved payment with transactionID.
           content:
             application/json:
               schema: { $ref: "#/components/schemas/PaymentRecord" }
+        "400":
+          description: Missing Idempotency-Key (`idempotency-key-required`, Part 12) or no account/ticket to settle.
+          content:
+            application/problem+json:
+              schema: { $ref: "#/components/schemas/Problem" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+        "409":
+          description: Idempotency-Key replayed with a different body.
+          content:
+            application/problem+json:
+              schema: { $ref: "#/components/schemas/Problem" }
         "422":
           description: Payment declined.
           content:
             application/problem+json:
               schema: { $ref: "#/components/schemas/Problem" }
+        "429": { $ref: "#/components/responses/TooManyRequests" }
     get:
       operationId: get-apx-v1-payments
+      security:
+        - apxOAuth: ["apx.accounts:read"]
       tags: [Accounts]
       summary: Payment history by ticket
       description: |-
@@ -852,6 +998,7 @@ paths:
             privacy rule as ticketLast4.
           schema: { type: string }
         - { name: date, in: query, schema: { type: string, format: date } }
+        - $ref: "../vendor/apds/4.1/apds-api-4.1.yaml#/components/parameters/page"
       responses:
         "200":
           description: Matching payments.
@@ -860,20 +1007,30 @@ paths:
               schema:
                 type: object
                 properties:
+                  meta:
+                    $ref: "../vendor/apds/4.1/apds-api-4.1.yaml#/components/schemas/PaginatedListMeta"
                   data:
                     type: array
                     items: { $ref: "#/components/schemas/PaymentRecord" }
         "401": { $ref: "#/components/responses/Unauthorized" }
         "403": { $ref: "#/components/responses/Forbidden" }
+        "429": { $ref: "#/components/responses/TooManyRequests" }
 
   /v1/payments/{id}/postings:
     post:
       operationId: post-apx-v1-payments-id-postings
+      security:
+        - apxOAuth: ["apx.payments:write"]
       tags: [Accounts]
       summary: Accounting write-back (PARIS-style)
       description: Posts the payment to the monthly-parking/AR system; returns confirmation and new balance.
       parameters:
         - { name: id, in: path, required: true, schema: { type: string, format: uuid } }
+      requestBody:
+        required: false
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/PostingRequest" }
       responses:
         "201":
           description: Posting result.
@@ -889,6 +1046,8 @@ paths:
   /v1/payments/{id}/refund:
     post:
       operationId: post-apx-v1-payments-id-refund
+      security:
+        - apxOAuth: ["apx.payments:write"]
       tags: [Accounts]
       summary: Refund a payment (financial domain action)
       description: |-
@@ -919,6 +1078,7 @@ paths:
               schema: { $ref: "#/components/schemas/PaymentRecord" }
         "401": { $ref: "#/components/responses/Unauthorized" }
         "403": { $ref: "#/components/responses/Forbidden" }
+        "429": { $ref: "#/components/responses/TooManyRequests" }
         "404":
           description: No such payment.
           content:
@@ -933,6 +1093,8 @@ paths:
   /v1/payments/{id}/void:
     post:
       operationId: post-apx-v1-payments-id-void
+      security:
+        - apxOAuth: ["apx.payments:write"]
       tags: [Accounts]
       summary: Void an authorized, uncaptured payment
       description: Financial domain action (Part 17 §17.4). Idempotency-Key REQUIRED. Scope apx.payments:write.
@@ -947,6 +1109,7 @@ paths:
               schema: { $ref: "#/components/schemas/PaymentRecord" }
         "401": { $ref: "#/components/responses/Unauthorized" }
         "403": { $ref: "#/components/responses/Forbidden" }
+        "429": { $ref: "#/components/responses/TooManyRequests" }
         "404":
           description: No such payment.
           content:
@@ -961,6 +1124,8 @@ paths:
   /v1/payments/{id}/capture:
     post:
       operationId: post-apx-v1-payments-id-capture
+      security:
+        - apxOAuth: ["apx.payments:write"]
       tags: [Accounts]
       summary: Capture a previously authorized payment
       description: Financial domain action (Part 17 §17.4). Idempotency-Key REQUIRED. Scope apx.payments:write.
@@ -984,6 +1149,7 @@ paths:
               schema: { $ref: "#/components/schemas/PaymentRecord" }
         "401": { $ref: "#/components/responses/Unauthorized" }
         "403": { $ref: "#/components/responses/Forbidden" }
+        "429": { $ref: "#/components/responses/TooManyRequests" }
         "404":
           description: No such payment.
           content:
@@ -998,6 +1164,8 @@ paths:
   /v1/payment-links:
     post:
       operationId: post-apx-v1-payment-links
+      security:
+        - apxOAuth: ["apx.payments:write"]
       tags: [Accounts, Resolution]
       summary: Send a hosted payment link
       description: |-
@@ -1014,6 +1182,11 @@ paths:
           application/json:
             schema: { $ref: "#/components/schemas/PaymentLink" }
       responses:
+        "200":
+          description: Idempotent replay — same key + same body returns the ORIGINAL link.
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/PaymentLink" }
         "201":
           description: The link, sent.
           content:
@@ -1026,6 +1199,7 @@ paths:
               schema: { $ref: "#/components/schemas/Problem" }
         "401": { $ref: "#/components/responses/Unauthorized" }
         "403": { $ref: "#/components/responses/Forbidden" }
+        "429": { $ref: "#/components/responses/TooManyRequests" }
         "409":
           description: Idempotency-Key replayed with a different body.
           content:
@@ -1035,6 +1209,8 @@ paths:
   /v1/sessions/{id}/plate:
     put:
       operationId: put-apx-v1-sessions-id-plate
+      security:
+        - apxOAuth: ["apx.data:write"]
       tags: [LPR, Resolution]
       summary: Associate or correct the plate on a session
       description: |-
@@ -1084,6 +1260,7 @@ paths:
                     $ref: "../vendor/apds/4.1/apds-api-4.1.yaml#/components/schemas/Reference"
         "401": { $ref: "#/components/responses/Unauthorized" }
         "403": { $ref: "#/components/responses/Forbidden" }
+        "429": { $ref: "#/components/responses/TooManyRequests" }
         "404":
           description: No such session.
           content:
@@ -1093,6 +1270,8 @@ paths:
   /v1/lpr/reads:
     get:
       operationId: get-apx-v1-lpr-reads
+      security:
+        - apxOAuth: ["apx.lpr:read"]
       tags: [LPR]
       summary: Bidirectional plate/ticket cross-lookup
       description: |-
@@ -1101,6 +1280,7 @@ paths:
       parameters:
         - { name: plate, in: query, schema: { type: string } }
         - { name: ticket, in: query, schema: { type: string } }
+        - $ref: "../vendor/apds/4.1/apds-api-4.1.yaml#/components/parameters/page"
       responses:
         "200":
           description: Matching reads.
@@ -1109,16 +1289,21 @@ paths:
               schema:
                 type: object
                 properties:
+                  meta:
+                    $ref: "../vendor/apds/4.1/apds-api-4.1.yaml#/components/schemas/PaginatedListMeta"
                   data:
                     type: array
                     items: { $ref: "#/components/schemas/LprRead" }
         "401": { $ref: "#/components/responses/Unauthorized" }
         "403": { $ref: "#/components/responses/Forbidden" }
+        "429": { $ref: "#/components/responses/TooManyRequests" }
 
   # ===== Alerts (conformance class apx-alerts) ===== #
   /v1/alerts:
     post:
       operationId: post-apx-v1-alerts
+      security:
+        - apxOAuth: ["apx.alerts:write"]
       tags: [Alerts]
       summary: Raise an alert (idempotent)
       description: |-
@@ -1138,6 +1323,12 @@ paths:
             schema:
               $ref: "#/components/schemas/Alert"
       responses:
+        "200":
+          description: Idempotent replay — same key + same body returns the ORIGINAL alert.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Alert"
         "201":
           description: Alert raised.
           content:
@@ -1150,6 +1341,9 @@ paths:
             application/problem+json:
               schema:
                 $ref: "#/components/schemas/Problem"
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+        "429": { $ref: "#/components/responses/TooManyRequests" }
         "409":
           description: Idempotency-Key replayed with a different body.
           content:
@@ -1158,6 +1352,8 @@ paths:
                 $ref: "#/components/schemas/Problem"
     get:
       operationId: get-apx-v1-alerts
+      security:
+        - apxOAuth: ["apx.alerts:read"]
       tags: [Alerts]
       summary: List/filter alerts
       description: Filter by status, severityFloor, type, place (subtree-inclusive), since.
@@ -1177,6 +1373,7 @@ paths:
         - name: since
           in: query
           schema: { type: string, format: date-time }
+        - $ref: "../vendor/apds/4.1/apds-api-4.1.yaml#/components/parameters/page"
       responses:
         "200":
           description: Paginated alerts (APDS PaginatedList shape).
@@ -1193,10 +1390,13 @@ paths:
                       $ref: "#/components/schemas/Alert"
         "401": { $ref: "#/components/responses/Unauthorized" }
         "403": { $ref: "#/components/responses/Forbidden" }
+        "429": { $ref: "#/components/responses/TooManyRequests" }
 
   /v1/alerts/{id}:
     get:
       operationId: get-apx-v1-alerts-id
+      security:
+        - apxOAuth: ["apx.alerts:read"]
       tags: [Alerts]
       summary: Read an alert
       description: Returns the alert including its immutable statusHistory.
@@ -1222,6 +1422,8 @@ paths:
   /v1/alerts/{id}/acknowledge:
     post:
       operationId: post-apx-v1-alerts-id-acknowledge
+      security:
+        - apxOAuth: ["apx.alerts:write"]
       tags: [Alerts]
       summary: Acknowledge an alert
       description: "Transition raised → acknowledged. Illegal transitions are 409."
@@ -1247,6 +1449,8 @@ paths:
   /v1/alerts/{id}/resolve:
     post:
       operationId: post-apx-v1-alerts-id-resolve
+      security:
+        - apxOAuth: ["apx.alerts:write"]
       tags: [Alerts]
       summary: Resolve an alert
       description: "Transition raised|acknowledged → resolved. Illegal transitions are 409."
@@ -1273,6 +1477,8 @@ paths:
   /v1/resolution/contexts:
     post:
       operationId: post-apx-v1-resolution-contexts
+      security:
+        - apxOAuth: ["apx.resolution:read"]
       tags: [Resolution]
       summary: Resolve a customer-service context from any known identifiers
       description: |-
@@ -1305,6 +1511,7 @@ paths:
               schema: { $ref: "#/components/schemas/Problem" }
         "401": { $ref: "#/components/responses/Unauthorized" }
         "403": { $ref: "#/components/responses/Forbidden" }
+        "429": { $ref: "#/components/responses/TooManyRequests" }
         "404":
           description: No identifier resolved to anything this implementation knows.
           content:
@@ -1314,6 +1521,8 @@ paths:
   /v1/resolution/contexts/{id}:
     get:
       operationId: get-apx-v1-resolution-contexts-id
+      security:
+        - apxOAuth: ["apx.resolution:read"]
       tags: [Resolution]
       summary: Re-read (recompute) a resolution context
       description: |-
@@ -1330,6 +1539,7 @@ paths:
               schema: { $ref: "#/components/schemas/ResolutionContext" }
         "401": { $ref: "#/components/responses/Unauthorized" }
         "403": { $ref: "#/components/responses/Forbidden" }
+        "429": { $ref: "#/components/responses/TooManyRequests" }
         "404":
           description: No such context (contexts MAY expire; re-resolve).
           content:
@@ -1339,6 +1549,8 @@ paths:
   /v1/resolution/contexts/{id}/allowed-actions:
     get:
       operationId: get-apx-v1-resolution-contexts-id-allowed-actions
+      security:
+        - apxOAuth: ["apx.resolution:read"]
       tags: [Resolution]
       summary: Re-evaluate the allowed actions for a context
       description: |-
@@ -1362,6 +1574,7 @@ paths:
                     items: { $ref: "#/components/schemas/AllowedAction" }
         "401": { $ref: "#/components/responses/Unauthorized" }
         "403": { $ref: "#/components/responses/Forbidden" }
+        "429": { $ref: "#/components/responses/TooManyRequests" }
         "404":
           description: No such context.
           content:
@@ -1371,6 +1584,8 @@ paths:
   /v1/lpr/candidates:
     get:
       operationId: get-apx-v1-lpr-candidates
+      security:
+        - apxOAuth: ["apx.lpr:read"]
       tags: [LPR, Resolution]
       summary: Plate candidates for correction workflows
       description: |-
@@ -1381,6 +1596,7 @@ paths:
         - { name: session, in: query, schema: { type: string, format: uuid }, description: Session UUID. }
         - { name: lane, in: query, schema: { type: string, format: uuid }, description: VehicularAccess UUID. }
         - { name: since, in: query, schema: { type: string, format: date-time } }
+        - $ref: "../vendor/apds/4.1/apds-api-4.1.yaml#/components/parameters/page"
       responses:
         "200":
           description: Candidates, best confidence first.
@@ -1390,6 +1606,8 @@ paths:
                 type: object
                 required: [data]
                 properties:
+                  meta:
+                    $ref: "../vendor/apds/4.1/apds-api-4.1.yaml#/components/schemas/PaginatedListMeta"
                   data:
                     type: array
                     items: { $ref: "#/components/schemas/PlateCandidate" }
@@ -1400,10 +1618,13 @@ paths:
               schema: { $ref: "#/components/schemas/Problem" }
         "401": { $ref: "#/components/responses/Unauthorized" }
         "403": { $ref: "#/components/responses/Forbidden" }
+        "429": { $ref: "#/components/responses/TooManyRequests" }
 
   /v1/credentials/{id}/passback:
     get:
       operationId: get-apx-v1-credentials-id-passback
+      security:
+        - apxOAuth: ["apx.control:read"]
       tags: [Resolution]
       summary: Anti-passback status for a credential
       description: |-
@@ -1422,6 +1643,7 @@ paths:
               schema: { $ref: "#/components/schemas/PassbackStatus" }
         "401": { $ref: "#/components/responses/Unauthorized" }
         "403": { $ref: "#/components/responses/Forbidden" }
+        "429": { $ref: "#/components/responses/TooManyRequests" }
         "404":
           description: No such credential or no passback tracking.
           content:
@@ -1431,6 +1653,8 @@ paths:
   /v1/support/interactions:
     post:
       operationId: post-apx-v1-support-interactions
+      security:
+        - apxOAuth: ["apx.support:manage"]
       tags: [Support]
       summary: Record a support interaction
       description: |-
@@ -1455,8 +1679,11 @@ paths:
               schema: { $ref: "#/components/schemas/Problem" }
         "401": { $ref: "#/components/responses/Unauthorized" }
         "403": { $ref: "#/components/responses/Forbidden" }
+        "429": { $ref: "#/components/responses/TooManyRequests" }
     get:
       operationId: get-apx-v1-support-interactions
+      security:
+        - apxOAuth: ["apx.support:manage"]
       tags: [Support]
       summary: Support history for a subject
       description: |-
@@ -1470,6 +1697,7 @@ paths:
         - { name: session, in: query, schema: { type: string, format: uuid } }
         - { name: place, in: query, schema: { type: string, format: uuid } }
         - { name: since, in: query, schema: { type: string, format: date-time } }
+        - $ref: "../vendor/apds/4.1/apds-api-4.1.yaml#/components/parameters/page"
       responses:
         "200":
           description: Paginated interactions (APDS PaginatedList shape).
@@ -1490,11 +1718,14 @@ paths:
               schema: { $ref: "#/components/schemas/Problem" }
         "401": { $ref: "#/components/responses/Unauthorized" }
         "403": { $ref: "#/components/responses/Forbidden" }
+        "429": { $ref: "#/components/responses/TooManyRequests" }
 
   # ===== Discovery (optional class apx-discovery; Part 16) ===== #
   /v1/discovery:
     get:
       operationId: get-apx-v1-discovery
+      security:
+        - apxOAuth: []
       tags: [Discovery]
       summary: Credential-scoped capability document
       description: |-
@@ -1579,6 +1810,15 @@ components:
       content:
         application/problem+json:
           schema: { $ref: "#/components/schemas/Problem" }
+    TooManyRequests:
+      description: Rate limited (problem type `rate-limited`, Part 12).
+      headers:
+        Retry-After:
+          description: Seconds to wait before retrying (RFC 9110).
+          schema: { type: integer, minimum: 0 }
+      content:
+        application/problem+json:
+          schema: { $ref: "#/components/schemas/Problem" }
 
   securitySchemes:
     # APDS 4.1's own scheme, vendored verbatim — the security requirement
@@ -1654,6 +1894,8 @@ components:
       $ref: "./domains/accounts/schemas.yaml#/Posting"
     PaymentLink:
       $ref: "./domains/accounts/schemas.yaml#/PaymentLink"
+    PostingRequest:
+      $ref: "./domains/accounts/schemas.yaml#/PostingRequest"
     LprRead:
       $ref: "./domains/lpr/schemas.yaml#/LprRead"
     ReservationExtension:
@@ -1666,6 +1908,12 @@ components:
       $ref: "./domains/reservations/schemas.yaml#/PermitIssueRequest"
     TollTransaction:
       $ref: "./domains/tolling/schemas.yaml#/TollTransaction"
+    TollPaymentAttachment:
+      $ref: "./domains/tolling/schemas.yaml#/TollPaymentAttachment"
+    TollDisputeOpen:
+      $ref: "./domains/tolling/schemas.yaml#/TollDisputeOpen"
+    TollDisputeResolution:
+      $ref: "./domains/tolling/schemas.yaml#/TollDisputeResolution"
     DiscoveryDocument:
       $ref: "./domains/discovery/schemas.yaml#/DiscoveryDocument"
     ResolutionContext:

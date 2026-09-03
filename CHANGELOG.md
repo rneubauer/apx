@@ -6,6 +6,22 @@ conformance/versioning rules in Part 3 of the written standard.
 The machine-readable spec (`spec/openapi/apx.yaml`, bundled as
 `spec/dist/apx-v1.*`) is normative; entries here are informative.
 
+## [Unreleased] — experimental/resolution-context
+
+Customer Service & Resolution (Part 17, class `apx-resolution`) plus the
+API-mechanics hardening pass. Highlights: one aggregated resolution-context
+call with policy-decided allowed actions ("the LLM is never the policy
+engine"), anti-passback, plate correction, payment links/refunds, support
+history, opaque `interactionId` (no telephony in the PARCS contract),
+`confirmationLevel` honesty on commands, scenarios 08–15, APDS 4.1
+upstream-pin + strictness-audit fixes, per-operation OAuth scopes on all 47
+APX operations, request bodies on the formerly body-less POSTs, uniform
+idempotent-replay/401/403/409/422/429 declarations, APDS `page` +
+`PaginatedListMeta` pagination on every APX list, `spectral:oas` base
+ruleset, and an openapi-typescript codegen smoke test in `npm test`
+(new dev dependency). Second documented APDS erratum (invalid
+`/observations` example).
+
 ## [0.2.0] — 2026-09-02
 
 Submission-readiness revision: fixes the seven blockers from the

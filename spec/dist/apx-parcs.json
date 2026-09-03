@@ -2855,6 +2855,13 @@
     "/v1/places/{id}/occupancy": {
       "get": {
         "operationId": "get-apx-v1-places-id-occupancy",
+        "security": [
+          {
+            "apxOAuth": [
+              "apx.data:read"
+            ]
+          }
+        ],
         "tags": [
           "Data"
         ],
@@ -2899,6 +2906,20 @@
     "/webhooks": {
       "post": {
         "operationId": "post-webhooks",
+        "security": [
+          {
+            "apxOAuth": [
+              "apx.subscriptions:manage"
+            ]
+          },
+          {
+            "oAuth": [
+              "po",
+              "sp",
+              "ad"
+            ]
+          }
+        ],
         "tags": [
           "Subscription"
         ],
@@ -2973,11 +2994,30 @@
       },
       "get": {
         "operationId": "get-webhooks",
+        "security": [
+          {
+            "apxOAuth": [
+              "apx.subscriptions:manage"
+            ]
+          },
+          {
+            "oAuth": [
+              "po",
+              "sp",
+              "ad"
+            ]
+          }
+        ],
         "tags": [
           "Subscription"
         ],
         "summary": "List subscriptions (APX additive operation)",
         "description": "Lists subscriptions visible to the caller. Secrets are never returned.",
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/page"
+          }
+        ],
         "responses": {
           "200": {
             "description": "Paginated subscription list (APDS PaginatedList shape).",
@@ -3005,6 +3045,9 @@
           },
           "403": {
             "$ref": "#/components/responses/Forbidden"
+          },
+          "429": {
+            "$ref": "#/components/responses/TooManyRequests"
           }
         }
       }
@@ -3023,6 +3066,20 @@
       ],
       "patch": {
         "operationId": "patch-webhooks-id",
+        "security": [
+          {
+            "apxOAuth": [
+              "apx.subscriptions:manage"
+            ]
+          },
+          {
+            "oAuth": [
+              "po",
+              "sp",
+              "ad"
+            ]
+          }
+        ],
         "tags": [
           "Subscription"
         ],
@@ -3063,6 +3120,20 @@
       },
       "delete": {
         "operationId": "delete-webhooks-id",
+        "security": [
+          {
+            "apxOAuth": [
+              "apx.subscriptions:manage"
+            ]
+          },
+          {
+            "oAuth": [
+              "po",
+              "sp",
+              "ad"
+            ]
+          }
+        ],
         "tags": [
           "Subscription"
         ],
@@ -3095,6 +3166,20 @@
     "/webhooks/{id}/deliveries": {
       "get": {
         "operationId": "get-webhooks-id-deliveries",
+        "security": [
+          {
+            "apxOAuth": [
+              "apx.subscriptions:manage"
+            ]
+          },
+          {
+            "oAuth": [
+              "po",
+              "sp",
+              "ad"
+            ]
+          }
+        ],
         "tags": [
           "Subscription"
         ],
@@ -3108,6 +3193,9 @@
             "schema": {
               "type": "string"
             }
+          },
+          {
+            "$ref": "#/components/parameters/page"
           }
         ],
         "responses": {
@@ -3118,6 +3206,9 @@
                 "schema": {
                   "type": "object",
                   "properties": {
+                    "meta": {
+                      "$ref": "#/components/schemas/PaginatedListMeta"
+                    },
                     "data": {
                       "type": "array",
                       "items": {
@@ -3144,6 +3235,9 @@
                 }
               }
             }
+          },
+          "429": {
+            "$ref": "#/components/responses/TooManyRequests"
           }
         }
       }
@@ -3151,6 +3245,13 @@
     "/v1/commands": {
       "post": {
         "operationId": "post-apx-v1-commands",
+        "security": [
+          {
+            "apxOAuth": [
+              "apx.control:execute"
+            ]
+          }
+        ],
         "tags": [
           "Control"
         ],
@@ -3177,6 +3278,16 @@
           }
         },
         "responses": {
+          "200": {
+            "description": "Idempotent replay — same key + same body returns the ORIGINAL command (Part 6 §6.1).",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Command"
+                }
+              }
+            }
+          },
           "202": {
             "description": "Command accepted for asynchronous execution.",
             "content": {
@@ -3197,8 +3308,11 @@
               }
             }
           },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
           "403": {
-            "description": "Insufficient scope or place grant.",
+            "description": "Insufficient scope or place grant (Part 9), the current\nresolution context evaluated the action as not allowed\n(`action-not-allowed`), or approval evidence is missing\n(`approval-required`) — Part 17 §17.3.",
             "content": {
               "application/problem+json": {
                 "schema": {
@@ -3216,6 +3330,19 @@
                 }
               }
             }
+          },
+          "422": {
+            "description": "Command expired before dispatch (`command-expired`) or unknown validation provider (`validation-provider-unknown`) — Part 12.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "429": {
+            "$ref": "#/components/responses/TooManyRequests"
           }
         }
       }
@@ -3223,6 +3350,13 @@
     "/v1/commands/{id}": {
       "get": {
         "operationId": "get-apx-v1-commands-id",
+        "security": [
+          {
+            "apxOAuth": [
+              "apx.control:read"
+            ]
+          }
+        ],
         "tags": [
           "Control"
         ],
@@ -3266,6 +3400,13 @@
     "/v1/commands/{id}/cancel": {
       "post": {
         "operationId": "post-apx-v1-commands-id-cancel",
+        "security": [
+          {
+            "apxOAuth": [
+              "apx.control:execute"
+            ]
+          }
+        ],
         "tags": [
           "Control"
         ],
@@ -3309,6 +3450,13 @@
     "/v1/lanes/{id}/current": {
       "get": {
         "operationId": "get-apx-v1-lanes-id-current",
+        "security": [
+          {
+            "apxOAuth": [
+              "apx.control:read"
+            ]
+          }
+        ],
         "tags": [
           "Control"
         ],
@@ -3353,6 +3501,13 @@
     "/v1/validations/providers": {
       "get": {
         "operationId": "get-apx-v1-validations-providers",
+        "security": [
+          {
+            "apxOAuth": [
+              "apx.control:read"
+            ]
+          }
+        ],
         "tags": [
           "Control"
         ],
@@ -3367,6 +3522,9 @@
               "type": "string",
               "format": "uuid"
             }
+          },
+          {
+            "$ref": "#/components/parameters/page"
           }
         ],
         "responses": {
@@ -3377,6 +3535,9 @@
                 "schema": {
                   "type": "object",
                   "properties": {
+                    "meta": {
+                      "$ref": "#/components/schemas/PaginatedListMeta"
+                    },
                     "data": {
                       "type": "array",
                       "items": {
@@ -3393,6 +3554,9 @@
           },
           "403": {
             "$ref": "#/components/responses/Forbidden"
+          },
+          "429": {
+            "$ref": "#/components/responses/TooManyRequests"
           }
         }
       }
@@ -3400,11 +3564,23 @@
     "/v1/devices": {
       "get": {
         "operationId": "get-apx-v1-devices",
+        "security": [
+          {
+            "apxOAuth": [
+              "apx.control:read"
+            ]
+          }
+        ],
         "tags": [
           "Control"
         ],
         "summary": "List device status overlays",
         "description": "Live DeviceStatus for every SupplementalEquipment the caller may see.",
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/page"
+          }
+        ],
         "responses": {
           "200": {
             "description": "Device status list.",
@@ -3413,6 +3589,9 @@
                 "schema": {
                   "type": "object",
                   "properties": {
+                    "meta": {
+                      "$ref": "#/components/schemas/PaginatedListMeta"
+                    },
                     "data": {
                       "type": "array",
                       "items": {
@@ -3429,6 +3608,9 @@
           },
           "403": {
             "$ref": "#/components/responses/Forbidden"
+          },
+          "429": {
+            "$ref": "#/components/responses/TooManyRequests"
           }
         }
       }
@@ -3436,6 +3618,13 @@
     "/v1/devices/{id}": {
       "get": {
         "operationId": "get-apx-v1-devices-id",
+        "security": [
+          {
+            "apxOAuth": [
+              "apx.control:read"
+            ]
+          }
+        ],
         "tags": [
           "Control"
         ],
@@ -9458,6 +9647,25 @@
       },
       "Forbidden": {
         "description": "Insufficient scope (problem type `insufficient-scope`) or place\ngrant (`insufficient-grant`) for this operation (Part 9).",
+        "content": {
+          "application/problem+json": {
+            "schema": {
+              "$ref": "#/components/schemas/Problem"
+            }
+          }
+        }
+      },
+      "TooManyRequests": {
+        "description": "Rate limited (problem type `rate-limited`, Part 12).",
+        "headers": {
+          "Retry-After": {
+            "description": "Seconds to wait before retrying (RFC 9110).",
+            "schema": {
+              "type": "integer",
+              "minimum": 0
+            }
+          }
+        },
         "content": {
           "application/problem+json": {
             "schema": {

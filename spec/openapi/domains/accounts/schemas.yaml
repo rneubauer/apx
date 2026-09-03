@@ -152,3 +152,17 @@ Posting:
       description: Target accounting system identifier (e.g. "paris").
     time:
       $ref: "../../../vendor/apds/4.1/apds-api-4.1.yaml#/components/schemas/DateTime"
+
+PostingRequest:
+  title: PostingRequest
+  description: Request body for the accounting write-back of a payment.
+  type: object
+  properties:
+    postedTo:
+      type: string
+      description: Target accounting system identifier; server default applies when omitted.
+      examples: [paris]
+    account:
+      description: Account to post against when the payment isn't already account-bound.
+      $ref: "../../../vendor/apds/4.1/apds-api-4.1.yaml#/components/schemas/Reference"
+    note: { type: string }

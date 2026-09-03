@@ -62,3 +62,40 @@ TollTransaction:
       $ref: "../common/schemas.yaml#/RecordInfo"
     extensions:
       $ref: "../common/schemas.yaml#/Extensions"
+
+TollPaymentAttachment:
+  title: TollPaymentAttachment
+  description: Request body attaching the settling Payment to a toll transaction.
+  type: object
+  required: [payment]
+  properties:
+    payment:
+      description: Reference to the settling APDS Payment (or APX PaymentRecord).
+      $ref: "../../../vendor/apds/4.1/apds-api-4.1.yaml#/components/schemas/Reference"
+    note: { type: string }
+
+TollDisputeOpen:
+  title: TollDisputeOpen
+  description: Request body opening a dispute on a toll transaction.
+  type: object
+  required: [reason]
+  properties:
+    reason:
+      type: string
+      description: Dispute reason (implementer code list).
+      examples: [wrongVehicle]
+    detail: { type: string }
+    disputedBy:
+      $ref: "../../../vendor/apds/4.1/apds-api-4.1.yaml#/components/schemas/Reference"
+
+TollDisputeResolution:
+  title: TollDisputeResolution
+  description: Request body resolving an open dispute.
+  type: object
+  required: [resolution]
+  properties:
+    resolution:
+      type: string
+      description: Resolution value (implementer code list — upheld, refunded, adjusted…).
+      examples: [refunded]
+    note: { type: string }

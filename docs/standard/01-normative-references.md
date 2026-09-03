@@ -48,3 +48,9 @@ schemas should be aware of:
    erratum should be reported to APDS
    (https://github.com/parkingdata/spec) and this section removed once a
    corrected upstream release is vendored.
+2. **`POST /observations` `single-element` example is invalid against its
+   own schema.** The embedded request example omits the required `id` and
+   matches no branch of the request `oneOf`. The schema is authoritative;
+   the example is defective. Lint tooling scopes an exemption to this path
+   (`tools/.spectral.yaml`) rather than editing the vendored file. Report
+   upstream; remove on a corrected release.
