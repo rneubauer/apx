@@ -45,6 +45,28 @@ Command:
     reason:
       type: string
       description: Free-text or code-list reason for the action (audit).
+    resolutionContext:
+      description: The ResolutionContext this command resolves (Part 17) — links the action into the interaction's audit chain.
+      $ref: "../../../vendor/apds/4.1/apds-api-4.1.yaml#/components/schemas/Reference"
+    correlationId:
+      type: string
+      format: uuid
+      description: Correlation chain id (Part 17 §17.7) — one id connects call → context → command → events → support interaction.
+    approval:
+      type: object
+      description: |-
+        Approval evidence, REQUIRED when the context's AllowedAction said
+        requiresApproval (Part 17 §17.3). Servers MUST reject a
+        requires-approval command without it (403 approval-required).
+      required: [approvedBy]
+      properties:
+        approvedBy:
+          type: string
+          description: The approving principal (role per AllowedAction.approvalRole).
+        approvedAt:
+          $ref: "../../../vendor/apds/4.1/apds-api-4.1.yaml#/components/schemas/DateTime"
+        note:
+          type: string
     expiryTime:
       description: Commands are perishable — MUST NOT be dispatched after this instant.
       $ref: "../../../vendor/apds/4.1/apds-api-4.1.yaml#/components/schemas/DateTime"

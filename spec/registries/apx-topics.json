@@ -1,6 +1,6 @@
 {
   "id": "3e4f5a6b-7c8d-4e9f-0a1b-2c3d4e5f6a7b",
-  "version": 3,
+  "version": 4,
   "name": "apx-topics",
   "creator": { "id": "a1000000-0000-4000-8000-000000000001", "className": "Organisation" },
   "locator": "https://apx-standard.org/registries/apx-topics.json",
@@ -15,6 +15,8 @@
     { "definedValue": "apx.subscription.failed.v1", "entryDescription": "A subscription exhausted its retry schedule and was marked failed (data: subscription reference).", "entryIndex": 7 },
     { "definedValue": "apx.data.occupancy.v1", "entryDescription": "Occupancy changed materially for a place element — threshold crossing or publisher-defined delta (data: OccupancySnapshot).", "entryIndex": 8 },
     { "definedValue": "apx.accounts.payment.recorded.v1", "entryDescription": "A payment was recorded — taken via /v1/payments or ingested from a lane device (data: PaymentRecord). Fills the financial-analytics gap: APDS EventTypeEnum has no payment events.", "entryIndex": 9 },
-    { "definedValue": "apx.data.observation.created.v1", "entryDescription": "A new Observation was ingested — LPR read, RFID hit, sensor event (data: the APDS Observation; subject references it). Fills the sensor-analytics gap: APDS EventTypeEnum has no Observation events.", "entryIndex": 10 }
+    { "definedValue": "apx.data.observation.created.v1", "entryDescription": "A new Observation was ingested — LPR read, RFID hit, sensor event (data: the APDS Observation; subject references it). Fills the sensor-analytics gap: APDS EventTypeEnum has no Observation events.", "entryIndex": 10 },
+    { "definedValue": "apx.resolution.context.created.v1", "entryDescription": "A resolution context was created or materially recomputed (data: ResolutionContext) — enables event-driven preloading so agent consoles pop before the call is answered.", "entryIndex": 11 },
+    { "definedValue": "apx.support.interaction.recorded.v1", "entryDescription": "A support interaction was recorded or updated (data: SupportInteraction).", "entryIndex": 12 }
   ]
 }

@@ -1,6 +1,6 @@
 {
   "id": "4f5a6b7c-8d9e-4f0a-1b2c-3d4e5f6a7b8c",
-  "version": 1,
+  "version": 2,
   "name": "apx-conformance-classes",
   "creator": { "id": "a1000000-0000-4000-8000-000000000001", "className": "Organisation" },
   "locator": "https://apx-standard.org/registries/apx-conformance-classes.json",
@@ -17,6 +17,7 @@
     { "definedValue": "apx-reservations", "entryDescription": "Implements the reservations profile over APDS quotes and assigned rights.", "entryIndex": 9 },
     { "definedValue": "apx-permits", "entryDescription": "Implements the permits profile over RightSpecification, RightPool, and Credential.", "entryIndex": 10 },
     { "definedValue": "apx-tolling", "entryDescription": "Implements TollTransaction and its dispute lifecycle.", "entryIndex": 11 },
-    { "definedValue": "apx-mtls", "entryDescription": "Optional hardening: mutual TLS on all APX endpoints.", "entryIndex": 12 }
+    { "definedValue": "apx-mtls", "entryDescription": "Optional hardening: mutual TLS on all APX endpoints.", "entryIndex": 12 },
+    { "definedValue": "apx-resolution", "entryDescription": "Implements Customer Service & Resolution: resolution contexts, policy-decided allowed actions, passback status, plate candidates, and support-interaction history.", "entryIndex": 13 }
   ]
 }

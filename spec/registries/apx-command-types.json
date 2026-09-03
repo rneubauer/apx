@@ -1,6 +1,6 @@
 {
   "id": "0b1f8a4e-1c2d-4e5f-9a6b-7c8d9e0f1a2b",
-  "version": 1,
+  "version": 2,
   "name": "apx-command-types",
   "creator": { "id": "a1000000-0000-4000-8000-000000000001", "className": "Organisation" },
   "locator": "https://apx-standard.org/registries/apx-command-types.json",
@@ -13,6 +13,15 @@
     { "definedValue": "applyValidation", "entryDescription": "Apply a validation from the given validation provider to the ticket/session referenced in parameters.", "entryIndex": 5 },
     { "definedValue": "setDeviceState", "entryDescription": "Request the target device transition to the state given in parameters.", "entryIndex": 6 },
     { "definedValue": "displayMessage", "entryDescription": "Display the message given in parameters on the target device (VMS, lane display).", "entryIndex": 7 },
-    { "definedValue": "restartDevice", "entryDescription": "Restart (reboot) the target device.", "entryIndex": 8 }
+    { "definedValue": "restartDevice", "entryDescription": "Restart (reboot) the target device.", "entryIndex": 8 },
+    { "definedValue": "resetPassback", "entryDescription": "Reset the anti-passback state of the credential referenced in parameters to normal.", "entryIndex": 9 },
+    { "definedValue": "forceIn", "entryDescription": "Force the credential referenced in parameters to recorded presence 'inside' (passback correction).", "entryIndex": 10 },
+    { "definedValue": "forceOut", "entryDescription": "Force the credential referenced in parameters to recorded presence 'outside' (passback correction).", "entryIndex": 11 },
+    { "definedValue": "courtesyExit", "entryDescription": "Vend the gate at the target lane as a tracked courtesy exit for the account/holder referenced in parameters — counted against courtesy policy.", "entryIndex": 12 },
+    { "definedValue": "associatePlate", "entryDescription": "Associate or correct the license plate given in parameters on the session referenced in parameters (plate-correction workflow, Part 17 §17.5).", "entryIndex": 13 },
+    { "definedValue": "sendPaymentLink", "entryDescription": "Send a hosted payment link for the session/account referenced in parameters via the channel given in parameters (sms, email). APX never carries PANs.", "entryIndex": 14 },
+    { "definedValue": "refundPayment", "entryDescription": "Refund (fully or partially, per parameters) the PaymentRecord referenced in parameters.", "entryIndex": 15 },
+    { "definedValue": "voidPayment", "entryDescription": "Void the authorized-but-uncaptured PaymentRecord referenced in parameters.", "entryIndex": 16 },
+    { "definedValue": "capturePayment", "entryDescription": "Capture the previously authorized PaymentRecord referenced in parameters.", "entryIndex": 17 }
   ]
 }

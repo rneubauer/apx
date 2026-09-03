@@ -66,6 +66,14 @@
     {
       "name": "Tolling",
       "description": "Toll transactions binding Observations to pricing and Payments. See written standard Part 15."
+    },
+    {
+      "name": "Resolution",
+      "description": "Customer Service & Resolution (optional class apx-resolution) — one\naggregated context call plus policy-decided allowed actions. Writes go\nthrough the Part 6 command plane. See written standard Part 17."
+    },
+    {
+      "name": "Support",
+      "description": "Support-interaction history for resolution contexts. See written standard Part 17."
     }
   ],
   "paths": {
@@ -4545,6 +4553,445 @@
         }
       }
     },
+    "/v1/resolution/contexts": {
+      "post": {
+        "operationId": "post-apx-v1-resolution-contexts",
+        "tags": [
+          "Resolution"
+        ],
+        "summary": "Resolve a customer-service context from any known identifiers",
+        "description": "THE aggregation call (Part 17 §17.2): accepts whatever identifiers\nare known (intercom SIP URI, lane, plate, ticket, credential,\nreservation code…) and returns everything the server can resolve —\nissue classification, lane status, vehicle, session, account,\npassback, device status, recent overrides, support history — plus\nthe policy-decided allowedActions. Sections the caller's scopes and\n`apx_places` grant could not read directly are omitted. May return\n`status: partial` with `pendingSources` rather than waiting on a\nslow source; re-read to refresh. Scope apx.resolution:read.",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ResolutionResolveRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "The resolved context (possibly partial).",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ResolutionContext"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "No usable identifier supplied.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "404": {
+            "description": "No identifier resolved to anything this implementation knows.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/resolution/contexts/{id}": {
+      "get": {
+        "operationId": "get-apx-v1-resolution-contexts-id",
+        "tags": [
+          "Resolution"
+        ],
+        "summary": "Re-read (recompute) a resolution context",
+        "description": "Returns the context recomputed against current state — `version`\nincrements when anything material changed. Use after events arrive\nor when the initial response was partial. Scope apx.resolution:read.",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The current context.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ResolutionContext"
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "404": {
+            "description": "No such context (contexts MAY expire; re-resolve).",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/resolution/contexts/{id}/allowed-actions": {
+      "get": {
+        "operationId": "get-apx-v1-resolution-contexts-id-allowed-actions",
+        "tags": [
+          "Resolution"
+        ],
+        "summary": "Re-evaluate the allowed actions for a context",
+        "description": "The policy layer's current decisions (Part 17 §17.3) — cheaper than\na full context recompute; call before executing when time has\npassed. The consuming agent (human or AI) MUST NOT decide\npermissibility itself. Scope apx.resolution:read.",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Current decisions.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": [
+                    "data"
+                  ],
+                  "properties": {
+                    "data": {
+                      "type": "array",
+                      "items": {
+                        "$ref": "#/components/schemas/AllowedAction"
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "404": {
+            "description": "No such context.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/lpr/candidates": {
+      "get": {
+        "operationId": "get-apx-v1-lpr-candidates",
+        "tags": [
+          "LPR",
+          "Resolution"
+        ],
+        "summary": "Plate candidates for correction workflows",
+        "description": "Candidate plate reads (with confidence and imagery links) for a\nsession or lane — the read side of plate correction (Part 17\n§17.5); the write is an `associatePlate` command. Scope apx.lpr:read.",
+        "parameters": [
+          {
+            "name": "session",
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            },
+            "description": "Session UUID."
+          },
+          {
+            "name": "lane",
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            },
+            "description": "VehicularAccess UUID."
+          },
+          {
+            "name": "since",
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "format": "date-time"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Candidates, best confidence first.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": [
+                    "data"
+                  ],
+                  "properties": {
+                    "data": {
+                      "type": "array",
+                      "items": {
+                        "$ref": "#/components/schemas/PlateCandidate"
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Neither session nor lane given.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          }
+        }
+      }
+    },
+    "/v1/credentials/{id}/passback": {
+      "get": {
+        "operationId": "get-apx-v1-credentials-id-passback",
+        "tags": [
+          "Resolution"
+        ],
+        "summary": "Anti-passback status for a credential",
+        "description": "The credential's passback overlay: state, expected vs recorded\npresence, last access. The write side is the `resetPassback` /\n`forceIn` / `forceOut` commands (Part 17 §17.4). Scope\napx.control:read; the place grant must cover the credential's\nlast-access place.",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            },
+            "description": "APDS Credential UUID."
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Passback status.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PassbackStatus"
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "404": {
+            "description": "No such credential or no passback tracking.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/support/interactions": {
+      "post": {
+        "operationId": "post-apx-v1-support-interactions",
+        "tags": [
+          "Support"
+        ],
+        "summary": "Record a support interaction",
+        "description": "Records one customer-service interaction (human or AI) so future\nresolution contexts can surface it. Summaries, not transcripts\n(Part 9 §9.6). Scope apx.support:manage.",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/SupportInteraction"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Recorded interaction.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SupportInteraction"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid interaction.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          }
+        }
+      },
+      "get": {
+        "operationId": "get-apx-v1-support-interactions",
+        "tags": [
+          "Support"
+        ],
+        "summary": "Support history for a subject",
+        "description": "Recent interactions filtered by any subject key. At least one\nfilter is required. Scope apx.support:manage (or apx.resolution:read\nfor read-only consumers).",
+        "parameters": [
+          {
+            "name": "plate",
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "holder",
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "account",
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "session",
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "place",
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "since",
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "format": "date-time"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Paginated interactions (APDS PaginatedList shape).",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "meta": {
+                      "$ref": "#/components/schemas/PaginatedListMeta"
+                    },
+                    "data": {
+                      "type": "array",
+                      "items": {
+                        "$ref": "#/components/schemas/SupportInteraction"
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "No filter given.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          }
+        }
+      }
+    },
     "/v1/discovery": {
       "get": {
         "operationId": "get-apx-v1-discovery",
@@ -5054,7 +5501,9 @@
               "apx.lpr:read": "LPR plate/ticket cross-lookup",
               "apx.reservations:manage": "Quote, book, amend, cancel reservations",
               "apx.permits:manage": "Issue and manage permits",
-              "apx.tolling:manage": "Create and manage toll transactions"
+              "apx.tolling:manage": "Create and manage toll transactions",
+              "apx.resolution:read": "Resolve and read customer-service resolution contexts and allowed actions",
+              "apx.support:manage": "Record and read support-interaction history"
             }
           }
         }
@@ -5612,6 +6061,34 @@
           "reason": {
             "type": "string",
             "description": "Free-text or code-list reason for the action (audit)."
+          },
+          "resolutionContext": {
+            "description": "The ResolutionContext this command resolves (Part 17) — links the action into the interaction's audit chain.",
+            "$ref": "#/components/schemas/Reference"
+          },
+          "correlationId": {
+            "type": "string",
+            "format": "uuid",
+            "description": "Correlation chain id (Part 17 §17.7) — one id connects call → context → command → events → support interaction."
+          },
+          "approval": {
+            "type": "object",
+            "description": "Approval evidence, REQUIRED when the context's AllowedAction said\nrequiresApproval (Part 17 §17.3). Servers MUST reject a\nrequires-approval command without it (403 approval-required).",
+            "required": [
+              "approvedBy"
+            ],
+            "properties": {
+              "approvedBy": {
+                "type": "string",
+                "description": "The approving principal (role per AllowedAction.approvalRole)."
+              },
+              "approvedAt": {
+                "$ref": "#/components/schemas/DateTime"
+              },
+              "note": {
+                "type": "string"
+              }
+            }
           },
           "expiryTime": {
             "description": "Commands are perishable — MUST NOT be dispatched after this instant.",
@@ -6407,6 +6884,617 @@
             "additionalProperties": {
               "type": "integer"
             }
+          }
+        }
+      },
+      "ResolutionContext": {
+        "title": "ResolutionContext",
+        "description": "The aggregated customer-service context (Part 17): everything the\nserver could resolve about one interaction, plus the policy-decided\nallowed actions. Every section beyond the required core is OPTIONAL —\nimplementations include what they know and omit what they don't\n(graceful degradation), and MUST NOT include sections the caller's\nscopes/grants could not read directly.",
+        "type": "object",
+        "required": [
+          "id",
+          "version",
+          "computedAt",
+          "status",
+          "place",
+          "allowedActions"
+        ],
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid",
+            "readOnly": true
+          },
+          "version": {
+            "type": "integer",
+            "minimum": 1,
+            "readOnly": true,
+            "description": "Increments each time the context is recomputed."
+          },
+          "computedAt": {
+            "$ref": "#/components/schemas/DateTime"
+          },
+          "status": {
+            "type": "string",
+            "enum": [
+              "full",
+              "partial"
+            ],
+            "description": "partial = at least one source has not answered yet; re-read to refresh."
+          },
+          "pendingSources": {
+            "type": "array",
+            "description": "Names of sources still resolving when status=partial (implementer-defined identifiers).",
+            "items": {
+              "type": "string"
+            }
+          },
+          "correlationId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "issue": {
+            "$ref": "#/components/schemas/ResolutionIssue"
+          },
+          "place": {
+            "description": "The facility this interaction is anchored to.",
+            "$ref": "#/components/schemas/Reference"
+          },
+          "placeDisplay": {
+            "type": "string",
+            "examples": [
+              "Lakeside Garage"
+            ]
+          },
+          "lane": {
+            "description": "The VehicularAccess (lane) if resolved.",
+            "$ref": "#/components/schemas/Reference"
+          },
+          "laneStatus": {
+            "description": "The live lane inquiry result (Part 6 §6.2).",
+            "$ref": "#/components/schemas/LaneStatus"
+          },
+          "vehicle": {
+            "type": "object",
+            "description": "The vehicle as best resolved (usually via LPR).",
+            "properties": {
+              "plate": {
+                "type": "string"
+              },
+              "jurisdiction": {
+                "type": "string",
+                "examples": [
+                  "US-FL"
+                ]
+              },
+              "confidence": {
+                "type": "number",
+                "minimum": 0,
+                "maximum": 1
+              },
+              "plateImage": {
+                "$ref": "#/components/schemas/Url"
+              }
+            }
+          },
+          "session": {
+            "$ref": "#/components/schemas/Reference"
+          },
+          "holder": {
+            "description": "The RightHolder (parker) if identified.",
+            "$ref": "#/components/schemas/Reference"
+          },
+          "holderDisplay": {
+            "type": "string",
+            "description": "Display name only — contact details require the account read (PII minimization)."
+          },
+          "account": {
+            "$ref": "#/components/schemas/Account"
+          },
+          "assignedRight": {
+            "description": "The permit/reservation AssignedRight if resolved.",
+            "$ref": "#/components/schemas/Reference"
+          },
+          "reservation": {
+            "$ref": "#/components/schemas/ReservationSummary"
+          },
+          "credential": {
+            "$ref": "#/components/schemas/Reference"
+          },
+          "passback": {
+            "$ref": "#/components/schemas/PassbackStatus"
+          },
+          "accessDecision": {
+            "type": "object",
+            "description": "The most recent access decision at the lane.",
+            "properties": {
+              "status": {
+                "type": "string",
+                "enum": [
+                  "granted",
+                  "denied",
+                  "pending",
+                  "unknown"
+                ]
+              },
+              "reasonCode": {
+                "type": "string",
+                "description": "Operator code-list value.",
+                "examples": [
+                  "outstandingBalance"
+                ]
+              },
+              "reasonDisplay": {
+                "type": "string"
+              },
+              "occurredAt": {
+                "$ref": "#/components/schemas/DateTime"
+              }
+            }
+          },
+          "payments": {
+            "type": "array",
+            "description": "Recent relevant payments (most recent first).",
+            "items": {
+              "$ref": "#/components/schemas/PaymentRecord"
+            }
+          },
+          "devices": {
+            "type": "array",
+            "description": "Live status of the lane's devices — surfaces equipment faults before the agent asks the customer to retry.",
+            "items": {
+              "$ref": "#/components/schemas/DeviceStatus"
+            }
+          },
+          "recentOverrides": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/OverrideRecord"
+            }
+          },
+          "supportHistory": {
+            "type": "array",
+            "description": "Recent SupportInteractions for the same subjects.",
+            "items": {
+              "$ref": "#/components/schemas/SupportInteraction"
+            }
+          },
+          "allowedActions": {
+            "type": "array",
+            "description": "The policy layer's decisions — see AllowedAction. May be empty.",
+            "items": {
+              "$ref": "#/components/schemas/AllowedAction"
+            }
+          },
+          "recommendedAction": {
+            "type": "object",
+            "description": "The server's suggested next step (advisory, never binding).",
+            "required": [
+              "command"
+            ],
+            "properties": {
+              "command": {
+                "type": "string",
+                "description": "definedValue from apx-command-types.",
+                "examples": [
+                  "sendPaymentLink"
+                ]
+              },
+              "reason": {
+                "type": "string"
+              }
+            }
+          },
+          "recordInfo": {
+            "$ref": "#/components/schemas/RecordInfo"
+          },
+          "extensions": {
+            "$ref": "#/components/schemas/Extensions"
+          }
+        }
+      },
+      "ResolutionResolveRequest": {
+        "title": "ResolutionResolveRequest",
+        "description": "Whatever identifiers are currently known — the server resolves every\nrelationship it can (Part 17 §17.2). At least one identifying property\nis required; all are optional individually.",
+        "type": "object",
+        "minProperties": 1,
+        "properties": {
+          "correlationId": {
+            "type": "string",
+            "format": "uuid",
+            "description": "Caller-minted correlation id; echoed on the context and reusable on Commands."
+          },
+          "channel": {
+            "type": "string",
+            "description": "How the interaction arrived (voice | intercom | chat | web | other).",
+            "examples": [
+              "intercom"
+            ]
+          },
+          "calledNumber": {
+            "type": "string"
+          },
+          "callingNumber": {
+            "type": "string"
+          },
+          "sipUri": {
+            "type": "string",
+            "examples": [
+              "exit3@lakeside-garage.example"
+            ]
+          },
+          "intercom": {
+            "description": "The intercom device (SupplementalEquipment).",
+            "$ref": "#/components/schemas/Reference"
+          },
+          "device": {
+            "$ref": "#/components/schemas/Reference"
+          },
+          "place": {
+            "$ref": "#/components/schemas/Reference"
+          },
+          "lane": {
+            "$ref": "#/components/schemas/Reference"
+          },
+          "session": {
+            "$ref": "#/components/schemas/Reference"
+          },
+          "holder": {
+            "$ref": "#/components/schemas/Reference"
+          },
+          "credential": {
+            "$ref": "#/components/schemas/Reference"
+          },
+          "plate": {
+            "type": "string"
+          },
+          "ticketNumber": {
+            "type": "string"
+          },
+          "reservationCode": {
+            "type": "string"
+          }
+        }
+      },
+      "ResolutionIssue": {
+        "title": "ResolutionIssue",
+        "description": "The machine-classified issue this context describes. `code` is a\ndefinedValue from the apx-issue-types registry (open, per Part 11);\n`display` is the human-readable summary shown to agents.",
+        "type": "object",
+        "required": [
+          "code"
+        ],
+        "properties": {
+          "code": {
+            "type": "string",
+            "description": "definedValue from apx-issue-types.",
+            "examples": [
+              "accountBalanceDenied"
+            ]
+          },
+          "display": {
+            "type": "string",
+            "examples": [
+              "Monthly parker denied because of outstanding balance"
+            ]
+          }
+        }
+      },
+      "AllowedAction": {
+        "title": "AllowedAction",
+        "description": "One policy decision about one command type, evaluated for THIS context,\nTHIS credential, and THIS moment (Part 17 §17.3). The server — never\nthe consuming agent, human or AI — decides permissibility. Approval\nrequirements are policy-dependent, which is why they live here at\nruntime and not in the command-type registry.",
+        "type": "object",
+        "required": [
+          "command",
+          "allowed"
+        ],
+        "properties": {
+          "command": {
+            "type": "string",
+            "description": "definedValue from apx-command-types.",
+            "examples": [
+              "sendPaymentLink"
+            ]
+          },
+          "target": {
+            "description": "The Reference the command should be executed against.",
+            "$ref": "#/components/schemas/Reference"
+          },
+          "allowed": {
+            "type": "boolean"
+          },
+          "requiresApproval": {
+            "type": "boolean",
+            "default": false,
+            "description": "When true, POST /v1/commands for this action MUST carry approval evidence (Part 17 §17.3)."
+          },
+          "approvalRole": {
+            "type": "string",
+            "description": "Role that can approve (implementer/operator code list).",
+            "examples": [
+              "supervisor"
+            ]
+          },
+          "reason": {
+            "type": "object",
+            "description": "Why the action is denied or gated. REQUIRED when allowed=false or requiresApproval=true.",
+            "required": [
+              "code"
+            ],
+            "properties": {
+              "code": {
+                "type": "string",
+                "description": "Machine-readable policy reason code (operator code list).",
+                "examples": [
+                  "courtesyLimitReached"
+                ]
+              },
+              "display": {
+                "type": "string",
+                "examples": [
+                  "Two courtesy exits have already been provided within the previous 48 hours."
+                ]
+              },
+              "policy": {
+                "type": "string",
+                "description": "Identifier of the matched operator policy (opaque to APX)."
+              }
+            }
+          }
+        }
+      },
+      "PassbackStatus": {
+        "title": "PassbackStatus",
+        "description": "Anti-passback state overlay for one APDS Credential.",
+        "type": "object",
+        "required": [
+          "credential",
+          "state"
+        ],
+        "properties": {
+          "credential": {
+            "$ref": "#/components/schemas/Reference"
+          },
+          "state": {
+            "type": "string",
+            "enum": [
+              "normal",
+              "violation",
+              "unknown"
+            ]
+          },
+          "expectedPresence": {
+            "type": "string",
+            "enum": [
+              "inside",
+              "outside",
+              "unknown"
+            ]
+          },
+          "recordedPresence": {
+            "type": "string",
+            "enum": [
+              "inside",
+              "outside",
+              "unknown"
+            ]
+          },
+          "lastAccess": {
+            "type": "object",
+            "description": "The most recent access event for this credential.",
+            "required": [
+              "direction",
+              "occurredAt"
+            ],
+            "properties": {
+              "direction": {
+                "type": "string",
+                "enum": [
+                  "entry",
+                  "exit"
+                ]
+              },
+              "occurredAt": {
+                "$ref": "#/components/schemas/DateTime"
+              },
+              "place": {
+                "$ref": "#/components/schemas/Reference"
+              },
+              "lane": {
+                "description": "The VehicularAccess where the access occurred.",
+                "$ref": "#/components/schemas/Reference"
+              }
+            }
+          },
+          "extensions": {
+            "$ref": "#/components/schemas/Extensions"
+          }
+        }
+      },
+      "PlateCandidate": {
+        "title": "PlateCandidate",
+        "description": "One candidate plate read for correction workflows (Part 17 §17.5) —\na projection over APDS Observations, imagery as access-controlled\nlinks (Part 9 §9.6).",
+        "type": "object",
+        "required": [
+          "plate",
+          "confidence",
+          "capturedAt"
+        ],
+        "properties": {
+          "plate": {
+            "type": "string"
+          },
+          "jurisdiction": {
+            "type": "string",
+            "description": "Plate issuing jurisdiction (e.g. ISO 3166-2 subdivision).",
+            "examples": [
+              "US-FL"
+            ]
+          },
+          "confidence": {
+            "type": "number",
+            "minimum": 0,
+            "maximum": 1
+          },
+          "capturedAt": {
+            "$ref": "#/components/schemas/DateTime"
+          },
+          "lane": {
+            "$ref": "#/components/schemas/Reference"
+          },
+          "observation": {
+            "description": "The underlying APDS Observation.",
+            "$ref": "#/components/schemas/Reference"
+          },
+          "plateImage": {
+            "$ref": "#/components/schemas/Url"
+          },
+          "vehicleImage": {
+            "$ref": "#/components/schemas/Url"
+          }
+        }
+      },
+      "OverrideRecord": {
+        "title": "OverrideRecord",
+        "description": "A recent manual override relevant to this context (courtesy exits, gate opens, passback resets…). Summarizes a Part 6 Command.",
+        "type": "object",
+        "required": [
+          "commandType",
+          "occurredAt"
+        ],
+        "properties": {
+          "commandType": {
+            "type": "string",
+            "description": "definedValue from apx-command-types.",
+            "examples": [
+              "courtesyExit"
+            ]
+          },
+          "command": {
+            "description": "Reference to the full Command (audit trail).",
+            "$ref": "#/components/schemas/Reference"
+          },
+          "occurredAt": {
+            "$ref": "#/components/schemas/DateTime"
+          },
+          "requestedBy": {
+            "$ref": "#/components/schemas/Reference"
+          },
+          "place": {
+            "$ref": "#/components/schemas/Reference"
+          }
+        }
+      },
+      "SupportInteraction": {
+        "title": "SupportInteraction",
+        "description": "One customer-service interaction (human or AI agent), recorded so\nfuture resolution contexts can surface \"they called twice yesterday\".",
+        "type": "object",
+        "required": [
+          "id",
+          "version",
+          "channel",
+          "agentType",
+          "startedAt",
+          "place"
+        ],
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "version": {
+            "type": "integer",
+            "minimum": 1
+          },
+          "channel": {
+            "type": "string",
+            "description": "voice | chat | email | sms | other (implementer code list).",
+            "examples": [
+              "voice"
+            ]
+          },
+          "agentType": {
+            "type": "string",
+            "enum": [
+              "human",
+              "ai"
+            ]
+          },
+          "agent": {
+            "type": "string",
+            "description": "Agent identifier (human or system principal)."
+          },
+          "startedAt": {
+            "$ref": "#/components/schemas/DateTime"
+          },
+          "endedAt": {
+            "$ref": "#/components/schemas/DateTime"
+          },
+          "place": {
+            "$ref": "#/components/schemas/Reference"
+          },
+          "issue": {
+            "$ref": "#/components/schemas/ResolutionIssue"
+          },
+          "summary": {
+            "type": "string",
+            "description": "Short outcome summary. NOT a transcript — PII minimization (Part 9 §9.6)."
+          },
+          "subjects": {
+            "type": "object",
+            "description": "What/who the interaction was about (all optional).",
+            "properties": {
+              "session": {
+                "$ref": "#/components/schemas/Reference"
+              },
+              "holder": {
+                "$ref": "#/components/schemas/Reference"
+              },
+              "account": {
+                "$ref": "#/components/schemas/Reference"
+              },
+              "credential": {
+                "$ref": "#/components/schemas/Reference"
+              },
+              "reservation": {
+                "$ref": "#/components/schemas/Reference"
+              },
+              "plate": {
+                "type": "string"
+              }
+            }
+          },
+          "commands": {
+            "type": "array",
+            "description": "References to Commands executed during the interaction.",
+            "items": {
+              "$ref": "#/components/schemas/Reference"
+            }
+          },
+          "resolution": {
+            "type": "object",
+            "description": "How the interaction ended.",
+            "properties": {
+              "code": {
+                "type": "string",
+                "examples": [
+                  "resolved"
+                ]
+              },
+              "display": {
+                "type": "string"
+              }
+            }
+          },
+          "correlationId": {
+            "type": "string",
+            "format": "uuid",
+            "description": "Correlation chain id (Part 17 §17.7)."
+          },
+          "recordInfo": {
+            "$ref": "#/components/schemas/RecordInfo"
+          },
+          "extensions": {
+            "$ref": "#/components/schemas/Extensions"
           }
         }
       },

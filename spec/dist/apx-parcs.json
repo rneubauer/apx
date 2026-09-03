@@ -66,6 +66,14 @@
     {
       "name": "Tolling",
       "description": "Toll transactions binding Observations to pricing and Payments. See written standard Part 15."
+    },
+    {
+      "name": "Resolution",
+      "description": "Customer Service & Resolution (optional class apx-resolution) — one\naggregated context call plus policy-decided allowed actions. Writes go\nthrough the Part 6 command plane. See written standard Part 17."
+    },
+    {
+      "name": "Support",
+      "description": "Support-interaction history for resolution contexts. See written standard Part 17."
     }
   ],
   "paths": {
@@ -3527,7 +3535,9 @@
               "apx.lpr:read": "LPR plate/ticket cross-lookup",
               "apx.reservations:manage": "Quote, book, amend, cancel reservations",
               "apx.permits:manage": "Issue and manage permits",
-              "apx.tolling:manage": "Create and manage toll transactions"
+              "apx.tolling:manage": "Create and manage toll transactions",
+              "apx.resolution:read": "Resolve and read customer-service resolution contexts and allowed actions",
+              "apx.support:manage": "Record and read support-interaction history"
             }
           }
         }
@@ -4871,6 +4881,34 @@
           "reason": {
             "type": "string",
             "description": "Free-text or code-list reason for the action (audit)."
+          },
+          "resolutionContext": {
+            "description": "The ResolutionContext this command resolves (Part 17) — links the action into the interaction's audit chain.",
+            "$ref": "#/components/schemas/Reference"
+          },
+          "correlationId": {
+            "type": "string",
+            "format": "uuid",
+            "description": "Correlation chain id (Part 17 §17.7) — one id connects call → context → command → events → support interaction."
+          },
+          "approval": {
+            "type": "object",
+            "description": "Approval evidence, REQUIRED when the context's AllowedAction said\nrequiresApproval (Part 17 §17.3). Servers MUST reject a\nrequires-approval command without it (403 approval-required).",
+            "required": [
+              "approvedBy"
+            ],
+            "properties": {
+              "approvedBy": {
+                "type": "string",
+                "description": "The approving principal (role per AllowedAction.approvalRole)."
+              },
+              "approvedAt": {
+                "$ref": "#/components/schemas/DateTime"
+              },
+              "note": {
+                "type": "string"
+              }
+            }
           },
           "expiryTime": {
             "description": "Commands are perishable — MUST NOT be dispatched after this instant.",

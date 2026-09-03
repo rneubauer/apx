@@ -72,6 +72,13 @@ tags:
     description: Pooled permit issuance over RightSpecification/RightPool. See written standard Part 14.
   - name: Tolling
     description: Toll transactions binding Observations to pricing and Payments. See written standard Part 15.
+  - name: Resolution
+    description: |-
+      Customer Service & Resolution (optional class apx-resolution) — one
+      aggregated context call plus policy-decided allowed actions. Writes go
+      through the Part 6 command plane. See written standard Part 17.
+  - name: Support
+    description: Support-interaction history for resolution contexts. See written standard Part 17.
 
 paths:
   # ===== APDS 4.1 native routes, mounted VERBATIM from the vendored spec ===== #
@@ -1058,6 +1065,226 @@ paths:
               schema:
                 $ref: "#/components/schemas/Problem"
 
+  # ===== Customer Service & Resolution (optional class apx-resolution; Part 17) ===== #
+  /v1/resolution/contexts:
+    post:
+      operationId: post-apx-v1-resolution-contexts
+      tags: [Resolution]
+      summary: Resolve a customer-service context from any known identifiers
+      description: |-
+        THE aggregation call (Part 17 §17.2): accepts whatever identifiers
+        are known (intercom SIP URI, lane, plate, ticket, credential,
+        reservation code…) and returns everything the server can resolve —
+        issue classification, lane status, vehicle, session, account,
+        passback, device status, recent overrides, support history — plus
+        the policy-decided allowedActions. Sections the caller's scopes and
+        `apx_places` grant could not read directly are omitted. May return
+        `status: partial` with `pendingSources` rather than waiting on a
+        slow source; re-read to refresh. Scope apx.resolution:read.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/ResolutionResolveRequest" }
+      responses:
+        "201":
+          description: The resolved context (possibly partial).
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/ResolutionContext" }
+        "400":
+          description: No usable identifier supplied.
+          content:
+            application/problem+json:
+              schema: { $ref: "#/components/schemas/Problem" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+        "404":
+          description: No identifier resolved to anything this implementation knows.
+          content:
+            application/problem+json:
+              schema: { $ref: "#/components/schemas/Problem" }
+
+  /v1/resolution/contexts/{id}:
+    get:
+      operationId: get-apx-v1-resolution-contexts-id
+      tags: [Resolution]
+      summary: Re-read (recompute) a resolution context
+      description: |-
+        Returns the context recomputed against current state — `version`
+        increments when anything material changed. Use after events arrive
+        or when the initial response was partial. Scope apx.resolution:read.
+      parameters:
+        - { name: id, in: path, required: true, schema: { type: string, format: uuid } }
+      responses:
+        "200":
+          description: The current context.
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/ResolutionContext" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+        "404":
+          description: No such context (contexts MAY expire; re-resolve).
+          content:
+            application/problem+json:
+              schema: { $ref: "#/components/schemas/Problem" }
+
+  /v1/resolution/contexts/{id}/allowed-actions:
+    get:
+      operationId: get-apx-v1-resolution-contexts-id-allowed-actions
+      tags: [Resolution]
+      summary: Re-evaluate the allowed actions for a context
+      description: |-
+        The policy layer's current decisions (Part 17 §17.3) — cheaper than
+        a full context recompute; call before executing when time has
+        passed. The consuming agent (human or AI) MUST NOT decide
+        permissibility itself. Scope apx.resolution:read.
+      parameters:
+        - { name: id, in: path, required: true, schema: { type: string, format: uuid } }
+      responses:
+        "200":
+          description: Current decisions.
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [data]
+                properties:
+                  data:
+                    type: array
+                    items: { $ref: "#/components/schemas/AllowedAction" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+        "404":
+          description: No such context.
+          content:
+            application/problem+json:
+              schema: { $ref: "#/components/schemas/Problem" }
+
+  /v1/lpr/candidates:
+    get:
+      operationId: get-apx-v1-lpr-candidates
+      tags: [LPR, Resolution]
+      summary: Plate candidates for correction workflows
+      description: |-
+        Candidate plate reads (with confidence and imagery links) for a
+        session or lane — the read side of plate correction (Part 17
+        §17.5); the write is an `associatePlate` command. Scope apx.lpr:read.
+      parameters:
+        - { name: session, in: query, schema: { type: string, format: uuid }, description: Session UUID. }
+        - { name: lane, in: query, schema: { type: string, format: uuid }, description: VehicularAccess UUID. }
+        - { name: since, in: query, schema: { type: string, format: date-time } }
+      responses:
+        "200":
+          description: Candidates, best confidence first.
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [data]
+                properties:
+                  data:
+                    type: array
+                    items: { $ref: "#/components/schemas/PlateCandidate" }
+        "400":
+          description: Neither session nor lane given.
+          content:
+            application/problem+json:
+              schema: { $ref: "#/components/schemas/Problem" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+
+  /v1/credentials/{id}/passback:
+    get:
+      operationId: get-apx-v1-credentials-id-passback
+      tags: [Resolution]
+      summary: Anti-passback status for a credential
+      description: |-
+        The credential's passback overlay: state, expected vs recorded
+        presence, last access. The write side is the `resetPassback` /
+        `forceIn` / `forceOut` commands (Part 17 §17.4). Scope
+        apx.control:read; the place grant must cover the credential's
+        last-access place.
+      parameters:
+        - { name: id, in: path, required: true, schema: { type: string, format: uuid }, description: APDS Credential UUID. }
+      responses:
+        "200":
+          description: Passback status.
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/PassbackStatus" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+        "404":
+          description: No such credential or no passback tracking.
+          content:
+            application/problem+json:
+              schema: { $ref: "#/components/schemas/Problem" }
+
+  /v1/support/interactions:
+    post:
+      operationId: post-apx-v1-support-interactions
+      tags: [Support]
+      summary: Record a support interaction
+      description: |-
+        Records one customer-service interaction (human or AI) so future
+        resolution contexts can surface it. Summaries, not transcripts
+        (Part 9 §9.6). Scope apx.support:manage.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/SupportInteraction" }
+      responses:
+        "201":
+          description: Recorded interaction.
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/SupportInteraction" }
+        "400":
+          description: Invalid interaction.
+          content:
+            application/problem+json:
+              schema: { $ref: "#/components/schemas/Problem" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+    get:
+      operationId: get-apx-v1-support-interactions
+      tags: [Support]
+      summary: Support history for a subject
+      description: |-
+        Recent interactions filtered by any subject key. At least one
+        filter is required. Scope apx.support:manage (or apx.resolution:read
+        for read-only consumers).
+      parameters:
+        - { name: plate, in: query, schema: { type: string } }
+        - { name: holder, in: query, schema: { type: string, format: uuid } }
+        - { name: account, in: query, schema: { type: string, format: uuid } }
+        - { name: session, in: query, schema: { type: string, format: uuid } }
+        - { name: place, in: query, schema: { type: string, format: uuid } }
+        - { name: since, in: query, schema: { type: string, format: date-time } }
+      responses:
+        "200":
+          description: Paginated interactions (APDS PaginatedList shape).
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  meta:
+                    $ref: "../vendor/apds/4.1/apds-api-4.1.yaml#/components/schemas/PaginatedListMeta"
+                  data:
+                    type: array
+                    items: { $ref: "#/components/schemas/SupportInteraction" }
+        "400":
+          description: No filter given.
+          content:
+            application/problem+json:
+              schema: { $ref: "#/components/schemas/Problem" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+
   # ===== Discovery (optional class apx-discovery; Part 16) ===== #
   /v1/discovery:
     get:
@@ -1177,6 +1404,8 @@ components:
             apx.reservations:manage: Quote, book, amend, cancel reservations
             apx.permits:manage: Issue and manage permits
             apx.tolling:manage: Create and manage toll transactions
+            apx.resolution:read: Resolve and read customer-service resolution contexts and allowed actions
+            apx.support:manage: Record and read support-interaction history
 
   schemas:
     RecordInfo:
@@ -1229,6 +1458,22 @@ components:
       $ref: "./domains/tolling/schemas.yaml#/TollTransaction"
     DiscoveryDocument:
       $ref: "./domains/discovery/schemas.yaml#/DiscoveryDocument"
+    ResolutionContext:
+      $ref: "./domains/resolution/schemas.yaml#/ResolutionContext"
+    ResolutionResolveRequest:
+      $ref: "./domains/resolution/schemas.yaml#/ResolutionResolveRequest"
+    ResolutionIssue:
+      $ref: "./domains/resolution/schemas.yaml#/ResolutionIssue"
+    AllowedAction:
+      $ref: "./domains/resolution/schemas.yaml#/AllowedAction"
+    PassbackStatus:
+      $ref: "./domains/resolution/schemas.yaml#/PassbackStatus"
+    PlateCandidate:
+      $ref: "./domains/resolution/schemas.yaml#/PlateCandidate"
+    OverrideRecord:
+      $ref: "./domains/resolution/schemas.yaml#/OverrideRecord"
+    SupportInteraction:
+      $ref: "./domains/resolution/schemas.yaml#/SupportInteraction"
 
     ApxConfiguration:
       type: object

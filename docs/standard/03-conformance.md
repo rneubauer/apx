@@ -12,9 +12,10 @@ in `spec/registries/apx-conformance-classes.json`. An implementation:
 4. MUST NOT partially implement a claimed class.
 
 `apx-data` and `apx-events` are the **base classes**; every other class
-builds on them. `apx-events-sse`, `apx-discovery`, `apx-accounts`,
-`apx-payment-history`, `apx-lpr`, `apx-reservations`, `apx-permits`,
-`apx-tolling`, and `apx-mtls` are optional.
+builds on them. `apx-control`, `apx-alerts`, `apx-events-sse`,
+`apx-discovery`, `apx-accounts`, `apx-payment-history`, `apx-lpr`,
+`apx-reservations`, `apx-permits`, `apx-tolling`, `apx-resolution`
+(requires `apx-control`), and `apx-mtls` are optional.
 
 ## 3.2 Versioning
 
@@ -56,5 +57,5 @@ The normative artifacts of an APX edition are: the bundled OpenAPI
 document, the APX data-profile overlay
 (`spec/openapi/overlays/apx-data-overlay.yaml`, whose application to the
 bundle produces the effective API description — Part 0 §0.5), the registry
-JSON files, and Parts 0–16 of this written standard. The spec tooling in
+JSON files, and Parts 0–17 of this written standard. The spec tooling in
 `tools/` is supporting material, not normative.
