@@ -2,7 +2,7 @@
   "openapi": "3.1.0",
   "info": {
     "title": "APX — PARCS Starter Profile",
-    "version": "0.1.1",
+    "version": "0.2.0",
     "summary": "An open companion standard to APDS 4.1",
     "description": "The MINIMUM APX surface for a PARCS vendor: apx-data + apx-events + apx-control. A subset of the full APX specification (apx-v1) — every path and schema here is identical to the full spec. See docs/parcs-starter-profile.md for the build order.",
     "license": {
@@ -21,7 +21,7 @@
   },
   "servers": [
     {
-      "url": "https://api.example.com",
+      "url": "https://api.apx-implementation.example",
       "description": "One host serves both surfaces: APDS-native routes at their verbatim\npaths (/places, /sessions, /webhooks, …) and APX routes under the\nexplicit /v1 prefix."
     }
   ],
@@ -149,6 +149,12 @@
           },
           {
             "$ref": "#/components/parameters/page"
+          },
+          {
+            "$ref": "#/components/parameters/ModeParam"
+          },
+          {
+            "$ref": "#/components/parameters/CursorParam"
           }
         ],
         "responses": {
@@ -157,7 +163,14 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/HierarchyElementList"
+                  "oneOf": [
+                    {
+                      "$ref": "#/components/schemas/HierarchyElementList"
+                    },
+                    {
+                      "$ref": "#/components/schemas/ChangeFeedPage"
+                    }
+                  ]
                 }
               }
             }
@@ -1510,6 +1523,12 @@
           },
           {
             "$ref": "#/components/parameters/page"
+          },
+          {
+            "$ref": "#/components/parameters/ModeParam"
+          },
+          {
+            "$ref": "#/components/parameters/CursorParam"
           }
         ],
         "responses": {
@@ -1518,7 +1537,14 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/RateTableList"
+                  "oneOf": [
+                    {
+                      "$ref": "#/components/schemas/RateTableList"
+                    },
+                    {
+                      "$ref": "#/components/schemas/ChangeFeedPage"
+                    }
+                  ]
                 }
               }
             }
@@ -1886,6 +1912,12 @@
           },
           {
             "$ref": "#/components/parameters/page"
+          },
+          {
+            "$ref": "#/components/parameters/ModeParam"
+          },
+          {
+            "$ref": "#/components/parameters/CursorParam"
           }
         ],
         "responses": {
@@ -1894,7 +1926,14 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/SessionList"
+                  "oneOf": [
+                    {
+                      "$ref": "#/components/schemas/SessionList"
+                    },
+                    {
+                      "$ref": "#/components/schemas/ChangeFeedPage"
+                    }
+                  ]
                 }
               }
             }
@@ -2318,6 +2357,12 @@
           },
           {
             "$ref": "#/components/parameters/page"
+          },
+          {
+            "$ref": "#/components/parameters/ModeParam"
+          },
+          {
+            "$ref": "#/components/parameters/CursorParam"
           }
         ],
         "responses": {
@@ -2326,7 +2371,14 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/AssignedRightList"
+                  "oneOf": [
+                    {
+                      "$ref": "#/components/schemas/AssignedRightList"
+                    },
+                    {
+                      "$ref": "#/components/schemas/ChangeFeedPage"
+                    }
+                  ]
                 }
               }
             }
@@ -2843,7 +2895,21 @@
           "Subscription"
         ],
         "summary": "Subscribe to event topics (APDS-compatible superset)",
-        "description": "Creates a subscription. A stock APDS 4.1 `EventSubscription`\n(`{endpoint, topics[]}` with EventTypeEnum values) is a valid body;\nAPX fields (transport, filters, secret) are additive. The signing\nsecret is returned exactly once, in this response.",
+        "description": "Creates a subscription. A stock APDS 4.1 `EventSubscription`\n(`{endpoint, topics[]}` with EventTypeEnum values) is a valid body;\nAPX fields (transport, filters, secret) are additive.\n\n**Response negotiation (normative, Part 8 §8.1):** the stock APDS\n4.1 response contract is preserved — a request WITHOUT\n`Prefer: return=representation` receives the native APDS `200`/`202`\nwith `ResponseStatus`, exactly as APDS documents. An APX client\nsends `Prefer: return=representation` and receives `201` with the\nfull subscription INCLUDING the signing secret (returned exactly\nonce, in that response only).",
+        "parameters": [
+          {
+            "name": "Prefer",
+            "in": "header",
+            "required": false,
+            "description": "RFC 7240. `return=representation` selects the APX-rich 201\nresponse (subscription + one-time secret). Absent, the server\nanswers with the stock APDS 200/202 ResponseStatus contract.",
+            "schema": {
+              "type": "string",
+              "enum": [
+                "return=representation"
+              ]
+            }
+          }
+        ],
         "requestBody": {
           "required": true,
           "content": {
@@ -2855,12 +2921,32 @@
           }
         },
         "responses": {
+          "200": {
+            "description": "Stock APDS contract — subscription approved and activated\n(request did not ask for the APX representation).",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ResponseStatus"
+                }
+              }
+            }
+          },
           "201": {
-            "description": "Subscription created (includes the signing secret, once).",
+            "description": "APX contract (Prefer: return=representation) — subscription\ncreated; includes the signing secret, exactly once.",
             "content": {
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/ApxEventSubscription"
+                }
+              }
+            }
+          },
+          "202": {
+            "description": "Stock APDS contract — subscription request received; will be\nprocessed and then approved/declined.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ResponseStatus"
                 }
               }
             }
@@ -2905,6 +2991,12 @@
                 }
               }
             }
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
           }
         }
       }
@@ -3025,6 +3117,22 @@
                       }
                     }
                   }
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "404": {
+            "description": "No such subscription.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
                 }
               }
             }
@@ -3197,7 +3305,7 @@
           "Control"
         ],
         "summary": "Lane inquiry — current transaction context (screen-pop)",
-        "description": "The ticket/credential currently in the machine at this lane, amount\ndue, applied validations, latest LPR read, and monthly-credential\ncontext including the last 10 activity events (2018 requirement ①).",
+        "description": "The ticket/credential currently in the machine at this lane, amount\ndue, applied validations, latest LPR read, and monthly-credential\ncontext including the last 10 activity events.",
         "parameters": [
           {
             "name": "id",
@@ -3241,7 +3349,7 @@
           "Control"
         ],
         "summary": "List validation providers for a place",
-        "description": "The venues allowed to validate tickets at the place (2018 requirement ⑤).",
+        "description": "The venues allowed to validate tickets at the place.",
         "parameters": [
           {
             "name": "place",
@@ -3271,6 +3379,12 @@
                 }
               }
             }
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
           }
         }
       }
@@ -3301,6 +3415,12 @@
                 }
               }
             }
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
           }
         }
       }
@@ -3374,6 +3494,20 @@
   },
   "components": {
     "securitySchemes": {
+      "oAuth": {
+        "type": "oauth2",
+        "flows": {
+          "clientCredentials": {
+            "tokenUrl": "https://api.parking-data-standards.org",
+            "scopes": {
+              "po": "Parking Operator",
+              "sp": "Service Provider",
+              "ep": "Enforcement Provider",
+              "ad": "Administrator"
+            }
+          }
+        }
+      },
       "apxOAuth": {
         "type": "oauth2",
         "description": "OAuth 2.0 client-credentials (aligned with APDS 4.1's `oAuth` scheme).\nAPX scopes follow `apx.<domain>:<verb>`. Grants are carried in the\nnormative token claims `apx_org` (Organisation reference) and\n`apx_places` (HierarchyElement UUID subtree grants; absent = all).",
@@ -3477,6 +3611,56 @@
             }
           }
         ]
+      },
+      "ChangeFeedPage": {
+        "title": "ChangeFeedPage",
+        "description": "Response of a native APDS list route when called with `mode=change`.\nItems are VERBATIM APDS entities carrying only changed fields plus\nidentity (change semantics per Part 5: explicit null = clear the field,\nabsent = unchanged — generalizing APDS Use Case C.1.1.6). Deletions are\nAPDS DeletedReferences (tombstones).",
+        "type": "object",
+        "required": [
+          "publicationTime",
+          "updateMode",
+          "items",
+          "cursor"
+        ],
+        "properties": {
+          "publicationTime": {
+            "$ref": "#/components/schemas/DateTime"
+          },
+          "publisher": {
+            "description": "The publishing Organisation.",
+            "$ref": "#/components/schemas/Reference"
+          },
+          "updateMode": {
+            "type": "string",
+            "const": "change"
+          },
+          "items": {
+            "type": "array",
+            "description": "Changed APDS entities of the route's class (verbatim APDS schemas).",
+            "items": {
+              "type": "object"
+            }
+          },
+          "deleted": {
+            "type": "array",
+            "description": "Tombstones for deleted entities.",
+            "items": {
+              "$ref": "#/components/schemas/DeletedReference"
+            }
+          },
+          "cursor": {
+            "type": "string",
+            "description": "Opaque cursor to resume AFTER the last change in this page."
+          },
+          "next": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "format": "uri-reference",
+            "description": "Link to the next page when more changes are immediately available; null otherwise."
+          }
+        }
       },
       "HierarchyElement": {
         "title": "HierarchyElement",
@@ -4751,7 +4935,7 @@
       },
       "LaneStatus": {
         "title": "LaneStatus",
-        "description": "The transaction context at a lane right now (2018 requirement ① —\ncall-center screen-pop). Composes APDS references and data; adds no\nparallel entities.",
+        "description": "The transaction context at a lane right now (the call-center\nscreen-pop). Composes APDS references and data; adds no\nparallel entities.",
         "type": "object",
         "required": [
           "lane"
@@ -4873,7 +5057,7 @@
       },
       "ValidationProvider": {
         "title": "ValidationProvider",
-        "description": "A venue/organisation allowed to validate tickets at a place (2018 requirement ⑤).",
+        "description": "A venue/organisation allowed to validate tickets at a place.",
         "type": "object",
         "required": [
           "provider"
@@ -5016,6 +5200,71 @@
         },
         "required": [
           "meta"
+        ]
+      },
+      "DateTime": {
+        "title": "DateTime",
+        "description": "ISO-8601 format definition of a date and time - format YYYY-MM-DDTHH:MM:SSZ.",
+        "type": "string",
+        "x-package": "common",
+        "format": "date-time",
+        "examples": [
+          "2024-03-09T15:35:08Z"
+        ]
+      },
+      "Reference": {
+        "title": "Reference",
+        "description": "Represents a reference to an identifiable object where the identifier is unique. It is composed of an unique identifier and a string identifying the class of the referenced object. If multiple versions exists for the object, the latest version is considered.",
+        "type": "object",
+        "x-package": "common",
+        "minProperties": 1,
+        "maxProperties": 1,
+        "properties": {
+          "id": {
+            "type": "string",
+            "description": "The unique identifier within the given class.",
+            "examples": [
+              "98bccb9c-2ffe-4ca4-8e7f-eb1ae4439c29"
+            ]
+          },
+          "className": {
+            "type": "string",
+            "description": "The class name of the referenced object in PascalCase.",
+            "minLength": 1,
+            "examples": [
+              "UKNumberPlate"
+            ]
+          }
+        },
+        "required": [
+          "id",
+          "className"
+        ]
+      },
+      "DeletedReference": {
+        "title": "DeletedReference",
+        "description": "A reference to a deleted identifiable managed object where the identifier is unique. It is described by a string identifying the class of the referenced object (key name) with a unique string identifier as its value, and the deletion instant.",
+        "type": "object",
+        "x-package": "api",
+        "properties": {
+          "id": {
+            "type": "string",
+            "description": "The unique id of the deleted object."
+          },
+          "className": {
+            "type": "string",
+            "description": "The class name of the deleted object.",
+            "pattern": "^([A-Z][a-z0-9]+)+"
+          },
+          "deleteTimestamp": {
+            "description": "The instant when the reference was deleted.",
+            "$ref": "#/components/schemas/DateTime"
+          }
+        },
+        "required": [
+          "id",
+          "className",
+          "deleteTimestamp"
         ]
       },
       "Campus": {
@@ -6339,45 +6588,6 @@
         "x-package": "Quotes",
         "x-tags": "Quotes"
       },
-      "Reference": {
-        "title": "Reference",
-        "description": "Represents a reference to an identifiable object where the identifier is unique. It is composed of an unique identifier and a string identifying the class of the referenced object. If multiple versions exists for the object, the latest version is considered.",
-        "type": "object",
-        "x-package": "common",
-        "minProperties": 1,
-        "maxProperties": 1,
-        "properties": {
-          "id": {
-            "type": "string",
-            "description": "The unique identifier within the given class.",
-            "examples": [
-              "98bccb9c-2ffe-4ca4-8e7f-eb1ae4439c29"
-            ]
-          },
-          "className": {
-            "type": "string",
-            "description": "The class name of the referenced object in PascalCase.",
-            "minLength": 1,
-            "examples": [
-              "UKNumberPlate"
-            ]
-          }
-        },
-        "required": [
-          "id",
-          "className"
-        ]
-      },
-      "DateTime": {
-        "title": "DateTime",
-        "description": "ISO-8601 format definition of a date and time - format YYYY-MM-DDTHH:MM:SSZ.",
-        "type": "string",
-        "x-package": "common",
-        "format": "date-time",
-        "examples": [
-          "2024-03-09T15:35:08Z"
-        ]
-      },
       "Supply": {
         "title": "Supply",
         "description": "A class defining concepts relating the parameters of the supply of parking. \nThis is the total number of spaces usable for parking or other mobility operations. \nIt can be defined as demarcated spaces or non-demarcated.",
@@ -6491,32 +6701,6 @@
           "aboveGround",
           "groundLevel",
           "underground"
-        ]
-      },
-      "DeletedReference": {
-        "title": "DeletedReference",
-        "description": "A reference to a deleted identifiable managed object where the identifier is unique. It is described by a string identifying the class of the referenced object (key name) with a unique string identifier as its value, and the deletion instant.",
-        "type": "object",
-        "x-package": "api",
-        "properties": {
-          "id": {
-            "type": "string",
-            "description": "The unique id of the deleted object."
-          },
-          "className": {
-            "type": "string",
-            "description": "The class name of the deleted object.",
-            "pattern": "^([A-Z][a-z0-9]+)+"
-          },
-          "deleteTimestamp": {
-            "description": "The instant when the reference was deleted.",
-            "$ref": "#/components/schemas/DateTime"
-          }
-        },
-        "required": [
-          "id",
-          "className",
-          "deleteTimestamp"
         ]
       },
       "PlaceInformation": {
@@ -8985,6 +9169,29 @@
         "name": "page",
         "description": "The page number for paginated responses."
       },
+      "ModeParam": {
+        "name": "mode",
+        "in": "query",
+        "required": false,
+        "description": "APX data profile: `full` (default — behaves exactly like stock APDS 4.1)\nor `change` (return a ChangeFeedPage of deltas since `cursor`/`since`).",
+        "schema": {
+          "type": "string",
+          "enum": [
+            "full",
+            "change"
+          ],
+          "default": "full"
+        }
+      },
+      "CursorParam": {
+        "name": "cursor",
+        "in": "query",
+        "required": false,
+        "description": "Opaque change-feed cursor from a previous ChangeFeedPage. Only meaningful with `mode=change`.",
+        "schema": {
+          "type": "string"
+        }
+      },
       "version": {
         "schema": {
           "type": "integer",
@@ -9183,6 +9390,28 @@
             "QuoteSessionExtensionRequest",
             "QuoteSessionExtensionResponse"
           ]
+        }
+      }
+    },
+    "responses": {
+      "Unauthorized": {
+        "description": "Missing or invalid access token.",
+        "content": {
+          "application/problem+json": {
+            "schema": {
+              "$ref": "#/components/schemas/Problem"
+            }
+          }
+        }
+      },
+      "Forbidden": {
+        "description": "Insufficient scope (problem type `insufficient-scope`) or place\ngrant (`insufficient-grant`) for this operation (Part 9).",
+        "content": {
+          "application/problem+json": {
+            "schema": {
+              "$ref": "#/components/schemas/Problem"
+            }
+          }
         }
       }
     }

@@ -19,18 +19,20 @@ actuation. This Part adds it, referencing APDS entities throughout.
   `displayMessage.message` (MultilingualString); `setDeviceState.state`
   (apx-device-states value).
 - `target` is a Reference to a SupplementalEquipment (device) or a
-  HierarchyElement (lane/place). The 2018 "Location ID + Lane Number"
-  convention maps to the Place UUID + VehicularAccess UUID.
+  HierarchyElement (lane/place). Legacy "location id + lane number"
+  addressing used by existing PARCS integrations maps to the Place UUID +
+  VehicularAccess UUID.
 - Commands are **perishable**: a command whose `expiryTime` passes before
   dispatch transitions to `expired` and MUST NOT fire (a gate vend requested
   10 minutes ago must not open the gate now).
 - The response is `202` with the Command in state `received`/`accepted` —
-  the richer replacement for the 2018 doc's True/False returns.
+  richer than a bare success/failure boolean because execution is
+  asynchronous and audited.
 
 **Lifecycle:** `received → accepted | rejected → dispatched → executing →
 succeeded | failed | expired | cancelled`. Every transition appends to the
-immutable `statusHistory[]` (state, time, actor, detail) — this satisfies
-the 2018 "all transactions are tracked" audit requirement. Transitions
+immutable `statusHistory[]` (state, time, actor, detail) — every control
+transaction is tracked end to end. Transitions
 publish `apx.control.command.status.v1`.
 
 - `GET /v1/commands/{id}` — poll state (scope `apx.control:read`).
@@ -53,7 +55,7 @@ the normal flow applies: take a payment (Part 13), apply a validation
 (§6.3), or vend (§6.1). The fee is never silently waived — reducing it is
 an explicit validation or payment event on the audit record.
 
-## 6.2 Lane inquiry (2018 requirement ① — screen-pop)
+## 6.2 Lane inquiry (screen-pop)
 
 `GET /v1/lanes/{id}/current` (scope `apx.control:read`) returns
 `LaneStatus`: the ticket currently in the machine (issued time, amount due,
@@ -61,7 +63,7 @@ applied validations, paid-in-full), the latest LPR read (plate, confidence,
 screenshot link — an APDS Observation), and monthly-credential context
 (access granted/denial reason, last activity, last 10 events).
 
-## 6.3 Validations (2018 requirement ⑤)
+## 6.3 Validations
 
 - `GET /v1/validations/providers?place={uuid}` — the venues allowed to
   validate tickets at that place (`ValidationProvider[]`).

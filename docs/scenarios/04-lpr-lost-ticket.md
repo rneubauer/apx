@@ -23,6 +23,7 @@ GET /v1/lpr/reads?plate=SYN-1234 HTTP/1.1
   "data": [
     {
       "plate": "SYN-1234",
+      "place": { "id": "b1000000-0000-4000-8000-000000000001", "className": "Place" },
       "confidence": 0.97,
       "observation": { "id": "f2000000-0000-4000-8000-000000000001", "className": "Observation" },
       "observationDateTime": "2026-08-06T08:02:02Z",
@@ -68,6 +69,7 @@ GET /v1/payments?cardLast4=0777&date=2026-08-06 HTTP/1.1
     {
       "id": "6f7a8b9c-0d1e-4f2a-8b3c-4d5e6f7a8b9c",
       "transactionID": "PARIS-20260806-00311",
+      "place": { "id": "b1000000-0000-4000-8000-000000000001", "className": "Place" },
       "dateCollected": "2026-08-06T12:44:09Z",
       "amount": { "currencyType": "USD", "currencyValue": 4.5 },
       "method": "card",
@@ -137,6 +139,7 @@ Content-Type: application/json
 
 {
   "ticketNumber": "T-1001",
+  "place": { "id": "b1000000-0000-4000-8000-000000000001", "className": "Place" },
   "amount": { "currencyType": "USD", "currencyValue": 4.5 },
   "method": "card"
 }
@@ -148,6 +151,7 @@ Content-Type: application/json
 {
   "id": "9c0d1e2f-3a4b-4c5d-8e6f-7a8b9c0d1e2f",
   "transactionID": "PARIS-20260806-00347",
+  "place": { "id": "b1000000-0000-4000-8000-000000000001", "className": "Place" },
   "dateCollected": "2026-08-06T18:26:40Z",
   "amount": { "currencyType": "USD", "currencyValue": 4.5 },
   "method": "card",

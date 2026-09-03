@@ -46,6 +46,22 @@ Rules:
    parameter (stock APDS) and then switch to cursors.
 4. Tombstones MUST be emitted for deletes and retained for the same window.
 
+**Machine-readability (normative).** The `mode`/`cursor` parameters and the
+`ChangeFeedPage` response alternate are declared by the APX data-profile
+overlay (`spec/openapi/overlays/apx-data-overlay.yaml`, OpenAPI Overlay
+1.0), applied to the bundled document by the build (Part 0 §0.5, Part 3
+§3.4). The overlay decorates exactly the four §5.6 routes; the vendored
+APDS document itself is never modified.
+
+**Design note (informative) — why the feed rides the native routes.** A
+separate APX route family (`/v1/changes?class=…`) would have been fully
+expressible in plain OpenAPI, but it would duplicate every native list
+route's filter surface and create exactly the "parallel construct" Part 10
+§10.2 forbids. Keeping the feed on APDS's own routes means cursors,
+filters, and grants compose per-collection, and a stock APDS client on the
+same route sees stock behavior — at the cost of needing the overlay to
+express the additions, which is the trade this standard accepts.
+
 ## 5.3 Push (client→server ingest)
 
 Data flows INTO an APX implementation through the same native `POST`/`PUT`

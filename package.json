@@ -1,6 +1,6 @@
 {
   "name": "apx-standard",
-  "version": "0.1.1",
+  "version": "0.2.0",
   "private": true,
   "description": "APX — APDS Parking eXtensions: an open companion standard to APDS 4.1 adding data push/pull profiles, control, alerts, discovery, accounts/payments, LPR, reservations, permits, and tolling.",
   "license": "MIT",
@@ -9,7 +9,8 @@
   },
   "scripts": {
     "spec:lint": "redocly lint spec/openapi/apx.yaml --config tools/redocly.yaml",
-    "spec:bundle": "redocly bundle spec/openapi/apx.yaml --config tools/redocly.yaml -o spec/dist/apx-v1.yaml && redocly bundle spec/openapi/apx.yaml --config tools/redocly.yaml -o spec/dist/apx-v1.json",
+    "spec:bundle": "redocly bundle spec/openapi/apx.yaml --config tools/redocly.yaml -o spec/dist/apx-v1.yaml && redocly bundle spec/openapi/apx.yaml --config tools/redocly.yaml -o spec/dist/apx-v1.json && node tools/apply-overlay.mjs",
+    "spec:overlay": "node tools/apply-overlay.mjs",
     "spec:style": "spectral lint spec/dist/apx-v1.yaml --ruleset tools/.spectral.yaml",
     "vendor:check": "node tools/check-vendor.mjs",
     "registries:check": "node tools/check-registries.mjs",

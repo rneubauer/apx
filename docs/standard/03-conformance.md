@@ -52,6 +52,9 @@ Companies extending APX (the "extension-of-the-extension" path):
 
 ## 3.4 Publication
 
-The normative artifacts of an APX edition are: the bundled OpenAPI document,
-the registry JSON files, and Parts 0–12 of this written standard. The spec
-tooling in `tools/` is supporting material, not normative.
+The normative artifacts of an APX edition are: the bundled OpenAPI
+document, the APX data-profile overlay
+(`spec/openapi/overlays/apx-data-overlay.yaml`, whose application to the
+bundle produces the effective API description — Part 0 §0.5), the registry
+JSON files, and Parts 0–16 of this written standard. The spec tooling in
+`tools/` is supporting material, not normative.

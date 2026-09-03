@@ -2,7 +2,7 @@ openapi: 3.1.0
 
 info:
   title: APX — APDS Parking eXtensions
-  version: 0.1.1
+  version: 0.2.0
   summary: An open companion standard to APDS 4.1
   description: |-
     **APX (APDS Parking eXtensions)** is an additive companion standard to the
@@ -41,7 +41,7 @@ info:
     apdsVersion: "4.1"
 
 servers:
-  - url: https://api.example.com
+  - url: https://api.apx-implementation.example
     description: |-
       One host serves both surfaces: APDS-native routes at their verbatim
       paths (/places, /sessions, /webhooks, …) and APX routes under the
@@ -147,8 +147,26 @@ paths:
       description: |-
         Creates a subscription. A stock APDS 4.1 `EventSubscription`
         (`{endpoint, topics[]}` with EventTypeEnum values) is a valid body;
-        APX fields (transport, filters, secret) are additive. The signing
-        secret is returned exactly once, in this response.
+        APX fields (transport, filters, secret) are additive.
+
+        **Response negotiation (normative, Part 8 §8.1):** the stock APDS
+        4.1 response contract is preserved — a request WITHOUT
+        `Prefer: return=representation` receives the native APDS `200`/`202`
+        with `ResponseStatus`, exactly as APDS documents. An APX client
+        sends `Prefer: return=representation` and receives `201` with the
+        full subscription INCLUDING the signing secret (returned exactly
+        once, in that response only).
+      parameters:
+        - name: Prefer
+          in: header
+          required: false
+          description: |-
+            RFC 7240. `return=representation` selects the APX-rich 201
+            response (subscription + one-time secret). Absent, the server
+            answers with the stock APDS 200/202 ResponseStatus contract.
+          schema:
+            type: string
+            enum: [return=representation]
       requestBody:
         required: true
         content:
@@ -156,12 +174,30 @@ paths:
             schema:
               $ref: "#/components/schemas/ApxEventSubscription"
       responses:
+        "200":
+          description: |-
+            Stock APDS contract — subscription approved and activated
+            (request did not ask for the APX representation).
+          content:
+            application/json:
+              schema:
+                $ref: "../vendor/apds/4.1/apds-api-4.1.yaml#/components/schemas/ResponseStatus"
         "201":
-          description: Subscription created (includes the signing secret, once).
+          description: |-
+            APX contract (Prefer: return=representation) — subscription
+            created; includes the signing secret, exactly once.
           content:
             application/json:
               schema:
                 $ref: "#/components/schemas/ApxEventSubscription"
+        "202":
+          description: |-
+            Stock APDS contract — subscription request received; will be
+            processed and then approved/declined.
+          content:
+            application/json:
+              schema:
+                $ref: "../vendor/apds/4.1/apds-api-4.1.yaml#/components/schemas/ResponseStatus"
         "400":
           description: Missing/unknown topics or endpoint.
           content:
@@ -187,6 +223,8 @@ paths:
                     type: array
                     items:
                       $ref: "#/components/schemas/ApxEventSubscription"
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/Forbidden" }
 
   /webhooks/{id}:
     parameters:
@@ -263,6 +301,13 @@ paths:
                     type: array
                     items:
                       $ref: "#/components/schemas/DeliveryRecord"
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+        "404":
+          description: No such subscription.
+          content:
+            application/problem+json:
+              schema: { $ref: "#/components/schemas/Problem" }
 
   /v1/events/stream:
     get:
@@ -292,6 +337,13 @@ paths:
             text/event-stream:
               schema:
                 type: string
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+        "404":
+          description: No such subscription, or subscription transport is not sse.
+          content:
+            application/problem+json:
+              schema: { $ref: "#/components/schemas/Problem" }
 
   # ===== Control (conformance class apx-control) ===== #
   /v1/commands:
@@ -402,6 +454,8 @@ paths:
                   data:
                     type: array
                     items: { $ref: "#/components/schemas/DeviceStatus" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/Forbidden" }
 
   /v1/devices/{id}:
     get:
@@ -434,7 +488,7 @@ paths:
       description: |-
         The ticket/credential currently in the machine at this lane, amount
         due, applied validations, latest LPR read, and monthly-credential
-        context including the last 10 activity events (2018 requirement ①).
+        context including the last 10 activity events.
       parameters:
         - name: id
           in: path
@@ -458,7 +512,7 @@ paths:
       operationId: get-apx-v1-validations-providers
       tags: [Control]
       summary: List validation providers for a place
-      description: The venues allowed to validate tickets at the place (2018 requirement ⑤).
+      description: The venues allowed to validate tickets at the place.
       parameters:
         - name: place
           in: query
@@ -475,6 +529,8 @@ paths:
                   data:
                     type: array
                     items: { $ref: "#/components/schemas/ValidationProvider" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/Forbidden" }
 
   # ===== Tolling (optional class; Part 15) ===== #
   /v1/tolling/transactions:
@@ -496,6 +552,18 @@ paths:
           content:
             application/json:
               schema: { $ref: "#/components/schemas/TollTransaction" }
+        "400":
+          description: Missing Idempotency-Key or invalid transaction.
+          content:
+            application/problem+json:
+              schema: { $ref: "#/components/schemas/Problem" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+        "409":
+          description: Idempotency-Key replayed with a different body.
+          content:
+            application/problem+json:
+              schema: { $ref: "#/components/schemas/Problem" }
     get:
       operationId: get-apx-v1-tolling-transactions
       tags: [Tolling]
@@ -515,6 +583,8 @@ paths:
                   data:
                     type: array
                     items: { $ref: "#/components/schemas/TollTransaction" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/Forbidden" }
 
   /v1/tolling/transactions/{id}:
     get:
@@ -550,6 +620,13 @@ paths:
           content:
             application/json:
               schema: { $ref: "#/components/schemas/TollTransaction" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+        "404":
+          description: No such transaction.
+          content:
+            application/problem+json:
+              schema: { $ref: "#/components/schemas/Problem" }
 
   /v1/tolling/transactions/{id}/disputes:
     post:
@@ -701,6 +778,8 @@ paths:
                   data:
                     type: array
                     items: { $ref: "#/components/schemas/Account" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/Forbidden" }
 
   /v1/accounts/{id}:
     get:
@@ -777,6 +856,8 @@ paths:
                   data:
                     type: array
                     items: { $ref: "#/components/schemas/PaymentRecord" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/Forbidden" }
 
   /v1/payments/{id}/postings:
     post:
@@ -820,6 +901,8 @@ paths:
                   data:
                     type: array
                     items: { $ref: "#/components/schemas/LprRead" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/Forbidden" }
 
   # ===== Alerts (conformance class apx-alerts) ===== #
   /v1/alerts:
@@ -897,6 +980,8 @@ paths:
                     type: array
                     items:
                       $ref: "#/components/schemas/Alert"
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/Forbidden" }
 
   /v1/alerts/{id}:
     get:
@@ -1048,7 +1133,26 @@ components:
     CursorParam:
       $ref: "./domains/data/schemas.yaml#/CursorParam"
 
+  responses:
+    Unauthorized:
+      description: Missing or invalid access token.
+      content:
+        application/problem+json:
+          schema: { $ref: "#/components/schemas/Problem" }
+    Forbidden:
+      description: |-
+        Insufficient scope (problem type `insufficient-scope`) or place
+        grant (`insufficient-grant`) for this operation (Part 9).
+      content:
+        application/problem+json:
+          schema: { $ref: "#/components/schemas/Problem" }
+
   securitySchemes:
+    # APDS 4.1's own scheme, vendored verbatim — the security requirement
+    # named by every APDS-native operation mounted above. Without this the
+    # bundle would reference an undefined scheme.
+    oAuth:
+      $ref: "../vendor/apds/4.1/apds-api-4.1.yaml#/components/securitySchemes/oAuth"
     apxOAuth:
       type: oauth2
       description: |-

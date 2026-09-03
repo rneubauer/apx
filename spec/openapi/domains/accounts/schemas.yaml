@@ -1,6 +1,6 @@
 # APX accounts & payments — optional conformance classes apx-accounts and
-# apx-payment-history (2018 requirements ⑥–⑨). Anchored on APDS RightHolder,
-# Credential, and Payment concepts.
+# apx-payment-history. Anchored on APDS RightHolder, Credential, and Payment
+# concepts.
 
 Account:
   title: Account
@@ -27,6 +27,16 @@ Account:
     accountStatus:
       type: string
       enum: [enabled, disabled]
+    places:
+      type: array
+      description: |-
+        HierarchyElement subtree roots this account is valid at. On
+        aggregating implementations (one endpoint fronting many locations)
+        this is how consumers attribute the account to its site(s); results
+        of place-less account lookups MUST stay within the caller's
+        `apx_places` grant (Part 13 §13.5).
+      items:
+        $ref: "../../../vendor/apds/4.1/apds-api-4.1.yaml#/components/schemas/Reference"
     recordInfo:
       $ref: "../common/schemas.yaml#/RecordInfo"
     extensions:
@@ -36,10 +46,17 @@ PaymentRecord:
   title: PaymentRecord
   description: A payment taken through APX (maps to the APDS Payment concept; card capture stays in the implementer's PCI scope).
   type: object
-  required: [id, transactionID, dateCollected, amount, paymentStatus]
+  required: [id, transactionID, dateCollected, amount, paymentStatus, place]
   properties:
     id: { type: string, format: uuid, readOnly: true }
     transactionID: { type: string, readOnly: true }
+    place:
+      description: |-
+        The HierarchyElement (site) this payment is bound to. REQUIRED so
+        every payment — in API responses and in
+        `apx.accounts.payment.recorded.v1` events — is attributable to its
+        location on implementations fronting many places (Part 13 §13.5).
+      $ref: "../../../vendor/apds/4.1/apds-api-4.1.yaml#/components/schemas/Reference"
     dateCollected:
       $ref: "../../../vendor/apds/4.1/apds-api-4.1.yaml#/components/schemas/DateTime"
       readOnly: true
@@ -72,7 +89,7 @@ PaymentRecord:
 
 Posting:
   title: Posting
-  description: An accounting write-back of a payment to a monthly-parking/AR system (2018 requirement ⑨).
+  description: An accounting write-back of a payment to a monthly-parking/AR system.
   type: object
   required: [confirmationNumber, accountUpdated]
   properties:

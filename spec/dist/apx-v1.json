@@ -2,7 +2,7 @@
   "openapi": "3.1.0",
   "info": {
     "title": "APX — APDS Parking eXtensions",
-    "version": "0.1.1",
+    "version": "0.2.0",
     "summary": "An open companion standard to APDS 4.1",
     "description": "**APX (APDS Parking eXtensions)** is an additive companion standard to the\n[APDS 4.1 API](https://github.com/parkingdata/spec) (Alliance for Parking\nData Standards, published as ISO/TS 5206-1).\n\nAPX follows an **APDS-first prime directive**: wherever APDS 4.1 already\ndefines a route, schema, or convention, APX uses it verbatim (by `$ref`\ninto the vendored, unmodified `apds-api-4.1.yaml`). APX only adds what\nAPDS deliberately leaves out:\n\n- **Data profile** — Full/Change update semantics, tombstones, and a\n  cursor-based change feed as additive parameters on APDS's native routes\n- **Delivery fabric** — a superset-compatible profile of APDS `/webhooks`\n  (HMAC signing, normative retries, delivery ledger, SSE)\n- **Control** — command plane for gates/PARCS/devices with idempotency,\n  lifecycle, and immutable audit\n- **Alerts** — operational alerting with open taxonomies via APDS\n  UserDefinedCodeLists\n- **Discovery** — credential-scoped capability documents\n- **Accounts & payments, LPR, reservations, permits, tolling** — profiles\n  and additive resources over APDS entities\n\nExtension identity follows the official APDS extension convention:\n`apds-ext:apx:<class>@<version>` (Use Case Document §C.2.5), with\nextensionName `apx`.",
     "license": {
@@ -21,7 +21,7 @@
   },
   "servers": [
     {
-      "url": "https://api.example.com",
+      "url": "https://api.apx-implementation.example",
       "description": "One host serves both surfaces: APDS-native routes at their verbatim\npaths (/places, /sessions, /webhooks, …) and APX routes under the\nexplicit /v1 prefix."
     }
   ],
@@ -126,6 +126,12 @@
           },
           {
             "$ref": "#/components/parameters/page"
+          },
+          {
+            "$ref": "#/components/parameters/ModeParam"
+          },
+          {
+            "$ref": "#/components/parameters/CursorParam"
           }
         ],
         "responses": {
@@ -134,7 +140,14 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/HierarchyElementList"
+                  "oneOf": [
+                    {
+                      "$ref": "#/components/schemas/HierarchyElementList"
+                    },
+                    {
+                      "$ref": "#/components/schemas/ChangeFeedPage"
+                    }
+                  ]
                 }
               }
             }
@@ -1487,6 +1500,12 @@
           },
           {
             "$ref": "#/components/parameters/page"
+          },
+          {
+            "$ref": "#/components/parameters/ModeParam"
+          },
+          {
+            "$ref": "#/components/parameters/CursorParam"
           }
         ],
         "responses": {
@@ -1495,7 +1514,14 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/RateTableList"
+                  "oneOf": [
+                    {
+                      "$ref": "#/components/schemas/RateTableList"
+                    },
+                    {
+                      "$ref": "#/components/schemas/ChangeFeedPage"
+                    }
+                  ]
                 }
               }
             }
@@ -1863,6 +1889,12 @@
           },
           {
             "$ref": "#/components/parameters/page"
+          },
+          {
+            "$ref": "#/components/parameters/ModeParam"
+          },
+          {
+            "$ref": "#/components/parameters/CursorParam"
           }
         ],
         "responses": {
@@ -1871,7 +1903,14 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/SessionList"
+                  "oneOf": [
+                    {
+                      "$ref": "#/components/schemas/SessionList"
+                    },
+                    {
+                      "$ref": "#/components/schemas/ChangeFeedPage"
+                    }
+                  ]
                 }
               }
             }
@@ -2295,6 +2334,12 @@
           },
           {
             "$ref": "#/components/parameters/page"
+          },
+          {
+            "$ref": "#/components/parameters/ModeParam"
+          },
+          {
+            "$ref": "#/components/parameters/CursorParam"
           }
         ],
         "responses": {
@@ -2303,7 +2348,14 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/AssignedRightList"
+                  "oneOf": [
+                    {
+                      "$ref": "#/components/schemas/AssignedRightList"
+                    },
+                    {
+                      "$ref": "#/components/schemas/ChangeFeedPage"
+                    }
+                  ]
                 }
               }
             }
@@ -2820,7 +2872,21 @@
           "Subscription"
         ],
         "summary": "Subscribe to event topics (APDS-compatible superset)",
-        "description": "Creates a subscription. A stock APDS 4.1 `EventSubscription`\n(`{endpoint, topics[]}` with EventTypeEnum values) is a valid body;\nAPX fields (transport, filters, secret) are additive. The signing\nsecret is returned exactly once, in this response.",
+        "description": "Creates a subscription. A stock APDS 4.1 `EventSubscription`\n(`{endpoint, topics[]}` with EventTypeEnum values) is a valid body;\nAPX fields (transport, filters, secret) are additive.\n\n**Response negotiation (normative, Part 8 §8.1):** the stock APDS\n4.1 response contract is preserved — a request WITHOUT\n`Prefer: return=representation` receives the native APDS `200`/`202`\nwith `ResponseStatus`, exactly as APDS documents. An APX client\nsends `Prefer: return=representation` and receives `201` with the\nfull subscription INCLUDING the signing secret (returned exactly\nonce, in that response only).",
+        "parameters": [
+          {
+            "name": "Prefer",
+            "in": "header",
+            "required": false,
+            "description": "RFC 7240. `return=representation` selects the APX-rich 201\nresponse (subscription + one-time secret). Absent, the server\nanswers with the stock APDS 200/202 ResponseStatus contract.",
+            "schema": {
+              "type": "string",
+              "enum": [
+                "return=representation"
+              ]
+            }
+          }
+        ],
         "requestBody": {
           "required": true,
           "content": {
@@ -2832,12 +2898,32 @@
           }
         },
         "responses": {
+          "200": {
+            "description": "Stock APDS contract — subscription approved and activated\n(request did not ask for the APX representation).",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ResponseStatus"
+                }
+              }
+            }
+          },
           "201": {
-            "description": "Subscription created (includes the signing secret, once).",
+            "description": "APX contract (Prefer: return=representation) — subscription\ncreated; includes the signing secret, exactly once.",
             "content": {
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/ApxEventSubscription"
+                }
+              }
+            }
+          },
+          "202": {
+            "description": "Stock APDS contract — subscription request received; will be\nprocessed and then approved/declined.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ResponseStatus"
                 }
               }
             }
@@ -2882,6 +2968,12 @@
                 }
               }
             }
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
           }
         }
       }
@@ -3005,6 +3097,22 @@
                 }
               }
             }
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "404": {
+            "description": "No such subscription.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
           }
         }
       }
@@ -3043,6 +3151,22 @@
               "text/event-stream": {
                 "schema": {
                   "type": "string"
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "404": {
+            "description": "No such subscription, or subscription transport is not sse.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
                 }
               }
             }
@@ -3234,6 +3358,12 @@
                 }
               }
             }
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
           }
         }
       }
@@ -3288,7 +3418,7 @@
           "Control"
         ],
         "summary": "Lane inquiry — current transaction context (screen-pop)",
-        "description": "The ticket/credential currently in the machine at this lane, amount\ndue, applied validations, latest LPR read, and monthly-credential\ncontext including the last 10 activity events (2018 requirement ①).",
+        "description": "The ticket/credential currently in the machine at this lane, amount\ndue, applied validations, latest LPR read, and monthly-credential\ncontext including the last 10 activity events.",
         "parameters": [
           {
             "name": "id",
@@ -3332,7 +3462,7 @@
           "Control"
         ],
         "summary": "List validation providers for a place",
-        "description": "The venues allowed to validate tickets at the place (2018 requirement ⑤).",
+        "description": "The venues allowed to validate tickets at the place.",
         "parameters": [
           {
             "name": "place",
@@ -3362,6 +3492,12 @@
                 }
               }
             }
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
           }
         }
       }
@@ -3401,6 +3537,32 @@
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/TollTransaction"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Missing Idempotency-Key or invalid transaction.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "409": {
+            "description": "Idempotency-Key replayed with a different body.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
                 }
               }
             }
@@ -3448,6 +3610,12 @@
                 }
               }
             }
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
           }
         }
       }
@@ -3521,6 +3689,22 @@
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/TollTransaction"
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "404": {
+            "description": "No such transaction.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
                 }
               }
             }
@@ -3822,6 +4006,12 @@
                 }
               }
             }
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
           }
         }
       }
@@ -3970,6 +4160,12 @@
                 }
               }
             }
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
           }
         }
       }
@@ -4059,6 +4255,12 @@
                 }
               }
             }
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
           }
         }
       }
@@ -4204,6 +4406,12 @@
                 }
               }
             }
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
           }
         }
       }
@@ -4790,7 +4998,43 @@
         }
       }
     },
+    "responses": {
+      "Unauthorized": {
+        "description": "Missing or invalid access token.",
+        "content": {
+          "application/problem+json": {
+            "schema": {
+              "$ref": "#/components/schemas/Problem"
+            }
+          }
+        }
+      },
+      "Forbidden": {
+        "description": "Insufficient scope (problem type `insufficient-scope`) or place\ngrant (`insufficient-grant`) for this operation (Part 9).",
+        "content": {
+          "application/problem+json": {
+            "schema": {
+              "$ref": "#/components/schemas/Problem"
+            }
+          }
+        }
+      }
+    },
     "securitySchemes": {
+      "oAuth": {
+        "type": "oauth2",
+        "flows": {
+          "clientCredentials": {
+            "tokenUrl": "https://api.parking-data-standards.org",
+            "scopes": {
+              "po": "Parking Operator",
+              "sp": "Service Provider",
+              "ep": "Enforcement Provider",
+              "ad": "Administrator"
+            }
+          }
+        }
+      },
       "apxOAuth": {
         "type": "oauth2",
         "description": "OAuth 2.0 client-credentials (aligned with APDS 4.1's `oAuth` scheme).\nAPX scopes follow `apx.<domain>:<verb>`. Grants are carried in the\nnormative token claims `apx_org` (Organisation reference) and\n`apx_places` (HierarchyElement UUID subtree grants; absent = all).",
@@ -5462,7 +5706,7 @@
       },
       "LaneStatus": {
         "title": "LaneStatus",
-        "description": "The transaction context at a lane right now (2018 requirement ① —\ncall-center screen-pop). Composes APDS references and data; adds no\nparallel entities.",
+        "description": "The transaction context at a lane right now (the call-center\nscreen-pop). Composes APDS references and data; adds no\nparallel entities.",
         "type": "object",
         "required": [
           "lane"
@@ -5584,7 +5828,7 @@
       },
       "ValidationProvider": {
         "title": "ValidationProvider",
-        "description": "A venue/organisation allowed to validate tickets at a place (2018 requirement ⑤).",
+        "description": "A venue/organisation allowed to validate tickets at a place.",
         "type": "object",
         "required": [
           "provider"
@@ -5676,6 +5920,13 @@
               "disabled"
             ]
           },
+          "places": {
+            "type": "array",
+            "description": "HierarchyElement subtree roots this account is valid at. On\naggregating implementations (one endpoint fronting many locations)\nthis is how consumers attribute the account to its site(s); results\nof place-less account lookups MUST stay within the caller's\n`apx_places` grant (Part 13 §13.5).",
+            "items": {
+              "$ref": "#/components/schemas/Reference"
+            }
+          },
           "recordInfo": {
             "$ref": "#/components/schemas/RecordInfo"
           },
@@ -5693,7 +5944,8 @@
           "transactionID",
           "dateCollected",
           "amount",
-          "paymentStatus"
+          "paymentStatus",
+          "place"
         ],
         "properties": {
           "id": {
@@ -5704,6 +5956,10 @@
           "transactionID": {
             "type": "string",
             "readOnly": true
+          },
+          "place": {
+            "description": "The HierarchyElement (site) this payment is bound to. REQUIRED so\nevery payment — in API responses and in\n`apx.accounts.payment.recorded.v1` events — is attributable to its\nlocation on implementations fronting many places (Part 13 §13.5).",
+            "$ref": "#/components/schemas/Reference"
           },
           "dateCollected": {
             "$ref": "#/components/schemas/DateTime",
@@ -5750,7 +6006,7 @@
       },
       "Posting": {
         "title": "Posting",
-        "description": "An accounting write-back of a payment to a monthly-parking/AR system (2018 requirement ⑨).",
+        "description": "An accounting write-back of a payment to a monthly-parking/AR system.",
         "type": "object",
         "required": [
           "confirmationNumber",
@@ -5780,11 +6036,16 @@
         "description": "One plate read joined with its ticket/session context.",
         "type": "object",
         "required": [
-          "plate"
+          "plate",
+          "place"
         ],
         "properties": {
           "plate": {
             "type": "string"
+          },
+          "place": {
+            "description": "The HierarchyElement (site) where the read occurred. REQUIRED so\ncross-lookups and `apx.data.observation.created.v1` consumers can\nalways attribute the read to its location (Part 13 §13.5).",
+            "$ref": "#/components/schemas/Reference"
           },
           "confidence": {
             "type": "number",

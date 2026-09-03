@@ -8,8 +8,15 @@ contract per-project. APX completes it — **as a superset**: a stock APDS
 ## 8.1 Subscriptions (at APDS's own `/webhooks` route)
 
 - `POST /webhooks` — create. Body: `ApxEventSubscription`. Stock APDS bodies
-  are valid (transport defaults to `webhook`; a signing `secret` is
-  generated and returned once). Requires `apx.subscriptions:manage`.
+  are valid (transport defaults to `webhook`). Requires
+  `apx.subscriptions:manage`.
+  **Response negotiation (normative):** the stock APDS 4.1 response
+  contract is preserved. A request WITHOUT `Prefer: return=representation`
+  (RFC 7240) MUST receive APDS's documented `200`/`202` with
+  `ResponseStatus` — a plain APDS client observes pure APDS behavior. An
+  APX client sends `Prefer: return=representation` and MUST receive `201`
+  with the full subscription including the signing `secret`, returned
+  exactly once, in that response only.
 - `DELETE /webhooks/{id}` — revoke (native APDS operation).
 - `GET /webhooks`, `PATCH /webhooks/{id}` — APX additive operations (list,
   update topics/filters/status, rotate secret).
@@ -53,7 +60,29 @@ CloudEvents-aligned). For APDS EventTypeEnum topics, `data` is the APDS
 - Exists for consumers that cannot expose an inbound endpoint (NAT'd PARCS,
   kiosks).
 
-## 8.5 Publishing obligations
+## 8.5 Place binding and filtering (normative)
+
+Subscription `filters.places` and per-site analytics both require every
+event to be attributable to a location. The binding rule, per topic:
+
+1. An event is **bound to a place** by, in order of precedence: (a) a
+   `place` field in `data` (e.g. OccupancySnapshot, PaymentRecord);
+   (b) a `source.place` field in `data` (Alerts); (c) `subject` when it
+   references a HierarchyElement; (d) the place that inventories the
+   subject device (`SupplementalEquipment`) or contains the subject
+   entity (e.g. a Session's `hierarchyElement`).
+2. Publishers MUST populate at least one of these bindings on every event
+   whose topic concerns a physical location. In particular:
+   `apx.accounts.payment.recorded.v1` data carries the (required)
+   `PaymentRecord.place`; `apx.data.observation.created.v1` publishers
+   MUST populate the Observation's element binding.
+3. `filters.places` matches an event when its bound place is inside any
+   granted subtree. An event with NO resolvable place binding matches only
+   subscriptions without a `places` filter, and MUST NOT be delivered to a
+   subscriber whose `apx_places` grant would not include it — when in
+   doubt, drop rather than leak (Part 9 §9.3).
+
+## 8.6 Publishing obligations
 
 Implementations claiming `apx-events` MUST publish the APDS EventTypeEnum
 topics for every entity class they serve writes for, and the APX topics of

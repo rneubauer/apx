@@ -122,6 +122,7 @@ happens — no nightly report scraping:
   "data": {
     "id": "d1000000-0000-4000-8000-000000000042",
     "transactionID": "TXN-2026-081547",
+    "place": { "id": "b1000000-0000-4000-8000-000000000001", "className": "Place" },
     "dateCollected": "2026-08-25T18:03:26Z",
     "amount": { "currencyType": "USD", "currencyValue": 18.00 },
     "method": "card",

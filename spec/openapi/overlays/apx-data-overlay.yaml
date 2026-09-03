@@ -1,0 +1,82 @@
+# APX data-profile overlay — a NORMATIVE artifact (Part 3 §3.4, Part 5 §5.6).
+#
+# The APDS 4.1 document is vendored byte-identical and mounted verbatim, so
+# the Part 5 data profile (mode/cursor parameters, ChangeFeedPage responses)
+# cannot be expressed inside those path items without editing them. This
+# OpenAPI Overlay (https://spec.openapis.org/overlay/v1.0.0) decorates the
+# BUNDLED document instead: applying it to spec/dist/apx-v1.{yaml,json}
+# (tools/apply-overlay.mjs, run by `npm run spec:bundle`) produces the
+# effective API description. The vendored APDS source is never touched.
+#
+# Scope: exactly the four list routes Part 5 §5.6 requires the change feed
+# on. Plain APDS clients are unaffected — mode defaults to `full`, and the
+# stock response shape remains a conforming branch of the oneOf.
+overlay: 1.0.0
+info:
+  title: APX data-profile overlay (change feed on native APDS list routes)
+  version: 0.2.0
+
+actions:
+  # ----- /places -----
+  - target: $.paths['/places'].get.parameters
+    description: Add the APX data-profile mode/cursor parameters.
+    update:
+      - $ref: "#/components/parameters/ModeParam"
+      - $ref: "#/components/parameters/CursorParam"
+  - target: $.paths['/places'].get.responses['200'].content['application/json'].schema
+    remove: true
+  - target: $.paths['/places'].get.responses['200'].content['application/json']
+    description: mode=full returns the stock APDS list; mode=change returns a ChangeFeedPage.
+    update:
+      schema:
+        oneOf:
+          - $ref: "#/components/schemas/HierarchyElementList"
+          - $ref: "#/components/schemas/ChangeFeedPage"
+
+  # ----- /sessions -----
+  - target: $.paths['/sessions'].get.parameters
+    description: Add the APX data-profile mode/cursor parameters.
+    update:
+      - $ref: "#/components/parameters/ModeParam"
+      - $ref: "#/components/parameters/CursorParam"
+  - target: $.paths['/sessions'].get.responses['200'].content['application/json'].schema
+    remove: true
+  - target: $.paths['/sessions'].get.responses['200'].content['application/json']
+    description: mode=full returns the stock APDS list; mode=change returns a ChangeFeedPage.
+    update:
+      schema:
+        oneOf:
+          - $ref: "#/components/schemas/SessionList"
+          - $ref: "#/components/schemas/ChangeFeedPage"
+
+  # ----- /rates -----
+  - target: $.paths['/rates'].get.parameters
+    description: Add the APX data-profile mode/cursor parameters.
+    update:
+      - $ref: "#/components/parameters/ModeParam"
+      - $ref: "#/components/parameters/CursorParam"
+  - target: $.paths['/rates'].get.responses['200'].content['application/json'].schema
+    remove: true
+  - target: $.paths['/rates'].get.responses['200'].content['application/json']
+    description: mode=full returns the stock APDS list; mode=change returns a ChangeFeedPage.
+    update:
+      schema:
+        oneOf:
+          - $ref: "#/components/schemas/RateTableList"
+          - $ref: "#/components/schemas/ChangeFeedPage"
+
+  # ----- /rights/assigned -----
+  - target: $.paths['/rights/assigned'].get.parameters
+    description: Add the APX data-profile mode/cursor parameters.
+    update:
+      - $ref: "#/components/parameters/ModeParam"
+      - $ref: "#/components/parameters/CursorParam"
+  - target: $.paths['/rights/assigned'].get.responses['200'].content['application/json'].schema
+    remove: true
+  - target: $.paths['/rights/assigned'].get.responses['200'].content['application/json']
+    description: mode=full returns the stock APDS list; mode=change returns a ChangeFeedPage.
+    update:
+      schema:
+        oneOf:
+          - $ref: "#/components/schemas/AssignedRightList"
+          - $ref: "#/components/schemas/ChangeFeedPage"

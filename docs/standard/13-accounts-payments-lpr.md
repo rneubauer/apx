@@ -1,29 +1,31 @@
 # APX Part 13 — Accounts, Payments, LPR (optional classes)
 
-Three optional conformance classes covering the 2018 "Desirable" tier.
+Three optional conformance classes for call-center and back-office
+integration over live PARCS state.
 
 ## 13.1 `apx-accounts`
 
 - `GET /v1/accounts?name=|phone=|card=|plate=` — look up accounts by any
-  combination (2018 requirement ⑥). Returns Account[] with balances and
+  combination. Returns Account[] with balances and
   status. Scope `apx.accounts:read`.
 - `GET /v1/accounts/{id}` — full account info.
-- `POST /v1/payments` — take a payment (2018 requirement ⑦). Body:
-  account Reference (or `ticketNumber`), `amount`, `method`
+- `POST /v1/payments` — take a payment. Body:
+  account Reference (or `ticketNumber`), the (required) `place` binding,
+  `amount`, `method`
   (`autoAttendant` = PCI-compliant IVR captures the card out of band; APX
   never carries PANs). **Idempotency-Key REQUIRED.** Returns a
   PaymentRecord with `transactionID`. Declines are `422 payment-declined`.
   Approved account payments reduce the account balance. Scope
   `apx.payments:write`.
 - `POST /v1/payments/{id}/postings` — accounting write-back
-  (2018 requirement ⑨, PARIS-style): posts account/card/amount/transaction
+  (PARIS-style): posts account/card/amount/transaction
   ID to the AR system and returns `{confirmationNumber, accountUpdated,
   newBalance}`.
 
 ## 13.2 `apx-payment-history`
 
 - `GET /v1/payments?ticketLast4=&cardLast4=&date=` — payments made on a
-  ticket (2018 requirement ⑧). `cardLast4` (truncated PAN, PCI-permitted) is
+  ticket. `cardLast4` (truncated PAN, PCI-permitted) is
   the **transient-parker lookup of last resort**: at locations without LPR,
   a caller who cannot read their ticket usually has nothing else.
   **Privacy rule (normative):** truncated-key lookups (`ticketLast4` or
@@ -34,9 +36,10 @@ Three optional conformance classes covering the 2018 "Desirable" tier.
 
 - Ingest is NATIVE: LPR vendors `POST /observations` (APDS route) with
   Confidence and Image — nothing new to implement.
-- `GET /v1/lpr/reads?plate=|ticket=` — the bidirectional cross-lookup
-  (2018 requirement ⑩): plate → ticket/session (+ accuracy + screenshot),
-  ticket → plate. Scope `apx.lpr:read`.
+- `GET /v1/lpr/reads?plate=|ticket=` — the bidirectional cross-lookup:
+  plate → ticket/session (+ accuracy + screenshot),
+  ticket → plate. Scope `apx.lpr:read`. Every read carries its (required)
+  `place` binding (§13.5).
 
 ## 13.4 Eventing — the analytics feed
 
@@ -64,3 +67,25 @@ mixing APDS EventTypeEnum topics with the APX topics above plus
 `apx.data.occupancy.v1`, alert, and command topics; (3) point-in-time
 convenience reads (occupancy §5.5, lane inquiry §6.2). Nothing about a
 place that APX models is unreachable by feed.
+
+## 13.5 Site binding on aggregating implementations (normative)
+
+Payments, accounts, and LPR reads must remain attributable and isolated
+per location when one endpoint fronts many places (Part 8 §8.5, Part 9
+§9.3):
+
+1. `PaymentRecord.place` and `LprRead.place` are REQUIRED — every payment
+   and plate read names the HierarchyElement it belongs to, in API
+   responses and in event payloads alike. `Account.places` SHOULD be
+   populated where accounts are place-scoped.
+2. **Grant enforcement on place-less lookups.** `GET /v1/accounts`,
+   `GET /v1/payments`, and `GET /v1/lpr/reads` take no place parameter,
+   but their results MUST be constrained to records whose place binding
+   (or, for accounts, any of whose `places`) falls inside the caller's
+   `apx_places` grant. A credential granted one garage searching by
+   name, plate, or truncated card MUST NOT see records from any other
+   location. The scope check alone is NOT sufficient authorization for
+   these routes.
+3. Implementations MAY additionally accept a `place` query parameter on
+   these lookups to narrow results below the grant (the pattern
+   established by `/v1/reservations/recent`, Part 14 §14.1a).

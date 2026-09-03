@@ -101,8 +101,8 @@ DeviceStatus:
 LaneStatus:
   title: LaneStatus
   description: |-
-    The transaction context at a lane right now (2018 requirement ① —
-    call-center screen-pop). Composes APDS references and data; adds no
+    The transaction context at a lane right now (the call-center
+    screen-pop). Composes APDS references and data; adds no
     parallel entities.
   type: object
   required:
@@ -179,7 +179,7 @@ LaneStatus:
 
 ValidationProvider:
   title: ValidationProvider
-  description: A venue/organisation allowed to validate tickets at a place (2018 requirement ⑤).
+  description: A venue/organisation allowed to validate tickets at a place.
   type: object
   required:
     - provider

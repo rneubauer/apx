@@ -69,5 +69,15 @@ payments, LPR, reservations, permits, tolling).
 | 16 | 16-discovery.md | Credential-scoped discovery |
 
 The machine-readable OpenAPI 3.1 document (`spec/openapi/apx.yaml`, bundled
-as `spec/dist/apx-v1.*`) is **normative**. Where prose and OpenAPI disagree,
-the OpenAPI document prevails and the prose defect MUST be corrected.
+as `spec/dist/apx-v1.*`) and the **APX data-profile overlay**
+(`spec/openapi/overlays/apx-data-overlay.yaml`, OpenAPI Overlay 1.0) are
+**normative**; applying the overlay to the bundle — done automatically by
+the build — produces the effective API description. The overlay exists so
+the Part 5 additions to APDS-native routes are machine-readable without
+editing the vendored APDS document.
+
+Precedence: for **APX-defined paths and schemas**, where prose and OpenAPI
+disagree, the effective OpenAPI description prevails and the prose defect
+MUST be corrected. For **APDS-native paths**, the vendored APDS 4.1
+document (plus the overlay's additive decorations) prevails — APX prose
+never overrides APDS.
