@@ -34,6 +34,17 @@ header required during rotation overlap, minimum secret entropy (Part 9
 standalone-site → platform transition (identity survival, credential,
 subscriptions, cursors, cutover, `EventEnvelope.source` change).
 
+Committee packaging (Block C): Annex A — numbered conformance requirements
+(`APX-<CLASS>-<NN>`) for all 14 classes + cross-cutting core, and the ICS
+template; Part 3 — class dependency table, APX→APDS reconciliation clause
+(§3.3(8)), and the APDS version policy (§3.5: one release per edition,
+re-vendor = new edition, no in-band negotiation); Part 13 §13.6 —
+normative PaymentRecord ↔ APDS Payment field mapping with the
+materialization rule; Part 11 §11.3 — open registration authority (60-day
+decisions, appeal path); CONTRIBUTING — governance/end-state and patent
+intent (pending legal review); draft submission cover letter
+(docs/submission-cover-letter.md).
+
 ## [0.2.0] — 2026-09-02
 
 Submission-readiness revision: fixes the seven blockers from the
