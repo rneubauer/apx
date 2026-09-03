@@ -26,9 +26,11 @@ DiscoveryDocument:
     places:
       type: array
       description: |-
-        Granted HierarchyElement subtree roots (token claim apx_places).
-        An empty array means ALL places are visible to this client.
-      items: { type: string, format: uuid }
+        Granted HierarchyElement subtree roots (token claim apx_places),
+        reflected exactly. Fail-closed semantics (Part 9 §9.3): an empty
+        array means NO places; the explicit wildcard entry "*" means all
+        places.
+      items: { type: string }
     endpoints:
       type: array
       description: Concrete callable endpoints (APDS-native + APX).

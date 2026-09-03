@@ -34,8 +34,11 @@ are NOT redefined here.
 
 - All timestamps are RFC 3339 in UTC unless a Place-local time is explicitly
   indicated (APDS convention). Intervals are start-inclusive, end-exclusive.
-- Identifiers are RFC 4122 UUIDs. Cross-object references use APDS
-  `Reference` / `VersionedReference` and are typed by `className`.
+- **APX-defined resource** identifiers are RFC 4122/9562 UUIDs. APDS entity
+  identifiers are whatever APDS defines them to be (unique strings within
+  the issuing implementation — UUIDs by convention, not by contract; APX
+  cannot and does not re-type them, Part 4 §4.1a). Cross-object references
+  use APDS `Reference` / `VersionedReference` and are typed by `className`.
 - JSON field names are camelCase. Paths are lowercase kebab-case.
 - `apx.<domain>:<verb>` denotes an OAuth scope; `apx.<domain>.<event>.vN`
   denotes a topic; `apds-ext:<ns>:<class>@<M.m>` denotes an extension key.

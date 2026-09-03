@@ -68,6 +68,7 @@ payments, LPR, reservations, permits, tolling).
 | 15 | 15-tolling.md | Toll transactions and disputes |
 | 16 | 16-discovery.md | Credential-scoped discovery |
 | 17 | 17-resolution.md | Customer Service & Resolution (contexts, policy, actions) |
+| 18 | 18-aggregation.md | Aggregation and onboarding (multi-site platforms) |
 
 The machine-readable OpenAPI 3.1 document (`spec/openapi/apx.yaml`, bundled
 as `spec/dist/apx-v1.*`) and the **APX data-profile overlay**

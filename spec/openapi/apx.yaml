@@ -1777,10 +1777,11 @@ webhooks:
       description: |-
         Every webhook delivery POSTs one EventEnvelope with headers
         `APX-Signature` (v1=HMAC-SHA256(secret, timestamp + "." + body)),
-        `APX-Timestamp` (RFC 3339, ±5 min replay window), and
+        `APX-Timestamp` (RFC 3339, ±5 min replay window),
         `APX-Delivery-Id` (unique per attempt; envelope `id` is stable
-        across retries). Respond 2xx to acknowledge; anything else triggers
-        the normative retry schedule (Part 8).
+        across retries), and `APX-Key-Id` (REQUIRED during secret-rotation
+        overlap windows — Part 9 §9.4). Respond 2xx to acknowledge;
+        anything else triggers the normative retry schedule (Part 8).
       requestBody:
         content:
           application/json:
@@ -1832,7 +1833,9 @@ components:
         OAuth 2.0 client-credentials (aligned with APDS 4.1's `oAuth` scheme).
         APX scopes follow `apx.<domain>:<verb>`. Grants are carried in the
         normative token claims `apx_org` (Organisation reference) and
-        `apx_places` (HierarchyElement UUID subtree grants; absent = all).
+        `apx_places` (HierarchyElement subtree grants — FAIL-CLOSED: absent
+        or empty = no places; the explicit wildcard "*" = all places,
+        Part 9 §9.3).
       flows:
         clientCredentials:
           tokenUrl: https://auth.example.com/oauth2/token

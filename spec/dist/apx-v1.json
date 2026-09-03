@@ -6118,7 +6118,7 @@
       "post": {
         "operationId": "receive-apx-event",
         "summary": "Signed APX event delivery",
-        "description": "Every webhook delivery POSTs one EventEnvelope with headers\n`APX-Signature` (v1=HMAC-SHA256(secret, timestamp + \".\" + body)),\n`APX-Timestamp` (RFC 3339, ±5 min replay window), and\n`APX-Delivery-Id` (unique per attempt; envelope `id` is stable\nacross retries). Respond 2xx to acknowledge; anything else triggers\nthe normative retry schedule (Part 8).",
+        "description": "Every webhook delivery POSTs one EventEnvelope with headers\n`APX-Signature` (v1=HMAC-SHA256(secret, timestamp + \".\" + body)),\n`APX-Timestamp` (RFC 3339, ±5 min replay window),\n`APX-Delivery-Id` (unique per attempt; envelope `id` is stable\nacross retries), and `APX-Key-Id` (REQUIRED during secret-rotation\noverlap windows — Part 9 §9.4). Respond 2xx to acknowledge;\nanything else triggers the normative retry schedule (Part 8).",
         "requestBody": {
           "content": {
             "application/json": {
@@ -6568,7 +6568,7 @@
       },
       "apxOAuth": {
         "type": "oauth2",
-        "description": "OAuth 2.0 client-credentials (aligned with APDS 4.1's `oAuth` scheme).\nAPX scopes follow `apx.<domain>:<verb>`. Grants are carried in the\nnormative token claims `apx_org` (Organisation reference) and\n`apx_places` (HierarchyElement UUID subtree grants; absent = all).",
+        "description": "OAuth 2.0 client-credentials (aligned with APDS 4.1's `oAuth` scheme).\nAPX scopes follow `apx.<domain>:<verb>`. Grants are carried in the\nnormative token claims `apx_org` (Organisation reference) and\n`apx_places` (HierarchyElement subtree grants — FAIL-CLOSED: absent\nor empty = no places; the explicit wildcard \"*\" = all places,\nPart 9 §9.3).",
         "flows": {
           "clientCredentials": {
             "tokenUrl": "https://auth.example.com/oauth2/token",
@@ -6809,6 +6809,14 @@
             "type": "string",
             "description": "Opaque cursor to resume AFTER the last change in this page."
           },
+          "grantAdditions": {
+            "type": "array",
+            "description": "Present on the first page served after the credential's apx_places\ngrant gained subtrees (Part 5 §5.2 rule 7): the new subtree roots.\nThe client MUST full-sync these subtrees before relying on the\nfeed for them — the cursor does not retroactively cover their\nhistory.",
+            "items": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
           "next": {
             "type": [
               "string",
@@ -6924,7 +6932,20 @@
           },
           "secret": {
             "type": "string",
-            "description": "HMAC signing secret (write-only; server-generated when absent and\nreturned once in the creation response)."
+            "description": "HMAC signing secret (≥32 bytes of entropy, used as raw UTF-8 key\nmaterial). Server-generated when absent and returned EXACTLY ONCE —\nin the Prefer=representation creation response. Never present in\nGET/PATCH responses."
+          },
+          "secretRef": {
+            "type": "string",
+            "writeOnly": true,
+            "description": "Identifier of an out-of-band-exchanged secret (Part 9 §9.4) —\nsupply INSTEAD of `secret` when key material must never transit\nthe API. Never a secret value itself."
+          },
+          "activeKeyIds": {
+            "type": "array",
+            "readOnly": true,
+            "description": "Identifiers of the currently valid signing keys — two entries\nduring a rotation overlap window, matching deliveries' APX-Key-Id\nheader (Part 9 §9.4).",
+            "items": {
+              "type": "string"
+            }
           },
           "status": {
             "type": "string",
@@ -8099,10 +8120,9 @@
           },
           "places": {
             "type": "array",
-            "description": "Granted HierarchyElement subtree roots (token claim apx_places).\nAn empty array means ALL places are visible to this client.",
+            "description": "Granted HierarchyElement subtree roots (token claim apx_places),\nreflected exactly. Fail-closed semantics (Part 9 §9.3): an empty\narray means NO places; the explicit wildcard entry \"*\" means all\nplaces.",
             "items": {
-              "type": "string",
-              "format": "uuid"
+              "type": "string"
             }
           },
           "endpoints": {

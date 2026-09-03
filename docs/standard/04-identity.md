@@ -17,6 +17,31 @@ APX resources reference APDS entities the same way — never by embedding or
 copying them. Example: a Command targets
 `{"id": "<uuid>", "className": "SupplementalEquipment"}`.
 
+## 4.1a Identifier locality and aggregation (normative)
+
+**All identifiers — APX resource ids and APDS entity ids alike — are LOCAL
+to the issuing implementation.** Clients MUST NOT assume an id minted by
+one implementation resolves at another. (This generalizes Part 14 §14.1a,
+which states the rule for RightHolders; it holds for HierarchyElements and
+every other class.) APDS entity ids are strings with per-implementation
+uniqueness — UUIDs by convention only.
+
+For **aggregating implementations** (one endpoint fronting many locations,
+Part 18):
+
+1. On import, an aggregator SHOULD preserve the source implementation's
+   HierarchyElement ids. When a collision with an already-hosted id makes
+   that impossible, it MUST mint new RFC 9562 UUIDs for the colliding
+   subtree.
+2. Whenever an imported element's id differs from its source id, the
+   aggregator MUST record the source id in the element's APDS
+   `operatorDefinedReference` — the designated alias field — so existing
+   integrations, grants, and warehouse keys can be migrated by lookup
+   rather than guesswork.
+3. Re-minting is a new identity: previously issued `apx_places` grants,
+   subscription `filters.places`, and stored references DO NOT carry over
+   automatically (Part 18 defines the onboarding sequence).
+
 ## 4.2 Provenance
 
 Every APX resource SHOULD carry `recordInfo` (`RecordInfo` schema), aligned

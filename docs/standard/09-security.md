@@ -26,9 +26,13 @@ Two token claims bound a client's world:
 - `apx_org` — object `{id, className}` (APDS Reference, className
   `Organisation`): the client's organisation. Implementations MUST attribute
   writes (`recordInfo.creator`, command `requestedBy` defaults) to it.
-- `apx_places` — array of HierarchyElement UUID strings. A grant on an
-  element includes its entire subtree (Campus → … → Space). Absence of the
-  claim means all places. A request targeting a place/device outside the
+- `apx_places` — array of HierarchyElement id strings. A grant on an
+  element includes its entire subtree (Campus → … → Space).
+  **Fail-closed (normative):** a token WITHOUT the claim has NO place
+  grant — every place-targeting request fails `insufficient-grant`. An
+  all-places grant is EXPLICIT: the single wildcard entry `"*"`. (For a
+  control plane that can open gates, misconfiguration must fail toward
+  nothing, not everything.) A request targeting a place/device outside the
   grant MUST receive 403 with problem type
   `https://apx-standard.org/problems/insufficient-grant` — even when the
   scope check passes.
@@ -39,12 +43,19 @@ a client can call everything its discovery document lists, and nothing more.
 ## 9.4 Webhook authenticity
 
 - Every webhook delivery MUST be signed: `APX-Signature: v1=<hex>` where
-  `<hex>` = HMAC-SHA256(secret, `<APX-Timestamp>` + "." + raw body).
+  `<hex>` = HMAC-SHA256(secret, `<APX-Timestamp>` + "." + raw body). The
+  secret is used as raw UTF-8 key material and MUST contain at least 32
+  bytes of entropy.
 - `APX-Timestamp` is RFC 3339; receivers MUST reject deliveries older/newer
   than 5 minutes (replay window).
-- Subscription secrets are exchanged out of band or at subscription time via
-  `secretRef`; rotation uses a dual-key overlap window (both keys valid
-  until the old one is retired).
+- Subscription secrets are server-generated (returned exactly once at
+  creation) or supplied by reference via the subscription's `secretRef`
+  (an identifier into an out-of-band exchange — never the secret value
+  itself). Rotation uses a dual-key overlap window (both keys valid until
+  the old one is retired); **during the overlap, every delivery MUST carry
+  `APX-Key-Id` naming the signing key** so receivers verify against the
+  right key instead of trying both. Outside a rotation window the header
+  is OPTIONAL.
 
 ## 9.5 Token issuance
 

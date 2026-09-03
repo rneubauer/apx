@@ -22,6 +22,18 @@ ruleset, and an openapi-typescript codegen smoke test in `npm test`
 (new dev dependency). Second documented APDS erratum (invalid
 `/observations` example).
 
+Multi-site semantics (Block B): identifier locality + aggregation alias
+convention via `operatorDefinedReference` (Part 4 §4.1a; Part 2 UUID claim
+scoped to APX resources); change-feed cursor scope, filtered-feed
+gaplessness, and grant-expansion signaling via `ChangeFeedPage.grantAdditions`
+(Part 5 §5.2 rules 5–7); **BREAKING:** `apx_places` is now fail-closed —
+absent/empty = no places, explicit `"*"` = all (Part 9 §9.3, discovery
+aligned); webhook secret hygiene — `secretRef`, `activeKeyIds`, `APX-Key-Id`
+header required during rotation overlap, minimum secret entropy (Part 9
+§9.4, Part 8 §8.3); new Part 18 "Aggregation and Onboarding" — the
+standalone-site → platform transition (identity survival, credential,
+subscriptions, cursors, cutover, `EventEnvelope.source` change).
+
 ## [0.2.0] — 2026-09-02
 
 Submission-readiness revision: fixes the seven blockers from the
