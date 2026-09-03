@@ -225,9 +225,14 @@ SupportInteraction:
 ResolutionResolveRequest:
   title: ResolutionResolveRequest
   description: |-
-    Whatever identifiers are currently known — the server resolves every
-    relationship it can (Part 17 §17.2). At least one identifying property
-    is required; all are optional individually.
+    Whatever PARKING-DOMAIN identifiers are currently known — the server
+    resolves every relationship it can (Part 17 §17.2). At least one
+    identifying property is required; all are optional individually.
+
+    Deliberately NO telephony identifiers (SIP URIs, phone numbers): the
+    call platform that owns the intercom maps call → lane/device on its
+    side before calling APX (Part 17 §17.1). PARCS implementations never
+    need to understand telephony.
   type: object
   minProperties: 1
   properties:
@@ -237,17 +242,10 @@ ResolutionResolveRequest:
       description: Caller-minted correlation id; echoed on the context and reusable on Commands.
     channel:
       type: string
-      description: How the interaction arrived (voice | intercom | chat | web | other).
+      description: How the interaction arrived, for context/history display (voice | intercom | chat | web | other).
       examples: [intercom]
-    calledNumber: { type: string }
-    callingNumber: { type: string }
-    sipUri:
-      type: string
-      examples: ["exit3@lakeside-garage.example"]
-    intercom:
-      description: The intercom device (SupplementalEquipment).
-      $ref: "../../../vendor/apds/4.1/apds-api-4.1.yaml#/components/schemas/Reference"
     device:
+      description: A SupplementalEquipment the interaction is anchored to (only meaningful if inventoried in the Place hierarchy).
       $ref: "../../../vendor/apds/4.1/apds-api-4.1.yaml#/components/schemas/Reference"
     place:
       $ref: "../../../vendor/apds/4.1/apds-api-4.1.yaml#/components/schemas/Reference"

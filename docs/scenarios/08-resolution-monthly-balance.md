@@ -13,7 +13,10 @@ server (`apx-resolution` + `apx-control` classes).
 
 ## Step 1 — The intercom call resolves to a context
 
-The platform knows only the SIP URI the call arrived on. One call:
+The intercom is the call platform's own hardware — the PARCS knows nothing
+about SIP, and never has to (Part 17 §17.1). The platform's provisioning
+already maps this intercom to Exit 3's lane UUID, so it opens the
+interaction with one parking-domain call:
 
 ```http
 POST /v1/resolution/contexts HTTP/1.1
@@ -24,12 +27,12 @@ Content-Type: application/json
 {
   "correlationId": "7c9e6679-7425-40de-944b-e07fc1f90ae7",
   "channel": "intercom",
-  "sipUri": "exit3@lakeside-garage.example"
+  "lane": { "id": "b2000000-0000-4000-8000-000000000002", "className": "VehicularAccess" }
 }
 ```
 
-The server resolves SIP URI → intercom → lane → current denial → credential
-→ account, and answers with the assembled context:
+The server resolves lane → current denial → credential → account, and
+answers with the assembled context:
 
 <!-- apx:validate ResolutionContext -->
 ```json

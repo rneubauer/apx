@@ -27,13 +27,20 @@ what you know, omit what you don't.
 
 ## 17.1 Identifier resolution
 
-Callers present whatever they have (`ResolutionResolveRequest`): SIP URI or
-called number, intercom/device Reference, lane, plate, ticket number,
+Callers present whatever parking-domain identifiers they have
+(`ResolutionResolveRequest`): lane, place, device, plate, ticket number,
 credential, reservation code, session, holder. Servers MUST resolve every
 relationship they can and MUST NOT fail because some identifiers are
-absent. How a SIP URI or phone number maps to a lane is implementation
-configuration (the intercom is a `SupplementalEquipment` inventoried in the
-Place hierarchy); the *output* of that mapping is interoperable.
+absent.
+
+**Layering rule (normative):** APX resolution accepts NO telephony
+identifiers — no SIP URIs, no phone numbers. The intercom is typically a
+separate physical device owned by the call platform, not the PARCS; the
+platform that terminates the call maps call → lane/device from its own
+provisioning BEFORE calling APX. This keeps every PARCS implementation
+free of telephony concepts. (Where an intercom happens to be inventoried
+as a `SupplementalEquipment` in the Place hierarchy, the caller MAY pass
+it as `device`.)
 
 ## 17.2 Resolution contexts
 

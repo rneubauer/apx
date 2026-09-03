@@ -2890,9 +2890,11 @@ paths:
         - Resolution
       summary: Resolve a customer-service context from any known identifiers
       description: |-
-        THE aggregation call (Part 17 §17.2): accepts whatever identifiers
-        are known (intercom SIP URI, lane, plate, ticket, credential,
-        reservation code…) and returns everything the server can resolve —
+        THE aggregation call (Part 17 §17.2): accepts whatever
+        parking-domain identifiers are known (lane, device, plate, ticket,
+        credential, reservation code…) — telephony mapping stays on the
+        call platform's side (§17.1) — and returns everything the server
+        can resolve —
         issue classification, lane status, vehicle, session, account,
         passback, device status, recent overrides, support history — plus
         the policy-decided allowedActions. Sections the caller's scopes and
@@ -4867,9 +4869,14 @@ components:
     ResolutionResolveRequest:
       title: ResolutionResolveRequest
       description: |-
-        Whatever identifiers are currently known — the server resolves every
-        relationship it can (Part 17 §17.2). At least one identifying property
-        is required; all are optional individually.
+        Whatever PARKING-DOMAIN identifiers are currently known — the server
+        resolves every relationship it can (Part 17 §17.2). At least one
+        identifying property is required; all are optional individually.
+
+        Deliberately NO telephony identifiers (SIP URIs, phone numbers): the
+        call platform that owns the intercom maps call → lane/device on its
+        side before calling APX (Part 17 §17.1). PARCS implementations never
+        need to understand telephony.
       type: object
       minProperties: 1
       properties:
@@ -4879,21 +4886,11 @@ components:
           description: Caller-minted correlation id; echoed on the context and reusable on Commands.
         channel:
           type: string
-          description: How the interaction arrived (voice | intercom | chat | web | other).
+          description: How the interaction arrived, for context/history display (voice | intercom | chat | web | other).
           examples:
             - intercom
-        calledNumber:
-          type: string
-        callingNumber:
-          type: string
-        sipUri:
-          type: string
-          examples:
-            - exit3@lakeside-garage.example
-        intercom:
-          description: The intercom device (SupplementalEquipment).
-          $ref: '#/components/schemas/Reference'
         device:
+          description: A SupplementalEquipment the interaction is anchored to (only meaningful if inventoried in the Place hierarchy).
           $ref: '#/components/schemas/Reference'
         place:
           $ref: '#/components/schemas/Reference'

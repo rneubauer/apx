@@ -4560,7 +4560,7 @@
           "Resolution"
         ],
         "summary": "Resolve a customer-service context from any known identifiers",
-        "description": "THE aggregation call (Part 17 §17.2): accepts whatever identifiers\nare known (intercom SIP URI, lane, plate, ticket, credential,\nreservation code…) and returns everything the server can resolve —\nissue classification, lane status, vehicle, session, account,\npassback, device status, recent overrides, support history — plus\nthe policy-decided allowedActions. Sections the caller's scopes and\n`apx_places` grant could not read directly are omitted. May return\n`status: partial` with `pendingSources` rather than waiting on a\nslow source; re-read to refresh. Scope apx.resolution:read.",
+        "description": "THE aggregation call (Part 17 §17.2): accepts whatever\nparking-domain identifiers are known (lane, device, plate, ticket,\ncredential, reservation code…) — telephony mapping stays on the\ncall platform's side (§17.1) — and returns everything the server\ncan resolve —\nissue classification, lane status, vehicle, session, account,\npassback, device status, recent overrides, support history — plus\nthe policy-decided allowedActions. Sections the caller's scopes and\n`apx_places` grant could not read directly are omitted. May return\n`status: partial` with `pendingSources` rather than waiting on a\nslow source; re-read to refresh. Scope apx.resolution:read.",
         "requestBody": {
           "required": true,
           "content": {
@@ -7095,7 +7095,7 @@
       },
       "ResolutionResolveRequest": {
         "title": "ResolutionResolveRequest",
-        "description": "Whatever identifiers are currently known — the server resolves every\nrelationship it can (Part 17 §17.2). At least one identifying property\nis required; all are optional individually.",
+        "description": "Whatever PARKING-DOMAIN identifiers are currently known — the server\nresolves every relationship it can (Part 17 §17.2). At least one\nidentifying property is required; all are optional individually.\n\nDeliberately NO telephony identifiers (SIP URIs, phone numbers): the\ncall platform that owns the intercom maps call → lane/device on its\nside before calling APX (Part 17 §17.1). PARCS implementations never\nneed to understand telephony.",
         "type": "object",
         "minProperties": 1,
         "properties": {
@@ -7106,28 +7106,13 @@
           },
           "channel": {
             "type": "string",
-            "description": "How the interaction arrived (voice | intercom | chat | web | other).",
+            "description": "How the interaction arrived, for context/history display (voice | intercom | chat | web | other).",
             "examples": [
               "intercom"
             ]
           },
-          "calledNumber": {
-            "type": "string"
-          },
-          "callingNumber": {
-            "type": "string"
-          },
-          "sipUri": {
-            "type": "string",
-            "examples": [
-              "exit3@lakeside-garage.example"
-            ]
-          },
-          "intercom": {
-            "description": "The intercom device (SupplementalEquipment).",
-            "$ref": "#/components/schemas/Reference"
-          },
           "device": {
+            "description": "A SupplementalEquipment the interaction is anchored to (only meaningful if inventoried in the Place hierarchy).",
             "$ref": "#/components/schemas/Reference"
           },
           "place": {

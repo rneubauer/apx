@@ -1072,9 +1072,11 @@ paths:
       tags: [Resolution]
       summary: Resolve a customer-service context from any known identifiers
       description: |-
-        THE aggregation call (Part 17 §17.2): accepts whatever identifiers
-        are known (intercom SIP URI, lane, plate, ticket, credential,
-        reservation code…) and returns everything the server can resolve —
+        THE aggregation call (Part 17 §17.2): accepts whatever
+        parking-domain identifiers are known (lane, device, plate, ticket,
+        credential, reservation code…) — telephony mapping stays on the
+        call platform's side (§17.1) — and returns everything the server
+        can resolve —
         issue classification, lane status, vehicle, session, account,
         passback, device status, recent overrides, support history — plus
         the policy-decided allowedActions. Sections the caller's scopes and
