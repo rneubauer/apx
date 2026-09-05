@@ -67,12 +67,14 @@ under the repository's MIT license. Portions reference the APDS API
 Specification (MIT, © Alliance for Parking Data Standards); nothing in a
 contribution may modify vendored APDS artifacts.
 
-*Patent intent (subject to formal legal review before any standards-body
-submission):* the steward intends that implementing APX requires no
-royalty — contributions are accepted on the understanding that any
-essential claims a contributor holds are made available royalty-free
-(RAND-Z) to implementers of the specification. A formal declaration will
-accompany the standards-body submission.
+*Patent intent (not itself a licence or covenant; formal instrument to
+follow legal review):* the steward's goal is that implementing any APX
+conformance class requires no patent royalty. Before standards-body
+submission, the steward will (1) select and adopt a contributor
+patent-commitment mechanism (e.g. Apache-2.0 inbound or OWFa 1.0), and
+(2) file the applicable royalty-free (RAND-Z / ISO Option 1) declaration
+for its own essential claims, scoped per conformance class with customary
+defensive-termination terms.
 
 ## Questions and proposals
 
