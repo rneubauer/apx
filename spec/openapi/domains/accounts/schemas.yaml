@@ -87,6 +87,56 @@ PaymentRecord:
     extensions:
       $ref: "../common/schemas.yaml#/Extensions"
 
+PaymentLink:
+  title: PaymentLink
+  description: |-
+    A hosted payment link sent to a customer (Part 13 §13.1a) — the
+    customer-service payment action of first resort. APX carries the link's
+    lifecycle, never card data; the hosted page is the implementer's PCI
+    scope.
+  type: object
+  required: [id, version, place, channel, status]
+  properties:
+    id: { type: string, format: uuid, readOnly: true }
+    version: { type: integer, minimum: 1, readOnly: true }
+    place:
+      description: Site binding (Part 13 §13.5).
+      $ref: "../../../vendor/apds/4.1/apds-api-4.1.yaml#/components/schemas/Reference"
+    account:
+      description: The account the payment settles (or omit and use ticketNumber).
+      $ref: "../../../vendor/apds/4.1/apds-api-4.1.yaml#/components/schemas/Reference"
+    ticketNumber: { type: string }
+    session:
+      $ref: "../../../vendor/apds/4.1/apds-api-4.1.yaml#/components/schemas/Reference"
+    amount:
+      description: Requested amount; omit to charge the current amount due.
+      $ref: "../../../vendor/apds/4.1/apds-api-4.1.yaml#/components/schemas/AmountInCurrency"
+    channel:
+      type: string
+      description: Delivery channel (sms | email | other implementer code list).
+      examples: [sms]
+    sentTo:
+      type: string
+      description: Masked destination (e.g. "+1•••••••4567"). PII-minimized.
+    status:
+      type: string
+      enum: [sent, opened, paid, expired, cancelled]
+      readOnly: true
+    payment:
+      description: The resulting PaymentRecord once paid.
+      $ref: "../../../vendor/apds/4.1/apds-api-4.1.yaml#/components/schemas/Reference"
+    expiresAt:
+      $ref: "../../../vendor/apds/4.1/apds-api-4.1.yaml#/components/schemas/DateTime"
+    correlationId:
+      type: string
+      format: uuid
+    resolutionContext:
+      $ref: "../../../vendor/apds/4.1/apds-api-4.1.yaml#/components/schemas/Reference"
+    recordInfo:
+      $ref: "../common/schemas.yaml#/RecordInfo"
+    extensions:
+      $ref: "../common/schemas.yaml#/Extensions"
+
 Posting:
   title: Posting
   description: An accounting write-back of a payment to a monthly-parking/AR system.
@@ -102,3 +152,17 @@ Posting:
       description: Target accounting system identifier (e.g. "paris").
     time:
       $ref: "../../../vendor/apds/4.1/apds-api-4.1.yaml#/components/schemas/DateTime"
+
+PostingRequest:
+  title: PostingRequest
+  description: Request body for the accounting write-back of a payment.
+  type: object
+  properties:
+    postedTo:
+      type: string
+      description: Target accounting system identifier; server default applies when omitted.
+      examples: [paris]
+    account:
+      description: Account to post against when the payment isn't already account-bound.
+      $ref: "../../../vendor/apds/4.1/apds-api-4.1.yaml#/components/schemas/Reference"
+    note: { type: string }

@@ -66,6 +66,14 @@
     {
       "name": "Tolling",
       "description": "Toll transactions binding Observations to pricing and Payments. See written standard Part 15."
+    },
+    {
+      "name": "Resolution",
+      "description": "Customer Service & Resolution (optional class apx-resolution) — one\naggregated context call plus policy-decided allowed actions. Writes go\nthrough the Part 6 command plane. See written standard Part 17."
+    },
+    {
+      "name": "Support",
+      "description": "Support-interaction history for resolution contexts. See written standard Part 17."
     }
   ],
   "paths": {
@@ -2847,6 +2855,13 @@
     "/v1/places/{id}/occupancy": {
       "get": {
         "operationId": "get-apx-v1-places-id-occupancy",
+        "security": [
+          {
+            "apxOAuth": [
+              "apx.data:read"
+            ]
+          }
+        ],
         "tags": [
           "Data"
         ],
@@ -2891,6 +2906,20 @@
     "/webhooks": {
       "post": {
         "operationId": "post-webhooks",
+        "security": [
+          {
+            "apxOAuth": [
+              "apx.subscriptions:manage"
+            ]
+          },
+          {
+            "oAuth": [
+              "po",
+              "sp",
+              "ad"
+            ]
+          }
+        ],
         "tags": [
           "Subscription"
         ],
@@ -2965,11 +2994,30 @@
       },
       "get": {
         "operationId": "get-webhooks",
+        "security": [
+          {
+            "apxOAuth": [
+              "apx.subscriptions:manage"
+            ]
+          },
+          {
+            "oAuth": [
+              "po",
+              "sp",
+              "ad"
+            ]
+          }
+        ],
         "tags": [
           "Subscription"
         ],
         "summary": "List subscriptions (APX additive operation)",
         "description": "Lists subscriptions visible to the caller. Secrets are never returned.",
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/page"
+          }
+        ],
         "responses": {
           "200": {
             "description": "Paginated subscription list (APDS PaginatedList shape).",
@@ -2997,6 +3045,9 @@
           },
           "403": {
             "$ref": "#/components/responses/Forbidden"
+          },
+          "429": {
+            "$ref": "#/components/responses/TooManyRequests"
           }
         }
       }
@@ -3015,6 +3066,20 @@
       ],
       "patch": {
         "operationId": "patch-webhooks-id",
+        "security": [
+          {
+            "apxOAuth": [
+              "apx.subscriptions:manage"
+            ]
+          },
+          {
+            "oAuth": [
+              "po",
+              "sp",
+              "ad"
+            ]
+          }
+        ],
         "tags": [
           "Subscription"
         ],
@@ -3055,6 +3120,20 @@
       },
       "delete": {
         "operationId": "delete-webhooks-id",
+        "security": [
+          {
+            "apxOAuth": [
+              "apx.subscriptions:manage"
+            ]
+          },
+          {
+            "oAuth": [
+              "po",
+              "sp",
+              "ad"
+            ]
+          }
+        ],
         "tags": [
           "Subscription"
         ],
@@ -3087,6 +3166,20 @@
     "/webhooks/{id}/deliveries": {
       "get": {
         "operationId": "get-webhooks-id-deliveries",
+        "security": [
+          {
+            "apxOAuth": [
+              "apx.subscriptions:manage"
+            ]
+          },
+          {
+            "oAuth": [
+              "po",
+              "sp",
+              "ad"
+            ]
+          }
+        ],
         "tags": [
           "Subscription"
         ],
@@ -3100,6 +3193,9 @@
             "schema": {
               "type": "string"
             }
+          },
+          {
+            "$ref": "#/components/parameters/page"
           }
         ],
         "responses": {
@@ -3110,6 +3206,9 @@
                 "schema": {
                   "type": "object",
                   "properties": {
+                    "meta": {
+                      "$ref": "#/components/schemas/PaginatedListMeta"
+                    },
                     "data": {
                       "type": "array",
                       "items": {
@@ -3136,6 +3235,9 @@
                 }
               }
             }
+          },
+          "429": {
+            "$ref": "#/components/responses/TooManyRequests"
           }
         }
       }
@@ -3143,6 +3245,13 @@
     "/v1/commands": {
       "post": {
         "operationId": "post-apx-v1-commands",
+        "security": [
+          {
+            "apxOAuth": [
+              "apx.control:execute"
+            ]
+          }
+        ],
         "tags": [
           "Control"
         ],
@@ -3169,6 +3278,16 @@
           }
         },
         "responses": {
+          "200": {
+            "description": "Idempotent replay — same key + same body returns the ORIGINAL command (Part 6 §6.1).",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Command"
+                }
+              }
+            }
+          },
           "202": {
             "description": "Command accepted for asynchronous execution.",
             "content": {
@@ -3189,8 +3308,11 @@
               }
             }
           },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
           "403": {
-            "description": "Insufficient scope or place grant.",
+            "description": "Insufficient scope or place grant (Part 9), the current\nresolution context evaluated the action as not allowed\n(`action-not-allowed`), or approval evidence is missing\n(`approval-required`) — Part 17 §17.3.",
             "content": {
               "application/problem+json": {
                 "schema": {
@@ -3208,6 +3330,19 @@
                 }
               }
             }
+          },
+          "422": {
+            "description": "Command expired before dispatch (`command-expired`) or unknown validation provider (`validation-provider-unknown`) — Part 12.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "429": {
+            "$ref": "#/components/responses/TooManyRequests"
           }
         }
       }
@@ -3215,6 +3350,13 @@
     "/v1/commands/{id}": {
       "get": {
         "operationId": "get-apx-v1-commands-id",
+        "security": [
+          {
+            "apxOAuth": [
+              "apx.control:read"
+            ]
+          }
+        ],
         "tags": [
           "Control"
         ],
@@ -3258,6 +3400,13 @@
     "/v1/commands/{id}/cancel": {
       "post": {
         "operationId": "post-apx-v1-commands-id-cancel",
+        "security": [
+          {
+            "apxOAuth": [
+              "apx.control:execute"
+            ]
+          }
+        ],
         "tags": [
           "Control"
         ],
@@ -3301,6 +3450,13 @@
     "/v1/lanes/{id}/current": {
       "get": {
         "operationId": "get-apx-v1-lanes-id-current",
+        "security": [
+          {
+            "apxOAuth": [
+              "apx.control:read"
+            ]
+          }
+        ],
         "tags": [
           "Control"
         ],
@@ -3345,6 +3501,13 @@
     "/v1/validations/providers": {
       "get": {
         "operationId": "get-apx-v1-validations-providers",
+        "security": [
+          {
+            "apxOAuth": [
+              "apx.control:read"
+            ]
+          }
+        ],
         "tags": [
           "Control"
         ],
@@ -3359,6 +3522,9 @@
               "type": "string",
               "format": "uuid"
             }
+          },
+          {
+            "$ref": "#/components/parameters/page"
           }
         ],
         "responses": {
@@ -3369,6 +3535,9 @@
                 "schema": {
                   "type": "object",
                   "properties": {
+                    "meta": {
+                      "$ref": "#/components/schemas/PaginatedListMeta"
+                    },
                     "data": {
                       "type": "array",
                       "items": {
@@ -3385,6 +3554,9 @@
           },
           "403": {
             "$ref": "#/components/responses/Forbidden"
+          },
+          "429": {
+            "$ref": "#/components/responses/TooManyRequests"
           }
         }
       }
@@ -3392,11 +3564,23 @@
     "/v1/devices": {
       "get": {
         "operationId": "get-apx-v1-devices",
+        "security": [
+          {
+            "apxOAuth": [
+              "apx.control:read"
+            ]
+          }
+        ],
         "tags": [
           "Control"
         ],
         "summary": "List device status overlays",
         "description": "Live DeviceStatus for every SupplementalEquipment the caller may see.",
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/page"
+          }
+        ],
         "responses": {
           "200": {
             "description": "Device status list.",
@@ -3405,6 +3589,9 @@
                 "schema": {
                   "type": "object",
                   "properties": {
+                    "meta": {
+                      "$ref": "#/components/schemas/PaginatedListMeta"
+                    },
                     "data": {
                       "type": "array",
                       "items": {
@@ -3421,6 +3608,9 @@
           },
           "403": {
             "$ref": "#/components/responses/Forbidden"
+          },
+          "429": {
+            "$ref": "#/components/responses/TooManyRequests"
           }
         }
       }
@@ -3428,6 +3618,13 @@
     "/v1/devices/{id}": {
       "get": {
         "operationId": "get-apx-v1-devices-id",
+        "security": [
+          {
+            "apxOAuth": [
+              "apx.control:read"
+            ]
+          }
+        ],
         "tags": [
           "Control"
         ],
@@ -3474,7 +3671,7 @@
       "post": {
         "operationId": "receive-apx-event",
         "summary": "Signed APX event delivery",
-        "description": "Every webhook delivery POSTs one EventEnvelope with headers\n`APX-Signature` (v1=HMAC-SHA256(secret, timestamp + \".\" + body)),\n`APX-Timestamp` (RFC 3339, ±5 min replay window), and\n`APX-Delivery-Id` (unique per attempt; envelope `id` is stable\nacross retries). Respond 2xx to acknowledge; anything else triggers\nthe normative retry schedule (Part 8).",
+        "description": "Every webhook delivery POSTs one EventEnvelope with headers\n`APX-Signature` (v1=HMAC-SHA256(secret, timestamp + \".\" + body)),\n`APX-Timestamp` (RFC 3339, ±5 min replay window),\n`APX-Delivery-Id` (unique per attempt; envelope `id` is stable\nacross retries), and `APX-Key-Id` (REQUIRED during secret-rotation\noverlap windows — Part 9 §9.4). Respond 2xx to acknowledge;\nanything else triggers the normative retry schedule (Part 8).",
         "requestBody": {
           "content": {
             "application/json": {
@@ -3510,7 +3707,7 @@
       },
       "apxOAuth": {
         "type": "oauth2",
-        "description": "OAuth 2.0 client-credentials (aligned with APDS 4.1's `oAuth` scheme).\nAPX scopes follow `apx.<domain>:<verb>`. Grants are carried in the\nnormative token claims `apx_org` (Organisation reference) and\n`apx_places` (HierarchyElement UUID subtree grants; absent = all).",
+        "description": "OAuth 2.0 client-credentials (aligned with APDS 4.1's `oAuth` scheme).\nAPX scopes follow `apx.<domain>:<verb>`. Grants are carried in the\nnormative token claims `apx_org` (Organisation reference) and\n`apx_places` (HierarchyElement subtree grants — FAIL-CLOSED: absent\nor empty = no places; the explicit wildcard \"*\" = all places,\nPart 9 §9.3).",
         "flows": {
           "clientCredentials": {
             "tokenUrl": "https://auth.example.com/oauth2/token",
@@ -3527,7 +3724,9 @@
               "apx.lpr:read": "LPR plate/ticket cross-lookup",
               "apx.reservations:manage": "Quote, book, amend, cancel reservations",
               "apx.permits:manage": "Issue and manage permits",
-              "apx.tolling:manage": "Create and manage toll transactions"
+              "apx.tolling:manage": "Create and manage toll transactions",
+              "apx.resolution:read": "Resolve and read customer-service resolution contexts and allowed actions",
+              "apx.support:manage": "Record and read support-interaction history"
             }
           }
         }
@@ -3651,6 +3850,14 @@
           "cursor": {
             "type": "string",
             "description": "Opaque cursor to resume AFTER the last change in this page."
+          },
+          "grantAdditions": {
+            "type": "array",
+            "description": "Present on the first page served after the credential's apx_places\ngrant gained subtrees (Part 5 §5.2 rule 7): the new subtree roots.\nThe client MUST full-sync these subtrees before relying on the\nfeed for them — the cursor does not retroactively cover their\nhistory.",
+            "items": {
+              "type": "string",
+              "format": "uuid"
+            }
           },
           "next": {
             "type": [
@@ -4766,7 +4973,20 @@
           },
           "secret": {
             "type": "string",
-            "description": "HMAC signing secret (write-only; server-generated when absent and\nreturned once in the creation response)."
+            "description": "HMAC signing secret (≥32 bytes of entropy, used as raw UTF-8 key\nmaterial). Server-generated when absent and returned EXACTLY ONCE —\nin the Prefer=representation creation response. Never present in\nGET/PATCH responses."
+          },
+          "secretRef": {
+            "type": "string",
+            "writeOnly": true,
+            "description": "Identifier of an out-of-band-exchanged secret (Part 9 §9.4) —\nsupply INSTEAD of `secret` when key material must never transit\nthe API. Never a secret value itself."
+          },
+          "activeKeyIds": {
+            "type": "array",
+            "readOnly": true,
+            "description": "Identifiers of the currently valid signing keys — two entries\nduring a rotation overlap window, matching deliveries' APX-Key-Id\nheader (Part 9 §9.4).",
+            "items": {
+              "type": "string"
+            }
           },
           "status": {
             "type": "string",
@@ -4872,6 +5092,18 @@
             "type": "string",
             "description": "Free-text or code-list reason for the action (audit)."
           },
+          "resolutionContext": {
+            "description": "The ResolutionContext this command resolves (Part 17) — links the action into the interaction's audit chain.",
+            "$ref": "#/components/schemas/Reference"
+          },
+          "correlationId": {
+            "type": "string",
+            "format": "uuid",
+            "description": "Correlation chain id (Part 17 §17.7) — one id connects call → context → command → events → support interaction."
+          },
+          "approval": {
+            "$ref": "#/components/schemas/Approval"
+          },
           "expiryTime": {
             "description": "Commands are perishable — MUST NOT be dispatched after this instant.",
             "$ref": "#/components/schemas/DateTime"
@@ -4898,6 +5130,16 @@
               "cancelled"
             ],
             "readOnly": true
+          },
+          "confirmationLevel": {
+            "type": "string",
+            "enum": [
+              "accepted",
+              "deviceAcknowledged",
+              "physicallyConfirmed"
+            ],
+            "readOnly": true,
+            "description": "How far success is actually confirmed (Part 6 §6.1): the command was\naccepted; the device acknowledged it; or the physical outcome was\nverified (e.g. gate-state sensor). Consumers — AI agents especially —\nMUST NOT claim a physical outcome (\"the gate is open\") beyond this\nlevel (\"the open command was accepted\")."
           },
           "statusHistory": {
             "type": "array",
@@ -6678,6 +6920,26 @@
           "lastUpdateUser": {
             "type": "string",
             "description": "Human or system principal that last updated the record."
+          }
+        }
+      },
+      "Approval": {
+        "title": "Approval",
+        "description": "Approval evidence, REQUIRED on a write whose AllowedAction said\nrequiresApproval (Part 17 §17.3). Servers MUST reject a\nrequires-approval action without it (403 approval-required). One shared\nshape for control commands and domain actions (e.g. refunds).",
+        "type": "object",
+        "required": [
+          "approvedBy"
+        ],
+        "properties": {
+          "approvedBy": {
+            "type": "string",
+            "description": "The approving principal (role per AllowedAction.approvalRole)."
+          },
+          "approvedAt": {
+            "$ref": "#/components/schemas/DateTime"
+          },
+          "note": {
+            "type": "string"
           }
         }
       },
@@ -9406,6 +9668,25 @@
       },
       "Forbidden": {
         "description": "Insufficient scope (problem type `insufficient-scope`) or place\ngrant (`insufficient-grant`) for this operation (Part 9).",
+        "content": {
+          "application/problem+json": {
+            "schema": {
+              "$ref": "#/components/schemas/Problem"
+            }
+          }
+        }
+      },
+      "TooManyRequests": {
+        "description": "Rate limited (problem type `rate-limited`, Part 12).",
+        "headers": {
+          "Retry-After": {
+            "description": "Seconds to wait before retrying (RFC 9110).",
+            "schema": {
+              "type": "integer",
+              "minimum": 0
+            }
+          }
+        },
         "content": {
           "application/problem+json": {
             "schema": {

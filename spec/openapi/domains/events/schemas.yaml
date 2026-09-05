@@ -49,8 +49,25 @@ ApxEventSubscription:
     secret:
       type: string
       description: |-
-        HMAC signing secret (write-only; server-generated when absent and
-        returned once in the creation response).
+        HMAC signing secret (≥32 bytes of entropy, used as raw UTF-8 key
+        material). Server-generated when absent and returned EXACTLY ONCE —
+        in the Prefer=representation creation response. Never present in
+        GET/PATCH responses.
+    secretRef:
+      type: string
+      writeOnly: true
+      description: |-
+        Identifier of an out-of-band-exchanged secret (Part 9 §9.4) —
+        supply INSTEAD of `secret` when key material must never transit
+        the API. Never a secret value itself.
+    activeKeyIds:
+      type: array
+      readOnly: true
+      description: |-
+        Identifiers of the currently valid signing keys — two entries
+        during a rotation overlap window, matching deliveries' APX-Key-Id
+        header (Part 9 §9.4).
+      items: { type: string }
     status:
       type: string
       enum: [active, paused, failed]

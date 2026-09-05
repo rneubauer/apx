@@ -44,12 +44,35 @@ npm test        # the full gate: vendor, registries, lint, bundle, profile,
 3. For normative changes: a sentence in the PR description on APDS
    alignment — what APDS defines today, why this is additive.
 
-## Licensing
+## Governance
+
+- **Today:** Umojo stewards the specification; changes merge per the PR
+  gates above. Registry entries follow the registration-authority policy
+  in Part 11 §11.3 (open to anyone, 60-day decision, appeal path).
+- **Intended end state:** shared industry governance. The submission goal
+  is adoption by the Alliance for Parking Data Standards; on adoption,
+  change control and the registration authority transfer to the APDS
+  process, and Part 3 §3.3(8) governs reconciliation of anything APDS
+  standardizes natively in the meantime. Until then, substantial
+  proposals from other vendors/operators are decided in the open on the
+  issue tracker, with rejections reasoned in writing.
+- **Editions:** maintainers cut editions (Part 3 §3.2/§3.5); every
+  edition's normative artifacts are tagged in git and immutable once
+  published.
+
+## Licensing and IPR
 
 APX is MIT-licensed. By submitting a contribution you agree it is licensed
 under the repository's MIT license. Portions reference the APDS API
 Specification (MIT, © Alliance for Parking Data Standards); nothing in a
 contribution may modify vendored APDS artifacts.
+
+*Patent intent (subject to formal legal review before any standards-body
+submission):* the steward intends that implementing APX requires no
+royalty — contributions are accepted on the understanding that any
+essential claims a contributor holds are made available royalty-free
+(RAND-Z) to implementers of the specification. A formal declaration will
+accompany the standards-body submission.
 
 ## Questions and proposals
 

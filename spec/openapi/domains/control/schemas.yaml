@@ -45,6 +45,15 @@ Command:
     reason:
       type: string
       description: Free-text or code-list reason for the action (audit).
+    resolutionContext:
+      description: The ResolutionContext this command resolves (Part 17) — links the action into the interaction's audit chain.
+      $ref: "../../../vendor/apds/4.1/apds-api-4.1.yaml#/components/schemas/Reference"
+    correlationId:
+      type: string
+      format: uuid
+      description: Correlation chain id (Part 17 §17.7) — one id connects call → context → command → events → support interaction.
+    approval:
+      $ref: "#/Approval"
     expiryTime:
       description: Commands are perishable — MUST NOT be dispatched after this instant.
       $ref: "../../../vendor/apds/4.1/apds-api-4.1.yaml#/components/schemas/DateTime"
@@ -56,6 +65,16 @@ Command:
       type: string
       enum: [received, accepted, rejected, dispatched, executing, succeeded, failed, expired, cancelled]
       readOnly: true
+    confirmationLevel:
+      type: string
+      enum: [accepted, deviceAcknowledged, physicallyConfirmed]
+      readOnly: true
+      description: |-
+        How far success is actually confirmed (Part 6 §6.1): the command was
+        accepted; the device acknowledged it; or the physical outcome was
+        verified (e.g. gate-state sensor). Consumers — AI agents especially —
+        MUST NOT claim a physical outcome ("the gate is open") beyond this
+        level ("the open command was accepted").
     statusHistory:
       type: array
       description: Immutable, append-only lifecycle audit — THE audit trail (Part 4 §4.2).
@@ -72,6 +91,24 @@ Command:
       $ref: "../common/schemas.yaml#/RecordInfo"
     extensions:
       $ref: "../common/schemas.yaml#/Extensions"
+
+Approval:
+  title: Approval
+  description: |-
+    Approval evidence, REQUIRED on a write whose AllowedAction said
+    requiresApproval (Part 17 §17.3). Servers MUST reject a
+    requires-approval action without it (403 approval-required). One shared
+    shape for control commands and domain actions (e.g. refunds).
+  type: object
+  required: [approvedBy]
+  properties:
+    approvedBy:
+      type: string
+      description: The approving principal (role per AllowedAction.approvalRole).
+    approvedAt:
+      $ref: "../../../vendor/apds/4.1/apds-api-4.1.yaml#/components/schemas/DateTime"
+    note:
+      type: string
 
 DeviceStatus:
   title: DeviceStatus

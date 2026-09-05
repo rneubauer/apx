@@ -34,7 +34,8 @@ CloudEvents-aligned). For APDS EventTypeEnum topics, `data` is the APDS
 - HTTP POST of the envelope JSON to the subscription endpoint.
 - Headers: `APX-Signature: v1=<hex HMAC-SHA256(secret, timestamp + "." + body)>`,
   `APX-Timestamp` (RFC 3339), `APX-Delivery-Id` (UUID, new per attempt),
-  `Content-Type: application/json`.
+  `APX-Key-Id` (REQUIRED during secret-rotation overlap windows, else
+  optional — Part 9 §9.4), `Content-Type: application/json`.
 - Receivers MUST verify the signature and reject deliveries outside a
   ±5 minute timestamp window.
 - Success = any 2xx response. Anything else triggers the retry schedule:

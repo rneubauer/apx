@@ -45,6 +45,22 @@ Rules:
 3. When no cursor is held, clients use the NATIVE `modified_since`
    parameter (stock APDS) and then switch to cursors.
 4. Tombstones MUST be emitted for deletes and retained for the same window.
+5. **Cursor scope.** A cursor is scoped to (entity class, credential,
+   filter set). Presenting a cursor with a different filter set or from a
+   different credential yields problem `target-not-found`; the client
+   re-syncs. Cursors are server-local: they never survive a move to a
+   different implementation (Part 18).
+6. **Filtered feeds.** `mode=change` composes with the native APDS filters
+   (e.g. `place_ids`): the resulting feed MUST be ordered and gapless
+   *within that filter set* — every change to an entity matching the
+   filter appears exactly once. Grants compose the same way: the feed a
+   credential sees is gapless within its `apx_places` world.
+7. **Grant expansion.** When a credential's `apx_places` grant later gains
+   a subtree, existing cursors DO NOT retroactively include the new
+   subtree's history. Servers MUST signal this by including the new
+   subtree roots in `ChangeFeedPage.grantAdditions` on the first page
+   served after the change; the client then runs `mode=full` for those
+   subtrees before relying on the feed for them.
 
 **Machine-readability (normative).** The `mode`/`cursor` parameters and the
 `ChangeFeedPage` response alternate are declared by the APX data-profile

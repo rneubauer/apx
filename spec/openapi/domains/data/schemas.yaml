@@ -37,6 +37,17 @@ ChangeFeedPage:
     cursor:
       type: string
       description: Opaque cursor to resume AFTER the last change in this page.
+    grantAdditions:
+      type: array
+      description: |-
+        Present on the first page served after the credential's apx_places
+        grant gained subtrees (Part 5 §5.2 rule 7): the new subtree roots.
+        The client MUST full-sync these subtrees before relying on the
+        feed for them — the cursor does not retroactively cover their
+        history.
+      items:
+        type: string
+        format: uuid
     next:
       type: [string, "null"]
       format: uri-reference

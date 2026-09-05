@@ -48,7 +48,7 @@ The result: every PARCS, LPR, tolling, permitting, and reservations vendor still
 **v1 draft complete.** The standard ships as two artifacts, in one repository:
 
 1. **The specification** — machine-readable OpenAPI 3.1 (imports directly into Postman/Swagger), fully validated and linted
-2. **The written standard** — 17 normative parts (RFC 2119) covering every domain, plus registries, profiles, and implementer guides
+2. **The written standard** — 19 normative parts (RFC 2119) covering every domain, plus registries, profiles, and implementer guides
 
 All automated spec checks pass: vendor integrity, linting, bundling, style conventions, and example validation.
 

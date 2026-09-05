@@ -1,0 +1,20 @@
+{
+  "id": "5a6b7c8d-9e0f-4a1b-8c2d-3e4f5a6b7c8d",
+  "version": 1,
+  "name": "apx-issue-types",
+  "creator": { "id": "a1000000-0000-4000-8000-000000000001", "className": "Organisation" },
+  "locator": "https://apx-standard.org/registries/apx-issue-types.json",
+  "userDefinedCodeListEntries": [
+    { "definedValue": "gateVendFailed", "entryDescription": "Customer paid or is entitled to exit but the gate did not open.", "entryIndex": 0 },
+    { "definedValue": "paymentDeclined", "entryDescription": "The customer's payment was declined or failed at the lane/pay station.", "entryIndex": 1 },
+    { "definedValue": "validationMissing", "entryDescription": "An expected validation/discount is not applied to the session.", "entryIndex": 2 },
+    { "definedValue": "rateDispute", "entryDescription": "The amount due does not match the expected rate calculation.", "entryIndex": 3 },
+    { "definedValue": "lostTicket", "entryDescription": "The customer cannot present the entry ticket.", "entryIndex": 4 },
+    { "definedValue": "passbackViolation", "entryDescription": "A credential was denied because of anti-passback state.", "entryIndex": 5 },
+    { "definedValue": "accountBalanceDenied", "entryDescription": "A monthly/account holder was denied because of an outstanding balance or account status.", "entryIndex": 6 },
+    { "definedValue": "reservationMismatch", "entryDescription": "A prepaid reservation exists but is not linked to the current session (wrong or unread plate, unscanned code).", "entryIndex": 7 },
+    { "definedValue": "plateUnresolved", "entryDescription": "The session has no plate or a low-confidence/incorrect plate association.", "entryIndex": 8 },
+    { "definedValue": "equipmentFault", "entryDescription": "A lane device (payment terminal, ticket reader, gate, intercom, camera) is offline or faulted.", "entryIndex": 9 },
+    { "definedValue": "unknown", "entryDescription": "The issue could not be classified from available signals.", "entryIndex": 10 }
+  ]
+}

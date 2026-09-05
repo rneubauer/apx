@@ -20,13 +20,18 @@ Base URI: `https://apx-standard.org/problems/`
 | `id-collision` | 409 | Client-supplied UUID already exists (APDS convention) |
 | `version-conflict` | 409 | Update targets a stale object version |
 | `command-expired` | 422 | Command `expiryTime` passed before dispatch |
-| `command-not-cancellable` | 409 | Cancel requested after a terminal state |
+| `command-not-cancellable` | 409 | Cancel requested at `dispatched` or later (Part 6 §6.1) |
 | `unknown-topic` | 400 | Subscription references an unregistered topic |
 | `subscription-failed` | 410 | Operation on a subscription in `failed` state |
 | `target-not-found` | 404 | Referenced APDS/APX entity does not exist |
 | `validation-provider-unknown` | 422 | applyValidation names a provider not offered at the place |
 | `payment-declined` | 422 | Take-payment attempt declined by the payment layer |
 | `dispute-closed` | 409 | Toll dispute operation on a closed dispute |
+| `pool-exhausted` | 409 | Permit issuance against an exhausted RightPool (Part 14 §14.2) |
+| `right-not-linkable` | 409 | AssignedRight already consumed, outside validity, or wrong place (Part 14 §14.1b) |
+| `action-not-allowed` | 403 | Execution of an action the current resolution context evaluated as not allowed (Part 17 §17.3) |
+| `approval-required` | 403 | Requires-approval action executed without approval evidence (Part 17 §17.3) |
+| `rate-limited` | 429 | Throttled; response carries `Retry-After` (§12.3) |
 
 Problem responses SHOULD include `detail` and MAY carry additional members
 (RFC 9457 extension members), including an `extensions` container.

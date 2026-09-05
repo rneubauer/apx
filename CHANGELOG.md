@@ -6,6 +6,54 @@ conformance/versioning rules in Part 3 of the written standard.
 The machine-readable spec (`spec/openapi/apx.yaml`, bundled as
 `spec/dist/apx-v1.*`) is normative; entries here are informative.
 
+## [0.3.0] — 2026-09-05
+
+Customer Service & Resolution (Part 17, class `apx-resolution`) plus the
+API-mechanics hardening pass. Highlights: one aggregated resolution-context
+call with policy-decided allowed actions ("the LLM is never the policy
+engine"), anti-passback, plate correction, payment links/refunds, support
+history, opaque `interactionId` (no telephony in the PARCS contract),
+`confirmationLevel` honesty on commands, scenarios 08–15, APDS 4.1
+upstream-pin + strictness-audit fixes, per-operation OAuth scopes on all 47
+APX operations, request bodies on the formerly body-less POSTs, uniform
+idempotent-replay/401/403/409/422/429 declarations, APDS `page` +
+`PaginatedListMeta` pagination on every APX list, `spectral:oas` base
+ruleset, and an openapi-typescript codegen smoke test in `npm test`
+(new dev dependency). Second documented APDS erratum (invalid
+`/observations` example).
+
+Multi-site semantics (Block B): identifier locality + aggregation alias
+convention via `operatorDefinedReference` (Part 4 §4.1a; Part 2 UUID claim
+scoped to APX resources); change-feed cursor scope, filtered-feed
+gaplessness, and grant-expansion signaling via `ChangeFeedPage.grantAdditions`
+(Part 5 §5.2 rules 5–7); **BREAKING:** `apx_places` is now fail-closed —
+absent/empty = no places, explicit `"*"` = all (Part 9 §9.3, discovery
+aligned); webhook secret hygiene — `secretRef`, `activeKeyIds`, `APX-Key-Id`
+header required during rotation overlap, minimum secret entropy (Part 9
+§9.4, Part 8 §8.3); new Part 18 "Aggregation and Onboarding" — the
+standalone-site → platform transition (identity survival, credential,
+subscriptions, cursors, cutover, `EventEnvelope.source` change).
+
+Committee packaging (Block C): Annex A — numbered conformance requirements
+(`APX-<CLASS>-<NN>`) for all 14 classes + cross-cutting core, and the ICS
+template; Part 3 — class dependency table, APX→APDS reconciliation clause
+(§3.3(8)), and the APDS version policy (§3.5: one release per edition,
+re-vendor = new edition, no in-band negotiation); Part 13 §13.6 —
+normative PaymentRecord ↔ APDS Payment field mapping with the
+materialization rule; Part 11 §11.3 — open registration authority (60-day
+decisions, appeal path); CONTRIBUTING — governance/end-state and patent
+intent (pending legal review); draft submission cover letter
+(docs/submission-cover-letter.md).
+
+Final review decisions: explicit reservation↔session link for
+barcode-only reservations (`PUT /v1/sessions/{id}/assigned-right`,
+Part 14 §14.1b, materializing into `segments[].assignedRight`); per-ticket
+price adjustment formally answered by validations/discounts — no raw
+override, by design (Part 6 §6.3); problem registry completed
+(pool-exhausted, right-not-linkable, action-not-allowed,
+approval-required, rate-limited; command-not-cancellable aligned with
+Part 6); Reservations tag added.
+
 ## [0.2.0] — 2026-09-02
 
 Submission-readiness revision: fixes the seven blockers from the

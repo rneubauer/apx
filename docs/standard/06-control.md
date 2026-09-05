@@ -28,6 +28,12 @@ actuation. This Part adds it, referencing APDS entities throughout.
 - The response is `202` with the Command in state `received`/`accepted` —
   richer than a bare success/failure boolean because execution is
   asynchronous and audited.
+- `confirmationLevel` distinguishes how far success is physically
+  confirmed: `accepted` (command taken), `deviceAcknowledged` (device
+  acked), `physicallyConfirmed` (outcome verified, e.g. gate-state
+  sensor). Consumers MUST NOT report an outcome stronger than this level —
+  an agent may say "the gate is open" only at `physicallyConfirmed`
+  (Part 17 §17.4).
 
 **Lifecycle:** `received → accepted | rejected → dispatched → executing →
 succeeded | failed | expired | cancelled`. Every transition appends to the
@@ -75,6 +81,14 @@ screenshot link — an APDS Observation), and monthly-credential context
   whose `provider` is not on the place's provider list with
   `422 validation-provider-unknown` — the list is authoritative, not
   advisory.
+- **Per-ticket price adjustment (design rule):** validations and discounts
+  ARE the sanctioned mechanism for adjusting one ticket's amount due —
+  auditable, provider-bound, and policy-gated. APX deliberately defines NO
+  raw single-ticket price override: the rate deck stays authoritative
+  (corrected, when wrong, via `pushRate`), and every reduction on a
+  specific ticket is attributable to a named validation provider or
+  discount on the audit record. Revenue integrity by construction, not by
+  operator discipline.
 - **APDS alignment (informative):** APDS 4.1 records that a validation
   *happened* (`PaymentTypeEnum: validation`, `Segment.validationType/
   validationId`, `RateTable.validation`) but defines no provider registry —

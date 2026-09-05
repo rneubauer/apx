@@ -45,6 +45,24 @@ an APX endpoint speaks only for the system behind it. Therefore:
    accept an optional `place` parameter so aggregating implementations
    (one endpoint fronting many locations) can scope results per location.
 
+## 14.1b Linking a reservation to a session (normative)
+
+At LPR-equipped facilities the plate IS the link: correcting the session's
+plate (Part 17 §17.5) lets the implementation's own matching bind the
+prepaid AssignedRight. Where no plate can carry the association —
+barcode-only reservations, unreadable plates — the explicit link exists:
+
+- `PUT /v1/sessions/{id}/assigned-right` (scope `apx.reservations:manage`)
+  binds the session to the AssignedRight, optionally recording the
+  presented `reservationCode` as audit evidence. Naturally idempotent.
+- **Materialization:** the link MUST land in the underlying APDS Session
+  (`segments[].assignedRight`), MUST publish `SessionUpdated`, and MUST be
+  visible to plain APDS clients — a façade over APDS-modeled state.
+- An AssignedRight already consumed by another session, outside its
+  validity window, or for another place is `409` (problem
+  `right-not-linkable`); pricing consequences follow from the link via the
+  implementation's normal rating.
+
 ## 14.2 `apx-permits`
 
 Permits = pooled RightSpecifications:

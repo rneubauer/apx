@@ -22,6 +22,25 @@ integration over live PARCS state.
   ID to the AR system and returns `{confirmationNumber, accountUpdated,
   newBalance}`.
 
+## 13.1a Payment lifecycle and payment links (financial actions)
+
+Customer-service financial actions are domain operations here — never
+control commands (Part 17 §17.4):
+
+- `POST /v1/payment-links` — send a hosted payment link (sms/email) for an
+  account, ticket, or session; returns the `PaymentLink` lifecycle
+  resource (`sent → opened → paid | expired | cancelled`). The action of
+  first resort when policy blocks a gate override. APX never carries PANs;
+  `sentTo` is masked.
+- `POST /v1/payments/{id}/refund` — full, or partial per `amount`.
+  Refunds SHOULD require approval by default operator policy; approval
+  evidence rides the request when the resolution context demanded it.
+- `POST /v1/payments/{id}/void` / `POST /v1/payments/{id}/capture` —
+  authorization lifecycle where the implementation models it.
+
+All four take a REQUIRED `Idempotency-Key`. Completion of a link-initiated
+payment publishes `apx.accounts.payment.recorded.v1` like any other.
+
 ## 13.2 `apx-payment-history`
 
 - `GET /v1/payments?ticketLast4=&cardLast4=&date=` — payments made on a
@@ -89,3 +108,33 @@ per location when one endpoint fronts many places (Part 8 §8.5, Part 9
 3. Implementations MAY additionally accept a `place` query parameter on
    these lookups to narrow results below the grant (the pattern
    established by `/v1/reservations/recent`, Part 14 §14.1a).
+
+## 13.6 PaymentRecord ↔ APDS Payment mapping (normative)
+
+APDS 4.1 defines `Payment` — a settled-payment *record* embedded in the
+rights/session model, requiring `serviceProvider` and `paymentLines[]`.
+APX's `PaymentRecord` is not a parallel definition of that concept but the
+*action record* of taking a payment: addressable, idempotent, and able to
+represent outcomes APDS's Payment cannot (declined, reversed). The two
+relate field-by-field:
+
+| APX `PaymentRecord` | APDS `Payment` | Note |
+|---|---|---|
+| `id` / `version` | `VersionedIdentity` (allOf) | same identity shape |
+| `transactionID` | `transactionID` | identical meaning |
+| `dateCollected` | `dateCollected` | identical (`dateAuthorised` has no APX field; authorization time is the record's creation) |
+| `amount` | `paymentLines[].value` summed | APX carries the total; line itemization stays APDS-side |
+| `method` | — | APX-only (PCI-safe method label; APDS has no per-payment method) |
+| `paymentStatus` | — | APX-only; APDS Payment records only collected payments — `approved` is the only state that maps |
+| `account` | `idCode` / RightHolder linkage | correlation, not identity |
+| `place` | — | APX-only site binding (§13.5) |
+| `ticketNumber`, `cardLast4`, `postings` | — | APX-only call-center/AR surface |
+| — | `serviceProvider` | APDS-required; populated by the implementation when materializing |
+
+**Materialization rule:** an implementation that persists APDS `Payment`
+entities MUST materialize every `approved` PaymentRecord as (or bind it
+to) a native `Payment` with a `paymentLines` entry of `paymentType:
+payment` and `value` = `amount`, so plain APDS consumers see the money
+without speaking APX. Declined and reversed records exist only on the APX
+surface — APDS has no vocabulary for them, which is precisely the gap
+`PaymentRecord` fills.

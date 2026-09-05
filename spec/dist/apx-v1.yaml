@@ -1,7 +1,7 @@
 openapi: 3.1.0
 info:
   title: APX — APDS Parking eXtensions
-  version: 0.2.0
+  version: 0.3.0
   summary: An open companion standard to APDS 4.1
   description: |-
     **APX (APDS Parking eXtensions)** is an additive companion standard to the
@@ -69,8 +69,17 @@ tags:
     description: Plate/ticket cross-lookup over APDS Observations. See written standard Part 13.
   - name: Permits
     description: Pooled permit issuance over RightSpecification/RightPool. See written standard Part 14.
+  - name: Reservations
+    description: Reservation conventions over native Quote/AssignedRight routes. See written standard Part 14.
   - name: Tolling
     description: Toll transactions binding Observations to pricing and Payments. See written standard Part 15.
+  - name: Resolution
+    description: |-
+      Customer Service & Resolution (optional class apx-resolution) — one
+      aggregated context call plus policy-decided allowed actions. Writes go
+      through the Part 6 command plane. See written standard Part 17.
+  - name: Support
+    description: Support-interaction history for resolution contexts. See written standard Part 17.
 paths:
   /places:
     get:
@@ -110,17 +119,13 @@ paths:
         - $ref: '#/components/parameters/modified_since'
         - $ref: '#/components/parameters/places_expand'
         - $ref: '#/components/parameters/page'
-        - $ref: '#/components/parameters/ModeParam'
-        - $ref: '#/components/parameters/CursorParam'
       responses:
         '200':
           description: Ok
           content:
             application/json:
               schema:
-                oneOf:
-                  - $ref: '#/components/schemas/HierarchyElementList'
-                  - $ref: '#/components/schemas/ChangeFeedPage'
+                $ref: '#/components/schemas/HierarchyElementList'
     post:
       summary: Create Place
       security:
@@ -958,17 +963,13 @@ paths:
         - $ref: '#/components/parameters/rates_expand'
         - $ref: '#/components/parameters/issuer'
         - $ref: '#/components/parameters/page'
-        - $ref: '#/components/parameters/ModeParam'
-        - $ref: '#/components/parameters/CursorParam'
       responses:
         '200':
           description: OK
           content:
             application/json:
               schema:
-                oneOf:
-                  - $ref: '#/components/schemas/RateTableList'
-                  - $ref: '#/components/schemas/ChangeFeedPage'
+                $ref: '#/components/schemas/RateTableList'
     post:
       summary: Create RateTable
       security:
@@ -1190,17 +1191,13 @@ paths:
         - $ref: '#/components/parameters/modified_since'
         - $ref: '#/components/parameters/sessions_expand'
         - $ref: '#/components/parameters/page'
-        - $ref: '#/components/parameters/ModeParam'
-        - $ref: '#/components/parameters/CursorParam'
       responses:
         '200':
           description: OK
           content:
             application/json:
               schema:
-                oneOf:
-                  - $ref: '#/components/schemas/SessionList'
-                  - $ref: '#/components/schemas/ChangeFeedPage'
+                $ref: '#/components/schemas/SessionList'
     post:
       summary: Create Session
       security:
@@ -1458,17 +1455,13 @@ paths:
         - $ref: '#/components/parameters/modified_since'
         - $ref: '#/components/parameters/assigned_expand'
         - $ref: '#/components/parameters/page'
-        - $ref: '#/components/parameters/ModeParam'
-        - $ref: '#/components/parameters/CursorParam'
       responses:
         '200':
           description: OK
           content:
             application/json:
               schema:
-                oneOf:
-                  - $ref: '#/components/schemas/AssignedRightList'
-                  - $ref: '#/components/schemas/ChangeFeedPage'
+                $ref: '#/components/schemas/AssignedRightList'
     post:
       summary: Create AssignedRight
       security:
@@ -1739,6 +1732,9 @@ paths:
   /v1/places/{id}/occupancy:
     get:
       operationId: get-apx-v1-places-id-occupancy
+      security:
+        - apxOAuth:
+            - apx.data:read
       tags:
         - Data
       summary: Current occupancy snapshot for a place element
@@ -1774,6 +1770,13 @@ paths:
   /webhooks:
     post:
       operationId: post-webhooks
+      security:
+        - apxOAuth:
+            - apx.subscriptions:manage
+        - oAuth:
+            - po
+            - sp
+            - ad
       tags:
         - Subscription
       summary: Subscribe to event topics (APDS-compatible superset)
@@ -1840,10 +1843,19 @@ paths:
                 $ref: '#/components/schemas/Problem'
     get:
       operationId: get-webhooks
+      security:
+        - apxOAuth:
+            - apx.subscriptions:manage
+        - oAuth:
+            - po
+            - sp
+            - ad
       tags:
         - Subscription
       summary: List subscriptions (APX additive operation)
       description: Lists subscriptions visible to the caller. Secrets are never returned.
+      parameters:
+        - $ref: '#/components/parameters/page'
       responses:
         '200':
           description: Paginated subscription list (APDS PaginatedList shape).
@@ -1862,6 +1874,8 @@ paths:
           $ref: '#/components/responses/Unauthorized'
         '403':
           $ref: '#/components/responses/Forbidden'
+        '429':
+          $ref: '#/components/responses/TooManyRequests'
   /webhooks/{id}:
     parameters:
       - name: id
@@ -1872,6 +1886,13 @@ paths:
         description: Unique identifier for the existing subscription
     patch:
       operationId: patch-webhooks-id
+      security:
+        - apxOAuth:
+            - apx.subscriptions:manage
+        - oAuth:
+            - po
+            - sp
+            - ad
       tags:
         - Subscription
       summary: Update a subscription (APX additive operation)
@@ -1897,6 +1918,13 @@ paths:
                 $ref: '#/components/schemas/Problem'
     delete:
       operationId: delete-webhooks-id
+      security:
+        - apxOAuth:
+            - apx.subscriptions:manage
+        - oAuth:
+            - po
+            - sp
+            - ad
       tags:
         - Subscription
       summary: Revoke (delete) existing subscription
@@ -1917,6 +1945,13 @@ paths:
   /webhooks/{id}/deliveries:
     get:
       operationId: get-webhooks-id-deliveries
+      security:
+        - apxOAuth:
+            - apx.subscriptions:manage
+        - oAuth:
+            - po
+            - sp
+            - ad
       tags:
         - Subscription
       summary: Delivery ledger for a subscription
@@ -1927,6 +1962,7 @@ paths:
           required: true
           schema:
             type: string
+        - $ref: '#/components/parameters/page'
       responses:
         '200':
           description: Delivery records.
@@ -1935,6 +1971,8 @@ paths:
               schema:
                 type: object
                 properties:
+                  meta:
+                    $ref: '#/components/schemas/PaginatedListMeta'
                   data:
                     type: array
                     items:
@@ -1949,9 +1987,14 @@ paths:
             application/problem+json:
               schema:
                 $ref: '#/components/schemas/Problem'
+        '429':
+          $ref: '#/components/responses/TooManyRequests'
   /v1/events/stream:
     get:
       operationId: get-apx-v1-events-stream
+      security:
+        - apxOAuth:
+            - apx.subscriptions:manage
       tags:
         - Subscription
       summary: Server-Sent Events stream (conformance class apx-events-sse)
@@ -1988,9 +2031,20 @@ paths:
             application/problem+json:
               schema:
                 $ref: '#/components/schemas/Problem'
+        '410':
+          description: Subscription exhausted its retry schedule and is failed (`subscription-failed`, Part 12).
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+        '429':
+          $ref: '#/components/responses/TooManyRequests'
   /v1/commands:
     post:
       operationId: post-apx-v1-commands
+      security:
+        - apxOAuth:
+            - apx.control:execute
       tags:
         - Control
       summary: Execute a command (idempotent, perishable, audited)
@@ -2013,6 +2067,12 @@ paths:
             schema:
               $ref: '#/components/schemas/Command'
       responses:
+        '200':
+          description: Idempotent replay — same key + same body returns the ORIGINAL command (Part 6 §6.1).
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Command'
         '202':
           description: Command accepted for asynchronous execution.
           content:
@@ -2025,8 +2085,14 @@ paths:
             application/problem+json:
               schema:
                 $ref: '#/components/schemas/Problem'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
         '403':
-          description: Insufficient scope or place grant.
+          description: |-
+            Insufficient scope or place grant (Part 9), the current
+            resolution context evaluated the action as not allowed
+            (`action-not-allowed`), or approval evidence is missing
+            (`approval-required`) — Part 17 §17.3.
           content:
             application/problem+json:
               schema:
@@ -2037,9 +2103,20 @@ paths:
             application/problem+json:
               schema:
                 $ref: '#/components/schemas/Problem'
+        '422':
+          description: Command expired before dispatch (`command-expired`) or unknown validation provider (`validation-provider-unknown`) — Part 12.
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+        '429':
+          $ref: '#/components/responses/TooManyRequests'
   /v1/commands/{id}:
     get:
       operationId: get-apx-v1-commands-id
+      security:
+        - apxOAuth:
+            - apx.control:read
       tags:
         - Control
       summary: Read a command (lifecycle + audit trail)
@@ -2067,6 +2144,9 @@ paths:
   /v1/commands/{id}/cancel:
     post:
       operationId: post-apx-v1-commands-id-cancel
+      security:
+        - apxOAuth:
+            - apx.control:execute
       tags:
         - Control
       summary: Cancel a command before dispatch
@@ -2094,10 +2174,15 @@ paths:
   /v1/devices:
     get:
       operationId: get-apx-v1-devices
+      security:
+        - apxOAuth:
+            - apx.control:read
       tags:
         - Control
       summary: List device status overlays
       description: Live DeviceStatus for every SupplementalEquipment the caller may see.
+      parameters:
+        - $ref: '#/components/parameters/page'
       responses:
         '200':
           description: Device status list.
@@ -2106,6 +2191,8 @@ paths:
               schema:
                 type: object
                 properties:
+                  meta:
+                    $ref: '#/components/schemas/PaginatedListMeta'
                   data:
                     type: array
                     items:
@@ -2114,9 +2201,14 @@ paths:
           $ref: '#/components/responses/Unauthorized'
         '403':
           $ref: '#/components/responses/Forbidden'
+        '429':
+          $ref: '#/components/responses/TooManyRequests'
   /v1/devices/{id}:
     get:
       operationId: get-apx-v1-devices-id
+      security:
+        - apxOAuth:
+            - apx.control:read
       tags:
         - Control
       summary: Read one device's status overlay
@@ -2144,6 +2236,9 @@ paths:
   /v1/lanes/{id}/current:
     get:
       operationId: get-apx-v1-lanes-id-current
+      security:
+        - apxOAuth:
+            - apx.control:read
       tags:
         - Control
       summary: Lane inquiry — current transaction context (screen-pop)
@@ -2175,6 +2270,9 @@ paths:
   /v1/validations/providers:
     get:
       operationId: get-apx-v1-validations-providers
+      security:
+        - apxOAuth:
+            - apx.control:read
       tags:
         - Control
       summary: List validation providers for a place
@@ -2186,6 +2284,7 @@ paths:
           schema:
             type: string
             format: uuid
+        - $ref: '#/components/parameters/page'
       responses:
         '200':
           description: Validation providers.
@@ -2194,6 +2293,8 @@ paths:
               schema:
                 type: object
                 properties:
+                  meta:
+                    $ref: '#/components/schemas/PaginatedListMeta'
                   data:
                     type: array
                     items:
@@ -2202,9 +2303,14 @@ paths:
           $ref: '#/components/responses/Unauthorized'
         '403':
           $ref: '#/components/responses/Forbidden'
+        '429':
+          $ref: '#/components/responses/TooManyRequests'
   /v1/tolling/transactions:
     post:
       operationId: post-apx-v1-tolling-transactions
+      security:
+        - apxOAuth:
+            - apx.tolling:manage
       tags:
         - Tolling
       summary: Create a toll transaction (idempotent)
@@ -2222,6 +2328,12 @@ paths:
             schema:
               $ref: '#/components/schemas/TollTransaction'
       responses:
+        '200':
+          description: Idempotent replay — same key + same body returns the ORIGINAL transaction.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TollTransaction'
         '201':
           description: Created toll transaction.
           content:
@@ -2244,8 +2356,13 @@ paths:
             application/problem+json:
               schema:
                 $ref: '#/components/schemas/Problem'
+        '429':
+          $ref: '#/components/responses/TooManyRequests'
     get:
       operationId: get-apx-v1-tolling-transactions
+      security:
+        - apxOAuth:
+            - apx.tolling:manage
       tags:
         - Tolling
       summary: List/filter toll transactions
@@ -2259,6 +2376,7 @@ paths:
           in: query
           schema:
             type: string
+        - $ref: '#/components/parameters/page'
       responses:
         '200':
           description: Matching transactions.
@@ -2267,6 +2385,8 @@ paths:
               schema:
                 type: object
                 properties:
+                  meta:
+                    $ref: '#/components/schemas/PaginatedListMeta'
                   data:
                     type: array
                     items:
@@ -2275,9 +2395,14 @@ paths:
           $ref: '#/components/responses/Unauthorized'
         '403':
           $ref: '#/components/responses/Forbidden'
+        '429':
+          $ref: '#/components/responses/TooManyRequests'
   /v1/tolling/transactions/{id}:
     get:
       operationId: get-apx-v1-tolling-transactions-id
+      security:
+        - apxOAuth:
+            - apx.tolling:manage
       tags:
         - Tolling
       summary: Read a toll transaction
@@ -2305,6 +2430,9 @@ paths:
   /v1/tolling/transactions/{id}/payment:
     post:
       operationId: post-apx-v1-tolling-transactions-id-payment
+      security:
+        - apxOAuth:
+            - apx.tolling:manage
       tags:
         - Tolling
       summary: Attach the settling Payment reference
@@ -2316,6 +2444,12 @@ paths:
           schema:
             type: string
             format: uuid
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/TollPaymentAttachment'
       responses:
         '200':
           description: Paid transaction.
@@ -2333,9 +2467,14 @@ paths:
             application/problem+json:
               schema:
                 $ref: '#/components/schemas/Problem'
+        '429':
+          $ref: '#/components/responses/TooManyRequests'
   /v1/tolling/transactions/{id}/disputes:
     post:
       operationId: post-apx-v1-tolling-transactions-id-disputes
+      security:
+        - apxOAuth:
+            - apx.tolling:manage
       tags:
         - Tolling
       summary: Open a dispute
@@ -2347,6 +2486,12 @@ paths:
           schema:
             type: string
             format: uuid
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/TollDisputeOpen'
       responses:
         '200':
           description: Disputed transaction.
@@ -2363,6 +2508,9 @@ paths:
   /v1/tolling/transactions/{id}/disputes/resolve:
     post:
       operationId: post-apx-v1-tolling-transactions-id-disputes-resolve
+      security:
+        - apxOAuth:
+            - apx.tolling:manage
       tags:
         - Tolling
       summary: Resolve a dispute
@@ -2374,6 +2522,12 @@ paths:
           schema:
             type: string
             format: uuid
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/TollDisputeResolution'
       responses:
         '200':
           description: Resolved transaction.
@@ -2390,8 +2544,11 @@ paths:
   /v1/reservations/recent:
     get:
       operationId: get-apx-v1-reservations-recent
+      security:
+        - apxOAuth:
+            - apx.reservations:manage
       tags:
-        - Permits
+        - Reservations
       summary: A customer's last 10 reservations
       description: |-
         Customer history for screen-pops and dispute handling: the same
@@ -2436,9 +2593,91 @@ paths:
             application/problem+json:
               schema:
                 $ref: '#/components/schemas/Problem'
+  /v1/sessions/{id}/assigned-right:
+    put:
+      operationId: put-apx-v1-sessions-id-assigned-right
+      security:
+        - apxOAuth:
+            - apx.reservations:manage
+      tags:
+        - Reservations
+        - Resolution
+      summary: Link a session to its AssignedRight (reservation/permit)
+      description: |-
+        The explicit reservation↔session link for facilities where the
+        plate cannot be the link (barcode-only reservations, unreadable
+        plates). Mirrors plate correction (Part 17 §17.5): a transactional
+        domain action, naturally idempotent (PUT).
+
+        NORMATIVE (Part 14 §14.1b): the link MUST materialize in the
+        underlying APDS Session (`segments[].assignedRight`), MUST publish
+        SessionUpdated, and MUST be visible to plain APDS clients reading
+        /sessions/{id} — a façade over APDS-modeled state, never a
+        parallel store. Pricing consequences (the prepaid rate replacing
+        the drive-up rate) follow from the link per the implementation's
+        normal rating.
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+          description: APDS Session UUID.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - assignedRight
+              properties:
+                assignedRight:
+                  description: The AssignedRight (reservation or permit) this session consumes.
+                  $ref: '#/components/schemas/Reference'
+                reservationCode:
+                  type: string
+                  description: The presented code, kept as audit evidence for the link.
+                reason:
+                  type: string
+      responses:
+        '200':
+          description: The link, applied.
+          content:
+            application/json:
+              schema:
+                type: object
+                required:
+                  - session
+                  - assignedRight
+                properties:
+                  session:
+                    $ref: '#/components/schemas/Reference'
+                  assignedRight:
+                    $ref: '#/components/schemas/Reference'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          description: No such session or AssignedRight.
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+        '409':
+          description: The AssignedRight is not linkable (already consumed elsewhere, outside its validity, or wrong place).
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
   /v1/permits/pools/{rightSpecId}/availability:
     get:
       operationId: get-apx-v1-permits-pools-rightspecid-availability
+      security:
+        - apxOAuth:
+            - apx.permits:manage
       tags:
         - Permits
       summary: Pool availability for a pooled RightSpecification
@@ -2466,6 +2705,9 @@ paths:
   /v1/permits/issue:
     post:
       operationId: post-apx-v1-permits-issue
+      security:
+        - apxOAuth:
+            - apx.permits:manage
       tags:
         - Permits
       summary: Issue a permit from a pool (multi-vehicle credentials)
@@ -2494,6 +2736,9 @@ paths:
   /v1/accounts:
     get:
       operationId: get-apx-v1-accounts
+      security:
+        - apxOAuth:
+            - apx.accounts:read
       tags:
         - Accounts
       summary: Look up accounts by name/phone/card/plate
@@ -2515,6 +2760,7 @@ paths:
           in: query
           schema:
             type: string
+        - $ref: '#/components/parameters/page'
       responses:
         '200':
           description: Matching accounts.
@@ -2523,6 +2769,8 @@ paths:
               schema:
                 type: object
                 properties:
+                  meta:
+                    $ref: '#/components/schemas/PaginatedListMeta'
                   data:
                     type: array
                     items:
@@ -2531,9 +2779,14 @@ paths:
           $ref: '#/components/responses/Unauthorized'
         '403':
           $ref: '#/components/responses/Forbidden'
+        '429':
+          $ref: '#/components/responses/TooManyRequests'
   /v1/accounts/{id}:
     get:
       operationId: get-apx-v1-accounts-id
+      security:
+        - apxOAuth:
+            - apx.accounts:read
       tags:
         - Accounts
       summary: Full account info
@@ -2561,6 +2814,9 @@ paths:
   /v1/payments:
     post:
       operationId: post-apx-v1-payments
+      security:
+        - apxOAuth:
+            - apx.payments:write
       tags:
         - Accounts
       summary: Take a payment (idempotent)
@@ -2581,20 +2837,47 @@ paths:
             schema:
               $ref: '#/components/schemas/PaymentRecord'
       responses:
+        '200':
+          description: Idempotent replay — same key + same body returns the ORIGINAL payment.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PaymentRecord'
         '201':
           description: Approved payment with transactionID.
           content:
             application/json:
               schema:
                 $ref: '#/components/schemas/PaymentRecord'
+        '400':
+          description: Missing Idempotency-Key (`idempotency-key-required`, Part 12) or no account/ticket to settle.
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '409':
+          description: Idempotency-Key replayed with a different body.
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
         '422':
           description: Payment declined.
           content:
             application/problem+json:
               schema:
                 $ref: '#/components/schemas/Problem'
+        '429':
+          $ref: '#/components/responses/TooManyRequests'
     get:
       operationId: get-apx-v1-payments
+      security:
+        - apxOAuth:
+            - apx.accounts:read
       tags:
         - Accounts
       summary: Payment history by ticket
@@ -2619,6 +2902,7 @@ paths:
           schema:
             type: string
             format: date
+        - $ref: '#/components/parameters/page'
       responses:
         '200':
           description: Matching payments.
@@ -2627,6 +2911,8 @@ paths:
               schema:
                 type: object
                 properties:
+                  meta:
+                    $ref: '#/components/schemas/PaginatedListMeta'
                   data:
                     type: array
                     items:
@@ -2635,9 +2921,14 @@ paths:
           $ref: '#/components/responses/Unauthorized'
         '403':
           $ref: '#/components/responses/Forbidden'
+        '429':
+          $ref: '#/components/responses/TooManyRequests'
   /v1/payments/{id}/postings:
     post:
       operationId: post-apx-v1-payments-id-postings
+      security:
+        - apxOAuth:
+            - apx.payments:write
       tags:
         - Accounts
       summary: Accounting write-back (PARIS-style)
@@ -2649,6 +2940,12 @@ paths:
           schema:
             type: string
             format: uuid
+      requestBody:
+        required: false
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PostingRequest'
       responses:
         '201':
           description: Posting result.
@@ -2662,9 +2959,326 @@ paths:
             application/problem+json:
               schema:
                 $ref: '#/components/schemas/Problem'
+  /v1/payments/{id}/refund:
+    post:
+      operationId: post-apx-v1-payments-id-refund
+      security:
+        - apxOAuth:
+            - apx.payments:write
+      tags:
+        - Accounts
+      summary: Refund a payment (financial domain action)
+      description: |-
+        Refunds the payment fully, or partially per `amount`. A financial
+        action per Part 17 §17.4 — never a control command. Idempotency-Key
+        REQUIRED; approval evidence required when the resolution context's
+        AllowedAction said so. Scope apx.payments:write.
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+        - name: Idempotency-Key
+          in: header
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: false
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                amount:
+                  $ref: '#/components/schemas/AmountInCurrency'
+                reason:
+                  type: string
+                approval:
+                  $ref: '#/components/schemas/Approval'
+      responses:
+        '200':
+          description: The payment, now reversed/partially refunded.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PaymentRecord'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          description: No such payment.
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+        '409':
+          description: Not refundable in its current state, or Idempotency-Key replayed with a different body.
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+        '429':
+          $ref: '#/components/responses/TooManyRequests'
+  /v1/payments/{id}/void:
+    post:
+      operationId: post-apx-v1-payments-id-void
+      security:
+        - apxOAuth:
+            - apx.payments:write
+      tags:
+        - Accounts
+      summary: Void an authorized, uncaptured payment
+      description: Financial domain action (Part 17 §17.4). Idempotency-Key REQUIRED. Scope apx.payments:write.
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+        - name: Idempotency-Key
+          in: header
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: The voided payment.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PaymentRecord'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          description: No such payment.
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+        '409':
+          description: Already captured or otherwise not voidable.
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+        '429':
+          $ref: '#/components/responses/TooManyRequests'
+  /v1/payments/{id}/capture:
+    post:
+      operationId: post-apx-v1-payments-id-capture
+      security:
+        - apxOAuth:
+            - apx.payments:write
+      tags:
+        - Accounts
+      summary: Capture a previously authorized payment
+      description: Financial domain action (Part 17 §17.4). Idempotency-Key REQUIRED. Scope apx.payments:write.
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+        - name: Idempotency-Key
+          in: header
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: false
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                amount:
+                  $ref: '#/components/schemas/AmountInCurrency'
+      responses:
+        '200':
+          description: The captured payment.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PaymentRecord'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          description: No such payment.
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+        '409':
+          description: Not capturable in its current state.
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+        '429':
+          $ref: '#/components/responses/TooManyRequests'
+  /v1/payment-links:
+    post:
+      operationId: post-apx-v1-payment-links
+      security:
+        - apxOAuth:
+            - apx.payments:write
+      tags:
+        - Accounts
+        - Resolution
+      summary: Send a hosted payment link
+      description: |-
+        The customer-service payment action of first resort (Part 13
+        §13.1a): sends a hosted payment link via the given channel for an
+        account, ticket, or session. APX never carries PANs. Idempotency-Key
+        REQUIRED. Scope apx.payments:write. Payment completion arrives as
+        apx.accounts.payment.recorded.v1.
+      parameters:
+        - name: Idempotency-Key
+          in: header
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PaymentLink'
+      responses:
+        '200':
+          description: Idempotent replay — same key + same body returns the ORIGINAL link.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PaymentLink'
+        '201':
+          description: The link, sent.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PaymentLink'
+        '400':
+          description: No account/ticket/session to settle, or unsupported channel.
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '409':
+          description: Idempotency-Key replayed with a different body.
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+        '429':
+          $ref: '#/components/responses/TooManyRequests'
+  /v1/sessions/{id}/plate:
+    put:
+      operationId: put-apx-v1-sessions-id-plate
+      security:
+        - apxOAuth:
+            - apx.data:write
+      tags:
+        - LPR
+        - Resolution
+      summary: Associate or correct the plate on a session
+      description: |-
+        The write side of plate correction (Part 17 §17.5): sets the
+        session's plate, optionally citing the chosen Observation candidate
+        (GET /v1/lpr/candidates). A transactional domain action — not a
+        control command. Naturally idempotent (PUT). Scope apx.data:write.
+
+        NORMATIVE (Part 17 §17.5): the correction MUST materialize in the
+        underlying APDS Session (identifiedCredentials /
+        identifiedVehicle), MUST publish SessionUpdated, and MUST be
+        visible to plain APDS clients reading /sessions/{id} — this route
+        is a business-action façade over APDS-modeled state, never a
+        parallel store.
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+          description: APDS Session UUID.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - plate
+              properties:
+                plate:
+                  type: string
+                country:
+                  type: string
+                  examples:
+                    - US
+                  description: APDS VehicleAncillaryIdentification.country vocabulary.
+                stateProvince:
+                  type: string
+                  examples:
+                    - FL
+                observation:
+                  description: The Observation candidate this correction is based on.
+                  $ref: '#/components/schemas/Reference'
+                reason:
+                  type: string
+      responses:
+        '200':
+          description: The corrected association.
+          content:
+            application/json:
+              schema:
+                type: object
+                required:
+                  - session
+                  - plate
+                properties:
+                  session:
+                    $ref: '#/components/schemas/Reference'
+                  plate:
+                    type: string
+                  country:
+                    type: string
+                  stateProvince:
+                    type: string
+                  observation:
+                    $ref: '#/components/schemas/Reference'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          description: No such session.
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+        '429':
+          $ref: '#/components/responses/TooManyRequests'
   /v1/lpr/reads:
     get:
       operationId: get-apx-v1-lpr-reads
+      security:
+        - apxOAuth:
+            - apx.lpr:read
       tags:
         - LPR
       summary: Bidirectional plate/ticket cross-lookup
@@ -2680,6 +3294,7 @@ paths:
           in: query
           schema:
             type: string
+        - $ref: '#/components/parameters/page'
       responses:
         '200':
           description: Matching reads.
@@ -2688,6 +3303,8 @@ paths:
               schema:
                 type: object
                 properties:
+                  meta:
+                    $ref: '#/components/schemas/PaginatedListMeta'
                   data:
                     type: array
                     items:
@@ -2696,9 +3313,14 @@ paths:
           $ref: '#/components/responses/Unauthorized'
         '403':
           $ref: '#/components/responses/Forbidden'
+        '429':
+          $ref: '#/components/responses/TooManyRequests'
   /v1/alerts:
     post:
       operationId: post-apx-v1-alerts
+      security:
+        - apxOAuth:
+            - apx.alerts:write
       tags:
         - Alerts
       summary: Raise an alert (idempotent)
@@ -2719,6 +3341,12 @@ paths:
             schema:
               $ref: '#/components/schemas/Alert'
       responses:
+        '200':
+          description: Idempotent replay — same key + same body returns the ORIGINAL alert.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Alert'
         '201':
           description: Alert raised.
           content:
@@ -2731,14 +3359,23 @@ paths:
             application/problem+json:
               schema:
                 $ref: '#/components/schemas/Problem'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
         '409':
           description: Idempotency-Key replayed with a different body.
           content:
             application/problem+json:
               schema:
                 $ref: '#/components/schemas/Problem'
+        '429':
+          $ref: '#/components/responses/TooManyRequests'
     get:
       operationId: get-apx-v1-alerts
+      security:
+        - apxOAuth:
+            - apx.alerts:read
       tags:
         - Alerts
       summary: List/filter alerts
@@ -2777,6 +3414,7 @@ paths:
           schema:
             type: string
             format: date-time
+        - $ref: '#/components/parameters/page'
       responses:
         '200':
           description: Paginated alerts (APDS PaginatedList shape).
@@ -2795,9 +3433,14 @@ paths:
           $ref: '#/components/responses/Unauthorized'
         '403':
           $ref: '#/components/responses/Forbidden'
+        '429':
+          $ref: '#/components/responses/TooManyRequests'
   /v1/alerts/{id}:
     get:
       operationId: get-apx-v1-alerts-id
+      security:
+        - apxOAuth:
+            - apx.alerts:read
       tags:
         - Alerts
       summary: Read an alert
@@ -2825,6 +3468,9 @@ paths:
   /v1/alerts/{id}/acknowledge:
     post:
       operationId: post-apx-v1-alerts-id-acknowledge
+      security:
+        - apxOAuth:
+            - apx.alerts:write
       tags:
         - Alerts
       summary: Acknowledge an alert
@@ -2852,6 +3498,9 @@ paths:
   /v1/alerts/{id}/resolve:
     post:
       operationId: post-apx-v1-alerts-id-resolve
+      security:
+        - apxOAuth:
+            - apx.alerts:write
       tags:
         - Alerts
       summary: Resolve an alert
@@ -2876,9 +3525,359 @@ paths:
             application/problem+json:
               schema:
                 $ref: '#/components/schemas/Problem'
+  /v1/resolution/contexts:
+    post:
+      operationId: post-apx-v1-resolution-contexts
+      security:
+        - apxOAuth:
+            - apx.resolution:read
+      tags:
+        - Resolution
+      summary: Resolve a customer-service context from any known identifiers
+      description: |-
+        THE aggregation call (Part 17 §17.2): accepts whatever
+        parking-domain identifiers are known (lane, device, plate, ticket,
+        credential, reservation code…) — telephony mapping stays on the
+        call platform's side (§17.1) — and returns everything the server
+        can resolve —
+        issue classification, lane status, vehicle, session, account,
+        passback, device status, recent overrides, support history — plus
+        the policy-decided allowedActions. Sections the caller's scopes and
+        `apx_places` grant could not read directly are omitted. May return
+        `status: partial` with `pendingSources` rather than waiting on a
+        slow source; re-read to refresh. Scope apx.resolution:read.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ResolutionResolveRequest'
+      responses:
+        '201':
+          description: The resolved context (possibly partial).
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ResolutionContext'
+        '400':
+          description: No usable identifier supplied.
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          description: No identifier resolved to anything this implementation knows.
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+        '429':
+          $ref: '#/components/responses/TooManyRequests'
+  /v1/resolution/contexts/{id}:
+    get:
+      operationId: get-apx-v1-resolution-contexts-id
+      security:
+        - apxOAuth:
+            - apx.resolution:read
+      tags:
+        - Resolution
+      summary: Re-read (recompute) a resolution context
+      description: |-
+        Returns the context recomputed against current state — `version`
+        increments when anything material changed. Use after events arrive
+        or when the initial response was partial. Scope apx.resolution:read.
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: The current context.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ResolutionContext'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          description: No such context (contexts MAY expire; re-resolve).
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+        '429':
+          $ref: '#/components/responses/TooManyRequests'
+  /v1/resolution/contexts/{id}/allowed-actions:
+    get:
+      operationId: get-apx-v1-resolution-contexts-id-allowed-actions
+      security:
+        - apxOAuth:
+            - apx.resolution:read
+      tags:
+        - Resolution
+      summary: Re-evaluate the allowed actions for a context
+      description: |-
+        The policy layer's current decisions (Part 17 §17.3) — cheaper than
+        a full context recompute; call before executing when time has
+        passed. The consuming agent (human or AI) MUST NOT decide
+        permissibility itself. Scope apx.resolution:read.
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: Current decisions.
+          content:
+            application/json:
+              schema:
+                type: object
+                required:
+                  - data
+                properties:
+                  data:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/AllowedAction'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          description: No such context.
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+        '429':
+          $ref: '#/components/responses/TooManyRequests'
+  /v1/lpr/candidates:
+    get:
+      operationId: get-apx-v1-lpr-candidates
+      security:
+        - apxOAuth:
+            - apx.lpr:read
+      tags:
+        - LPR
+        - Resolution
+      summary: Plate candidates for correction workflows
+      description: |-
+        Candidate plate reads (with confidence and imagery links) for a
+        session or lane — the read side of plate correction (Part 17
+        §17.5); the write is PUT /v1/sessions/{id}/plate. Scope apx.lpr:read.
+      parameters:
+        - name: session
+          in: query
+          schema:
+            type: string
+            format: uuid
+          description: Session UUID.
+        - name: lane
+          in: query
+          schema:
+            type: string
+            format: uuid
+          description: VehicularAccess UUID.
+        - name: since
+          in: query
+          schema:
+            type: string
+            format: date-time
+        - $ref: '#/components/parameters/page'
+      responses:
+        '200':
+          description: Candidates, best confidence first.
+          content:
+            application/json:
+              schema:
+                type: object
+                required:
+                  - data
+                properties:
+                  meta:
+                    $ref: '#/components/schemas/PaginatedListMeta'
+                  data:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/PlateCandidate'
+        '400':
+          description: Neither session nor lane given.
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '429':
+          $ref: '#/components/responses/TooManyRequests'
+  /v1/credentials/{id}/passback:
+    get:
+      operationId: get-apx-v1-credentials-id-passback
+      security:
+        - apxOAuth:
+            - apx.control:read
+      tags:
+        - Resolution
+      summary: Anti-passback status for a credential
+      description: |-
+        The credential's passback overlay: state, expected vs recorded
+        presence, last access. The write side is the `resetPassback` /
+        `forceIn` / `forceOut` commands (Part 17 §17.4). Scope
+        apx.control:read; the place grant must cover the credential's
+        last-access place.
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+          description: APDS Credential UUID.
+      responses:
+        '200':
+          description: Passback status.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PassbackStatus'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          description: No such credential or no passback tracking.
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+        '429':
+          $ref: '#/components/responses/TooManyRequests'
+  /v1/support/interactions:
+    post:
+      operationId: post-apx-v1-support-interactions
+      security:
+        - apxOAuth:
+            - apx.support:manage
+      tags:
+        - Support
+      summary: Record a support interaction
+      description: |-
+        Records one customer-service interaction (human or AI) so future
+        resolution contexts can surface it. Summaries, not transcripts
+        (Part 9 §9.6). Scope apx.support:manage.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/SupportInteraction'
+      responses:
+        '201':
+          description: Recorded interaction.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SupportInteraction'
+        '400':
+          description: Invalid interaction.
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '429':
+          $ref: '#/components/responses/TooManyRequests'
+    get:
+      operationId: get-apx-v1-support-interactions
+      security:
+        - apxOAuth:
+            - apx.support:manage
+      tags:
+        - Support
+      summary: Support history for a subject
+      description: |-
+        Recent interactions filtered by any subject key. At least one
+        filter is required. Scope apx.support:manage (or apx.resolution:read
+        for read-only consumers).
+      parameters:
+        - name: plate
+          in: query
+          schema:
+            type: string
+        - name: holder
+          in: query
+          schema:
+            type: string
+            format: uuid
+        - name: account
+          in: query
+          schema:
+            type: string
+            format: uuid
+        - name: session
+          in: query
+          schema:
+            type: string
+            format: uuid
+        - name: place
+          in: query
+          schema:
+            type: string
+            format: uuid
+        - name: since
+          in: query
+          schema:
+            type: string
+            format: date-time
+        - $ref: '#/components/parameters/page'
+      responses:
+        '200':
+          description: Paginated interactions (APDS PaginatedList shape).
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  meta:
+                    $ref: '#/components/schemas/PaginatedListMeta'
+                  data:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/SupportInteraction'
+        '400':
+          description: No filter given.
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '429':
+          $ref: '#/components/responses/TooManyRequests'
   /v1/discovery:
     get:
       operationId: get-apx-v1-discovery
+      security:
+        - apxOAuth: []
       tags:
         - Discovery
       summary: Credential-scoped capability document
@@ -2928,10 +3927,11 @@ webhooks:
       description: |-
         Every webhook delivery POSTs one EventEnvelope with headers
         `APX-Signature` (v1=HMAC-SHA256(secret, timestamp + "." + body)),
-        `APX-Timestamp` (RFC 3339, ±5 min replay window), and
+        `APX-Timestamp` (RFC 3339, ±5 min replay window),
         `APX-Delivery-Id` (unique per attempt; envelope `id` is stable
-        across retries). Respond 2xx to acknowledge; anything else triggers
-        the normative retry schedule (Part 8).
+        across retries), and `APX-Key-Id` (REQUIRED during secret-rotation
+        overlap windows — Part 9 §9.4). Respond 2xx to acknowledge;
+        anything else triggers the normative retry schedule (Part 8).
       requestBody:
         content:
           application/json:
@@ -3250,6 +4250,18 @@ components:
         application/problem+json:
           schema:
             $ref: '#/components/schemas/Problem'
+    TooManyRequests:
+      description: Rate limited (problem type `rate-limited`, Part 12).
+      headers:
+        Retry-After:
+          description: Seconds to wait before retrying (RFC 9110).
+          schema:
+            type: integer
+            minimum: 0
+      content:
+        application/problem+json:
+          schema:
+            $ref: '#/components/schemas/Problem'
   securitySchemes:
     oAuth:
       type: oauth2
@@ -3267,7 +4279,9 @@ components:
         OAuth 2.0 client-credentials (aligned with APDS 4.1's `oAuth` scheme).
         APX scopes follow `apx.<domain>:<verb>`. Grants are carried in the
         normative token claims `apx_org` (Organisation reference) and
-        `apx_places` (HierarchyElement UUID subtree grants; absent = all).
+        `apx_places` (HierarchyElement subtree grants — FAIL-CLOSED: absent
+        or empty = no places; the explicit wildcard "*" = all places,
+        Part 9 §9.3).
       flows:
         clientCredentials:
           tokenUrl: https://auth.example.com/oauth2/token
@@ -3285,6 +4299,8 @@ components:
             apx.reservations:manage: Quote, book, amend, cancel reservations
             apx.permits:manage: Issue and manage permits
             apx.tolling:manage: Create and manage toll transactions
+            apx.resolution:read: Resolve and read customer-service resolution contexts and allowed actions
+            apx.support:manage: Record and read support-interaction history
   schemas:
     RecordInfo:
       title: RecordInfo
@@ -3475,6 +4491,17 @@ components:
         cursor:
           type: string
           description: Opaque cursor to resume AFTER the last change in this page.
+        grantAdditions:
+          type: array
+          description: |-
+            Present on the first page served after the credential's apx_places
+            grant gained subtrees (Part 5 §5.2 rule 7): the new subtree roots.
+            The client MUST full-sync these subtrees before relying on the
+            feed for them — the cursor does not retroactively cover their
+            history.
+          items:
+            type: string
+            format: uuid
         next:
           type:
             - string
@@ -3579,8 +4606,26 @@ components:
         secret:
           type: string
           description: |-
-            HMAC signing secret (write-only; server-generated when absent and
-            returned once in the creation response).
+            HMAC signing secret (≥32 bytes of entropy, used as raw UTF-8 key
+            material). Server-generated when absent and returned EXACTLY ONCE —
+            in the Prefer=representation creation response. Never present in
+            GET/PATCH responses.
+        secretRef:
+          type: string
+          writeOnly: true
+          description: |-
+            Identifier of an out-of-band-exchanged secret (Part 9 §9.4) —
+            supply INSTEAD of `secret` when key material must never transit
+            the API. Never a secret value itself.
+        activeKeyIds:
+          type: array
+          readOnly: true
+          description: |-
+            Identifiers of the currently valid signing keys — two entries
+            during a rotation overlap window, matching deliveries' APX-Key-Id
+            header (Part 9 §9.4).
+          items:
+            type: string
         status:
           type: string
           enum:
@@ -3759,6 +4804,15 @@ components:
         reason:
           type: string
           description: Free-text or code-list reason for the action (audit).
+        resolutionContext:
+          description: The ResolutionContext this command resolves (Part 17) — links the action into the interaction's audit chain.
+          $ref: '#/components/schemas/Reference'
+        correlationId:
+          type: string
+          format: uuid
+          description: Correlation chain id (Part 17 §17.7) — one id connects call → context → command → events → support interaction.
+        approval:
+          $ref: '#/components/schemas/Approval'
         expiryTime:
           description: Commands are perishable — MUST NOT be dispatched after this instant.
           $ref: '#/components/schemas/DateTime'
@@ -3781,6 +4835,19 @@ components:
             - expired
             - cancelled
           readOnly: true
+        confirmationLevel:
+          type: string
+          enum:
+            - accepted
+            - deviceAcknowledged
+            - physicallyConfirmed
+          readOnly: true
+          description: |-
+            How far success is actually confirmed (Part 6 §6.1): the command was
+            accepted; the device acknowledged it; or the physical outcome was
+            verified (e.g. gate-state sensor). Consumers — AI agents especially —
+            MUST NOT claim a physical outcome ("the gate is open") beyond this
+            level ("the open command was accepted").
         statusHistory:
           type: array
           description: Immutable, append-only lifecycle audit — THE audit trail (Part 4 §4.2).
@@ -3803,6 +4870,24 @@ components:
           $ref: '#/components/schemas/RecordInfo'
         extensions:
           $ref: '#/components/schemas/Extensions'
+    Approval:
+      title: Approval
+      description: |-
+        Approval evidence, REQUIRED on a write whose AllowedAction said
+        requiresApproval (Part 17 §17.3). Servers MUST reject a
+        requires-approval action without it (403 approval-required). One shared
+        shape for control commands and domain actions (e.g. refunds).
+      type: object
+      required:
+        - approvedBy
+      properties:
+        approvedBy:
+          type: string
+          description: The approving principal (role per AllowedAction.approvalRole).
+        approvedAt:
+          $ref: '#/components/schemas/DateTime'
+        note:
+          type: string
     DeviceStatus:
       title: DeviceStatus
       description: |-
@@ -4078,6 +5163,88 @@ components:
           description: Target accounting system identifier (e.g. "paris").
         time:
           $ref: '#/components/schemas/DateTime'
+    PaymentLink:
+      title: PaymentLink
+      description: |-
+        A hosted payment link sent to a customer (Part 13 §13.1a) — the
+        customer-service payment action of first resort. APX carries the link's
+        lifecycle, never card data; the hosted page is the implementer's PCI
+        scope.
+      type: object
+      required:
+        - id
+        - version
+        - place
+        - channel
+        - status
+      properties:
+        id:
+          type: string
+          format: uuid
+          readOnly: true
+        version:
+          type: integer
+          minimum: 1
+          readOnly: true
+        place:
+          description: Site binding (Part 13 §13.5).
+          $ref: '#/components/schemas/Reference'
+        account:
+          description: The account the payment settles (or omit and use ticketNumber).
+          $ref: '#/components/schemas/Reference'
+        ticketNumber:
+          type: string
+        session:
+          $ref: '#/components/schemas/Reference'
+        amount:
+          description: Requested amount; omit to charge the current amount due.
+          $ref: '#/components/schemas/AmountInCurrency'
+        channel:
+          type: string
+          description: Delivery channel (sms | email | other implementer code list).
+          examples:
+            - sms
+        sentTo:
+          type: string
+          description: Masked destination (e.g. "+1•••••••4567"). PII-minimized.
+        status:
+          type: string
+          enum:
+            - sent
+            - opened
+            - paid
+            - expired
+            - cancelled
+          readOnly: true
+        payment:
+          description: The resulting PaymentRecord once paid.
+          $ref: '#/components/schemas/Reference'
+        expiresAt:
+          $ref: '#/components/schemas/DateTime'
+        correlationId:
+          type: string
+          format: uuid
+        resolutionContext:
+          $ref: '#/components/schemas/Reference'
+        recordInfo:
+          $ref: '#/components/schemas/RecordInfo'
+        extensions:
+          $ref: '#/components/schemas/Extensions'
+    PostingRequest:
+      title: PostingRequest
+      description: Request body for the accounting write-back of a payment.
+      type: object
+      properties:
+        postedTo:
+          type: string
+          description: Target accounting system identifier; server default applies when omitted.
+          examples:
+            - paris
+        account:
+          description: Account to post against when the payment isn't already account-bound.
+          $ref: '#/components/schemas/Reference'
+        note:
+          type: string
     LprRead:
       title: LprRead
       description: One plate read joined with its ticket/session context.
@@ -4304,6 +5471,48 @@ components:
           $ref: '#/components/schemas/RecordInfo'
         extensions:
           $ref: '#/components/schemas/Extensions'
+    TollPaymentAttachment:
+      title: TollPaymentAttachment
+      description: Request body attaching the settling Payment to a toll transaction.
+      type: object
+      required:
+        - payment
+      properties:
+        payment:
+          description: Reference to the settling APDS Payment (or APX PaymentRecord).
+          $ref: '#/components/schemas/Reference'
+        note:
+          type: string
+    TollDisputeOpen:
+      title: TollDisputeOpen
+      description: Request body opening a dispute on a toll transaction.
+      type: object
+      required:
+        - reason
+      properties:
+        reason:
+          type: string
+          description: Dispute reason (implementer code list).
+          examples:
+            - wrongVehicle
+        detail:
+          type: string
+        disputedBy:
+          $ref: '#/components/schemas/Reference'
+    TollDisputeResolution:
+      title: TollDisputeResolution
+      description: Request body resolving an open dispute.
+      type: object
+      required:
+        - resolution
+      properties:
+        resolution:
+          type: string
+          description: Resolution value (implementer code list — upheld, refunded, adjusted…).
+          examples:
+            - refunded
+        note:
+          type: string
     DiscoveryDocument:
       title: DiscoveryDocument
       description: |-
@@ -4336,11 +5545,12 @@ components:
         places:
           type: array
           description: |-
-            Granted HierarchyElement subtree roots (token claim apx_places).
-            An empty array means ALL places are visible to this client.
+            Granted HierarchyElement subtree roots (token claim apx_places),
+            reflected exactly. Fail-closed semantics (Part 9 §9.3): an empty
+            array means NO places; the explicit wildcard entry "*" means all
+            places.
           items:
             type: string
-            format: uuid
         endpoints:
           type: array
           description: Concrete callable endpoints (APDS-native + APX).
@@ -4371,6 +5581,526 @@ components:
           description: Advisory per-client limits.
           additionalProperties:
             type: integer
+    ResolutionContext:
+      title: ResolutionContext
+      description: |-
+        The aggregated customer-service context (Part 17): everything the
+        server could resolve about one interaction, plus the policy-decided
+        allowed actions. Every section beyond the required core is OPTIONAL —
+        implementations include what they know and omit what they don't
+        (graceful degradation), and MUST NOT include sections the caller's
+        scopes/grants could not read directly.
+      type: object
+      required:
+        - id
+        - version
+        - computedAt
+        - status
+        - place
+        - allowedActions
+      properties:
+        id:
+          type: string
+          format: uuid
+          readOnly: true
+        version:
+          type: integer
+          minimum: 1
+          readOnly: true
+          description: Increments each time the context is recomputed.
+        computedAt:
+          $ref: '#/components/schemas/DateTime'
+        status:
+          type: string
+          enum:
+            - full
+            - partial
+          description: partial = at least one source has not answered yet; re-read to refresh.
+        pendingSources:
+          type: array
+          description: Names of sources still resolving when status=partial (implementer-defined identifiers).
+          items:
+            type: string
+        interactionId:
+          type: string
+          description: Echo of the caller's opaque interaction identifier.
+          examples:
+            - interaction-938383
+        correlationId:
+          type: string
+          format: uuid
+        issue:
+          $ref: '#/components/schemas/ResolutionIssue'
+        place:
+          description: The facility this interaction is anchored to.
+          $ref: '#/components/schemas/Reference'
+        placeDisplay:
+          type: string
+          examples:
+            - Lakeside Garage
+        lane:
+          description: The VehicularAccess (lane) if resolved.
+          $ref: '#/components/schemas/Reference'
+        laneStatus:
+          description: The live lane inquiry result (Part 6 §6.2).
+          $ref: '#/components/schemas/LaneStatus'
+        vehicle:
+          type: object
+          description: The vehicle as best resolved (usually via LPR). Plate vocabulary follows APDS VehicleAncillaryIdentification (country/stateProvince).
+          properties:
+            plate:
+              type: string
+            country:
+              type: string
+              examples:
+                - US
+            stateProvince:
+              type: string
+              examples:
+                - FL
+            confidence:
+              type: number
+              minimum: 0
+              maximum: 1
+              description: Projection of APDS Confidence.overallConfidence (0–1).
+            plateImage:
+              $ref: '#/components/schemas/Url'
+        session:
+          $ref: '#/components/schemas/Reference'
+        holder:
+          description: The RightHolder (parker) if identified.
+          $ref: '#/components/schemas/Reference'
+        holderDisplay:
+          type: string
+          description: Display name only — contact details require the account read (PII minimization).
+        account:
+          $ref: '#/components/schemas/Account'
+        assignedRight:
+          description: The permit/reservation AssignedRight if resolved.
+          $ref: '#/components/schemas/Reference'
+        reservation:
+          $ref: '#/components/schemas/ReservationSummary'
+        credential:
+          $ref: '#/components/schemas/Reference'
+        passback:
+          $ref: '#/components/schemas/PassbackStatus'
+        accessDecision:
+          type: object
+          description: The most recent access decision at the lane.
+          properties:
+            status:
+              type: string
+              enum:
+                - granted
+                - denied
+                - pending
+                - unknown
+            reasonCode:
+              type: string
+              description: Operator code-list value.
+              examples:
+                - outstandingBalance
+            reasonDisplay:
+              type: string
+            occurredAt:
+              $ref: '#/components/schemas/DateTime'
+        payments:
+          type: array
+          description: Recent relevant payments (most recent first).
+          items:
+            $ref: '#/components/schemas/PaymentRecord'
+        devices:
+          type: array
+          description: Live status of the lane's devices — surfaces equipment faults before the agent asks the customer to retry.
+          items:
+            $ref: '#/components/schemas/DeviceStatus'
+        recentOverrides:
+          type: array
+          items:
+            $ref: '#/components/schemas/OverrideRecord'
+        supportHistory:
+          type: array
+          description: Recent SupportInteractions for the same subjects.
+          items:
+            $ref: '#/components/schemas/SupportInteraction'
+        allowedActions:
+          type: array
+          description: The policy layer's decisions — see AllowedAction. May be empty.
+          items:
+            $ref: '#/components/schemas/AllowedAction'
+        recommendedAction:
+          type: object
+          description: The server's suggested next step (advisory, never binding). MUST be one of allowedActions.
+          required:
+            - action
+          properties:
+            action:
+              type: string
+              description: The AllowedAction.action value being recommended.
+              examples:
+                - post-apx-v1-payment-links
+            reason:
+              type: string
+        recordInfo:
+          $ref: '#/components/schemas/RecordInfo'
+        extensions:
+          $ref: '#/components/schemas/Extensions'
+    ResolutionResolveRequest:
+      title: ResolutionResolveRequest
+      description: |-
+        Whatever PARKING-DOMAIN identifiers are currently known — the server
+        resolves every relationship it can (Part 17 §17.2). At least one
+        identifying property is required; all are optional individually.
+
+        Deliberately NO telephony identifiers (SIP URIs, phone numbers): the
+        call platform that owns the intercom maps call → lane/device on its
+        side before calling APX (Part 17 §17.1). PARCS implementations never
+        need to understand telephony.
+      type: object
+      minProperties: 1
+      properties:
+        interactionId:
+          type: string
+          description: |-
+            OPAQUE identifier of the calling application's customer interaction
+            (a call, chat, SMS session…). APX never interprets it — it only
+            echoes it for correlation (Part 17 §17.7). Not an identifier for
+            resolution.
+          examples:
+            - interaction-938383
+        correlationId:
+          type: string
+          format: uuid
+          description: Caller-minted correlation id; echoed on the context and reusable on Commands.
+        channel:
+          type: string
+          description: How the interaction arrived, for context/history display (voice | intercom | chat | web | other).
+          examples:
+            - intercom
+        device:
+          description: A SupplementalEquipment the interaction is anchored to (only meaningful if inventoried in the Place hierarchy).
+          $ref: '#/components/schemas/Reference'
+        place:
+          $ref: '#/components/schemas/Reference'
+        lane:
+          $ref: '#/components/schemas/Reference'
+        session:
+          $ref: '#/components/schemas/Reference'
+        holder:
+          $ref: '#/components/schemas/Reference'
+        credential:
+          $ref: '#/components/schemas/Reference'
+        plate:
+          type: string
+        ticketNumber:
+          type: string
+        reservationCode:
+          type: string
+    ResolutionIssue:
+      title: ResolutionIssue
+      description: |-
+        The machine-classified issue this context describes. `code` is a
+        definedValue from the apx-issue-types registry (open, per Part 11);
+        `display` is the human-readable summary shown to agents.
+      type: object
+      required:
+        - code
+      properties:
+        code:
+          type: string
+          description: definedValue from apx-issue-types.
+          examples:
+            - accountBalanceDenied
+        display:
+          type: string
+          examples:
+            - Monthly parker denied because of outstanding balance
+    AllowedAction:
+      title: AllowedAction
+      description: |-
+        One policy decision about one action, evaluated for THIS context, THIS
+        credential, and THIS moment (Part 17 §17.3). The server — never the
+        consuming agent, human or AI — decides permissibility. Approval
+        requirements are policy-dependent, which is why they live here at
+        runtime and not in a registry.
+
+        The `execution` descriptor abstracts HOW the action runs — a Part 6
+        control command or a domain API operation — so the agent sees one
+        unified action list and never needs to know which APX module executes
+        it. Servers MUST NOT list an action the implementation does not
+        support (Part 17 §17.3).
+      type: object
+      required:
+        - action
+        - allowed
+      properties:
+        action:
+          type: string
+          description: |-
+            Logical action identifier: the apx-command-types value for control
+            actions, or the effective-spec operationId for domain actions.
+          examples:
+            - courtesyExit
+        display:
+          type: string
+          description: Agent-facing label.
+          examples:
+            - Courtesy exit
+        target:
+          description: The Reference the action should be executed against.
+          $ref: '#/components/schemas/Reference'
+        allowed:
+          type: boolean
+        requiresApproval:
+          type: boolean
+          default: false
+          description: When true, the executing request MUST carry approval evidence (Part 17 §17.3).
+        approvalRole:
+          type: string
+          description: Role that can approve (implementer/operator code list).
+          examples:
+            - supervisor
+        execution:
+          type: object
+          description: How to execute (RECOMMENDED). Exactly one of command/operationId per type.
+          required:
+            - type
+          properties:
+            type:
+              type: string
+              enum:
+                - control
+                - domain
+            command:
+              type: string
+              description: For type=control — the apx-command-types value for POST /v1/commands.
+              examples:
+                - courtesyExit
+            operationId:
+              type: string
+              description: For type=domain — the operationId of the executing operation in the effective OpenAPI description.
+              examples:
+                - post-apx-v1-payment-links
+        reason:
+          type: object
+          description: Why the action is denied or gated. REQUIRED when allowed=false or requiresApproval=true.
+          required:
+            - code
+          properties:
+            code:
+              type: string
+              description: Machine-readable policy reason code (operator code list).
+              examples:
+                - courtesyLimitReached
+            display:
+              type: string
+              examples:
+                - Two courtesy exits have already been provided within the previous 48 hours.
+            policy:
+              type: string
+              description: Identifier of the matched operator policy (opaque to APX).
+    PassbackStatus:
+      title: PassbackStatus
+      description: Anti-passback state overlay for one APDS Credential.
+      type: object
+      required:
+        - credential
+        - state
+      properties:
+        credential:
+          $ref: '#/components/schemas/Reference'
+        state:
+          type: string
+          enum:
+            - normal
+            - violation
+            - unknown
+        expectedPresence:
+          type: string
+          enum:
+            - inside
+            - outside
+            - unknown
+        recordedPresence:
+          type: string
+          enum:
+            - inside
+            - outside
+            - unknown
+        lastAccess:
+          type: object
+          description: The most recent access event for this credential.
+          required:
+            - direction
+            - occurredAt
+          properties:
+            direction:
+              type: string
+              enum:
+                - entry
+                - exit
+            occurredAt:
+              $ref: '#/components/schemas/DateTime'
+            place:
+              $ref: '#/components/schemas/Reference'
+            lane:
+              description: The VehicularAccess where the access occurred.
+              $ref: '#/components/schemas/Reference'
+        extensions:
+          $ref: '#/components/schemas/Extensions'
+    PlateCandidate:
+      title: PlateCandidate
+      description: |-
+        One candidate plate read for correction workflows (Part 17 §17.5) —
+        a projection over APDS Observations, imagery as access-controlled
+        links (Part 9 §9.6).
+      type: object
+      required:
+        - plate
+        - confidence
+        - observationDateTime
+      properties:
+        plate:
+          type: string
+        country:
+          type: string
+          description: Plate issuing country (APDS VehicleAncillaryIdentification.country vocabulary).
+          examples:
+            - US
+        stateProvince:
+          type: string
+          description: Plate issuing state/province (APDS VehicleAncillaryIdentification.stateProvince vocabulary).
+          examples:
+            - FL
+        confidence:
+          type: number
+          minimum: 0
+          maximum: 1
+          description: Projection of APDS Confidence.overallConfidence (0–1) for the read.
+        observationDateTime:
+          description: When the read was captured (aligned with LprRead.observationDateTime; APDS ObservationElement.observationStartTime).
+          $ref: '#/components/schemas/DateTime'
+        lane:
+          $ref: '#/components/schemas/Reference'
+        observation:
+          description: The underlying APDS Observation.
+          $ref: '#/components/schemas/Reference'
+        plateImage:
+          $ref: '#/components/schemas/Url'
+        vehicleImage:
+          $ref: '#/components/schemas/Url'
+    OverrideRecord:
+      title: OverrideRecord
+      description: A recent manual override relevant to this context (courtesy exits, gate opens, passback resets…). Summarizes a Part 6 Command.
+      type: object
+      required:
+        - commandType
+        - occurredAt
+      properties:
+        commandType:
+          type: string
+          description: definedValue from apx-command-types.
+          examples:
+            - courtesyExit
+        command:
+          description: Reference to the full Command (audit trail).
+          $ref: '#/components/schemas/Reference'
+        occurredAt:
+          $ref: '#/components/schemas/DateTime'
+        requestedBy:
+          $ref: '#/components/schemas/Reference'
+        place:
+          $ref: '#/components/schemas/Reference'
+    SupportInteraction:
+      title: SupportInteraction
+      description: |-
+        One customer-service interaction (human or AI agent), recorded so
+        future resolution contexts can surface "they called twice yesterday".
+      type: object
+      required:
+        - id
+        - version
+        - channel
+        - agentType
+        - startedAt
+        - place
+      properties:
+        id:
+          type: string
+          format: uuid
+          readOnly: true
+        version:
+          type: integer
+          minimum: 1
+          readOnly: true
+        channel:
+          type: string
+          description: voice | chat | email | sms | other (implementer code list).
+          examples:
+            - voice
+        agentType:
+          type: string
+          enum:
+            - human
+            - ai
+        agent:
+          type: string
+          description: Agent identifier (human or system principal).
+        startedAt:
+          $ref: '#/components/schemas/DateTime'
+        endedAt:
+          $ref: '#/components/schemas/DateTime'
+        place:
+          $ref: '#/components/schemas/Reference'
+        issue:
+          $ref: '#/components/schemas/ResolutionIssue'
+        summary:
+          type: string
+          description: Short outcome summary. NOT a transcript — PII minimization (Part 9 §9.6).
+        subjects:
+          type: object
+          description: What/who the interaction was about (all optional).
+          properties:
+            session:
+              $ref: '#/components/schemas/Reference'
+            holder:
+              $ref: '#/components/schemas/Reference'
+            account:
+              $ref: '#/components/schemas/Reference'
+            credential:
+              $ref: '#/components/schemas/Reference'
+            reservation:
+              $ref: '#/components/schemas/Reference'
+            plate:
+              type: string
+        actions:
+          type: array
+          description: References to actions executed during the interaction (Commands, PaymentLinks, domain mutations).
+          items:
+            $ref: '#/components/schemas/Reference'
+        interactionId:
+          type: string
+          description: The calling application's opaque interaction identifier.
+          examples:
+            - interaction-938383
+        resolution:
+          type: object
+          description: How the interaction ended.
+          properties:
+            code:
+              type: string
+              examples:
+                - resolved
+            display:
+              type: string
+        correlationId:
+          type: string
+          format: uuid
+          description: Correlation chain id (Part 17 §17.7).
+        recordInfo:
+          $ref: '#/components/schemas/RecordInfo'
+        extensions:
+          $ref: '#/components/schemas/Extensions'
     ApxConfiguration:
       type: object
       description: Unauthenticated bootstrap configuration document.

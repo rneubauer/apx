@@ -66,6 +66,14 @@
     {
       "name": "Tolling",
       "description": "Toll transactions binding Observations to pricing and Payments. See written standard Part 15."
+    },
+    {
+      "name": "Resolution",
+      "description": "Customer Service & Resolution (optional class apx-resolution) — one\naggregated context call plus policy-decided allowed actions. Writes go\nthrough the Part 6 command plane. See written standard Part 17."
+    },
+    {
+      "name": "Support",
+      "description": "Support-interaction history for resolution contexts. See written standard Part 17."
     }
   ],
   "paths": {
@@ -2824,6 +2832,13 @@
     "/v1/places/{id}/occupancy": {
       "get": {
         "operationId": "get-apx-v1-places-id-occupancy",
+        "security": [
+          {
+            "apxOAuth": [
+              "apx.data:read"
+            ]
+          }
+        ],
         "tags": [
           "Data"
         ],
@@ -2868,6 +2883,20 @@
     "/webhooks": {
       "post": {
         "operationId": "post-webhooks",
+        "security": [
+          {
+            "apxOAuth": [
+              "apx.subscriptions:manage"
+            ]
+          },
+          {
+            "oAuth": [
+              "po",
+              "sp",
+              "ad"
+            ]
+          }
+        ],
         "tags": [
           "Subscription"
         ],
@@ -2942,11 +2971,30 @@
       },
       "get": {
         "operationId": "get-webhooks",
+        "security": [
+          {
+            "apxOAuth": [
+              "apx.subscriptions:manage"
+            ]
+          },
+          {
+            "oAuth": [
+              "po",
+              "sp",
+              "ad"
+            ]
+          }
+        ],
         "tags": [
           "Subscription"
         ],
         "summary": "List subscriptions (APX additive operation)",
         "description": "Lists subscriptions visible to the caller. Secrets are never returned.",
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/page"
+          }
+        ],
         "responses": {
           "200": {
             "description": "Paginated subscription list (APDS PaginatedList shape).",
@@ -2974,6 +3022,9 @@
           },
           "403": {
             "$ref": "#/components/responses/Forbidden"
+          },
+          "429": {
+            "$ref": "#/components/responses/TooManyRequests"
           }
         }
       }
@@ -2992,6 +3043,20 @@
       ],
       "patch": {
         "operationId": "patch-webhooks-id",
+        "security": [
+          {
+            "apxOAuth": [
+              "apx.subscriptions:manage"
+            ]
+          },
+          {
+            "oAuth": [
+              "po",
+              "sp",
+              "ad"
+            ]
+          }
+        ],
         "tags": [
           "Subscription"
         ],
@@ -3032,6 +3097,20 @@
       },
       "delete": {
         "operationId": "delete-webhooks-id",
+        "security": [
+          {
+            "apxOAuth": [
+              "apx.subscriptions:manage"
+            ]
+          },
+          {
+            "oAuth": [
+              "po",
+              "sp",
+              "ad"
+            ]
+          }
+        ],
         "tags": [
           "Subscription"
         ],
@@ -3064,6 +3143,20 @@
     "/webhooks/{id}/deliveries": {
       "get": {
         "operationId": "get-webhooks-id-deliveries",
+        "security": [
+          {
+            "apxOAuth": [
+              "apx.subscriptions:manage"
+            ]
+          },
+          {
+            "oAuth": [
+              "po",
+              "sp",
+              "ad"
+            ]
+          }
+        ],
         "tags": [
           "Subscription"
         ],
@@ -3077,6 +3170,9 @@
             "schema": {
               "type": "string"
             }
+          },
+          {
+            "$ref": "#/components/parameters/page"
           }
         ],
         "responses": {
@@ -3087,6 +3183,9 @@
                 "schema": {
                   "type": "object",
                   "properties": {
+                    "meta": {
+                      "$ref": "#/components/schemas/PaginatedListMeta"
+                    },
                     "data": {
                       "type": "array",
                       "items": {
@@ -3113,6 +3212,9 @@
                 }
               }
             }
+          },
+          "429": {
+            "$ref": "#/components/responses/TooManyRequests"
           }
         }
       }
@@ -3120,6 +3222,13 @@
     "/v1/events/stream": {
       "get": {
         "operationId": "get-apx-v1-events-stream",
+        "security": [
+          {
+            "apxOAuth": [
+              "apx.subscriptions:manage"
+            ]
+          }
+        ],
         "tags": [
           "Subscription"
         ],
@@ -3170,6 +3279,19 @@
                 }
               }
             }
+          },
+          "410": {
+            "description": "Subscription exhausted its retry schedule and is failed (`subscription-failed`, Part 12).",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "429": {
+            "$ref": "#/components/responses/TooManyRequests"
           }
         }
       }
@@ -3177,6 +3299,13 @@
     "/v1/commands": {
       "post": {
         "operationId": "post-apx-v1-commands",
+        "security": [
+          {
+            "apxOAuth": [
+              "apx.control:execute"
+            ]
+          }
+        ],
         "tags": [
           "Control"
         ],
@@ -3203,6 +3332,16 @@
           }
         },
         "responses": {
+          "200": {
+            "description": "Idempotent replay — same key + same body returns the ORIGINAL command (Part 6 §6.1).",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Command"
+                }
+              }
+            }
+          },
           "202": {
             "description": "Command accepted for asynchronous execution.",
             "content": {
@@ -3223,8 +3362,11 @@
               }
             }
           },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
           "403": {
-            "description": "Insufficient scope or place grant.",
+            "description": "Insufficient scope or place grant (Part 9), the current\nresolution context evaluated the action as not allowed\n(`action-not-allowed`), or approval evidence is missing\n(`approval-required`) — Part 17 §17.3.",
             "content": {
               "application/problem+json": {
                 "schema": {
@@ -3242,6 +3384,19 @@
                 }
               }
             }
+          },
+          "422": {
+            "description": "Command expired before dispatch (`command-expired`) or unknown validation provider (`validation-provider-unknown`) — Part 12.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "429": {
+            "$ref": "#/components/responses/TooManyRequests"
           }
         }
       }
@@ -3249,6 +3404,13 @@
     "/v1/commands/{id}": {
       "get": {
         "operationId": "get-apx-v1-commands-id",
+        "security": [
+          {
+            "apxOAuth": [
+              "apx.control:read"
+            ]
+          }
+        ],
         "tags": [
           "Control"
         ],
@@ -3292,6 +3454,13 @@
     "/v1/commands/{id}/cancel": {
       "post": {
         "operationId": "post-apx-v1-commands-id-cancel",
+        "security": [
+          {
+            "apxOAuth": [
+              "apx.control:execute"
+            ]
+          }
+        ],
         "tags": [
           "Control"
         ],
@@ -3335,11 +3504,23 @@
     "/v1/devices": {
       "get": {
         "operationId": "get-apx-v1-devices",
+        "security": [
+          {
+            "apxOAuth": [
+              "apx.control:read"
+            ]
+          }
+        ],
         "tags": [
           "Control"
         ],
         "summary": "List device status overlays",
         "description": "Live DeviceStatus for every SupplementalEquipment the caller may see.",
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/page"
+          }
+        ],
         "responses": {
           "200": {
             "description": "Device status list.",
@@ -3348,6 +3529,9 @@
                 "schema": {
                   "type": "object",
                   "properties": {
+                    "meta": {
+                      "$ref": "#/components/schemas/PaginatedListMeta"
+                    },
                     "data": {
                       "type": "array",
                       "items": {
@@ -3364,6 +3548,9 @@
           },
           "403": {
             "$ref": "#/components/responses/Forbidden"
+          },
+          "429": {
+            "$ref": "#/components/responses/TooManyRequests"
           }
         }
       }
@@ -3371,6 +3558,13 @@
     "/v1/devices/{id}": {
       "get": {
         "operationId": "get-apx-v1-devices-id",
+        "security": [
+          {
+            "apxOAuth": [
+              "apx.control:read"
+            ]
+          }
+        ],
         "tags": [
           "Control"
         ],
@@ -3414,6 +3608,13 @@
     "/v1/lanes/{id}/current": {
       "get": {
         "operationId": "get-apx-v1-lanes-id-current",
+        "security": [
+          {
+            "apxOAuth": [
+              "apx.control:read"
+            ]
+          }
+        ],
         "tags": [
           "Control"
         ],
@@ -3458,6 +3659,13 @@
     "/v1/validations/providers": {
       "get": {
         "operationId": "get-apx-v1-validations-providers",
+        "security": [
+          {
+            "apxOAuth": [
+              "apx.control:read"
+            ]
+          }
+        ],
         "tags": [
           "Control"
         ],
@@ -3472,6 +3680,9 @@
               "type": "string",
               "format": "uuid"
             }
+          },
+          {
+            "$ref": "#/components/parameters/page"
           }
         ],
         "responses": {
@@ -3482,6 +3693,9 @@
                 "schema": {
                   "type": "object",
                   "properties": {
+                    "meta": {
+                      "$ref": "#/components/schemas/PaginatedListMeta"
+                    },
                     "data": {
                       "type": "array",
                       "items": {
@@ -3498,6 +3712,9 @@
           },
           "403": {
             "$ref": "#/components/responses/Forbidden"
+          },
+          "429": {
+            "$ref": "#/components/responses/TooManyRequests"
           }
         }
       }
@@ -3505,6 +3722,13 @@
     "/v1/tolling/transactions": {
       "post": {
         "operationId": "post-apx-v1-tolling-transactions",
+        "security": [
+          {
+            "apxOAuth": [
+              "apx.tolling:manage"
+            ]
+          }
+        ],
         "tags": [
           "Tolling"
         ],
@@ -3531,6 +3755,16 @@
           }
         },
         "responses": {
+          "200": {
+            "description": "Idempotent replay — same key + same body returns the ORIGINAL transaction.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/TollTransaction"
+                }
+              }
+            }
+          },
           "201": {
             "description": "Created toll transaction.",
             "content": {
@@ -3566,11 +3800,21 @@
                 }
               }
             }
+          },
+          "429": {
+            "$ref": "#/components/responses/TooManyRequests"
           }
         }
       },
       "get": {
         "operationId": "get-apx-v1-tolling-transactions",
+        "security": [
+          {
+            "apxOAuth": [
+              "apx.tolling:manage"
+            ]
+          }
+        ],
         "tags": [
           "Tolling"
         ],
@@ -3590,6 +3834,9 @@
             "schema": {
               "type": "string"
             }
+          },
+          {
+            "$ref": "#/components/parameters/page"
           }
         ],
         "responses": {
@@ -3600,6 +3847,9 @@
                 "schema": {
                   "type": "object",
                   "properties": {
+                    "meta": {
+                      "$ref": "#/components/schemas/PaginatedListMeta"
+                    },
                     "data": {
                       "type": "array",
                       "items": {
@@ -3616,6 +3866,9 @@
           },
           "403": {
             "$ref": "#/components/responses/Forbidden"
+          },
+          "429": {
+            "$ref": "#/components/responses/TooManyRequests"
           }
         }
       }
@@ -3623,6 +3876,13 @@
     "/v1/tolling/transactions/{id}": {
       "get": {
         "operationId": "get-apx-v1-tolling-transactions-id",
+        "security": [
+          {
+            "apxOAuth": [
+              "apx.tolling:manage"
+            ]
+          }
+        ],
         "tags": [
           "Tolling"
         ],
@@ -3666,6 +3926,13 @@
     "/v1/tolling/transactions/{id}/payment": {
       "post": {
         "operationId": "post-apx-v1-tolling-transactions-id-payment",
+        "security": [
+          {
+            "apxOAuth": [
+              "apx.tolling:manage"
+            ]
+          }
+        ],
         "tags": [
           "Tolling"
         ],
@@ -3682,6 +3949,16 @@
             }
           }
         ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/TollPaymentAttachment"
+              }
+            }
+          }
+        },
         "responses": {
           "200": {
             "description": "Paid transaction.",
@@ -3708,6 +3985,9 @@
                 }
               }
             }
+          },
+          "429": {
+            "$ref": "#/components/responses/TooManyRequests"
           }
         }
       }
@@ -3715,6 +3995,13 @@
     "/v1/tolling/transactions/{id}/disputes": {
       "post": {
         "operationId": "post-apx-v1-tolling-transactions-id-disputes",
+        "security": [
+          {
+            "apxOAuth": [
+              "apx.tolling:manage"
+            ]
+          }
+        ],
         "tags": [
           "Tolling"
         ],
@@ -3731,6 +4018,16 @@
             }
           }
         ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/TollDisputeOpen"
+              }
+            }
+          }
+        },
         "responses": {
           "200": {
             "description": "Disputed transaction.",
@@ -3758,6 +4055,13 @@
     "/v1/tolling/transactions/{id}/disputes/resolve": {
       "post": {
         "operationId": "post-apx-v1-tolling-transactions-id-disputes-resolve",
+        "security": [
+          {
+            "apxOAuth": [
+              "apx.tolling:manage"
+            ]
+          }
+        ],
         "tags": [
           "Tolling"
         ],
@@ -3774,6 +4078,16 @@
             }
           }
         ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/TollDisputeResolution"
+              }
+            }
+          }
+        },
         "responses": {
           "200": {
             "description": "Resolved transaction.",
@@ -3801,6 +4115,13 @@
     "/v1/reservations/recent": {
       "get": {
         "operationId": "get-apx-v1-reservations-recent",
+        "security": [
+          {
+            "apxOAuth": [
+              "apx.reservations:manage"
+            ]
+          }
+        ],
         "tags": [
           "Permits"
         ],
@@ -3868,6 +4189,13 @@
     "/v1/permits/pools/{rightSpecId}/availability": {
       "get": {
         "operationId": "get-apx-v1-permits-pools-rightspecid-availability",
+        "security": [
+          {
+            "apxOAuth": [
+              "apx.permits:manage"
+            ]
+          }
+        ],
         "tags": [
           "Permits"
         ],
@@ -3911,6 +4239,13 @@
     "/v1/permits/issue": {
       "post": {
         "operationId": "post-apx-v1-permits-issue",
+        "security": [
+          {
+            "apxOAuth": [
+              "apx.permits:manage"
+            ]
+          }
+        ],
         "tags": [
           "Permits"
         ],
@@ -3953,6 +4288,13 @@
     "/v1/accounts": {
       "get": {
         "operationId": "get-apx-v1-accounts",
+        "security": [
+          {
+            "apxOAuth": [
+              "apx.accounts:read"
+            ]
+          }
+        ],
         "tags": [
           "Accounts"
         ],
@@ -3986,6 +4328,9 @@
             "schema": {
               "type": "string"
             }
+          },
+          {
+            "$ref": "#/components/parameters/page"
           }
         ],
         "responses": {
@@ -3996,6 +4341,9 @@
                 "schema": {
                   "type": "object",
                   "properties": {
+                    "meta": {
+                      "$ref": "#/components/schemas/PaginatedListMeta"
+                    },
                     "data": {
                       "type": "array",
                       "items": {
@@ -4012,6 +4360,9 @@
           },
           "403": {
             "$ref": "#/components/responses/Forbidden"
+          },
+          "429": {
+            "$ref": "#/components/responses/TooManyRequests"
           }
         }
       }
@@ -4019,6 +4370,13 @@
     "/v1/accounts/{id}": {
       "get": {
         "operationId": "get-apx-v1-accounts-id",
+        "security": [
+          {
+            "apxOAuth": [
+              "apx.accounts:read"
+            ]
+          }
+        ],
         "tags": [
           "Accounts"
         ],
@@ -4062,6 +4420,13 @@
     "/v1/payments": {
       "post": {
         "operationId": "post-apx-v1-payments",
+        "security": [
+          {
+            "apxOAuth": [
+              "apx.payments:write"
+            ]
+          }
+        ],
         "tags": [
           "Accounts"
         ],
@@ -4088,12 +4453,48 @@
           }
         },
         "responses": {
+          "200": {
+            "description": "Idempotent replay — same key + same body returns the ORIGINAL payment.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PaymentRecord"
+                }
+              }
+            }
+          },
           "201": {
             "description": "Approved payment with transactionID.",
             "content": {
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/PaymentRecord"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Missing Idempotency-Key (`idempotency-key-required`, Part 12) or no account/ticket to settle.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "409": {
+            "description": "Idempotency-Key replayed with a different body.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
                 }
               }
             }
@@ -4107,11 +4508,21 @@
                 }
               }
             }
+          },
+          "429": {
+            "$ref": "#/components/responses/TooManyRequests"
           }
         }
       },
       "get": {
         "operationId": "get-apx-v1-payments",
+        "security": [
+          {
+            "apxOAuth": [
+              "apx.accounts:read"
+            ]
+          }
+        ],
         "tags": [
           "Accounts"
         ],
@@ -4140,6 +4551,9 @@
               "type": "string",
               "format": "date"
             }
+          },
+          {
+            "$ref": "#/components/parameters/page"
           }
         ],
         "responses": {
@@ -4150,6 +4564,9 @@
                 "schema": {
                   "type": "object",
                   "properties": {
+                    "meta": {
+                      "$ref": "#/components/schemas/PaginatedListMeta"
+                    },
                     "data": {
                       "type": "array",
                       "items": {
@@ -4166,6 +4583,9 @@
           },
           "403": {
             "$ref": "#/components/responses/Forbidden"
+          },
+          "429": {
+            "$ref": "#/components/responses/TooManyRequests"
           }
         }
       }
@@ -4173,6 +4593,13 @@
     "/v1/payments/{id}/postings": {
       "post": {
         "operationId": "post-apx-v1-payments-id-postings",
+        "security": [
+          {
+            "apxOAuth": [
+              "apx.payments:write"
+            ]
+          }
+        ],
         "tags": [
           "Accounts"
         ],
@@ -4189,6 +4616,16 @@
             }
           }
         ],
+        "requestBody": {
+          "required": false,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/PostingRequest"
+              }
+            }
+          }
+        },
         "responses": {
           "201": {
             "description": "Posting result.",
@@ -4213,9 +4650,492 @@
         }
       }
     },
+    "/v1/payments/{id}/refund": {
+      "post": {
+        "operationId": "post-apx-v1-payments-id-refund",
+        "security": [
+          {
+            "apxOAuth": [
+              "apx.payments:write"
+            ]
+          }
+        ],
+        "tags": [
+          "Accounts"
+        ],
+        "summary": "Refund a payment (financial domain action)",
+        "description": "Refunds the payment fully, or partially per `amount`. A financial\naction per Part 17 §17.4 — never a control command. Idempotency-Key\nREQUIRED; approval evidence required when the resolution context's\nAllowedAction said so. Scope apx.payments:write.",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "Idempotency-Key",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": false,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "amount": {
+                    "$ref": "#/components/schemas/AmountInCurrency"
+                  },
+                  "reason": {
+                    "type": "string"
+                  },
+                  "approval": {
+                    "$ref": "#/components/schemas/Approval"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "The payment, now reversed/partially refunded.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PaymentRecord"
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "404": {
+            "description": "No such payment.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Not refundable in its current state, or Idempotency-Key replayed with a different body.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "429": {
+            "$ref": "#/components/responses/TooManyRequests"
+          }
+        }
+      }
+    },
+    "/v1/payments/{id}/void": {
+      "post": {
+        "operationId": "post-apx-v1-payments-id-void",
+        "security": [
+          {
+            "apxOAuth": [
+              "apx.payments:write"
+            ]
+          }
+        ],
+        "tags": [
+          "Accounts"
+        ],
+        "summary": "Void an authorized, uncaptured payment",
+        "description": "Financial domain action (Part 17 §17.4). Idempotency-Key REQUIRED. Scope apx.payments:write.",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "Idempotency-Key",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The voided payment.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PaymentRecord"
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "404": {
+            "description": "No such payment.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Already captured or otherwise not voidable.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "429": {
+            "$ref": "#/components/responses/TooManyRequests"
+          }
+        }
+      }
+    },
+    "/v1/payments/{id}/capture": {
+      "post": {
+        "operationId": "post-apx-v1-payments-id-capture",
+        "security": [
+          {
+            "apxOAuth": [
+              "apx.payments:write"
+            ]
+          }
+        ],
+        "tags": [
+          "Accounts"
+        ],
+        "summary": "Capture a previously authorized payment",
+        "description": "Financial domain action (Part 17 §17.4). Idempotency-Key REQUIRED. Scope apx.payments:write.",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "Idempotency-Key",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": false,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "amount": {
+                    "$ref": "#/components/schemas/AmountInCurrency"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "The captured payment.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PaymentRecord"
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "404": {
+            "description": "No such payment.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Not capturable in its current state.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "429": {
+            "$ref": "#/components/responses/TooManyRequests"
+          }
+        }
+      }
+    },
+    "/v1/payment-links": {
+      "post": {
+        "operationId": "post-apx-v1-payment-links",
+        "security": [
+          {
+            "apxOAuth": [
+              "apx.payments:write"
+            ]
+          }
+        ],
+        "tags": [
+          "Accounts",
+          "Resolution"
+        ],
+        "summary": "Send a hosted payment link",
+        "description": "The customer-service payment action of first resort (Part 13\n§13.1a): sends a hosted payment link via the given channel for an\naccount, ticket, or session. APX never carries PANs. Idempotency-Key\nREQUIRED. Scope apx.payments:write. Payment completion arrives as\napx.accounts.payment.recorded.v1.",
+        "parameters": [
+          {
+            "name": "Idempotency-Key",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/PaymentLink"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Idempotent replay — same key + same body returns the ORIGINAL link.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PaymentLink"
+                }
+              }
+            }
+          },
+          "201": {
+            "description": "The link, sent.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PaymentLink"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "No account/ticket/session to settle, or unsupported channel.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "409": {
+            "description": "Idempotency-Key replayed with a different body.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "429": {
+            "$ref": "#/components/responses/TooManyRequests"
+          }
+        }
+      }
+    },
+    "/v1/sessions/{id}/plate": {
+      "put": {
+        "operationId": "put-apx-v1-sessions-id-plate",
+        "security": [
+          {
+            "apxOAuth": [
+              "apx.data:write"
+            ]
+          }
+        ],
+        "tags": [
+          "LPR",
+          "Resolution"
+        ],
+        "summary": "Associate or correct the plate on a session",
+        "description": "The write side of plate correction (Part 17 §17.5): sets the\nsession's plate, optionally citing the chosen Observation candidate\n(GET /v1/lpr/candidates). A transactional domain action — not a\ncontrol command. Naturally idempotent (PUT). Scope apx.data:write.\n\nNORMATIVE (Part 17 §17.5): the correction MUST materialize in the\nunderlying APDS Session (identifiedCredentials /\nidentifiedVehicle), MUST publish SessionUpdated, and MUST be\nvisible to plain APDS clients reading /sessions/{id} — this route\nis a business-action façade over APDS-modeled state, never a\nparallel store.",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            },
+            "description": "APDS Session UUID."
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": [
+                  "plate"
+                ],
+                "properties": {
+                  "plate": {
+                    "type": "string"
+                  },
+                  "country": {
+                    "type": "string",
+                    "examples": [
+                      "US"
+                    ],
+                    "description": "APDS VehicleAncillaryIdentification.country vocabulary."
+                  },
+                  "stateProvince": {
+                    "type": "string",
+                    "examples": [
+                      "FL"
+                    ]
+                  },
+                  "observation": {
+                    "description": "The Observation candidate this correction is based on.",
+                    "$ref": "#/components/schemas/Reference"
+                  },
+                  "reason": {
+                    "type": "string"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "The corrected association.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": [
+                    "session",
+                    "plate"
+                  ],
+                  "properties": {
+                    "session": {
+                      "$ref": "#/components/schemas/Reference"
+                    },
+                    "plate": {
+                      "type": "string"
+                    },
+                    "country": {
+                      "type": "string"
+                    },
+                    "stateProvince": {
+                      "type": "string"
+                    },
+                    "observation": {
+                      "$ref": "#/components/schemas/Reference"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "404": {
+            "description": "No such session.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "429": {
+            "$ref": "#/components/responses/TooManyRequests"
+          }
+        }
+      }
+    },
     "/v1/lpr/reads": {
       "get": {
         "operationId": "get-apx-v1-lpr-reads",
+        "security": [
+          {
+            "apxOAuth": [
+              "apx.lpr:read"
+            ]
+          }
+        ],
         "tags": [
           "LPR"
         ],
@@ -4235,6 +5155,9 @@
             "schema": {
               "type": "string"
             }
+          },
+          {
+            "$ref": "#/components/parameters/page"
           }
         ],
         "responses": {
@@ -4245,6 +5168,9 @@
                 "schema": {
                   "type": "object",
                   "properties": {
+                    "meta": {
+                      "$ref": "#/components/schemas/PaginatedListMeta"
+                    },
                     "data": {
                       "type": "array",
                       "items": {
@@ -4261,6 +5187,9 @@
           },
           "403": {
             "$ref": "#/components/responses/Forbidden"
+          },
+          "429": {
+            "$ref": "#/components/responses/TooManyRequests"
           }
         }
       }
@@ -4268,6 +5197,13 @@
     "/v1/alerts": {
       "post": {
         "operationId": "post-apx-v1-alerts",
+        "security": [
+          {
+            "apxOAuth": [
+              "apx.alerts:write"
+            ]
+          }
+        ],
         "tags": [
           "Alerts"
         ],
@@ -4294,6 +5230,16 @@
           }
         },
         "responses": {
+          "200": {
+            "description": "Idempotent replay — same key + same body returns the ORIGINAL alert.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Alert"
+                }
+              }
+            }
+          },
           "201": {
             "description": "Alert raised.",
             "content": {
@@ -4314,6 +5260,12 @@
               }
             }
           },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
           "409": {
             "description": "Idempotency-Key replayed with a different body.",
             "content": {
@@ -4323,11 +5275,21 @@
                 }
               }
             }
+          },
+          "429": {
+            "$ref": "#/components/responses/TooManyRequests"
           }
         }
       },
       "get": {
         "operationId": "get-apx-v1-alerts",
+        "security": [
+          {
+            "apxOAuth": [
+              "apx.alerts:read"
+            ]
+          }
+        ],
         "tags": [
           "Alerts"
         ],
@@ -4383,6 +5345,9 @@
               "type": "string",
               "format": "date-time"
             }
+          },
+          {
+            "$ref": "#/components/parameters/page"
           }
         ],
         "responses": {
@@ -4412,6 +5377,9 @@
           },
           "403": {
             "$ref": "#/components/responses/Forbidden"
+          },
+          "429": {
+            "$ref": "#/components/responses/TooManyRequests"
           }
         }
       }
@@ -4419,6 +5387,13 @@
     "/v1/alerts/{id}": {
       "get": {
         "operationId": "get-apx-v1-alerts-id",
+        "security": [
+          {
+            "apxOAuth": [
+              "apx.alerts:read"
+            ]
+          }
+        ],
         "tags": [
           "Alerts"
         ],
@@ -4462,6 +5437,13 @@
     "/v1/alerts/{id}/acknowledge": {
       "post": {
         "operationId": "post-apx-v1-alerts-id-acknowledge",
+        "security": [
+          {
+            "apxOAuth": [
+              "apx.alerts:write"
+            ]
+          }
+        ],
         "tags": [
           "Alerts"
         ],
@@ -4505,6 +5487,13 @@
     "/v1/alerts/{id}/resolve": {
       "post": {
         "operationId": "post-apx-v1-alerts-id-resolve",
+        "security": [
+          {
+            "apxOAuth": [
+              "apx.alerts:write"
+            ]
+          }
+        ],
         "tags": [
           "Alerts"
         ],
@@ -4545,9 +5534,532 @@
         }
       }
     },
+    "/v1/resolution/contexts": {
+      "post": {
+        "operationId": "post-apx-v1-resolution-contexts",
+        "security": [
+          {
+            "apxOAuth": [
+              "apx.resolution:read"
+            ]
+          }
+        ],
+        "tags": [
+          "Resolution"
+        ],
+        "summary": "Resolve a customer-service context from any known identifiers",
+        "description": "THE aggregation call (Part 17 §17.2): accepts whatever\nparking-domain identifiers are known (lane, device, plate, ticket,\ncredential, reservation code…) — telephony mapping stays on the\ncall platform's side (§17.1) — and returns everything the server\ncan resolve —\nissue classification, lane status, vehicle, session, account,\npassback, device status, recent overrides, support history — plus\nthe policy-decided allowedActions. Sections the caller's scopes and\n`apx_places` grant could not read directly are omitted. May return\n`status: partial` with `pendingSources` rather than waiting on a\nslow source; re-read to refresh. Scope apx.resolution:read.",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ResolutionResolveRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "The resolved context (possibly partial).",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ResolutionContext"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "No usable identifier supplied.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "404": {
+            "description": "No identifier resolved to anything this implementation knows.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "429": {
+            "$ref": "#/components/responses/TooManyRequests"
+          }
+        }
+      }
+    },
+    "/v1/resolution/contexts/{id}": {
+      "get": {
+        "operationId": "get-apx-v1-resolution-contexts-id",
+        "security": [
+          {
+            "apxOAuth": [
+              "apx.resolution:read"
+            ]
+          }
+        ],
+        "tags": [
+          "Resolution"
+        ],
+        "summary": "Re-read (recompute) a resolution context",
+        "description": "Returns the context recomputed against current state — `version`\nincrements when anything material changed. Use after events arrive\nor when the initial response was partial. Scope apx.resolution:read.",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The current context.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ResolutionContext"
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "404": {
+            "description": "No such context (contexts MAY expire; re-resolve).",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "429": {
+            "$ref": "#/components/responses/TooManyRequests"
+          }
+        }
+      }
+    },
+    "/v1/resolution/contexts/{id}/allowed-actions": {
+      "get": {
+        "operationId": "get-apx-v1-resolution-contexts-id-allowed-actions",
+        "security": [
+          {
+            "apxOAuth": [
+              "apx.resolution:read"
+            ]
+          }
+        ],
+        "tags": [
+          "Resolution"
+        ],
+        "summary": "Re-evaluate the allowed actions for a context",
+        "description": "The policy layer's current decisions (Part 17 §17.3) — cheaper than\na full context recompute; call before executing when time has\npassed. The consuming agent (human or AI) MUST NOT decide\npermissibility itself. Scope apx.resolution:read.",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Current decisions.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": [
+                    "data"
+                  ],
+                  "properties": {
+                    "data": {
+                      "type": "array",
+                      "items": {
+                        "$ref": "#/components/schemas/AllowedAction"
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "404": {
+            "description": "No such context.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "429": {
+            "$ref": "#/components/responses/TooManyRequests"
+          }
+        }
+      }
+    },
+    "/v1/lpr/candidates": {
+      "get": {
+        "operationId": "get-apx-v1-lpr-candidates",
+        "security": [
+          {
+            "apxOAuth": [
+              "apx.lpr:read"
+            ]
+          }
+        ],
+        "tags": [
+          "LPR",
+          "Resolution"
+        ],
+        "summary": "Plate candidates for correction workflows",
+        "description": "Candidate plate reads (with confidence and imagery links) for a\nsession or lane — the read side of plate correction (Part 17\n§17.5); the write is PUT /v1/sessions/{id}/plate. Scope apx.lpr:read.",
+        "parameters": [
+          {
+            "name": "session",
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            },
+            "description": "Session UUID."
+          },
+          {
+            "name": "lane",
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            },
+            "description": "VehicularAccess UUID."
+          },
+          {
+            "name": "since",
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "format": "date-time"
+            }
+          },
+          {
+            "$ref": "#/components/parameters/page"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Candidates, best confidence first.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": [
+                    "data"
+                  ],
+                  "properties": {
+                    "meta": {
+                      "$ref": "#/components/schemas/PaginatedListMeta"
+                    },
+                    "data": {
+                      "type": "array",
+                      "items": {
+                        "$ref": "#/components/schemas/PlateCandidate"
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Neither session nor lane given.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "429": {
+            "$ref": "#/components/responses/TooManyRequests"
+          }
+        }
+      }
+    },
+    "/v1/credentials/{id}/passback": {
+      "get": {
+        "operationId": "get-apx-v1-credentials-id-passback",
+        "security": [
+          {
+            "apxOAuth": [
+              "apx.control:read"
+            ]
+          }
+        ],
+        "tags": [
+          "Resolution"
+        ],
+        "summary": "Anti-passback status for a credential",
+        "description": "The credential's passback overlay: state, expected vs recorded\npresence, last access. The write side is the `resetPassback` /\n`forceIn` / `forceOut` commands (Part 17 §17.4). Scope\napx.control:read; the place grant must cover the credential's\nlast-access place.",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            },
+            "description": "APDS Credential UUID."
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Passback status.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PassbackStatus"
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "404": {
+            "description": "No such credential or no passback tracking.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "429": {
+            "$ref": "#/components/responses/TooManyRequests"
+          }
+        }
+      }
+    },
+    "/v1/support/interactions": {
+      "post": {
+        "operationId": "post-apx-v1-support-interactions",
+        "security": [
+          {
+            "apxOAuth": [
+              "apx.support:manage"
+            ]
+          }
+        ],
+        "tags": [
+          "Support"
+        ],
+        "summary": "Record a support interaction",
+        "description": "Records one customer-service interaction (human or AI) so future\nresolution contexts can surface it. Summaries, not transcripts\n(Part 9 §9.6). Scope apx.support:manage.",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/SupportInteraction"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Recorded interaction.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SupportInteraction"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid interaction.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "429": {
+            "$ref": "#/components/responses/TooManyRequests"
+          }
+        }
+      },
+      "get": {
+        "operationId": "get-apx-v1-support-interactions",
+        "security": [
+          {
+            "apxOAuth": [
+              "apx.support:manage"
+            ]
+          }
+        ],
+        "tags": [
+          "Support"
+        ],
+        "summary": "Support history for a subject",
+        "description": "Recent interactions filtered by any subject key. At least one\nfilter is required. Scope apx.support:manage (or apx.resolution:read\nfor read-only consumers).",
+        "parameters": [
+          {
+            "name": "plate",
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "holder",
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "account",
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "session",
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "place",
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "since",
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "format": "date-time"
+            }
+          },
+          {
+            "$ref": "#/components/parameters/page"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Paginated interactions (APDS PaginatedList shape).",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "meta": {
+                      "$ref": "#/components/schemas/PaginatedListMeta"
+                    },
+                    "data": {
+                      "type": "array",
+                      "items": {
+                        "$ref": "#/components/schemas/SupportInteraction"
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "No filter given.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "429": {
+            "$ref": "#/components/responses/TooManyRequests"
+          }
+        }
+      }
+    },
     "/v1/discovery": {
       "get": {
         "operationId": "get-apx-v1-discovery",
+        "security": [
+          {
+            "apxOAuth": []
+          }
+        ],
         "tags": [
           "Discovery"
         ],
@@ -4606,7 +6118,7 @@
       "post": {
         "operationId": "receive-apx-event",
         "summary": "Signed APX event delivery",
-        "description": "Every webhook delivery POSTs one EventEnvelope with headers\n`APX-Signature` (v1=HMAC-SHA256(secret, timestamp + \".\" + body)),\n`APX-Timestamp` (RFC 3339, ±5 min replay window), and\n`APX-Delivery-Id` (unique per attempt; envelope `id` is stable\nacross retries). Respond 2xx to acknowledge; anything else triggers\nthe normative retry schedule (Part 8).",
+        "description": "Every webhook delivery POSTs one EventEnvelope with headers\n`APX-Signature` (v1=HMAC-SHA256(secret, timestamp + \".\" + body)),\n`APX-Timestamp` (RFC 3339, ±5 min replay window),\n`APX-Delivery-Id` (unique per attempt; envelope `id` is stable\nacross retries), and `APX-Key-Id` (REQUIRED during secret-rotation\noverlap windows — Part 9 §9.4). Respond 2xx to acknowledge;\nanything else triggers the normative retry schedule (Part 8).",
         "requestBody": {
           "content": {
             "application/json": {
@@ -5018,6 +6530,25 @@
             }
           }
         }
+      },
+      "TooManyRequests": {
+        "description": "Rate limited (problem type `rate-limited`, Part 12).",
+        "headers": {
+          "Retry-After": {
+            "description": "Seconds to wait before retrying (RFC 9110).",
+            "schema": {
+              "type": "integer",
+              "minimum": 0
+            }
+          }
+        },
+        "content": {
+          "application/problem+json": {
+            "schema": {
+              "$ref": "#/components/schemas/Problem"
+            }
+          }
+        }
       }
     },
     "securitySchemes": {
@@ -5037,7 +6568,7 @@
       },
       "apxOAuth": {
         "type": "oauth2",
-        "description": "OAuth 2.0 client-credentials (aligned with APDS 4.1's `oAuth` scheme).\nAPX scopes follow `apx.<domain>:<verb>`. Grants are carried in the\nnormative token claims `apx_org` (Organisation reference) and\n`apx_places` (HierarchyElement UUID subtree grants; absent = all).",
+        "description": "OAuth 2.0 client-credentials (aligned with APDS 4.1's `oAuth` scheme).\nAPX scopes follow `apx.<domain>:<verb>`. Grants are carried in the\nnormative token claims `apx_org` (Organisation reference) and\n`apx_places` (HierarchyElement subtree grants — FAIL-CLOSED: absent\nor empty = no places; the explicit wildcard \"*\" = all places,\nPart 9 §9.3).",
         "flows": {
           "clientCredentials": {
             "tokenUrl": "https://auth.example.com/oauth2/token",
@@ -5054,7 +6585,9 @@
               "apx.lpr:read": "LPR plate/ticket cross-lookup",
               "apx.reservations:manage": "Quote, book, amend, cancel reservations",
               "apx.permits:manage": "Issue and manage permits",
-              "apx.tolling:manage": "Create and manage toll transactions"
+              "apx.tolling:manage": "Create and manage toll transactions",
+              "apx.resolution:read": "Resolve and read customer-service resolution contexts and allowed actions",
+              "apx.support:manage": "Record and read support-interaction history"
             }
           }
         }
@@ -5276,6 +6809,14 @@
             "type": "string",
             "description": "Opaque cursor to resume AFTER the last change in this page."
           },
+          "grantAdditions": {
+            "type": "array",
+            "description": "Present on the first page served after the credential's apx_places\ngrant gained subtrees (Part 5 §5.2 rule 7): the new subtree roots.\nThe client MUST full-sync these subtrees before relying on the\nfeed for them — the cursor does not retroactively cover their\nhistory.",
+            "items": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
           "next": {
             "type": [
               "string",
@@ -5391,7 +6932,20 @@
           },
           "secret": {
             "type": "string",
-            "description": "HMAC signing secret (write-only; server-generated when absent and\nreturned once in the creation response)."
+            "description": "HMAC signing secret (≥32 bytes of entropy, used as raw UTF-8 key\nmaterial). Server-generated when absent and returned EXACTLY ONCE —\nin the Prefer=representation creation response. Never present in\nGET/PATCH responses."
+          },
+          "secretRef": {
+            "type": "string",
+            "writeOnly": true,
+            "description": "Identifier of an out-of-band-exchanged secret (Part 9 §9.4) —\nsupply INSTEAD of `secret` when key material must never transit\nthe API. Never a secret value itself."
+          },
+          "activeKeyIds": {
+            "type": "array",
+            "readOnly": true,
+            "description": "Identifiers of the currently valid signing keys — two entries\nduring a rotation overlap window, matching deliveries' APX-Key-Id\nheader (Part 9 §9.4).",
+            "items": {
+              "type": "string"
+            }
           },
           "status": {
             "type": "string",
@@ -5613,6 +7167,18 @@
             "type": "string",
             "description": "Free-text or code-list reason for the action (audit)."
           },
+          "resolutionContext": {
+            "description": "The ResolutionContext this command resolves (Part 17) — links the action into the interaction's audit chain.",
+            "$ref": "#/components/schemas/Reference"
+          },
+          "correlationId": {
+            "type": "string",
+            "format": "uuid",
+            "description": "Correlation chain id (Part 17 §17.7) — one id connects call → context → command → events → support interaction."
+          },
+          "approval": {
+            "$ref": "#/components/schemas/Approval"
+          },
           "expiryTime": {
             "description": "Commands are perishable — MUST NOT be dispatched after this instant.",
             "$ref": "#/components/schemas/DateTime"
@@ -5639,6 +7205,16 @@
               "cancelled"
             ],
             "readOnly": true
+          },
+          "confirmationLevel": {
+            "type": "string",
+            "enum": [
+              "accepted",
+              "deviceAcknowledged",
+              "physicallyConfirmed"
+            ],
+            "readOnly": true,
+            "description": "How far success is actually confirmed (Part 6 §6.1): the command was\naccepted; the device acknowledged it; or the physical outcome was\nverified (e.g. gate-state sensor). Consumers — AI agents especially —\nMUST NOT claim a physical outcome (\"the gate is open\") beyond this\nlevel (\"the open command was accepted\")."
           },
           "statusHistory": {
             "type": "array",
@@ -5671,6 +7247,26 @@
           },
           "extensions": {
             "$ref": "#/components/schemas/Extensions"
+          }
+        }
+      },
+      "Approval": {
+        "title": "Approval",
+        "description": "Approval evidence, REQUIRED on a write whose AllowedAction said\nrequiresApproval (Part 17 §17.3). Servers MUST reject a\nrequires-approval action without it (403 approval-required). One shared\nshape for control commands and domain actions (e.g. refunds).",
+        "type": "object",
+        "required": [
+          "approvedBy"
+        ],
+        "properties": {
+          "approvedBy": {
+            "type": "string",
+            "description": "The approving principal (role per AllowedAction.approvalRole)."
+          },
+          "approvedAt": {
+            "$ref": "#/components/schemas/DateTime"
+          },
+          "note": {
+            "type": "string"
           }
         }
       },
@@ -6031,6 +7627,111 @@
           }
         }
       },
+      "PaymentLink": {
+        "title": "PaymentLink",
+        "description": "A hosted payment link sent to a customer (Part 13 §13.1a) — the\ncustomer-service payment action of first resort. APX carries the link's\nlifecycle, never card data; the hosted page is the implementer's PCI\nscope.",
+        "type": "object",
+        "required": [
+          "id",
+          "version",
+          "place",
+          "channel",
+          "status"
+        ],
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid",
+            "readOnly": true
+          },
+          "version": {
+            "type": "integer",
+            "minimum": 1,
+            "readOnly": true
+          },
+          "place": {
+            "description": "Site binding (Part 13 §13.5).",
+            "$ref": "#/components/schemas/Reference"
+          },
+          "account": {
+            "description": "The account the payment settles (or omit and use ticketNumber).",
+            "$ref": "#/components/schemas/Reference"
+          },
+          "ticketNumber": {
+            "type": "string"
+          },
+          "session": {
+            "$ref": "#/components/schemas/Reference"
+          },
+          "amount": {
+            "description": "Requested amount; omit to charge the current amount due.",
+            "$ref": "#/components/schemas/AmountInCurrency"
+          },
+          "channel": {
+            "type": "string",
+            "description": "Delivery channel (sms | email | other implementer code list).",
+            "examples": [
+              "sms"
+            ]
+          },
+          "sentTo": {
+            "type": "string",
+            "description": "Masked destination (e.g. \"+1•••••••4567\"). PII-minimized."
+          },
+          "status": {
+            "type": "string",
+            "enum": [
+              "sent",
+              "opened",
+              "paid",
+              "expired",
+              "cancelled"
+            ],
+            "readOnly": true
+          },
+          "payment": {
+            "description": "The resulting PaymentRecord once paid.",
+            "$ref": "#/components/schemas/Reference"
+          },
+          "expiresAt": {
+            "$ref": "#/components/schemas/DateTime"
+          },
+          "correlationId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "resolutionContext": {
+            "$ref": "#/components/schemas/Reference"
+          },
+          "recordInfo": {
+            "$ref": "#/components/schemas/RecordInfo"
+          },
+          "extensions": {
+            "$ref": "#/components/schemas/Extensions"
+          }
+        }
+      },
+      "PostingRequest": {
+        "title": "PostingRequest",
+        "description": "Request body for the accounting write-back of a payment.",
+        "type": "object",
+        "properties": {
+          "postedTo": {
+            "type": "string",
+            "description": "Target accounting system identifier; server default applies when omitted.",
+            "examples": [
+              "paris"
+            ]
+          },
+          "account": {
+            "description": "Account to post against when the payment isn't already account-bound.",
+            "$ref": "#/components/schemas/Reference"
+          },
+          "note": {
+            "type": "string"
+          }
+        }
+      },
       "LprRead": {
         "title": "LprRead",
         "description": "One plate read joined with its ticket/session context.",
@@ -6325,6 +8026,66 @@
           }
         }
       },
+      "TollPaymentAttachment": {
+        "title": "TollPaymentAttachment",
+        "description": "Request body attaching the settling Payment to a toll transaction.",
+        "type": "object",
+        "required": [
+          "payment"
+        ],
+        "properties": {
+          "payment": {
+            "description": "Reference to the settling APDS Payment (or APX PaymentRecord).",
+            "$ref": "#/components/schemas/Reference"
+          },
+          "note": {
+            "type": "string"
+          }
+        }
+      },
+      "TollDisputeOpen": {
+        "title": "TollDisputeOpen",
+        "description": "Request body opening a dispute on a toll transaction.",
+        "type": "object",
+        "required": [
+          "reason"
+        ],
+        "properties": {
+          "reason": {
+            "type": "string",
+            "description": "Dispute reason (implementer code list).",
+            "examples": [
+              "wrongVehicle"
+            ]
+          },
+          "detail": {
+            "type": "string"
+          },
+          "disputedBy": {
+            "$ref": "#/components/schemas/Reference"
+          }
+        }
+      },
+      "TollDisputeResolution": {
+        "title": "TollDisputeResolution",
+        "description": "Request body resolving an open dispute.",
+        "type": "object",
+        "required": [
+          "resolution"
+        ],
+        "properties": {
+          "resolution": {
+            "type": "string",
+            "description": "Resolution value (implementer code list — upheld, refunded, adjusted…).",
+            "examples": [
+              "refunded"
+            ]
+          },
+          "note": {
+            "type": "string"
+          }
+        }
+      },
       "DiscoveryDocument": {
         "title": "DiscoveryDocument",
         "description": "What THIS credential can do: exactly the endpoints, commands, topics,\nand places reachable with the presented token's scopes and grants.\nTwo clients with different grants receive different documents; a client\ncan call everything its document lists and nothing more.",
@@ -6359,10 +8120,9 @@
           },
           "places": {
             "type": "array",
-            "description": "Granted HierarchyElement subtree roots (token claim apx_places).\nAn empty array means ALL places are visible to this client.",
+            "description": "Granted HierarchyElement subtree roots (token claim apx_places),\nreflected exactly. Fail-closed semantics (Part 9 §9.3): an empty\narray means NO places; the explicit wildcard entry \"*\" means all\nplaces.",
             "items": {
-              "type": "string",
-              "format": "uuid"
+              "type": "string"
             }
           },
           "endpoints": {
@@ -6407,6 +8167,678 @@
             "additionalProperties": {
               "type": "integer"
             }
+          }
+        }
+      },
+      "ResolutionContext": {
+        "title": "ResolutionContext",
+        "description": "The aggregated customer-service context (Part 17): everything the\nserver could resolve about one interaction, plus the policy-decided\nallowed actions. Every section beyond the required core is OPTIONAL —\nimplementations include what they know and omit what they don't\n(graceful degradation), and MUST NOT include sections the caller's\nscopes/grants could not read directly.",
+        "type": "object",
+        "required": [
+          "id",
+          "version",
+          "computedAt",
+          "status",
+          "place",
+          "allowedActions"
+        ],
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid",
+            "readOnly": true
+          },
+          "version": {
+            "type": "integer",
+            "minimum": 1,
+            "readOnly": true,
+            "description": "Increments each time the context is recomputed."
+          },
+          "computedAt": {
+            "$ref": "#/components/schemas/DateTime"
+          },
+          "status": {
+            "type": "string",
+            "enum": [
+              "full",
+              "partial"
+            ],
+            "description": "partial = at least one source has not answered yet; re-read to refresh."
+          },
+          "pendingSources": {
+            "type": "array",
+            "description": "Names of sources still resolving when status=partial (implementer-defined identifiers).",
+            "items": {
+              "type": "string"
+            }
+          },
+          "interactionId": {
+            "type": "string",
+            "description": "Echo of the caller's opaque interaction identifier.",
+            "examples": [
+              "interaction-938383"
+            ]
+          },
+          "correlationId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "issue": {
+            "$ref": "#/components/schemas/ResolutionIssue"
+          },
+          "place": {
+            "description": "The facility this interaction is anchored to.",
+            "$ref": "#/components/schemas/Reference"
+          },
+          "placeDisplay": {
+            "type": "string",
+            "examples": [
+              "Lakeside Garage"
+            ]
+          },
+          "lane": {
+            "description": "The VehicularAccess (lane) if resolved.",
+            "$ref": "#/components/schemas/Reference"
+          },
+          "laneStatus": {
+            "description": "The live lane inquiry result (Part 6 §6.2).",
+            "$ref": "#/components/schemas/LaneStatus"
+          },
+          "vehicle": {
+            "type": "object",
+            "description": "The vehicle as best resolved (usually via LPR). Plate vocabulary follows APDS VehicleAncillaryIdentification (country/stateProvince).",
+            "properties": {
+              "plate": {
+                "type": "string"
+              },
+              "country": {
+                "type": "string",
+                "examples": [
+                  "US"
+                ]
+              },
+              "stateProvince": {
+                "type": "string",
+                "examples": [
+                  "FL"
+                ]
+              },
+              "confidence": {
+                "type": "number",
+                "minimum": 0,
+                "maximum": 1,
+                "description": "Projection of APDS Confidence.overallConfidence (0–1)."
+              },
+              "plateImage": {
+                "$ref": "#/components/schemas/Url"
+              }
+            }
+          },
+          "session": {
+            "$ref": "#/components/schemas/Reference"
+          },
+          "holder": {
+            "description": "The RightHolder (parker) if identified.",
+            "$ref": "#/components/schemas/Reference"
+          },
+          "holderDisplay": {
+            "type": "string",
+            "description": "Display name only — contact details require the account read (PII minimization)."
+          },
+          "account": {
+            "$ref": "#/components/schemas/Account"
+          },
+          "assignedRight": {
+            "description": "The permit/reservation AssignedRight if resolved.",
+            "$ref": "#/components/schemas/Reference"
+          },
+          "reservation": {
+            "$ref": "#/components/schemas/ReservationSummary"
+          },
+          "credential": {
+            "$ref": "#/components/schemas/Reference"
+          },
+          "passback": {
+            "$ref": "#/components/schemas/PassbackStatus"
+          },
+          "accessDecision": {
+            "type": "object",
+            "description": "The most recent access decision at the lane.",
+            "properties": {
+              "status": {
+                "type": "string",
+                "enum": [
+                  "granted",
+                  "denied",
+                  "pending",
+                  "unknown"
+                ]
+              },
+              "reasonCode": {
+                "type": "string",
+                "description": "Operator code-list value.",
+                "examples": [
+                  "outstandingBalance"
+                ]
+              },
+              "reasonDisplay": {
+                "type": "string"
+              },
+              "occurredAt": {
+                "$ref": "#/components/schemas/DateTime"
+              }
+            }
+          },
+          "payments": {
+            "type": "array",
+            "description": "Recent relevant payments (most recent first).",
+            "items": {
+              "$ref": "#/components/schemas/PaymentRecord"
+            }
+          },
+          "devices": {
+            "type": "array",
+            "description": "Live status of the lane's devices — surfaces equipment faults before the agent asks the customer to retry.",
+            "items": {
+              "$ref": "#/components/schemas/DeviceStatus"
+            }
+          },
+          "recentOverrides": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/OverrideRecord"
+            }
+          },
+          "supportHistory": {
+            "type": "array",
+            "description": "Recent SupportInteractions for the same subjects.",
+            "items": {
+              "$ref": "#/components/schemas/SupportInteraction"
+            }
+          },
+          "allowedActions": {
+            "type": "array",
+            "description": "The policy layer's decisions — see AllowedAction. May be empty.",
+            "items": {
+              "$ref": "#/components/schemas/AllowedAction"
+            }
+          },
+          "recommendedAction": {
+            "type": "object",
+            "description": "The server's suggested next step (advisory, never binding). MUST be one of allowedActions.",
+            "required": [
+              "action"
+            ],
+            "properties": {
+              "action": {
+                "type": "string",
+                "description": "The AllowedAction.action value being recommended.",
+                "examples": [
+                  "post-apx-v1-payment-links"
+                ]
+              },
+              "reason": {
+                "type": "string"
+              }
+            }
+          },
+          "recordInfo": {
+            "$ref": "#/components/schemas/RecordInfo"
+          },
+          "extensions": {
+            "$ref": "#/components/schemas/Extensions"
+          }
+        }
+      },
+      "ResolutionResolveRequest": {
+        "title": "ResolutionResolveRequest",
+        "description": "Whatever PARKING-DOMAIN identifiers are currently known — the server\nresolves every relationship it can (Part 17 §17.2). At least one\nidentifying property is required; all are optional individually.\n\nDeliberately NO telephony identifiers (SIP URIs, phone numbers): the\ncall platform that owns the intercom maps call → lane/device on its\nside before calling APX (Part 17 §17.1). PARCS implementations never\nneed to understand telephony.",
+        "type": "object",
+        "minProperties": 1,
+        "properties": {
+          "interactionId": {
+            "type": "string",
+            "description": "OPAQUE identifier of the calling application's customer interaction\n(a call, chat, SMS session…). APX never interprets it — it only\nechoes it for correlation (Part 17 §17.7). Not an identifier for\nresolution.",
+            "examples": [
+              "interaction-938383"
+            ]
+          },
+          "correlationId": {
+            "type": "string",
+            "format": "uuid",
+            "description": "Caller-minted correlation id; echoed on the context and reusable on Commands."
+          },
+          "channel": {
+            "type": "string",
+            "description": "How the interaction arrived, for context/history display (voice | intercom | chat | web | other).",
+            "examples": [
+              "intercom"
+            ]
+          },
+          "device": {
+            "description": "A SupplementalEquipment the interaction is anchored to (only meaningful if inventoried in the Place hierarchy).",
+            "$ref": "#/components/schemas/Reference"
+          },
+          "place": {
+            "$ref": "#/components/schemas/Reference"
+          },
+          "lane": {
+            "$ref": "#/components/schemas/Reference"
+          },
+          "session": {
+            "$ref": "#/components/schemas/Reference"
+          },
+          "holder": {
+            "$ref": "#/components/schemas/Reference"
+          },
+          "credential": {
+            "$ref": "#/components/schemas/Reference"
+          },
+          "plate": {
+            "type": "string"
+          },
+          "ticketNumber": {
+            "type": "string"
+          },
+          "reservationCode": {
+            "type": "string"
+          }
+        }
+      },
+      "ResolutionIssue": {
+        "title": "ResolutionIssue",
+        "description": "The machine-classified issue this context describes. `code` is a\ndefinedValue from the apx-issue-types registry (open, per Part 11);\n`display` is the human-readable summary shown to agents.",
+        "type": "object",
+        "required": [
+          "code"
+        ],
+        "properties": {
+          "code": {
+            "type": "string",
+            "description": "definedValue from apx-issue-types.",
+            "examples": [
+              "accountBalanceDenied"
+            ]
+          },
+          "display": {
+            "type": "string",
+            "examples": [
+              "Monthly parker denied because of outstanding balance"
+            ]
+          }
+        }
+      },
+      "AllowedAction": {
+        "title": "AllowedAction",
+        "description": "One policy decision about one action, evaluated for THIS context, THIS\ncredential, and THIS moment (Part 17 §17.3). The server — never the\nconsuming agent, human or AI — decides permissibility. Approval\nrequirements are policy-dependent, which is why they live here at\nruntime and not in a registry.\n\nThe `execution` descriptor abstracts HOW the action runs — a Part 6\ncontrol command or a domain API operation — so the agent sees one\nunified action list and never needs to know which APX module executes\nit. Servers MUST NOT list an action the implementation does not\nsupport (Part 17 §17.3).",
+        "type": "object",
+        "required": [
+          "action",
+          "allowed"
+        ],
+        "properties": {
+          "action": {
+            "type": "string",
+            "description": "Logical action identifier: the apx-command-types value for control\nactions, or the effective-spec operationId for domain actions.",
+            "examples": [
+              "courtesyExit"
+            ]
+          },
+          "display": {
+            "type": "string",
+            "description": "Agent-facing label.",
+            "examples": [
+              "Courtesy exit"
+            ]
+          },
+          "target": {
+            "description": "The Reference the action should be executed against.",
+            "$ref": "#/components/schemas/Reference"
+          },
+          "allowed": {
+            "type": "boolean"
+          },
+          "requiresApproval": {
+            "type": "boolean",
+            "default": false,
+            "description": "When true, the executing request MUST carry approval evidence (Part 17 §17.3)."
+          },
+          "approvalRole": {
+            "type": "string",
+            "description": "Role that can approve (implementer/operator code list).",
+            "examples": [
+              "supervisor"
+            ]
+          },
+          "execution": {
+            "type": "object",
+            "description": "How to execute (RECOMMENDED). Exactly one of command/operationId per type.",
+            "required": [
+              "type"
+            ],
+            "properties": {
+              "type": {
+                "type": "string",
+                "enum": [
+                  "control",
+                  "domain"
+                ]
+              },
+              "command": {
+                "type": "string",
+                "description": "For type=control — the apx-command-types value for POST /v1/commands.",
+                "examples": [
+                  "courtesyExit"
+                ]
+              },
+              "operationId": {
+                "type": "string",
+                "description": "For type=domain — the operationId of the executing operation in the effective OpenAPI description.",
+                "examples": [
+                  "post-apx-v1-payment-links"
+                ]
+              }
+            }
+          },
+          "reason": {
+            "type": "object",
+            "description": "Why the action is denied or gated. REQUIRED when allowed=false or requiresApproval=true.",
+            "required": [
+              "code"
+            ],
+            "properties": {
+              "code": {
+                "type": "string",
+                "description": "Machine-readable policy reason code (operator code list).",
+                "examples": [
+                  "courtesyLimitReached"
+                ]
+              },
+              "display": {
+                "type": "string",
+                "examples": [
+                  "Two courtesy exits have already been provided within the previous 48 hours."
+                ]
+              },
+              "policy": {
+                "type": "string",
+                "description": "Identifier of the matched operator policy (opaque to APX)."
+              }
+            }
+          }
+        }
+      },
+      "PassbackStatus": {
+        "title": "PassbackStatus",
+        "description": "Anti-passback state overlay for one APDS Credential.",
+        "type": "object",
+        "required": [
+          "credential",
+          "state"
+        ],
+        "properties": {
+          "credential": {
+            "$ref": "#/components/schemas/Reference"
+          },
+          "state": {
+            "type": "string",
+            "enum": [
+              "normal",
+              "violation",
+              "unknown"
+            ]
+          },
+          "expectedPresence": {
+            "type": "string",
+            "enum": [
+              "inside",
+              "outside",
+              "unknown"
+            ]
+          },
+          "recordedPresence": {
+            "type": "string",
+            "enum": [
+              "inside",
+              "outside",
+              "unknown"
+            ]
+          },
+          "lastAccess": {
+            "type": "object",
+            "description": "The most recent access event for this credential.",
+            "required": [
+              "direction",
+              "occurredAt"
+            ],
+            "properties": {
+              "direction": {
+                "type": "string",
+                "enum": [
+                  "entry",
+                  "exit"
+                ]
+              },
+              "occurredAt": {
+                "$ref": "#/components/schemas/DateTime"
+              },
+              "place": {
+                "$ref": "#/components/schemas/Reference"
+              },
+              "lane": {
+                "description": "The VehicularAccess where the access occurred.",
+                "$ref": "#/components/schemas/Reference"
+              }
+            }
+          },
+          "extensions": {
+            "$ref": "#/components/schemas/Extensions"
+          }
+        }
+      },
+      "PlateCandidate": {
+        "title": "PlateCandidate",
+        "description": "One candidate plate read for correction workflows (Part 17 §17.5) —\na projection over APDS Observations, imagery as access-controlled\nlinks (Part 9 §9.6).",
+        "type": "object",
+        "required": [
+          "plate",
+          "confidence",
+          "observationDateTime"
+        ],
+        "properties": {
+          "plate": {
+            "type": "string"
+          },
+          "country": {
+            "type": "string",
+            "description": "Plate issuing country (APDS VehicleAncillaryIdentification.country vocabulary).",
+            "examples": [
+              "US"
+            ]
+          },
+          "stateProvince": {
+            "type": "string",
+            "description": "Plate issuing state/province (APDS VehicleAncillaryIdentification.stateProvince vocabulary).",
+            "examples": [
+              "FL"
+            ]
+          },
+          "confidence": {
+            "type": "number",
+            "minimum": 0,
+            "maximum": 1,
+            "description": "Projection of APDS Confidence.overallConfidence (0–1) for the read."
+          },
+          "observationDateTime": {
+            "description": "When the read was captured (aligned with LprRead.observationDateTime; APDS ObservationElement.observationStartTime).",
+            "$ref": "#/components/schemas/DateTime"
+          },
+          "lane": {
+            "$ref": "#/components/schemas/Reference"
+          },
+          "observation": {
+            "description": "The underlying APDS Observation.",
+            "$ref": "#/components/schemas/Reference"
+          },
+          "plateImage": {
+            "$ref": "#/components/schemas/Url"
+          },
+          "vehicleImage": {
+            "$ref": "#/components/schemas/Url"
+          }
+        }
+      },
+      "OverrideRecord": {
+        "title": "OverrideRecord",
+        "description": "A recent manual override relevant to this context (courtesy exits, gate opens, passback resets…). Summarizes a Part 6 Command.",
+        "type": "object",
+        "required": [
+          "commandType",
+          "occurredAt"
+        ],
+        "properties": {
+          "commandType": {
+            "type": "string",
+            "description": "definedValue from apx-command-types.",
+            "examples": [
+              "courtesyExit"
+            ]
+          },
+          "command": {
+            "description": "Reference to the full Command (audit trail).",
+            "$ref": "#/components/schemas/Reference"
+          },
+          "occurredAt": {
+            "$ref": "#/components/schemas/DateTime"
+          },
+          "requestedBy": {
+            "$ref": "#/components/schemas/Reference"
+          },
+          "place": {
+            "$ref": "#/components/schemas/Reference"
+          }
+        }
+      },
+      "SupportInteraction": {
+        "title": "SupportInteraction",
+        "description": "One customer-service interaction (human or AI agent), recorded so\nfuture resolution contexts can surface \"they called twice yesterday\".",
+        "type": "object",
+        "required": [
+          "id",
+          "version",
+          "channel",
+          "agentType",
+          "startedAt",
+          "place"
+        ],
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid",
+            "readOnly": true
+          },
+          "version": {
+            "type": "integer",
+            "minimum": 1,
+            "readOnly": true
+          },
+          "channel": {
+            "type": "string",
+            "description": "voice | chat | email | sms | other (implementer code list).",
+            "examples": [
+              "voice"
+            ]
+          },
+          "agentType": {
+            "type": "string",
+            "enum": [
+              "human",
+              "ai"
+            ]
+          },
+          "agent": {
+            "type": "string",
+            "description": "Agent identifier (human or system principal)."
+          },
+          "startedAt": {
+            "$ref": "#/components/schemas/DateTime"
+          },
+          "endedAt": {
+            "$ref": "#/components/schemas/DateTime"
+          },
+          "place": {
+            "$ref": "#/components/schemas/Reference"
+          },
+          "issue": {
+            "$ref": "#/components/schemas/ResolutionIssue"
+          },
+          "summary": {
+            "type": "string",
+            "description": "Short outcome summary. NOT a transcript — PII minimization (Part 9 §9.6)."
+          },
+          "subjects": {
+            "type": "object",
+            "description": "What/who the interaction was about (all optional).",
+            "properties": {
+              "session": {
+                "$ref": "#/components/schemas/Reference"
+              },
+              "holder": {
+                "$ref": "#/components/schemas/Reference"
+              },
+              "account": {
+                "$ref": "#/components/schemas/Reference"
+              },
+              "credential": {
+                "$ref": "#/components/schemas/Reference"
+              },
+              "reservation": {
+                "$ref": "#/components/schemas/Reference"
+              },
+              "plate": {
+                "type": "string"
+              }
+            }
+          },
+          "actions": {
+            "type": "array",
+            "description": "References to actions executed during the interaction (Commands, PaymentLinks, domain mutations).",
+            "items": {
+              "$ref": "#/components/schemas/Reference"
+            }
+          },
+          "interactionId": {
+            "type": "string",
+            "description": "The calling application's opaque interaction identifier.",
+            "examples": [
+              "interaction-938383"
+            ]
+          },
+          "resolution": {
+            "type": "object",
+            "description": "How the interaction ended.",
+            "properties": {
+              "code": {
+                "type": "string",
+                "examples": [
+                  "resolved"
+                ]
+              },
+              "display": {
+                "type": "string"
+              }
+            }
+          },
+          "correlationId": {
+            "type": "string",
+            "format": "uuid",
+            "description": "Correlation chain id (Part 17 §17.7)."
+          },
+          "recordInfo": {
+            "$ref": "#/components/schemas/RecordInfo"
+          },
+          "extensions": {
+            "$ref": "#/components/schemas/Extensions"
           }
         }
       },
