@@ -2,7 +2,7 @@
   "openapi": "3.1.0",
   "info": {
     "title": "APX — PARCS Starter Profile",
-    "version": "0.2.0",
+    "version": "0.3.0",
     "summary": "An open companion standard to APDS 4.1",
     "description": "The MINIMUM APX surface for a PARCS vendor: apx-data + apx-events + apx-control. A subset of the full APX specification (apx-v1) — every path and schema here is identical to the full spec. See docs/parcs-starter-profile.md for the build order.",
     "license": {
@@ -62,6 +62,10 @@
     {
       "name": "Permits",
       "description": "Pooled permit issuance over RightSpecification/RightPool. See written standard Part 14."
+    },
+    {
+      "name": "Reservations",
+      "description": "Reservation conventions over native Quote/AssignedRight routes. See written standard Part 14."
     },
     {
       "name": "Tolling",
