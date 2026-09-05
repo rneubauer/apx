@@ -59,16 +59,21 @@ annex, six open registries, and fifteen CI-validated end-to-end scenarios.
   group to probe, and one we are prepared to defend.
 - **Tolling (Part 15) is severable** without touching anything else, if
   the group prefers to defer it to the EFC standards world.
-- **The patent statement** in CONTRIBUTING.md is a stated intent pending
-  formal legal declaration, which will accompany the final submission.
+- **The patent position** in CONTRIBUTING.md is a stated intent, not yet a
+  licence or covenant. Before formal submission the steward will adopt a
+  contributor patent-commitment mechanism (e.g. Apache-2.0 inbound or
+  OWFa 1.0) and file the royalty-free (RAND-Z / ISO Option 1) declaration
+  for its own essential claims, scoped per conformance class — pending
+  legal review.
 
 ## What we ask
 
 Technical review by the working group; a decision on adoption, adoption
 with changes, or chartering a joint task group; and — independent of that
 outcome — acceptance of the two errata reports. The repository, its CI,
-browsable reference documentation, and the scenario suite are public; a
-reference implementation (mock provider) exercises the specification
-end-to-end.
+browsable reference documentation, and the scenario suite are public;
+every wire example is schema-validated against the specification in CI,
+and a schema-conformant mock server (`npm run mock`, Prism over the
+bundled spec) lets reviewers exercise the API without an implementation.
 
 *Contact: rneubauer@umojo.com*
