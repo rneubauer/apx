@@ -109,6 +109,7 @@ implementation has the named capability).
 |---|---|---|
 | APX-RSV-01 | Reservations as native Quote→AssignedRight with `apds-ext:apx:reservation@1.0`; lifecycle per Part 14 | §14 |
 | APX-RSV-02 | Holder ids treated as local; cross-system correlation by plate; place-scoped history lookups | §14.1a |
+| APX-RSV-03 | `PUT /v1/sessions/{id}/assigned-right` materializes into the APDS Session (`segments[].assignedRight`) + SessionUpdated; unlinkable right → 409 | §14.1b |
 | APX-PRM-01 | Pooled issuance over RightSpecification/RightPool; exhaustion → 409 `pool-exhausted` | §14.2 |
 
 ## A.13 `apx-tolling`

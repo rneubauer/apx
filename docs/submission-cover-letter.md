@@ -52,10 +52,11 @@ annex, six open registries, and fifteen CI-validated end-to-end scenarios.
 
 - **Two known upstream errata** in `apds-api-4.1.yaml` (Part 1 §1.3),
   reported to your repository.
-- **Deliberate open items:** no reservation↔session link for barcode-only
-  reservations (plate correction covers LPR sites); no single-ticket rate
-  override (the rate deck remains authoritative). Both are one small
-  addition if the working group wants them in scope.
+- **A deliberate absence:** APX defines no raw single-ticket price
+  override. Validations and discounts are the sanctioned, auditable
+  per-ticket adjustment mechanism, and the rate deck stays authoritative
+  (Part 6 §6.3) — a revenue-integrity position we expect the working
+  group to probe, and one we are prepared to defend.
 - **Tolling (Part 15) is severable** without touching anything else, if
   the group prefers to defer it to the EFC standards world.
 - **The patent statement** in CONTRIBUTING.md is a stated intent pending

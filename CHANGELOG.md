@@ -6,7 +6,7 @@ conformance/versioning rules in Part 3 of the written standard.
 The machine-readable spec (`spec/openapi/apx.yaml`, bundled as
 `spec/dist/apx-v1.*`) is normative; entries here are informative.
 
-## [Unreleased] — experimental/resolution-context
+## [0.3.0] — 2026-09-05
 
 Customer Service & Resolution (Part 17, class `apx-resolution`) plus the
 API-mechanics hardening pass. Highlights: one aggregated resolution-context
@@ -44,6 +44,15 @@ materialization rule; Part 11 §11.3 — open registration authority (60-day
 decisions, appeal path); CONTRIBUTING — governance/end-state and patent
 intent (pending legal review); draft submission cover letter
 (docs/submission-cover-letter.md).
+
+Final review decisions: explicit reservation↔session link for
+barcode-only reservations (`PUT /v1/sessions/{id}/assigned-right`,
+Part 14 §14.1b, materializing into `segments[].assignedRight`); per-ticket
+price adjustment formally answered by validations/discounts — no raw
+override, by design (Part 6 §6.3); problem registry completed
+(pool-exhausted, right-not-linkable, action-not-allowed,
+approval-required, rate-limited; command-not-cancellable aligned with
+Part 6); Reservations tag added.
 
 ## [0.2.0] — 2026-09-02
 

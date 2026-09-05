@@ -173,9 +173,11 @@ shown as-is, unannotated.)
 
 With the plate corrected, the PARCS's own matching does the rest: the
 session now carries the plate the reservation was sold against, the
-reservation links, and the prepaid rate replaces the drive-up rate. There
-is no separate "link reservation to session" call to get wrong — the plate
-**is** the link. A context re-read shows the episode resolved:
+reservation links, and the prepaid rate replaces the drive-up rate. At an
+LPR facility the plate **is** the link — no separate call needed. (Where no
+plate can carry the association — barcode-only reservations — the explicit
+`PUT /v1/sessions/{id}/assigned-right` exists instead, Part 14 §14.1b.) A
+context re-read shows the episode resolved:
 
 ```http
 GET /v1/resolution/contexts/e5000000-0000-4000-8000-000000000014 HTTP/1.1

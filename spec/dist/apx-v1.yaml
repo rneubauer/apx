@@ -1,7 +1,7 @@
 openapi: 3.1.0
 info:
   title: APX — APDS Parking eXtensions
-  version: 0.2.0
+  version: 0.3.0
   summary: An open companion standard to APDS 4.1
   description: |-
     **APX (APDS Parking eXtensions)** is an additive companion standard to the
@@ -69,6 +69,8 @@ tags:
     description: Plate/ticket cross-lookup over APDS Observations. See written standard Part 13.
   - name: Permits
     description: Pooled permit issuance over RightSpecification/RightPool. See written standard Part 14.
+  - name: Reservations
+    description: Reservation conventions over native Quote/AssignedRight routes. See written standard Part 14.
   - name: Tolling
     description: Toll transactions binding Observations to pricing and Payments. See written standard Part 15.
   - name: Resolution
@@ -117,17 +119,13 @@ paths:
         - $ref: '#/components/parameters/modified_since'
         - $ref: '#/components/parameters/places_expand'
         - $ref: '#/components/parameters/page'
-        - $ref: '#/components/parameters/ModeParam'
-        - $ref: '#/components/parameters/CursorParam'
       responses:
         '200':
           description: Ok
           content:
             application/json:
               schema:
-                oneOf:
-                  - $ref: '#/components/schemas/HierarchyElementList'
-                  - $ref: '#/components/schemas/ChangeFeedPage'
+                $ref: '#/components/schemas/HierarchyElementList'
     post:
       summary: Create Place
       security:
@@ -965,17 +963,13 @@ paths:
         - $ref: '#/components/parameters/rates_expand'
         - $ref: '#/components/parameters/issuer'
         - $ref: '#/components/parameters/page'
-        - $ref: '#/components/parameters/ModeParam'
-        - $ref: '#/components/parameters/CursorParam'
       responses:
         '200':
           description: OK
           content:
             application/json:
               schema:
-                oneOf:
-                  - $ref: '#/components/schemas/RateTableList'
-                  - $ref: '#/components/schemas/ChangeFeedPage'
+                $ref: '#/components/schemas/RateTableList'
     post:
       summary: Create RateTable
       security:
@@ -1197,17 +1191,13 @@ paths:
         - $ref: '#/components/parameters/modified_since'
         - $ref: '#/components/parameters/sessions_expand'
         - $ref: '#/components/parameters/page'
-        - $ref: '#/components/parameters/ModeParam'
-        - $ref: '#/components/parameters/CursorParam'
       responses:
         '200':
           description: OK
           content:
             application/json:
               schema:
-                oneOf:
-                  - $ref: '#/components/schemas/SessionList'
-                  - $ref: '#/components/schemas/ChangeFeedPage'
+                $ref: '#/components/schemas/SessionList'
     post:
       summary: Create Session
       security:
@@ -1465,17 +1455,13 @@ paths:
         - $ref: '#/components/parameters/modified_since'
         - $ref: '#/components/parameters/assigned_expand'
         - $ref: '#/components/parameters/page'
-        - $ref: '#/components/parameters/ModeParam'
-        - $ref: '#/components/parameters/CursorParam'
       responses:
         '200':
           description: OK
           content:
             application/json:
               schema:
-                oneOf:
-                  - $ref: '#/components/schemas/AssignedRightList'
-                  - $ref: '#/components/schemas/ChangeFeedPage'
+                $ref: '#/components/schemas/AssignedRightList'
     post:
       summary: Create AssignedRight
       security:
@@ -2562,7 +2548,7 @@ paths:
         - apxOAuth:
             - apx.reservations:manage
       tags:
-        - Permits
+        - Reservations
       summary: A customer's last 10 reservations
       description: |-
         Customer history for screen-pops and dispute handling: the same
@@ -2603,6 +2589,85 @@ paths:
                       $ref: '#/components/schemas/ReservationSummary'
         '400':
           description: Neither plate nor holder given.
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+  /v1/sessions/{id}/assigned-right:
+    put:
+      operationId: put-apx-v1-sessions-id-assigned-right
+      security:
+        - apxOAuth:
+            - apx.reservations:manage
+      tags:
+        - Reservations
+        - Resolution
+      summary: Link a session to its AssignedRight (reservation/permit)
+      description: |-
+        The explicit reservation↔session link for facilities where the
+        plate cannot be the link (barcode-only reservations, unreadable
+        plates). Mirrors plate correction (Part 17 §17.5): a transactional
+        domain action, naturally idempotent (PUT).
+
+        NORMATIVE (Part 14 §14.1b): the link MUST materialize in the
+        underlying APDS Session (`segments[].assignedRight`), MUST publish
+        SessionUpdated, and MUST be visible to plain APDS clients reading
+        /sessions/{id} — a façade over APDS-modeled state, never a
+        parallel store. Pricing consequences (the prepaid rate replacing
+        the drive-up rate) follow from the link per the implementation's
+        normal rating.
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+          description: APDS Session UUID.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - assignedRight
+              properties:
+                assignedRight:
+                  description: The AssignedRight (reservation or permit) this session consumes.
+                  $ref: '#/components/schemas/Reference'
+                reservationCode:
+                  type: string
+                  description: The presented code, kept as audit evidence for the link.
+                reason:
+                  type: string
+      responses:
+        '200':
+          description: The link, applied.
+          content:
+            application/json:
+              schema:
+                type: object
+                required:
+                  - session
+                  - assignedRight
+                properties:
+                  session:
+                    $ref: '#/components/schemas/Reference'
+                  assignedRight:
+                    $ref: '#/components/schemas/Reference'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          description: No such session or AssignedRight.
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+        '409':
+          description: The AssignedRight is not linkable (already consumed elsewhere, outside its validity, or wrong place).
           content:
             application/problem+json:
               schema:

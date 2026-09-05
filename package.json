@@ -1,6 +1,6 @@
 {
   "name": "apx-standard",
-  "version": "0.2.0",
+  "version": "0.3.0",
   "private": true,
   "description": "APX — APDS Parking eXtensions: an open companion standard to APDS 4.1 adding data push/pull profiles, control, alerts, discovery, accounts/payments, LPR, reservations, permits, and tolling.",
   "license": "MIT",
