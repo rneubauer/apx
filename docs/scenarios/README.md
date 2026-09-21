@@ -1,6 +1,6 @@
 # APX Scenarios — the API at work
 
-Fifteen end-to-end stories showing real wire exchanges against an APX
+Twenty-one end-to-end stories showing real wire exchanges against an APX
 implementation. Every JSON payload marked with an `<!-- apx:validate … -->`
 comment is machine-validated against the bundled spec by
 `npm run scenarios:check` — the samples cannot drift from the standard.
@@ -22,6 +22,12 @@ comment is machine-validated against the bundled spec by
 | [13](13-resolution-passback-violation.md) | "It says I'm already inside" — anti-passback reset | `apx-resolution`, `apx-control` |
 | [14](14-resolution-reservation-plate-mismatch.md) | Prepaid reservation, misread plate — candidates, correction, the plate is the link | `apx-resolution`, `apx-lpr`, `apx-reservations` |
 | [15](15-resolution-equipment-fault.md) | Payment terminal fault — the context knows before the customer retries | `apx-resolution`, `apx-control`, `apx-alerts` |
+| [16](16-violation-automated-overstay.md) | Automated enforcement — LPR overstay, notice by mail, appeal reduced, paid | `apx-violations`, `apx-accounts`, `apx-events` |
+| [17](17-violation-guided-handheld.md) | Guided enforcement — handheld eligibility check, officer confirms, citation on the windshield | `apx-violations`, `apx-lpr` |
+| [18](18-validation-program-merchant.md) | Validation program — enrol a restaurant, issue QR codes, redeem at the pay station, cap hit, close the month | `apx-validations`, `apx-control` |
+| [19](19-violation-policy-signage-escalation.md) | The law at the location — policy and signage on file, a mailed notice refused, issued lawfully with coordinates, day-31 escalation | `apx-violations`, `apx-events` |
+| [20](20-credential-lost-card-replacement.md) | Lost keycard — replaced on the phone at noon, the old card denied at the gate at six, the access log says why | `apx-credentials`, `apx-accounts`, `apx-events` |
+| [21](21-valet-dropoff-retrieve-handback.md) | Valet — drop-off with a scanned condition report, "bring my car" by text with an ETA, staged, verified handback, and the scratch that was already there | `apx-valet`, `apx-events` |
 
 ## Conventions
 

@@ -12,6 +12,7 @@ APX open vocabularies are published as **APDS UserDefinedCodeList documents**
 | `apx-topics` | APX event topics | `EventEnvelope.type`, subscriptions |
 | `apx-conformance-classes` | Conformance classes | `.well-known/apx-configuration` |
 | `apx-issue-types` | Resolution issue classification | `ResolutionIssue.code` (Part 17) |
+| `apx-violation-types` | Enforcement violation classification (open; jurisdictional vocabularies extend it) | `Violation.violationType`, `EligibilityResult.suggestedViolationType` (Part 19) |
 
 ## 11.1 Rules
 

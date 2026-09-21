@@ -132,13 +132,67 @@ implementation has the named capability).
 | APX-RES-07 **C** (tracks passback) | Passback read + resetPassback/forceIn/forceOut commands | §17.4 |
 | APX-RES-08 **C** (stores LPR) | Plate candidates read + `PUT /v1/sessions/{id}/plate` materializing into the APDS Session + SessionUpdated | §17.5 |
 
-## A.15 `apx-mtls`
+## A.15 `apx-violations`
+
+| ID | Requirement | Source |
+|---|---|---|
+| APX-VIO-01 | Violation idempotent create (Idempotency-Key semantics as APX-CTL-01); eligibility check performed and recorded at creation; entitled vehicles recorded as `dismissed` with basis | §19.1, §19.2 |
+| APX-VIO-02 | Lifecycle per §19.1 with immutable `statusHistory[]`; illegal transitions → 409 `violation-transition-illegal`; void never deletes | §19.1 |
+| APX-VIO-03 | `guided`/`manual` detections reviewed before issuance; unreviewed issue → 409 `violation-not-issuable`; automated unreviewed-issuance policy published | §19.4 |
+| APX-VIO-04 | One appeal per violation; `upheld`/`reduced`/`dismissed` semantics; closed → 409 `appeal-closed`; `amount` changes only via `reduced` | §19.1, §19.6 |
+| APX-VIO-05 | Settlement by Payment reference only (Part 13 takes the money); `paid` only from `issued` | §19.6 |
+| APX-VIO-06 | `GET /v1/enforcement/eligibility` derivable from held APDS rights/sessions; ancestor-bound rights count; `basis[]` never exceeds the token's `/rights/assigned` grant; `suggestedViolationType` advisory | §19.3 |
+| APX-VIO-07 | Evidence and `lastRead` imagery as access-controlled links; plate values only under `apx.violations:*`; retention published; appellant media treated as untrusted | §19.5, §9.6 |
+| APX-VIO-08 | `apx.violations.detected.v1`, `.issued.v1`, `.status.v1` published; place-bound on `Violation.place` | §19.7 |
+| APX-VIO-09 | `Violation.location` in the APDS Observation Location shape, GeoJSON [lon, lat]; guided/manual carry `observerLocation`; automated copies from the Observation | §19.9 |
+| APX-VIO-10 | Policy in force resolved by nearest-ancestor-or-self at `detectedTime`; `…/policies/effective` returns exactly what `issue` applies; refusals per §19.10 rule 2 with the named problem types; `policy`, `signage[]`, `amountHistory` frozen at issue | §19.10 |
+| APX-VIO-11 | Escalation server-applied per schedule, never before `paymentGraceDays`, never while `appealed`, never above `overallCeiling`; each step appended to `amountHistory` and published; clients never compute penalties | §19.10 |
+| APX-VIO-12 | Signage history immutable (text change on a referenced record → 422 `signage-referenced`); in-force signage frozen on the violation at issue; `signageRequired` enforced | §19.11 |
+
+## A.16 `apx-validations`
+
+| ID | Requirement | Source |
+|---|---|---|
+| APX-VAL-01 | Program lifecycle `active ⇄ suspended → ended` via versioned `PUT`; stale version → 409 `version-conflict`; out of `ended` → 422 `program-not-active`; `statusHistory[]` immutable | §20.1 |
+| APX-VAL-02 | Provider list (Part 6) derived from active programs covering the queried place or an ancestor, each row carrying `program`; `applyValidation` materializes a `ValidationRedemption` | §20.1, §6.3 |
+| APX-VAL-03 | Issuance idempotent; `codes[]` returned exactly once; codes ≥ 64 bits entropy and implementation-unique; unknown/out-of-grant code → 404 never 403 | §20.2 |
+| APX-VAL-04 | Redemption idempotent; rule set evaluated in order with 422 `program-not-active` / `instrument-invalid` / `redemption-limit-exceeded`; APDS-native validation record materialized and returned as `validationId`; `amountReduced` is the actual effect | §20.3 |
+| APX-VAL-05 | Reversal restores amount due and instrument; already reversed → 409 `redemption-reversed`; inside a closed statement → 409 `statement-closed` | §20.4 |
+| APX-VAL-06 | `apx.validations:redeem` confined to the token's own provider (`apx_org`) for reads, issuance, redemption, and events; cannot enrol, reverse, or close | §20.5 |
+| APX-VAL-07 | Statement preview computable for any period; closed statements immutable and non-overlapping (409 `statement-overlap`); post-closure reversals appear as credit lines on the next statement | §20.6 |
+| APX-VAL-08 | `apx.validations.redeemed.v1`, `.program.status.v1`, `.statement.closed.v1` published; place-bound | §20.7 |
+
+## A.17 `apx-credentials`
+
+| ID | Requirement | Source |
+|---|---|---|
+| APX-CRD-01 | Lifecycle per §21.1 with immutable `statusHistory[]`; illegal transitions → 409 `credential-transition-illegal`; terminal replace → 409 `credential-not-replaceable`; identification unique per type among non-terminal records → 409 `credential-identification-in-use` | §21.1 |
+| APX-CRD-02 | Active records materialized as APDS `CredentialAssigned` (`identifier` → the record) on every listed AssignedRight; removed/ended on suspend, lost, revoke, expire; restored on resume; lane denies non-active credentials from the transition instant | §21.2 |
+| APX-CRD-03 | `replace` idempotent and atomic on the AssignedRight (one `AssignedRightUpdated`); `replaces`/`replacedBy` linked; deposit settled per `oldDepositStatus` | §21.3 |
+| APX-CRD-04 | Access events recorded with outcome and seeded `denialReason`; `GET …/access-events` served; `apx.credentials.access.v1` published; passback corrections remain Part 17 | §21.4 |
+| APX-CRD-05 | Identification, serials, and access events under Part 9 §9.6; no identification-in-use oracle outside `apx.credentials:manage` | §21.5 |
+| APX-CRD-06 | `apx.credentials.status.v1` on every transition including server-side `expired` and timed resume | §21.1, §21.6 |
+
+## A.18 `apx-valet`
+
+| ID | Requirement | Source |
+|---|---|---|
+| APX-VLT-01 | Lifecycle per §22.1 with immutable `statusHistory[]`; illegal transitions → 409 `valet-transition-illegal`; `retrieve` from `dropped` → 409 `valet-vehicle-not-located`; drop-off idempotent | §22.1 |
+| APX-VLT-02 | ValetTicket references the APDS Session (and AssignedRight where issued) and never restates the stay or the money; `closed` follows Session settlement | §22, §22.1, §22.4 |
+| APX-VLT-03 | Drop-off condition report immutable after `dropped` (corrections as new dated entries); imagery as access-controlled links; `customerAcknowledged` captured where obtainable | §22.2 |
+| APX-VLT-04 | `retrieve` sets `etaMinutes` and `promisedTime` and publishes `apx.valet.retrieval.requested.v1`; queue ordered by `promisedTime`; scheduled pickups surface inside the horizon | §22.3 |
+| APX-VLT-05 | Handback verifies the claimant; failure → 403 `valet-verification-failed` recorded in `statusHistory`; `verificationValue` never stored; handback condition report recorded | §22.4 |
+| APX-VLT-06 | `apx.valet:request` confined to the caller's own ticket(s); minimized read (no storage, key tag, attendant principals, or condition images); can only read, retrieve, cancel-retrieval | §22.5 |
+| APX-VLT-07 | No raw phone/e-mail on the ticket (`contactChannel.handle` opaque/masked); condition-imagery retention published | §22.6 |
+| APX-VLT-08 | `apx.valet.ticket.status.v1` on every transition; place-bound on `ValetTicket.place` | §22.7 |
+
+## A.19 `apx-mtls`
 
 | ID | Requirement | Source |
 |---|---|---|
 | APX-TLS-01 | Mutual TLS on all APX endpoints; TLS 1.2 minimum (1.3 RECOMMENDED); client identity bound to the OAuth client | §9.1 |
 
-## A.16 Implementation Conformance Statement (template)
+## A.20 Implementation Conformance Statement (template)
 
 An ICS is a filled-in copy of this annex plus the header below. Publish it
 with the implementation's documentation; `/.well-known/apx-configuration`
@@ -153,7 +207,8 @@ Date:           <ISO 8601>
 Classes claimed: [ ] apx-data  [ ] apx-events  [ ] apx-events-sse
   [ ] apx-control  [ ] apx-alerts  [ ] apx-discovery  [ ] apx-accounts
   [ ] apx-payment-history  [ ] apx-lpr  [ ] apx-reservations
-  [ ] apx-permits  [ ] apx-tolling  [ ] apx-resolution  [ ] apx-mtls
+  [ ] apx-permits  [ ] apx-tolling  [ ] apx-resolution  [ ] apx-violations
+  [ ] apx-validations  [ ] apx-credentials  [ ] apx-valet  [ ] apx-mtls
 
 For each requirement row of every claimed class (and A.1):
   <ID>: PASS | N/A (conditional not applicable) | DEVIATION (explain)

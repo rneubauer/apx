@@ -34,8 +34,9 @@ against is exactly what a conformant server returns.
 1. **You already speak APDS 4.1?** Keep everything. APX mounts your routes
    verbatim and adds additive parameters/headers plain APDS clients never see.
 2. Pick your **conformance classes** (`apx-data` + `apx-events` are the
-   base; control/alerts/discovery/accounts/LPR/reservations/permits/tolling
-   are optional). Advertise them at `/.well-known/apx-configuration`.
+   base; control/alerts/discovery/accounts/LPR/reservations/permits/tolling/
+   resolution/violations/validations/credentials/valet are optional). Advertise them at
+   `/.well-known/apx-configuration`.
 3. Implement the classes per the written standard (`docs/standard/`), using
    the bundled OpenAPI (`spec/dist/apx-v1.yaml`) as the normative contract.
 4. **Self-certify**: verify your implementation against the conformance

@@ -10,8 +10,8 @@ APX is an **additive companion standard to APDS 4.1**: the interoperable
 API surface APDS deliberately leaves out — real-time delivery, operational
 control, alerting, discovery, and the customer-service layer built on
 them — expressed entirely in APDS's own vocabulary. One machine-readable
-OpenAPI 3.1 document, a written standard of 19 parts plus a conformance
-annex, six open registries, and fifteen CI-validated end-to-end scenarios.
+OpenAPI 3.1 document, a written standard of 23 parts plus a conformance
+annex, seven open registries, and twenty-one CI-validated end-to-end scenarios.
 
 ## Why we believe it belongs with APDS
 
@@ -57,8 +57,9 @@ annex, six open registries, and fifteen CI-validated end-to-end scenarios.
   per-ticket adjustment mechanism, and the rate deck stays authoritative
   (Part 6 §6.3) — a revenue-integrity position we expect the working
   group to probe, and one we are prepared to defend.
-- **Tolling (Part 15) is severable** without touching anything else, if
-  the group prefers to defer it to the EFC standards world.
+- **Tolling (Part 15) and Violations (Part 19) are each severable**
+  without touching anything else, if the group prefers to defer tolling
+  to the EFC standards world or enforcement to a later edition.
 - **The patent position** in CONTRIBUTING.md is a stated intent, not yet a
   licence or covenant. Before formal submission the steward will adopt a
   contributor patent-commitment mechanism (e.g. Apache-2.0 inbound or

@@ -1,6 +1,6 @@
 {
   "id": "3e4f5a6b-7c8d-4e9f-0a1b-2c3d4e5f6a7b",
-  "version": 4,
+  "version": 8,
   "name": "apx-topics",
   "creator": { "id": "a1000000-0000-4000-8000-000000000001", "className": "Organisation" },
   "locator": "https://apx-standard.org/registries/apx-topics.json",
@@ -17,6 +17,16 @@
     { "definedValue": "apx.accounts.payment.recorded.v1", "entryDescription": "A payment was recorded — taken via /v1/payments or ingested from a lane device (data: PaymentRecord). Fills the financial-analytics gap: APDS EventTypeEnum has no payment events.", "entryIndex": 9 },
     { "definedValue": "apx.data.observation.created.v1", "entryDescription": "A new Observation was ingested — LPR read, RFID hit, sensor event (data: the APDS Observation; subject references it). Fills the sensor-analytics gap: APDS EventTypeEnum has no Observation events.", "entryIndex": 10 },
     { "definedValue": "apx.resolution.context.created.v1", "entryDescription": "A resolution context was created or materially recomputed (data: ResolutionContext) — enables event-driven preloading so agent consoles pop before the call is answered.", "entryIndex": 11 },
-    { "definedValue": "apx.support.interaction.recorded.v1", "entryDescription": "A support interaction was recorded or updated (data: SupportInteraction).", "entryIndex": 12 }
+    { "definedValue": "apx.support.interaction.recorded.v1", "entryDescription": "A support interaction was recorded or updated (data: SupportInteraction).", "entryIndex": 12 },
+    { "definedValue": "apx.violations.detected.v1", "entryDescription": "A violation candidate was recorded from automated, guided, or manual detection (data: Violation) — drives guided-enforcement handheld queues.", "entryIndex": 13 },
+    { "definedValue": "apx.violations.issued.v1", "entryDescription": "A notice, warning, or citation was issued on a violation (data: Violation).", "entryIndex": 14 },
+    { "definedValue": "apx.violations.status.v1", "entryDescription": "A violation changed lifecycle state — review, payment, appeal open/resolve, void (data: Violation).", "entryIndex": 15 },
+    { "definedValue": "apx.validations.redeemed.v1", "entryDescription": "A validation was applied to a ticket/session from any channel, or reversed (data: ValidationRedemption).", "entryIndex": 16 },
+    { "definedValue": "apx.validations.program.status.v1", "entryDescription": "A validation program was enrolled, suspended, resumed, or ended (data: ValidationProgram).", "entryIndex": 17 },
+    { "definedValue": "apx.validations.statement.closed.v1", "entryDescription": "A merchant billing period was closed into an immutable statement (data: ValidationStatement).", "entryIndex": 18 },
+    { "definedValue": "apx.credentials.status.v1", "entryDescription": "A credential was issued, activated, suspended, resumed, reported lost, revoked, expired, or replaced (data: CredentialRecord).", "entryIndex": 19 },
+    { "definedValue": "apx.credentials.access.v1", "entryDescription": "A credential was presented at a lane and access was granted or denied (data: CredentialAccessEvent). Fills the gap: APDS EventTypeEnum has no access events.", "entryIndex": 20 },
+    { "definedValue": "apx.valet.ticket.status.v1", "entryDescription": "A valet ticket changed lifecycle state — dropped, parked, retrieving, staged, handed back, closed, cancelled (data: ValetTicket).", "entryIndex": 21 },
+    { "definedValue": "apx.valet.retrieval.requested.v1", "entryDescription": "A customer or attendant requested a valeted vehicle; carries channel, ETA, and promised time (data: ValetTicket) — drives runner boards and customer notifications.", "entryIndex": 22 }
   ]
 }

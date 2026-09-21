@@ -96,6 +96,12 @@ screenshot link — an APDS Observation), and monthly-credential context
   record an applied validation in APDS-native terms: a Payment of type
   `validation` and the segment's `validationId`, so downstream APDS
   consumers see it without speaking APX.
+- **Program management (Part 20):** the merchant side — enrolment,
+  instrument stock, the redemption ledger, and billing — is the optional
+  class `apx-validations`. When claimed, the provider list above is
+  derived from active `ValidationProgram`s (each row carries the additive
+  `program` reference) and every `applyValidation` materializes a
+  `ValidationRedemption` (Part 20 §20.1–20.3).
 
 ## 6.4 Device status
 

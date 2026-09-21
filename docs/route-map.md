@@ -82,3 +82,23 @@ response is `202` — poll `GET /v1/commands/{id}` or subscribe to
 | `/api/v4.1/...` versioning | APX surface is `/v1/…`; APDS routes are unversioned-verbatim. The APDS version served is advertised in `/.well-known/apx-configuration`, never in the path. |
 | Webhooks / events | `POST /webhooks` (APDS-compatible superset: signed deliveries, retries, ledger, SSE — Part 8) |
 | Alerts | `GET/POST /v1/alerts` (Part 7) |
+| `GET /vehicles/{plate}/entitlement` | `GET /v1/enforcement/eligibility?credential={plate}&place={id}` — composed from APDS `/rights/assigned` + `/sessions`, which remain authoritative (Part 19 §19.3) |
+| `POST /citations` / `/tickets` / `/notices` | `POST /v1/violations` — one resource for all of them; `notice.noticeKind` says which was issued (Part 19) |
+| `PATCH /citations/{id} {status: paid}` | `POST /v1/violations/{id}/payment` with the Payment reference — money is taken via `/v1/payments`, never on the violation |
+| `POST /citations/{id}/dispute` | `POST /v1/violations/{id}/appeals` · `…/appeals/resolve` |
+| `GET /locations/{id}/enforcement-rules` | `GET /v1/enforcement/policies/effective?place={id}` — the jurisdiction's notice, cap, and escalation rules the server itself enforces (Part 19 §19.10) |
+| `GET /locations/{id}/signs` | `GET /v1/enforcement/signage/effective?place={id}&at=` — posted text, photo, position, in force at that instant (Part 19 §19.11) |
+| `citation.latitude` / `.longitude` | `Violation.location.observedLocation` (GeoJSON Point, **longitude first**) plus `observerLocation` for the officer (Part 19 §19.9) |
+| `POST /merchants` / `/validation-partners` | `POST /v1/validations/programs` — a merchant's enrolment at a place, with benefit, rules, and billing (Part 20) |
+| `POST /coupons/generate` | `POST /v1/validations/programs/{id}/issuances` — codes returned exactly once |
+| `GET /coupons/{code}` | `GET /v1/validations/instruments/{code}` |
+| `POST /tickets/{id}/validate` | `POST /v1/validations/redemptions` from devices and merchant apps; `POST /v1/commands` with `applyValidation` from an agent console — same ledger |
+| `GET /merchants/{id}/invoice` | `GET /v1/validations/programs/{id}/statement` (preview) · `POST …/statements` (close, immutable) |
+| `POST /cards` / `/tags` / `/fobs` | `POST /v1/credentials` — one resource for every read technology; `credentialType` is APDS's enum, `media.form` is the physical form (Part 21) |
+| `PATCH /cards/{id} {status: disabled}` | `POST /v1/credentials/{id}/suspend` · `/resume` · `/report-lost` · `/revoke` — each also rewrites the APDS `AssignedRight` so the lane agrees |
+| `POST /cards/{id}/reissue` | `POST /v1/credentials/{id}/replace` — successor issued and active, predecessor dead, one call |
+| `GET /cards/{id}/log` | `GET /v1/credentials/{id}/access-events` — granted/denied with reason; passback state is `GET …/{id}/passback` (Part 17) |
+| `POST /valet/checkin` | `POST /v1/valet/tickets` — custody with the drop-off condition report (notes, damage entries, photos, acknowledgement); the stay itself is the APDS Session (Part 22) |
+| `POST /valet/{ticket}/request-car` | `POST /v1/valet/tickets/{id}/retrieve` — channel (sms, app, web, voiceBot, kiosk, attendant, callCenter), returns ETA and promised time; customers use `apx.valet:request` |
+| `GET /valet/board` | `GET /v1/valet/queue?place=` — requested, retrieving, staged, in promised-time order |
+| `POST /valet/{ticket}/checkout` | `POST …/{id}/stage` then `POST …/{id}/handback` — verified claimant, handback condition report, mileage |

@@ -12,7 +12,9 @@ what this profile needs and is byte-identical to the full standard.
 ## What you do NOT need
 
 Alerts, accounts/payments, LPR lookup, reservations, permits, tolling,
-SSE streaming, credential-scoped discovery — **all optional classes.**
+violations/enforcement, validation programs, credential lifecycle, valet,
+resolution, SSE streaming, credential-scoped discovery — **all optional
+classes.**
 Add any of them later without touching what you build here.
 
 ## Build order (five steps, each independently testable)

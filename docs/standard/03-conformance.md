@@ -15,7 +15,8 @@ in `spec/registries/apx-conformance-classes.json`. An implementation:
 builds on them. `apx-control`, `apx-alerts`, `apx-events-sse`,
 `apx-discovery`, `apx-accounts`, `apx-payment-history`, `apx-lpr`,
 `apx-reservations`, `apx-permits`, `apx-tolling`, `apx-resolution`
-(requires `apx-control`), and `apx-mtls` are optional.
+(requires `apx-control`), `apx-violations`, `apx-validations`,
+`apx-credentials`, `apx-valet`, and `apx-mtls` are optional.
 
 **Dependency table (normative).** A claimed class requires every class in
 its row:
@@ -24,7 +25,7 @@ its row:
 |---|---|
 | `apx-data`, `apx-events` | — (base; both required by every other class) |
 | `apx-events-sse` | `apx-events` |
-| `apx-control`, `apx-alerts`, `apx-discovery`, `apx-accounts`, `apx-lpr`, `apx-reservations`, `apx-permits`, `apx-tolling` | base classes |
+| `apx-control`, `apx-alerts`, `apx-discovery`, `apx-accounts`, `apx-lpr`, `apx-reservations`, `apx-permits`, `apx-tolling`, `apx-violations`, `apx-validations`, `apx-credentials`, `apx-valet` | base classes |
 | `apx-payment-history` | `apx-accounts` |
 | `apx-resolution` | `apx-control` |
 | `apx-mtls` | — (composable with any set) |
@@ -80,7 +81,7 @@ The normative artifacts of an APX edition are: the bundled OpenAPI
 document, the APX data-profile overlay
 (`spec/openapi/overlays/apx-data-overlay.yaml`, whose application to the
 bundle produces the effective API description — Part 0 §0.5), the registry
-JSON files, Parts 0–18 of this written standard, and Annex A (conformance
+JSON files, Parts 0–22 of this written standard, and Annex A (conformance
 requirements and ICS template). The spec tooling in
 `tools/` is supporting material, not normative.
 

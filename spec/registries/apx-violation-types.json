@@ -1,0 +1,19 @@
+{
+  "id": "6b7c8d9e-0f1a-4b2c-9d3e-4f5a6b7c8d9e",
+  "version": 1,
+  "name": "apx-violation-types",
+  "creator": { "id": "a1000000-0000-4000-8000-000000000001", "className": "Organisation" },
+  "locator": "https://apx-standard.org/registries/apx-violation-types.json",
+  "userDefinedCodeListEntries": [
+    { "definedValue": "noValidRight", "entryDescription": "No AssignedRight or paid Session covers the vehicle at the place at the observed time.", "entryIndex": 0 },
+    { "definedValue": "expiredRight", "entryDescription": "The nearest AssignedRight or Session covering the vehicle has ended (overstay past the paid/permitted time).", "entryIndex": 1 },
+    { "definedValue": "notYetValidRight", "entryDescription": "The vehicle's right exists but its validity has not started (early arrival on a reservation or future-dated permit).", "entryIndex": 2 },
+    { "definedValue": "wrongPlace", "entryDescription": "The vehicle holds a right for a different HierarchyElement (wrong zone, level, lot, or space).", "entryIndex": 3 },
+    { "definedValue": "maximumStayExceeded", "entryDescription": "The stay exceeds the place's maximum-stay operating restriction regardless of payment.", "entryIndex": 4 },
+    { "definedValue": "restrictedSpace", "entryDescription": "The vehicle occupies a space it is not eligible for (accessible, EV charging, loading, reserved, permit-only).", "entryIndex": 5 },
+    { "definedValue": "permitMisuse", "entryDescription": "A permit or credential is presented by a vehicle it was not issued to, or is suspended, cloned, or otherwise invalid.", "entryIndex": 6 },
+    { "definedValue": "noParkingPeriod", "entryDescription": "The vehicle is parked during a period when the place is closed to parking (street cleaning, event closure, tow-away window).", "entryIndex": 7 },
+    { "definedValue": "obstruction", "entryDescription": "The vehicle obstructs a lane, access, exit, hydrant, or another space.", "entryIndex": 8 },
+    { "definedValue": "other", "entryDescription": "A violation class not otherwise listed; the notice text carries the specifics.", "entryIndex": 9 }
+  ]
+}

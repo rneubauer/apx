@@ -291,7 +291,114 @@ a reference to an object elsewhere in this same API.
 
 ---
 
-## 12. Room to grow: the vendor space
+## 12. Violations: enforcement, from camera to citation to appeal
+
+One resource — a **Violation** — for what operators call tickets, notices,
+warnings, or citations. Two ways of finding them are first-class:
+**automated** (a camera or sensor pipeline detects and, if policy allows,
+issues with no human in the loop) and **guided** (the system flags a
+candidate, an officer with a handheld confirms on site).
+
+| Route | What it does |
+|---|---|
+| `GET /v1/enforcement/eligibility?credential=&place=` | **The handheld screen-pop:** is this vehicle entitled to be here right now, and by what — permit, reservation, pay-by-plate session — with why not (expired, wrong zone) and a suggested violation type |
+| `POST /v1/violations` | Record a detection (idempotent — cameras and handhelds retry). The server runs the eligibility check and keeps the answer on the record |
+| `GET /v1/violations?plate=&status=&place=` · `GET …/{id}` | Query and read, with evidence links and the full audit trail |
+| `POST …/{id}/review` | Guided enforcement: the officer confirms or dismisses the candidate |
+| `POST …/{id}/issue` | Issue the notice or citation — amount, due date, how it was delivered |
+| `POST …/{id}/payment` | Attach the settling payment (taken through the Money section — nothing new to build) |
+| `POST …/{id}/appeals` · `…/appeals/resolve` | "That wasn't my car" — upheld, reduced, or dismissed, with audit |
+| `POST …/{id}/void` | Void; the record and its history stay readable |
+| `GET /v1/enforcement/policies/effective?place=` · `POST` / `PUT /v1/enforcement/policies` | **The law, machine-readable, per location:** which notice methods are lawful for which detections and by when, the penalty cap over the unpaid fee, the escalation schedule after 30/60 days with a ceiling, the appeal window. The server enforces it at issue and runs the escalation itself |
+| `GET /v1/enforcement/signage/effective?place=` · `POST` / `PUT /v1/enforcement/signage` | **What the sign said:** posted text (per language), a photo, where it stands, and when it was in force. Frozen onto every violation at issue, so the appeal sees the sign the officer saw |
+
+Every violation also carries where it happened and from where it was
+seen (GeoJSON, in the same shape APDS uses for camera observations).
+
+**Why this way:** APDS already says assigned rights are what enforcement
+systems check against — so APX composes that answer rather than inventing
+an entitlement model. Every violation keeps its evidence chain (camera
+reads → eligibility check → notice → payment → appeal) as references to
+objects elsewhere in this same API, and a guided detection can never be
+issued without a human's confirmation on the audit trail.
+
+---
+
+## 13. Validations: the merchant side, from enrolment to invoice
+
+Section 6 showed the two pieces a call center needs — *who may validate
+here* and *apply one to this ticket*. This section is everything the
+operator does around them:
+
+| Route | What it does |
+|---|---|
+| `POST /v1/validations/programs` · `PUT …/{id}` | Enrol a merchant: what the validation is worth, the rules (per-ticket and per-day caps, expiry, stackable), who pays and how, and how stock is issued. Suspend or end it later |
+| `POST …/programs/{id}/issuances` | Hand out a batch of codes, QR codes, or stamp stock — the codes come back exactly once |
+| `GET /v1/validations/instruments/{code}` | "Is this code good?" — what a pay station or the restaurant's iPad asks before applying |
+| `POST /v1/validations/redemptions` | Record the validation from any channel (pay station, merchant app, lane). The agent's `applyValidation` command lands in the same ledger |
+| `GET …/redemptions?program=&ticket=` · `POST …/{id}/reverse` | Query the ledger; reverse a mistake |
+| `GET …/programs/{id}/statement` · `POST …/statements` | Preview a billing period, then close it into an immutable statement accounting invoices from |
+
+Merchants get their own scope: a restaurant's app can check codes, issue
+its own stock, and record redemptions for its own program, and nothing
+else.
+
+**Why this way:** APDS records that a validation happened on a session
+but has no notion of a merchant program — so this adds the program and
+keeps the APDS record as the thing that actually reduces the amount due.
+Every redemption carries the *actual* reduction, not the nominal benefit,
+so month-end billing is evidence, not estimate.
+
+---
+
+## 14. Credentials: the card, the fob, the tag, the phone
+
+Monthly parkers get a keycard, a windshield tag, a fob, or a phone
+credential — and lose them, lend them, and stop paying for them. APDS
+knows a credential only as a line on the parker's assigned right. This
+section manages its life:
+
+| Route | What it does |
+|---|---|
+| `POST /v1/credentials` | Issue one — the read technology (RFID, Bluetooth, plate…), the value the lane reads, the physical form and serial, the deposit, who it belongs to and where it works |
+| `GET /v1/credentials?account=&identification=` · `GET …/{id}` | Find it by account, holder, card number, status, or facility |
+| `POST …/{id}/suspend` · `/resume` · `/report-lost` · `/revoke` | Change what it can do — every change lands on the parker's assigned right at the same instant, so the gate agrees with the office |
+| `POST …/{id}/replace` | "I lost my card" in one call: the new one is issued and active, the old one dead, deposits settled |
+| `GET …/{id}/access-events` | Every time it was presented: where, which direction, granted or denied, and why — the "why was I denied?" answer |
+
+**Why this way:** the record and the right are one truth. An active
+credential is written onto the APDS assigned right; a suspended or lost
+one is taken off it. Any lane that only speaks APDS still refuses the
+lost card at 6 PM because the office replaced it at noon — no second
+list to keep in sync.
+
+---
+
+## 15. Valet: custody, keys, "bring my car", and the scratch that wasn't there
+
+Hotels, hospitals, restaurants, and event venues hand cars to
+attendants all day, and every valet operator has its own app for it.
+This section is the shared shape:
+
+| Route | What it does |
+|---|---|
+| `POST /v1/valet/tickets` | Take custody: the car, the customer (minimized), mileage and fuel, the key tag, and a **condition report** — notes, per-panel damage entries, walk-around photos, customer acknowledgement |
+| `POST …/{id}/park` | Where it went and where the keys are |
+| `POST …/{id}/retrieve` | "Bring my car" — from a text, the app, a web page, a voice bot, a kiosk, or the stand; comes back with an ETA and a promised time |
+| `GET /v1/valet/queue?place=` | The runner board: everything requested, being fetched, or staged, in promised-time order |
+| `POST …/{id}/stage` · `/handback` | Car at the staging lane; car handed to a **verified** claimant with a handback condition report and mileage |
+| `GET …/{id}` (customer scope) | What the customer's phone shows: status and "ready in 8 minutes" — nothing about where the car or the keys are |
+
+**Why this way:** the stay and the money are the APDS session, untouched.
+What APDS has no words for is custody — who has the keys, where the car
+is, when it was asked for, who it was handed to — and evidence. The
+drop-off condition report, acknowledged by the customer, is what settles
+"that scratch wasn't there" a week later; the handback report and
+mileage settle the rest.
+
+---
+
+## 16. Room to grow: the vendor space
 
 Partner companies extend APX without asking permission and without breaking
 anyone:
@@ -312,11 +419,12 @@ systems unharmed, and the core API means the same thing everywhere.
 
 ---
 
-## 13. Not everything is mandatory: conformance classes
+## 17. Not everything is mandatory: conformance classes
 
 APX is sliced into named, independently claimable feature sets — `apx-data`
 and `apx-events` are the base; control, alerts, discovery, accounts,
-payment-history, LPR, reservations, permits, and tolling are each optional.
+payment-history, LPR, reservations, permits, tolling, violations,
+validations, credentials, and valet are each optional.
 A server advertises its classes in its bootstrap document, and the
 written standard defines objective conformance requirements for each
 class an implementation claims.
@@ -331,5 +439,5 @@ conformance requirements make the claim testable rather than aspirational.
 
 - Postman / Swagger UI: import `spec/dist/apx-v1.yaml`
 - PARCS vendors: the slim profile subset `spec/dist/apx-parcs.json`
-- The deep dives: the 17-part written standard in `docs/standard/`
+- The deep dives: the written standard (Parts 0–22 + Annex A) in `docs/standard/`
   (each Part covers one section above, normatively)

@@ -224,6 +224,11 @@ ValidationProvider:
     provider:
       $ref: "../../../vendor/apds/4.1/apds-api-4.1.yaml#/components/schemas/Reference"
     name: { type: string }
+    program:
+      description: |-
+        The ValidationProgram this row is derived from, when the server
+        claims `apx-validations` (Part 20) — additive; absent otherwise.
+      $ref: "../../../vendor/apds/4.1/apds-api-4.1.yaml#/components/schemas/Reference"
     validationType:
       type: string
       description: e.g. flat discount, hours comped — implementer code list.
