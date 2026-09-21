@@ -40,15 +40,19 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
+      # The oasdiff action runs in a Docker container that mounts only the
+      # workspace (and RUNNER_TEMP) — the runner's /tmp is NOT visible inside
+      # it. Write the base bundle into the workspace and pass a relative path.
       - name: Extract base-branch bundle
         run: |
           git fetch --depth=1 origin "$BASE_REF"
-          git show "origin/$BASE_REF:spec/dist/apx-v1.yaml" > /tmp/base-apx-v1.yaml
+          mkdir -p .oasdiff
+          git show "origin/$BASE_REF:spec/dist/apx-v1.yaml" > .oasdiff/base-apx-v1.yaml
         env:
           BASE_REF: ${{ github.base_ref }}
       - name: Breaking-change gate (oasdiff)
         uses: oasdiff/oasdiff-action/breaking@main
         with:
-          base: /tmp/base-apx-v1.yaml
+          base: .oasdiff/base-apx-v1.yaml
           revision: spec/dist/apx-v1.yaml
           fail-on: ERR
