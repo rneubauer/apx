@@ -115,6 +115,10 @@ demand table. APX adds one convenience read:
   the Part 8 fabric. Where `apx-alerts` is implemented, a configured
   threshold crossing SHOULD also raise an `occupancyThresholdExceeded`
   alert (Part 7).
+- EXPERIMENTAL (Part 23 §23.7): the snapshot MAY carry an `evCharging`
+  block — charging points total, available, charging, occupied but not
+  charging, blocked, inoperative — derived from `ChargingPointStatus`, so
+  "is there a free charger" is the same read as "is there a free space".
 
 ## 5.6 Conformance
 

@@ -146,3 +146,13 @@ ticket's events.
 
 Every list is paginated in the APDS `PaginatedList` shape and constrained
 to the caller's place grant.
+
+## 22.9 Experimental cross-link: charging (Part 23)
+
+`ValetTicket.charging` (optional, additive) records that the guest asked
+for the car to be charged — `requested`, `targetStateOfChargePercent`,
+`instructions` — and, once the valet plugs in, references the Part 23
+`ChargingSession`, which points back via `valetTicket`. Valet charging
+settles on the stay's APDS Session by default. The customer read (§22.5)
+exposes `charging.requested` and `charging.session`; the charge itself is
+read under `apx.charging:status`.

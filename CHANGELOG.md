@@ -6,6 +6,40 @@ conformance/versioning rules in Part 3 of the written standard.
 The machine-readable spec (`spec/openapi/apx.yaml`, bundled as
 `spec/dist/apx-v1.*`) is normative; entries here are informative.
 
+## [Unreleased] — EXPERIMENTAL, branch `beta/ev-charging`
+
+EV charging (Part 23, proposed optional class `apx-charging`) — the
+**parking-side view** of charging; not a charger protocol (OCPP) or a
+roaming protocol (OCPI), whose identifiers ride along opaquely. APDS 4.1
+already has the static infrastructure (`ElectricChargingEquipment`,
+`ElectricChargingPoint`, `Connector`, the IEC enums, `kWh`,
+`refillPointIndex`, `electricVehicleOnly`); all reused by `$ref`. New:
+`ChargingPointStatus` (live availability per point and connector in the
+OCPI status vocabulary, `currentSession`, `reservedFor`, and `bay`
+presence); `ChargingBayPresence` (what the overhead camera / sensor /
+attendant sees — `empty | vehiclePluggedIn | vehicleNotPluggedIn |
+blocked`, fused with the charger's connector state by a normative table
+so "car in the EV bay, not plugged in" and "bay blocked" are first-class
+facts with the Observation as evidence); `ChargingSession` referencing
+the APDS Session for the stay — authorization (APDS
+`AuthenticationAndIdentificationEnum`), OCPP-aligned lifecycle
+`authorized → pluggedIn → charging ⇄ suspended → complete → idle →
+unplugged → closed` with server-side `idle` after a snapshotted
+`idlePolicy` grace, energy and state of charge, cost breakdown, and
+three settlement modes (`parkingSession` one bill at exit,
+`directPayment`, `chargingNetwork`); `ChargingEvent` (the bridge's
+ingest, one per OCPP TransactionEvent). Nine operations under
+`/v1/charging`; scopes `apx.charging:read`/`:manage` and the customer
+`apx.charging:status` (minimized). Additive cross-links:
+`ValetTicket.charging` (Part 22 §22.9), `OccupancySnapshot.evCharging`
+(Part 5 §5.5). Charger control (`startCharging`, `stopCharging`,
+`unlockConnector`) via the Part 6 command plane. Scenario 23 (ICE in the
+bay caught by the camera, free-vend charge attributed to the parking
+session by bay LPR, idle after complete, `unlockConnector`, one bill at
+exit). **Nothing registered:** class, topics, command/alert/violation
+types, and problem types are PROPOSED (Part 23 §23.14; Annex A.21 rows
+provisional) and the package version is unchanged until merge.
+
 ## [0.9.0] — 2026-09-21
 
 LPR read fidelity (Part 13 §13.3a, class `apx-lpr`). APDS's Observation

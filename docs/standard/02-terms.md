@@ -29,6 +29,12 @@ are NOT redefined here.
   (Part 3), registered in `apx-conformance-classes`.
 - **Grant** — the pair of token claims (`apx_org`, `apx_places`) bounding
   what a client may see/do (Part 9).
+- **Charging point** (experimental, Part 23) — an APDS
+  `ElectricChargingEquipment` hierarchy element; APX overlays live
+  availability and bay presence on it (`ChargingPointStatus`).
+- **Charging session** (experimental, Part 23) — an APX resource recording
+  one charge of one vehicle at one charging point as it relates to the
+  parking `Session` it happened inside (`ChargingSession`).
 
 ## 2.2 Notation
 

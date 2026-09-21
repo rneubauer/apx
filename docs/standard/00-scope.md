@@ -12,7 +12,8 @@ model published as ISO/TS 5206-1). APX defines the interoperable API surface
 that APDS deliberately leaves out: real-time delivery, operational control,
 alerting, discovery, and the operational domains built on them (accounts &
 payments, LPR, reservations, permits, tolling, violations/enforcement,
-validation programs, credential lifecycle, valet).
+validation programs, credential lifecycle, valet; EV charging is
+experimental, Part 23).
 
 ## 0.2 Prime directive: APDS-first
 
@@ -74,6 +75,7 @@ validation programs, credential lifecycle, valet).
 | 20 | 20-validations.md | Validations — merchant programs, instrument issuance, redemption ledger, billing statements |
 | 21 | 21-credentials.md | Credentials — keycard/fob/RFID/mobile lifecycle, replacement, access-event history |
 | 22 | 22-valet.md | Valet — custody, condition evidence, retrieval queue and ETA, staging, verified handback |
+| 23 | 23-charging.md | **EXPERIMENTAL** — EV charging, the parking-side view: live point status with bay-presence fusion, ChargingSession on the APDS Session, idle after complete, settlement, charger control via Part 6 |
 | A | annex-a-ics.md | Conformance requirements and ICS template |
 
 The machine-readable OpenAPI 3.1 document (`spec/openapi/apx.yaml`, bundled

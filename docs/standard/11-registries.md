@@ -52,3 +52,12 @@ link the registry versions it validates against.
    one edition; should APDS adopt APX, appeals escalate to the APDS change
    process, and any registry value APDS later standardizes is reconciled
    per Part 3 §3.3(8).
+
+## 11.4 Proposed entries pending merge (experimental)
+
+Part 23 (EV charging, branch `beta/ev-charging`) proposes entries in
+`apx-conformance-classes`, `apx-topics`, `apx-command-types`,
+`apx-alert-types`, and `apx-violation-types`, listed in Part 23 §23.14.
+None is registered; none appears in these files until the Part merges,
+when each list is bumped once per §11.1. Implementers prototyping the
+Part use the §11.3 interim path meanwhile.

@@ -103,3 +103,8 @@ response is `202` — poll `GET /v1/commands/{id}` or subscribe to
 | `POST /valet/{ticket}/request-car` | `POST /v1/valet/tickets/{id}/retrieve` — channel (sms, app, web, voiceBot, kiosk, attendant, callCenter), returns ETA and promised time; customers use `apx.valet:request` |
 | `GET /valet/board` | `GET /v1/valet/queue?place=` — requested, retrieving, staged, in promised-time order |
 | `POST /valet/{ticket}/checkout` | `POST …/{id}/stage` then `POST …/{id}/handback` — verified claimant, handback condition report, mileage |
+| `GET /chargers?available=true` | **Experimental** `GET /v1/charging/points?place=&availability=available` — live status per point and connector, plus what the bay camera sees (Part 23) |
+| `POST /chargers/{id}/heartbeat` / `/status` | `PUT /v1/charging/points/{id}/status` from the charging-network bridge; `POST …/{id}/bay` from the overhead camera (vehicle present but not plugged in, bay blocked) |
+| `POST /charging-sessions/start` · `/stop` | `POST /v1/charging/sessions` (authorization), then `POST …/{id}/events` — one `ChargingEvent` per OCPP TransactionEvent (pluggedIn, chargingStarted, meterValue, chargingEnded, unplugged); `idle` is server-side after grace |
+| `GET /my-charge` | `GET /v1/charging/sessions/{id}` on `apx.charging:status` — kWh, state of charge, grace and idle rate, cost so far; no plate or network ids |
+| `POST /chargers/{id}/unlock` | `POST /v1/commands` with `unlockConnector` (also `startCharging`, `stopCharging`) — Part 6, with `confirmationLevel` |

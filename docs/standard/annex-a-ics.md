@@ -211,6 +211,7 @@ Classes claimed: [ ] apx-data  [ ] apx-events  [ ] apx-events-sse
   [ ] apx-payment-history  [ ] apx-lpr  [ ] apx-reservations
   [ ] apx-permits  [ ] apx-tolling  [ ] apx-resolution  [ ] apx-violations
   [ ] apx-validations  [ ] apx-credentials  [ ] apx-valet  [ ] apx-mtls
+  (experimental, NOT claimable until registered: apx-charging — A.21)
 
 For each requirement row of every claimed class (and A.1):
   <ID>: PASS | N/A (conditional not applicable) | DEVIATION (explain)
@@ -218,3 +219,24 @@ For each requirement row of every claimed class (and A.1):
 
 A claim with any unexplained non-PASS row on a claimed class is
 non-conforming (§3.1: no partial classes).
+
+## A.21 `apx-charging` — EXPERIMENTAL, not claimable
+
+> Part 23 is on branch `beta/ev-charging`. These rows are provisional:
+> the identifiers are reserved but MUST NOT appear in an ICS until the
+> class is registered and this banner removed. The section sits after
+> the A.20 template deliberately, because the template's class list
+> cannot yet include it; on merge it moves ahead of the template.
+
+| ID | Requirement | Source |
+|---|---|---|
+| APX-EVC-01 | ChargingPointStatus keyed by Reference to the APDS ElectricChargingEquipment; carries `refillPointIndex`/`evseId`; static descriptive fields never duplicated; bridge `PUT …/status` cannot write `bay` | §23.1 |
+| APX-EVC-02 | Lifecycle per §23.2 driven by `ChargingEvent`s applied in time order with immutable `statusHistory[]`; illegal transitions → 409 `charging-transition-illegal`; open on an unavailable point → 409 `charging-point-unavailable` | §23.2 |
+| APX-EVC-03 | `complete → idle` server-side after `idlePolicy.graceMinutes`; `idleStartedTime` set; `apx.charging.idle.started.v1` published | §23.2, §23.12 |
+| APX-EVC-04 | Bay presence fused per the §23.3 table; `vehicleNotPluggedIn`/`blocked` yield `availability: blocked` when no cable is connected (a connected cable wins); camera Observation carried as evidence; `bay.vehicle`/`imageLink` operator-scope only | §23.1, §23.3 |
+| APX-EVC-05 | `deliveredKwh` never derived from time × rated power; absent energy means unreported | §23.4 |
+| APX-EVC-06 | `settlement.mode` honoured: `parkingSession` requires the Session reference and refuses `…/payment` (409 `charging-settlement-conflict`); `directPayment` closes on the payment attached after `unplugged` (earlier → 409); `chargingNetwork` records energy and idle without money; `idlePolicy` snapshotted, never re-priced, idle billed per started unit | §23.5 |
+| APX-EVC-07 | `apx.charging:status` confined to the caller's own session(s) and the place's point availability; reads minimized exactly per the §23.6 omit-lists | §23.6 |
+| APX-EVC-08 | `OccupancySnapshot.evCharging` populated where point status is held | §23.7 |
+| APX-EVC-09 | Charger actions only via Part 6 commands; `confirmationLevel` discipline applies | §23.9 |
+| APX-EVC-10 | `apx.charging.session.status.v1` on every transition; `apx.charging.point.status.v1` on availability/presence change; place-bound on `.place` | §23.12 |

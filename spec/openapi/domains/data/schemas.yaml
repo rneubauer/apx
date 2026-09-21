@@ -90,6 +90,37 @@ OccupancySnapshot:
         overfull facilities clamp to 0 (the demand record still shows the
         true count).
       examples: [59]
+    evCharging:
+      type: object
+      description: |-
+        EXPERIMENTAL (Part 23 §23.7) — charging availability under this
+        element, derived from ChargingPointStatus. Optional; present only
+        when the implementation claims the proposed `apx-charging` class.
+        Counts are of charging points (APDS ElectricChargingEquipment),
+        not connectors. Absent counts are unknown, never guessed.
+      properties:
+        pointsTotal:
+          type: integer
+          minimum: 0
+        available:
+          type: integer
+          minimum: 0
+          description: "Points with `availability: available`."
+        charging:
+          type: integer
+          minimum: 0
+        occupiedNotCharging:
+          type: integer
+          minimum: 0
+          description: Points `occupied` (cable connected, no energy) — includes complete and idle sessions.
+        blocked:
+          type: integer
+          minimum: 0
+          description: Points whose bay holds a vehicle that is not plugged in, or is obstructed.
+        inoperative:
+          type: integer
+          minimum: 0
+          description: Points `inoperative` or `outOfOrder`.
     extensions:
       $ref: "../common/schemas.yaml#/Extensions"
 
