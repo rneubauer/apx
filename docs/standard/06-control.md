@@ -120,3 +120,12 @@ screenshot link — an APDS Observation), and monthly-credential context
 `apx-control` requires: §6.1 command plane with vendGate, lostTicket,
 pushRate, applyValidation; §6.2 lane inquiry; §6.3 provider query; §6.4
 device status; the grant rule; and command/device event publication.
+
+## 6.6 Experimental command types (Part 23)
+
+Proposed, not registered: `startCharging`, `stopCharging`,
+`unlockConnector` — targets an APDS `ElectricChargingEquipment`;
+parameters `connectorIndex` and `chargingSession` (Reference), or for
+`startCharging` an `authorization` object instead of the session. Defined in
+Part 23 §23.9 on branch `beta/ev-charging`; until registered, operators
+use the Part 11 §11.3 interim path (their own code list).

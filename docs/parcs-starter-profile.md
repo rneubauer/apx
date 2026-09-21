@@ -14,7 +14,7 @@ what this profile needs and is byte-identical to the full standard.
 Alerts, accounts/payments, LPR lookup, reservations, permits, tolling,
 violations/enforcement, validation programs, credential lifecycle, valet,
 resolution, SSE streaming, credential-scoped discovery — **all optional
-classes.**
+classes** (and EV charging, Part 23, is experimental).
 Add any of them later without touching what you build here.
 
 ## Build order (five steps, each independently testable)

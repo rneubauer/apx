@@ -18,6 +18,13 @@ builds on them. `apx-control`, `apx-alerts`, `apx-events-sse`,
 (requires `apx-control`), `apx-violations`, `apx-validations`,
 `apx-credentials`, `apx-valet`, and `apx-mtls` are optional.
 
+**Experimental classes.** `apx-charging` (Part 23) is proposed on branch
+`beta/ev-charging`: it is not registered, not claimable in an ICS, and
+may change incompatibly until merged. Implementations MAY prototype it
+and MUST NOT advertise it in `/.well-known/apx-configuration` before it
+is registered. It requires the base classes, and `apx-control` for its
+charger-control commands (§23.9).
+
 **Dependency table (normative).** A claimed class requires every class in
 its row:
 

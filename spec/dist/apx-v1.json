@@ -94,6 +94,11 @@
     {
       "name": "Valet",
       "description": "Valet custody (optional class apx-valet, net-new domain) — drop-off\nwith condition evidence, parked position and keys, the retrieval\nqueue with ETA (from text, app, web, voice bot, kiosk, or\nattendant), staging, and verified handback. The APDS Session\nremains the stay and the money. See written standard Part 22."
+    },
+    {
+      "name": "Charging",
+      "x-apx-experimental": true,
+      "description": "**EXPERIMENTAL** — EV charging, the parking-side view (proposed\nclass apx-charging; Part 23; branch beta/ev-charging). Live\ncharging-point availability and what the bay camera sees, the\nChargingSession referencing the APDS Session for the stay (energy,\nOCPP-aligned state, idle after complete, cost, three settlement\nmodes), the bridge's event ingest, and a customer status scope.\nCharger control (start, stop, unlock connector) goes through the\nPart 6 command plane. Not a charger or roaming protocol: OCPP/OCPI\nidentifiers ride along opaquely. Subject to change until merged;\nno registry entries yet."
     }
   ],
   "paths": {
@@ -8613,6 +8618,787 @@
         }
       }
     },
+    "/v1/charging/points": {
+      "get": {
+        "operationId": "get-apx-v1-charging-points",
+        "security": [
+          {
+            "apxOAuth": [
+              "apx.charging:read"
+            ]
+          },
+          {
+            "apxOAuth": [
+              "apx.charging:status"
+            ]
+          }
+        ],
+        "tags": [
+          "Charging"
+        ],
+        "summary": "List live charging-point status for a place (experimental)",
+        "description": "ChargingPointStatus for every ElectricChargingEquipment under the\nplace (subtree-inclusive), optionally filtered by `availability`\n— \"is there a free charger\". A `apx.charging:status` token\nreceives the minimized form (no `bay.vehicle`, no `bay.imageLink`,\nno `currentSession`; Part 23 §23.6).",
+        "parameters": [
+          {
+            "name": "place",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "availability",
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "enum": [
+                "available",
+                "occupied",
+                "charging",
+                "reserved",
+                "blocked",
+                "inoperative",
+                "outOfOrder",
+                "unknown"
+              ]
+            }
+          },
+          {
+            "$ref": "#/components/parameters/page"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Charging-point status list (APDS PaginatedList shape).",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "meta": {
+                      "$ref": "#/components/schemas/PaginatedListMeta"
+                    },
+                    "data": {
+                      "type": "array",
+                      "items": {
+                        "$ref": "#/components/schemas/ChargingPointStatus"
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "404": {
+            "description": "No such place.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "429": {
+            "$ref": "#/components/responses/TooManyRequests"
+          }
+        }
+      }
+    },
+    "/v1/charging/points/{id}": {
+      "get": {
+        "operationId": "get-apx-v1-charging-points-id",
+        "security": [
+          {
+            "apxOAuth": [
+              "apx.charging:read"
+            ]
+          },
+          {
+            "apxOAuth": [
+              "apx.charging:status"
+            ]
+          }
+        ],
+        "tags": [
+          "Charging"
+        ],
+        "summary": "Read one charging point's live status (experimental)",
+        "description": "ChargingPointStatus keyed by the ElectricChargingEquipment id. Minimized for `apx.charging:status` (Part 23 §23.6).",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The status overlay.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ChargingPointStatus"
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "404": {
+            "description": "No such charging point (or outside the caller's grant).",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "429": {
+            "$ref": "#/components/responses/TooManyRequests"
+          }
+        }
+      }
+    },
+    "/v1/charging/points/{id}/status": {
+      "put": {
+        "operationId": "put-apx-v1-charging-points-id-status",
+        "security": [
+          {
+            "apxOAuth": [
+              "apx.charging:manage"
+            ]
+          }
+        ],
+        "tags": [
+          "Charging"
+        ],
+        "summary": "Bridge pushes the point's availability (experimental)",
+        "description": "The charging-network bridge (the operator's OCPP/OCPI integration)\nreplaces the point-level and per-connector `availability`,\n`currentSession`, `reservedFor`, and `lastCommunication`. The `bay`\nblock is NOT written here — it comes from `…/bay` and is fused by\nthe server (Part 23 §23.3); a `bay` in this body is ignored.\nPublishes `apx.charging.point.status.v1` when availability\nchanges.",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ChargingPointStatus"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "The fused status after the update.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ChargingPointStatus"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Body `chargingPoint` does not match the path id.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "404": {
+            "description": "No such charging point.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "429": {
+            "$ref": "#/components/responses/TooManyRequests"
+          }
+        }
+      }
+    },
+    "/v1/charging/points/{id}/bay": {
+      "post": {
+        "operationId": "post-apx-v1-charging-points-id-bay",
+        "security": [
+          {
+            "apxOAuth": [
+              "apx.charging:manage"
+            ]
+          }
+        ],
+        "tags": [
+          "Charging"
+        ],
+        "summary": "Camera or sensor reports what is in the bay (experimental)",
+        "description": "An overhead-camera analytics system, ground sensor, or attendant\nreports the bay's physical presence: empty, vehicle plugged in,\nvehicle NOT plugged in, blocked. The server fuses it with the\ncharger's connector state (Part 23 §23.3 table) into\n`ChargingPointStatus.bay` and derives `availability: blocked` when\nno cable is connected (a connected cable wins). A vehicle not\nplugged in past the place's grace SHOULD raise the proposed\n`evBayNotCharging` alert — or the seeded `iceInEvSpace` when\n`vehicle.evCapable` is false; an obstructed bay SHOULD raise the\nproposed `evBayBlocked` alert (Part 7; Part 23 §23.3).\n`Idempotency-Key` REQUIRED (cameras re-send).",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "Idempotency-Key",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ChargingBayPresence"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "The fused status after the observation.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ChargingPointStatus"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Missing Idempotency-Key or invalid observation.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "404": {
+            "description": "No such charging point.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "429": {
+            "$ref": "#/components/responses/TooManyRequests"
+          }
+        }
+      }
+    },
+    "/v1/charging/sessions": {
+      "post": {
+        "operationId": "post-apx-v1-charging-sessions",
+        "security": [
+          {
+            "apxOAuth": [
+              "apx.charging:manage"
+            ]
+          }
+        ],
+        "tags": [
+          "Charging"
+        ],
+        "summary": "Open a charging session (authorization, idempotent; experimental)",
+        "description": "Creates the ChargingSession in `authorized` with the authorization,\nthe point and connector, the parking Session it belongs to, the\nsettlement mode, and the idle policy snapshot; the plug-in itself\narrives as a `pluggedIn` event (Part 23 §23.2). `Idempotency-Key`\nREQUIRED. 409 `charging-point-unavailable` when the point or\nconnector is inoperative, out of order, reserved for someone else,\nor already serving an active session. Publishes\n`apx.charging.session.status.v1`.",
+        "parameters": [
+          {
+            "name": "Idempotency-Key",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ChargingSession"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Idempotent replay — same key + same body returns the ORIGINAL session.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ChargingSession"
+                }
+              }
+            }
+          },
+          "201": {
+            "description": "Session opened.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ChargingSession"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Missing Idempotency-Key or invalid session.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "409": {
+            "description": "Point/connector unavailable, or Idempotency-Key replayed with a different body.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Unknown place, charging point, parking session, or credential reference; or `settlement.mode` parkingSession without `parkingSession`.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "429": {
+            "$ref": "#/components/responses/TooManyRequests"
+          }
+        }
+      },
+      "get": {
+        "operationId": "get-apx-v1-charging-sessions",
+        "security": [
+          {
+            "apxOAuth": [
+              "apx.charging:read"
+            ]
+          }
+        ],
+        "tags": [
+          "Charging"
+        ],
+        "summary": "List/filter charging sessions (experimental)",
+        "description": "Filter by place (subtree-inclusive), charging point, status, plate, parking session, account, and `since` (timeline.authorizedTime).",
+        "parameters": [
+          {
+            "name": "place",
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "chargingPoint",
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "status",
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "enum": [
+                "authorized",
+                "pluggedIn",
+                "charging",
+                "suspended",
+                "complete",
+                "idle",
+                "unplugged",
+                "closed",
+                "cancelled",
+                "faulted"
+              ]
+            }
+          },
+          {
+            "name": "plate",
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "parkingSession",
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "account",
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "since",
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "format": "date-time"
+            }
+          },
+          {
+            "$ref": "#/components/parameters/page"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Paginated sessions (APDS PaginatedList shape).",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "meta": {
+                      "$ref": "#/components/schemas/PaginatedListMeta"
+                    },
+                    "data": {
+                      "type": "array",
+                      "items": {
+                        "$ref": "#/components/schemas/ChargingSession"
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "429": {
+            "$ref": "#/components/responses/TooManyRequests"
+          }
+        }
+      }
+    },
+    "/v1/charging/sessions/{id}": {
+      "get": {
+        "operationId": "get-apx-v1-charging-sessions-id",
+        "security": [
+          {
+            "apxOAuth": [
+              "apx.charging:read"
+            ]
+          },
+          {
+            "apxOAuth": [
+              "apx.charging:status"
+            ]
+          }
+        ],
+        "tags": [
+          "Charging"
+        ],
+        "summary": "Read a charging session (experimental)",
+        "description": "Full record for operator scopes. A `apx.charging:status` token sees\nonly its own session(s), minimized (Part 23 §23.6): status, energy\nand state of charge, timeline, idle policy and idle clock, cost\ntotals, the point and connector — no plate, no credential or\ncontract id, no network identifiers. Enough for \"your car is at\n62%, charging ends in about 40 minutes; 10 minutes grace, then\n$0.40 per minute\".",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The session.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ChargingSession"
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "404": {
+            "description": "No such session (or outside the caller's grant).",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "429": {
+            "$ref": "#/components/responses/TooManyRequests"
+          }
+        }
+      }
+    },
+    "/v1/charging/sessions/{id}/events": {
+      "post": {
+        "operationId": "post-apx-v1-charging-sessions-id-events",
+        "security": [
+          {
+            "apxOAuth": [
+              "apx.charging:manage"
+            ]
+          }
+        ],
+        "tags": [
+          "Charging"
+        ],
+        "summary": "Bridge reports a physical-timeline event (experimental)",
+        "description": "The APX counterpart of an OCPP 2.0.1 TransactionEvent. Applies the\ntransition for `eventType` per Part 23 §23.2 — `pluggedIn`,\n`chargingStarted`, `suspended`/`resumed`, `chargingEnded`,\n`unplugged`, `fault`, `cancelled` — or, for `meterValue`, updates\n`energy` in place. Events MUST be applied in `time` order; one that\nis illegal from the current state is 409\n`charging-transition-illegal` (a `meterValue` after `unplugged`, a\n`pluggedIn` after `charging`). `Idempotency-Key` REQUIRED. Every\nstate change appends `statusHistory` and publishes\n`apx.charging.session.status.v1`; `complete → idle` is server-side\nafter `idlePolicy.graceMinutes` and additionally publishes\n`apx.charging.idle.started.v1`.",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "Idempotency-Key",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ChargingEvent"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "The session after the event.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ChargingSession"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Missing Idempotency-Key or invalid event.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "404": {
+            "description": "No such session.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Illegal transition from the current state, or Idempotency-Key replayed with a different body.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "429": {
+            "$ref": "#/components/responses/TooManyRequests"
+          }
+        }
+      }
+    },
+    "/v1/charging/sessions/{id}/payment": {
+      "post": {
+        "operationId": "post-apx-v1-charging-sessions-id-payment",
+        "security": [
+          {
+            "apxOAuth": [
+              "apx.charging:manage"
+            ]
+          }
+        ],
+        "tags": [
+          "Charging"
+        ],
+        "summary": "Attach the settling payment or the network's CDR (experimental)",
+        "description": "For `settlement.mode: directPayment`, attaches the settling\nPayment reference and moves an `unplugged` session to `closed`;\nbefore `unplugged` the final cost is unknown and it is 409\n`charging-settlement-conflict`. For `chargingNetwork`, records the\ncharge detail record id. For `parkingSession` it is 409\n`charging-settlement-conflict` — that session closes when the APDS\nSession settles. Also 409 when the session is already `closed`.",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ChargingPaymentAttachment"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "The settled session.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ChargingSession"
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "404": {
+            "description": "No such session.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Settlement mode does not take a payment here, session not yet unplugged, or already closed.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "429": {
+            "$ref": "#/components/responses/TooManyRequests"
+          }
+        }
+      }
+    },
     "/v1/reservations/recent": {
       "get": {
         "operationId": "get-apx-v1-reservations-recent",
@@ -11204,7 +11990,10 @@
               "apx.credentials:manage": "Issue, activate, suspend, resume, report lost, revoke, and replace credentials",
               "apx.valet:read": "Read valet tickets and the retrieval queue",
               "apx.valet:manage": "Take custody, park, stage, hand back, and manage retrievals",
-              "apx.valet:request": "Customer scope — request or cancel retrieval and read status/ETA for the caller's own ticket (text, app, web, voice bot)"
+              "apx.valet:request": "Customer scope — request or cancel retrieval and read status/ETA for the caller's own ticket (text, app, web, voice bot)",
+              "apx.charging:read": "EXPERIMENTAL — read charging-point status (with bay presence) and charging sessions",
+              "apx.charging:manage": "EXPERIMENTAL — bridge scope; push point availability, bay observations, open sessions, report timeline events, attach settlement",
+              "apx.charging:status": "EXPERIMENTAL — customer scope; minimized read of the caller's own charging session and the place's charger availability (app, text, voice bot)"
             }
           }
         }
@@ -11479,6 +12268,40 @@
             "examples": [
               59
             ]
+          },
+          "evCharging": {
+            "type": "object",
+            "description": "EXPERIMENTAL (Part 23 §23.7) — charging availability under this\nelement, derived from ChargingPointStatus. Optional; present only\nwhen the implementation claims the proposed `apx-charging` class.\nCounts are of charging points (APDS ElectricChargingEquipment),\nnot connectors. Absent counts are unknown, never guessed.",
+            "properties": {
+              "pointsTotal": {
+                "type": "integer",
+                "minimum": 0
+              },
+              "available": {
+                "type": "integer",
+                "minimum": 0,
+                "description": "Points with `availability: available`."
+              },
+              "charging": {
+                "type": "integer",
+                "minimum": 0
+              },
+              "occupiedNotCharging": {
+                "type": "integer",
+                "minimum": 0,
+                "description": "Points `occupied` (cable connected, no energy) — includes complete and idle sessions."
+              },
+              "blocked": {
+                "type": "integer",
+                "minimum": 0,
+                "description": "Points whose bay holds a vehicle that is not plugged in, or is obstructed."
+              },
+              "inoperative": {
+                "type": "integer",
+                "minimum": 0,
+                "description": "Points `inoperative` or `outOfOrder`."
+              }
+            }
           },
           "extensions": {
             "$ref": "#/components/schemas/Extensions"
@@ -15118,6 +15941,29 @@
               }
             }
           },
+          "charging": {
+            "type": "object",
+            "description": "EXPERIMENTAL (Part 23 §23.8) — the guest asked the valet to charge\nthe car. Additive and optional; the charge itself is a Part 23\nChargingSession referenced here once the valet plugs in.",
+            "properties": {
+              "requested": {
+                "type": "boolean",
+                "description": "The customer asked for the vehicle to be charged during the stay."
+              },
+              "targetStateOfChargePercent": {
+                "type": "number",
+                "minimum": 0,
+                "maximum": 100
+              },
+              "instructions": {
+                "type": "string",
+                "description": "Free text from the customer (charge port side, adapter in trunk…)."
+              },
+              "session": {
+                "description": "The Part 23 ChargingSession the valet opened.",
+                "$ref": "#/components/schemas/Reference"
+              }
+            }
+          },
           "valetStatus": {
             "type": "string",
             "enum": [
@@ -15286,6 +16132,668 @@
             "$ref": "#/components/schemas/ConditionReport"
           },
           "notes": {
+            "type": "string"
+          }
+        }
+      },
+      "ChargingBayPresence": {
+        "title": "ChargingBayPresence",
+        "description": "EXPERIMENTAL (Part 23) — what the bay in front of a charging point physically contains, as\nobserved by an overhead camera, a ground sensor, the charger's own\nconnector state, or an attendant — fused by the server (Part 23 §23.3).\nDistinguishes the cases the charger alone cannot: a vehicle parked in\nthe bay but not plugged in (an ICE vehicle, or an EV not charging), and\na bay blocked by something that is not a vehicle. Also the request body\na camera analytics system POSTs to `…/points/{id}/bay`.",
+        "type": "object",
+        "required": [
+          "presence"
+        ],
+        "properties": {
+          "presence": {
+            "type": "string",
+            "enum": [
+              "empty",
+              "vehiclePluggedIn",
+              "vehicleNotPluggedIn",
+              "blocked",
+              "unknown"
+            ],
+            "description": "`empty` — nothing in the bay; `vehiclePluggedIn` — a vehicle is\npresent and the charger reports a connected cable;\n`vehicleNotPluggedIn` — a vehicle is present and no cable is\nconnected (ICE-ing, or an EV not charging); `blocked` — the bay is\nobstructed by something other than a parked vehicle (cones,\ndebris, a vehicle straddling); `unknown`."
+          },
+          "source": {
+            "type": "string",
+            "enum": [
+              "overheadCamera",
+              "groundSensor",
+              "charger",
+              "attendant",
+              "inferred"
+            ],
+            "description": "The evidence source this presence state was derived from (the strongest one, when fused)."
+          },
+          "observation": {
+            "description": "The APDS Observation carrying the camera/sensor evidence (Part 13 §13.3 conventions).",
+            "$ref": "#/components/schemas/Reference"
+          },
+          "observedTime": {
+            "$ref": "#/components/schemas/DateTime"
+          },
+          "sinceTime": {
+            "description": "When the current presence state began — the dwell clock for not-plugged-in and idle handling.",
+            "$ref": "#/components/schemas/DateTime"
+          },
+          "vehicle": {
+            "type": "object",
+            "description": "The vehicle seen in the bay, minimized (Part 9 §9.6). Omitted on the customer scope.",
+            "properties": {
+              "credentialType": {
+                "$ref": "#/components/schemas/CredentialTypeEnum"
+              },
+              "credentialIdentification": {
+                "type": "string",
+                "description": "The plate read, when the camera has LPR.",
+                "examples": [
+                  "SYN-7734"
+                ]
+              },
+              "jurisdiction": {
+                "type": "string"
+              },
+              "evCapable": {
+                "type": [
+                  "boolean",
+                  "null"
+                ],
+                "description": "Whether the vehicle appears able to charge (make/model or badge\nrecognition) — `false` is the ICE-in-EV-bay signal; `null` when\nunknown."
+              }
+            }
+          },
+          "confidence": {
+            "type": "number",
+            "minimum": 0,
+            "maximum": 1,
+            "description": "The analytics system's confidence in `presence`."
+          },
+          "imageLink": {
+            "description": "Access-controlled evidence image (Part 9 §9.6), never inline.",
+            "$ref": "#/components/schemas/Url"
+          },
+          "detail": {
+            "type": "string"
+          }
+        }
+      },
+      "ChargingPointStatus": {
+        "title": "ChargingPointStatus",
+        "description": "EXPERIMENTAL (Part 23) — live state overlay keyed by Reference to an APDS ElectricChargingEquipment\n— the dynamic counterpart of the static ElectricChargingPoint (APDS\n`refillPointIndex` exists precisely \"to link static and dynamic\npublications\"). Never duplicates the static descriptive fields\n(connector types, power ratings live in APDS). Carries availability per\npoint and per connector, the current session, a reservation, and what\nthe bay camera sees. Same pattern as Part 6 DeviceStatus. Also the\nrequest body the charging-network bridge PUTs to `…/points/{id}/status`.",
+        "type": "object",
+        "required": [
+          "chargingPoint",
+          "availability"
+        ],
+        "properties": {
+          "chargingPoint": {
+            "description": "The APDS ElectricChargingEquipment (HierarchyElement).",
+            "$ref": "#/components/schemas/Reference"
+          },
+          "place": {
+            "description": "The containing Place (event binding and place filters).",
+            "$ref": "#/components/schemas/Reference"
+          },
+          "space": {
+            "description": "The APDS Space (bay) this point serves, when the facility is space-mapped.",
+            "$ref": "#/components/schemas/Reference"
+          },
+          "refillPointIndex": {
+            "type": "integer",
+            "description": "The APDS RefillPoint index of the static publication this status describes."
+          },
+          "evseId": {
+            "type": "string",
+            "description": "The EVSE identifier as the charging network knows it (ISO 15118 / eMI3 form) — opaque bridge to OCPP/OCPI.",
+            "examples": [
+              "US*LSG*E20419*1"
+            ]
+          },
+          "availability": {
+            "type": "string",
+            "enum": [
+              "available",
+              "occupied",
+              "charging",
+              "reserved",
+              "blocked",
+              "inoperative",
+              "outOfOrder",
+              "unknown"
+            ],
+            "description": "Point-level availability (the busiest connector wins): `available`;\n`occupied` — a cable is connected but no energy is flowing\n(plugged in, suspended, complete, or idle); `charging`; `reserved`\n(Part 14 AssignedRight in force); `blocked` — the bay is occupied\nor obstructed without a connected cable (from `bay.presence`);\n`inoperative` (planned: maintenance, closed hours); `outOfOrder`\n(fault); `unknown`. Aligned with the OCPI EVSE status vocabulary."
+          },
+          "connectors": {
+            "type": "array",
+            "description": "Per-connector availability; `connectorIndex` is the 1-based position in the static APDS `connectors[]`.",
+            "items": {
+              "type": "object",
+              "required": [
+                "connectorIndex",
+                "availability"
+              ],
+              "properties": {
+                "connectorIndex": {
+                  "type": "integer",
+                  "minimum": 1
+                },
+                "connectorType": {
+                  "description": "Echo of the static APDS connector type, for consumers that do not hold the hierarchy.",
+                  "$ref": "#/components/schemas/ConnectorTypeEnum"
+                },
+                "availability": {
+                  "type": "string",
+                  "enum": [
+                    "available",
+                    "occupied",
+                    "charging",
+                    "reserved",
+                    "blocked",
+                    "inoperative",
+                    "outOfOrder",
+                    "unknown"
+                  ]
+                },
+                "currentPowerKw": {
+                  "type": "number",
+                  "minimum": 0
+                },
+                "currentSession": {
+                  "$ref": "#/components/schemas/Reference"
+                }
+              }
+            }
+          },
+          "currentSession": {
+            "description": "The ChargingSession in progress at this point, if any.",
+            "$ref": "#/components/schemas/Reference"
+          },
+          "reservedFor": {
+            "description": "The APDS AssignedRight (Part 14 reservation) holding this point, if any.",
+            "$ref": "#/components/schemas/Reference"
+          },
+          "bay": {
+            "$ref": "#/components/schemas/ChargingBayPresence"
+          },
+          "lastCommunication": {
+            "$ref": "#/components/schemas/DateTime"
+          },
+          "stateChangedTime": {
+            "$ref": "#/components/schemas/DateTime"
+          },
+          "extensions": {
+            "$ref": "#/components/schemas/Extensions"
+          }
+        }
+      },
+      "ChargingSession": {
+        "title": "ChargingSession",
+        "description": "EXPERIMENTAL (Part 23) — one charge of one vehicle at one charging point, as the parking system\nsees it: who was authorized and how, the timeline from plug-in to\nunplug, energy delivered, the idle period after charging completed,\ncost, and how it settles — while the APDS Session remains the parking\nstay and is only referenced. The charging network's own identifiers\n(OCPP transaction, OCPI session/CDR) ride along opaquely so the two\nrecords can be reconciled without APX redefining either protocol.\n\nLifecycle (Part 23 §23.2 transition table): `authorized → pluggedIn →\ncharging ⇄ suspended → complete → idle → unplugged → closed`;\n`unplugged` also directly from `pluggedIn` (no energy) and `complete`\n(left inside the grace); `cancelled` for an authorization never used;\n`fault` from any state before `unplugged`, exiting via `unplugged` (or\n`cancelled` if never plugged in). `idle` is server-side when\n`idlePolicy.graceMinutes` elapses after `complete`; `closed` is\nserver-side on settlement.",
+        "type": "object",
+        "required": [
+          "id",
+          "version",
+          "place",
+          "chargingPoint",
+          "chargingStatus"
+        ],
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid",
+            "readOnly": true
+          },
+          "version": {
+            "type": "integer",
+            "minimum": 1,
+            "readOnly": true
+          },
+          "place": {
+            "description": "The Place (facility) — event binding and grant check.",
+            "$ref": "#/components/schemas/Reference"
+          },
+          "chargingPoint": {
+            "description": "The APDS ElectricChargingEquipment.",
+            "$ref": "#/components/schemas/Reference"
+          },
+          "connectorIndex": {
+            "type": "integer",
+            "minimum": 1,
+            "description": "1-based position in the point's static APDS `connectors[]`."
+          },
+          "evseId": {
+            "type": "string",
+            "description": "Opaque EVSE identifier (ISO 15118 / eMI3 form)."
+          },
+          "space": {
+            "description": "The APDS Space (bay), when space-mapped.",
+            "$ref": "#/components/schemas/Reference"
+          },
+          "parkingSession": {
+            "description": "The APDS Session for the parking stay this charge happened inside. REQUIRED when `settlement.mode` is `parkingSession`.",
+            "$ref": "#/components/schemas/Reference"
+          },
+          "assignedRight": {
+            "description": "The APDS AssignedRight used — a charging reservation (Part 14) or the permit that entitles charging.",
+            "$ref": "#/components/schemas/Reference"
+          },
+          "valetTicket": {
+            "description": "The Part 22 ValetTicket when the valet plugged the car in.",
+            "$ref": "#/components/schemas/Reference"
+          },
+          "vehicle": {
+            "type": "object",
+            "description": "Minimized (Part 9 §9.6); plate values only under `apx.charging:read`/`:manage`.",
+            "properties": {
+              "credentialType": {
+                "$ref": "#/components/schemas/CredentialTypeEnum"
+              },
+              "credentialIdentification": {
+                "type": "string",
+                "examples": [
+                  "SYN-7734"
+                ]
+              },
+              "jurisdiction": {
+                "type": "string"
+              },
+              "make": {
+                "type": "string"
+              },
+              "model": {
+                "type": "string"
+              }
+            }
+          },
+          "authorization": {
+            "type": "object",
+            "description": "How the charge was authorized and who is on the hook for it.",
+            "properties": {
+              "method": {
+                "description": "The APDS authentication/identification method (`rfid`, `apps`, `overTheAir` for ISO 15118 Plug & Charge, `creditCard`, `unlimitedAccess` for free-vend inside a controlled garage…).",
+                "$ref": "#/components/schemas/AuthenticationAndIdentificationEnum"
+              },
+              "methodDetail": {
+                "type": "string",
+                "description": "Free text for methods the APDS list does not name (e.g. plate linked by LPR at entry).",
+                "examples": [
+                  "plate linked to parking session at entry LPR"
+                ]
+              },
+              "credential": {
+                "description": "The Part 21 CredentialRecord (or APDS CredentialAssigned) presented.",
+                "$ref": "#/components/schemas/Reference"
+              },
+              "account": {
+                "description": "The Part 13 Account charged, when settlement is on account.",
+                "$ref": "#/components/schemas/Reference"
+              },
+              "contractId": {
+                "type": "string",
+                "description": "The e-mobility contract id (EMAID) or roaming token, masked/opaque — never a raw payment credential.",
+                "examples": [
+                  "US-LSG-C****4471"
+                ]
+              },
+              "authorizedTime": {
+                "$ref": "#/components/schemas/DateTime"
+              },
+              "authorizedBy": {
+                "type": "string",
+                "description": "Opaque principal (bridge id, attendant, customer)."
+              }
+            }
+          },
+          "chargingStatus": {
+            "type": "string",
+            "enum": [
+              "authorized",
+              "pluggedIn",
+              "charging",
+              "suspended",
+              "complete",
+              "idle",
+              "unplugged",
+              "closed",
+              "cancelled",
+              "faulted"
+            ],
+            "readOnly": true,
+            "description": "Mapping to OCPP 2.0.1 `chargingState`: `pluggedIn` = EVConnected;\n`charging` = Charging; `suspended` = SuspendedEV | SuspendedEVSE\n(see `suspendedBy`); `complete` and `idle` = EVConnected after\nenergy delivery ended; `unplugged` = Idle (no EV)."
+          },
+          "suspendedBy": {
+            "type": "string",
+            "enum": [
+              "ev",
+              "evse"
+            ],
+            "description": "While `suspended`: whether the vehicle or the charger paused delivery."
+          },
+          "timeline": {
+            "type": "object",
+            "readOnly": true,
+            "properties": {
+              "authorizedTime": {
+                "$ref": "#/components/schemas/DateTime"
+              },
+              "pluggedInTime": {
+                "$ref": "#/components/schemas/DateTime"
+              },
+              "chargingStartedTime": {
+                "$ref": "#/components/schemas/DateTime"
+              },
+              "chargingEndedTime": {
+                "$ref": "#/components/schemas/DateTime"
+              },
+              "idleStartedTime": {
+                "description": "When the grace period elapsed and idle began (server-set).",
+                "$ref": "#/components/schemas/DateTime"
+              },
+              "unpluggedTime": {
+                "$ref": "#/components/schemas/DateTime"
+              },
+              "closedTime": {
+                "$ref": "#/components/schemas/DateTime"
+              }
+            }
+          },
+          "energy": {
+            "type": "object",
+            "description": "Energy in kilowatt-hours (APDS DeliveryUnitEnum `kWh`); meter readings in watt-hours as chargers report them.",
+            "properties": {
+              "meterStartWh": {
+                "type": "number",
+                "minimum": 0
+              },
+              "meterStopWh": {
+                "type": "number",
+                "minimum": 0
+              },
+              "deliveredKwh": {
+                "type": "number",
+                "minimum": 0,
+                "description": "Energy delivered so far (final after `chargingEndedTime`)."
+              },
+              "currentPowerKw": {
+                "type": "number",
+                "minimum": 0
+              },
+              "peakPowerKw": {
+                "type": "number",
+                "minimum": 0
+              },
+              "stateOfChargePercent": {
+                "type": "number",
+                "minimum": 0,
+                "maximum": 100,
+                "description": "Vehicle state of charge when the vehicle reports it (ISO 15118)."
+              },
+              "targetStateOfChargePercent": {
+                "type": "number",
+                "minimum": 0,
+                "maximum": 100,
+                "description": "The customer's or valet's requested target; delivery ends when reached where the charger supports it."
+              },
+              "lastMeterTime": {
+                "$ref": "#/components/schemas/DateTime"
+              }
+            }
+          },
+          "stopReason": {
+            "type": "string",
+            "enum": [
+              "evDisconnected",
+              "evFull",
+              "targetReached",
+              "energyLimitReached",
+              "timeLimitReached",
+              "remote",
+              "local",
+              "deauthorized",
+              "emergencyStop",
+              "powerLoss",
+              "other"
+            ],
+            "description": "Why energy delivery ended (OCPP 2.0.1 stopped-reason subset plus `targetReached`)."
+          },
+          "idlePolicy": {
+            "type": "object",
+            "description": "The idle rule applied to THIS session, snapshotted at authorization\nso the customer read can say \"10 minutes grace, then $0.40/min\" and\nso a later policy change never re-prices a past session.",
+            "properties": {
+              "graceMinutes": {
+                "type": "integer",
+                "minimum": 0,
+                "description": "Minutes after `complete` before `idle` begins."
+              },
+              "idleRate": {
+                "$ref": "#/components/schemas/AmountInCurrency"
+              },
+              "idleRatePer": {
+                "type": "string",
+                "enum": [
+                  "minute",
+                  "hour"
+                ]
+              },
+              "maxIdleMinutes": {
+                "type": "integer",
+                "minimum": 0,
+                "description": "After this much idle the session is eligible for enforcement (Part 19) — `apx.charging.idle.started.v1` consumers act on it."
+              },
+              "appliesToSettlement": {
+                "type": "boolean",
+                "description": "Whether idle charges are billed by this operator (true) or by the charging network (false)."
+              }
+            }
+          },
+          "cost": {
+            "type": "object",
+            "description": "Cost as the parking system knows it; absent components are unknown, not zero. Money is APDS AmountInCurrency.",
+            "properties": {
+              "energy": {
+                "$ref": "#/components/schemas/AmountInCurrency"
+              },
+              "time": {
+                "$ref": "#/components/schemas/AmountInCurrency"
+              },
+              "idle": {
+                "$ref": "#/components/schemas/AmountInCurrency"
+              },
+              "fees": {
+                "$ref": "#/components/schemas/AmountInCurrency"
+              },
+              "total": {
+                "$ref": "#/components/schemas/AmountInCurrency"
+              },
+              "tariffReference": {
+                "type": "string",
+                "description": "Opaque id of the charging network's tariff in force."
+              },
+              "pricedAt": {
+                "$ref": "#/components/schemas/DateTime"
+              }
+            }
+          },
+          "settlement": {
+            "type": "object",
+            "description": "How the cost is collected (Part 23 §23.5).",
+            "properties": {
+              "mode": {
+                "type": "string",
+                "enum": [
+                  "parkingSession",
+                  "directPayment",
+                  "chargingNetwork"
+                ],
+                "description": "`parkingSession` — the cost becomes a line on the APDS Session\nand is paid with the parking (one bill at exit);\n`directPayment` — settled by a Part 13 payment referenced in\n`payment`; `chargingNetwork` — billed by the charging network\nor roaming partner; the parking side records energy and idle\nbut not money."
+              },
+              "payment": {
+                "description": "The settling APDS Payment / APX PaymentRecord (`directPayment`).",
+                "$ref": "#/components/schemas/Reference"
+              },
+              "settledTime": {
+                "$ref": "#/components/schemas/DateTime"
+              },
+              "externalReference": {
+                "type": "string",
+                "description": "The charging network's charge detail record id (OCPI CDR) once issued — opaque."
+              }
+            }
+          },
+          "network": {
+            "type": "object",
+            "description": "The charging network behind the point, and its identifiers for this charge — opaque bridge fields, never interpreted by APX.",
+            "properties": {
+              "operator": {
+                "description": "The charge point operator — a Reference to the operator's contact/organisation record, as Part 20 references a merchant.",
+                "$ref": "#/components/schemas/Reference"
+              },
+              "partyId": {
+                "type": "string",
+                "description": "Roaming party id (country code + party id form).",
+                "examples": [
+                  "US-LSG"
+                ]
+              },
+              "ocppTransactionId": {
+                "type": "string"
+              },
+              "ocpiSessionId": {
+                "type": "string"
+              }
+            }
+          },
+          "statusHistory": {
+            "type": "array",
+            "description": "Immutable, append-only lifecycle audit (Part 4 §4.2).",
+            "items": {
+              "type": "object",
+              "required": [
+                "state",
+                "time",
+                "actor"
+              ],
+              "properties": {
+                "state": {
+                  "type": "string"
+                },
+                "time": {
+                  "$ref": "#/components/schemas/DateTime"
+                },
+                "actor": {
+                  "type": "string"
+                },
+                "detail": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "recordInfo": {
+            "$ref": "#/components/schemas/RecordInfo"
+          },
+          "extensions": {
+            "$ref": "#/components/schemas/Extensions"
+          }
+        }
+      },
+      "ChargingEvent": {
+        "title": "ChargingEvent",
+        "description": "EXPERIMENTAL (Part 23) — one physical-timeline event the charging-network bridge reports for a\nsession — the APX counterpart of an OCPP 2.0.1 TransactionEvent. The\nserver applies the lifecycle transition (Part 23 §23.2) and appends\n`statusHistory`. `meterValue` events update `energy` without a state\nchange. Idempotent by `Idempotency-Key` (bridges retry).",
+        "type": "object",
+        "required": [
+          "eventType",
+          "time"
+        ],
+        "properties": {
+          "eventType": {
+            "type": "string",
+            "enum": [
+              "pluggedIn",
+              "chargingStarted",
+              "meterValue",
+              "suspended",
+              "resumed",
+              "chargingEnded",
+              "unplugged",
+              "fault",
+              "cancelled"
+            ]
+          },
+          "time": {
+            "$ref": "#/components/schemas/DateTime"
+          },
+          "connectorIndex": {
+            "type": "integer",
+            "minimum": 1
+          },
+          "meterWh": {
+            "type": "number",
+            "minimum": 0,
+            "description": "Cumulative meter reading at `time`."
+          },
+          "powerKw": {
+            "type": "number",
+            "minimum": 0
+          },
+          "stateOfChargePercent": {
+            "type": "number",
+            "minimum": 0,
+            "maximum": 100
+          },
+          "suspendedBy": {
+            "type": "string",
+            "enum": [
+              "ev",
+              "evse"
+            ],
+            "description": "With `suspended`."
+          },
+          "stopReason": {
+            "type": "string",
+            "enum": [
+              "evDisconnected",
+              "evFull",
+              "targetReached",
+              "energyLimitReached",
+              "timeLimitReached",
+              "remote",
+              "local",
+              "deauthorized",
+              "emergencyStop",
+              "powerLoss",
+              "other"
+            ],
+            "description": "With `chargingEnded`."
+          },
+          "faultCode": {
+            "type": "string",
+            "description": "With `fault` — the charger's error code, opaque."
+          },
+          "externalEventId": {
+            "type": "string",
+            "description": "The bridge's own id for this event (OCPP seqNo, message id) for reconciliation."
+          },
+          "detail": {
+            "type": "string"
+          }
+        }
+      },
+      "ChargingPaymentAttachment": {
+        "title": "ChargingPaymentAttachment",
+        "description": "EXPERIMENTAL (Part 23) — request body attaching the settling payment to an `unplugged` `directPayment` session, or recording the network's charge detail record for a `chargingNetwork` one.",
+        "type": "object",
+        "properties": {
+          "payment": {
+            "description": "The settling APDS Payment / APX PaymentRecord.",
+            "$ref": "#/components/schemas/Reference"
+          },
+          "externalReference": {
+            "type": "string",
+            "description": "The charging network's CDR id."
+          },
+          "note": {
             "type": "string"
           }
         }
@@ -20888,6 +22396,78 @@
         ],
         "x-package": "Quotes",
         "x-tags": "Quotes"
+      },
+      "ConnectorTypeEnum": {
+        "title": "ConnectorTypeEnum",
+        "description": "A table of commonly used connectors / charging interfaces\n* cee3: CEE3, 230 V, 16 A\n* cee5: CEE5, 400 V, 16-63 A\n* chademo: CHAdeMO, 600 V DC. Used mostly in Japan.\n* domestic: A domestic socket of unspecified type. Applicable countries should be specified in seperate attribute.\n* domesticA: Domestic socket type A (mainly used in the USA, Canada, Mexico & Japan)\n* domesticB: Domestic socket type B (mainly used in the USA, Canada & Mexico)\n* domesticC: Domestic socket type C (commonly used in Europe, South America & Asia)\n* domesticD: Domestic socket type D (mainly used in India)\n* domesticE: Domestic socket type E (primarily used in France, Belgium, Poland, Slovakia & Czechia)\n* domesticF: Domestic socket type F (used almost everywhere in Europe & Russia, except for the UK & Ireland)\n* domesticG: Domestic socket type G (mainly used in the United Kingdom, Ireland, Malta, Malaysia, Singapore & the Arabian Peninsula)\n* domesticH: Domestic socket type H (used exclusively in Israel, the West Bank & the Gaza Strip)\n* domesticI: Domestic socket type I (mainly used in Australia, New Zealand, China & Argentina)\n* domesticJ: Domestic socket type J (used almost exclusively in Switzerland & Liechtenstein)\n* domesticK: Domestic socket type K (used almost exclusively in Denmark & Greenland)\n* domesticL: Domestic socket type L (used almost exclusively in Italy & Chile)\n* domesticM: Domestic socket type M (mainly used in South Africa)\n* domesticN: Domestic socket type N (used in Brazil and South Africa)\n* domesticO: Domestic socket type O (used exclusively in Thailand)\n* iec60309x2single16:  IEC 60309-2 Industrial Connector single phase 16 amperes (usually blue)\n* iec60309x2three16: IEC 60309-2 Industrial Connector three phase 16 amperes (usually red)\n* iec60309x2three32: IEC 60309-2 Industrial Connector three phase 32 amperes (usually red)\n* iec60309x2three64: IEC 60309-2 Industrial Connector three phase 64 amperes (usually red)\n* iec62196T1: IEC 62196 Type 1 \"SAE J1772\".  Mostly used in USA and Asia.\n* iec62196T1COMBO: Combo Type 1 based, DC\n* iec62196T2: IEC 62196 Type 2 \"Mennekes\" - 400 V, 16-63 A. Mandatory in Europe\n* iec62196T2COMBO: Combo Type 2 based, DC, Type 2 connector with extension for simultaneous DC-charging\n* iec62196T3A: IEC 62196 Type 3A\n* iec62196T3C: \" IEC 62196 Type 3C \"\"Scame\"\"  \"\n* other: Other charging interface.\n* pantographBottomUp: On-board Bottom-up-Pantograph typically for bus charging\n* pantographTopDown: Off-board Top-down-Pantograph typically for bus charging\n* teslaConnectorAmerica: Tesla connector used in America (Tesla specific)\n* teslaConnectorEurope: Tesla Connector EU (modification of the Type 2 connector)\n* teslaR: Tesla Connector \"Roadster\"-type (round, 4 pin)\n* teslaS: Tesla Connector \"Model-S\"-type (oval, 5 pin)\n* yazaki: Yazaki, 400 VDC, 125 A, Asian standard.",
+        "type": "string",
+        "x-package": "place.service.enums",
+        "enum": [
+          "cee3",
+          "cee5",
+          "chademo",
+          "domestic",
+          "domesticA",
+          "domesticB",
+          "domesticC",
+          "domesticD",
+          "domesticE",
+          "domesticF",
+          "domesticG",
+          "domesticH",
+          "domesticI",
+          "domesticJ",
+          "domesticK",
+          "domesticL",
+          "domesticM",
+          "domesticN",
+          "domesticO",
+          "iec60309x2single16",
+          "iec60309x2three16",
+          "iec60309x2three32",
+          "iec60309x2three64",
+          "iec62196T1",
+          "iec62196T1COMBO",
+          "iec62196T2",
+          "iec62196T2COMBO",
+          "iec62196T3A",
+          "iec62196T3C",
+          "other",
+          "pantographBottomUp",
+          "pantographTopDown",
+          "teslaConnectorAmerica",
+          "teslaConnectorEurope",
+          "teslaR",
+          "teslaS",
+          "yazaki"
+        ]
+      },
+      "AuthenticationAndIdentificationEnum": {
+        "title": "AuthenticationAndIdentificationEnum",
+        "description": "A table of authentication and/or identification methods: \n* activeRFIDChip: Phone (active RFID chip)\n* apps: Apps\n* calypso: RFID Calypso\n* cashPayment: No specific authentication by using cash\n* creditCard: Credit card\n* debitCard: Debit card\n* mifareClassic: RFID Card / Phone NFC - Mifare Classic\n* mifareDesfire: RFID Card / Phone NFC - Mifare Desfire\n* nfc: Nearfield communication\n* noAccess: No access granted\n* overTheAir: Over the air according to ISO 15118\n* phoneDialog: phone (dialog with platform)\n* phoneSMS: Phone (SMS)\n* pinpad: PINPAD\n* plc: PLC according to ISO 15118\n* prepaidCard: Pre-Paid card\n* rfid: RFID\n* unlimitedAccess: No authentication/identification required.\n* website: Using a website",
+        "type": "string",
+        "x-package": "place.service.enums",
+        "enum": [
+          "activeRFIDChip",
+          "apps",
+          "calypso",
+          "cashPayment",
+          "creditCard",
+          "debitCard",
+          "mifareClassic",
+          "mifareDesfire",
+          "nfc",
+          "noAccess",
+          "overTheAir",
+          "phoneDialog",
+          "phoneSMS",
+          "pinpad",
+          "plc",
+          "prepaidCard",
+          "rfid",
+          "unlimitedAccess",
+          "website"
+        ]
       }
     }
   }

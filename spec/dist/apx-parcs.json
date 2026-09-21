@@ -94,6 +94,11 @@
     {
       "name": "Valet",
       "description": "Valet custody (optional class apx-valet, net-new domain) — drop-off\nwith condition evidence, parked position and keys, the retrieval\nqueue with ETA (from text, app, web, voice bot, kiosk, or\nattendant), staging, and verified handback. The APDS Session\nremains the stay and the money. See written standard Part 22."
+    },
+    {
+      "name": "Charging",
+      "x-apx-experimental": true,
+      "description": "**EXPERIMENTAL** — EV charging, the parking-side view (proposed\nclass apx-charging; Part 23; branch beta/ev-charging). Live\ncharging-point availability and what the bay camera sees, the\nChargingSession referencing the APDS Session for the stay (energy,\nOCPP-aligned state, idle after complete, cost, three settlement\nmodes), the bridge's event ingest, and a customer status scope.\nCharger control (start, stop, unlock connector) goes through the\nPart 6 command plane. Not a charger or roaming protocol: OCPP/OCPI\nidentifiers ride along opaquely. Subject to change until merged;\nno registry entries yet."
     }
   ],
   "paths": {
@@ -3756,7 +3761,10 @@
               "apx.credentials:manage": "Issue, activate, suspend, resume, report lost, revoke, and replace credentials",
               "apx.valet:read": "Read valet tickets and the retrieval queue",
               "apx.valet:manage": "Take custody, park, stage, hand back, and manage retrievals",
-              "apx.valet:request": "Customer scope — request or cancel retrieval and read status/ETA for the caller's own ticket (text, app, web, voice bot)"
+              "apx.valet:request": "Customer scope — request or cancel retrieval and read status/ETA for the caller's own ticket (text, app, web, voice bot)",
+              "apx.charging:read": "EXPERIMENTAL — read charging-point status (with bay presence) and charging sessions",
+              "apx.charging:manage": "EXPERIMENTAL — bridge scope; push point availability, bay observations, open sessions, report timeline events, attach settlement",
+              "apx.charging:status": "EXPERIMENTAL — customer scope; minimized read of the caller's own charging session and the place's charger availability (app, text, voice bot)"
             }
           }
         }
@@ -4893,6 +4901,40 @@
             "examples": [
               59
             ]
+          },
+          "evCharging": {
+            "type": "object",
+            "description": "EXPERIMENTAL (Part 23 §23.7) — charging availability under this\nelement, derived from ChargingPointStatus. Optional; present only\nwhen the implementation claims the proposed `apx-charging` class.\nCounts are of charging points (APDS ElectricChargingEquipment),\nnot connectors. Absent counts are unknown, never guessed.",
+            "properties": {
+              "pointsTotal": {
+                "type": "integer",
+                "minimum": 0
+              },
+              "available": {
+                "type": "integer",
+                "minimum": 0,
+                "description": "Points with `availability: available`."
+              },
+              "charging": {
+                "type": "integer",
+                "minimum": 0
+              },
+              "occupiedNotCharging": {
+                "type": "integer",
+                "minimum": 0,
+                "description": "Points `occupied` (cable connected, no energy) — includes complete and idle sessions."
+              },
+              "blocked": {
+                "type": "integer",
+                "minimum": 0,
+                "description": "Points whose bay holds a vehicle that is not plugged in, or is obstructed."
+              },
+              "inoperative": {
+                "type": "integer",
+                "minimum": 0,
+                "description": "Points `inoperative` or `outOfOrder`."
+              }
+            }
           },
           "extensions": {
             "$ref": "#/components/schemas/Extensions"

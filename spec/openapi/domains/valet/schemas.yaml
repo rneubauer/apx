@@ -237,6 +237,26 @@ ValetTicket:
           $ref: "#/ConditionReport"
         notes:
           type: string
+    charging:
+      type: object
+      description: |-
+        EXPERIMENTAL (Part 23 §23.8) — the guest asked the valet to charge
+        the car. Additive and optional; the charge itself is a Part 23
+        ChargingSession referenced here once the valet plugs in.
+      properties:
+        requested:
+          type: boolean
+          description: The customer asked for the vehicle to be charged during the stay.
+        targetStateOfChargePercent:
+          type: number
+          minimum: 0
+          maximum: 100
+        instructions:
+          type: string
+          description: Free text from the customer (charge port side, adapter in trunk…).
+        session:
+          description: The Part 23 ChargingSession the valet opened.
+          $ref: "../../../vendor/apds/4.1/apds-api-4.1.yaml#/components/schemas/Reference"
     valetStatus:
       type: string
       enum: [dropped, parked, requested, retrieving, staged, handedBack, closed, cancelled]

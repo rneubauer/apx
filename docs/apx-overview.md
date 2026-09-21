@@ -404,7 +404,34 @@ mileage settle the rest.
 
 ---
 
-## 16. Room to grow: the vendor space
+## 16. EV charging (experimental): the free charger, the car that isn't plugged in, and one bill at exit
+
+> On branch `beta/ev-charging`; the class is proposed, not registered.
+
+Chargers have their own protocols — OCPP between a charger and its
+network, OCPI between networks — and APX does not replace them. What the
+parking system needs is the *parking side*: which chargers are free,
+what is physically in the bay, and what a charge did to the parking
+bill.
+
+| Route | What it does |
+|---|---|
+| `GET /v1/charging/points?place=` | Live status per charger and connector: available, occupied, charging, reserved, blocked, out of order — and what the **overhead camera** sees: empty, vehicle plugged in, vehicle **not** plugged in, bay blocked |
+| `POST …/points/{id}/bay` | The camera (or a sensor, or an attendant) reports what is in the bay; the server fuses it with the charger's cable state. A car in the EV bay that never plugs in becomes a fact with a photo behind it, not a complaint |
+| `POST /v1/charging/sessions` · `POST …/{id}/events` | The bridge opens the charge and reports its timeline — plugged in, charging, meter values, complete, unplugged — the way OCPP already reports it. Idle after complete is the **server's** call, after a grace period the session snapshotted up front |
+| `GET …/sessions/{id}` (customer scope) | What the driver's app shows: state of charge, kWh, "10 minutes grace, then $0.40/min", cost so far — no plate, no network ids |
+| `settlement.mode` | `parkingSession` — energy and idle are lines on the parking stay, paid once at exit; `directPayment` — its own payment; `chargingNetwork` — the network bills, parking keeps the record |
+| `POST /v1/commands` with `unlockConnector` | The cable won't release: the same command plane as the gate, with the same honesty about what was actually confirmed |
+
+**Why this way:** APDS already describes every charger, connector, and
+kilowatt-hour statically; it has nothing live and nothing that ties a
+charge to a stay. Camera occupancy and charger state each see half the
+picture; fusing them in the parking system is what makes "there's an ICE
+in the EV bay" enforceable and "your car is done, move it" fair.
+
+---
+
+## 17. Room to grow: the vendor space
 
 Partner companies extend APX without asking permission and without breaking
 anyone:
@@ -425,7 +452,7 @@ systems unharmed, and the core API means the same thing everywhere.
 
 ---
 
-## 17. Not everything is mandatory: conformance classes
+## 18. Not everything is mandatory: conformance classes
 
 APX is sliced into named, independently claimable feature sets — `apx-data`
 and `apx-events` are the base; control, alerts, discovery, accounts,

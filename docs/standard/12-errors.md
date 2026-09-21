@@ -52,6 +52,9 @@ Base URI: `https://apx-standard.org/problems/`
 | `valet-transition-illegal` | 409 | Valet ticket transition requested from a state that does not allow it (Part 22 §22.1) |
 | `valet-vehicle-not-located` | 409 | `retrieve` on a ticket still in `dropped` — no parked position recorded yet (Part 22 §22.1) |
 | `valet-verification-failed` | 403 | Handback claimant verification failed; the attempt is recorded in `statusHistory` (Part 22 §22.4) |
+| `charging-transition-illegal` | 409 | EXPERIMENTAL — a ChargingEvent illegal from the session's current state, or out of time order (Part 23 §23.2) |
+| `charging-point-unavailable` | 409 | EXPERIMENTAL — opening a session on a point/connector that is inoperative, out of order, reserved for another right, or already serving an active session (Part 23 §23.2) |
+| `charging-settlement-conflict` | 409 | EXPERIMENTAL — `…/payment` on a `parkingSession`-settled session, on a `directPayment` session not yet `unplugged`, or on an already `closed` session (Part 23 §23.5) |
 
 Problem responses SHOULD include `detail` and MAY carry additional members
 (RFC 9457 extension members), including an `extensions` container.

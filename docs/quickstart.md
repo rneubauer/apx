@@ -35,7 +35,8 @@ against is exactly what a conformant server returns.
    verbatim and adds additive parameters/headers plain APDS clients never see.
 2. Pick your **conformance classes** (`apx-data` + `apx-events` are the
    base; control/alerts/discovery/accounts/LPR/reservations/permits/tolling/
-   resolution/violations/validations/credentials/valet are optional). Advertise them at
+   resolution/violations/validations/credentials/valet are optional; EV
+   charging, Part 23, is experimental and not yet claimable). Advertise them at
    `/.well-known/apx-configuration`.
 3. Implement the classes per the written standard (`docs/standard/`), using
    the bundled OpenAPI (`spec/dist/apx-v1.yaml`) as the normative contract.

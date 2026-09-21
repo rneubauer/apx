@@ -110,6 +110,19 @@ tags:
       queue with ETA (from text, app, web, voice bot, kiosk, or
       attendant), staging, and verified handback. The APDS Session
       remains the stay and the money. See written standard Part 22.
+  - name: Charging
+    x-apx-experimental: true
+    description: |-
+      **EXPERIMENTAL** — EV charging, the parking-side view (proposed
+      class apx-charging; Part 23; branch beta/ev-charging). Live
+      charging-point availability and what the bay camera sees, the
+      ChargingSession referencing the APDS Session for the stay (energy,
+      OCPP-aligned state, idle after complete, cost, three settlement
+      modes), the bridge's event ingest, and a customer status scope.
+      Charger control (start, stop, unlock connector) goes through the
+      Part 6 command plane. Not a charger or roaming protocol: OCPP/OCPI
+      identifiers ride along opaquely. Subject to change until merged;
+      no registry entries yet.
 
 paths:
   # ===== APDS 4.1 native routes, mounted VERBATIM from the vendored spec ===== #
@@ -2897,6 +2910,383 @@ paths:
               schema: { $ref: "#/components/schemas/Problem" }
         "429": { $ref: "#/components/responses/TooManyRequests" }
 
+  # ===== EV charging (EXPERIMENTAL — proposed class apx-charging; Part 23) ===== #
+  # Parking-side view of charging. Static infrastructure is APDS
+  # (ElectricChargingEquipment / ElectricChargingPoint / Connector); the
+  # stay is the APDS Session. This adds live point status + bay presence,
+  # the ChargingSession, the bridge's event ingest, and settlement.
+  /v1/charging/points:
+    get:
+      operationId: get-apx-v1-charging-points
+      security:
+        - apxOAuth: ["apx.charging:read"]
+        - apxOAuth: ["apx.charging:status"]
+      tags: [Charging]
+      summary: List live charging-point status for a place (experimental)
+      description: |-
+        ChargingPointStatus for every ElectricChargingEquipment under the
+        place (subtree-inclusive), optionally filtered by `availability`
+        — "is there a free charger". A `apx.charging:status` token
+        receives the minimized form (no `bay.vehicle`, no `bay.imageLink`,
+        no `currentSession`; Part 23 §23.6).
+      parameters:
+        - { name: place, in: query, required: true, schema: { type: string, format: uuid } }
+        - name: availability
+          in: query
+          schema: { type: string, enum: [available, occupied, charging, reserved, blocked, inoperative, outOfOrder, unknown] }
+        - $ref: "../vendor/apds/4.1/apds-api-4.1.yaml#/components/parameters/page"
+      responses:
+        "200":
+          description: Charging-point status list (APDS PaginatedList shape).
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  meta:
+                    $ref: "../vendor/apds/4.1/apds-api-4.1.yaml#/components/schemas/PaginatedListMeta"
+                  data:
+                    type: array
+                    items: { $ref: "#/components/schemas/ChargingPointStatus" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+        "404":
+          description: No such place.
+          content:
+            application/problem+json:
+              schema: { $ref: "#/components/schemas/Problem" }
+        "429": { $ref: "#/components/responses/TooManyRequests" }
+
+  /v1/charging/points/{id}:
+    get:
+      operationId: get-apx-v1-charging-points-id
+      security:
+        - apxOAuth: ["apx.charging:read"]
+        - apxOAuth: ["apx.charging:status"]
+      tags: [Charging]
+      summary: Read one charging point's live status (experimental)
+      description: ChargingPointStatus keyed by the ElectricChargingEquipment id. Minimized for `apx.charging:status` (Part 23 §23.6).
+      parameters:
+        - { name: id, in: path, required: true, schema: { type: string, format: uuid } }
+      responses:
+        "200":
+          description: The status overlay.
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/ChargingPointStatus" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+        "404":
+          description: No such charging point (or outside the caller's grant).
+          content:
+            application/problem+json:
+              schema: { $ref: "#/components/schemas/Problem" }
+        "429": { $ref: "#/components/responses/TooManyRequests" }
+
+  /v1/charging/points/{id}/status:
+    put:
+      operationId: put-apx-v1-charging-points-id-status
+      security:
+        - apxOAuth: ["apx.charging:manage"]
+      tags: [Charging]
+      summary: Bridge pushes the point's availability (experimental)
+      description: |-
+        The charging-network bridge (the operator's OCPP/OCPI integration)
+        replaces the point-level and per-connector `availability`,
+        `currentSession`, `reservedFor`, and `lastCommunication`. The `bay`
+        block is NOT written here — it comes from `…/bay` and is fused by
+        the server (Part 23 §23.3); a `bay` in this body is ignored.
+        Publishes `apx.charging.point.status.v1` when availability
+        changes.
+      parameters:
+        - { name: id, in: path, required: true, schema: { type: string, format: uuid } }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/ChargingPointStatus" }
+      responses:
+        "200":
+          description: The fused status after the update.
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/ChargingPointStatus" }
+        "400":
+          description: Body `chargingPoint` does not match the path id.
+          content:
+            application/problem+json:
+              schema: { $ref: "#/components/schemas/Problem" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+        "404":
+          description: No such charging point.
+          content:
+            application/problem+json:
+              schema: { $ref: "#/components/schemas/Problem" }
+        "429": { $ref: "#/components/responses/TooManyRequests" }
+
+  /v1/charging/points/{id}/bay:
+    post:
+      operationId: post-apx-v1-charging-points-id-bay
+      security:
+        - apxOAuth: ["apx.charging:manage"]
+      tags: [Charging]
+      summary: Camera or sensor reports what is in the bay (experimental)
+      description: |-
+        An overhead-camera analytics system, ground sensor, or attendant
+        reports the bay's physical presence: empty, vehicle plugged in,
+        vehicle NOT plugged in, blocked. The server fuses it with the
+        charger's connector state (Part 23 §23.3 table) into
+        `ChargingPointStatus.bay` and derives `availability: blocked` when
+        no cable is connected (a connected cable wins). A vehicle not
+        plugged in past the place's grace SHOULD raise the proposed
+        `evBayNotCharging` alert — or the seeded `iceInEvSpace` when
+        `vehicle.evCapable` is false; an obstructed bay SHOULD raise the
+        proposed `evBayBlocked` alert (Part 7; Part 23 §23.3).
+        `Idempotency-Key` REQUIRED (cameras re-send).
+      parameters:
+        - { name: id, in: path, required: true, schema: { type: string, format: uuid } }
+        - { name: Idempotency-Key, in: header, required: true, schema: { type: string } }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/ChargingBayPresence" }
+      responses:
+        "200":
+          description: The fused status after the observation.
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/ChargingPointStatus" }
+        "400":
+          description: Missing Idempotency-Key or invalid observation.
+          content:
+            application/problem+json:
+              schema: { $ref: "#/components/schemas/Problem" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+        "404":
+          description: No such charging point.
+          content:
+            application/problem+json:
+              schema: { $ref: "#/components/schemas/Problem" }
+        "429": { $ref: "#/components/responses/TooManyRequests" }
+
+  /v1/charging/sessions:
+    post:
+      operationId: post-apx-v1-charging-sessions
+      security:
+        - apxOAuth: ["apx.charging:manage"]
+      tags: [Charging]
+      summary: Open a charging session (authorization, idempotent; experimental)
+      description: |-
+        Creates the ChargingSession in `authorized` with the authorization,
+        the point and connector, the parking Session it belongs to, the
+        settlement mode, and the idle policy snapshot; the plug-in itself
+        arrives as a `pluggedIn` event (Part 23 §23.2). `Idempotency-Key`
+        REQUIRED. 409 `charging-point-unavailable` when the point or
+        connector is inoperative, out of order, reserved for someone else,
+        or already serving an active session. Publishes
+        `apx.charging.session.status.v1`.
+      parameters:
+        - { name: Idempotency-Key, in: header, required: true, schema: { type: string } }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/ChargingSession" }
+      responses:
+        "200":
+          description: Idempotent replay — same key + same body returns the ORIGINAL session.
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/ChargingSession" }
+        "201":
+          description: Session opened.
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/ChargingSession" }
+        "400":
+          description: Missing Idempotency-Key or invalid session.
+          content:
+            application/problem+json:
+              schema: { $ref: "#/components/schemas/Problem" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+        "409":
+          description: Point/connector unavailable, or Idempotency-Key replayed with a different body.
+          content:
+            application/problem+json:
+              schema: { $ref: "#/components/schemas/Problem" }
+        "422":
+          description: Unknown place, charging point, parking session, or credential reference; or `settlement.mode` parkingSession without `parkingSession`.
+          content:
+            application/problem+json:
+              schema: { $ref: "#/components/schemas/Problem" }
+        "429": { $ref: "#/components/responses/TooManyRequests" }
+    get:
+      operationId: get-apx-v1-charging-sessions
+      security:
+        - apxOAuth: ["apx.charging:read"]
+      tags: [Charging]
+      summary: List/filter charging sessions (experimental)
+      description: Filter by place (subtree-inclusive), charging point, status, plate, parking session, account, and `since` (timeline.authorizedTime).
+      parameters:
+        - { name: place, in: query, schema: { type: string, format: uuid } }
+        - { name: chargingPoint, in: query, schema: { type: string, format: uuid } }
+        - name: status
+          in: query
+          schema: { type: string, enum: [authorized, pluggedIn, charging, suspended, complete, idle, unplugged, closed, cancelled, faulted] }
+        - { name: plate, in: query, schema: { type: string } }
+        - { name: parkingSession, in: query, schema: { type: string, format: uuid } }
+        - { name: account, in: query, schema: { type: string, format: uuid } }
+        - { name: since, in: query, schema: { type: string, format: date-time } }
+        - $ref: "../vendor/apds/4.1/apds-api-4.1.yaml#/components/parameters/page"
+      responses:
+        "200":
+          description: Paginated sessions (APDS PaginatedList shape).
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  meta:
+                    $ref: "../vendor/apds/4.1/apds-api-4.1.yaml#/components/schemas/PaginatedListMeta"
+                  data:
+                    type: array
+                    items: { $ref: "#/components/schemas/ChargingSession" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+        "429": { $ref: "#/components/responses/TooManyRequests" }
+
+  /v1/charging/sessions/{id}:
+    get:
+      operationId: get-apx-v1-charging-sessions-id
+      security:
+        - apxOAuth: ["apx.charging:read"]
+        - apxOAuth: ["apx.charging:status"]
+      tags: [Charging]
+      summary: Read a charging session (experimental)
+      description: |-
+        Full record for operator scopes. A `apx.charging:status` token sees
+        only its own session(s), minimized (Part 23 §23.6): status, energy
+        and state of charge, timeline, idle policy and idle clock, cost
+        totals, the point and connector — no plate, no credential or
+        contract id, no network identifiers. Enough for "your car is at
+        62%, charging ends in about 40 minutes; 10 minutes grace, then
+        $0.40 per minute".
+      parameters:
+        - { name: id, in: path, required: true, schema: { type: string, format: uuid } }
+      responses:
+        "200":
+          description: The session.
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/ChargingSession" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+        "404":
+          description: No such session (or outside the caller's grant).
+          content:
+            application/problem+json:
+              schema: { $ref: "#/components/schemas/Problem" }
+        "429": { $ref: "#/components/responses/TooManyRequests" }
+
+  /v1/charging/sessions/{id}/events:
+    post:
+      operationId: post-apx-v1-charging-sessions-id-events
+      security:
+        - apxOAuth: ["apx.charging:manage"]
+      tags: [Charging]
+      summary: Bridge reports a physical-timeline event (experimental)
+      description: |-
+        The APX counterpart of an OCPP 2.0.1 TransactionEvent. Applies the
+        transition for `eventType` per Part 23 §23.2 — `pluggedIn`,
+        `chargingStarted`, `suspended`/`resumed`, `chargingEnded`,
+        `unplugged`, `fault`, `cancelled` — or, for `meterValue`, updates
+        `energy` in place. Events MUST be applied in `time` order; one that
+        is illegal from the current state is 409
+        `charging-transition-illegal` (a `meterValue` after `unplugged`, a
+        `pluggedIn` after `charging`). `Idempotency-Key` REQUIRED. Every
+        state change appends `statusHistory` and publishes
+        `apx.charging.session.status.v1`; `complete → idle` is server-side
+        after `idlePolicy.graceMinutes` and additionally publishes
+        `apx.charging.idle.started.v1`.
+      parameters:
+        - { name: id, in: path, required: true, schema: { type: string, format: uuid } }
+        - { name: Idempotency-Key, in: header, required: true, schema: { type: string } }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/ChargingEvent" }
+      responses:
+        "200":
+          description: The session after the event.
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/ChargingSession" }
+        "400":
+          description: Missing Idempotency-Key or invalid event.
+          content:
+            application/problem+json:
+              schema: { $ref: "#/components/schemas/Problem" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+        "404":
+          description: No such session.
+          content:
+            application/problem+json:
+              schema: { $ref: "#/components/schemas/Problem" }
+        "409":
+          description: Illegal transition from the current state, or Idempotency-Key replayed with a different body.
+          content:
+            application/problem+json:
+              schema: { $ref: "#/components/schemas/Problem" }
+        "429": { $ref: "#/components/responses/TooManyRequests" }
+
+  /v1/charging/sessions/{id}/payment:
+    post:
+      operationId: post-apx-v1-charging-sessions-id-payment
+      security:
+        - apxOAuth: ["apx.charging:manage"]
+      tags: [Charging]
+      summary: Attach the settling payment or the network's CDR (experimental)
+      description: |-
+        For `settlement.mode: directPayment`, attaches the settling
+        Payment reference and moves an `unplugged` session to `closed`;
+        before `unplugged` the final cost is unknown and it is 409
+        `charging-settlement-conflict`. For `chargingNetwork`, records the
+        charge detail record id. For `parkingSession` it is 409
+        `charging-settlement-conflict` — that session closes when the APDS
+        Session settles. Also 409 when the session is already `closed`.
+      parameters:
+        - { name: id, in: path, required: true, schema: { type: string, format: uuid } }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/ChargingPaymentAttachment" }
+      responses:
+        "200":
+          description: The settled session.
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/ChargingSession" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+        "404":
+          description: No such session.
+          content:
+            application/problem+json:
+              schema: { $ref: "#/components/schemas/Problem" }
+        "409":
+          description: Settlement mode does not take a payment here, session not yet unplugged, or already closed.
+          content:
+            application/problem+json:
+              schema: { $ref: "#/components/schemas/Problem" }
+        "429": { $ref: "#/components/responses/TooManyRequests" }
+
   # ===== Reservations & permits (optional classes; Part 14) ===== #
   # Reservations use NATIVE routes (/quotes, /rights/assigned) with the
   # apds-ext:apx:reservation@1.0 extension; only permits add endpoints.
@@ -4045,6 +4435,9 @@ components:
             apx.valet:read: Read valet tickets and the retrieval queue
             apx.valet:manage: Take custody, park, stage, hand back, and manage retrievals
             apx.valet:request: Customer scope — request or cancel retrieval and read status/ETA for the caller's own ticket (text, app, web, voice bot)
+            apx.charging:read: EXPERIMENTAL — read charging-point status (with bay presence) and charging sessions
+            apx.charging:manage: EXPERIMENTAL — bridge scope; push point availability, bay observations, open sessions, report timeline events, attach settlement
+            apx.charging:status: EXPERIMENTAL — customer scope; minimized read of the caller's own charging session and the place's charger availability (app, text, voice bot)
 
   schemas:
     RecordInfo:
@@ -4169,6 +4562,16 @@ components:
       $ref: "./domains/valet/schemas.yaml#/ValetStageRequest"
     ValetHandbackRequest:
       $ref: "./domains/valet/schemas.yaml#/ValetHandbackRequest"
+    ChargingBayPresence:
+      $ref: "./domains/charging/schemas.yaml#/ChargingBayPresence"
+    ChargingPointStatus:
+      $ref: "./domains/charging/schemas.yaml#/ChargingPointStatus"
+    ChargingSession:
+      $ref: "./domains/charging/schemas.yaml#/ChargingSession"
+    ChargingEvent:
+      $ref: "./domains/charging/schemas.yaml#/ChargingEvent"
+    ChargingPaymentAttachment:
+      $ref: "./domains/charging/schemas.yaml#/ChargingPaymentAttachment"
     DiscoveryDocument:
       $ref: "./domains/discovery/schemas.yaml#/DiscoveryDocument"
     ResolutionContext:

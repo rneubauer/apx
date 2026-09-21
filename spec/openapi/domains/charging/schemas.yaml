@@ -1,0 +1,485 @@
+# APX EV charging — EXPERIMENTAL (branch beta/ev-charging; Part 23, class
+# apx-charging proposed, not yet registered).
+#
+# The PARKING-SIDE view of charging. APDS 4.1 already describes the static
+# infrastructure — ElectricChargingEquipment (a HierarchyElement),
+# ElectricChargingPoint, Connector, the IEC connector/mode/usage enums, kWh
+# as a DeliveryUnit, reservability, evChargingPoints on PlaceInformation,
+# the electricVehicleOnly restriction — and this domain reuses every one of
+# them by $ref. It adds what APDS has no words for: live charging-point
+# availability, what the bay camera sees, the charging session as it
+# relates to the parking Session (energy, state, idle after complete, cost,
+# settlement), and the bridge identifiers to the charging network's own
+# protocols. It is NOT a charger protocol (OCPP) or a roaming protocol
+# (OCPI): those ids are carried opaquely; load management, tariffs, and
+# roaming clearing stay with the charging network.
+
+ChargingBayPresence:
+  title: ChargingBayPresence
+  description: |-
+    EXPERIMENTAL (Part 23) — what the bay in front of a charging point physically contains, as
+    observed by an overhead camera, a ground sensor, the charger's own
+    connector state, or an attendant — fused by the server (Part 23 §23.3).
+    Distinguishes the cases the charger alone cannot: a vehicle parked in
+    the bay but not plugged in (an ICE vehicle, or an EV not charging), and
+    a bay blocked by something that is not a vehicle. Also the request body
+    a camera analytics system POSTs to `…/points/{id}/bay`.
+  type: object
+  required: [presence]
+  properties:
+    presence:
+      type: string
+      enum: [empty, vehiclePluggedIn, vehicleNotPluggedIn, blocked, unknown]
+      description: |-
+        `empty` — nothing in the bay; `vehiclePluggedIn` — a vehicle is
+        present and the charger reports a connected cable;
+        `vehicleNotPluggedIn` — a vehicle is present and no cable is
+        connected (ICE-ing, or an EV not charging); `blocked` — the bay is
+        obstructed by something other than a parked vehicle (cones,
+        debris, a vehicle straddling); `unknown`.
+    source:
+      type: string
+      enum: [overheadCamera, groundSensor, charger, attendant, inferred]
+      description: The evidence source this presence state was derived from (the strongest one, when fused).
+    observation:
+      description: The APDS Observation carrying the camera/sensor evidence (Part 13 §13.3 conventions).
+      $ref: "../../../vendor/apds/4.1/apds-api-4.1.yaml#/components/schemas/Reference"
+    observedTime:
+      $ref: "../../../vendor/apds/4.1/apds-api-4.1.yaml#/components/schemas/DateTime"
+    sinceTime:
+      description: When the current presence state began — the dwell clock for not-plugged-in and idle handling.
+      $ref: "../../../vendor/apds/4.1/apds-api-4.1.yaml#/components/schemas/DateTime"
+    vehicle:
+      type: object
+      description: The vehicle seen in the bay, minimized (Part 9 §9.6). Omitted on the customer scope.
+      properties:
+        credentialType:
+          $ref: "../../../vendor/apds/4.1/apds-api-4.1.yaml#/components/schemas/CredentialTypeEnum"
+        credentialIdentification:
+          type: string
+          description: The plate read, when the camera has LPR.
+          examples: [SYN-7734]
+        jurisdiction:
+          type: string
+        evCapable:
+          type: [boolean, "null"]
+          description: |-
+            Whether the vehicle appears able to charge (make/model or badge
+            recognition) — `false` is the ICE-in-EV-bay signal; `null` when
+            unknown.
+    confidence:
+      type: number
+      minimum: 0
+      maximum: 1
+      description: The analytics system's confidence in `presence`.
+    imageLink:
+      description: Access-controlled evidence image (Part 9 §9.6), never inline.
+      $ref: "../../../vendor/apds/4.1/apds-api-4.1.yaml#/components/schemas/Url"
+    detail:
+      type: string
+
+ChargingPointStatus:
+  title: ChargingPointStatus
+  description: |-
+    EXPERIMENTAL (Part 23) — live state overlay keyed by Reference to an APDS ElectricChargingEquipment
+    — the dynamic counterpart of the static ElectricChargingPoint (APDS
+    `refillPointIndex` exists precisely "to link static and dynamic
+    publications"). Never duplicates the static descriptive fields
+    (connector types, power ratings live in APDS). Carries availability per
+    point and per connector, the current session, a reservation, and what
+    the bay camera sees. Same pattern as Part 6 DeviceStatus. Also the
+    request body the charging-network bridge PUTs to `…/points/{id}/status`.
+  type: object
+  required: [chargingPoint, availability]
+  properties:
+    chargingPoint:
+      description: The APDS ElectricChargingEquipment (HierarchyElement).
+      $ref: "../../../vendor/apds/4.1/apds-api-4.1.yaml#/components/schemas/Reference"
+    place:
+      description: The containing Place (event binding and place filters).
+      $ref: "../../../vendor/apds/4.1/apds-api-4.1.yaml#/components/schemas/Reference"
+    space:
+      description: The APDS Space (bay) this point serves, when the facility is space-mapped.
+      $ref: "../../../vendor/apds/4.1/apds-api-4.1.yaml#/components/schemas/Reference"
+    refillPointIndex:
+      type: integer
+      description: The APDS RefillPoint index of the static publication this status describes.
+    evseId:
+      type: string
+      description: The EVSE identifier as the charging network knows it (ISO 15118 / eMI3 form) — opaque bridge to OCPP/OCPI.
+      examples: ["US*LSG*E20419*1"]
+    availability:
+      type: string
+      enum: [available, occupied, charging, reserved, blocked, inoperative, outOfOrder, unknown]
+      description: |-
+        Point-level availability (the busiest connector wins): `available`;
+        `occupied` — a cable is connected but no energy is flowing
+        (plugged in, suspended, complete, or idle); `charging`; `reserved`
+        (Part 14 AssignedRight in force); `blocked` — the bay is occupied
+        or obstructed without a connected cable (from `bay.presence`);
+        `inoperative` (planned: maintenance, closed hours); `outOfOrder`
+        (fault); `unknown`. Aligned with the OCPI EVSE status vocabulary.
+    connectors:
+      type: array
+      description: Per-connector availability; `connectorIndex` is the 1-based position in the static APDS `connectors[]`.
+      items:
+        type: object
+        required: [connectorIndex, availability]
+        properties:
+          connectorIndex:
+            type: integer
+            minimum: 1
+          connectorType:
+            description: Echo of the static APDS connector type, for consumers that do not hold the hierarchy.
+            $ref: "../../../vendor/apds/4.1/apds-api-4.1.yaml#/components/schemas/ConnectorTypeEnum"
+          availability:
+            type: string
+            enum: [available, occupied, charging, reserved, blocked, inoperative, outOfOrder, unknown]
+          currentPowerKw:
+            type: number
+            minimum: 0
+          currentSession:
+            $ref: "../../../vendor/apds/4.1/apds-api-4.1.yaml#/components/schemas/Reference"
+    currentSession:
+      description: The ChargingSession in progress at this point, if any.
+      $ref: "../../../vendor/apds/4.1/apds-api-4.1.yaml#/components/schemas/Reference"
+    reservedFor:
+      description: The APDS AssignedRight (Part 14 reservation) holding this point, if any.
+      $ref: "../../../vendor/apds/4.1/apds-api-4.1.yaml#/components/schemas/Reference"
+    bay:
+      $ref: "#/ChargingBayPresence"
+    lastCommunication:
+      $ref: "../../../vendor/apds/4.1/apds-api-4.1.yaml#/components/schemas/DateTime"
+    stateChangedTime:
+      $ref: "../../../vendor/apds/4.1/apds-api-4.1.yaml#/components/schemas/DateTime"
+    extensions:
+      $ref: "../common/schemas.yaml#/Extensions"
+
+ChargingSession:
+  title: ChargingSession
+  description: |-
+    EXPERIMENTAL (Part 23) — one charge of one vehicle at one charging point, as the parking system
+    sees it: who was authorized and how, the timeline from plug-in to
+    unplug, energy delivered, the idle period after charging completed,
+    cost, and how it settles — while the APDS Session remains the parking
+    stay and is only referenced. The charging network's own identifiers
+    (OCPP transaction, OCPI session/CDR) ride along opaquely so the two
+    records can be reconciled without APX redefining either protocol.
+
+    Lifecycle (Part 23 §23.2 transition table): `authorized → pluggedIn →
+    charging ⇄ suspended → complete → idle → unplugged → closed`;
+    `unplugged` also directly from `pluggedIn` (no energy) and `complete`
+    (left inside the grace); `cancelled` for an authorization never used;
+    `fault` from any state before `unplugged`, exiting via `unplugged` (or
+    `cancelled` if never plugged in). `idle` is server-side when
+    `idlePolicy.graceMinutes` elapses after `complete`; `closed` is
+    server-side on settlement.
+  type: object
+  required:
+    - id
+    - version
+    - place
+    - chargingPoint
+    - chargingStatus
+  properties:
+    id:
+      type: string
+      format: uuid
+      readOnly: true
+    version:
+      type: integer
+      minimum: 1
+      readOnly: true
+    place:
+      description: The Place (facility) — event binding and grant check.
+      $ref: "../../../vendor/apds/4.1/apds-api-4.1.yaml#/components/schemas/Reference"
+    chargingPoint:
+      description: The APDS ElectricChargingEquipment.
+      $ref: "../../../vendor/apds/4.1/apds-api-4.1.yaml#/components/schemas/Reference"
+    connectorIndex:
+      type: integer
+      minimum: 1
+      description: 1-based position in the point's static APDS `connectors[]`.
+    evseId:
+      type: string
+      description: Opaque EVSE identifier (ISO 15118 / eMI3 form).
+    space:
+      description: The APDS Space (bay), when space-mapped.
+      $ref: "../../../vendor/apds/4.1/apds-api-4.1.yaml#/components/schemas/Reference"
+    parkingSession:
+      description: The APDS Session for the parking stay this charge happened inside. REQUIRED when `settlement.mode` is `parkingSession`.
+      $ref: "../../../vendor/apds/4.1/apds-api-4.1.yaml#/components/schemas/Reference"
+    assignedRight:
+      description: The APDS AssignedRight used — a charging reservation (Part 14) or the permit that entitles charging.
+      $ref: "../../../vendor/apds/4.1/apds-api-4.1.yaml#/components/schemas/Reference"
+    valetTicket:
+      description: The Part 22 ValetTicket when the valet plugged the car in.
+      $ref: "../../../vendor/apds/4.1/apds-api-4.1.yaml#/components/schemas/Reference"
+    vehicle:
+      type: object
+      description: Minimized (Part 9 §9.6); plate values only under `apx.charging:read`/`:manage`.
+      properties:
+        credentialType:
+          $ref: "../../../vendor/apds/4.1/apds-api-4.1.yaml#/components/schemas/CredentialTypeEnum"
+        credentialIdentification:
+          type: string
+          examples: [SYN-7734]
+        jurisdiction:
+          type: string
+        make:
+          type: string
+        model:
+          type: string
+    authorization:
+      type: object
+      description: How the charge was authorized and who is on the hook for it.
+      properties:
+        method:
+          description: The APDS authentication/identification method (`rfid`, `apps`, `overTheAir` for ISO 15118 Plug & Charge, `creditCard`, `unlimitedAccess` for free-vend inside a controlled garage…).
+          $ref: "../../../vendor/apds/4.1/apds-api-4.1.yaml#/components/schemas/AuthenticationAndIdentificationEnum"
+        methodDetail:
+          type: string
+          description: Free text for methods the APDS list does not name (e.g. plate linked by LPR at entry).
+          examples: ["plate linked to parking session at entry LPR"]
+        credential:
+          description: The Part 21 CredentialRecord (or APDS CredentialAssigned) presented.
+          $ref: "../../../vendor/apds/4.1/apds-api-4.1.yaml#/components/schemas/Reference"
+        account:
+          description: The Part 13 Account charged, when settlement is on account.
+          $ref: "../../../vendor/apds/4.1/apds-api-4.1.yaml#/components/schemas/Reference"
+        contractId:
+          type: string
+          description: The e-mobility contract id (EMAID) or roaming token, masked/opaque — never a raw payment credential.
+          examples: ["US-LSG-C****4471"]
+        authorizedTime:
+          $ref: "../../../vendor/apds/4.1/apds-api-4.1.yaml#/components/schemas/DateTime"
+        authorizedBy:
+          type: string
+          description: Opaque principal (bridge id, attendant, customer).
+    chargingStatus:
+      type: string
+      enum: [authorized, pluggedIn, charging, suspended, complete, idle, unplugged, closed, cancelled, faulted]
+      readOnly: true
+      description: |-
+        Mapping to OCPP 2.0.1 `chargingState`: `pluggedIn` = EVConnected;
+        `charging` = Charging; `suspended` = SuspendedEV | SuspendedEVSE
+        (see `suspendedBy`); `complete` and `idle` = EVConnected after
+        energy delivery ended; `unplugged` = Idle (no EV).
+    suspendedBy:
+      type: string
+      enum: [ev, evse]
+      description: "While `suspended`: whether the vehicle or the charger paused delivery."
+    timeline:
+      type: object
+      readOnly: true
+      properties:
+        authorizedTime:
+          $ref: "../../../vendor/apds/4.1/apds-api-4.1.yaml#/components/schemas/DateTime"
+        pluggedInTime:
+          $ref: "../../../vendor/apds/4.1/apds-api-4.1.yaml#/components/schemas/DateTime"
+        chargingStartedTime:
+          $ref: "../../../vendor/apds/4.1/apds-api-4.1.yaml#/components/schemas/DateTime"
+        chargingEndedTime:
+          $ref: "../../../vendor/apds/4.1/apds-api-4.1.yaml#/components/schemas/DateTime"
+        idleStartedTime:
+          description: When the grace period elapsed and idle began (server-set).
+          $ref: "../../../vendor/apds/4.1/apds-api-4.1.yaml#/components/schemas/DateTime"
+        unpluggedTime:
+          $ref: "../../../vendor/apds/4.1/apds-api-4.1.yaml#/components/schemas/DateTime"
+        closedTime:
+          $ref: "../../../vendor/apds/4.1/apds-api-4.1.yaml#/components/schemas/DateTime"
+    energy:
+      type: object
+      description: Energy in kilowatt-hours (APDS DeliveryUnitEnum `kWh`); meter readings in watt-hours as chargers report them.
+      properties:
+        meterStartWh:
+          type: number
+          minimum: 0
+        meterStopWh:
+          type: number
+          minimum: 0
+        deliveredKwh:
+          type: number
+          minimum: 0
+          description: Energy delivered so far (final after `chargingEndedTime`).
+        currentPowerKw:
+          type: number
+          minimum: 0
+        peakPowerKw:
+          type: number
+          minimum: 0
+        stateOfChargePercent:
+          type: number
+          minimum: 0
+          maximum: 100
+          description: Vehicle state of charge when the vehicle reports it (ISO 15118).
+        targetStateOfChargePercent:
+          type: number
+          minimum: 0
+          maximum: 100
+          description: The customer's or valet's requested target; delivery ends when reached where the charger supports it.
+        lastMeterTime:
+          $ref: "../../../vendor/apds/4.1/apds-api-4.1.yaml#/components/schemas/DateTime"
+    stopReason:
+      type: string
+      enum: [evDisconnected, evFull, targetReached, energyLimitReached, timeLimitReached, remote, local, deauthorized, emergencyStop, powerLoss, other]
+      description: Why energy delivery ended (OCPP 2.0.1 stopped-reason subset plus `targetReached`).
+    idlePolicy:
+      type: object
+      description: |-
+        The idle rule applied to THIS session, snapshotted at authorization
+        so the customer read can say "10 minutes grace, then $0.40/min" and
+        so a later policy change never re-prices a past session.
+      properties:
+        graceMinutes:
+          type: integer
+          minimum: 0
+          description: Minutes after `complete` before `idle` begins.
+        idleRate:
+          $ref: "../../../vendor/apds/4.1/apds-api-4.1.yaml#/components/schemas/AmountInCurrency"
+        idleRatePer:
+          type: string
+          enum: [minute, hour]
+        maxIdleMinutes:
+          type: integer
+          minimum: 0
+          description: After this much idle the session is eligible for enforcement (Part 19) — `apx.charging.idle.started.v1` consumers act on it.
+        appliesToSettlement:
+          type: boolean
+          description: Whether idle charges are billed by this operator (true) or by the charging network (false).
+    cost:
+      type: object
+      description: Cost as the parking system knows it; absent components are unknown, not zero. Money is APDS AmountInCurrency.
+      properties:
+        energy:
+          $ref: "../../../vendor/apds/4.1/apds-api-4.1.yaml#/components/schemas/AmountInCurrency"
+        time:
+          $ref: "../../../vendor/apds/4.1/apds-api-4.1.yaml#/components/schemas/AmountInCurrency"
+        idle:
+          $ref: "../../../vendor/apds/4.1/apds-api-4.1.yaml#/components/schemas/AmountInCurrency"
+        fees:
+          $ref: "../../../vendor/apds/4.1/apds-api-4.1.yaml#/components/schemas/AmountInCurrency"
+        total:
+          $ref: "../../../vendor/apds/4.1/apds-api-4.1.yaml#/components/schemas/AmountInCurrency"
+        tariffReference:
+          type: string
+          description: Opaque id of the charging network's tariff in force.
+        pricedAt:
+          $ref: "../../../vendor/apds/4.1/apds-api-4.1.yaml#/components/schemas/DateTime"
+    settlement:
+      type: object
+      description: How the cost is collected (Part 23 §23.5).
+      properties:
+        mode:
+          type: string
+          enum: [parkingSession, directPayment, chargingNetwork]
+          description: |-
+            `parkingSession` — the cost becomes a line on the APDS Session
+            and is paid with the parking (one bill at exit);
+            `directPayment` — settled by a Part 13 payment referenced in
+            `payment`; `chargingNetwork` — billed by the charging network
+            or roaming partner; the parking side records energy and idle
+            but not money.
+        payment:
+          description: The settling APDS Payment / APX PaymentRecord (`directPayment`).
+          $ref: "../../../vendor/apds/4.1/apds-api-4.1.yaml#/components/schemas/Reference"
+        settledTime:
+          $ref: "../../../vendor/apds/4.1/apds-api-4.1.yaml#/components/schemas/DateTime"
+        externalReference:
+          type: string
+          description: The charging network's charge detail record id (OCPI CDR) once issued — opaque.
+    network:
+      type: object
+      description: The charging network behind the point, and its identifiers for this charge — opaque bridge fields, never interpreted by APX.
+      properties:
+        operator:
+          description: The charge point operator — a Reference to the operator's contact/organisation record, as Part 20 references a merchant.
+          $ref: "../../../vendor/apds/4.1/apds-api-4.1.yaml#/components/schemas/Reference"
+        partyId:
+          type: string
+          description: Roaming party id (country code + party id form).
+          examples: ["US-LSG"]
+        ocppTransactionId:
+          type: string
+        ocpiSessionId:
+          type: string
+    statusHistory:
+      type: array
+      description: Immutable, append-only lifecycle audit (Part 4 §4.2).
+      items:
+        type: object
+        required: [state, time, actor]
+        properties:
+          state:
+            type: string
+          time:
+            $ref: "../../../vendor/apds/4.1/apds-api-4.1.yaml#/components/schemas/DateTime"
+          actor:
+            type: string
+          detail:
+            type: string
+    recordInfo:
+      $ref: "../common/schemas.yaml#/RecordInfo"
+    extensions:
+      $ref: "../common/schemas.yaml#/Extensions"
+
+ChargingEvent:
+  title: ChargingEvent
+  description: |-
+    EXPERIMENTAL (Part 23) — one physical-timeline event the charging-network bridge reports for a
+    session — the APX counterpart of an OCPP 2.0.1 TransactionEvent. The
+    server applies the lifecycle transition (Part 23 §23.2) and appends
+    `statusHistory`. `meterValue` events update `energy` without a state
+    change. Idempotent by `Idempotency-Key` (bridges retry).
+  type: object
+  required: [eventType, time]
+  properties:
+    eventType:
+      type: string
+      enum: [pluggedIn, chargingStarted, meterValue, suspended, resumed, chargingEnded, unplugged, fault, cancelled]
+    time:
+      $ref: "../../../vendor/apds/4.1/apds-api-4.1.yaml#/components/schemas/DateTime"
+    connectorIndex:
+      type: integer
+      minimum: 1
+    meterWh:
+      type: number
+      minimum: 0
+      description: Cumulative meter reading at `time`.
+    powerKw:
+      type: number
+      minimum: 0
+    stateOfChargePercent:
+      type: number
+      minimum: 0
+      maximum: 100
+    suspendedBy:
+      type: string
+      enum: [ev, evse]
+      description: With `suspended`.
+    stopReason:
+      type: string
+      enum: [evDisconnected, evFull, targetReached, energyLimitReached, timeLimitReached, remote, local, deauthorized, emergencyStop, powerLoss, other]
+      description: With `chargingEnded`.
+    faultCode:
+      type: string
+      description: With `fault` — the charger's error code, opaque.
+    externalEventId:
+      type: string
+      description: The bridge's own id for this event (OCPP seqNo, message id) for reconciliation.
+    detail:
+      type: string
+
+ChargingPaymentAttachment:
+  title: ChargingPaymentAttachment
+  description: EXPERIMENTAL (Part 23) — request body attaching the settling payment to an `unplugged` `directPayment` session, or recording the network's charge detail record for a `chargingNetwork` one.
+  type: object
+  properties:
+    payment:
+      description: The settling APDS Payment / APX PaymentRecord.
+      $ref: "../../../vendor/apds/4.1/apds-api-4.1.yaml#/components/schemas/Reference"
+    externalReference:
+      type: string
+      description: The charging network's CDR id.
+    note:
+      type: string

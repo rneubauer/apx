@@ -313,3 +313,15 @@ force.
 APDS 4.1 has no signage concept (`PlaceInformation` carries operating
 restrictions and times, not posted text); this is net-new, built to APDS
 conventions and subject to Part 3 §3.3(8).
+
+## 19.12 Experimental cross-reference: charging bays (Part 23)
+
+A vehicle in an EV charging bay that is not plugged in — an ICE vehicle
+or an EV not charging — is the existing `restrictedSpace` type, evidenced
+by the bay Observation the Part 23 §23.3 fusion recorded. Proposed and
+not registered: `chargingBayIdle` — a vehicle remained connected in a
+charging bay after charging completed beyond the posted idle limit; the
+candidate is raised by a consumer of `apx.charging.idle.started.v1` when
+`idlePolicy.maxIdleMinutes` elapses (Part 23 §23.10). Whether idle is a
+fee, a violation, or both is the place's enforcement policy (§19.10) and
+signage (§19.11).
