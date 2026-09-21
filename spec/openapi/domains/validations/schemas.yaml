@@ -1,0 +1,439 @@
+# APX validations — program management over the Part 6 §6.3 surface.
+# APDS 4.1 records that a validation HAPPENED (PaymentTypeEnum: validation,
+# Segment.validationType/validationId, RateTable.validation, RateDiscount)
+# but has no merchant enrolment, stock issuance, redemption ledger, or
+# merchant billing. This domain adds exactly those, as APX resources that
+# reference APDS entities: the merchant is a Contact/Organisation, the place
+# a HierarchyElement, the ticket a Session, money AmountInCurrency, comped
+# time Duration, and the applied validation's id IS the APDS
+# Segment.validationId.
+
+ValidationBenefit:
+  title: ValidationBenefit
+  description: |-
+    What a validation is worth. Exactly one of `amount` (money off),
+    `duration` (comped time, valued at the applicable rate), or
+    `percentage` (proportionate discount — the APDS RateDiscount
+    `discountRate` semantics) applies; `description` is always present so
+    agents can answer disputes in plain language.
+  type: object
+  required: [description]
+  properties:
+    description:
+      type: string
+      examples: ["First two hours comped"]
+    amount:
+      description: Fixed money off.
+      $ref: "../../../vendor/apds/4.1/apds-api-4.1.yaml#/components/schemas/AmountInCurrency"
+    duration:
+      description: Comped parking time (ISO 8601), valued at the applicable rate.
+      $ref: "../../../vendor/apds/4.1/apds-api-4.1.yaml#/components/schemas/Duration"
+    percentage:
+      type: number
+      minimum: 0
+      maximum: 100
+      description: Proportionate discount on the amount due (APDS RateDiscount.discountRate semantics).
+
+ValidationProgram:
+  title: ValidationProgram
+  description: |-
+    A merchant's enrolment to validate parking at a place: who the
+    provider is, what the validation is worth, the rules that bound it,
+    how the merchant is billed, and how instruments are issued. Active
+    programs ARE the source of the Part 6 `GET /v1/validations/providers`
+    list when `apx-validations` is claimed.
+
+    Lifecycle (Part 20 §20.1): `active ⇄ suspended`, either → `ended`
+    (terminal). Status changes go through `PUT` with the current
+    `version` (409 `version-conflict` when stale).
+  type: object
+  required:
+    - id
+    - version
+    - place
+    - provider
+    - programStatus
+    - benefit
+  properties:
+    id:
+      type: string
+      format: uuid
+      readOnly: true
+    version:
+      type: integer
+      minimum: 1
+      readOnly: true
+    place:
+      description: The HierarchyElement (Place or subtree root) the program validates parking at.
+      $ref: "../../../vendor/apds/4.1/apds-api-4.1.yaml#/components/schemas/Reference"
+    provider:
+      description: The merchant — an APDS Contact or Organisation.
+      $ref: "../../../vendor/apds/4.1/apds-api-4.1.yaml#/components/schemas/Reference"
+    name:
+      type: string
+      description: Display name shown to agents and on receipts.
+      examples: [Harbor Bistro]
+    validationType:
+      type: string
+      description: Implementer code list naming the validation product (matches `ValidationProvider.validationType`).
+      examples: [twoHourComp]
+    programStatus:
+      type: string
+      enum: [active, suspended, ended]
+    benefit:
+      $ref: "#/ValidationBenefit"
+    rules:
+      type: object
+      description: |-
+        The closed rule set every implementation evaluates at redemption
+        (Part 20 §20.3). Anything beyond it rides in `extensions`.
+      properties:
+        maxPerTicket:
+          type: integer
+          minimum: 1
+          description: Redemptions of THIS program allowed on one ticket/session.
+        maxPerDay:
+          type: integer
+          minimum: 1
+          description: Redemptions of this program allowed per calendar day at the place.
+        validityWindow:
+          description: How long after issuance an instrument stays redeemable (ISO 8601).
+          $ref: "../../../vendor/apds/4.1/apds-api-4.1.yaml#/components/schemas/Duration"
+        stackable:
+          type: boolean
+          description: Whether this program may combine with other programs on the same ticket.
+        applicableRateTables:
+          type: array
+          description: Restrict to these APDS RateTables; absent = all tables at the place that accept validations.
+          items:
+            $ref: "../../../vendor/apds/4.1/apds-api-4.1.yaml#/components/schemas/Reference"
+    billing:
+      type: object
+      description: How the operator charges the merchant for redemptions.
+      required: [model]
+      properties:
+        model:
+          type: string
+          enum: [merchantPays, operatorAbsorbs, split]
+        unitPrice:
+          description: What the merchant pays per redemption (merchantPays), or the base for `merchantShare` (split). Absent = billed at the actual amount reduced.
+          $ref: "../../../vendor/apds/4.1/apds-api-4.1.yaml#/components/schemas/AmountInCurrency"
+        merchantShare:
+          type: number
+          minimum: 0
+          maximum: 100
+          description: Percentage of the amount reduced the merchant pays under `split`.
+        billingCycle:
+          type: string
+          enum: [monthly, weekly, perRedemption]
+    issuanceMethods:
+      type: array
+      description: Instrument forms this program may issue.
+      items:
+        type: string
+        enum: [code, qrCode, stamp, digital, api]
+    statusHistory:
+      type: array
+      description: Immutable, append-only lifecycle audit (Part 4 §4.2).
+      items:
+        type: object
+        required: [state, time, actor]
+        properties:
+          state:
+            type: string
+          time:
+            $ref: "../../../vendor/apds/4.1/apds-api-4.1.yaml#/components/schemas/DateTime"
+          actor:
+            type: string
+          detail:
+            type: string
+    recordInfo:
+      $ref: "../common/schemas.yaml#/RecordInfo"
+    extensions:
+      $ref: "../common/schemas.yaml#/Extensions"
+
+ValidationIssuance:
+  title: ValidationIssuance
+  description: |-
+    A batch of validation instruments issued to a program — printed codes,
+    QR codes, stamp stock, digital tokens. `codes[]` is returned EXACTLY
+    ONCE, in the creation response (the webhook-secret convention, Part 8
+    §8.1); later reads omit it. `stamp` and `api` batches carry no codes.
+  type: object
+  required:
+    - id
+    - version
+    - program
+    - quantity
+    - method
+    - issuanceStatus
+  properties:
+    id:
+      type: string
+      format: uuid
+      readOnly: true
+    version:
+      type: integer
+      minimum: 1
+      readOnly: true
+    program:
+      $ref: "../../../vendor/apds/4.1/apds-api-4.1.yaml#/components/schemas/Reference"
+    quantity:
+      type: integer
+      minimum: 1
+    method:
+      type: string
+      enum: [code, qrCode, stamp, digital, api]
+    validFrom:
+      $ref: "../../../vendor/apds/4.1/apds-api-4.1.yaml#/components/schemas/DateTime"
+    validTo:
+      description: Expiry of every instrument in the batch; defaults from the program's `rules.validityWindow`.
+      $ref: "../../../vendor/apds/4.1/apds-api-4.1.yaml#/components/schemas/DateTime"
+    issuedTo:
+      type: string
+      description: Opaque principal or merchant contact the stock was handed to.
+    codes:
+      type: array
+      readOnly: true
+      description: The instrument codes — present ONLY in the creation response.
+      items:
+        type: string
+    issuanceStatus:
+      type: string
+      enum: [issued, void]
+      readOnly: true
+    note:
+      type: string
+    recordInfo:
+      $ref: "../common/schemas.yaml#/RecordInfo"
+    extensions:
+      $ref: "../common/schemas.yaml#/Extensions"
+
+ValidationInstrument:
+  title: ValidationInstrument
+  description: The current state of one validation code — the pay-station / merchant-app "is this code good?" read.
+  type: object
+  required: [code, program, instrumentStatus]
+  properties:
+    code:
+      type: string
+    program:
+      $ref: "../../../vendor/apds/4.1/apds-api-4.1.yaml#/components/schemas/Reference"
+    issuance:
+      $ref: "../../../vendor/apds/4.1/apds-api-4.1.yaml#/components/schemas/Reference"
+    instrumentStatus:
+      type: string
+      enum: [valid, redeemed, void, expired]
+    validFrom:
+      $ref: "../../../vendor/apds/4.1/apds-api-4.1.yaml#/components/schemas/DateTime"
+    validTo:
+      $ref: "../../../vendor/apds/4.1/apds-api-4.1.yaml#/components/schemas/DateTime"
+    benefit:
+      description: What redeeming this code is worth (from the program), so a pay station can show it before applying.
+      $ref: "#/ValidationBenefit"
+    redemption:
+      description: The ValidationRedemption that consumed the code, when `redeemed`.
+      $ref: "../../../vendor/apds/4.1/apds-api-4.1.yaml#/components/schemas/Reference"
+    extensions:
+      $ref: "../common/schemas.yaml#/Extensions"
+
+ValidationRedemption:
+  title: ValidationRedemption
+  description: |-
+    One validation applied to one ticket/session — the ledger entry every
+    channel writes: a pay station scanning a code, a merchant app, an
+    agent's `applyValidation` command (Part 6), or a lane device. `validationId`
+    is the APDS `Segment.validationId`, so APDS consumers see the same
+    redemption without speaking APX. `amountReduced` is the ACTUAL value
+    removed from the amount due (dispute evidence), never the nominal benefit.
+  type: object
+  required:
+    - id
+    - version
+    - program
+    - place
+    - appliedTime
+    - channel
+    - redemptionStatus
+  properties:
+    id:
+      type: string
+      format: uuid
+      readOnly: true
+    version:
+      type: integer
+      minimum: 1
+      readOnly: true
+    program:
+      $ref: "../../../vendor/apds/4.1/apds-api-4.1.yaml#/components/schemas/Reference"
+    place:
+      $ref: "../../../vendor/apds/4.1/apds-api-4.1.yaml#/components/schemas/Reference"
+    instrumentCode:
+      type: string
+      description: The code redeemed, when the channel used one.
+    ticketNumber:
+      type: string
+    session:
+      $ref: "../../../vendor/apds/4.1/apds-api-4.1.yaml#/components/schemas/Reference"
+    appliedTime:
+      $ref: "../../../vendor/apds/4.1/apds-api-4.1.yaml#/components/schemas/DateTime"
+    channel:
+      type: string
+      enum: [lane, payStation, merchantApp, callCenter, api]
+    appliedBy:
+      type: string
+      description: Opaque principal (device id, merchant user, agent id).
+    command:
+      description: The Part 6 Command that applied it, when the channel was `callCenter`/`api` via `applyValidation`.
+      $ref: "../../../vendor/apds/4.1/apds-api-4.1.yaml#/components/schemas/Reference"
+    validationId:
+      type: string
+      readOnly: true
+      description: The APDS Segment.validationId materialized on the session.
+    amountReduced:
+      description: Actual reduction of the amount due.
+      $ref: "../../../vendor/apds/4.1/apds-api-4.1.yaml#/components/schemas/AmountInCurrency"
+    durationComped:
+      $ref: "../../../vendor/apds/4.1/apds-api-4.1.yaml#/components/schemas/Duration"
+    redemptionStatus:
+      type: string
+      enum: [applied, reversed]
+      readOnly: true
+    reversal:
+      type: object
+      readOnly: true
+      properties:
+        reason:
+          type: string
+        note:
+          type: string
+        time:
+          $ref: "../../../vendor/apds/4.1/apds-api-4.1.yaml#/components/schemas/DateTime"
+        actor:
+          type: string
+    statusHistory:
+      type: array
+      description: Immutable, append-only lifecycle audit (Part 4 §4.2).
+      items:
+        type: object
+        required: [state, time, actor]
+        properties:
+          state:
+            type: string
+          time:
+            $ref: "../../../vendor/apds/4.1/apds-api-4.1.yaml#/components/schemas/DateTime"
+          actor:
+            type: string
+          detail:
+            type: string
+    recordInfo:
+      $ref: "../common/schemas.yaml#/RecordInfo"
+    extensions:
+      $ref: "../common/schemas.yaml#/Extensions"
+
+ValidationRedemptionReversal:
+  title: ValidationRedemptionReversal
+  description: Request body reversing a redemption (wrong ticket, merchant dispute, fraud).
+  type: object
+  required: [reason]
+  properties:
+    reason:
+      type: string
+      description: Implementer code list.
+      examples: [wrongTicket]
+    note:
+      type: string
+
+ValidationStatementClose:
+  title: ValidationStatementClose
+  description: Request body closing a billing period for a program.
+  type: object
+  required: [periodStart, periodEnd]
+  properties:
+    periodStart:
+      $ref: "../../../vendor/apds/4.1/apds-api-4.1.yaml#/components/schemas/DateTime"
+    periodEnd:
+      $ref: "../../../vendor/apds/4.1/apds-api-4.1.yaml#/components/schemas/DateTime"
+    note:
+      type: string
+
+ValidationStatement:
+  title: ValidationStatement
+  description: |-
+    A program's redemptions and billable total for a period. Returned
+    as a computed preview by `GET …/statement`, and as an IMMUTABLE
+    record once a period is closed by `POST …/statements` (`statementStatus:
+    closed`; the operator's accounting system invoices from it). Closed
+    periods MUST NOT overlap (409 `statement-overlap`).
+  type: object
+  required:
+    - program
+    - periodStart
+    - periodEnd
+    - redemptionCount
+    - billableAmount
+  properties:
+    id:
+      type: string
+      format: uuid
+      readOnly: true
+      description: Present only on closed statements.
+    version:
+      type: integer
+      minimum: 1
+      readOnly: true
+    program:
+      $ref: "../../../vendor/apds/4.1/apds-api-4.1.yaml#/components/schemas/Reference"
+    place:
+      $ref: "../../../vendor/apds/4.1/apds-api-4.1.yaml#/components/schemas/Reference"
+    periodStart:
+      $ref: "../../../vendor/apds/4.1/apds-api-4.1.yaml#/components/schemas/DateTime"
+    periodEnd:
+      $ref: "../../../vendor/apds/4.1/apds-api-4.1.yaml#/components/schemas/DateTime"
+    statementStatus:
+      type: string
+      enum: [preview, closed]
+      readOnly: true
+    billingModel:
+      type: string
+      enum: [merchantPays, operatorAbsorbs, split]
+    redemptionCount:
+      type: integer
+      minimum: 0
+      description: Applied redemptions in the period (reversed ones excluded).
+    reversedCount:
+      type: integer
+      minimum: 0
+    totalReduced:
+      description: Sum of `amountReduced` over applied redemptions.
+      $ref: "../../../vendor/apds/4.1/apds-api-4.1.yaml#/components/schemas/AmountInCurrency"
+    billableAmount:
+      description: What the merchant owes for the period under the program's billing model.
+      $ref: "../../../vendor/apds/4.1/apds-api-4.1.yaml#/components/schemas/AmountInCurrency"
+    lines:
+      type: array
+      description: Per-redemption detail; MAY be omitted from list responses.
+      items:
+        type: object
+        required: [redemption, appliedTime]
+        properties:
+          redemption:
+            $ref: "../../../vendor/apds/4.1/apds-api-4.1.yaml#/components/schemas/Reference"
+          appliedTime:
+            $ref: "../../../vendor/apds/4.1/apds-api-4.1.yaml#/components/schemas/DateTime"
+          ticketNumber:
+            type: string
+          amountReduced:
+            $ref: "../../../vendor/apds/4.1/apds-api-4.1.yaml#/components/schemas/AmountInCurrency"
+          billable:
+            $ref: "../../../vendor/apds/4.1/apds-api-4.1.yaml#/components/schemas/AmountInCurrency"
+    closedTime:
+      $ref: "../../../vendor/apds/4.1/apds-api-4.1.yaml#/components/schemas/DateTime"
+    closedBy:
+      type: string
+    note:
+      type: string
+    recordInfo:
+      $ref: "../common/schemas.yaml#/RecordInfo"
+    extensions:
+      $ref: "../common/schemas.yaml#/Extensions"

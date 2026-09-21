@@ -11,7 +11,8 @@ APDS 4.1 API specification (Alliance for Parking Data Standards; core data
 model published as ISO/TS 5206-1). APX defines the interoperable API surface
 that APDS deliberately leaves out: real-time delivery, operational control,
 alerting, discovery, and the operational domains built on them (accounts &
-payments, LPR, reservations, permits, tolling).
+payments, LPR, reservations, permits, tolling, violations/enforcement,
+validation programs, credential lifecycle, valet).
 
 ## 0.2 Prime directive: APDS-first
 
@@ -69,6 +70,10 @@ payments, LPR, reservations, permits, tolling).
 | 16 | 16-discovery.md | Credential-scoped discovery |
 | 17 | 17-resolution.md | Customer Service & Resolution (contexts, policy, actions) |
 | 18 | 18-aggregation.md | Aggregation and onboarding (multi-site platforms) |
+| 19 | 19-violations.md | Violations — automated and guided enforcement, notices/citations, appeals |
+| 20 | 20-validations.md | Validations — merchant programs, instrument issuance, redemption ledger, billing statements |
+| 21 | 21-credentials.md | Credentials — keycard/fob/RFID/mobile lifecycle, replacement, access-event history |
+| 22 | 22-valet.md | Valet — custody, condition evidence, retrieval queue and ETA, staging, verified handback |
 | A | annex-a-ics.md | Conformance requirements and ICS template |
 
 The machine-readable OpenAPI 3.1 document (`spec/openapi/apx.yaml`, bundled

@@ -6,6 +6,129 @@ conformance/versioning rules in Part 3 of the written standard.
 The machine-readable spec (`spec/openapi/apx.yaml`, bundled as
 `spec/dist/apx-v1.*`) is normative; entries here are informative.
 
+## [0.8.0] — 2026-09-20
+
+Valet (Part 22, optional class `apx-valet`) — a net-new domain (APDS has
+no valet entity). `ValetTicket` referencing the APDS Session for the
+stay: `vehicle`, minimized `customer` with an opaque `contactChannel`,
+`dropOff` (lane, attendant, mileage, fuel, key tag, items left,
+condition report), `storage` (Space or zone, key location), `retrieval`
+(channel `sms|app|web|voiceBot|kiosk|attendant|callCenter`, scheduled
+`requestedFor`, opaque `interaction` id, server-set `etaMinutes` and
+`promisedTime`, staging), `handback` (verification method, mileage,
+condition report), lifecycle `dropped → parked → requested → retrieving
+→ staged → handedBack → closed` with cancel-retrieval and immutable
+`statusHistory`. `ConditionReport` — notes, structured `damage[]`
+(area, severity, image), walk-around `imageLinks[]`, `customerAcknowledged`
+— at both ends; drop-off report immutable after `dropped`. Nine
+operations under `/v1/valet` including `GET /v1/valet/queue` (the runner
+board); scopes `apx.valet:read`/`:manage` and the customer-confined
+`apx.valet:request` (minimized read, retrieve, cancel — works for texts,
+PWAs, voice bots); topics `apx.valet.ticket.status.v1`,
+`apx.valet.retrieval.requested.v1`; problem types
+`valet-transition-illegal`, `valet-vehicle-not-located`,
+`valet-verification-failed` (recorded in statusHistory); Annex A.18
+(APX-VLT-01…08); scenario 21 (scanned drop-off report, retrieve by text
+with ETA, staged, verified handback, damage claim answered).
+
+## [0.7.0] — 2026-09-20
+
+Credentials (Part 21, optional class `apx-credentials`) — the lifecycle
+of keycards, fobs, RFID tags and transponders, mobile credentials,
+hangtags, and plates used as the credential. `CredentialRecord` (APDS
+`CredentialTypeEnum` read technology + identification, assigned type,
+holder/account, assigned rights, places, validity, physical `media` with
+serial, batch, and deposit, `replaces`/`replacedBy`, immutable
+`statusHistory`); lifecycle `issued → active ⇄ suspended`, `→ lost`,
+`→ revoked`, server-side `expired`, and one-call `replace` issuing an
+active successor. **APDS materialization is normative:** an active
+record MUST appear as `CredentialAssigned` on the holder's AssignedRights
+with `identifier` → the record, and MUST be removed on suspend, lost,
+revoke, expire — a plain APDS lane sees the truth without APX.
+`CredentialAccessEvent` + `GET …/{id}/access-events` (granted/denied with
+seeded `denialReason`) and topic `apx.credentials.access.v1` (APDS has no
+access events); topic `apx.credentials.status.v1`. Ten operations under
+`/v1/credentials` (the Part 17 `…/{id}/passback` read is unchanged);
+scopes `apx.credentials:read`/`:manage`; problem types
+`credential-identification-in-use`, `credential-transition-illegal`,
+`credential-not-replaceable`; additive `Account.credentials[]`
+(Part 13); Annex A.17 (APX-CRD-01…06); scenario 20 (lost keycard
+replaced by phone, old card refused by an APDS-only lane, access log).
+
+## [0.6.0] — 2026-09-19
+
+Violations (Part 19) extension: the law at the location. New
+`EnforcementPolicy` bound to a HierarchyElement with subtree inheritance
+— lawful notice delivery per detection mode with deadlines and minimum
+evidence, penalty cap over the unpaid fee (refuse or clamp), ordered
+server-applied escalation schedule with an overall ceiling, appeal
+window, payment grace, `signageRequired`, statute provenance. New
+`Signage` — posted text (`MultilingualString`), photo link, sign
+position, in-force window, immutable history. `Violation` gains
+`location` (APDS Observation `Location` shape: observed and observer
+`PointLocation`, textual, accuracy), `policy` and `signage[]` frozen at
+issue as VersionedReferences, and `amountHistory[]` (issued, escalation
+steps, appeal reductions, cap clamps). Ten operations under
+`/v1/enforcement/policies` and `/v1/enforcement/signage` including
+`…/effective?place=&at=` resolution reads; `issue` now enforces the
+policy in force with 422 `delivery-method-not-permitted`,
+`notice-deadline-passed`, `penalty-exceeds-cap`, `signage-required`;
+`signage-referenced` on text edits to referenced signs. §19.1 rule 6
+replaced (escalation now in scope, collections still out). Annex A
+APX-VIO-09…12; scenario 19.
+
+## [0.5.0] — 2026-09-19
+
+Validations program management (Part 20, optional class
+`apx-validations`) — the merchant side of the Part 6 §6.3 surface.
+`ValidationProgram` (merchant enrolment at a place: benefit as exactly
+one of amount/duration/percentage, a closed rule set — maxPerTicket,
+maxPerDay, validityWindow, stackable, applicableRateTables — billing
+model merchantPays/operatorAbsorbs/split, versioned `PUT` lifecycle
+`active ⇄ suspended → ended`); `ValidationIssuance` (batches of codes,
+QR, stamps, digital; codes returned exactly once); `ValidationInstrument`
+(code check, 404-never-403); `ValidationRedemption` (the ledger every
+channel writes — pay station, merchant app, lane, and the Part 6
+`applyValidation` command — carrying the APDS `Segment.validationId` and
+the ACTUAL `amountReduced`; reversible); `ValidationStatement` (preview
+any period, close it into an immutable non-overlapping statement).
+Fifteen operations under `/v1/validations`; scopes
+`apx.validations:read`/`:manage` and the merchant-confined
+`apx.validations:redeem`; topics `apx.validations.redeemed.v1`,
+`.program.status.v1`, `.statement.closed.v1`; problem types
+`program-not-active`, `instrument-invalid`, `redemption-limit-exceeded`,
+`redemption-reversed`, `statement-closed`, `statement-overlap`; additive
+`ValidationProvider.program` reference (Part 6 provider list now derives
+from active programs when the class is claimed); Annex A.16
+(APX-VAL-01…08); scenario 18 (enrol, issue QR codes, redeem at the pay
+station, per-ticket cap refused, close the month).
+
+## [0.4.0] — 2026-09-19
+
+Violations (Part 19, optional class `apx-violations`) — enforcement as a
+net-new domain. One `Violation` resource for tickets, notices, warnings,
+and citations; two first-class detection modes (`automated` camera/sensor
+pipelines and `guided` handheld enforcement, plus `manual`); lifecycle
+`detected → confirmed | dismissed → issued → paid | appealed`, `voided`
+terminal, immutable `statusHistory[]`; guided/manual detections MUST be
+reviewed before issuance (409 `violation-not-issuable`); one appeal per
+violation with `upheld`/`reduced`/`dismissed`; settlement by Payment
+reference only (money taken via Part 13). New `GET
+/v1/enforcement/eligibility` — the handheld screen-pop composed from APDS
+AssignedRights/Sessions (which remain authoritative), with a per-basis
+reason (`valid`, `expired`, `wrongPlace`…) and an advisory
+`suggestedViolationType`. Ten operations under `/v1/violations` and
+`/v1/enforcement`; scopes `apx.violations:read`/`:manage`; topics
+`apx.violations.detected.v1`, `.issued.v1`, `.status.v1`; new registry
+`apx-violation-types` (10 entries); problem types
+`violation-transition-illegal`, `violation-not-issuable`,
+`appeal-closed`; Annex A.15 (APX-VIO-01…08); scenarios 16 (automated LPR
+overstay → mailed notice → appeal reduced → paid) and 17 (guided
+handheld: eligibility check, confirm, windshield citation, and the 409
+when review is skipped). Part 9 §9.6 plate-scope list extended; reuses
+APDS's `ep` (Enforcement Provider) role and `enforcementSystemProvider`
+responsibility rather than defining an enforcement identity.
+
 ## [0.3.0] — 2026-09-05
 
 Customer Service & Resolution (Part 17, class `apx-resolution`) plus the

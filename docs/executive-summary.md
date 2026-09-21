@@ -34,7 +34,7 @@ The result: every PARCS, LPR, tolling, permitting, and reservations vendor still
 | **Call-center support** | Lane inquiry "screen-pop": the ticket in the machine, amount due, plate photo, monthly-credential history |
 | **Alerts** | Operational alerting with open taxonomies and severity filtering |
 | **Discovery** | Each connected credential can ask the API exactly what it may do — and the answer is contractually accurate |
-| **Business domains** | Accounts & payments (incl. accounting write-back), LPR plate↔ticket lookup, reservations, pooled permits, tolling with disputes |
+| **Business domains** | Accounts & payments (incl. accounting write-back), LPR plate↔ticket lookup, reservations, pooled permits, tolling with disputes, violations (automated and guided enforcement, notices/citations, appeals), validation programs (merchant enrolment, code issuance, redemption ledger, billing statements), credential lifecycle (keycards, tags, fobs, mobile — issue, suspend, replace, access history), valet (custody with condition evidence, retrieval queue and ETA from text/app/voice bot, verified handback) |
 
 ## Built for multi-vendor adoption
 

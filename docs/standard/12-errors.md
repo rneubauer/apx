@@ -32,6 +32,26 @@ Base URI: `https://apx-standard.org/problems/`
 | `action-not-allowed` | 403 | Execution of an action the current resolution context evaluated as not allowed (Part 17 §17.3) |
 | `approval-required` | 403 | Requires-approval action executed without approval evidence (Part 17 §17.3) |
 | `rate-limited` | 429 | Throttled; response carries `Retry-After` (§12.3) |
+| `violation-transition-illegal` | 409 | Violation transition requested from a state that does not allow it (Part 19 §19.1) |
+| `violation-not-issuable` | 409 | `issue` on an unreviewed `guided`/`manual` detection, or an `automated` one where policy forbids unreviewed issuance (Part 19 §19.4) |
+| `appeal-closed` | 409 | Appeal operation on a violation with no open appeal, a second appeal, or a closed/voided violation (Part 19 §19.1) |
+| `program-not-active` | 422 | Issuance or redemption against a validation program that is not `active`, or a transition out of `ended` (Part 20 §20.1, §20.3) |
+| `instrument-invalid` | 422 | Validation code unknown, void, expired, or already redeemed; or an instrument required and absent (Part 20 §20.3) |
+| `redemption-limit-exceeded` | 422 | A program rule (maxPerTicket, maxPerDay, stackable, applicableRateTables) refuses the redemption (Part 20 §20.3) |
+| `redemption-reversed` | 409 | Reverse requested on an already-reversed redemption (Part 20 §20.4) |
+| `statement-closed` | 409 | Reverse requested on a redemption inside a closed statement period (Part 20 §20.4) |
+| `statement-overlap` | 409 | Closing a period that overlaps an existing closed statement (Part 20 §20.6) |
+| `delivery-method-not-permitted` | 422 | `issue` with a notice delivery method, or without the minimum evidence, the enforcement policy in force does not permit for the detection mode (Part 19 §19.10) |
+| `notice-deadline-passed` | 422 | `issue` after the policy's notice deadline for the delivery method has elapsed since detection (Part 19 §19.10) |
+| `penalty-exceeds-cap` | 422 | `issue` amount above the policy's penalty cap with `onExceed: refuse` (Part 19 §19.10) |
+| `signage-required` | 422 | `issue` at a place whose policy requires posted signage and none was in force at detection (Part 19 §19.10–19.11) |
+| `signage-referenced` | 422 | `PUT` altering the text of a Signage record an issued violation references (Part 19 §19.11) |
+| `credential-identification-in-use` | 409 | Issuing or replacing with an identification already held by a non-terminal record of the same type (Part 21 §21.1) |
+| `credential-transition-illegal` | 409 | Credential transition requested from a state that does not allow it (Part 21 §21.1) |
+| `credential-not-replaceable` | 409 | `replace` on a revoked, expired, or already-replaced credential (Part 21 §21.1) |
+| `valet-transition-illegal` | 409 | Valet ticket transition requested from a state that does not allow it (Part 22 §22.1) |
+| `valet-vehicle-not-located` | 409 | `retrieve` on a ticket still in `dropped` — no parked position recorded yet (Part 22 §22.1) |
+| `valet-verification-failed` | 403 | Handback claimant verification failed; the attempt is recorded in `statusHistory` (Part 22 §22.4) |
 
 Problem responses SHOULD include `detail` and MAY carry additional members
 (RFC 9457 extension members), including an `extensions` container.

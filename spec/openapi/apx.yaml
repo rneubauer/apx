@@ -2,7 +2,7 @@ openapi: 3.1.0
 
 info:
   title: APX — APDS Parking eXtensions
-  version: 0.3.0
+  version: 0.8.0
   summary: An open companion standard to APDS 4.1
   description: |-
     **APX (APDS Parking eXtensions)** is an additive companion standard to the
@@ -81,6 +81,35 @@ tags:
       through the Part 6 command plane. See written standard Part 17.
   - name: Support
     description: Support-interaction history for resolution contexts. See written standard Part 17.
+  - name: Violations
+    description: |-
+      Enforcement (optional class apx-violations, net-new domain) — one
+      Violation resource for tickets, notices, and citations: automated and
+      guided detection, review, issuance, settlement by Payment reference,
+      appeals, and the eligibility check that drives guided enforcement.
+      See written standard Part 19.
+  - name: Validations
+    description: |-
+      Validation program management (optional class apx-validations) —
+      merchant enrolment, instrument issuance (codes, QR, stamps),
+      the redemption ledger every channel writes, and merchant billing
+      statements. Builds on the Part 6 §6.3 provider lookup and
+      `applyValidation` command. See written standard Part 20.
+  - name: Credentials
+    description: |-
+      Credential lifecycle (optional class apx-credentials) — keycards,
+      fobs, RFID tags, mobile credentials, hangtags, plates-as-credential:
+      issue, activate, suspend, resume, report lost, revoke, replace, and
+      access-event history. Active records are materialized as APDS
+      CredentialAssigned on the holder's AssignedRights. See written
+      standard Part 21.
+  - name: Valet
+    description: |-
+      Valet custody (optional class apx-valet, net-new domain) — drop-off
+      with condition evidence, parked position and keys, the retrieval
+      queue with ETA (from text, app, web, voice bot, kiosk, or
+      attendant), staging, and verified handback. The APDS Session
+      remains the stay and the money. See written standard Part 22.
 
 paths:
   # ===== APDS 4.1 native routes, mounted VERBATIM from the vendored spec ===== #
@@ -786,6 +815,2087 @@ paths:
           content:
             application/problem+json:
               schema: { $ref: "#/components/schemas/Problem" }
+
+  # ===== Violations / enforcement (optional class apx-violations; Part 19) ===== #
+  # Net-new like tolling: APDS has no violation entity. Eligibility comes
+  # from AssignedRight (APDS's own enforcement source), evidence from native
+  # Observations; settlement attaches a Payment reference (Part 13).
+  /v1/violations:
+    post:
+      operationId: post-apx-v1-violations
+      security:
+        - apxOAuth: ["apx.violations:manage"]
+      tags: [Violations]
+      summary: Create a violation from a detection (idempotent)
+      description: |-
+        Records a detected violation — from an automated camera/sensor
+        pipeline, a guided-enforcement handheld, or an officer directly
+        (`detection.mode`). The `Idempotency-Key` header is REQUIRED:
+        cameras and handhelds retry, and a retry must not create a second
+        violation. Same key + same body returns the ORIGINAL (200); same
+        key + different body is 409 idempotency-conflict. The server
+        performs the eligibility check at creation and records it in
+        `eligibilityCheck`; a vehicle found entitled is still recorded (as
+        `dismissed`, with the basis) so the audit trail is complete.
+        Publishes `apx.violations.detected.v1`.
+      parameters:
+        - { name: Idempotency-Key, in: header, required: true, schema: { type: string } }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/Violation" }
+      responses:
+        "200":
+          description: Idempotent replay — same key + same body returns the ORIGINAL violation.
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/Violation" }
+        "201":
+          description: Violation recorded (status `detected`, or `dismissed` when the vehicle was entitled).
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/Violation" }
+        "400":
+          description: Missing Idempotency-Key or invalid violation.
+          content:
+            application/problem+json:
+              schema: { $ref: "#/components/schemas/Problem" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+        "409":
+          description: Idempotency-Key replayed with a different body.
+          content:
+            application/problem+json:
+              schema: { $ref: "#/components/schemas/Problem" }
+        "422":
+          description: Unprocessable — unknown place, or `violationType` outside the served registries.
+          content:
+            application/problem+json:
+              schema: { $ref: "#/components/schemas/Problem" }
+        "429": { $ref: "#/components/responses/TooManyRequests" }
+    get:
+      operationId: get-apx-v1-violations
+      security:
+        - apxOAuth: ["apx.violations:read"]
+      tags: [Violations]
+      summary: List/filter violations
+      description: |-
+        Filter by plate (credentialIdentification), status, type, place
+        (subtree-inclusive), detection mode, and `since` (detectedTime).
+        Results are constrained to the caller's place grant. Plate values
+        appear only under `apx.violations:*` scopes (Part 9 §9.6).
+      parameters:
+        - { name: plate, in: query, schema: { type: string } }
+        - name: status
+          in: query
+          schema: { type: string, enum: [detected, confirmed, dismissed, issued, paid, appealed, closed, voided] }
+        - { name: type, in: query, schema: { type: string } }
+        - { name: place, in: query, schema: { type: string, format: uuid } }
+        - name: detectionMode
+          in: query
+          schema: { type: string, enum: [automated, guided, manual] }
+        - { name: since, in: query, schema: { type: string, format: date-time } }
+        - $ref: "../vendor/apds/4.1/apds-api-4.1.yaml#/components/parameters/page"
+      responses:
+        "200":
+          description: Paginated violations (APDS PaginatedList shape).
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  meta:
+                    $ref: "../vendor/apds/4.1/apds-api-4.1.yaml#/components/schemas/PaginatedListMeta"
+                  data:
+                    type: array
+                    items: { $ref: "#/components/schemas/Violation" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+        "429": { $ref: "#/components/responses/TooManyRequests" }
+
+  /v1/violations/{id}:
+    get:
+      operationId: get-apx-v1-violations-id
+      security:
+        - apxOAuth: ["apx.violations:read"]
+      tags: [Violations]
+      summary: Read a violation
+      description: Returns the violation including evidence links, the eligibility check, notice, appeal, and the immutable statusHistory.
+      parameters:
+        - { name: id, in: path, required: true, schema: { type: string, format: uuid } }
+      responses:
+        "200":
+          description: The violation.
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/Violation" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+        "404":
+          description: No such violation.
+          content:
+            application/problem+json:
+              schema: { $ref: "#/components/schemas/Problem" }
+        "429": { $ref: "#/components/responses/TooManyRequests" }
+
+  /v1/violations/{id}/review:
+    post:
+      operationId: post-apx-v1-violations-id-review
+      security:
+        - apxOAuth: ["apx.violations:manage"]
+      tags: [Violations]
+      summary: Review a detected candidate (guided enforcement)
+      description: |-
+        Transition `detected → confirmed` or `detected → dismissed`. The
+        officer's decision is recorded with reason and reviewer; a
+        `violationType` in the body corrects the detector's classification.
+        Any other starting state is 409 `violation-transition-illegal`.
+      parameters:
+        - { name: id, in: path, required: true, schema: { type: string, format: uuid } }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/ViolationReview" }
+      responses:
+        "200":
+          description: Reviewed violation.
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/Violation" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+        "404":
+          description: No such violation.
+          content:
+            application/problem+json:
+              schema: { $ref: "#/components/schemas/Problem" }
+        "409":
+          description: Illegal transition (not in `detected`).
+          content:
+            application/problem+json:
+              schema: { $ref: "#/components/schemas/Problem" }
+        "429": { $ref: "#/components/responses/TooManyRequests" }
+
+  /v1/violations/{id}/issue:
+    post:
+      operationId: post-apx-v1-violations-id-issue
+      security:
+        - apxOAuth: ["apx.violations:manage"]
+      tags: [Violations]
+      summary: Issue the notice or citation
+      description: |-
+        Transition `confirmed → issued` — or `detected → issued` for
+        `automated` detections where operator policy allows unreviewed
+        issuance; a `guided` detection still in `detected` is 409
+        `violation-not-issuable`. Sets `notice`, `amount`, and `dueTime`.
+
+        The server resolves the EnforcementPolicy in force at `place`
+        (Part 19 §19.10) and refuses with 422 when the request breaks it:
+        `delivery-method-not-permitted`, `notice-deadline-passed`,
+        `penalty-exceeds-cap` (or clamps, per the policy), or
+        `signage-required`. On success `policy`, `signage[]`, and the
+        first `amountHistory` entry are frozen onto the violation.
+        Publishes `apx.violations.issued.v1`.
+      parameters:
+        - { name: id, in: path, required: true, schema: { type: string, format: uuid } }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/ViolationIssue" }
+      responses:
+        "200":
+          description: Issued violation.
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/Violation" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+        "404":
+          description: No such violation.
+          content:
+            application/problem+json:
+              schema: { $ref: "#/components/schemas/Problem" }
+        "409":
+          description: Not issuable from the current state or detection mode.
+          content:
+            application/problem+json:
+              schema: { $ref: "#/components/schemas/Problem" }
+        "422":
+          description: Refused by the enforcement policy in force (delivery method, notice deadline, penalty cap, or signage).
+          content:
+            application/problem+json:
+              schema: { $ref: "#/components/schemas/Problem" }
+        "429": { $ref: "#/components/responses/TooManyRequests" }
+
+  /v1/violations/{id}/payment:
+    post:
+      operationId: post-apx-v1-violations-id-payment
+      security:
+        - apxOAuth: ["apx.violations:manage"]
+      tags: [Violations]
+      summary: Attach the settling Payment reference
+      description: |-
+        Transition `issued → paid`. The payment itself is taken through the
+        Part 13 surface (`POST /v1/payments`, a payment link, or an APDS
+        Payment ingested from a pay station); this attaches its reference.
+        Not in `issued` is 409 `violation-transition-illegal`.
+      parameters:
+        - { name: id, in: path, required: true, schema: { type: string, format: uuid } }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/ViolationPaymentAttachment" }
+      responses:
+        "200":
+          description: Paid violation.
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/Violation" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+        "404":
+          description: No such violation.
+          content:
+            application/problem+json:
+              schema: { $ref: "#/components/schemas/Problem" }
+        "409":
+          description: Illegal transition (not in `issued`).
+          content:
+            application/problem+json:
+              schema: { $ref: "#/components/schemas/Problem" }
+        "429": { $ref: "#/components/responses/TooManyRequests" }
+
+  /v1/violations/{id}/appeals:
+    post:
+      operationId: post-apx-v1-violations-id-appeals
+      security:
+        - apxOAuth: ["apx.violations:manage"]
+      tags: [Violations]
+      summary: Open an appeal
+      description: |-
+        Transition `issued → appealed`. One appeal per violation: a second
+        appeal, or an appeal on a closed/voided violation, is 409
+        `appeal-closed`.
+      parameters:
+        - { name: id, in: path, required: true, schema: { type: string, format: uuid } }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/ViolationAppealOpen" }
+      responses:
+        "200":
+          description: Appealed violation.
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/Violation" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+        "404":
+          description: No such violation.
+          content:
+            application/problem+json:
+              schema: { $ref: "#/components/schemas/Problem" }
+        "409":
+          description: Appeal closed or already opened.
+          content:
+            application/problem+json:
+              schema: { $ref: "#/components/schemas/Problem" }
+        "429": { $ref: "#/components/responses/TooManyRequests" }
+
+  /v1/violations/{id}/appeals/resolve:
+    post:
+      operationId: post-apx-v1-violations-id-appeals-resolve
+      security:
+        - apxOAuth: ["apx.violations:manage"]
+      tags: [Violations]
+      summary: Resolve an appeal
+      description: |-
+        `upheld` → back to `issued`; `reduced` → back to `issued` with
+        `amount` replaced by `adjustedAmount`; `dismissed` → `closed`.
+        No open appeal is 409 `appeal-closed`.
+      parameters:
+        - { name: id, in: path, required: true, schema: { type: string, format: uuid } }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/ViolationAppealResolution" }
+      responses:
+        "200":
+          description: Resolved violation.
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/Violation" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+        "404":
+          description: No such violation.
+          content:
+            application/problem+json:
+              schema: { $ref: "#/components/schemas/Problem" }
+        "409":
+          description: No open appeal.
+          content:
+            application/problem+json:
+              schema: { $ref: "#/components/schemas/Problem" }
+        "429": { $ref: "#/components/responses/TooManyRequests" }
+
+  /v1/violations/{id}/void:
+    post:
+      operationId: post-apx-v1-violations-id-void
+      security:
+        - apxOAuth: ["apx.violations:manage"]
+      tags: [Violations]
+      summary: Void a violation
+      description: |-
+        Terminal from any non-terminal state; the record and its
+        statusHistory remain readable. Already `closed`/`voided` is 409
+        `violation-transition-illegal`.
+      parameters:
+        - { name: id, in: path, required: true, schema: { type: string, format: uuid } }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/ViolationVoid" }
+      responses:
+        "200":
+          description: Voided violation.
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/Violation" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+        "404":
+          description: No such violation.
+          content:
+            application/problem+json:
+              schema: { $ref: "#/components/schemas/Problem" }
+        "409":
+          description: Already terminal.
+          content:
+            application/problem+json:
+              schema: { $ref: "#/components/schemas/Problem" }
+        "429": { $ref: "#/components/responses/TooManyRequests" }
+
+  /v1/enforcement/eligibility:
+    get:
+      operationId: get-apx-v1-enforcement-eligibility
+      security:
+        - apxOAuth: ["apx.violations:read"]
+      tags: [Violations]
+      summary: Is this vehicle entitled to be here right now?
+      description: |-
+        The guided-enforcement screen-pop (Part 19 §19.3): one call answers
+        whether a credential is covered at a place at an instant, and by
+        what — composing the APDS AssignedRights (APDS's own enforcement
+        source of truth), Sessions, and the reservation/permit profiles the
+        server holds. A convenience READ in the spirit of lane inquiry and
+        the occupancy snapshot: the AssignedRight remains authoritative and
+        a client MAY derive the same answer from the native routes. Lives
+        under `/v1/enforcement` (not `/v1/violations/…`) because no
+        violation exists yet when the question is asked.
+      parameters:
+        - name: credential
+          in: query
+          required: true
+          schema: { type: string }
+          description: The credential value — plate string, permit number, transponder id.
+        - name: credentialType
+          in: query
+          required: false
+          schema:
+            $ref: "../vendor/apds/4.1/apds-api-4.1.yaml#/components/schemas/CredentialTypeEnum"
+          description: APDS CredentialTypeEnum; defaults to `licensePlate`.
+        - name: place
+          in: query
+          required: true
+          schema: { type: string, format: uuid }
+          description: HierarchyElement UUID the vehicle is observed at (subtree semantics for rights bound to an ancestor).
+        - name: at
+          in: query
+          required: false
+          schema: { type: string, format: date-time }
+          description: The instant to evaluate; defaults to now.
+      responses:
+        "200":
+          description: The entitlement answer with its basis.
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/EligibilityResult" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+        "404":
+          description: No such place element.
+          content:
+            application/problem+json:
+              schema: { $ref: "#/components/schemas/Problem" }
+        "429": { $ref: "#/components/responses/TooManyRequests" }
+
+  # ----- Enforcement policy and signage (Part 19 §19.10–19.11) ----- #
+  /v1/enforcement/policies:
+    post:
+      operationId: post-apx-v1-enforcement-policies
+      security:
+        - apxOAuth: ["apx.violations:manage"]
+      tags: [Violations]
+      summary: Create an enforcement policy (idempotent)
+      description: |-
+        Binds jurisdictional rules to a HierarchyElement. `Idempotency-Key`
+        REQUIRED. The policy applies to the element and its subtree from
+        `effectiveFrom` unless a descendant carries its own.
+      parameters:
+        - { name: Idempotency-Key, in: header, required: true, schema: { type: string } }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/EnforcementPolicy" }
+      responses:
+        "200":
+          description: Idempotent replay — same key + same body returns the ORIGINAL policy.
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/EnforcementPolicy" }
+        "201":
+          description: Policy created.
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/EnforcementPolicy" }
+        "400":
+          description: Missing Idempotency-Key or invalid policy.
+          content:
+            application/problem+json:
+              schema: { $ref: "#/components/schemas/Problem" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+        "409":
+          description: Idempotency-Key replayed with a different body.
+          content:
+            application/problem+json:
+              schema: { $ref: "#/components/schemas/Problem" }
+        "422":
+          description: Unknown place, or an escalation step that could exceed the overall ceiling.
+          content:
+            application/problem+json:
+              schema: { $ref: "#/components/schemas/Problem" }
+        "429": { $ref: "#/components/responses/TooManyRequests" }
+    get:
+      operationId: get-apx-v1-enforcement-policies
+      security:
+        - apxOAuth: ["apx.violations:read"]
+      tags: [Violations]
+      summary: List enforcement policies
+      description: Policies bound at or below `place`, optionally filtered by status.
+      parameters:
+        - { name: place, in: query, schema: { type: string, format: uuid } }
+        - name: status
+          in: query
+          schema: { type: string, enum: [active, superseded, retired] }
+        - $ref: "../vendor/apds/4.1/apds-api-4.1.yaml#/components/parameters/page"
+      responses:
+        "200":
+          description: Paginated policies (APDS PaginatedList shape).
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  meta:
+                    $ref: "../vendor/apds/4.1/apds-api-4.1.yaml#/components/schemas/PaginatedListMeta"
+                  data:
+                    type: array
+                    items: { $ref: "#/components/schemas/EnforcementPolicy" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+        "429": { $ref: "#/components/responses/TooManyRequests" }
+
+  /v1/enforcement/policies/effective:
+    get:
+      operationId: get-apx-v1-enforcement-policies-effective
+      security:
+        - apxOAuth: ["apx.violations:read"]
+      tags: [Violations]
+      summary: The policy in force at a place
+      description: |-
+        Resolves inheritance: the nearest ancestor-or-self `active` policy
+        whose effective window covers `at` (default now). This is exactly
+        what the server applies at `issue` and for escalation, so
+        handhelds, pipelines, and appeals portals see the same rules.
+      parameters:
+        - { name: place, in: query, required: true, schema: { type: string, format: uuid } }
+        - { name: at, in: query, required: false, schema: { type: string, format: date-time } }
+      responses:
+        "200":
+          description: The effective policy.
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/EnforcementPolicy" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+        "404":
+          description: No such place, or no policy in force for it.
+          content:
+            application/problem+json:
+              schema: { $ref: "#/components/schemas/Problem" }
+        "429": { $ref: "#/components/responses/TooManyRequests" }
+
+  /v1/enforcement/policies/{id}:
+    parameters:
+      - { name: id, in: path, required: true, schema: { type: string, format: uuid } }
+    get:
+      operationId: get-apx-v1-enforcement-policies-id
+      security:
+        - apxOAuth: ["apx.violations:read"]
+      tags: [Violations]
+      summary: Read an enforcement policy
+      description: Returns the policy including its immutable statusHistory.
+      responses:
+        "200":
+          description: The policy.
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/EnforcementPolicy" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+        "404":
+          description: No such policy.
+          content:
+            application/problem+json:
+              schema: { $ref: "#/components/schemas/Problem" }
+        "429": { $ref: "#/components/responses/TooManyRequests" }
+    put:
+      operationId: put-apx-v1-enforcement-policies-id
+      security:
+        - apxOAuth: ["apx.violations:manage"]
+      tags: [Violations]
+      summary: Update an enforcement policy (full update, versioned)
+      description: |-
+        Full-update semantics with the `version` last read (409
+        `version-conflict` when stale). Changes apply to issuance and
+        escalation from the update onward; violations already issued keep
+        the `policy` version they were issued under.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/EnforcementPolicy" }
+      responses:
+        "200":
+          description: Updated policy.
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/EnforcementPolicy" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+        "404":
+          description: No such policy.
+          content:
+            application/problem+json:
+              schema: { $ref: "#/components/schemas/Problem" }
+        "409":
+          description: Stale version.
+          content:
+            application/problem+json:
+              schema: { $ref: "#/components/schemas/Problem" }
+        "422":
+          description: Invalid policy.
+          content:
+            application/problem+json:
+              schema: { $ref: "#/components/schemas/Problem" }
+        "429": { $ref: "#/components/responses/TooManyRequests" }
+
+  /v1/enforcement/signage:
+    post:
+      operationId: post-apx-v1-enforcement-signage
+      security:
+        - apxOAuth: ["apx.violations:manage"]
+      tags: [Violations]
+      summary: Record posted signage (idempotent)
+      description: |-
+        Records the text, photo, and position of a sign at a place.
+        `Idempotency-Key` REQUIRED. To change the wording later, create a
+        new record (or new version) with the new `effectiveFrom` and set
+        the old one's `effectiveTo` — historical text is never rewritten.
+      parameters:
+        - { name: Idempotency-Key, in: header, required: true, schema: { type: string } }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/Signage" }
+      responses:
+        "200":
+          description: Idempotent replay — same key + same body returns the ORIGINAL record.
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/Signage" }
+        "201":
+          description: Signage recorded.
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/Signage" }
+        "400":
+          description: Missing Idempotency-Key or invalid record.
+          content:
+            application/problem+json:
+              schema: { $ref: "#/components/schemas/Problem" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+        "409":
+          description: Idempotency-Key replayed with a different body.
+          content:
+            application/problem+json:
+              schema: { $ref: "#/components/schemas/Problem" }
+        "422":
+          description: Unknown place.
+          content:
+            application/problem+json:
+              schema: { $ref: "#/components/schemas/Problem" }
+        "429": { $ref: "#/components/responses/TooManyRequests" }
+    get:
+      operationId: get-apx-v1-enforcement-signage
+      security:
+        - apxOAuth: ["apx.violations:read"]
+      tags: [Violations]
+      summary: List signage records
+      description: Signage bound at or below `place`, optionally filtered by status.
+      parameters:
+        - { name: place, in: query, schema: { type: string, format: uuid } }
+        - name: status
+          in: query
+          schema: { type: string, enum: [active, superseded, removed] }
+        - $ref: "../vendor/apds/4.1/apds-api-4.1.yaml#/components/parameters/page"
+      responses:
+        "200":
+          description: Paginated signage (APDS PaginatedList shape).
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  meta:
+                    $ref: "../vendor/apds/4.1/apds-api-4.1.yaml#/components/schemas/PaginatedListMeta"
+                  data:
+                    type: array
+                    items: { $ref: "#/components/schemas/Signage" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+        "429": { $ref: "#/components/responses/TooManyRequests" }
+
+  /v1/enforcement/signage/effective:
+    get:
+      operationId: get-apx-v1-enforcement-signage-effective
+      security:
+        - apxOAuth: ["apx.violations:read"]
+      tags: [Violations]
+      summary: The signage in force at a place
+      description: |-
+        Every `active` Signage record bound to `place` or an ancestor whose
+        effective window covers `at` (default now) — what the server
+        freezes onto a violation at `issue`.
+      parameters:
+        - { name: place, in: query, required: true, schema: { type: string, format: uuid } }
+        - { name: at, in: query, required: false, schema: { type: string, format: date-time } }
+      responses:
+        "200":
+          description: Signage in force (may be empty).
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    type: array
+                    items: { $ref: "#/components/schemas/Signage" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+        "404":
+          description: No such place.
+          content:
+            application/problem+json:
+              schema: { $ref: "#/components/schemas/Problem" }
+        "429": { $ref: "#/components/responses/TooManyRequests" }
+
+  /v1/enforcement/signage/{id}:
+    parameters:
+      - { name: id, in: path, required: true, schema: { type: string, format: uuid } }
+    get:
+      operationId: get-apx-v1-enforcement-signage-id
+      security:
+        - apxOAuth: ["apx.violations:read"]
+      tags: [Violations]
+      summary: Read a signage record
+      description: Returns the record including its immutable statusHistory.
+      responses:
+        "200":
+          description: The signage record.
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/Signage" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+        "404":
+          description: No such record.
+          content:
+            application/problem+json:
+              schema: { $ref: "#/components/schemas/Problem" }
+        "429": { $ref: "#/components/responses/TooManyRequests" }
+    put:
+      operationId: put-apx-v1-enforcement-signage-id
+      security:
+        - apxOAuth: ["apx.violations:manage"]
+      tags: [Violations]
+      summary: Update a signage record (full update, versioned)
+      description: |-
+        Full-update semantics with the `version` last read (409
+        `version-conflict` when stale). Changing `text` on a record that
+        any issued violation references is refused (422
+        `signage-referenced`) — supersede it instead.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/Signage" }
+      responses:
+        "200":
+          description: Updated record.
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/Signage" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+        "404":
+          description: No such record.
+          content:
+            application/problem+json:
+              schema: { $ref: "#/components/schemas/Problem" }
+        "409":
+          description: Stale version.
+          content:
+            application/problem+json:
+              schema: { $ref: "#/components/schemas/Problem" }
+        "422":
+          description: Text change on a referenced record.
+          content:
+            application/problem+json:
+              schema: { $ref: "#/components/schemas/Problem" }
+        "429": { $ref: "#/components/responses/TooManyRequests" }
+
+  # ===== Validations program management (optional class apx-validations; Part 20) ===== #
+  # Builds on Part 6 §6.3: the provider lookup (/v1/validations/providers)
+  # and the applyValidation command stay as they are; this adds merchant
+  # enrolment, instrument stock, the redemption ledger, and billing.
+  /v1/validations/programs:
+    post:
+      operationId: post-apx-v1-validations-programs
+      security:
+        - apxOAuth: ["apx.validations:manage"]
+      tags: [Validations]
+      summary: Enrol a validation program (idempotent)
+      description: |-
+        Enrols a merchant to validate parking at a place. `Idempotency-Key`
+        REQUIRED. The program becomes a row in the Part 6 provider lookup
+        for that place while `active`. Publishes
+        `apx.validations.program.status.v1`.
+      parameters:
+        - { name: Idempotency-Key, in: header, required: true, schema: { type: string } }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/ValidationProgram" }
+      responses:
+        "200":
+          description: Idempotent replay — same key + same body returns the ORIGINAL program.
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/ValidationProgram" }
+        "201":
+          description: Program enrolled.
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/ValidationProgram" }
+        "400":
+          description: Missing Idempotency-Key or invalid program.
+          content:
+            application/problem+json:
+              schema: { $ref: "#/components/schemas/Problem" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+        "409":
+          description: Idempotency-Key replayed with a different body.
+          content:
+            application/problem+json:
+              schema: { $ref: "#/components/schemas/Problem" }
+        "422":
+          description: Unknown place or provider, or a benefit with more than one of amount/duration/percentage.
+          content:
+            application/problem+json:
+              schema: { $ref: "#/components/schemas/Problem" }
+        "429": { $ref: "#/components/responses/TooManyRequests" }
+    get:
+      operationId: get-apx-v1-validations-programs
+      security:
+        - apxOAuth: ["apx.validations:read"]
+        - apxOAuth: ["apx.validations:redeem"]
+      tags: [Validations]
+      summary: List/filter validation programs
+      description: |-
+        Filter by place (subtree-inclusive), provider, and status. A
+        `apx.validations:redeem` token sees only programs whose provider is
+        its own `apx_org` (Part 20 §20.5).
+      parameters:
+        - { name: place, in: query, schema: { type: string, format: uuid } }
+        - { name: provider, in: query, schema: { type: string, format: uuid } }
+        - name: status
+          in: query
+          schema: { type: string, enum: [active, suspended, ended] }
+        - $ref: "../vendor/apds/4.1/apds-api-4.1.yaml#/components/parameters/page"
+      responses:
+        "200":
+          description: Paginated programs (APDS PaginatedList shape).
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  meta:
+                    $ref: "../vendor/apds/4.1/apds-api-4.1.yaml#/components/schemas/PaginatedListMeta"
+                  data:
+                    type: array
+                    items: { $ref: "#/components/schemas/ValidationProgram" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+        "429": { $ref: "#/components/responses/TooManyRequests" }
+
+  /v1/validations/programs/{id}:
+    parameters:
+      - { name: id, in: path, required: true, schema: { type: string, format: uuid } }
+    get:
+      operationId: get-apx-v1-validations-programs-id
+      security:
+        - apxOAuth: ["apx.validations:read"]
+        - apxOAuth: ["apx.validations:redeem"]
+      tags: [Validations]
+      summary: Read a validation program
+      description: Returns the program including rules, billing, and the immutable statusHistory.
+      responses:
+        "200":
+          description: The program.
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/ValidationProgram" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+        "404":
+          description: No such program.
+          content:
+            application/problem+json:
+              schema: { $ref: "#/components/schemas/Problem" }
+        "429": { $ref: "#/components/responses/TooManyRequests" }
+    put:
+      operationId: put-apx-v1-validations-programs-id
+      security:
+        - apxOAuth: ["apx.validations:manage"]
+      tags: [Validations]
+      summary: Update a validation program (full update, versioned)
+      description: |-
+        Full-update semantics (Part 5 §5.1): the body carries the complete
+        program with the `version` the client last read; a stale version is
+        409 `version-conflict`. Status transitions: `active ⇄ suspended`,
+        either → `ended` (terminal; 422 `program-not-active` for any
+        transition out of `ended`). Benefit and rule changes apply to
+        redemptions from the update onward; existing instruments keep the
+        benefit they were issued with.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/ValidationProgram" }
+      responses:
+        "200":
+          description: Updated program.
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/ValidationProgram" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+        "404":
+          description: No such program.
+          content:
+            application/problem+json:
+              schema: { $ref: "#/components/schemas/Problem" }
+        "409":
+          description: Stale version.
+          content:
+            application/problem+json:
+              schema: { $ref: "#/components/schemas/Problem" }
+        "422":
+          description: Illegal status transition or invalid benefit.
+          content:
+            application/problem+json:
+              schema: { $ref: "#/components/schemas/Problem" }
+        "429": { $ref: "#/components/responses/TooManyRequests" }
+
+  /v1/validations/programs/{id}/issuances:
+    parameters:
+      - { name: id, in: path, required: true, schema: { type: string, format: uuid } }
+    post:
+      operationId: post-apx-v1-validations-programs-id-issuances
+      security:
+        - apxOAuth: ["apx.validations:manage"]
+        - apxOAuth: ["apx.validations:redeem"]
+      tags: [Validations]
+      summary: Issue a batch of validation instruments (idempotent)
+      description: |-
+        Issues `quantity` instruments of `method` to the program.
+        `Idempotency-Key` REQUIRED — a retried print job must not double
+        the stock. For `code`/`qrCode`/`digital`, the generated `codes[]`
+        are returned in THIS response only. Program must be `active` (422
+        `program-not-active`).
+      parameters:
+        - { name: Idempotency-Key, in: header, required: true, schema: { type: string } }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/ValidationIssuance" }
+      responses:
+        "200":
+          description: Idempotent replay — returns the ORIGINAL issuance (without codes).
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/ValidationIssuance" }
+        "201":
+          description: Batch issued; includes `codes[]` exactly once.
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/ValidationIssuance" }
+        "400":
+          description: Missing Idempotency-Key or invalid issuance.
+          content:
+            application/problem+json:
+              schema: { $ref: "#/components/schemas/Problem" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+        "404":
+          description: No such program.
+          content:
+            application/problem+json:
+              schema: { $ref: "#/components/schemas/Problem" }
+        "409":
+          description: Idempotency-Key replayed with a different body.
+          content:
+            application/problem+json:
+              schema: { $ref: "#/components/schemas/Problem" }
+        "422":
+          description: Program not active, or method not in the program's issuanceMethods.
+          content:
+            application/problem+json:
+              schema: { $ref: "#/components/schemas/Problem" }
+        "429": { $ref: "#/components/responses/TooManyRequests" }
+    get:
+      operationId: get-apx-v1-validations-programs-id-issuances
+      security:
+        - apxOAuth: ["apx.validations:read"]
+        - apxOAuth: ["apx.validations:redeem"]
+      tags: [Validations]
+      summary: List issuances for a program
+      description: Batches issued to the program, newest first. Codes are never returned here.
+      parameters:
+        - $ref: "../vendor/apds/4.1/apds-api-4.1.yaml#/components/parameters/page"
+      responses:
+        "200":
+          description: Paginated issuances (APDS PaginatedList shape).
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  meta:
+                    $ref: "../vendor/apds/4.1/apds-api-4.1.yaml#/components/schemas/PaginatedListMeta"
+                  data:
+                    type: array
+                    items: { $ref: "#/components/schemas/ValidationIssuance" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+        "404":
+          description: No such program.
+          content:
+            application/problem+json:
+              schema: { $ref: "#/components/schemas/Problem" }
+        "429": { $ref: "#/components/responses/TooManyRequests" }
+
+  /v1/validations/instruments/{code}:
+    get:
+      operationId: get-apx-v1-validations-instruments-code
+      security:
+        - apxOAuth: ["apx.validations:read"]
+        - apxOAuth: ["apx.validations:redeem"]
+      tags: [Validations]
+      summary: Check a validation code
+      description: |-
+        "Is this code good?" — the pay-station / merchant-app read before
+        applying. Returns status, program, validity window, and the
+        benefit. A code the caller's grant cannot see is 404, never 403
+        (no oracle for guessing codes).
+      parameters:
+        - { name: code, in: path, required: true, schema: { type: string } }
+      responses:
+        "200":
+          description: The instrument.
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/ValidationInstrument" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+        "404":
+          description: Unknown code (or outside the caller's grant).
+          content:
+            application/problem+json:
+              schema: { $ref: "#/components/schemas/Problem" }
+        "429": { $ref: "#/components/responses/TooManyRequests" }
+
+  /v1/validations/redemptions:
+    post:
+      operationId: post-apx-v1-validations-redemptions
+      security:
+        - apxOAuth: ["apx.validations:manage"]
+        - apxOAuth: ["apx.validations:redeem"]
+      tags: [Validations]
+      summary: Record a redemption (idempotent)
+      description: |-
+        Applies a validation to a ticket/session from a pay station,
+        merchant app, or lane device — the data-plane counterpart of the
+        Part 6 `applyValidation` command (which agents use to act on a
+        lane; it materializes the same resource). `Idempotency-Key`
+        REQUIRED. The server evaluates the program rules (Part 20 §20.3):
+        422 `program-not-active`, `instrument-invalid`,
+        `redemption-limit-exceeded`. On success the session gains the APDS
+        `Segment.validationId` and `amountReduced` reflects the ACTUAL
+        reduction. Publishes `apx.validations.redeemed.v1`.
+      parameters:
+        - { name: Idempotency-Key, in: header, required: true, schema: { type: string } }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/ValidationRedemption" }
+      responses:
+        "200":
+          description: Idempotent replay — same key + same body returns the ORIGINAL redemption.
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/ValidationRedemption" }
+        "201":
+          description: Redemption applied.
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/ValidationRedemption" }
+        "400":
+          description: Missing Idempotency-Key or invalid redemption.
+          content:
+            application/problem+json:
+              schema: { $ref: "#/components/schemas/Problem" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+        "409":
+          description: Idempotency-Key replayed with a different body.
+          content:
+            application/problem+json:
+              schema: { $ref: "#/components/schemas/Problem" }
+        "422":
+          description: Program not active, instrument invalid/expired/used, or a program rule exceeded.
+          content:
+            application/problem+json:
+              schema: { $ref: "#/components/schemas/Problem" }
+        "429": { $ref: "#/components/responses/TooManyRequests" }
+    get:
+      operationId: get-apx-v1-validations-redemptions
+      security:
+        - apxOAuth: ["apx.validations:read"]
+        - apxOAuth: ["apx.validations:redeem"]
+      tags: [Validations]
+      summary: List/filter redemptions
+      description: Filter by program, place, ticket, session, channel, status, and `since` (appliedTime).
+      parameters:
+        - { name: program, in: query, schema: { type: string, format: uuid } }
+        - { name: place, in: query, schema: { type: string, format: uuid } }
+        - { name: ticket, in: query, schema: { type: string } }
+        - { name: session, in: query, schema: { type: string, format: uuid } }
+        - name: channel
+          in: query
+          schema: { type: string, enum: [lane, payStation, merchantApp, callCenter, api] }
+        - name: status
+          in: query
+          schema: { type: string, enum: [applied, reversed] }
+        - { name: since, in: query, schema: { type: string, format: date-time } }
+        - $ref: "../vendor/apds/4.1/apds-api-4.1.yaml#/components/parameters/page"
+      responses:
+        "200":
+          description: Paginated redemptions (APDS PaginatedList shape).
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  meta:
+                    $ref: "../vendor/apds/4.1/apds-api-4.1.yaml#/components/schemas/PaginatedListMeta"
+                  data:
+                    type: array
+                    items: { $ref: "#/components/schemas/ValidationRedemption" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+        "429": { $ref: "#/components/responses/TooManyRequests" }
+
+  /v1/validations/redemptions/{id}:
+    get:
+      operationId: get-apx-v1-validations-redemptions-id
+      security:
+        - apxOAuth: ["apx.validations:read"]
+        - apxOAuth: ["apx.validations:redeem"]
+      tags: [Validations]
+      summary: Read a redemption
+      description: Returns the redemption including any reversal and the immutable statusHistory.
+      parameters:
+        - { name: id, in: path, required: true, schema: { type: string, format: uuid } }
+      responses:
+        "200":
+          description: The redemption.
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/ValidationRedemption" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+        "404":
+          description: No such redemption.
+          content:
+            application/problem+json:
+              schema: { $ref: "#/components/schemas/Problem" }
+        "429": { $ref: "#/components/responses/TooManyRequests" }
+
+  /v1/validations/redemptions/{id}/reverse:
+    post:
+      operationId: post-apx-v1-validations-redemptions-id-reverse
+      security:
+        - apxOAuth: ["apx.validations:manage"]
+      tags: [Validations]
+      summary: Reverse a redemption
+      description: |-
+        Transition `applied → reversed`; the amount due on the session is
+        restored and the instrument (if any) returns to `valid` while
+        still within its window. Already reversed is 409
+        `redemption-reversed`. A redemption inside a CLOSED statement
+        period cannot be reversed (409 `statement-closed`) — issue a
+        credit on the next statement instead.
+      parameters:
+        - { name: id, in: path, required: true, schema: { type: string, format: uuid } }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/ValidationRedemptionReversal" }
+      responses:
+        "200":
+          description: Reversed redemption.
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/ValidationRedemption" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+        "404":
+          description: No such redemption.
+          content:
+            application/problem+json:
+              schema: { $ref: "#/components/schemas/Problem" }
+        "409":
+          description: Already reversed, or inside a closed statement period.
+          content:
+            application/problem+json:
+              schema: { $ref: "#/components/schemas/Problem" }
+        "429": { $ref: "#/components/responses/TooManyRequests" }
+
+  /v1/validations/programs/{id}/statement:
+    get:
+      operationId: get-apx-v1-validations-programs-id-statement
+      security:
+        - apxOAuth: ["apx.validations:read"]
+        - apxOAuth: ["apx.validations:redeem"]
+      tags: [Validations]
+      summary: Preview a billing statement for a period
+      description: |-
+        Computes the program's redemptions and billable total for
+        `from`..`to` under its billing model — a preview
+        (`statementStatus: preview`, no `id`). Closing the period is
+        `POST …/statements`.
+      parameters:
+        - { name: id, in: path, required: true, schema: { type: string, format: uuid } }
+        - { name: from, in: query, required: true, schema: { type: string, format: date-time } }
+        - { name: to, in: query, required: true, schema: { type: string, format: date-time } }
+      responses:
+        "200":
+          description: The computed statement.
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/ValidationStatement" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+        "404":
+          description: No such program.
+          content:
+            application/problem+json:
+              schema: { $ref: "#/components/schemas/Problem" }
+        "429": { $ref: "#/components/responses/TooManyRequests" }
+
+  /v1/validations/programs/{id}/statements:
+    parameters:
+      - { name: id, in: path, required: true, schema: { type: string, format: uuid } }
+    post:
+      operationId: post-apx-v1-validations-programs-id-statements
+      security:
+        - apxOAuth: ["apx.validations:manage"]
+      tags: [Validations]
+      summary: Close a billing period (idempotent)
+      description: |-
+        Freezes the period into an immutable statement the operator's
+        accounting invoices from. `Idempotency-Key` REQUIRED. Periods MUST
+        NOT overlap an existing closed statement (409 `statement-overlap`).
+        Publishes `apx.validations.statement.closed.v1`.
+      parameters:
+        - { name: Idempotency-Key, in: header, required: true, schema: { type: string } }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/ValidationStatementClose" }
+      responses:
+        "200":
+          description: Idempotent replay — same key + same body returns the ORIGINAL statement.
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/ValidationStatement" }
+        "201":
+          description: Period closed.
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/ValidationStatement" }
+        "400":
+          description: Missing Idempotency-Key or invalid period.
+          content:
+            application/problem+json:
+              schema: { $ref: "#/components/schemas/Problem" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+        "404":
+          description: No such program.
+          content:
+            application/problem+json:
+              schema: { $ref: "#/components/schemas/Problem" }
+        "409":
+          description: Overlaps a closed statement, or Idempotency-Key replayed with a different body.
+          content:
+            application/problem+json:
+              schema: { $ref: "#/components/schemas/Problem" }
+        "429": { $ref: "#/components/responses/TooManyRequests" }
+    get:
+      operationId: get-apx-v1-validations-programs-id-statements
+      security:
+        - apxOAuth: ["apx.validations:read"]
+        - apxOAuth: ["apx.validations:redeem"]
+      tags: [Validations]
+      summary: List closed statements for a program
+      description: Closed statements, newest period first; `lines[]` omitted.
+      parameters:
+        - $ref: "../vendor/apds/4.1/apds-api-4.1.yaml#/components/parameters/page"
+      responses:
+        "200":
+          description: Paginated statements (APDS PaginatedList shape).
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  meta:
+                    $ref: "../vendor/apds/4.1/apds-api-4.1.yaml#/components/schemas/PaginatedListMeta"
+                  data:
+                    type: array
+                    items: { $ref: "#/components/schemas/ValidationStatement" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+        "404":
+          description: No such program.
+          content:
+            application/problem+json:
+              schema: { $ref: "#/components/schemas/Problem" }
+        "429": { $ref: "#/components/responses/TooManyRequests" }
+
+  /v1/validations/statements/{id}:
+    get:
+      operationId: get-apx-v1-validations-statements-id
+      security:
+        - apxOAuth: ["apx.validations:read"]
+        - apxOAuth: ["apx.validations:redeem"]
+      tags: [Validations]
+      summary: Read a closed statement
+      description: The immutable statement with `lines[]`.
+      parameters:
+        - { name: id, in: path, required: true, schema: { type: string, format: uuid } }
+      responses:
+        "200":
+          description: The statement.
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/ValidationStatement" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+        "404":
+          description: No such statement.
+          content:
+            application/problem+json:
+              schema: { $ref: "#/components/schemas/Problem" }
+        "429": { $ref: "#/components/responses/TooManyRequests" }
+
+  # ===== Credentials lifecycle (optional class apx-credentials; Part 21) ===== #
+  # APDS models a credential as CredentialAssigned on an AssignedRight with
+  # no status, replacement, media, or access history; this adds those and
+  # materializes active records back onto the AssignedRight (§21.2).
+  # GET /v1/credentials/{id}/passback (Part 17) stays where it is.
+  /v1/credentials:
+    post:
+      operationId: post-apx-v1-credentials
+      security:
+        - apxOAuth: ["apx.credentials:manage"]
+      tags: [Credentials]
+      summary: Issue a credential (idempotent)
+      description: |-
+        Creates a CredentialRecord in `issued` (or `active` when
+        `validity.start` is past and the request says so via the
+        `activate` transition afterwards). `Idempotency-Key` REQUIRED.
+        `credentialIdentification` MUST be unique per `credentialType`
+        (409 `credential-identification-in-use`). Publishes
+        `apx.credentials.status.v1`.
+      parameters:
+        - { name: Idempotency-Key, in: header, required: true, schema: { type: string } }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/CredentialRecord" }
+      responses:
+        "200":
+          description: Idempotent replay — same key + same body returns the ORIGINAL record.
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/CredentialRecord" }
+        "201":
+          description: Credential issued.
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/CredentialRecord" }
+        "400":
+          description: Missing Idempotency-Key or invalid record.
+          content:
+            application/problem+json:
+              schema: { $ref: "#/components/schemas/Problem" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+        "409":
+          description: Identification already in use for this type, or Idempotency-Key replayed with a different body.
+          content:
+            application/problem+json:
+              schema: { $ref: "#/components/schemas/Problem" }
+        "422":
+          description: Unknown holder, account, assigned right, or place.
+          content:
+            application/problem+json:
+              schema: { $ref: "#/components/schemas/Problem" }
+        "429": { $ref: "#/components/responses/TooManyRequests" }
+    get:
+      operationId: get-apx-v1-credentials
+      security:
+        - apxOAuth: ["apx.credentials:read"]
+      tags: [Credentials]
+      summary: List/filter credentials
+      description: |-
+        Filter by holder, account, type, identification, status, and place
+        (subtree-inclusive). Results are constrained to the caller's place
+        grant; identification values are personal data under Part 9 §9.6.
+      parameters:
+        - { name: holder, in: query, schema: { type: string, format: uuid } }
+        - { name: account, in: query, schema: { type: string, format: uuid } }
+        - name: type
+          in: query
+          schema:
+            $ref: "../vendor/apds/4.1/apds-api-4.1.yaml#/components/schemas/CredentialTypeEnum"
+        - { name: identification, in: query, schema: { type: string } }
+        - name: status
+          in: query
+          schema: { type: string, enum: [issued, active, suspended, lost, revoked, expired, replaced] }
+        - { name: place, in: query, schema: { type: string, format: uuid } }
+        - $ref: "../vendor/apds/4.1/apds-api-4.1.yaml#/components/parameters/page"
+      responses:
+        "200":
+          description: Paginated credentials (APDS PaginatedList shape).
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  meta:
+                    $ref: "../vendor/apds/4.1/apds-api-4.1.yaml#/components/schemas/PaginatedListMeta"
+                  data:
+                    type: array
+                    items: { $ref: "#/components/schemas/CredentialRecord" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+        "429": { $ref: "#/components/responses/TooManyRequests" }
+
+  /v1/credentials/{id}:
+    get:
+      operationId: get-apx-v1-credentials-id
+      security:
+        - apxOAuth: ["apx.credentials:read"]
+      tags: [Credentials]
+      summary: Read a credential
+      description: Returns the record including media, replacement links, and the immutable statusHistory.
+      parameters:
+        - { name: id, in: path, required: true, schema: { type: string, format: uuid } }
+      responses:
+        "200":
+          description: The credential.
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/CredentialRecord" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+        "404":
+          description: No such credential.
+          content:
+            application/problem+json:
+              schema: { $ref: "#/components/schemas/Problem" }
+        "429": { $ref: "#/components/responses/TooManyRequests" }
+
+  /v1/credentials/{id}/activate:
+    post:
+      operationId: post-apx-v1-credentials-id-activate
+      security:
+        - apxOAuth: ["apx.credentials:manage"]
+      tags: [Credentials]
+      summary: Activate a credential
+      description: "Transition `issued → active`; materializes the APDS CredentialAssigned (§21.2). Any other state is 409 `credential-transition-illegal`."
+      parameters:
+        - { name: id, in: path, required: true, schema: { type: string, format: uuid } }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/CredentialTransition" }
+      responses:
+        "200":
+          description: Active credential.
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/CredentialRecord" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+        "404":
+          description: No such credential.
+          content:
+            application/problem+json:
+              schema: { $ref: "#/components/schemas/Problem" }
+        "409":
+          description: Illegal transition.
+          content:
+            application/problem+json:
+              schema: { $ref: "#/components/schemas/Problem" }
+        "429": { $ref: "#/components/responses/TooManyRequests" }
+
+  /v1/credentials/{id}/suspend:
+    post:
+      operationId: post-apx-v1-credentials-id-suspend
+      security:
+        - apxOAuth: ["apx.credentials:manage"]
+      tags: [Credentials]
+      summary: Suspend a credential
+      description: "Transition `active → suspended` (optionally `until`); the lane MUST deny it meanwhile. Any other state is 409 `credential-transition-illegal`."
+      parameters:
+        - { name: id, in: path, required: true, schema: { type: string, format: uuid } }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/CredentialTransition" }
+      responses:
+        "200":
+          description: Suspended credential.
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/CredentialRecord" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+        "404":
+          description: No such credential.
+          content:
+            application/problem+json:
+              schema: { $ref: "#/components/schemas/Problem" }
+        "409":
+          description: Illegal transition.
+          content:
+            application/problem+json:
+              schema: { $ref: "#/components/schemas/Problem" }
+        "429": { $ref: "#/components/responses/TooManyRequests" }
+
+  /v1/credentials/{id}/resume:
+    post:
+      operationId: post-apx-v1-credentials-id-resume
+      security:
+        - apxOAuth: ["apx.credentials:manage"]
+      tags: [Credentials]
+      summary: Resume a suspended credential
+      description: "Transition `suspended → active`. Any other state is 409 `credential-transition-illegal`."
+      parameters:
+        - { name: id, in: path, required: true, schema: { type: string, format: uuid } }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/CredentialTransition" }
+      responses:
+        "200":
+          description: Active credential.
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/CredentialRecord" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+        "404":
+          description: No such credential.
+          content:
+            application/problem+json:
+              schema: { $ref: "#/components/schemas/Problem" }
+        "409":
+          description: Illegal transition.
+          content:
+            application/problem+json:
+              schema: { $ref: "#/components/schemas/Problem" }
+        "429": { $ref: "#/components/responses/TooManyRequests" }
+
+  /v1/credentials/{id}/report-lost:
+    post:
+      operationId: post-apx-v1-credentials-id-report-lost
+      security:
+        - apxOAuth: ["apx.credentials:manage"]
+      tags: [Credentials]
+      summary: Report a credential lost or stolen
+      description: "Transition `active | suspended → lost`; the lane MUST deny it from this instant. Follow with `replace` or `revoke`. Any other state is 409 `credential-transition-illegal`."
+      parameters:
+        - { name: id, in: path, required: true, schema: { type: string, format: uuid } }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/CredentialTransition" }
+      responses:
+        "200":
+          description: Credential marked lost.
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/CredentialRecord" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+        "404":
+          description: No such credential.
+          content:
+            application/problem+json:
+              schema: { $ref: "#/components/schemas/Problem" }
+        "409":
+          description: Illegal transition.
+          content:
+            application/problem+json:
+              schema: { $ref: "#/components/schemas/Problem" }
+        "429": { $ref: "#/components/responses/TooManyRequests" }
+
+  /v1/credentials/{id}/revoke:
+    post:
+      operationId: post-apx-v1-credentials-id-revoke
+      security:
+        - apxOAuth: ["apx.credentials:manage"]
+      tags: [Credentials]
+      summary: Revoke a credential (terminal)
+      description: "Transition `issued | active | suspended | lost → revoked`; removes the APDS CredentialAssigned. Terminal states are 409 `credential-transition-illegal`."
+      parameters:
+        - { name: id, in: path, required: true, schema: { type: string, format: uuid } }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/CredentialTransition" }
+      responses:
+        "200":
+          description: Revoked credential.
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/CredentialRecord" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+        "404":
+          description: No such credential.
+          content:
+            application/problem+json:
+              schema: { $ref: "#/components/schemas/Problem" }
+        "409":
+          description: Illegal transition.
+          content:
+            application/problem+json:
+              schema: { $ref: "#/components/schemas/Problem" }
+        "429": { $ref: "#/components/responses/TooManyRequests" }
+
+  /v1/credentials/{id}/replace:
+    post:
+      operationId: post-apx-v1-credentials-id-replace
+      security:
+        - apxOAuth: ["apx.credentials:manage"]
+      tags: [Credentials]
+      summary: Replace a credential with a successor (idempotent)
+      description: |-
+        Issues a successor `active` record inheriting holder, account,
+        assigned rights, places, and validity; links `replaces`/`replacedBy`;
+        moves THIS record to `replaced` and swaps the APDS CredentialAssigned
+        atomically. Allowed from `active`, `suspended`, or `lost`; terminal
+        states are 409 `credential-not-replaceable`. `Idempotency-Key`
+        REQUIRED. Returns the successor.
+      parameters:
+        - { name: id, in: path, required: true, schema: { type: string, format: uuid } }
+        - { name: Idempotency-Key, in: header, required: true, schema: { type: string } }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/CredentialReplaceRequest" }
+      responses:
+        "200":
+          description: Idempotent replay — returns the ORIGINAL successor.
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/CredentialRecord" }
+        "201":
+          description: The successor credential.
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/CredentialRecord" }
+        "400":
+          description: Missing Idempotency-Key or invalid request.
+          content:
+            application/problem+json:
+              schema: { $ref: "#/components/schemas/Problem" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+        "404":
+          description: No such credential.
+          content:
+            application/problem+json:
+              schema: { $ref: "#/components/schemas/Problem" }
+        "409":
+          description: Not replaceable from the current state, successor identification in use, or key replayed with a different body.
+          content:
+            application/problem+json:
+              schema: { $ref: "#/components/schemas/Problem" }
+        "429": { $ref: "#/components/responses/TooManyRequests" }
+
+  /v1/credentials/{id}/access-events:
+    get:
+      operationId: get-apx-v1-credentials-id-access-events
+      security:
+        - apxOAuth: ["apx.credentials:read"]
+      tags: [Credentials]
+      summary: Access-event history for a credential
+      description: |-
+        Entry/exit attempts with this credential, newest first — granted
+        or denied, where, and why. The same events are published as
+        `apx.credentials.access.v1`. Retention per Part 9 §9.6.
+      parameters:
+        - { name: id, in: path, required: true, schema: { type: string, format: uuid } }
+        - { name: since, in: query, schema: { type: string, format: date-time } }
+        - name: outcome
+          in: query
+          schema: { type: string, enum: [granted, denied] }
+        - $ref: "../vendor/apds/4.1/apds-api-4.1.yaml#/components/parameters/page"
+      responses:
+        "200":
+          description: Paginated access events (APDS PaginatedList shape).
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  meta:
+                    $ref: "../vendor/apds/4.1/apds-api-4.1.yaml#/components/schemas/PaginatedListMeta"
+                  data:
+                    type: array
+                    items: { $ref: "#/components/schemas/CredentialAccessEvent" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+        "404":
+          description: No such credential.
+          content:
+            application/problem+json:
+              schema: { $ref: "#/components/schemas/Problem" }
+        "429": { $ref: "#/components/responses/TooManyRequests" }
+
+  # ===== Valet (optional class apx-valet; Part 22) ===== #
+  # Net-new: APDS has no valet entity. The stay is a native Session; this
+  # adds custody, keys, condition evidence, the retrieval queue, staging,
+  # and handback.
+  /v1/valet/tickets:
+    post:
+      operationId: post-apx-v1-valet-tickets
+      security:
+        - apxOAuth: ["apx.valet:manage"]
+      tags: [Valet]
+      summary: Take custody of a vehicle (drop-off, idempotent)
+      description: |-
+        Creates the ValetTicket in `dropped` with the drop-off condition
+        report. `Idempotency-Key` REQUIRED (handhelds and scanning devices
+        retry). The server SHOULD open the APDS Session for the stay and
+        reference it. Publishes `apx.valet.ticket.status.v1`.
+      parameters:
+        - { name: Idempotency-Key, in: header, required: true, schema: { type: string } }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/ValetTicket" }
+      responses:
+        "200":
+          description: Idempotent replay — same key + same body returns the ORIGINAL ticket.
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/ValetTicket" }
+        "201":
+          description: Custody taken.
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/ValetTicket" }
+        "400":
+          description: Missing Idempotency-Key or invalid ticket.
+          content:
+            application/problem+json:
+              schema: { $ref: "#/components/schemas/Problem" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+        "409":
+          description: Idempotency-Key replayed with a different body.
+          content:
+            application/problem+json:
+              schema: { $ref: "#/components/schemas/Problem" }
+        "422":
+          description: Unknown place, lane, or customer reference.
+          content:
+            application/problem+json:
+              schema: { $ref: "#/components/schemas/Problem" }
+        "429": { $ref: "#/components/responses/TooManyRequests" }
+    get:
+      operationId: get-apx-v1-valet-tickets
+      security:
+        - apxOAuth: ["apx.valet:read"]
+      tags: [Valet]
+      summary: List/filter valet tickets
+      description: Filter by place (subtree-inclusive), status, plate, ticket number, customer account, and `since` (dropOff.time).
+      parameters:
+        - { name: place, in: query, schema: { type: string, format: uuid } }
+        - name: status
+          in: query
+          schema: { type: string, enum: [dropped, parked, requested, retrieving, staged, handedBack, closed, cancelled] }
+        - { name: plate, in: query, schema: { type: string } }
+        - { name: ticketNumber, in: query, schema: { type: string } }
+        - { name: account, in: query, schema: { type: string, format: uuid } }
+        - { name: since, in: query, schema: { type: string, format: date-time } }
+        - $ref: "../vendor/apds/4.1/apds-api-4.1.yaml#/components/parameters/page"
+      responses:
+        "200":
+          description: Paginated tickets (APDS PaginatedList shape).
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  meta:
+                    $ref: "../vendor/apds/4.1/apds-api-4.1.yaml#/components/schemas/PaginatedListMeta"
+                  data:
+                    type: array
+                    items: { $ref: "#/components/schemas/ValetTicket" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+        "429": { $ref: "#/components/responses/TooManyRequests" }
+
+  /v1/valet/queue:
+    get:
+      operationId: get-apx-v1-valet-queue
+      security:
+        - apxOAuth: ["apx.valet:read"]
+      tags: [Valet]
+      summary: The retrieval queue for a place (attendant board)
+      description: |-
+        Tickets in `requested`, `retrieving`, or `staged` at the place,
+        ordered by `retrieval.promisedTime` ascending — what the runners
+        and the stand see. Scheduled pickups (`requestedFor`) appear when
+        they fall inside `horizonMinutes` (default 60).
+      parameters:
+        - { name: place, in: query, required: true, schema: { type: string, format: uuid } }
+        - { name: horizonMinutes, in: query, required: false, schema: { type: integer, minimum: 0, default: 60 } }
+        - $ref: "../vendor/apds/4.1/apds-api-4.1.yaml#/components/parameters/page"
+      responses:
+        "200":
+          description: The queue (APDS PaginatedList shape).
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  meta:
+                    $ref: "../vendor/apds/4.1/apds-api-4.1.yaml#/components/schemas/PaginatedListMeta"
+                  data:
+                    type: array
+                    items: { $ref: "#/components/schemas/ValetTicket" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+        "404":
+          description: No such place.
+          content:
+            application/problem+json:
+              schema: { $ref: "#/components/schemas/Problem" }
+        "429": { $ref: "#/components/responses/TooManyRequests" }
+
+  /v1/valet/tickets/{id}:
+    get:
+      operationId: get-apx-v1-valet-tickets-id
+      security:
+        - apxOAuth: ["apx.valet:read"]
+        - apxOAuth: ["apx.valet:request"]
+      tags: [Valet]
+      summary: Read a valet ticket
+      description: |-
+        Full record for operator scopes. A `apx.valet:request` token sees
+        only its own ticket, with `storage`, attendant principals, and
+        condition images omitted (Part 22 §22.5) — enough to show status
+        and ETA.
+      parameters:
+        - { name: id, in: path, required: true, schema: { type: string, format: uuid } }
+      responses:
+        "200":
+          description: The ticket.
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/ValetTicket" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+        "404":
+          description: No such ticket (or outside the caller's grant).
+          content:
+            application/problem+json:
+              schema: { $ref: "#/components/schemas/Problem" }
+        "429": { $ref: "#/components/responses/TooManyRequests" }
+
+  /v1/valet/tickets/{id}/park:
+    post:
+      operationId: post-apx-v1-valet-tickets-id-park
+      security:
+        - apxOAuth: ["apx.valet:manage"]
+      tags: [Valet]
+      summary: Record the parked position and key location
+      description: "Transition `dropped → parked` (or update `storage` while `parked`). Any other state is 409 `valet-transition-illegal`."
+      parameters:
+        - { name: id, in: path, required: true, schema: { type: string, format: uuid } }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/ValetParkRequest" }
+      responses:
+        "200":
+          description: Parked ticket.
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/ValetTicket" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+        "404":
+          description: No such ticket.
+          content:
+            application/problem+json:
+              schema: { $ref: "#/components/schemas/Problem" }
+        "409":
+          description: Illegal transition.
+          content:
+            application/problem+json:
+              schema: { $ref: "#/components/schemas/Problem" }
+        "429": { $ref: "#/components/responses/TooManyRequests" }
+
+  /v1/valet/tickets/{id}/retrieve:
+    post:
+      operationId: post-apx-v1-valet-tickets-id-retrieve
+      security:
+        - apxOAuth: ["apx.valet:manage"]
+        - apxOAuth: ["apx.valet:request"]
+      tags: [Valet]
+      summary: Request the vehicle (now or scheduled)
+      description: |-
+        Transition `parked → requested`. The customer's text, app, web
+        page, or voice bot calls this on `apx.valet:request` for its own
+        ticket; attendants and the call center on `apx.valet:manage`. The
+        server sets `retrieval.etaMinutes` and `promisedTime` and
+        publishes `apx.valet.retrieval.requested.v1`. From `dropped` (not
+        yet parked) it is 409 `valet-vehicle-not-located`; any other state
+        is 409 `valet-transition-illegal`.
+      parameters:
+        - { name: id, in: path, required: true, schema: { type: string, format: uuid } }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/ValetRetrievalRequest" }
+      responses:
+        "200":
+          description: Requested ticket with ETA.
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/ValetTicket" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+        "404":
+          description: No such ticket (or outside the caller's grant).
+          content:
+            application/problem+json:
+              schema: { $ref: "#/components/schemas/Problem" }
+        "409":
+          description: Vehicle not yet located, or illegal transition.
+          content:
+            application/problem+json:
+              schema: { $ref: "#/components/schemas/Problem" }
+        "429": { $ref: "#/components/responses/TooManyRequests" }
+
+  /v1/valet/tickets/{id}/cancel-retrieval:
+    post:
+      operationId: post-apx-v1-valet-tickets-id-cancel-retrieval
+      security:
+        - apxOAuth: ["apx.valet:manage"]
+        - apxOAuth: ["apx.valet:request"]
+      tags: [Valet]
+      summary: Cancel an open retrieval request
+      description: "Transition `requested | retrieving → parked` (a staged car is re-parked by the operator, not cancelled here). Any other state is 409 `valet-transition-illegal`."
+      parameters:
+        - { name: id, in: path, required: true, schema: { type: string, format: uuid } }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/ValetCancelRetrievalRequest" }
+      responses:
+        "200":
+          description: Ticket back in `parked`.
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/ValetTicket" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+        "404":
+          description: No such ticket (or outside the caller's grant).
+          content:
+            application/problem+json:
+              schema: { $ref: "#/components/schemas/Problem" }
+        "409":
+          description: Illegal transition.
+          content:
+            application/problem+json:
+              schema: { $ref: "#/components/schemas/Problem" }
+        "429": { $ref: "#/components/responses/TooManyRequests" }
+
+  /v1/valet/tickets/{id}/stage:
+    post:
+      operationId: post-apx-v1-valet-tickets-id-stage
+      security:
+        - apxOAuth: ["apx.valet:manage"]
+      tags: [Valet]
+      summary: Vehicle at the staging lane
+      description: "Transition `requested | retrieving → staged`; sets `retrieval.stagingLane`/`stagedTime` and notifies the customer's contact channel. Any other state is 409 `valet-transition-illegal`."
+      parameters:
+        - { name: id, in: path, required: true, schema: { type: string, format: uuid } }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/ValetStageRequest" }
+      responses:
+        "200":
+          description: Staged ticket.
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/ValetTicket" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+        "404":
+          description: No such ticket.
+          content:
+            application/problem+json:
+              schema: { $ref: "#/components/schemas/Problem" }
+        "409":
+          description: Illegal transition.
+          content:
+            application/problem+json:
+              schema: { $ref: "#/components/schemas/Problem" }
+        "429": { $ref: "#/components/responses/TooManyRequests" }
+
+  /v1/valet/tickets/{id}/handback:
+    post:
+      operationId: post-apx-v1-valet-tickets-id-handback
+      security:
+        - apxOAuth: ["apx.valet:manage"]
+      tags: [Valet]
+      summary: Hand the vehicle to a verified customer
+      description: |-
+        Transition `staged → handedBack` (or `dropped → handedBack` before
+        the car moved). The attendant verifies the claimant
+        (`verificationMethod`) — a mismatch is 403
+        `valet-verification-failed` and MUST be recorded in
+        `statusHistory`. Records the handback condition report. The APDS
+        Session closes per the operator's flow; `closed` follows
+        server-side when it settles.
+      parameters:
+        - { name: id, in: path, required: true, schema: { type: string, format: uuid } }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/ValetHandbackRequest" }
+      responses:
+        "200":
+          description: Handed back.
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/ValetTicket" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403":
+          description: Insufficient scope/grant, or claimant verification failed.
+          content:
+            application/problem+json:
+              schema: { $ref: "#/components/schemas/Problem" }
+        "404":
+          description: No such ticket.
+          content:
+            application/problem+json:
+              schema: { $ref: "#/components/schemas/Problem" }
+        "409":
+          description: Illegal transition.
+          content:
+            application/problem+json:
+              schema: { $ref: "#/components/schemas/Problem" }
+        "429": { $ref: "#/components/responses/TooManyRequests" }
 
   # ===== Reservations & permits (optional classes; Part 14) ===== #
   # Reservations use NATIVE routes (/quotes, /rights/assigned) with the
@@ -1920,6 +4030,16 @@ components:
             apx.tolling:manage: Create and manage toll transactions
             apx.resolution:read: Resolve and read customer-service resolution contexts and allowed actions
             apx.support:manage: Record and read support-interaction history
+            apx.violations:read: Read violations and run the enforcement eligibility check
+            apx.violations:manage: Create, review, issue, settle, appeal, and void violations
+            apx.validations:read: Read validation programs, issuances, redemptions, and statements
+            apx.validations:manage: Enrol and update programs, issue stock, reverse redemptions, close statements
+            apx.validations:redeem: Merchant scope — check codes, issue own stock, record redemptions, read own programs and statements (limited to the token's apx_org)
+            apx.credentials:read: Read credentials and their access-event history
+            apx.credentials:manage: Issue, activate, suspend, resume, report lost, revoke, and replace credentials
+            apx.valet:read: Read valet tickets and the retrieval queue
+            apx.valet:manage: Take custody, park, stage, hand back, and manage retrievals
+            apx.valet:request: Customer scope — request or cancel retrieval and read status/ETA for the caller's own ticket (text, app, web, voice bot)
 
   schemas:
     RecordInfo:
@@ -1982,6 +4102,64 @@ components:
       $ref: "./domains/tolling/schemas.yaml#/TollDisputeOpen"
     TollDisputeResolution:
       $ref: "./domains/tolling/schemas.yaml#/TollDisputeResolution"
+    Violation:
+      $ref: "./domains/violations/schemas.yaml#/Violation"
+    EligibilityResult:
+      $ref: "./domains/violations/schemas.yaml#/EligibilityResult"
+    ViolationReview:
+      $ref: "./domains/violations/schemas.yaml#/ViolationReview"
+    ViolationIssue:
+      $ref: "./domains/violations/schemas.yaml#/ViolationIssue"
+    ViolationPaymentAttachment:
+      $ref: "./domains/violations/schemas.yaml#/ViolationPaymentAttachment"
+    ViolationAppealOpen:
+      $ref: "./domains/violations/schemas.yaml#/ViolationAppealOpen"
+    ViolationAppealResolution:
+      $ref: "./domains/violations/schemas.yaml#/ViolationAppealResolution"
+    ViolationVoid:
+      $ref: "./domains/violations/schemas.yaml#/ViolationVoid"
+    EnforcementPolicy:
+      $ref: "./domains/violations/schemas.yaml#/EnforcementPolicy"
+    Signage:
+      $ref: "./domains/violations/schemas.yaml#/Signage"
+    ValidationBenefit:
+      $ref: "./domains/validations/schemas.yaml#/ValidationBenefit"
+    ValidationProgram:
+      $ref: "./domains/validations/schemas.yaml#/ValidationProgram"
+    ValidationIssuance:
+      $ref: "./domains/validations/schemas.yaml#/ValidationIssuance"
+    ValidationInstrument:
+      $ref: "./domains/validations/schemas.yaml#/ValidationInstrument"
+    ValidationRedemption:
+      $ref: "./domains/validations/schemas.yaml#/ValidationRedemption"
+    ValidationRedemptionReversal:
+      $ref: "./domains/validations/schemas.yaml#/ValidationRedemptionReversal"
+    ValidationStatementClose:
+      $ref: "./domains/validations/schemas.yaml#/ValidationStatementClose"
+    ValidationStatement:
+      $ref: "./domains/validations/schemas.yaml#/ValidationStatement"
+    CredentialRecord:
+      $ref: "./domains/credentials/schemas.yaml#/CredentialRecord"
+    CredentialTransition:
+      $ref: "./domains/credentials/schemas.yaml#/CredentialTransition"
+    CredentialReplaceRequest:
+      $ref: "./domains/credentials/schemas.yaml#/CredentialReplaceRequest"
+    CredentialAccessEvent:
+      $ref: "./domains/credentials/schemas.yaml#/CredentialAccessEvent"
+    ConditionReport:
+      $ref: "./domains/valet/schemas.yaml#/ConditionReport"
+    ValetTicket:
+      $ref: "./domains/valet/schemas.yaml#/ValetTicket"
+    ValetParkRequest:
+      $ref: "./domains/valet/schemas.yaml#/ValetParkRequest"
+    ValetRetrievalRequest:
+      $ref: "./domains/valet/schemas.yaml#/ValetRetrievalRequest"
+    ValetCancelRetrievalRequest:
+      $ref: "./domains/valet/schemas.yaml#/ValetCancelRetrievalRequest"
+    ValetStageRequest:
+      $ref: "./domains/valet/schemas.yaml#/ValetStageRequest"
+    ValetHandbackRequest:
+      $ref: "./domains/valet/schemas.yaml#/ValetHandbackRequest"
     DiscoveryDocument:
       $ref: "./domains/discovery/schemas.yaml#/DiscoveryDocument"
     ResolutionContext:

@@ -1,6 +1,6 @@
 {
   "id": "4f5a6b7c-8d9e-4f0a-1b2c-3d4e5f6a7b8c",
-  "version": 2,
+  "version": 6,
   "name": "apx-conformance-classes",
   "creator": { "id": "a1000000-0000-4000-8000-000000000001", "className": "Organisation" },
   "locator": "https://apx-standard.org/registries/apx-conformance-classes.json",
@@ -18,6 +18,10 @@
     { "definedValue": "apx-permits", "entryDescription": "Implements the permits profile over RightSpecification, RightPool, and Credential.", "entryIndex": 10 },
     { "definedValue": "apx-tolling", "entryDescription": "Implements TollTransaction and its dispute lifecycle.", "entryIndex": 11 },
     { "definedValue": "apx-mtls", "entryDescription": "Optional hardening: mutual TLS on all APX endpoints.", "entryIndex": 12 },
-    { "definedValue": "apx-resolution", "entryDescription": "Implements Customer Service & Resolution: resolution contexts, policy-decided allowed actions, passback status, plate candidates, and support-interaction history.", "entryIndex": 13 }
+    { "definedValue": "apx-resolution", "entryDescription": "Implements Customer Service & Resolution: resolution contexts, policy-decided allowed actions, passback status, plate candidates, and support-interaction history.", "entryIndex": 13 },
+    { "definedValue": "apx-violations", "entryDescription": "Implements enforcement: the Violation lifecycle (automated and guided detection, review, issuance, settlement, appeals, void) and the eligibility check.", "entryIndex": 14 },
+    { "definedValue": "apx-validations", "entryDescription": "Implements validation program management: merchant enrolment, instrument issuance, the redemption ledger, and closable billing statements; the Part 6 provider list derives from active programs.", "entryIndex": 15 },
+    { "definedValue": "apx-credentials", "entryDescription": "Implements credential lifecycle: issue, activate, suspend, resume, report lost, revoke, replace, access-event history; active records materialized as APDS CredentialAssigned on the holder's AssignedRights.", "entryIndex": 16 },
+    { "definedValue": "apx-valet", "entryDescription": "Implements valet custody: drop-off with condition evidence, parked position and keys, the retrieval queue with ETA, staging, verified handback, and the customer request scope.", "entryIndex": 17 }
   ]
 }

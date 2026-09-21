@@ -21,6 +21,14 @@ Account:
     plates:
       type: array
       items: { type: string }
+    credentials:
+      type: array
+      description: |-
+        The account's CredentialRecords (Part 21), when the server claims
+        `apx-credentials` — additive; `cardNumber` and `plates` remain
+        the APDS-only summary.
+      items:
+        $ref: "../../../vendor/apds/4.1/apds-api-4.1.yaml#/components/schemas/Reference"
     balance:
       description: Current balance due.
       $ref: "../../../vendor/apds/4.1/apds-api-4.1.yaml#/components/schemas/AmountInCurrency"

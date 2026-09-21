@@ -2,7 +2,7 @@
   "openapi": "3.1.0",
   "info": {
     "title": "APX — PARCS Starter Profile",
-    "version": "0.3.0",
+    "version": "0.8.0",
     "summary": "An open companion standard to APDS 4.1",
     "description": "The MINIMUM APX surface for a PARCS vendor: apx-data + apx-events + apx-control. A subset of the full APX specification (apx-v1) — every path and schema here is identical to the full spec. See docs/parcs-starter-profile.md for the build order.",
     "license": {
@@ -78,6 +78,22 @@
     {
       "name": "Support",
       "description": "Support-interaction history for resolution contexts. See written standard Part 17."
+    },
+    {
+      "name": "Violations",
+      "description": "Enforcement (optional class apx-violations, net-new domain) — one\nViolation resource for tickets, notices, and citations: automated and\nguided detection, review, issuance, settlement by Payment reference,\nappeals, and the eligibility check that drives guided enforcement.\nSee written standard Part 19."
+    },
+    {
+      "name": "Validations",
+      "description": "Validation program management (optional class apx-validations) —\nmerchant enrolment, instrument issuance (codes, QR, stamps),\nthe redemption ledger every channel writes, and merchant billing\nstatements. Builds on the Part 6 §6.3 provider lookup and\n`applyValidation` command. See written standard Part 20."
+    },
+    {
+      "name": "Credentials",
+      "description": "Credential lifecycle (optional class apx-credentials) — keycards,\nfobs, RFID tags, mobile credentials, hangtags, plates-as-credential:\nissue, activate, suspend, resume, report lost, revoke, replace, and\naccess-event history. Active records are materialized as APDS\nCredentialAssigned on the holder's AssignedRights. See written\nstandard Part 21."
+    },
+    {
+      "name": "Valet",
+      "description": "Valet custody (optional class apx-valet, net-new domain) — drop-off\nwith condition evidence, parked position and keys, the retrieval\nqueue with ETA (from text, app, web, voice bot, kiosk, or\nattendant), staging, and verified handback. The APDS Session\nremains the stay and the money. See written standard Part 22."
     }
   ],
   "paths": {
@@ -3730,7 +3746,17 @@
               "apx.permits:manage": "Issue and manage permits",
               "apx.tolling:manage": "Create and manage toll transactions",
               "apx.resolution:read": "Resolve and read customer-service resolution contexts and allowed actions",
-              "apx.support:manage": "Record and read support-interaction history"
+              "apx.support:manage": "Record and read support-interaction history",
+              "apx.violations:read": "Read violations and run the enforcement eligibility check",
+              "apx.violations:manage": "Create, review, issue, settle, appeal, and void violations",
+              "apx.validations:read": "Read validation programs, issuances, redemptions, and statements",
+              "apx.validations:manage": "Enrol and update programs, issue stock, reverse redemptions, close statements",
+              "apx.validations:redeem": "Merchant scope — check codes, issue own stock, record redemptions, read own programs and statements (limited to the token's apx_org)",
+              "apx.credentials:read": "Read credentials and their access-event history",
+              "apx.credentials:manage": "Issue, activate, suspend, resume, report lost, revoke, and replace credentials",
+              "apx.valet:read": "Read valet tickets and the retrieval queue",
+              "apx.valet:manage": "Take custody, park, stage, hand back, and manage retrievals",
+              "apx.valet:request": "Customer scope — request or cancel retrieval and read status/ETA for the caller's own ticket (text, app, web, voice bot)"
             }
           }
         }
@@ -5314,6 +5340,10 @@
           },
           "name": {
             "type": "string"
+          },
+          "program": {
+            "description": "The ValidationProgram this row is derived from, when the server\nclaims `apx-validations` (Part 20) — additive; absent otherwise.",
+            "$ref": "#/components/schemas/Reference"
           },
           "validationType": {
             "type": "string",

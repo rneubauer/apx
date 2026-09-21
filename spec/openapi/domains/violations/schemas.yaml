@@ -1,0 +1,701 @@
+# APX violations — NET-NEW surface (APDS has no violation, notice, or citation
+# entities). Built to APDS conventions: eligibility is decided from
+# AssignedRight (APDS's own enforcement source of truth), evidence is native
+# Observation + access-controlled Image links, location is a HierarchyElement
+# Reference, the vehicle is an APDS CredentialTypeEnum credential, money is
+# AmountInCurrency, and settlement links a Payment reference.
+#
+# One resource — Violation — covers what operators variously call a ticket,
+# notice, warning, or citation; `notice.noticeKind` names which one was issued.
+
+Violation:
+  title: Violation
+  description: |-
+    An enforcement finding against a vehicle at a place: the detection
+    (automated, guided, or manual), the eligibility check that justified
+    it, the evidence, the issued notice/citation, settlement, and any
+    appeal — with the immutable lifecycle audit (Part 4 §4.2).
+
+    Lifecycle (Part 19 §19.1): `detected → confirmed | dismissed`,
+    `confirmed → issued`, `issued → paid | appealed`,
+    `appealed → issued (upheld, or reduced with amount replaced by
+    adjustedAmount) | closed (dismissed)`, `paid → closed` (server-side
+    administrative transition, no API operation). `voided` is terminal
+    from any state.
+    Automated detection MAY skip review (`detected → issued`) where the
+    operator's policy permits; guided detection MUST pass through review.
+  type: object
+  required:
+    - id
+    - version
+    - violationType
+    - violationStatus
+    - place
+    - detection
+  properties:
+    id:
+      type: string
+      format: uuid
+      readOnly: true
+    version:
+      type: integer
+      minimum: 1
+      readOnly: true
+    violationType:
+      type: string
+      description: definedValue from `apx-violation-types` or an implementer code list.
+      examples: [noValidRight]
+    violationStatus:
+      type: string
+      enum: [detected, confirmed, dismissed, issued, paid, appealed, closed, voided]
+      readOnly: true
+      description: Current lifecycle state (see schema description for transitions).
+    place:
+      description: The HierarchyElement (Place, Area, Space…) where the violation was observed.
+      $ref: "../../../vendor/apds/4.1/apds-api-4.1.yaml#/components/schemas/Reference"
+    space:
+      description: The specific APDS Space, when the detection is space-resolved (sensor, bay camera).
+      $ref: "../../../vendor/apds/4.1/apds-api-4.1.yaml#/components/schemas/Reference"
+    detection:
+      type: object
+      description: How and when the candidate was found.
+      required: [mode, detectedTime]
+      properties:
+        mode:
+          type: string
+          enum: [automated, guided, manual]
+          description: |-
+            `automated` — a camera/sensor pipeline created the violation with
+            no human in the loop. `guided` — the system surfaced a candidate
+            (typically to a handheld) and an officer confirms on site.
+            `manual` — an officer created the violation directly.
+        detectedTime:
+          $ref: "../../../vendor/apds/4.1/apds-api-4.1.yaml#/components/schemas/DateTime"
+        detector:
+          description: The detecting device (SupplementalEquipment) or, for guided/manual, the officer's Contact.
+          $ref: "../../../vendor/apds/4.1/apds-api-4.1.yaml#/components/schemas/Reference"
+        principal:
+          type: string
+          description: Opaque principal of the human or system that detected (officer badge id, pipeline name).
+          examples: [officer-0417]
+        confidence:
+          type: number
+          minimum: 0
+          maximum: 1
+          description: Detection confidence (plate read × rule certainty), when the detector reports one.
+        rule:
+          type: string
+          description: Implementer identifier of the enforcement rule that fired (automated mode).
+          examples: [overstay-2h-zone-b]
+    vehicle:
+      type: object
+      description: The credential observed on the vehicle (an APDS CredentialTypeEnum credential).
+      required: [credentialType, credentialIdentification]
+      properties:
+        credentialType:
+          $ref: "../../../vendor/apds/4.1/apds-api-4.1.yaml#/components/schemas/CredentialTypeEnum"
+        credentialIdentification:
+          type: string
+          description: The credential value — plate string, permit number, transponder id.
+          examples: [SYN-4471]
+        jurisdiction:
+          type: string
+          description: Issuing jurisdiction of the plate/credential (state, province, country code).
+          examples: [US-IL]
+        description:
+          type: string
+          description: Free-text vehicle description captured by the officer (make, colour).
+    observations:
+      type: array
+      description: The underlying APDS Observations (plate reads, sensor events) the finding is built from.
+      items:
+        $ref: "../../../vendor/apds/4.1/apds-api-4.1.yaml#/components/schemas/Reference"
+    evidence:
+      type: array
+      description: |-
+        Evidence media, as access-controlled LINKS (Part 9 §9.6 — never
+        inline). Each item points at an APDS Image reachable under the same
+        authentication and place grant as this resource.
+      items:
+        type: object
+        required: [imageLink]
+        properties:
+          imageLink:
+            $ref: "../../../vendor/apds/4.1/apds-api-4.1.yaml#/components/schemas/Url"
+          imageType:
+            $ref: "../../../vendor/apds/4.1/apds-api-4.1.yaml#/components/schemas/ImageTypeEnum"
+          capturedTime:
+            $ref: "../../../vendor/apds/4.1/apds-api-4.1.yaml#/components/schemas/DateTime"
+          device:
+            description: The capturing SupplementalEquipment (camera, handheld).
+            $ref: "../../../vendor/apds/4.1/apds-api-4.1.yaml#/components/schemas/Reference"
+          description:
+            type: string
+    eligibilityCheck:
+      description: The entitlement check performed at detection time (the same shape `GET /v1/enforcement/eligibility` returns).
+      $ref: "#/EligibilityResult"
+    relatedSession:
+      description: The APDS Session the vehicle was in, when one exists.
+      $ref: "../../../vendor/apds/4.1/apds-api-4.1.yaml#/components/schemas/Reference"
+    relatedRight:
+      description: The AssignedRight that was closest to covering the stay (expired permit, wrong-zone reservation…).
+      $ref: "../../../vendor/apds/4.1/apds-api-4.1.yaml#/components/schemas/Reference"
+    location:
+      type: object
+      description: |-
+        Where the violation was observed and from where — the APDS
+        Observation `Location` shape (Part 19 §19.9). GeoJSON positions
+        are [longitude, latitude] in that order; enforcement tools that
+        store latitude first MUST swap on the wire. Automated detections
+        SHOULD copy this from the underlying Observation.
+      properties:
+        observedLocation:
+          description: The vehicle's position (GeoJSON Point).
+          $ref: "../../../vendor/apds/4.1/apds-api-4.1.yaml#/components/schemas/PointLocation"
+        observerLocation:
+          description: The officer's or camera's position when the finding was made (GeoJSON Point).
+          $ref: "../../../vendor/apds/4.1/apds-api-4.1.yaml#/components/schemas/PointLocation"
+        observedLocationTextual:
+          description: Human-readable address or description of the observed location.
+          $ref: "../../../vendor/apds/4.1/apds-api-4.1.yaml#/components/schemas/MultilingualString"
+        accuracyMetres:
+          type: number
+          minimum: 0
+          description: Horizontal accuracy reported by the capturing device.
+    policy:
+      description: The EnforcementPolicy resolved for `place` at `issue` (Part 19 §19.10), frozen with its version.
+      $ref: "../../../vendor/apds/4.1/apds-api-4.1.yaml#/components/schemas/VersionedReference"
+      readOnly: true
+    signage:
+      type: array
+      readOnly: true
+      description: |-
+        The Signage records in force at `place` (and ancestors) at
+        `detectedTime`, frozen at `issue` with their versions — the
+        evidence of what was posted (Part 19 §19.11).
+      items:
+        $ref: "../../../vendor/apds/4.1/apds-api-4.1.yaml#/components/schemas/VersionedReference"
+    amountHistory:
+      type: array
+      readOnly: true
+      description: |-
+        Every change to `amount`, in order: the issued amount, each
+        server-applied escalation step, and each appeal reduction
+        (Part 19 §19.10). `amount` always equals the last entry.
+      items:
+        type: object
+        required: [amount, time, reason]
+        properties:
+          amount:
+            $ref: "../../../vendor/apds/4.1/apds-api-4.1.yaml#/components/schemas/AmountInCurrency"
+          time:
+            $ref: "../../../vendor/apds/4.1/apds-api-4.1.yaml#/components/schemas/DateTime"
+          reason:
+            type: string
+            enum: [issued, escalation, appealReduced, cap]
+          step:
+            type: string
+            description: The policy escalation step id that fired, when `reason` is `escalation`.
+          detail:
+            type: string
+    notice:
+      type: object
+      description: The notice, warning, or citation issued for this violation. Absent until `issued`.
+      readOnly: true
+      properties:
+        noticeKind:
+          type: string
+          description: What was issued — warning, notice, citation (implementer code list; jurisdictional vocabulary).
+          examples: [citation]
+        noticeNumber:
+          type: string
+          description: The operator's/jurisdiction's printed or mailed notice number.
+          examples: [LG-2026-018342]
+        issuedTime:
+          $ref: "../../../vendor/apds/4.1/apds-api-4.1.yaml#/components/schemas/DateTime"
+        issuedBy:
+          description: The issuing Organisation or officer Contact.
+          $ref: "../../../vendor/apds/4.1/apds-api-4.1.yaml#/components/schemas/Reference"
+        deliveryMethod:
+          type: string
+          description: How the notice reached the driver — windshield, handed, mail, electronic (implementer code list).
+          examples: [mail]
+    amount:
+      description: The amount payable on the issued notice (after any appeal reduction).
+      $ref: "../../../vendor/apds/4.1/apds-api-4.1.yaml#/components/schemas/AmountInCurrency"
+    dueTime:
+      description: When payment falls due.
+      $ref: "../../../vendor/apds/4.1/apds-api-4.1.yaml#/components/schemas/DateTime"
+    payment:
+      description: Reference to the settling APDS Payment or APX PaymentRecord (Part 13).
+      $ref: "../../../vendor/apds/4.1/apds-api-4.1.yaml#/components/schemas/Reference"
+    appeal:
+      type: object
+      description: The appeal on this violation, if one was opened. One appeal per violation.
+      readOnly: true
+      properties:
+        reason:
+          type: string
+          description: Appeal reason (implementer code list).
+          examples: [notTheVehicle]
+        detail:
+          type: string
+        appellant:
+          description: The appealing party (Contact), when identified.
+          $ref: "../../../vendor/apds/4.1/apds-api-4.1.yaml#/components/schemas/Reference"
+        openedTime:
+          $ref: "../../../vendor/apds/4.1/apds-api-4.1.yaml#/components/schemas/DateTime"
+        resolvedTime:
+          $ref: "../../../vendor/apds/4.1/apds-api-4.1.yaml#/components/schemas/DateTime"
+        resolution:
+          type: string
+          description: upheld | reduced | dismissed (implementer code list).
+          examples: [dismissed]
+        resolutionNote:
+          type: string
+    statusHistory:
+      type: array
+      description: Immutable, append-only lifecycle audit (Part 4 §4.2).
+      items:
+        type: object
+        required: [state, time, actor]
+        properties:
+          state:
+            type: string
+          time:
+            $ref: "../../../vendor/apds/4.1/apds-api-4.1.yaml#/components/schemas/DateTime"
+          actor:
+            type: string
+            description: Client/agent principal that caused the transition.
+          detail:
+            type: string
+    recordInfo:
+      $ref: "../common/schemas.yaml#/RecordInfo"
+    extensions:
+      $ref: "../common/schemas.yaml#/Extensions"
+
+EligibilityResult:
+  title: EligibilityResult
+  description: |-
+    "Is this vehicle entitled to be here right now?" — the guided-enforcement
+    screen-pop (Part 19 §19.3). A convenience READ composed from the APDS
+    entities that natively answer the question: AssignedRights (APDS's own
+    enforcement source of truth), Sessions, and reservation/permit profiles.
+    Adds no parallel entitlement entity; the AssignedRight remains
+    authoritative.
+  type: object
+  required: [place, credential, checkedTime, entitled]
+  properties:
+    place:
+      description: The HierarchyElement the question was asked for.
+      $ref: "../../../vendor/apds/4.1/apds-api-4.1.yaml#/components/schemas/Reference"
+    credential:
+      type: object
+      required: [credentialType, credentialIdentification]
+      properties:
+        credentialType:
+          $ref: "../../../vendor/apds/4.1/apds-api-4.1.yaml#/components/schemas/CredentialTypeEnum"
+        credentialIdentification:
+          type: string
+          examples: [SYN-4471]
+    checkedTime:
+      description: The instant the answer applies to (the `at` parameter, or now).
+      $ref: "../../../vendor/apds/4.1/apds-api-4.1.yaml#/components/schemas/DateTime"
+    entitled:
+      type: boolean
+      description: True when at least one basis entry is `valid` for the place at `checkedTime`.
+    basis:
+      type: array
+      description: Every right or session considered, newest first, with why it does or does not cover the stay.
+      items:
+        type: object
+        required: [status]
+        properties:
+          right:
+            description: The AssignedRight considered.
+            $ref: "../../../vendor/apds/4.1/apds-api-4.1.yaml#/components/schemas/Reference"
+          session:
+            description: The Session considered (pay-by-plate, transient).
+            $ref: "../../../vendor/apds/4.1/apds-api-4.1.yaml#/components/schemas/Reference"
+          rightType:
+            type: string
+            description: Human-readable product (from the RightSpecification) — monthly permit, reservation, pay-by-plate.
+            examples: [monthlyPermit]
+          validFrom:
+            $ref: "../../../vendor/apds/4.1/apds-api-4.1.yaml#/components/schemas/DateTime"
+          validTo:
+            $ref: "../../../vendor/apds/4.1/apds-api-4.1.yaml#/components/schemas/DateTime"
+          status:
+            type: string
+            enum: [valid, expired, notYetValid, wrongPlace, consumed, suspended]
+            description: Why this basis does or does not entitle the vehicle here, now.
+    suggestedViolationType:
+      type: string
+      description: When not entitled — the `apx-violation-types` value the server's rules suggest (never binding on the officer).
+      examples: [expiredRight]
+    graceUntil:
+      description: When a grace period on the nearest basis ends, if the operator's policy grants one.
+      $ref: "../../../vendor/apds/4.1/apds-api-4.1.yaml#/components/schemas/DateTime"
+    lastRead:
+      type: object
+      description: The most recent plate read of this credential at the place (APDS Observation-derived).
+      properties:
+        observation:
+          $ref: "../../../vendor/apds/4.1/apds-api-4.1.yaml#/components/schemas/Reference"
+        observationDateTime:
+          $ref: "../../../vendor/apds/4.1/apds-api-4.1.yaml#/components/schemas/DateTime"
+        confidence:
+          type: number
+          minimum: 0
+          maximum: 1
+        imageLink:
+          $ref: "../../../vendor/apds/4.1/apds-api-4.1.yaml#/components/schemas/Url"
+    extensions:
+      $ref: "../common/schemas.yaml#/Extensions"
+
+ViolationReview:
+  title: ViolationReview
+  description: Request body for guided-enforcement review — confirm or dismiss a detected candidate.
+  type: object
+  required: [decision]
+  properties:
+    decision:
+      type: string
+      enum: [confirm, dismiss]
+    reason:
+      type: string
+      description: Required when dismissing (implementer code list — permitDisplayed, plateMisread, gracePeriod…).
+      examples: [plateMisread]
+    note:
+      type: string
+    reviewer:
+      description: The reviewing officer's Contact, when the token is a system credential.
+      $ref: "../../../vendor/apds/4.1/apds-api-4.1.yaml#/components/schemas/Reference"
+    violationType:
+      type: string
+      description: Corrects the violation type on confirmation, when the officer's finding differs from the detector's.
+      examples: [wrongZone]
+
+ViolationIssue:
+  title: ViolationIssue
+  description: Request body issuing the notice/citation for a confirmed (or, under automated policy, detected) violation.
+  type: object
+  required: [amount]
+  properties:
+    noticeKind:
+      type: string
+      description: warning | notice | citation (implementer code list). Default is implementation policy.
+      examples: [citation]
+    noticeNumber:
+      type: string
+      description: Client-supplied notice number (pre-printed handheld stock). Server-assigned when absent.
+    amount:
+      $ref: "../../../vendor/apds/4.1/apds-api-4.1.yaml#/components/schemas/AmountInCurrency"
+    dueTime:
+      $ref: "../../../vendor/apds/4.1/apds-api-4.1.yaml#/components/schemas/DateTime"
+    deliveryMethod:
+      type: string
+      description: windshield | handed | mail | electronic (implementer code list).
+      examples: [windshield]
+    issuedBy:
+      description: The issuing Organisation or officer Contact, when different from the token's organisation.
+      $ref: "../../../vendor/apds/4.1/apds-api-4.1.yaml#/components/schemas/Reference"
+    note:
+      type: string
+
+ViolationPaymentAttachment:
+  title: ViolationPaymentAttachment
+  description: Request body attaching the settling Payment to an issued violation.
+  type: object
+  required: [payment]
+  properties:
+    payment:
+      description: Reference to the settling APDS Payment (or APX PaymentRecord taken via `POST /v1/payments`).
+      $ref: "../../../vendor/apds/4.1/apds-api-4.1.yaml#/components/schemas/Reference"
+    note:
+      type: string
+
+ViolationAppealOpen:
+  title: ViolationAppealOpen
+  description: Request body opening an appeal on an issued violation.
+  type: object
+  required: [reason]
+  properties:
+    reason:
+      type: string
+      description: Appeal reason (implementer code list).
+      examples: [notTheVehicle]
+    detail:
+      type: string
+    appellant:
+      description: The appealing party (Contact), when identified.
+      $ref: "../../../vendor/apds/4.1/apds-api-4.1.yaml#/components/schemas/Reference"
+    evidenceLinks:
+      type: array
+      description: Appellant-supplied evidence, as access-controlled links.
+      items:
+        $ref: "../../../vendor/apds/4.1/apds-api-4.1.yaml#/components/schemas/Url"
+
+ViolationAppealResolution:
+  title: ViolationAppealResolution
+  description: Request body resolving an open appeal.
+  type: object
+  required: [resolution]
+  properties:
+    resolution:
+      type: string
+      description: |-
+        upheld | reduced | dismissed (implementer code list). `upheld` returns
+        the violation to `issued`; `reduced` returns it to `issued` with
+        `adjustedAmount`; `dismissed` closes it.
+      examples: [reduced]
+    adjustedAmount:
+      description: The new amount payable when `resolution` is `reduced`.
+      $ref: "../../../vendor/apds/4.1/apds-api-4.1.yaml#/components/schemas/AmountInCurrency"
+    note:
+      type: string
+
+ViolationVoid:
+  title: ViolationVoid
+  description: Request body voiding a violation (terminal; never deletes the audit).
+  type: object
+  required: [reason]
+  properties:
+    reason:
+      type: string
+      description: Void reason (implementer code list — issuedInError, duplicate, policyException…).
+      examples: [duplicate]
+    note:
+      type: string
+
+EnforcementPolicy:
+  title: EnforcementPolicy
+  description: |-
+    The jurisdictional rules that govern issuing and escalating violations
+    at a place (Part 19 §19.10): lawful notice delivery per detection
+    mode, the initial penalty cap, the escalation schedule, windows, and
+    whether posted signage is required. Bound to a HierarchyElement with
+    subtree inheritance — the nearest ancestor's policy applies unless a
+    descendant overrides it. A machine-readable summary an operator
+    configures from the governing statute; never the statute itself.
+    Edits use versioned `PUT` (409 `version-conflict` when stale).
+  type: object
+  required: [id, version, place, policyStatus, effectiveFrom]
+  properties:
+    id:
+      type: string
+      format: uuid
+      readOnly: true
+    version:
+      type: integer
+      minimum: 1
+      readOnly: true
+    place:
+      description: The HierarchyElement this policy binds to (a state- or city-wide root, a lot, a level).
+      $ref: "../../../vendor/apds/4.1/apds-api-4.1.yaml#/components/schemas/Reference"
+    name:
+      type: string
+      examples: [Illinois private-lot notice rules 2026]
+    policyStatus:
+      type: string
+      enum: [active, superseded, retired]
+    effectiveFrom:
+      $ref: "../../../vendor/apds/4.1/apds-api-4.1.yaml#/components/schemas/DateTime"
+    effectiveTo:
+      $ref: "../../../vendor/apds/4.1/apds-api-4.1.yaml#/components/schemas/DateTime"
+    authority:
+      type: object
+      description: Provenance — where the rules come from.
+      properties:
+        jurisdiction:
+          type: string
+          description: ISO 3166-2 or implementer code for the legal jurisdiction.
+          examples: [US-IL]
+        citation:
+          type: string
+          description: Statute, ordinance, or regulation citation.
+          examples: [625 ILCS 5/11-1305]
+        url:
+          $ref: "../../../vendor/apds/4.1/apds-api-4.1.yaml#/components/schemas/Url"
+    deliveryRules:
+      type: array
+      description: Which notice delivery methods are lawful for which detection modes, and by when.
+      items:
+        type: object
+        required: [detectionModes, deliveryMethods]
+        properties:
+          detectionModes:
+            type: array
+            items:
+              type: string
+              enum: [automated, guided, manual]
+          deliveryMethods:
+            type: array
+            description: Lawful `notice.deliveryMethod` values for these modes (implementer code list — windshield, handed, mail, electronic).
+            items:
+              type: string
+          noticeDeadline:
+            description: Latest lawful `issue` after `detectedTime` for these methods (ISO 8601).
+            $ref: "../../../vendor/apds/4.1/apds-api-4.1.yaml#/components/schemas/Duration"
+          minimumEvidence:
+            type: object
+            description: What the violation MUST carry before a notice by these methods is lawful.
+            properties:
+              observations:
+                type: integer
+                minimum: 0
+              images:
+                type: integer
+                minimum: 0
+              locationRequired:
+                type: boolean
+    penaltyCap:
+      type: object
+      description: Ceiling on the amount at `issue`. When more than one bound is present the lowest applies.
+      properties:
+        maximumAmount:
+          $ref: "../../../vendor/apds/4.1/apds-api-4.1.yaml#/components/schemas/AmountInCurrency"
+        maximumMultipleOfUnpaid:
+          type: number
+          minimum: 0
+          description: Cap as a multiple of the unpaid parking fee the violation relates to (e.g. 2 = twice the unpaid fee).
+        maximumPercentOverUnpaid:
+          type: number
+          minimum: 0
+          description: Cap as unpaid fee plus this percentage of it.
+        onExceed:
+          type: string
+          enum: [refuse, clamp]
+          description: "`refuse` → 422 `penalty-exceeds-cap`; `clamp` → issue at the cap and record `reason: cap` in amountHistory."
+    escalation:
+      type: array
+      description: |-
+        Ordered, server-applied steps (Part 19 §19.10). Each fires once
+        when `afterDays` have elapsed since `notice.issuedTime` with the
+        violation still `issued`; the result is appended to
+        `amountHistory` and never exceeds `overallCeiling`.
+      items:
+        type: object
+        required: [step, afterDays]
+        properties:
+          step:
+            type: string
+            description: Stable step id recorded in `amountHistory[].step`.
+            examples: [late-30]
+          afterDays:
+            type: integer
+            minimum: 1
+          addAmount:
+            $ref: "../../../vendor/apds/4.1/apds-api-4.1.yaml#/components/schemas/AmountInCurrency"
+          addPercent:
+            type: number
+            minimum: 0
+            description: Percentage of the CURRENT amount to add.
+          description:
+            type: string
+    overallCeiling:
+      type: object
+      description: Hard ceiling on `amount` after any escalation.
+      properties:
+        maximumAmount:
+          $ref: "../../../vendor/apds/4.1/apds-api-4.1.yaml#/components/schemas/AmountInCurrency"
+        maximumMultipleOfIssued:
+          type: number
+          minimum: 1
+          description: e.g. 3 = never more than three times the issued amount.
+    appealWindowDays:
+      type: integer
+      minimum: 0
+      description: Days after `notice.issuedTime` during which an appeal MUST be accepted.
+    paymentGraceDays:
+      type: integer
+      minimum: 0
+      description: Days after `notice.issuedTime` before the first escalation step MAY fire, regardless of `afterDays`.
+    signageRequired:
+      type: boolean
+      description: When true, `issue` is refused (422 `signage-required`) unless Signage was in force at the place at `detectedTime`.
+    statusHistory:
+      type: array
+      description: Immutable, append-only lifecycle audit (Part 4 §4.2).
+      items:
+        type: object
+        required: [state, time, actor]
+        properties:
+          state:
+            type: string
+          time:
+            $ref: "../../../vendor/apds/4.1/apds-api-4.1.yaml#/components/schemas/DateTime"
+          actor:
+            type: string
+          detail:
+            type: string
+    recordInfo:
+      $ref: "../common/schemas.yaml#/RecordInfo"
+    extensions:
+      $ref: "../common/schemas.yaml#/Extensions"
+
+Signage:
+  title: Signage
+  description: |-
+    A record of what is posted at a place — the text, a photo, the
+    sign's position, and when it was in force (Part 19 §19.11). Bound to
+    a HierarchyElement with subtree inheritance. Versioned so an appeal
+    can show the sign as it stood on the day: superseding a sign is a
+    new version or a new record with `effectiveTo` set, never an edit in
+    place of historical text. Edits use versioned `PUT`.
+  type: object
+  required: [id, version, place, text, signageStatus, effectiveFrom]
+  properties:
+    id:
+      type: string
+      format: uuid
+      readOnly: true
+    version:
+      type: integer
+      minimum: 1
+      readOnly: true
+    place:
+      description: The HierarchyElement the sign governs (the lot, a level, a zone).
+      $ref: "../../../vendor/apds/4.1/apds-api-4.1.yaml#/components/schemas/Reference"
+    text:
+      description: The posted text, verbatim, per language.
+      $ref: "../../../vendor/apds/4.1/apds-api-4.1.yaml#/components/schemas/MultilingualString"
+    signageStatus:
+      type: string
+      enum: [active, superseded, removed]
+    effectiveFrom:
+      $ref: "../../../vendor/apds/4.1/apds-api-4.1.yaml#/components/schemas/DateTime"
+    effectiveTo:
+      $ref: "../../../vendor/apds/4.1/apds-api-4.1.yaml#/components/schemas/DateTime"
+    location:
+      description: Where the sign stands (GeoJSON Point).
+      $ref: "../../../vendor/apds/4.1/apds-api-4.1.yaml#/components/schemas/PointLocation"
+    imageLink:
+      description: Access-controlled photo of the physical sign (Part 9 §9.6).
+      $ref: "../../../vendor/apds/4.1/apds-api-4.1.yaml#/components/schemas/Url"
+    signType:
+      type: string
+      description: Implementer code list — entrance, payStation, perSpace, towAway, ratesBoard.
+      examples: [entrance]
+    policy:
+      description: The EnforcementPolicy whose disclosure requirements this sign satisfies, when applicable.
+      $ref: "../../../vendor/apds/4.1/apds-api-4.1.yaml#/components/schemas/Reference"
+    statusHistory:
+      type: array
+      description: Immutable, append-only lifecycle audit (Part 4 §4.2).
+      items:
+        type: object
+        required: [state, time, actor]
+        properties:
+          state:
+            type: string
+          time:
+            $ref: "../../../vendor/apds/4.1/apds-api-4.1.yaml#/components/schemas/DateTime"
+          actor:
+            type: string
+          detail:
+            type: string
+    recordInfo:
+      $ref: "../common/schemas.yaml#/RecordInfo"
+    extensions:
+      $ref: "../common/schemas.yaml#/Extensions"

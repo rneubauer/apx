@@ -30,6 +30,10 @@ an APX implementation without changes. APX adds only what APDS lacks:
 | Reservations | Quote→book→amend→check-in conventions | `Quote*`, `AssignedRight`, `PlannedUse` |
 | Permits | Pooled issuance, multi-vehicle credentials | `RightSpecification`, `RightPool`, `Credential` |
 | Tolling | TollTransaction + dispute lifecycle (net-new) | `Observation` → pricing → `Payment` |
+| Violations | Automated + guided enforcement: detection, review, notice/citation, appeal (net-new); eligibility check for handhelds; per-location enforcement policy (lawful notice methods, penalty caps, server-applied escalation) and posted-signage evidence | `AssignedRight` (eligibility), `Observation`/`Image`/`Location` (evidence), `Payment` (settlement), `ep` role |
+| Validations | Merchant programs, instrument issuance, redemption ledger from every channel, closable billing statements, merchant scope | `Contact`/`Organisation` (merchant), `Segment.validationId`, `Payment` type `validation`, `RateDiscount`, `RateTable.validation` |
+| Credentials | Keycard/fob/RFID/mobile lifecycle — issue, suspend, lost, revoke, replace — with media and deposits, access-event history; active records materialized onto the assigned right | `CredentialAssigned`, `CredentialTypeEnum`, `AssignedRight`, `RightHolder` |
+| Valet | Custody with condition evidence (notes, damage entries, photos, acknowledgement), parked position and keys, retrieval queue with ETA from text/app/web/voice bot, staging, verified handback, customer scope (net-new) | `Session` (the stay), `AssignedRight`, `Space`, `Contact`, `Payment` |
 
 Extension identity follows the official APDS convention (Use Case §C.2.5):
 `apds-ext:apx:<class>@<version>`.
@@ -73,9 +77,10 @@ Version history: [CHANGELOG.md](CHANGELOG.md).
 
 ## Status
 
-**v0.1.1 — complete v1 draft.** All domains specified: data profile,
+**v0.8.0 — complete v1 draft.** All domains specified: data profile,
 delivery fabric, control, alerts, discovery, accounts & payments, LPR,
-reservations, permits, tolling. This repository contains the specification
+reservations, permits, tolling, customer service & resolution, violations
+(enforcement), validation programs, credential lifecycle, valet. This repository contains the specification
 and written standard only — implementations live elsewhere.
 
 ## License

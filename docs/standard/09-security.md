@@ -73,8 +73,8 @@ payment history — are subject to this clause:
 1. **Minimization (normative).** Responses and event payloads MUST NOT
    carry more personal data than the requesting scope needs: full PANs are
    never carried (Part 0 §0.4); plate values appear only under `apx.lpr:*`,
-   `apx.tolling:*`, or `apx.accounts:*` scopes; imagery is carried as
-   links, never inline.
+   `apx.tolling:*`, `apx.violations:*`, or `apx.accounts:*` scopes;
+   imagery is carried as links, never inline.
 2. **Access-controlled imagery (normative).** `imageLink` and any other
    media URL MUST require the same authentication and place grant as the
    API call that produced it. Unauthenticated, long-lived image URLs do

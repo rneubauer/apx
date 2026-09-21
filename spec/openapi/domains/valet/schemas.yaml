@@ -1,0 +1,339 @@
+# APX valet — NET-NEW surface (APDS 4.1 has no valet entity; its only
+# mention is the `valetOnly` operating restriction). Built to APDS
+# conventions: the stay is a native Session, the ticket an AssignedRight,
+# the parked position a Space, the customer a Contact/RightHolder, money
+# rides on the Session and the Part 13 payment surface. This domain adds
+# what APDS lacks: custody, keys, condition evidence, the retrieval queue,
+# staging, and handback.
+
+ConditionReport:
+  title: ConditionReport
+  description: |-
+    The vehicle's condition as recorded by an attendant (or a scanning
+    device) at drop-off or handback: free-text notes, per-area damage
+    entries, and access-controlled image links (Part 9 §9.6). The
+    drop-off report is the evidence a damage claim is answered with.
+  type: object
+  properties:
+    notes:
+      type: string
+      description: Free-text observations.
+      examples: ["Scuff on rear bumper, driver side; interior clean."]
+    damage:
+      type: array
+      description: Structured damage entries, one per finding.
+      items:
+        type: object
+        required: [area]
+        properties:
+          area:
+            type: string
+            description: Implementer code list — frontBumper, rearBumper, driverDoor, passengerDoor, hood, roof, trunk, wheelFL/FR/RL/RR, windshield, interior…
+            examples: [rearBumper]
+          description:
+            type: string
+          severity:
+            type: string
+            enum: [minor, moderate, major]
+          imageLink:
+            $ref: "../../../vendor/apds/4.1/apds-api-4.1.yaml#/components/schemas/Url"
+    imageLinks:
+      type: array
+      description: Walk-around photos or scan captures, as access-controlled links.
+      items:
+        $ref: "../../../vendor/apds/4.1/apds-api-4.1.yaml#/components/schemas/Url"
+    recordedTime:
+      $ref: "../../../vendor/apds/4.1/apds-api-4.1.yaml#/components/schemas/DateTime"
+    recordedBy:
+      type: string
+      description: Opaque principal (attendant id, scanning device id).
+    customerAcknowledged:
+      type: boolean
+      description: Whether the customer acknowledged the report (signature, tap, spoken confirmation).
+
+ValetTicket:
+  title: ValetTicket
+  description: |-
+    The custody record for one valeted vehicle: drop-off (with condition
+    evidence), where it is parked and where the keys are, the retrieval
+    request and its ETA, staging, and handback — with the immutable
+    lifecycle audit. The APDS Session remains the stay and the money;
+    this record is what the attendant board, the customer's phone, and a
+    damage claim look at.
+
+    Lifecycle (Part 22 §22.1): `dropped → parked → requested → retrieving
+    → staged → handedBack → closed`; `cancel-retrieval` returns
+    `requested | retrieving` to `parked`; `dropped → handedBack` is
+    allowed before the car moves; `closed` is server-side when the stay
+    settles. `cancelled` is terminal for a drop-off abandoned before
+    custody.
+  type: object
+  required:
+    - id
+    - version
+    - place
+    - valetStatus
+    - dropOff
+  properties:
+    id:
+      type: string
+      format: uuid
+      readOnly: true
+    version:
+      type: integer
+      minimum: 1
+      readOnly: true
+    place:
+      description: The HierarchyElement (the facility or valet stand).
+      $ref: "../../../vendor/apds/4.1/apds-api-4.1.yaml#/components/schemas/Reference"
+    session:
+      description: The APDS Session for the stay (opened at drop-off).
+      $ref: "../../../vendor/apds/4.1/apds-api-4.1.yaml#/components/schemas/Reference"
+    assignedRight:
+      description: The APDS AssignedRight (the valet ticket as a right), when the operator issues one.
+      $ref: "../../../vendor/apds/4.1/apds-api-4.1.yaml#/components/schemas/Reference"
+    ticketNumber:
+      type: string
+      description: The number printed on the claim ticket / shown in the app.
+      examples: [V-20419]
+    vehicle:
+      type: object
+      properties:
+        credentialType:
+          $ref: "../../../vendor/apds/4.1/apds-api-4.1.yaml#/components/schemas/CredentialTypeEnum"
+        credentialIdentification:
+          type: string
+          description: The plate (or other credential) read at drop-off.
+          examples: [SYN-7734]
+        jurisdiction:
+          type: string
+        make:
+          type: string
+        model:
+          type: string
+        colour:
+          type: string
+        description:
+          type: string
+    customer:
+      type: object
+      description: Who the car belongs to — minimized (Part 9 §9.6); enough to verify at handback and reach them for ETA.
+      properties:
+        contact:
+          $ref: "../../../vendor/apds/4.1/apds-api-4.1.yaml#/components/schemas/Reference"
+        account:
+          description: The APX Account (Part 13), for members and hotel guests on file.
+          $ref: "../../../vendor/apds/4.1/apds-api-4.1.yaml#/components/schemas/Reference"
+        displayName:
+          type: string
+        contactChannel:
+          type: object
+          description: How to reach the customer about retrieval; the handle is opaque/masked — no telephony in the contract.
+          properties:
+            type:
+              type: string
+              enum: [sms, app, web, voice, email, none]
+            handle:
+              type: string
+              description: Opaque or masked handle (push token id, masked number).
+    dropOff:
+      type: object
+      required: [time]
+      properties:
+        time:
+          $ref: "../../../vendor/apds/4.1/apds-api-4.1.yaml#/components/schemas/DateTime"
+        lane:
+          description: The VehicularAccess or valet stand where custody was taken.
+          $ref: "../../../vendor/apds/4.1/apds-api-4.1.yaml#/components/schemas/Reference"
+        attendant:
+          type: string
+          description: Opaque principal.
+        mileage:
+          type: integer
+          minimum: 0
+        fuelLevelPercent:
+          type: number
+          minimum: 0
+          maximum: 100
+        keyTag:
+          type: string
+          description: The key hook / tag identifier.
+        itemsLeft:
+          type: string
+          description: Declared items left in the vehicle.
+        conditionReport:
+          $ref: "#/ConditionReport"
+    storage:
+      type: object
+      description: Where the vehicle and its keys are.
+      properties:
+        space:
+          description: The APDS Space, when the facility is space-mapped.
+          $ref: "../../../vendor/apds/4.1/apds-api-4.1.yaml#/components/schemas/Reference"
+        zone:
+          type: string
+          description: Zone/row/level text for facilities that are not space-mapped.
+          examples: [P3 row D]
+        keyLocation:
+          type: string
+          examples: [board-2 hook 17]
+        parkedTime:
+          $ref: "../../../vendor/apds/4.1/apds-api-4.1.yaml#/components/schemas/DateTime"
+        parkedBy:
+          type: string
+    retrieval:
+      type: object
+      description: The current (or last) retrieval request.
+      properties:
+        requestedTime:
+          $ref: "../../../vendor/apds/4.1/apds-api-4.1.yaml#/components/schemas/DateTime"
+        requestedFor:
+          description: A scheduled pickup time; absent = as soon as possible.
+          $ref: "../../../vendor/apds/4.1/apds-api-4.1.yaml#/components/schemas/DateTime"
+        channel:
+          type: string
+          enum: [sms, app, web, voiceBot, kiosk, attendant, callCenter]
+        requestedBy:
+          type: string
+          description: Opaque principal (customer handle, attendant, bot id).
+        interaction:
+          type: string
+          description: Opaque interaction id (Part 17 §17.6 convention) linking to the support interaction that raised it, if any.
+        etaMinutes:
+          type: integer
+          minimum: 0
+          description: The operator's current estimate; recomputed as the queue moves.
+        promisedTime:
+          description: When the car is promised at the staging lane (requestedTime + eta, or requestedFor).
+          $ref: "../../../vendor/apds/4.1/apds-api-4.1.yaml#/components/schemas/DateTime"
+        retrievingBy:
+          type: string
+        stagingLane:
+          $ref: "../../../vendor/apds/4.1/apds-api-4.1.yaml#/components/schemas/Reference"
+        stagedTime:
+          $ref: "../../../vendor/apds/4.1/apds-api-4.1.yaml#/components/schemas/DateTime"
+        cancelledTime:
+          $ref: "../../../vendor/apds/4.1/apds-api-4.1.yaml#/components/schemas/DateTime"
+        cancelReason:
+          type: string
+    handback:
+      type: object
+      readOnly: true
+      properties:
+        time:
+          $ref: "../../../vendor/apds/4.1/apds-api-4.1.yaml#/components/schemas/DateTime"
+        handedTo:
+          type: string
+          description: Opaque description of the recipient as verified.
+        verificationMethod:
+          type: string
+          enum: [ticket, phone, code, id, attendant]
+        attendant:
+          type: string
+        mileage:
+          type: integer
+          minimum: 0
+        conditionReport:
+          $ref: "#/ConditionReport"
+        notes:
+          type: string
+    valetStatus:
+      type: string
+      enum: [dropped, parked, requested, retrieving, staged, handedBack, closed, cancelled]
+      readOnly: true
+    statusHistory:
+      type: array
+      description: Immutable, append-only lifecycle audit (Part 4 §4.2).
+      items:
+        type: object
+        required: [state, time, actor]
+        properties:
+          state:
+            type: string
+          time:
+            $ref: "../../../vendor/apds/4.1/apds-api-4.1.yaml#/components/schemas/DateTime"
+          actor:
+            type: string
+          detail:
+            type: string
+    recordInfo:
+      $ref: "../common/schemas.yaml#/RecordInfo"
+    extensions:
+      $ref: "../common/schemas.yaml#/Extensions"
+
+ValetParkRequest:
+  title: ValetParkRequest
+  description: Request body recording where the vehicle was parked and where its keys are.
+  type: object
+  properties:
+    space:
+      $ref: "../../../vendor/apds/4.1/apds-api-4.1.yaml#/components/schemas/Reference"
+    zone:
+      type: string
+    keyLocation:
+      type: string
+    note:
+      type: string
+
+ValetRetrievalRequest:
+  title: ValetRetrievalRequest
+  description: Request body asking for the car — from the customer (text, app, web, voice bot) or an attendant.
+  type: object
+  required: [channel]
+  properties:
+    channel:
+      type: string
+      enum: [sms, app, web, voiceBot, kiosk, attendant, callCenter]
+    requestedFor:
+      description: Scheduled pickup; absent = as soon as possible.
+      $ref: "../../../vendor/apds/4.1/apds-api-4.1.yaml#/components/schemas/DateTime"
+    interaction:
+      type: string
+      description: Opaque interaction id (Part 17 §17.6) when raised through a support channel or bot.
+    note:
+      type: string
+
+ValetCancelRetrievalRequest:
+  title: ValetCancelRetrievalRequest
+  description: Request body cancelling an open retrieval request; the vehicle returns to `parked`.
+  type: object
+  required: [reason]
+  properties:
+    reason:
+      type: string
+      examples: [customerDelayed]
+    note:
+      type: string
+
+ValetStageRequest:
+  title: ValetStageRequest
+  description: Request body recording the vehicle at the staging lane, ready for handback.
+  type: object
+  required: [stagingLane]
+  properties:
+    stagingLane:
+      $ref: "../../../vendor/apds/4.1/apds-api-4.1.yaml#/components/schemas/Reference"
+    note:
+      type: string
+
+ValetHandbackRequest:
+  title: ValetHandbackRequest
+  description: Request body handing the vehicle to a verified customer, with the handback condition report.
+  type: object
+  required: [verificationMethod]
+  properties:
+    verificationMethod:
+      type: string
+      enum: [ticket, phone, code, id, attendant]
+    verificationValue:
+      type: string
+      description: What was presented (ticket number, one-time code…); never stored beyond the check.
+    handedTo:
+      type: string
+    mileage:
+      type: integer
+      minimum: 0
+    conditionReport:
+      $ref: "#/ConditionReport"
+    notes:
+      type: string
