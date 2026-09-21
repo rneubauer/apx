@@ -237,13 +237,19 @@ the revenue stream in real time instead of scraping reports.
 |---|---|
 | `POST /observations` | How camera reads enter the system (a standard data route — nothing special to build) |
 | `GET /v1/lpr/reads?plate=…` or `?ticket=…` | The cross-lookup: plate → ticket/session (with confidence score and the photo), or ticket → plate |
+| `detail` on a read | What the camera actually knew: plate, state, make, model, colour **each with its own confidence**, the runner-up plate strings, how many plates it read, which plate face it saw (front or rear), and whether the car was approaching, receding, or stopped |
+| `laneTravel` on a read | The server's call from all of that plus the lane's configured direction: with the lane, or **against** it — the gateless "they came in through the exit" signal, which raises a `wrongWayTravel` alert |
 
 **Why this way:** LPR vendors shouldn't need a bespoke ingestion API — a
 plate read *is* an observation, so ingest is the standard route every data
 integration already uses. The only genuinely new need is the *join* ("which
 ticket goes with this plate?"), so that's the only new endpoint. Each
 ingested read also publishes `apx.data.observation.created.v1`, so analytics
-consumers can stream the raw sensor feed rather than polling.
+consumers can stream the raw sensor feed rather than polling. The extra
+detail rides *inside* the standard observation as a namespaced block, so a
+camera that knows more can say more without breaking a reader that only
+speaks plain APDS — and the "which way was it going" answer is computed
+once, by the system that knows the lane, rather than by every consumer.
 
 ---
 

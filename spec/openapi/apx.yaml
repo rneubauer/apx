@@ -2,7 +2,7 @@ openapi: 3.1.0
 
 info:
   title: APX — APDS Parking eXtensions
-  version: 0.8.0
+  version: 0.9.0
   summary: An open companion standard to APDS 4.1
   description: |-
     **APX (APDS Parking eXtensions)** is an additive companion standard to the
@@ -3451,7 +3451,12 @@ paths:
       summary: Bidirectional plate/ticket cross-lookup
       description: |-
         plate → ticket/session with accuracy + screenshot; ticket → plate.
-        A pure profile over APDS Observations (ingest = native POST /observations).
+        A pure profile over APDS Observations (ingest = native POST
+        /observations). Where the ingested Observation carried the
+        `apds-ext:apx:lpr-read@1.0` decoration, each read returns `detail`
+        (per-attribute confidences for plate, state, make, model, color;
+        alternate reads; plates read; plate face; movement) and the
+        server-derived `laneTravel` (Part 13 §13.3a).
       parameters:
         - { name: plate, in: query, schema: { type: string } }
         - { name: ticket, in: query, schema: { type: string } }
@@ -4086,6 +4091,10 @@ components:
       $ref: "./domains/accounts/schemas.yaml#/PostingRequest"
     LprRead:
       $ref: "./domains/lpr/schemas.yaml#/LprRead"
+    AttributeRead:
+      $ref: "./domains/lpr/schemas.yaml#/AttributeRead"
+    LprReadDetail:
+      $ref: "./domains/lpr/schemas.yaml#/LprReadDetail"
     ReservationExtension:
       $ref: "./domains/reservations/schemas.yaml#/ReservationExtension"
     ReservationSummary:

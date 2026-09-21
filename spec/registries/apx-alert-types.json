@@ -1,6 +1,6 @@
 {
   "id": "1c2d3e4f-5a6b-4c7d-8e9f-0a1b2c3d4e5f",
-  "version": 1,
+  "version": 2,
   "name": "apx-alert-types",
   "creator": { "id": "a1000000-0000-4000-8000-000000000001", "className": "Organisation" },
   "locator": "https://apx-standard.org/registries/apx-alert-types.json",
@@ -16,6 +16,7 @@
     { "definedValue": "occupancyThresholdExceeded", "entryDescription": "Occupancy demand crossed a configured threshold for a place element.", "entryIndex": 8 },
     { "definedValue": "paymentException", "entryDescription": "A payment failed, was reversed, or requires attention.", "entryIndex": 9 },
     { "definedValue": "intercomRequest", "entryDescription": "A customer requested assistance at a lane/device intercom.", "entryIndex": 10 },
-    { "definedValue": "webhookDeliveryFailed", "entryDescription": "A subscription exhausted its delivery retry schedule and was marked failed (self-referential alert).", "entryIndex": 11 }
+    { "definedValue": "webhookDeliveryFailed", "entryDescription": "A subscription exhausted its delivery retry schedule and was marked failed (self-referential alert).", "entryIndex": 11 },
+    { "definedValue": "wrongWayTravel", "entryDescription": "An LPR read derived laneTravel=againstLane: a vehicle travelled against the lane's configured direction (entered on an exit lane or vice versa), typical of gateless sites (Part 13 §13.3a).", "entryIndex": 12 }
   ]
 }

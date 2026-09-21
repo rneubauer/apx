@@ -102,6 +102,8 @@ implementation has the named capability).
 |---|---|---|
 | APX-LPR-01 | Ingest via native `POST /observations`; cross-lookup plate↔ticket with confidence + imagery links | §13.3 |
 | APX-LPR-02 | `LprRead.place` populated; `apx.data.observation.created.v1` published per ingest | §13.5, §13.4 |
+| APX-LPR-03 | **C** (engine supplies it): `apds-ext:apx:lpr-read@1.0` accepted on ingest and projected as `LprRead.detail` / `PlateCandidate.detail`; winning values mirrored into the APDS-native fields; per-attribute confidences 0–1; nothing guessed when absent | §13.3a(1–3) |
+| APX-LPR-04 | `laneTravel` derived from `plateFace` + `movement` + camera orientation + lane `accessType`; `unknown` when inputs are missing; `againstLane` SHOULD raise `wrongWayTravel` and MUST still open/match the Session | §13.3a(4–5) |
 
 ## A.11 `apx-reservations` / A.12 `apx-permits`
 
