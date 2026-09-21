@@ -60,6 +60,66 @@ payment publishes `apx.accounts.payment.recorded.v1` like any other.
   ticket → plate. Scope `apx.lpr:read`. Every read carries its (required)
   `place` binding (§13.5).
 
+### 13.3a Read detail: per-attribute confidence and passage geometry (normative)
+
+APDS's Observation carries the plate, the vehicle's `country`,
+`stateProvince`, `make`, `model`, and `color`, one overall `Confidence`,
+and per-character confidence — but no confidence per attribute, no
+alternate candidates, and nothing about how the vehicle moved. Modern LPR
+engines produce all of that, and gateless sites depend on it. APX adds it
+as the Level B decoration `apds-ext:apx:lpr-read@1.0` (`LprReadDetail`) in
+the Observation's `extensions` container (Part 4 §4.3), so a camera vendor
+still ingests through native `POST /observations` and a plain APDS
+consumer still sees a valid Observation.
+
+1. **Per-attribute reads.** `detail.plate`, `.country`, `.stateProvince`,
+   `.make`, `.model`, `.color`, `.bodyType` are each an `AttributeRead`
+   (`value` + `confidence` 0–1). The winning values MUST also appear in
+   the APDS-native fields (`observedCredentialId`,
+   `vehicleAncillaryIdentification`) so APDS-only readers see them;
+   `Confidence.overallConfidence` remains the overall score. Every
+   attribute is optional — an engine that does not classify colour omits
+   `color` rather than guessing.
+2. **Alternate reads.** `detail.alternateReads[]` keeps the candidate
+   plate strings the engine rejected, best first, each with confidence.
+   Part 17 §17.5 plate correction SHOULD offer them as `PlateCandidate`s.
+3. **Passage geometry.** `detail.platesRead` is how many plates of the
+   vehicle the camera captured during the passage (1, or 2 for front and
+   rear across frames — two reads are what let the engine call movement
+   with confidence). `detail.plateFace` (`front | rear | unknown`) is
+   which plate was read, i.e. the vehicle's orientation relative to the
+   camera. `detail.movement` (`approaching | receding | stopped |
+   unknown`) is the vehicle's motion relative to the camera. These are
+   camera facts; they say nothing about the lane by themselves.
+4. **Lane travel (server-derived).** The server MUST set
+   `LprRead.laneTravel` (`withLane | againstLane | unknown`) by combining
+   `plateFace` and `movement` with the camera's configured orientation
+   and the lane's APDS `VehicularAccess.accessType` (`entry | exit |
+   reversible`). The mapping from camera mount to lane direction is
+   implementation configuration (as Part 17 §17.1 treats the SIP-URI-to-
+   lane mapping); the *output* is interoperable. Informative canonical
+   case, camera facing the traffic it is meant to read: on an `exit`
+   lane, `front` + `approaching` = `withLane`, `rear` + `receding` =
+   `againstLane`; on an `entry` lane the same pairs are `withLane` and
+   `againstLane` respectively; a `reversible` lane yields `unknown`
+   unless the lane's current direction is known to the server. Without
+   `plateFace` or `movement`, `laneTravel` is `unknown`, never guessed.
+5. **Wrong-way handling.** `againstLane` on a gateless site is the
+   "entered on the exit lane" signal. The server SHOULD raise the
+   `wrongWayTravel` alert (registry `apx-alert-types`, Part 7) with the
+   Observation as evidence, and MUST still open or match the Session for
+   the plate — the driver is charged for parking, not for the lot's
+   geometry; what happens next (signage, enforcement under Part 19) is
+   operator policy.
+6. **Grouping.** `detail.captureGroup` links the reads of one passage
+   (front and rear, several frames) so a consumer counting vehicles
+   counts once. `LprRead` returns one row per Observation; the group id
+   is how a consumer collapses them.
+7. **Privacy.** `detail` is plate-bearing personal data under Part 9
+   §9.6: it appears only under `apx.lpr:*` (and the Part 17 candidate
+   route); make, model, and colour are carried as attributes of the
+   read, not as a vehicle registry.
+
 ## 13.4 Eventing — the analytics feed
 
 APDS's native `EventTypeEnum` publishes entity lifecycle events for

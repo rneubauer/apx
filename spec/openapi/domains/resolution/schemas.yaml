@@ -157,6 +157,9 @@ PlateCandidate:
     observationDateTime:
       description: When the read was captured (aligned with LprRead.observationDateTime; APDS ObservationElement.observationStartTime).
       $ref: "../../../vendor/apds/4.1/apds-api-4.1.yaml#/components/schemas/DateTime"
+    detail:
+      description: Per-attribute confidences, alternate reads, and passage geometry (Part 13 §13.3a), when the read carried them.
+      $ref: "../lpr/schemas.yaml#/LprReadDetail"
     lane:
       $ref: "../../../vendor/apds/4.1/apds-api-4.1.yaml#/components/schemas/Reference"
     observation:

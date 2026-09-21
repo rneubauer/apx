@@ -20,7 +20,19 @@ LprRead:
       type: number
       minimum: 0
       maximum: 1
-      description: Read accuracy (APDS 4.1 Confidence).
+      description: Overall read accuracy (APDS 4.1 Confidence.overallConfidence). Per-attribute confidences are in `detail`.
+    detail:
+      $ref: "#/LprReadDetail"
+    laneTravel:
+      type: string
+      enum: [withLane, againstLane, unknown]
+      readOnly: true
+      description: |-
+        SERVER-DERIVED (Part 13 §13.3a): whether the vehicle was travelling
+        in the lane's configured direction. Derived from `detail.movement`,
+        `detail.plateFace`, the camera's configured orientation, and the
+        lane's APDS `VehicularAccess.accessType` (entry | exit | reversible).
+        `againstLane` is the gateless "entered on the exit lane" signal.
     observation:
       description: The underlying APDS Observation.
       $ref: "../../../vendor/apds/4.1/apds-api-4.1.yaml#/components/schemas/Reference"
@@ -41,3 +53,85 @@ LprRead:
         reservation's own vehicle credentials.
       items:
         $ref: "../reservations/schemas.yaml#/ReservationSummary"
+
+AttributeRead:
+  title: AttributeRead
+  description: One recognized attribute with its own confidence (0–1, APDS Confidence scale).
+  type: object
+  required: [value]
+  properties:
+    value:
+      type: string
+    confidence:
+      type: number
+      minimum: 0
+      maximum: 1
+
+LprReadDetail:
+  title: LprReadDetail
+  description: |-
+    What a modern LPR camera knows beyond the plate string and one overall
+    score (Part 13 §13.3a). Carried on the ingested APDS Observation as the
+    Level B decoration `apds-ext:apx:lpr-read@1.0` in its `extensions`
+    container (Part 4 §4.3 — plain APDS consumers ignore it), and projected
+    on `LprRead.detail` and `PlateCandidate.detail`. Every field optional;
+    each recognized attribute carries its own confidence. APDS's
+    `vehicleAncillaryIdentification` (country, stateProvince, make, model,
+    color) remains the APDS-visible copy of the winning values; this block
+    adds the per-attribute confidence, the candidates that lost, and the
+    passage geometry APDS has no fields for.
+  type: object
+  properties:
+    plate:
+      $ref: "#/AttributeRead"
+    country:
+      description: Plate issuing country (APDS VehicleAncillaryIdentification.country vocabulary).
+      $ref: "#/AttributeRead"
+    stateProvince:
+      description: Plate issuing state/province (APDS VehicleAncillaryIdentification.stateProvince vocabulary).
+      $ref: "#/AttributeRead"
+    make:
+      $ref: "#/AttributeRead"
+    model:
+      $ref: "#/AttributeRead"
+    color:
+      $ref: "#/AttributeRead"
+    bodyType:
+      description: Implementer vocabulary (sedan, suv, pickup, van, motorcycle…).
+      $ref: "#/AttributeRead"
+    alternateReads:
+      type: array
+      description: The other candidate plate strings the engine considered for this capture, best first — kept so a correction (Part 17 §17.5) can pick a loser.
+      items:
+        type: object
+        required: [plate]
+        properties:
+          plate:
+            type: string
+          stateProvince:
+            type: string
+          confidence:
+            type: number
+            minimum: 0
+            maximum: 1
+    platesRead:
+      type: integer
+      minimum: 0
+      description: |-
+        How many plates of the vehicle the camera read during this passage
+        (1 = one plate; 2 = front and rear across frames). Two reads are
+        what let the engine call `movement` with confidence.
+    plateFace:
+      type: string
+      enum: [front, rear, unknown]
+      description: Which plate of the vehicle was read — the vehicle's orientation relative to the camera.
+    movement:
+      type: string
+      enum: [approaching, receding, stopped, unknown]
+      description: The vehicle's motion relative to the camera — coming toward it, going away from it, or stopped.
+    captureGroup:
+      type: string
+      description: Opaque id linking the reads of one passage (front and rear, several frames) so consumers can treat them as one event.
+    engine:
+      type: string
+      description: Recognition engine/vendor identifier, opaque (for confidence calibration downstream).

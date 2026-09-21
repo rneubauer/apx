@@ -6,6 +6,31 @@ conformance/versioning rules in Part 3 of the written standard.
 The machine-readable spec (`spec/openapi/apx.yaml`, bundled as
 `spec/dist/apx-v1.*`) is normative; entries here are informative.
 
+## [0.9.0] — 2026-09-21
+
+LPR read fidelity (Part 13 §13.3a, class `apx-lpr`). APDS's Observation
+carries plate, state, make, model, colour, and one overall confidence;
+it has no confidence per attribute, no alternate candidates, and nothing
+about how the vehicle moved. New Level B decoration
+`apds-ext:apx:lpr-read@1.0` (`LprReadDetail`) on the ingested Observation,
+projected as `LprRead.detail` and `PlateCandidate.detail`: per-attribute
+`AttributeRead`s (plate, country, stateProvince, make, model, color,
+bodyType — each `value` + `confidence`), `alternateReads[]`,
+`platesRead` (how many plates were read in the passage), `plateFace`
+(`front | rear | unknown` — the vehicle's orientation to the camera),
+`movement` (`approaching | receding | stopped | unknown`), `captureGroup`,
+`engine`. Server-derived `LprRead.laneTravel` (`withLane | againstLane |
+unknown`) from plate face + movement + camera orientation + the lane's
+APDS `accessType` — the gateless "entered on the exit lane" signal; new
+alert type `wrongWayTravel` (registry `apx-alert-types` v2); the Session
+is still opened for the plate. Ingest stays native `POST /observations`;
+winning values MUST also appear in the APDS-native fields. Annex A.10
+rows APX-LPR-03 (conditional) and 04; scenario 22 (gateless lot: wrong-way
+entry caught by plate face and movement, correct exit with two plates
+read and a second-ranked candidate). CI: the oasdiff base bundle is now
+extracted inside the workspace (the action's container never saw
+`/tmp`).
+
 ## [0.8.0] — 2026-09-20
 
 Valet (Part 22, optional class `apx-valet`) — a net-new domain (APDS has

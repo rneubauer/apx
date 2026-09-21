@@ -26,7 +26,7 @@ an APX implementation without changes. APX adds only what APDS lacks:
 | Alerts | Alert lifecycle + open taxonomies | `UserDefinedCodeList`, Use Case C.2.2 exception vocabulary |
 | Discovery | Credential-scoped capability documents | OAuth2 scopes + place grants |
 | Accounts & payments | Balance lookup, take-payment, accounting write-back, payment history | `RightHolder`, `Payment` |
-| LPR | Plate↔ticket cross-lookup with confidence + imagery | `Observation`, `Confidence`, `Image` (4.1) |
+| LPR | Plate↔ticket cross-lookup with confidence + imagery; per-attribute confidence (plate, state, make, model, colour), alternate reads, plates read, plate face, movement, and server-derived lane travel for gateless wrong-way detection | `Observation`, `Confidence`, `Image`, `VehicleAncillaryIdentification`, `VehicularAccess.accessType` (4.1) |
 | Reservations | Quote→book→amend→check-in conventions | `Quote*`, `AssignedRight`, `PlannedUse` |
 | Permits | Pooled issuance, multi-vehicle credentials | `RightSpecification`, `RightPool`, `Credential` |
 | Tolling | TollTransaction + dispute lifecycle (net-new) | `Observation` → pricing → `Payment` |
@@ -77,7 +77,7 @@ Version history: [CHANGELOG.md](CHANGELOG.md).
 
 ## Status
 
-**v0.8.0 — complete v1 draft.** All domains specified: data profile,
+**v0.9.0 — complete v1 draft.** All domains specified: data profile,
 delivery fabric, control, alerts, discovery, accounts & payments, LPR,
 reservations, permits, tolling, customer service & resolution, violations
 (enforcement), validation programs, credential lifecycle, valet. This repository contains the specification

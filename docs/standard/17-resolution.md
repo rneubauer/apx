@@ -141,7 +141,10 @@ a business-action façade (adding audit fields: the cited Observation, the
 reason) over APDS-modeled state; it MUST NOT create a parallel plate
 store. Plate vocabulary follows APDS `VehicleAncillaryIdentification`
 (`country` + `stateProvince`); confidence values are projections of APDS
-`Confidence.overallConfidence`.
+`Confidence.overallConfidence`. Where the read carried the Part 13 §13.3a
+decoration, `PlateCandidate.detail` returns it, and the engine's
+`alternateReads` SHOULD be offered as additional candidates — the plate the
+engine ranked second is usually the one the agent is looking for.
 
 ## 17.6 Support interactions and topics
 
