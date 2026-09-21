@@ -3,3 +3,6 @@ node_modules/
 .env
 coverage/
 site/
+
+# Local Claude Code session state (settings.local.json, scratch)
+.claude/
