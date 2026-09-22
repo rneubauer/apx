@@ -11,7 +11,7 @@ API surface APDS deliberately leaves out — real-time delivery, operational
 control, alerting, discovery, and the customer-service layer built on
 them — expressed entirely in APDS's own vocabulary. One machine-readable
 OpenAPI 3.1 document, a written standard of 23 parts plus a conformance
-annex, seven open registries, and twenty-one CI-validated end-to-end scenarios.
+annex, seven open registries, and twenty-two CI-validated end-to-end scenarios.
 
 ## Why we believe it belongs with APDS
 

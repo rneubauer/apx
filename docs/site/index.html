@@ -1,0 +1,177 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>APX — APDS Parking eXtensions</title>
+<meta name="description" content="APX is an open companion standard to APDS 4.1: interactive API console, reference documentation, and downloadable OpenAPI bundles.">
+<style>
+  :root {
+    --bg: #ffffff;
+    --surface: #f6f7f9;
+    --border: #d9dde3;
+    --text: #15181d;
+    --muted: #5b636e;
+    --accent: #0a5ad6;
+    --accent-soft: #e8f0fe;
+    --radius: 10px;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) {
+      --bg: #0f1216;
+      --surface: #171b21;
+      --border: #2a313a;
+      --text: #e8ebef;
+      --muted: #9aa3ae;
+      --accent: #6ea8fe;
+      --accent-soft: #16233a;
+    }
+  }
+  :root[data-theme="dark"] {
+    --bg: #0f1216;
+    --surface: #171b21;
+    --border: #2a313a;
+    --text: #e8ebef;
+    --muted: #9aa3ae;
+    --accent: #6ea8fe;
+    --accent-soft: #16233a;
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    background: var(--bg);
+    color: var(--text);
+    font: 16px/1.6 -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+    -webkit-font-smoothing: antialiased;
+  }
+  .wrap { max-width: 900px; margin: 0 auto; padding: 0 16px 72px; }
+  header { padding: 56px 0 8px; }
+  h1 { font-size: clamp(30px, 5vw, 42px); line-height: 1.15; margin: 0 0 12px; letter-spacing: -0.02em; }
+  .lede { font-size: clamp(17px, 2.4vw, 20px); color: var(--muted); margin: 0 0 20px; max-width: 62ch; }
+  .badges { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 18px; }
+  .badge {
+    font-size: 13px; font-weight: 600; padding: 3px 10px; border-radius: 999px;
+    background: var(--accent-soft); color: var(--accent); border: 1px solid transparent;
+  }
+  .badge.neutral { background: var(--surface); color: var(--muted); border-color: var(--border); }
+  h2 { font-size: 15px; text-transform: uppercase; letter-spacing: 0.08em; color: var(--muted); margin: 44px 0 14px; }
+  .cards { display: grid; gap: 14px; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); }
+  a.card {
+    display: block; padding: 20px; background: var(--surface); border: 1px solid var(--border);
+    border-radius: var(--radius); text-decoration: none; color: inherit; transition: border-color .15s, transform .15s;
+  }
+  a.card:hover { border-color: var(--accent); transform: translateY(-2px); }
+  a.card .t { font-weight: 650; font-size: 17px; margin-bottom: 6px; }
+  a.card .d { color: var(--muted); font-size: 14.5px; line-height: 1.5; }
+  .files { border: 1px solid var(--border); border-radius: var(--radius); overflow: hidden; }
+  .files a {
+    display: flex; justify-content: space-between; align-items: baseline; gap: 16px;
+    padding: 13px 18px; text-decoration: none; color: inherit; border-bottom: 1px solid var(--border);
+  }
+  .files a:last-child { border-bottom: 0; }
+  .files a:hover { background: var(--surface); }
+  .files code { font-size: 14.5px; color: var(--accent); font-weight: 600; }
+  .files span { color: var(--muted); font-size: 14px; text-align: right; }
+  pre {
+    background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius);
+    padding: 16px 18px; overflow-x: auto; font-size: 14px; line-height: 1.55; margin: 0;
+  }
+  code, pre { font-family: ui-monospace, SFMono-Regular, "SF Mono", Menlo, Consolas, monospace; }
+  p { max-width: 68ch; }
+  p.note { color: var(--muted); font-size: 14.5px; }
+  footer {
+    margin-top: 56px; padding-top: 20px; border-top: 1px solid var(--border);
+    color: var(--muted); font-size: 14px;
+  }
+  footer a { color: var(--accent); }
+  ul.plain { padding-left: 20px; color: var(--muted); font-size: 15px; max-width: 68ch; }
+  ul.plain li { margin-bottom: 6px; }
+  ul.plain strong { color: var(--text); }
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <header>
+    <div class="badges">
+      <span class="badge">v{{APX_VERSION}}</span>
+      <span class="badge neutral">Companion to APDS 4.1</span>
+      <span class="badge neutral">OpenAPI 3.1</span>
+      <span class="badge neutral">MIT</span>
+    </div>
+    <h1>APX — APDS Parking eXtensions</h1>
+    <p class="lede">
+      An open companion standard to the APDS 4.1 API. APX adds what APDS
+      deliberately leaves out — real-time delivery, operational control,
+      alerting, discovery, and the business domains built on them — without
+      redefining a single APDS entity.
+    </p>
+  </header>
+
+  <h2>Explore the API</h2>
+  <div class="cards">
+    <a class="card" href="reference.html">
+      <div class="t">API reference →</div>
+      <div class="d">Every endpoint, parameter, and schema, searchable, with request and response shapes beside the prose that governs them.</div>
+    </a>
+    <a class="card" href="parcs.html">
+      <div class="t">PARCS starter profile →</div>
+      <div class="d">The minimum surface for a PARCS vendor: data, events, and control only. Byte-identical to the full spec, just smaller.</div>
+    </a>
+    <a class="card" href="https://github.com/rneubauer/apx/tree/main/docs/standard">
+      <div class="t">The written standard →</div>
+      <div class="d">The normative prose in parts: scope and the APDS-first prime directive, conformance classes, security, errors, and every domain.</div>
+    </a>
+    <a class="card" href="https://github.com/rneubauer/apx/tree/main/docs/scenarios">
+      <div class="t">Worked scenarios →</div>
+      <div class="d">End-to-end stories with real wire payloads, every one machine-validated against the bundle so the samples cannot drift.</div>
+    </a>
+  </div>
+
+  <h2>Download the spec</h2>
+  <div class="files">
+    <a href="apx-v1.yaml"><code>apx-v1.yaml</code><span>Full standard · OpenAPI 3.1 · YAML</span></a>
+    <a href="apx-v1.json"><code>apx-v1.json</code><span>Full standard · OpenAPI 3.1 · JSON</span></a>
+    <a href="apx-parcs.json"><code>apx-parcs.json</code><span>PARCS starter profile · JSON</span></a>
+  </div>
+  <p class="note">
+    These are the bundled, normative artifacts, regenerated from source on
+    every push to <code>main</code>. Import one into Postman, Insomnia, or
+    your own code generator.
+  </p>
+
+  <h2>Run it locally</h2>
+  <pre><code>git clone https://github.com/rneubauer/apx.git
+cd apx &amp;&amp; npm install
+
+npm test             # the full gate: vendor, registries, lint, bundle, examples, scenarios
+npm run mock         # Prism mock server on :4010, generated from the spec
+npm run docs:build   # rebuild this site into site/</code></pre>
+  <p class="note">
+    The mock server answers every documented route with schema-valid
+    responses, so a client integration can be written and tested before any
+    real implementation exists. Send any bearer token.
+  </p>
+
+  <h2>What's in it</h2>
+  <ul class="plain">
+    <li><strong>Data profile</strong> — full and change update semantics, tombstones, and cursor-based change feeds on APDS's own routes.</li>
+    <li><strong>Delivery fabric</strong> — HMAC-signed webhooks, a normative retry schedule, a delivery ledger, and server-sent events.</li>
+    <li><strong>Control</strong> — an audited command plane for gates, pay stations, and devices, with perishable commands and honest confirmation levels.</li>
+    <li><strong>Business domains</strong> — accounts and payments, LPR, reservations, permits, tolling, customer-service resolution, violations, validations, credentials, and valet.</li>
+    <li><strong>Conformance classes</strong> — named, independently claimable feature sets, each with testable requirements in Annex A.</li>
+  </ul>
+
+  <footer>
+    <p>
+      Stewarded by Umojo · MIT licensed · Portions reference the APDS API
+      Specification (MIT, © Alliance for Parking Data Standards).<br>
+      <a href="https://github.com/rneubauer/apx">Source on GitHub</a> ·
+      <a href="https://github.com/rneubauer/apx/blob/main/CHANGELOG.md">Changelog</a> ·
+      <a href="https://github.com/rneubauer/apx/tree/main/docs/scenarios">Worked scenarios</a>
+    </p>
+  </footer>
+
+</div>
+</body>
+</html>
