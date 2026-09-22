@@ -2,7 +2,8 @@ node_modules/
 *.tsbuildinfo
 .env
 coverage/
-site/
+# Build output only. Anchored: docs/site/ holds the site's SOURCE and is tracked.
+/site/
 
 # Local Claude Code session state (settings.local.json, scratch)
 .claude/

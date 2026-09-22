@@ -59,14 +59,16 @@ npm run spec:bundle    # produce spec/dist/apx-v1.{yaml,json}
 npm run spec:style     # Spectral APX conventions (bundled artifact)
 npm test               # all of the above + registry, profile, and example validation
 npm run mock           # Prism mock server on :4010 — schema-valid fake responses
-npm run docs:build     # render browsable HTML reference docs into site/
+npm run docs:build     # assemble the documentation site into site/
 ```
 
 Requires Node 20+. No Docker, no native modules.
 
-**Browsable docs** are published from `main` at
-<https://rneubauer.github.io/apx/> (full standard) and
-<https://rneubauer.github.io/apx/parcs.html> (PARCS starter profile).
+**Browsable docs** are published from `main` to GitHub Pages:
+<https://rneubauer.github.io/apx/> is the landing page,
+`/reference.html` the full API reference, `/parcs.html` the PARCS starter
+profile, and the bundles are served alongside them at `/apx-v1.yaml`,
+`/apx-v1.json`, and `/apx-parcs.json`.
 CI validates every push and PR; pull requests are additionally gated by an
 oasdiff breaking-change check against the base branch's bundle.
 

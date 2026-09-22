@@ -18,7 +18,7 @@
     "spec:profile": "node tools/build-profile-spec.mjs",
     "examples:check": "node tools/validate-examples.mjs",
     "mock": "prism mock spec/dist/apx-v1.yaml --port 4010",
-    "docs:build": "redocly build-docs spec/dist/apx-v1.yaml -o site/index.html && redocly build-docs spec/dist/apx-parcs.json -o site/parcs.html",
+    "docs:build": "redocly build-docs spec/dist/apx-v1.yaml -o site/reference.html && redocly build-docs spec/dist/apx-parcs.json -o site/parcs.html && node tools/build-site.mjs",
     "scenarios:check": "node tools/validate-scenarios.mjs",
     "test": "npm run vendor:check && npm run registries:check && npm run spec:lint && npm run spec:bundle && npm run spec:profile && npm run spec:style && npm run spec:smoke && npm run examples:check && npm run scenarios:check"
   },

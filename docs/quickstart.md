@@ -9,9 +9,11 @@ npm test               # lint, bundle, and validate the full spec
 
 Then import `spec/dist/apx-v1.yaml` into Postman, Swagger UI, or any
 OpenAPI viewer. PARCS vendors can start from the slim profile subset,
-`spec/dist/apx-parcs.json` (~25 endpoints). Browsable reference docs are
-published from `main` at <https://rneubauer.github.io/apx/> (full standard)
-and <https://rneubauer.github.io/apx/parcs.html> (PARCS profile).
+`spec/dist/apx-parcs.json` (~25 endpoints). Both bundles are also served
+from the documentation site, so a viewer can load one straight from
+<https://rneubauer.github.io/apx/apx-v1.yaml>. That site is published from
+`main`: the landing page at <https://rneubauer.github.io/apx/>, the full
+reference at `/reference.html`, and the PARCS profile at `/parcs.html`.
 
 ## Try it against a mock server
 
