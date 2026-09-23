@@ -41,12 +41,15 @@ checksum, so "adopt APX" names a fixed set of files rather than a branch.
    (classes, capability discovery with a conformance-tested soundness
    rule); the PARCS Starter Profile is a 26-endpoint minimum; every list
    paginates the APDS way; codegen is exercised in CI. During drafting we
-   found and documented two defects in the published APDS artifact
+   found and documented three defects in the published APDS artifact
    (Part 1 §1.3), vendored untouched and worked around only in our own
-   validators. They are not yet filed in your tracker: we did not want to
-   open issues against a published release before the working group had
-   seen the analysis. We bring them with this submission and will file
-   them wherever you prefer.
+   validators. All three are filed in your tracker as issues
+   [#33](https://github.com/parkingdata/spec/issues/33),
+   [#34](https://github.com/parkingdata/spec/issues/34), and
+   [#35](https://github.com/parkingdata/spec/issues/35), each with the
+   offending snippet and a minimal suggested fix. We offer them as evidence
+   the erratum discipline works: a companion standard that validates every
+   payload in CI finds defects in its base that prose review does not.
 5. **It answers the industry's next question.** Part 17 standardizes the
    customer-service surface — one aggregated resolution context and
    server-side, policy-decided allowed actions — with a rule we believe
@@ -55,8 +58,11 @@ checksum, so "adopt APX" names a fixed set of files rather than a branch.
 
 ## What we are candid about
 
-- **Two known upstream errata** in `apds-api-4.1.yaml` (Part 1 §1.3),
-  documented in our written standard but **not yet filed** with you.
+- **Three known upstream errata** in `apds-api-4.1.yaml` (Part 1 §1.3),
+  filed with you as issues #33, #34, and #35 and still open at the time of
+  writing. Two are worked around in our validators; the third needs no
+  workaround. None is a blocker for APX, and none originates here: our
+  vendored copy is byte-identical to your published document.
 - **A deliberate absence:** APX defines no raw single-ticket price
   override. Validations and discounts are the sanctioned, auditable
   per-ticket adjustment mechanism, and the rate deck stays authoritative
@@ -76,7 +82,7 @@ checksum, so "adopt APX" names a fixed set of files rather than a branch.
 
 Technical review by the working group; a decision on adoption, adoption
 with changes, or chartering a joint task group; and — independent of that
-outcome — a route for filing the two errata. The repository, its CI,
+outcome — disposition of the three errata already filed (#33, #34, #35). The repository, its CI,
 browsable reference documentation, and the scenario suite are public;
 every wire example is schema-validated against the specification in CI,
 and a schema-conformant mock server (`npm run mock`, Prism over the
