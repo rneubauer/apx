@@ -135,9 +135,60 @@ ${rows
 `;
 writeFileSync(join(REG_OUT, 'index.html'), registryIndex);
 
+// ----- module index, generated from the bundle -----------------------------
+// The landing page must not carry a hand-kept list of domains: it would drift
+// from the spec the first time one was added. Tags, their narrative, and the
+// grouping all come from the bundle (the docs overlay put them there), so this
+// section is always exactly what the reference renders.
+const bundle = JSON.parse(readFileSync(join(DIST, 'apx-v1.json'), 'utf8'));
+const tags = new Map((bundle.tags ?? []).map((t) => [t.name, t]));
+const groups = bundle['x-tagGroups'] ?? [{ name: 'Modules', tags: [...tags.keys()] }];
+
+/** First paragraph of a tag description, as plain text. */
+function lead(description = '') {
+  const first = description.split(/\n\s*\n/)[0] ?? '';
+  return first
+    .replace(/\[([^\]]+)\]\([^)]*\)/g, '$1') // links to their text
+    .replace(/\*\*(.+?)\*\*/g, '$1') // bold
+    .replace(/\*(.+?)\*/g, '$1') // italics
+    .replace(/`(.+?)`/g, '$1') // code spans
+    .replace(/\s+/g, ' ')
+    .trim();
+}
+
+/** The "Written standard: [Part N](url)." trailer a tag description ends with. */
+function part(description = '') {
+  const m = description.match(/Written standard:\s*\[([^\]]+)\]\(([^)]+)\)/);
+  return m ? { label: m[1], href: m[2] } : null;
+}
+
+let moduleCount = 0;
+const modulesHtml = groups
+  .map((group) => {
+    const rows = (group.tags ?? [])
+      .filter((name) => tags.has(name))
+      .map((name) => {
+        const tag = tags.get(name);
+        const p = part(tag.description);
+        moduleCount += 1;
+        return `      <div class="mod">
+        <a class="mod-name" href="reference.html#tag/${encodeURIComponent(name)}">${escapeHtml(name)}</a>
+        <p class="mod-d">${escapeHtml(lead(tag.description))}</p>
+        <p class="mod-l"><a href="reference.html#tag/${encodeURIComponent(name)}">API reference</a>${
+          p ? ` · <a href="${escapeHtml(p.href)}">${escapeHtml(p.label)}</a>` : ''
+        }</p>
+      </div>`;
+      })
+      .join('\n');
+    return `    <h3 class="grp">${escapeHtml(group.name)}</h3>\n    <div class="mods">\n${rows}\n    </div>`;
+  })
+  .join('\n');
+
 // ----- landing page --------------------------------------------------------
 for (const page of PAGES) {
-  const html = readFileSync(join(SRC, page), 'utf8').replaceAll('{{APX_VERSION}}', version);
+  const html = readFileSync(join(SRC, page), 'utf8')
+    .replaceAll('{{APX_VERSION}}', version)
+    .replace('{{APX_MODULES}}', modulesHtml);
   writeFileSync(join(SITE, page), html);
 }
 
@@ -146,5 +197,5 @@ writeFileSync(join(SITE, '.nojekyll'), '');
 
 console.log(
   `[docs:site] site/ assembled for v${version}: ${PAGES.length + RENDERED.length} pages, ` +
-    `${BUNDLES.length} bundles, ${rows.length} registries`
+    `${BUNDLES.length} bundles, ${rows.length} registries, ${moduleCount} modules`
 );

@@ -84,6 +84,23 @@
     color: var(--muted); font-size: 14px;
   }
   footer a { color: var(--accent); }
+  h3.grp {
+    font-size: 13px; text-transform: uppercase; letter-spacing: 0.07em;
+    color: var(--muted); font-weight: 650; margin: 26px 0 10px;
+    padding-bottom: 6px; border-bottom: 1px solid var(--border);
+  }
+  .mods { display: grid; gap: 10px; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); }
+  .mod {
+    padding: 14px 16px; border: 1px solid var(--border); border-radius: var(--radius);
+    background: var(--surface);
+  }
+  .mod:hover { border-color: var(--accent); }
+  a.mod-name { font-weight: 650; font-size: 16px; text-decoration: none; color: var(--text); }
+  a.mod-name:hover { color: var(--accent); }
+  .mod-d { color: var(--muted); font-size: 14px; line-height: 1.45; margin: 5px 0 9px; }
+  .mod-l { margin: 0; font-size: 13px; }
+  .mod-l a { color: var(--accent); text-decoration: none; }
+  .mod-l a:hover { text-decoration: underline; }
   ul.plain { padding-left: 20px; color: var(--muted); font-size: 15px; max-width: 68ch; }
   ul.plain li { margin-bottom: 6px; }
   ul.plain strong { color: var(--text); }
@@ -127,6 +144,15 @@
       <div class="d">End-to-end stories with real wire payloads, every one machine-validated against the bundle so the samples cannot drift.</div>
     </a>
   </div>
+
+  <h2>The modules</h2>
+  <p class="note">
+    Every domain APX defines, grouped the way the reference groups them.
+    Each links to its section of the API reference and to the part of the
+    written standard that governs it. Generated from the specification on
+    every build, so this list is never out of date.
+  </p>
+{{APX_MODULES}}
 
   <h2>Download the spec</h2>
   <div class="files">
