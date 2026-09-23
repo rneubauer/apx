@@ -14,24 +14,28 @@ the erratum.
 
 | # | Defect | Filed upstream |
 |---|---|---|
-| [001](001-reference-schema-unsatisfiable.md) | `Reference` is unsatisfiable: two required properties, at most one permitted | Not yet |
-| [002](002-observations-example-invalid.md) | `POST /observations` `single-element` example matches neither branch of its own `oneOf` | Not yet |
-| [003](003-observation-discriminator-typo.md) | Discriminator mapping key misspelled `ObvservationSet` | Not yet |
+| [001](001-reference-schema-unsatisfiable.md) | `Reference` is unsatisfiable: two required properties, at most one permitted | [#33](https://github.com/parkingdata/spec/issues/33), open |
+| [002](002-observations-example-invalid.md) | `POST /observations` `single-element` example matches neither branch of its own `oneOf` | [#34](https://github.com/parkingdata/spec/issues/34), open |
+| [003](003-observation-discriminator-typo.md) | Discriminator mapping key misspelled `ObvservationSet` | [#35](https://github.com/parkingdata/spec/issues/35), open |
+
+All three were filed on 2026-09-23. Update this table as they are triaged.
+Remove an entry only once a corrected APDS release is vendored, because the
+workaround in our tooling has to come out at the same moment.
 
 **Verified against upstream on 2026-09-23.** `parkingdata/spec` at `master`
 was byte-identical to the vendored copy, commit
 `e10dcfc4cf5e45aaa2f46641a235333fb5585b1b` (2026-03-03), so all three are
 live in the currently published document.
 
-## How to file
+## The reports
 
-Each file is a complete issue body, ready to paste into
-<https://github.com/parkingdata/spec/issues/new>, with a suggested title at
-the top. One issue per defect: they are independent, and 003 is a
-one-character fix that should not wait behind a discussion of 001.
+Each file is the issue body as filed, with the suggested title at the top.
+One issue per defect, because they are independent: 003 is a one-character
+fix that should not wait behind a discussion of 001.
 
-Filing them is a courtesy to the Alliance, not a precondition for anything
-in APX. Update the table above when each is filed, with its issue number.
+Filing them was a courtesy to the Alliance, not a precondition for anything
+in APX. Keep these files in step with the upstream discussion, so the
+reasoning stays in the package even if an issue is later closed.
 
 ## Why they ship with the submission
 
