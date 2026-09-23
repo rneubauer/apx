@@ -36,8 +36,15 @@
 ## 1.3 Known APDS 4.1 errata
 
 APX vendors the APDS 4.1 OpenAPI document **verbatim** (checksum-guarded),
-including its defects. Implementers validating payloads against the raw
-schemas should be aware of:
+including its defects. Filing-ready reports for all three, each with the
+offending snippet and a minimal suggested fix, are in
+[`docs/errata/`](../errata/README.md), which also tracks whether each has
+been filed upstream. Verified against `parkingdata/spec` at `master` on
+2026-09-23: the published document was byte-identical to the vendored copy,
+so all three are live in the current release.
+
+Implementers validating payloads against the raw schemas should be aware
+of:
 
 1. **`Reference` is unsatisfiable as written.** The schema declares
    `maxProperties: 1` while requiring *both* `id` and `className` — no
@@ -54,3 +61,9 @@ schemas should be aware of:
    the example is defective. Lint tooling scopes an exemption to this path
    (`tools/.spectral.yaml`) rather than editing the vendored file. Report
    upstream; remove on a corrected release.
+3. **Discriminator mapping typo on `POST /observations`.** The mapping key
+   for the observation-set branch is spelled `ObvservationSet` (extra `v`),
+   so the legal `ObservationDataType` value `ObservationSet` has no mapping
+   entry. Tolerant tooling resolves the subschema by name anyway; strict
+   tooling does not. APX needs no workaround for this one. Report upstream;
+   remove on a corrected release.
