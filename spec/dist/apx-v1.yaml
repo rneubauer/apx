@@ -3,6 +3,31 @@ info:
   title: APX — APDS Parking eXtensions
   version: 0.9.0
   summary: An open companion standard to APDS 4.1
+  description: |-
+    **APX (APDS Parking eXtensions)** is an additive companion standard to the
+    [APDS 4.1 API](https://github.com/parkingdata/spec) (Alliance for Parking
+    Data Standards, published as ISO/TS 5206-1).
+
+    APX follows an **APDS-first prime directive**: wherever APDS 4.1 already
+    defines a route, schema, or convention, APX uses it verbatim (by `$ref`
+    into the vendored, unmodified `apds-api-4.1.yaml`). APX only adds what
+    APDS deliberately leaves out:
+
+    - **Data profile** — Full/Change update semantics, tombstones, and a
+      cursor-based change feed as additive parameters on APDS's native routes
+    - **Delivery fabric** — a superset-compatible profile of APDS `/webhooks`
+      (HMAC signing, normative retries, delivery ledger, SSE)
+    - **Control** — command plane for gates/PARCS/devices with idempotency,
+      lifecycle, and immutable audit
+    - **Alerts** — operational alerting with open taxonomies via APDS
+      UserDefinedCodeLists
+    - **Discovery** — credential-scoped capability documents
+    - **Accounts & payments, LPR, reservations, permits, tolling** — profiles
+      and additive resources over APDS entities
+
+    Extension identity follows the official APDS extension convention:
+    `apds-ext:apx:<class>@<version>` (Use Case Document §C.2.5), with
+    extensionName `apx`.
   license:
     name: MIT
     url: https://opensource.org/licenses/MIT
@@ -13,76 +38,6 @@ info:
     extensionName: apx
     extensionVersion: '1.0'
     apdsVersion: '4.1'
-  description: |-
-    **APX (APDS Parking eXtensions)** is an additive companion standard to the
-    [APDS 4.1 API](https://github.com/parkingdata/spec) (Alliance for Parking
-    Data Standards, core model published as ISO/TS 5206-1).
-
-    ## The prime directive
-
-    Wherever APDS 4.1 already defines a route, schema, or convention, APX uses
-    it **verbatim**, by `$ref` into the vendored, unmodified `apds-api-4.1.yaml`.
-    APX never redefines, subsets, or re-shapes an APDS entity, and a plain
-    APDS 4.1 client works against an APX implementation without modification.
-    Everything here is what APDS deliberately leaves out.
-
-    ## Five ideas, used everywhere
-
-    | Concept | Plain meaning |
-    |---|---|
-    | **Place** | Anywhere a vehicle can park, broken into levels, lanes, and spaces |
-    | **Right** | Permission to park. A *specification* is the product; an *assigned right* is that product granted to someone |
-    | **Session** | An actual stay: a vehicle using a right, with a start and an end |
-    | **Rate** | Pricing: hourly tables, flat fees, event rates |
-    | **Observation** | Something a sensor saw, with a timestamp, a confidence score, and imagery |
-
-    Supporting players: an **Organisation** or **Contact**, a **Credential**
-    (the thing presented at the lane), and a **Device** (gate, pay station,
-    camera). All of them are APDS classes; none is redefined here.
-
-    ## Conventions
-
-    - Every APX resource carries an `id` (UUID) and an integer `version`.
-      Objects reference each other as `{"id": "…", "className": "Session"}`.
-    - Timestamps are RFC 3339 UTC. Money is the APDS shape
-      `{"currencyType": "USD", "currencyValue": 9.00}`.
-    - Errors are RFC 9457 `application/problem+json` with a registered
-      `type` URI you can program against, never a bare string.
-    - Mutating operations a device may retry require an `Idempotency-Key`.
-      Replaying a key with the same body returns the original result; with a
-      different body it is a conflict.
-    - Lifecycles are audited: resources with states carry an immutable,
-      append-only `statusHistory[]`.
-
-    ## Access
-
-    OAuth 2.0 client credentials. Two independent bounds apply to every call:
-    **scopes** (`apx.<domain>:<verb>`, what kinds of thing you may do) and
-    **grants** (the token claims `apx_org` and `apx_places`, which facilities
-    you may do them at). Grants are fail-closed: absent or empty means no
-    places. A vendor hired for one garage cannot act on another.
-
-    ## Not everything is mandatory
-
-    APX is partitioned into named **conformance classes**. `apx-data` and
-    `apx-events` are the base; every other class is optional and
-    independently claimable, with objective per-requirement criteria in
-    Annex A of the written standard. An implementation advertises the classes
-    it satisfies at `/.well-known/apx-configuration`.
-
-    ## How to read this document
-
-    Operations are grouped by domain in the navigation, and each group opens
-    with what APDS already provides, what APX adds on top, and a link to the
-    governing Part of the **written standard** in
-    [docs/standard/](https://github.com/rneubauer/apx/tree/main/docs/standard).
-    Where prose and this description disagree for an APX-defined path, this
-    document prevails and the prose is a defect to be corrected; for
-    APDS-native paths the vendored APDS document prevails.
-
-    End-to-end worked examples, every payload machine-validated against this
-    bundle, are in
-    [docs/scenarios/](https://github.com/rneubauer/apx/tree/main/docs/scenarios).
 servers:
   - url: https://api.apx-implementation.example
     description: |-
@@ -91,6 +46,69 @@ servers:
       explicit /v1 prefix.
 security:
   - apxOAuth: []
+tags:
+  - name: Discovery
+    description: Bootstrap and credential-scoped capability discovery.
+  - name: Data
+    description: |-
+      APX data profile — additive reads over the APDS Place hierarchy
+      (occupancy snapshot). The pull/push routes themselves are the native
+      APDS paths, mounted verbatim. See written standard Part 5.
+  - name: Subscription
+    description: |-
+      APX delivery fabric — a superset-compatible profile of the APDS 4.1
+      /webhooks subscription endpoint (stock EventSubscription bodies work
+      unmodified). See written standard Part 8.
+  - name: Alerts
+    description: Operational alerting (net-new APX domain). See written standard Part 7.
+  - name: Control
+    description: Command plane, lane inquiry, validations, device status. See written standard Part 6.
+  - name: Accounts
+    description: Accounts, payments, accounting write-back, payment history. See written standard Part 13.
+  - name: LPR
+    description: Plate/ticket cross-lookup over APDS Observations. See written standard Part 13.
+  - name: Permits
+    description: Pooled permit issuance over RightSpecification/RightPool. See written standard Part 14.
+  - name: Reservations
+    description: Reservation conventions over native Quote/AssignedRight routes. See written standard Part 14.
+  - name: Tolling
+    description: Toll transactions binding Observations to pricing and Payments. See written standard Part 15.
+  - name: Resolution
+    description: |-
+      Customer Service & Resolution (optional class apx-resolution) — one
+      aggregated context call plus policy-decided allowed actions. Writes go
+      through the Part 6 command plane. See written standard Part 17.
+  - name: Support
+    description: Support-interaction history for resolution contexts. See written standard Part 17.
+  - name: Violations
+    description: |-
+      Enforcement (optional class apx-violations, net-new domain) — one
+      Violation resource for tickets, notices, and citations: automated and
+      guided detection, review, issuance, settlement by Payment reference,
+      appeals, and the eligibility check that drives guided enforcement.
+      See written standard Part 19.
+  - name: Validations
+    description: |-
+      Validation program management (optional class apx-validations) —
+      merchant enrolment, instrument issuance (codes, QR, stamps),
+      the redemption ledger every channel writes, and merchant billing
+      statements. Builds on the Part 6 §6.3 provider lookup and
+      `applyValidation` command. See written standard Part 20.
+  - name: Credentials
+    description: |-
+      Credential lifecycle (optional class apx-credentials) — keycards,
+      fobs, RFID tags, mobile credentials, hangtags, plates-as-credential:
+      issue, activate, suspend, resume, report lost, revoke, replace, and
+      access-event history. Active records are materialized as APDS
+      CredentialAssigned on the holder's AssignedRights. See written
+      standard Part 21.
+  - name: Valet
+    description: |-
+      Valet custody (optional class apx-valet, net-new domain) — drop-off
+      with condition evidence, parked position and keys, the retrieval
+      queue with ETA (from text, app, web, voice bot, kiosk, or
+      attendant), staging, and verified handback. The APDS Session
+      remains the stay and the money. See written standard Part 22.
 paths:
   /places:
     get:
@@ -130,17 +148,13 @@ paths:
         - $ref: '#/components/parameters/modified_since'
         - $ref: '#/components/parameters/places_expand'
         - $ref: '#/components/parameters/page'
-        - $ref: '#/components/parameters/ModeParam'
-        - $ref: '#/components/parameters/CursorParam'
       responses:
         '200':
           description: Ok
           content:
             application/json:
               schema:
-                oneOf:
-                  - $ref: '#/components/schemas/HierarchyElementList'
-                  - $ref: '#/components/schemas/ChangeFeedPage'
+                $ref: '#/components/schemas/HierarchyElementList'
     post:
       summary: Create Place
       security:
@@ -978,17 +992,13 @@ paths:
         - $ref: '#/components/parameters/rates_expand'
         - $ref: '#/components/parameters/issuer'
         - $ref: '#/components/parameters/page'
-        - $ref: '#/components/parameters/ModeParam'
-        - $ref: '#/components/parameters/CursorParam'
       responses:
         '200':
           description: OK
           content:
             application/json:
               schema:
-                oneOf:
-                  - $ref: '#/components/schemas/RateTableList'
-                  - $ref: '#/components/schemas/ChangeFeedPage'
+                $ref: '#/components/schemas/RateTableList'
     post:
       summary: Create RateTable
       security:
@@ -1210,17 +1220,13 @@ paths:
         - $ref: '#/components/parameters/modified_since'
         - $ref: '#/components/parameters/sessions_expand'
         - $ref: '#/components/parameters/page'
-        - $ref: '#/components/parameters/ModeParam'
-        - $ref: '#/components/parameters/CursorParam'
       responses:
         '200':
           description: OK
           content:
             application/json:
               schema:
-                oneOf:
-                  - $ref: '#/components/schemas/SessionList'
-                  - $ref: '#/components/schemas/ChangeFeedPage'
+                $ref: '#/components/schemas/SessionList'
     post:
       summary: Create Session
       security:
@@ -1478,17 +1484,13 @@ paths:
         - $ref: '#/components/parameters/modified_since'
         - $ref: '#/components/parameters/assigned_expand'
         - $ref: '#/components/parameters/page'
-        - $ref: '#/components/parameters/ModeParam'
-        - $ref: '#/components/parameters/CursorParam'
       responses:
         '200':
           description: OK
           content:
             application/json:
               schema:
-                oneOf:
-                  - $ref: '#/components/schemas/AssignedRightList'
-                  - $ref: '#/components/schemas/ChangeFeedPage'
+                $ref: '#/components/schemas/AssignedRightList'
     post:
       summary: Create AssignedRight
       security:
@@ -7315,12 +7317,6 @@ components:
           format: uri-reference
           description: URI reference identifying this specific occurrence.
       additionalProperties: true
-      examples:
-        - type: https://apx-standard.org/problems/target-not-found
-          title: Target not found
-          status: 404
-          detail: No lane b2000000-0000-4000-8000-00000000dead at this place.
-          instance: /v1/lanes/b2000000-0000-4000-8000-00000000dead/current
     EventEnvelope:
       title: EventEnvelope
       description: |-
@@ -7366,20 +7362,6 @@ components:
           type: object
         extensions:
           $ref: '#/components/schemas/Extensions'
-      examples:
-        - id: 3b4c5d6e-7f8a-4b9c-8d0e-1f2a3b4c5d6e
-          type: apx.reservation.noshow.v1
-          source: https://api.lakeside-garage.example/v1
-          subject:
-            id: e2000000-0000-4000-8000-000000000003
-            className: AssignedRight
-          time: '2026-08-14T19:30:00Z'
-          data:
-            reservation:
-              id: e2000000-0000-4000-8000-000000000003
-              className: AssignedRight
-            reservationState: noShow
-            plannedStart: '2026-08-14T18:00:00Z'
     CodeListValue:
       title: CodeListValue
       description: |-
@@ -7451,23 +7433,6 @@ components:
             - 'null'
           format: uri-reference
           description: Link to the next page when more changes are immediately available; null otherwise.
-      examples:
-        - publicationTime: '2026-08-06T18:20:00Z'
-          publisher:
-            id: a1000000-0000-4000-8000-000000000001
-            className: Organisation
-          updateMode: change
-          items:
-            - id: f1000000-0000-4000-8000-000000000001
-              version: 4
-              className: Session
-              segments:
-                - actualEnd: '2026-08-06T18:14:34Z'
-          deleted:
-            - id: f1000000-0000-4000-8000-000000000099
-              className: Session
-              deleteTimestamp: '2026-08-06T17:58:12Z'
-          cursor: c:00042
     OccupancySnapshot:
       title: OccupancySnapshot
       description: |-
@@ -7510,20 +7475,6 @@ components:
             - 59
         extensions:
           $ref: '#/components/schemas/Extensions'
-      examples:
-        - place:
-            id: b1000000-0000-4000-8000-000000000001
-            className: Place
-          computedAt: '2026-08-25T17:45:00Z'
-          supply:
-            supplyViewType: spaceView
-            supplyQuantity: 420
-          demand:
-            count: 361
-            percentage: 85.9
-            occupancyCalculation: counted
-            recordDateTime: '2026-08-25T17:44:30Z'
-          available: 59
     ApxEventSubscription:
       title: ApxEventSubscription
       description: |-
@@ -7643,13 +7594,6 @@ components:
           description: Last HTTP status code received from the endpoint (0 = network error).
         time:
           $ref: '#/components/schemas/DateTime'
-      examples:
-        - deliveryId: 4d5e6f7a-8b9c-4d0e-9f1a-2b3c4d5e6f7a
-          eventId: 2a3b4c5d-6e7f-4890-9a0b-1c2d3e4f5a6b
-          attempts: 1
-          status: delivered
-          lastCode: 200
-          time: '2026-08-06T18:17:42Z'
     Alert:
       title: Alert
       description: |-
@@ -7740,30 +7684,6 @@ components:
           $ref: '#/components/schemas/RecordInfo'
         extensions:
           $ref: '#/components/schemas/Extensions'
-      examples:
-        - id: 7b8c9d0e-1f2a-4b3c-8d4e-5f6a7b8c9d0e
-          version: 2
-          alertType: deviceFault
-          severity: major
-          status: acknowledged
-          source:
-            device:
-              id: c1000000-0000-4000-8000-000000000003
-              className: SupplementalEquipment
-            place: b1000000-0000-4000-8000-000000000001
-          occurrenceTime: '2026-08-06T18:17:40Z'
-          detectionTime: '2026-08-06T18:17:41Z'
-          description:
-            - language: en
-              string: Pay station 3 not responding
-          statusHistory:
-            - state: raised
-              time: '2026-08-06T18:17:41Z'
-              actor: lakeside-parcs
-            - state: acknowledged
-              time: '2026-08-06T18:19:05Z'
-              actor: apx-operator
-              detail: field tech dispatched
     Command:
       title: Command
       description: |-
@@ -7875,36 +7795,6 @@ components:
           $ref: '#/components/schemas/RecordInfo'
         extensions:
           $ref: '#/components/schemas/Extensions'
-      examples:
-        - id: 5e8d7c6b-4a39-4281-b0f1-2e3d4c5b6a70
-          version: 5
-          commandType: vendGate
-          target:
-            id: b2000000-0000-4000-8000-000000000002
-            className: VehicularAccess
-          requestedBy:
-            id: a1000000-0000-4000-8000-000000000001
-            className: Organisation
-          reason: customer assistance — cinema validation applied, remainder waived per policy
-          expiryTime: '2026-08-06T18:16:00Z'
-          status: succeeded
-          statusHistory:
-            - state: received
-              time: '2026-08-06T18:14:31Z'
-              actor: apx-operator
-            - state: accepted
-              time: '2026-08-06T18:14:31Z'
-              actor: lakeside-parcs
-            - state: dispatched
-              time: '2026-08-06T18:14:32Z'
-              actor: lakeside-parcs
-            - state: executing
-              time: '2026-08-06T18:14:32Z'
-              actor: gate-c1000000-0002
-            - state: succeeded
-              time: '2026-08-06T18:14:34Z'
-              actor: gate-c1000000-0002
-              detail: barrier raised
     Approval:
       title: Approval
       description: |-
@@ -7948,13 +7838,6 @@ components:
           $ref: '#/components/schemas/DateTime'
         extensions:
           $ref: '#/components/schemas/Extensions'
-      examples:
-        - device:
-            id: c1000000-0000-4000-8000-000000000003
-            className: SupplementalEquipment
-          deviceState: fault
-          lastCommunication: '2026-08-06T18:16:55Z'
-          stateChangedTime: '2026-08-06T18:17:40Z'
     LaneStatus:
       title: LaneStatus
       description: |-
@@ -8041,47 +7924,6 @@ components:
                     type: string
                   lane:
                     $ref: '#/components/schemas/Reference'
-      examples:
-        - lane:
-            id: b2000000-0000-4000-8000-000000000002
-            className: VehicularAccess
-          currentTicket:
-            ticketNumber: T-1001
-            session:
-              id: f1000000-0000-4000-8000-000000000001
-              className: Session
-            issuedTime: '2026-08-06T08:02:11Z'
-            amountDue:
-              currencyType: USD
-              currencyValue: 9
-            paidInFull: false
-            validations: []
-            lpr:
-              plate: SYN-1234
-              confidence: 0.97
-              observation:
-                id: f2000000-0000-4000-8000-000000000001
-                className: Observation
-              imageLink: https://api.lakeside-garage.example/lpr/f2000000.jpg
-          monthlyCredential:
-            credential:
-              id: e3000000-0000-4000-8000-000000000001
-              className: Credential
-            cardNumber: MC-0777
-            accessGranted: false
-            denialReason: account past due
-            lastActivity: '2026-08-05T18:22:00Z'
-            recentEvents:
-              - time: '2026-08-05T18:22:00Z'
-                event: exit
-                lane:
-                  id: b2000000-0000-4000-8000-000000000002
-                  className: VehicularAccess
-              - time: '2026-08-05T08:04:31Z'
-                event: entry
-                lane:
-                  id: b2000000-0000-4000-8000-000000000001
-                  className: VehicularAccess
     ValidationProvider:
       title: ValidationProvider
       description: A venue/organisation allowed to validate tickets at a place.
@@ -8122,15 +7964,6 @@ components:
             duration:
               description: Comped parking time (ISO 8601), valued at the applicable rate.
               $ref: '#/components/schemas/Duration'
-      examples:
-        - provider:
-            id: a2000000-0000-4000-8000-000000000011
-            className: Organisation
-          name: Lakeside Cinema
-          validationType: twoHoursComped
-          benefit:
-            description: First two hours comped
-            duration: PT2H
     Account:
       title: Account
       description: A billable parking account (monthly parker, fleet…), anchored on an APDS RightHolder.
@@ -8249,25 +8082,6 @@ components:
             $ref: '#/components/schemas/Posting'
         extensions:
           $ref: '#/components/schemas/Extensions'
-      examples:
-        - id: 9c0d1e2f-3a4b-4c5d-8e6f-7a8b9c0d1e2f
-          transactionID: PARIS-20260806-00347
-          place:
-            id: b1000000-0000-4000-8000-000000000001
-            className: Place
-          dateCollected: '2026-08-06T18:26:40Z'
-          amount:
-            currencyType: USD
-            currencyValue: 4.5
-          method: card
-          paymentStatus: approved
-          ticketNumber: T-1001
-          cardLast4: '0777'
-          postings:
-            - confirmationNumber: CONF-88214
-              accountUpdated: false
-              postedTo: PARIS
-              time: '2026-08-06T18:26:41Z'
     Posting:
       title: Posting
       description: An accounting write-back of a payment to a monthly-parking/AR system.
@@ -8287,11 +8101,6 @@ components:
           description: Target accounting system identifier (e.g. "paris").
         time:
           $ref: '#/components/schemas/DateTime'
-      examples:
-        - confirmationNumber: CONF-88214
-          accountUpdated: false
-          postedTo: PARIS
-          time: '2026-08-06T18:26:41Z'
     PaymentLink:
       title: PaymentLink
       description: |-
@@ -8359,26 +8168,6 @@ components:
           $ref: '#/components/schemas/RecordInfo'
         extensions:
           $ref: '#/components/schemas/Extensions'
-      examples:
-        - id: e6000000-0000-4000-8000-000000000002
-          version: 1
-          place:
-            id: b1000000-0000-4000-8000-000000000001
-            className: Place
-          account:
-            id: c2000000-0000-4000-8000-000000000004
-            className: Account
-          amount:
-            currencyType: USD
-            currencyValue: 185
-          channel: sms
-          sentTo: +1•••••••4567
-          status: sent
-          expiresAt: '2026-09-02T22:15:41Z'
-          resolutionContext:
-            id: e5000000-0000-4000-8000-000000000001
-            className: ResolutionContext
-          correlationId: 7c9e6679-7425-40de-944b-e07fc1f90ae7
     PostingRequest:
       title: PostingRequest
       description: Request body for the accounting write-back of a payment.
@@ -8451,46 +8240,6 @@ components:
             reservation's own vehicle credentials.
           items:
             $ref: '#/components/schemas/ReservationSummary'
-      examples:
-        - plate: RVR-8821
-          place:
-            id: b1000000-0000-4000-8000-000000000006
-            className: Place
-          confidence: 0.91
-          detail:
-            plate:
-              value: RVR-8821
-              confidence: 0.91
-            stateProvince:
-              value: IL
-              confidence: 0.88
-            make:
-              value: Ford
-              confidence: 0.94
-            model:
-              value: F-150
-              confidence: 0.71
-            color:
-              value: grey
-              confidence: 0.83
-            bodyType:
-              value: pickup
-              confidence: 0.96
-            platesRead: 1
-            plateFace: rear
-            movement: receding
-            captureGroup: cam-exit-1/20260921T074108/0417
-            engine: vendor-x/7.2
-          laneTravel: againstLane
-          observation:
-            id: f2000000-0000-4000-8000-000000000741
-            className: Observation
-          observationDateTime: '2026-09-21T07:41:08Z'
-          session:
-            id: f1000000-0000-4000-8000-000000000741
-            className: Session
-          imageLink: https://api.riverside-lot.example/lpr/f2000000-741-plate.jpg
-          recentReservations: []
     AttributeRead:
       title: AttributeRead
       description: One recognized attribute with its own confidence (0–1, APDS Confidence scale).
@@ -8580,30 +8329,6 @@ components:
         engine:
           type: string
           description: Recognition engine/vendor identifier, opaque (for confidence calibration downstream).
-      examples:
-        - plate:
-            value: RVR-8821
-            confidence: 0.91
-          stateProvince:
-            value: IL
-            confidence: 0.88
-          make:
-            value: Ford
-            confidence: 0.94
-          model:
-            value: F-150
-            confidence: 0.71
-          color:
-            value: grey
-            confidence: 0.83
-          bodyType:
-            value: pickup
-            confidence: 0.96
-          platesRead: 1
-          plateFace: rear
-          movement: receding
-          captureGroup: cam-exit-1/20260921T074108/0417
-          engine: vendor-x/7.2
     ReservationExtension:
       title: ReservationExtension
       description: |-
@@ -8629,13 +8354,6 @@ components:
         checkInSession:
           description: Set when a Session referencing this AssignedRight is created.
           $ref: '#/components/schemas/Reference'
-      examples:
-        - reservationState: checkedIn
-          plannedStart: '2026-08-14T18:00:00Z'
-          plannedEnd: '2026-08-15T01:00:00Z'
-          checkInSession:
-            id: f1000000-0000-4000-8000-000000000014
-            className: Session
     ReservationSummary:
       title: ReservationSummary
       description: Compact view of one past/current reservation, for customer-history lookups.
@@ -8657,13 +8375,6 @@ components:
           $ref: '#/components/schemas/DateTime'
         plannedEnd:
           $ref: '#/components/schemas/DateTime'
-      examples:
-        - reservation:
-            id: e2000000-0000-4000-8000-000000000002
-            className: AssignedRight
-          reservationState: checkedIn
-          plannedStart: '2026-08-14T18:00:00Z'
-          plannedEnd: '2026-08-15T01:00:00Z'
     PoolAvailability:
       title: PoolAvailability
       description: Availability of a pooled RightSpecification (APDS RightPool profile).
@@ -8802,45 +8513,6 @@ components:
           $ref: '#/components/schemas/RecordInfo'
         extensions:
           $ref: '#/components/schemas/Extensions'
-      examples:
-        - id: e9000000-0000-4000-8000-000000000802
-          version: 5
-          tollPoint:
-            id: b4000000-0000-4000-8000-000000000001
-            className: SupplementalEquipment
-          credential:
-            credentialType: licensePlate
-            credentialIdentification: SYN-9930
-          pricing:
-            currencyType: USD
-            currencyValue: 2.75
-          payment:
-            id: 9c0d1e2f-3a4b-4c5d-8e6f-7a8b9c0d1902
-            className: PaymentRecord
-          transactionStatus: resolved
-          dispute:
-            reason: wrongVehicle
-            openedTime: '2026-10-02T15:20:11Z'
-            resolvedTime: '2026-10-03T09:41:02Z'
-            resolution: refunded
-          statusHistory:
-            - state: created
-              time: '2026-09-22T07:52:31Z'
-              actor: gantry-hc-01
-              detail: plate fallback, confidence 0.71
-            - state: priced
-              time: '2026-09-22T07:52:31Z'
-              actor: toll-pricing
-            - state: paid
-              time: '2026-09-23T02:11:41Z'
-              actor: billing-batch
-            - state: disputed
-              time: '2026-10-02T15:20:11Z'
-              actor: agent-0219
-            - state: resolved
-              time: '2026-10-03T09:41:02Z'
-              actor: backoffice-jlee
-              detail: refunded; gantry hc-01 flagged for recalibration
     TollPaymentAttachment:
       title: TollPaymentAttachment
       description: Request body attaching the settling Payment to a toll transaction.
@@ -9184,54 +8856,6 @@ components:
           $ref: '#/components/schemas/RecordInfo'
         extensions:
           $ref: '#/components/schemas/Extensions'
-      examples:
-        - id: d3000000-0000-4000-8000-000000000001
-          version: 2
-          violationType: expiredRight
-          violationStatus: issued
-          place:
-            id: b1000000-0000-4000-8000-000000000004
-            className: Place
-          detection:
-            mode: automated
-            detectedTime: '2026-09-18T09:31:04Z'
-            detector:
-              id: b2000000-0000-4000-8000-000000000031
-              className: SupplementalEquipment
-            principal: lpr-pipeline-lot-c
-            confidence: 0.94
-            rule: paybyplate-expiry-15m
-          vehicle:
-            credentialType: licensePlate
-            credentialIdentification: SYN-4471
-            jurisdiction: US-IL
-          observations:
-            - id: f2000000-0000-4000-8000-000000000041
-              className: Observation
-          relatedSession:
-            id: f1000000-0000-4000-8000-000000000044
-            className: Session
-          notice:
-            noticeKind: notice
-            noticeNumber: LG-2026-018301
-            issuedTime: '2026-09-18T09:31:09Z'
-            issuedBy:
-              id: a1000000-0000-4000-8000-000000000001
-              className: Organisation
-            deliveryMethod: mail
-          amount:
-            currencyType: USD
-            currencyValue: 35
-          dueTime: '2026-10-18T23:59:59Z'
-          statusHistory:
-            - state: detected
-              time: '2026-09-18T09:31:05Z'
-              actor: lpr-pipeline-lot-c
-              detail: rule paybyplate-expiry-15m; grace to 09:20 elapsed
-            - state: issued
-              time: '2026-09-18T09:31:09Z'
-              actor: lpr-pipeline-lot-c
-              detail: policy lot-c-auto-issue (confidence 0.94 ≥ 0.9); notice LG-2026-018301 queued for mail
     EligibilityResult:
       title: EligibilityResult
       description: |-
@@ -9326,31 +8950,6 @@ components:
               $ref: '#/components/schemas/Url'
         extensions:
           $ref: '#/components/schemas/Extensions'
-      examples:
-        - place:
-            id: b1000000-0000-4000-8000-000000000003
-            className: Place
-          credential:
-            credentialType: licensePlate
-            credentialIdentification: SYN-8820
-          checkedTime: '2026-09-18T10:14:05Z'
-          entitled: false
-          basis:
-            - right:
-                id: e1000000-0000-4000-8000-000000000027
-                className: AssignedRight
-              rightType: monthlyPermit
-              validFrom: '2026-09-01T00:00:00Z'
-              validTo: '2026-09-30T23:59:59Z'
-              status: wrongPlace
-          suggestedViolationType: wrongPlace
-          lastRead:
-            observation:
-              id: f2000000-0000-4000-8000-000000000052
-              className: Observation
-            observationDateTime: '2026-09-18T08:31:47Z'
-            confidence: 0.96
-            imageLink: https://api.lakeside-garage.example/lpr/f2000000-0052.jpg
     ViolationReview:
       title: ViolationReview
       description: Request body for guided-enforcement review — confirm or dismiss a detected candidate.
@@ -9664,60 +9263,6 @@ components:
           $ref: '#/components/schemas/RecordInfo'
         extensions:
           $ref: '#/components/schemas/Extensions'
-      examples:
-        - id: d4000000-0000-4000-8000-000000000001
-          version: 1
-          place:
-            id: b1000000-0000-4000-8000-000000000004
-            className: Place
-          name: State private-lot notice rules — Lot C
-          policyStatus: active
-          effectiveFrom: '2026-07-01T00:00:00Z'
-          authority:
-            jurisdiction: US-IL
-            citation: Synthetic Stat. §12-405 (private lot notices)
-          deliveryRules:
-            - detectionModes:
-                - automated
-              deliveryMethods:
-                - mail
-                - electronic
-              noticeDeadline: P14D
-              minimumEvidence:
-                observations: 1
-                images: 1
-                locationRequired: true
-            - detectionModes:
-                - guided
-                - manual
-              deliveryMethods:
-                - windshield
-                - handed
-              noticeDeadline: PT1H
-          penaltyCap:
-            maximumMultipleOfUnpaid: 2
-            onExceed: refuse
-          escalation:
-            - step: late-30
-              afterDays: 30
-              addPercent: 25
-              description: 25% late penalty
-            - step: late-60
-              afterDays: 60
-              addAmount:
-                currencyType: USD
-                currencyValue: 15
-              description: Collection referral fee
-          overallCeiling:
-            maximumMultipleOfIssued: 3
-          appealWindowDays: 21
-          paymentGraceDays: 14
-          signageRequired: true
-          statusHistory:
-            - state: active
-              time: '2026-06-20T14:00:00Z'
-              actor: backoffice-jlee
-              detail: loaded from counsel's summary of §12-405
     Signage:
       title: Signage
       description: |-
@@ -9796,34 +9341,6 @@ components:
           $ref: '#/components/schemas/RecordInfo'
         extensions:
           $ref: '#/components/schemas/Extensions'
-      examples:
-        - id: d5000000-0000-4000-8000-000000000001
-          version: 1
-          place:
-            id: b1000000-0000-4000-8000-000000000004
-            className: Place
-          text:
-            - language: en
-              string: 'PAY BY PLATE. Unpaid or expired parking is subject to a $35 notice; unpaid notices increase 25% after 30 days. Appeals: lakeside-garage.example/appeals within 21 days.'
-            - language: es
-              string: 'PAGUE POR PLACA. El estacionamiento sin pagar o vencido está sujeto a un aviso de $35; los avisos impagos aumentan 25% después de 30 días. Apelaciones: lakeside-garage.example/appeals dentro de 21 días.'
-          signageStatus: active
-          effectiveFrom: '2026-07-01T00:00:00Z'
-          location:
-            type: Point
-            coordinates:
-              - -87.6214
-              - 41.8827
-          imageLink: https://api.lakeside-garage.example/signage/lot-c-entrance-2026-07.jpg
-          signType: entrance
-          policy:
-            id: d4000000-0000-4000-8000-000000000001
-            className: EnforcementPolicy
-          statusHistory:
-            - state: active
-              time: '2026-06-28T10:12:00Z'
-              actor: backoffice-jlee
-              detail: installed 2026-06-28, photographed
     ValidationBenefit:
       title: ValidationBenefit
       description: |-
@@ -9988,39 +9505,6 @@ components:
           $ref: '#/components/schemas/RecordInfo'
         extensions:
           $ref: '#/components/schemas/Extensions'
-      examples:
-        - id: e5000000-0000-4000-8000-000000000001
-          version: 1
-          place:
-            id: b1000000-0000-4000-8000-000000000001
-            className: Place
-          provider:
-            id: a2000000-0000-4000-8000-000000000077
-            className: Organisation
-          name: Harbor Bistro
-          validationType: twoHourComp
-          programStatus: active
-          benefit:
-            description: First two hours comped
-            duration: PT2H
-          rules:
-            maxPerTicket: 1
-            maxPerDay: 200
-            validityWindow: P1D
-            stackable: false
-          billing:
-            model: merchantPays
-            unitPrice:
-              currencyType: USD
-              currencyValue: 4
-            billingCycle: monthly
-          issuanceMethods:
-            - qrCode
-          statusHistory:
-            - state: active
-              time: '2026-09-01T15:02:11Z'
-              actor: backoffice-jlee
-              detail: enrolled
     ValidationIssuance:
       title: ValidationIssuance
       description: |-
@@ -10084,22 +9568,6 @@ components:
           $ref: '#/components/schemas/RecordInfo'
         extensions:
           $ref: '#/components/schemas/Extensions'
-      examples:
-        - id: e6000000-0000-4000-8000-000000000003
-          version: 1
-          program:
-            id: e5000000-0000-4000-8000-000000000001
-            className: ValidationProgram
-          quantity: 50
-          method: qrCode
-          validFrom: '2026-09-12T17:00:00Z'
-          validTo: '2026-09-13T17:00:00Z'
-          issuedTo: front-of-house
-          codes:
-            - HB-7Q2M-K9X4-3TPD
-            - HB-A1C8-ZR5N-W6LJ
-            - HB-P0V3-E7HS-M2QY
-          issuanceStatus: issued
     ValidationInstrument:
       title: ValidationInstrument
       description: The current state of one validation code — the pay-station / merchant-app "is this code good?" read.
@@ -10134,20 +9602,6 @@ components:
           $ref: '#/components/schemas/Reference'
         extensions:
           $ref: '#/components/schemas/Extensions'
-      examples:
-        - code: HB-7Q2M-K9X4-3TPD
-          program:
-            id: e5000000-0000-4000-8000-000000000001
-            className: ValidationProgram
-          issuance:
-            id: e6000000-0000-4000-8000-000000000003
-            className: ValidationIssuance
-          instrumentStatus: valid
-          validFrom: '2026-09-12T17:00:00Z'
-          validTo: '2026-09-13T17:00:00Z'
-          benefit:
-            description: First two hours comped
-            duration: PT2H
     ValidationRedemption:
       title: ValidationRedemption
       description: |-
@@ -10251,34 +9705,6 @@ components:
           $ref: '#/components/schemas/RecordInfo'
         extensions:
           $ref: '#/components/schemas/Extensions'
-      examples:
-        - id: e7000000-0000-4000-8000-000000000041
-          version: 1
-          program:
-            id: e5000000-0000-4000-8000-000000000001
-            className: ValidationProgram
-          place:
-            id: b1000000-0000-4000-8000-000000000001
-            className: Place
-          instrumentCode: HB-7Q2M-K9X4-3TPD
-          ticketNumber: T-2210
-          session:
-            id: f1000000-0000-4000-8000-000000000210
-            className: Session
-          appliedTime: '2026-09-12T21:33:05Z'
-          channel: payStation
-          appliedBy: paystation-b2000000-0007
-          validationId: VAL-20260912-000318
-          amountReduced:
-            currencyType: USD
-            currencyValue: 6
-          durationComped: PT2H
-          redemptionStatus: applied
-          statusHistory:
-            - state: applied
-              time: '2026-09-12T21:33:05Z'
-              actor: paystation-b2000000-0007
-              detail: T-2210 amount due 9.00 → 3.00
     ValidationRedemptionReversal:
       title: ValidationRedemptionReversal
       description: Request body reversing a redemption (wrong ticket, merchant dispute, fraud).
@@ -10394,41 +9820,6 @@ components:
           $ref: '#/components/schemas/RecordInfo'
         extensions:
           $ref: '#/components/schemas/Extensions'
-      examples:
-        - id: e8000000-0000-4000-8000-000000000009
-          version: 1
-          program:
-            id: e5000000-0000-4000-8000-000000000001
-            className: ValidationProgram
-          place:
-            id: b1000000-0000-4000-8000-000000000001
-            className: Place
-          periodStart: '2026-09-01T00:00:00Z'
-          periodEnd: '2026-10-01T00:00:00Z'
-          statementStatus: closed
-          billingModel: merchantPays
-          redemptionCount: 412
-          reversedCount: 3
-          totalReduced:
-            currencyType: USD
-            currencyValue: 2418
-          billableAmount:
-            currencyType: USD
-            currencyValue: 1648
-          lines:
-            - redemption:
-                id: e7000000-0000-4000-8000-000000000041
-                className: ValidationRedemption
-              appliedTime: '2026-09-12T21:33:05Z'
-              ticketNumber: T-2210
-              amountReduced:
-                currencyType: USD
-                currencyValue: 6
-              billable:
-                currencyType: USD
-                currencyValue: 4
-          closedTime: '2026-10-01T09:00:12Z'
-          closedBy: backoffice-jlee
     CredentialRecord:
       title: CredentialRecord
       description: |-
@@ -10577,48 +9968,6 @@ components:
           $ref: '#/components/schemas/RecordInfo'
         extensions:
           $ref: '#/components/schemas/Extensions'
-      examples:
-        - id: d6000000-0000-4000-8000-000000000102
-          version: 1
-          credentialType: rfid
-          credentialIdentification: C-0051207
-          credentialAssignedType: customer
-          holder:
-            id: c1000000-0000-4000-8000-000000000102
-            className: RightHolder
-          account:
-            id: 7a8b9c0d-1e2f-4a3b-8c4d-5e6f7a8b9c0d
-            className: Account
-          assignedRights:
-            - id: e1000000-0000-4000-8000-000000000102
-              className: AssignedRight
-          places:
-            - id: b1000000-0000-4000-8000-000000000001
-              className: Place
-          validity:
-            start: '2026-01-01T00:00:00Z'
-            end: '2026-12-31T23:59:59Z'
-          media:
-            form: physicalCard
-            serialNumber: HID-77A3-006903
-            batch: 2026-Q3-A
-            issuedTime: '2026-09-19T12:04:20Z'
-            deposit:
-              currencyType: USD
-              currencyValue: 25
-            depositStatus: held
-          credentialStatus: active
-          replaces:
-            id: d6000000-0000-4000-8000-000000000101
-            className: CredentialRecord
-          statusHistory:
-            - state: issued
-              time: '2026-09-19T12:04:20Z'
-              actor: agent-0212
-              detail: replacement for d6000000-…-0101 (lost)
-            - state: active
-              time: '2026-09-19T12:04:20Z'
-              actor: agent-0212
     CredentialTransition:
       title: CredentialTransition
       description: Request body for activate / suspend / resume / report-lost / revoke.
@@ -10736,24 +10085,6 @@ components:
           $ref: '#/components/schemas/Reference'
         extensions:
           $ref: '#/components/schemas/Extensions'
-      examples:
-        - id: d7000000-0000-4000-8000-000000000410
-          credential:
-            id: d6000000-0000-4000-8000-000000000101
-            className: CredentialRecord
-          occurredAt: '2026-09-19T18:02:17Z'
-          place:
-            id: b1000000-0000-4000-8000-000000000001
-            className: Place
-          lane:
-            id: b2000000-0000-4000-8000-000000000001
-            className: VehicularAccess
-          device:
-            id: b2000000-0000-4000-8000-000000000011
-            className: SupplementalEquipment
-          direction: entry
-          outcome: denied
-          denialReason: credentialReplaced
     ConditionReport:
       title: ConditionReport
       description: |-
@@ -10804,21 +10135,6 @@ components:
         customerAcknowledged:
           type: boolean
           description: Whether the customer acknowledged the report (signature, tap, spoken confirmation).
-      examples:
-        - notes: Scuff on rear bumper, driver side, approx 6 cm. Interior clean.
-          damage:
-            - area: rearBumper
-              description: 6 cm scuff, driver side
-              severity: minor
-              imageLink: https://api.lakeside-garage.example/valet/v-20419/in-rear-bumper.jpg
-          imageLinks:
-            - https://api.lakeside-garage.example/valet/v-20419/in-front.jpg
-            - https://api.lakeside-garage.example/valet/v-20419/in-driver.jpg
-            - https://api.lakeside-garage.example/valet/v-20419/in-rear.jpg
-            - https://api.lakeside-garage.example/valet/v-20419/in-passenger.jpg
-          recordedTime: '2026-09-20T18:30:02Z'
-          recordedBy: scanner-0031
-          customerAcknowledged: true
     ValetTicket:
       title: ValetTicket
       description: |-
@@ -11062,38 +10378,6 @@ components:
           $ref: '#/components/schemas/RecordInfo'
         extensions:
           $ref: '#/components/schemas/Extensions'
-      examples:
-        - id: d8000000-0000-4000-8000-000000000419
-          version: 3
-          place:
-            id: b1000000-0000-4000-8000-000000000005
-            className: Place
-          ticketNumber: V-20419
-          vehicle:
-            credentialType: licensePlate
-            credentialIdentification: SYN-7734
-            make: Audi
-            colour: grey
-          dropOff:
-            time: '2026-09-20T18:30:14Z'
-          retrieval:
-            requestedTime: '2026-09-20T20:41:03Z'
-            channel: sms
-            requestedBy: customer
-            etaMinutes: 8
-            promisedTime: '2026-09-20T20:49:03Z'
-          valetStatus: requested
-          statusHistory:
-            - state: dropped
-              time: '2026-09-20T18:30:14Z'
-              actor: attendant-0031
-            - state: parked
-              time: '2026-09-20T18:36:40Z'
-              actor: runner-0107
-            - state: requested
-              time: '2026-09-20T20:41:03Z'
-              actor: customer
-              detail: channel sms; eta 8 min
     ValetParkRequest:
       title: ValetParkRequest
       description: Request body recording where the vehicle was parked and where its keys are.
@@ -11415,58 +10699,6 @@ components:
           $ref: '#/components/schemas/RecordInfo'
         extensions:
           $ref: '#/components/schemas/Extensions'
-      examples:
-        - id: e5000000-0000-4000-8000-000000000013
-          version: 1
-          computedAt: '2026-09-05T20:12:44Z'
-          status: full
-          issue:
-            code: validationMissing
-            display: Customer reports a merchant validation that is not applied to the ticket
-          place:
-            id: b1000000-0000-4000-8000-000000000001
-            className: Place
-          laneStatus:
-            lane:
-              id: b2000000-0000-4000-8000-000000000002
-              className: VehicularAccess
-            currentTicket:
-              ticketNumber: T-70443
-              session:
-                id: c4000000-0000-4000-8000-000000000023
-                className: Session
-              amountDue:
-                currencyType: USD
-                currencyValue: 14
-              paidInFull: false
-              validations: []
-          allowedActions:
-            - action: applyValidation
-              display: Apply merchant validation
-              target:
-                id: b2000000-0000-4000-8000-000000000002
-                className: VehicularAccess
-              allowed: true
-              requiresApproval: false
-              execution:
-                type: control
-                command: applyValidation
-            - action: vendGate
-              display: Vend gate
-              target:
-                id: b2000000-0000-4000-8000-000000000002
-                className: VehicularAccess
-              allowed: false
-              execution:
-                type: control
-                command: vendGate
-              reason:
-                code: sessionUnpaid
-                display: A validation adjusts the amount due; it does not waive the remainder.
-                policy: no-vend-while-unpaid
-          recommendedAction:
-            action: applyValidation
-            reason: The ticket carries no validation; if the claimed provider is on the place's list, apply it and requote.
     ResolutionResolveRequest:
       title: ResolutionResolveRequest
       description: |-
@@ -11670,22 +10902,6 @@ components:
               $ref: '#/components/schemas/Reference'
         extensions:
           $ref: '#/components/schemas/Extensions'
-      examples:
-        - credential:
-            id: c3000000-0000-4000-8000-000000000013
-            className: Credential
-          state: violation
-          expectedPresence: outside
-          recordedPresence: inside
-          lastAccess:
-            direction: entry
-            occurredAt: '2026-09-01T08:03:47Z'
-            place:
-              id: b1000000-0000-4000-8000-000000000001
-              className: Place
-            lane:
-              id: b2000000-0000-4000-8000-000000000001
-              className: VehicularAccess
     PlateCandidate:
       title: PlateCandidate
       description: |-
@@ -11730,19 +10946,6 @@ components:
           $ref: '#/components/schemas/Url'
         vehicleImage:
           $ref: '#/components/schemas/Url'
-      examples:
-        - plate: SVN-4821
-          country: US
-          stateProvince: FL
-          confidence: 0.97
-          observationDateTime: '2026-09-02T22:39:04Z'
-          lane:
-            id: b2000000-0000-4000-8000-000000000002
-            className: VehicularAccess
-          observation:
-            id: f2000000-0000-4000-8000-000000000014
-            className: Observation
-          plateImage: https://api.lakeside-garage.example/v1/media/f2000000-0014/plate.jpg
     OverrideRecord:
       title: OverrideRecord
       description: A recent manual override relevant to this context (courtesy exits, gate opens, passback resets…). Summarizes a Part 6 Command.
@@ -11855,37 +11058,6 @@ components:
           $ref: '#/components/schemas/RecordInfo'
         extensions:
           $ref: '#/components/schemas/Extensions'
-      examples:
-        - id: e7000000-0000-4000-8000-000000000003
-          version: 1
-          channel: voice
-          agentType: ai
-          agent: callcenter-ai-agent-07
-          startedAt: '2026-09-02T21:14:02Z'
-          endedAt: '2026-09-02T21:18:30Z'
-          place:
-            id: b1000000-0000-4000-8000-000000000001
-            className: Place
-          issue:
-            code: accountBalanceDenied
-            display: Monthly parker denied because of outstanding balance
-          summary: Balance hold at Exit 3; customer paid $185.00 via payment link; exited normally.
-          subjects:
-            holder:
-              id: c1000000-0000-4000-8000-000000000003
-              className: RightHolder
-            account:
-              id: c2000000-0000-4000-8000-000000000004
-              className: Account
-            plate: SYN-1234
-          actions:
-            - id: e6000000-0000-4000-8000-000000000002
-              className: PaymentLink
-          interactionId: interaction-938383
-          resolution:
-            code: resolved
-            display: Paid and exited
-          correlationId: 7c9e6679-7425-40de-944b-e07fc1f90ae7
     ApxConfiguration:
       type: object
       description: Unauthenticated bootstrap configuration document.
@@ -15824,341 +14996,3 @@ components:
             - revisedEndTime
       x-package: Quotes
       x-tags: Quotes
-tags:
-  - name: Discovery
-    description: |-
-      **Where every integration starts.** A partner needs exactly one thing
-      to begin: a hostname.
-
-      `GET /.well-known/apx-configuration` is unauthenticated and served at
-      the host root. It answers where to get a token, which optional
-      conformance classes this server implements, and where its code-list
-      registries are published. `GET /v1/discovery` then answers the
-      narrower and more useful question: what can *this credential* do? The
-      document it returns is the intersection of the server's classes with
-      the caller's scopes and place grants.
-
-      Discovery is **contractual, not advertising**: everything the document
-      lists will work for the caller, and anything it omits will refuse with
-      a clean 403. That is what makes onboarding a new vendor a matter of
-      issuing a credential rather than exchanging PDFs.
-
-      Written standard:
-      [Part 16](https://github.com/rneubauer/apx/blob/main/docs/standard/16-discovery.md).
-  - name: Data
-    description: |-
-      **Reading and writing parking data, and staying in sync.**
-
-      The data routes themselves are APDS 4.1's own, mounted verbatim:
-      `/places`, `/sessions`, `/rates`, `/rights/specs`, `/rights/assigned`,
-      `/observations`, `/contacts`, `/quotes`. APX invents nothing here on
-      purpose, because data exchange is the part the industry already
-      agreed on.
-
-      What APX adds is a **profile** over those routes, all of it additive
-      and invisible to a client that ignores it: full versus change update
-      semantics, tombstones for deletions, and a cursor-based change feed
-      that is ordered, gapless, and exactly-once, so a partner that goes
-      offline for an hour replays precisely what it missed. Partial writes
-      make `null` mean *clear this field* and omission mean *leave it
-      alone*, which retires the oldest bug in data integration.
-
-      The one net-new read here is the occupancy snapshot: how full a
-      garage, level, or zone is right now, without walking the whole Place
-      hierarchy.
-
-      Written standard:
-      [Part 5](https://github.com/rneubauer/apx/blob/main/docs/standard/05-data.md).
-  - name: Subscription
-    description: |-
-      **Push instead of poll.** A superset-compatible profile of the APDS
-      4.1 `/webhooks` endpoint: stock APDS subscription bodies work here
-      unmodified.
-
-      Webhooks without rules are where integrations go to die, so the
-      delivery contract is normative rather than best-effort. Every delivery
-      is one uniform envelope, HMAC-signed so the receiver can prove it is
-      genuine, carrying a stable event id so duplicates are detectable.
-      Failed deliveries follow a published retry schedule before the
-      subscription is marked failed, which itself raises an alert. The
-      delivery ledger records every attempt and its result.
-
-      Subscriptions filter by place and by severity, so a partner receives
-      only its own world, and an event whose place cannot be resolved is
-      dropped rather than leaked. Server-sent events carry the same
-      envelopes for consumers that cannot host a public endpoint.
-
-      Written standard:
-      [Part 8](https://github.com/rneubauer/apx/blob/main/docs/standard/08-events.md).
-  - name: Alerts
-    description: |-
-      **Knowing something is wrong.** A net-new domain: APDS has no alert,
-      event, or notification class.
-
-      One `Alert` resource covers the operational conditions an attendant or
-      a monitoring system acts on: a device fault, a blocked lane, a vehicle
-      in a space it should not be, an occupancy threshold crossed, a payment
-      exception. Alert *types* are an open vocabulary, seeded from the APDS
-      use-case exception list and extensible by any implementer through
-      their own code list. Severity, by contrast, is a closed five-level
-      scale, because filtering on it has to mean the same thing everywhere.
-
-      The lifecycle is raised, acknowledged, resolved, with an immutable
-      audit of every transition.
-
-      Written standard:
-      [Part 7](https://github.com/rneubauer/apx/blob/main/docs/standard/07-alerts.md).
-  - name: Control
-    description: |-
-      **Doing things in the real world.** APDS inventories devices and marks
-      access-controlled places but defines no actuation. This is it.
-
-      Everything physical goes through one audited command plane rather than
-      scattered verbs: vend a gate, hold it open, close a lane, issue a lost
-      ticket, push a rate table, apply a validation, set a device state,
-      display a message, restart a device. Commands are **idempotent** (a
-      retry must not vend the gate twice), **perishable** (a vend requested
-      ten minutes ago must not fire now), and audited end to end.
-
-      The response is deliberately not a success boolean. It is a command
-      resource whose `confirmationLevel` distinguishes *accepted* from *the
-      device acknowledged it* from *the outcome was physically verified*. A
-      consumer, an AI agent especially, must not claim a stronger outcome
-      than that level supports.
-
-      Also here: the lane inquiry that populates a call-center screen-pop,
-      the validation-provider list for a place, and live device status.
-
-      Written standard:
-      [Part 6](https://github.com/rneubauer/apx/blob/main/docs/standard/06-control.md).
-  - name: Accounts
-    description: |-
-      **Money.** Account and balance lookup, taking a payment, refunds,
-      voids and captures, accounting write-back, and payment history.
-
-      APDS models a `Payment` but not the *act* of taking one. The APX
-      `PaymentRecord` is that action record: addressable, idempotent, and
-      reconcilable, and every approved one is materialized as an APDS
-      Payment so downstream APDS consumers see it without speaking APX.
-
-      Two rules shape this domain. Full card numbers never appear anywhere.
-      And because one endpoint often fronts many facilities, every payment
-      names the place it belongs to, so revenue stays attributable and a
-      grant cannot leak across sites.
-
-      APDS publishes no payment events, which leaves financial analytics
-      blind; APX closes that with a payment-recorded topic.
-
-      Written standard:
-      [Part 13](https://github.com/rneubauer/apx/blob/main/docs/standard/13-accounts-payments-lpr.md).
-  - name: LPR
-    description: |-
-      **Plates.** A camera read *is* an APDS `Observation`, so ingest is the
-      standard data route every integration already uses. No bespoke
-      ingestion API.
-
-      The genuinely new need is the **join**: which ticket goes with this
-      plate, and which plate with this ticket. That is the one endpoint this
-      domain adds, answering with the session, the confidence score, and an
-      access-controlled image link.
-
-      Modern engines know more than a plate string, so a read may also carry
-      per-attribute confidence for plate, state, make, model and colour, the
-      runner-up plate strings the engine rejected, how many plates it saw,
-      which face of the vehicle it read, and whether the vehicle was
-      approaching, receding, or stopped. From those the server derives
-      whether the vehicle travelled with or **against** the lane's
-      configured direction, which is how a gateless site detects a car
-      entering through the exit.
-
-      Written standard:
-      [Part 13](https://github.com/rneubauer/apx/blob/main/docs/standard/13-accounts-payments-lpr.md).
-  - name: Reservations
-    description: |-
-      **Booking ahead**, expressed as conventions over native APDS routes
-      rather than a parallel booking system.
-
-      Quote through the APDS quote route, book by creating an
-      `AssignedRight` carrying the APX reservation extension, amend and
-      cancel through the same surface, and check in by linking the arrival
-      to the right. The reservation is therefore a first-class APDS object
-      any APDS consumer can read, not an APX-only record that has to be
-      synchronized.
-
-      The hard parts this domain pins down are the ones integrations usually
-      get wrong: how a prepaid booking binds to the session the vehicle
-      actually starts, what happens when the plate is misread, and when a
-      no-show is declared.
-
-      Written standard:
-      [Part 14](https://github.com/rneubauer/apx/blob/main/docs/standard/14-reservations-permits.md).
-  - name: Permits
-    description: |-
-      **Pooled permits**: issuing from a finite allocation, over the APDS
-      right-specification and right-pool model.
-
-      The cases that matter are the ones a naive implementation breaks on: a
-      pool that runs out, a household or company credential valid for
-      several vehicles, and issuance that must stay attributable when
-      allocations are audited later.
-
-      Written standard:
-      [Part 14](https://github.com/rneubauer/apx/blob/main/docs/standard/14-reservations-permits.md).
-  - name: Tolling
-    description: |-
-      **Toll transactions**, a net-new domain: APDS has no toll entity.
-
-      Everything is still built to APDS conventions. A toll point is
-      equipment in the place hierarchy, the reads are native `Observation`s,
-      money is the APDS amount shape, and settlement links a Payment
-      reference. A transaction runs created, priced, paid, and a dispute can
-      move any non-voided transaction aside for resolution.
-
-      Creation is idempotent, because gantries retry in storms.
-
-      Written standard:
-      [Part 15](https://github.com/rneubauer/apx/blob/main/docs/standard/15-tolling.md).
-  - name: Resolution
-    description: |-
-      **When a customer presses the intercom.** The agent, human or AI,
-      should not have to log into another system, find the facility, find
-      the lane, find the transaction, and reconstruct what happened.
-
-      One call assembles the context from whatever identifiers the caller
-      has: a phone number, a lane, a plate, a ticket, a credential, a
-      reservation code. The server resolves every relationship it can and
-      does not fail because some identifiers are missing.
-
-      The important design decision is that **the server, not the agent,
-      decides what may be done**. The context returns the allowed actions,
-      already evaluated against policy, including which ones require
-      supervisor approval. Writes then go through the existing command plane
-      rather than a second one. A refund an agent should not offer is simply
-      not in the list.
-
-      Written standard:
-      [Part 17](https://github.com/rneubauer/apx/blob/main/docs/standard/17-resolution.md).
-  - name: Support
-    description: |-
-      **What happened on the last call.** Support-interaction history for a
-      resolution context: who spoke to the customer, through which channel,
-      about what, and what was done.
-
-      It exists so the second call is not the first call again, and so an
-      action taken during an interaction can be traced back to the
-      conversation that prompted it.
-
-      Written standard:
-      [Part 17](https://github.com/rneubauer/apx/blob/main/docs/standard/17-resolution.md).
-  - name: Violations
-    description: |-
-      **Enforcement, from camera to citation to appeal.** A net-new domain,
-      and the one with the most legal exposure.
-
-      One `Violation` resource covers tickets, notices, and citations alike,
-      through detection (automated, guided, or manual), review, issuance,
-      settlement by Payment reference, appeal, and void. Guided enforcement
-      is supported by an eligibility check a handheld calls before an
-      officer writes anything, composed from the rights and sessions that
-      remain authoritative.
-
-      What makes this domain unusual is that **the law at the location is
-      data**. A per-place enforcement policy records which notice methods
-      are lawful, the penalty cap, and the escalation schedule, and the
-      server enforces it: an issuance by a method the jurisdiction does not
-      permit, past the notice deadline, above the cap, or at a place whose
-      required signage was not posted, is refused. The posted signage itself
-      is on file, with its text and photograph, as it stood at the moment of
-      the finding.
-
-      Written standard:
-      [Part 19](https://github.com/rneubauer/apx/blob/main/docs/standard/19-violations.md).
-  - name: Validations
-    description: |-
-      **The merchant side**, from enrolment to invoice.
-
-      The lane-side act of applying a validation is a command in the control
-      plane. This domain is everything around it: enrolling a merchant at a
-      place with a benefit and its rules, issuing instrument stock (codes,
-      QR, stamps), the redemption ledger every channel writes to, and
-      closable billing statements.
-
-      The ledger is the point. A validation applied at a pay station, by an
-      agent console, or through a merchant's own app lands in one place, so
-      the month-end statement is a query rather than a reconciliation.
-      Closed statements are immutable, and a reversal after closing appears
-      as a credit on the next one.
-
-      A merchant-confined scope lets a venue check codes, issue its own
-      stock, and read its own statements without seeing anyone else's.
-
-      Written standard:
-      [Part 20](https://github.com/rneubauer/apx/blob/main/docs/standard/20-validations.md).
-  - name: Credentials
-    description: |-
-      **The card, the fob, the tag, the phone.** The lifecycle of anything
-      presented at a lane: issue, activate, suspend, resume, report lost,
-      revoke, replace, plus access-event history.
-
-      The rule that makes this domain worth having is **materialization**:
-      an active credential record MUST appear on the holder's APDS assigned
-      right, and MUST be removed when it is suspended, lost, revoked, or
-      expired. A lane that speaks only APDS therefore refuses the lost card
-      at six o'clock because the office replaced it at noon. There is no
-      second list to keep in sync.
-
-      APDS has no access events, so granted and denied presentations with
-      their reasons are recorded here and published as a topic.
-
-      Written standard:
-      [Part 21](https://github.com/rneubauer/apx/blob/main/docs/standard/21-credentials.md).
-  - name: Valet
-    description: |-
-      **Custody.** A net-new domain: APDS has no valet entity, only a
-      restriction flag.
-
-      The stay and the money remain the APDS session. What APDS has no words
-      for is who has the keys, where the car is, when it was asked for, who
-      it was handed to, and what condition it was in. A ticket records
-      drop-off with a condition report (notes, per-panel damage entries,
-      walk-around photographs, and the customer's acknowledgement), the
-      parked position and key location, the retrieval request and its ETA,
-      staging, and a verified handback.
-
-      Retrieval works from a text, an app, a web page, a voice bot, a kiosk,
-      or the stand, through one customer-facing scope confined to the
-      caller's own ticket and minimized so it exposes status and ETA but
-      never where the car or the keys are.
-
-      The acknowledged drop-off report is what answers "that scratch wasn't
-      there" a week later.
-
-      Written standard:
-      [Part 22](https://github.com/rneubauer/apx/blob/main/docs/standard/22-valet.md).
-x-tagGroups:
-  - name: Start here
-    tags:
-      - Discovery
-  - name: Platform
-    tags:
-      - Data
-      - Subscription
-      - Control
-      - Alerts
-  - name: Commerce
-    tags:
-      - Accounts
-      - Reservations
-      - Permits
-      - Validations
-      - Tolling
-  - name: Vehicles and access
-    tags:
-      - LPR
-      - Credentials
-      - Valet
-  - name: Enforcement and service
-    tags:
-      - Violations
-      - Resolution
-      - Support

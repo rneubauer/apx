@@ -81,10 +81,19 @@ validation programs, credential lifecycle, valet).
 The machine-readable OpenAPI 3.1 document (`spec/openapi/apx.yaml`, bundled
 as `spec/dist/apx-v1.*`) and the **APX data-profile overlay**
 (`spec/openapi/overlays/apx-data-overlay.yaml`, OpenAPI Overlay 1.0) are
-**normative**; applying the overlay to the bundle — done automatically by
-the build — produces the effective API description. The overlay exists so
-the Part 5 additions to APDS-native routes are machine-readable without
-editing the vendored APDS document.
+**normative**; applying it to the bundle — done automatically by the
+build — produces the effective API description. That overlay exists so the
+Part 5 additions to APDS-native routes are machine-readable without editing
+the vendored APDS document.
+
+Two further overlays are applied by the same build step and are
+**informative**: `apx-docs-overlay.yaml` carries the reader's orientation,
+the per-domain narrative on each tag, and the navigation grouping;
+`apx-examples-overlay.yaml` carries one worked payload per resource schema,
+each lifted from a scenario and validated in CI. Neither adds, removes, or
+constrains anything in the contract. The distinction is deliberate: were
+narrative normative, requirements would live in two places, which is
+precisely what the precedence rule below exists to prevent.
 
 Precedence: for **APX-defined paths and schemas**, where prose and OpenAPI
 disagree, the effective OpenAPI description prevails and the prose defect
