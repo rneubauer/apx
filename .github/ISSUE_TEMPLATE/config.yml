@@ -1,0 +1,15 @@
+blank_issues_enabled: true
+contact_links:
+  - name: Security or privacy consequence
+    url: https://github.com/rneubauer/apx/blob/main/SECURITY.md
+    about: >
+      A flaw in what the standard requires is inherited by every conforming
+      implementation. Report it privately first, per SECURITY.md.
+  - name: Substantial proposal (new domain or conformance class)
+    url: https://github.com/rneubauer/apx/blob/main/CONTRIBUTING.md
+    about: >
+      Open a blank issue describing the use case first. Design discussion
+      happens before spec text.
+  - name: Read the standard
+    url: https://rneubauer.github.io/apx/
+    about: The API reference, the written standard in one document, and the registries.
