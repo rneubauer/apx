@@ -82,8 +82,20 @@ document, the APX data-profile overlay
 (`spec/openapi/overlays/apx-data-overlay.yaml`, whose application to the
 bundle produces the effective API description — Part 0 §0.5), the registry
 JSON files, Parts 0–22 of this written standard, and Annex A (conformance
-requirements and ICS template). The spec tooling in
-`tools/` is supporting material, not normative.
+requirements and ICS template).
+
+Each edition names that set exactly, by checksum, in **`spec/edition.json`**:
+the bundle and every overlay, each registry with its version, the vendored
+APDS release and its checksum, the Parts, and the conformance classes. The
+manifest is generated from the artifacts themselves and CI fails if it goes
+stale, so an edition is a fixed set of files rather than the state of a
+branch. Cite it when proposing adoption.
+
+The documentation overlays (`apx-docs-overlay.yaml`,
+`apx-examples-overlay.yaml`) appear in the manifest for completeness but are
+**informative**, per Part 0 §0.5: they carry narrative and examples, not
+contract. The spec tooling in `tools/` is supporting material, not
+normative.
 
 ## 3.5 APDS version policy
 

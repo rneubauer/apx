@@ -6,6 +6,61 @@ conformance/versioning rules in Part 3 of the written standard.
 The machine-readable spec (`spec/openapi/apx.yaml`, bundled as
 `spec/dist/apx-v1.*`) is normative; entries here are informative.
 
+## [0.9.1] — 2026-09-23
+
+Submission-readiness pass. No change to any route, schema, or required
+field: the API surface is identical to 0.9.0.
+
+**The reference now explains itself.** Two new overlays decorate the bundle
+alongside the data-profile one, and both are **informative** rather than
+normative (Part 0 §0.5, Part 3 §3.4): `apx-docs-overlay.yaml` supplies the
+reader's orientation in `info.description`, a per-domain narrative on each
+of the sixteen tags, and `x-tagGroups`; `apx-examples-overlay.yaml` gives 35
+resource schemas a worked payload, each lifted from a scenario where CI
+already validates it. Validated schema examples went from 9 to 44.
+`tools/apply-overlay.mjs` now applies an ordered list of overlays and can
+create an absent node. `examples:check` relaxes the vendored APDS
+`Reference` defect exactly as `scenarios:check` does; without that, every
+example containing a reference failed, which is why only primitives had one.
+
+**The registries are actually published.** Part 11 §11.2 said they were
+served at their `locator` URLs; `apx-standard.org` has no DNS, so the
+document asserted something untrue. They are now served from the
+documentation site under `/registries/`, byte-identical to
+`spec/registries/` and republished by CI, and §11.2 describes that. Part 12
+gains the RFC 9457 §3.1.1 clarification that a problem `type` is a stable
+identifier rather than a location, so those URIs are correct as they stand.
+
+**An edition is now a fixed set of files.** New generated
+`spec/edition.json` pins the bundle and every overlay by checksum, each
+registry with its version, the vendored APDS release and its checksum, the
+Parts, and the conformance classes. CI fails if it goes stale. Part 3 §3.4
+cites it as what a proposer should name when asking for adoption.
+
+**Documentation site.** A landing page listing every module, generated from
+the bundle so it cannot drift, each linking to its section of the reference
+and to the governing Part; the whole written standard compiled into one
+document at `/apx-standard.md`; the bundles and the edition manifest served
+alongside. CI builds the entire site on every pull request.
+
+**APDS errata.** A third defect recorded and all three filed upstream: the
+`Reference` schema is unsatisfiable
+([#33](https://github.com/parkingdata/spec/issues/33)), the observations
+`single-element` example matches neither branch of its own `oneOf`
+([#34](https://github.com/parkingdata/spec/issues/34)), and the
+observation-set discriminator mapping key is misspelled
+([#35](https://github.com/parkingdata/spec/issues/35)). Filing-ready reports
+live in `docs/errata/`.
+
+**Also:** scenario 23 covers tolling, previously the only domain with none
+(a gantry retry that must not double-bill, settlement against an account, a
+misread plate disputed and refunded, and a resolved dispute that cannot be
+reopened); `SECURITY.md` and `CODE_OF_CONDUCT.md`; issue templates for
+registry requests per Part 11 §11.3 and for specification defects, plus a
+pull request template; and the CI breaking-change gate now actually runs,
+having previously written its base bundle where the action's container could
+not see it.
+
 ## [0.9.0] — 2026-09-21
 
 LPR read fidelity (Part 13 §13.3a, class `apx-lpr`). APDS's Observation
