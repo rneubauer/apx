@@ -14,6 +14,15 @@ const ROOT = join(dirname(fileURLToPath(import.meta.url)), '..');
 const BUNDLE = join(ROOT, 'spec', 'dist', 'apx-v1.json');
 
 const doc = JSON.parse(readFileSync(BUNDLE, 'utf8'));
+
+// Upstream defect in the vendored APDS 4.1 spec: `Reference` declares
+// `maxProperties: 1` while requiring BOTH `id` and `className`, which no
+// object can satisfy. The vendored file is checksum-guarded and must not be
+// edited, so the contradiction is relaxed here, for validation only — the
+// same workaround tools/validate-scenarios.mjs applies, for the same reason.
+delete doc.components.schemas.Reference.minProperties;
+delete doc.components.schemas.Reference.maxProperties;
+
 const schemas = doc.components?.schemas ?? {};
 
 const ajv = new Ajv2020({ allErrors: true, strict: false, validateFormats: true });

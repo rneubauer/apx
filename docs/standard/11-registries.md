@@ -30,9 +30,22 @@ APX open vocabularies are published as **APDS UserDefinedCodeList documents**
 
 ## 11.2 Publication
 
-Registries are published at the `locator` URLs and mirrored in
-`/.well-known/apx-configuration.registries`. An implementation MUST serve or
-link the registry versions it validates against.
+Each registry declares a `locator` naming its permanent home under
+`apx-standard.org`. That domain is **not yet delegated**, so until it is,
+the authoritative published copies are served from the specification site:
+
+- <https://rneubauer.github.io/apx/registries/> — an index, the registries
+  as JSON, and `registry.schema.json`.
+
+The files there are byte-identical to `spec/registries/` in the repository
+and are republished by CI on every push to `main`, so the served copy cannot
+drift from the copy CI validates. When the canonical domain is delegated the
+`locator` values become live and these become mirrors.
+
+An implementation MUST serve or link the registry versions it validates
+against, and MUST advertise those URLs in
+`/.well-known/apx-configuration.registries`. Advertising a URL that does not
+resolve does not conform.
 
 ## 11.3 Registration authority (normative)
 

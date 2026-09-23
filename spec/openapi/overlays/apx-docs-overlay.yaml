@@ -1,0 +1,435 @@
+# APX documentation overlay — the READING layer over the bundled contract.
+#
+# The modular source (spec/openapi/) is a contract: schemas, operations,
+# scopes. This overlay adds what a reader needs and a machine does not:
+#   - `info.description`   the orientation a first-time reader opens with
+#   - `tags[].description` the per-domain narrative, rendered by Redoc and
+#     Swagger UI directly ABOVE the operations carrying that tag, so every
+#     group of routes explains itself before listing itself
+#   - `x-tagGroups`        nav grouping, so sixteen tags read as five areas
+#
+# Applied to spec/dist/apx-v1.{yaml,json} by tools/apply-overlay.mjs as the
+# last step of `npm run spec:bundle`, after the data-profile overlay.
+#
+# SINGLE SOURCE RULE. Nothing here restates a normative requirement. The
+# written standard in docs/standard/ is where MUST and SHOULD live; these
+# descriptions orient the reader and link to the governing Part. If you find
+# yourself copying a normative sentence in here, link to it instead — a
+# standard that says the same thing in two places eventually says two
+# different things, which is why Part 0 §0.5 needs a precedence rule at all.
+overlay: 1.0.0
+info:
+  title: APX documentation overlay (orientation, domain narrative, nav grouping)
+  version: 0.9.0
+
+actions:
+  # ===== Orientation =======================================================
+  # `update` cannot replace a scalar, so each replacement is remove + set.
+  - target: $.info.description
+    description: Replace the short blurb with the reader's orientation.
+    remove: true
+  - target: $.info.description
+    description: The orientation a first-time reader opens with.
+    update: |-
+      **APX (APDS Parking eXtensions)** is an additive companion standard to the
+      [APDS 4.1 API](https://github.com/parkingdata/spec) (Alliance for Parking
+      Data Standards, core model published as ISO/TS 5206-1).
+
+      ## The prime directive
+
+      Wherever APDS 4.1 already defines a route, schema, or convention, APX uses
+      it **verbatim**, by `$ref` into the vendored, unmodified `apds-api-4.1.yaml`.
+      APX never redefines, subsets, or re-shapes an APDS entity, and a plain
+      APDS 4.1 client works against an APX implementation without modification.
+      Everything here is what APDS deliberately leaves out.
+
+      ## Five ideas, used everywhere
+
+      | Concept | Plain meaning |
+      |---|---|
+      | **Place** | Anywhere a vehicle can park, broken into levels, lanes, and spaces |
+      | **Right** | Permission to park. A *specification* is the product; an *assigned right* is that product granted to someone |
+      | **Session** | An actual stay: a vehicle using a right, with a start and an end |
+      | **Rate** | Pricing: hourly tables, flat fees, event rates |
+      | **Observation** | Something a sensor saw, with a timestamp, a confidence score, and imagery |
+
+      Supporting players: an **Organisation** or **Contact**, a **Credential**
+      (the thing presented at the lane), and a **Device** (gate, pay station,
+      camera). All of them are APDS classes; none is redefined here.
+
+      ## Conventions
+
+      - Every APX resource carries an `id` (UUID) and an integer `version`.
+        Objects reference each other as `{"id": "…", "className": "Session"}`.
+      - Timestamps are RFC 3339 UTC. Money is the APDS shape
+        `{"currencyType": "USD", "currencyValue": 9.00}`.
+      - Errors are RFC 9457 `application/problem+json` with a registered
+        `type` URI you can program against, never a bare string.
+      - Mutating operations a device may retry require an `Idempotency-Key`.
+        Replaying a key with the same body returns the original result; with a
+        different body it is a conflict.
+      - Lifecycles are audited: resources with states carry an immutable,
+        append-only `statusHistory[]`.
+
+      ## Access
+
+      OAuth 2.0 client credentials. Two independent bounds apply to every call:
+      **scopes** (`apx.<domain>:<verb>`, what kinds of thing you may do) and
+      **grants** (the token claims `apx_org` and `apx_places`, which facilities
+      you may do them at). Grants are fail-closed: absent or empty means no
+      places. A vendor hired for one garage cannot act on another.
+
+      ## Not everything is mandatory
+
+      APX is partitioned into named **conformance classes**. `apx-data` and
+      `apx-events` are the base; every other class is optional and
+      independently claimable, with objective per-requirement criteria in
+      Annex A of the written standard. An implementation advertises the classes
+      it satisfies at `/.well-known/apx-configuration`.
+
+      ## How to read this document
+
+      Operations are grouped by domain in the navigation, and each group opens
+      with what APDS already provides, what APX adds on top, and a link to the
+      governing Part of the **written standard** in
+      [docs/standard/](https://github.com/rneubauer/apx/tree/main/docs/standard).
+      Where prose and this description disagree for an APX-defined path, this
+      document prevails and the prose is a defect to be corrected; for
+      APDS-native paths the vendored APDS document prevails.
+
+      End-to-end worked examples, every payload machine-validated against this
+      bundle, are in
+      [docs/scenarios/](https://github.com/rneubauer/apx/tree/main/docs/scenarios).
+
+  # ===== Per-domain narrative ==============================================
+  - target: $.tags
+    description: Replace the terse tag list with the per-domain narrative.
+    remove: true
+  - target: $.tags
+    description: One section of orientation per domain, rendered above its operations.
+    update:
+      - name: Discovery
+        description: |-
+          **Where every integration starts.** A partner needs exactly one thing
+          to begin: a hostname.
+
+          `GET /.well-known/apx-configuration` is unauthenticated and served at
+          the host root. It answers where to get a token, which optional
+          conformance classes this server implements, and where its code-list
+          registries are published. `GET /v1/discovery` then answers the
+          narrower and more useful question: what can *this credential* do? The
+          document it returns is the intersection of the server's classes with
+          the caller's scopes and place grants.
+
+          Discovery is **contractual, not advertising**: everything the document
+          lists will work for the caller, and anything it omits will refuse with
+          a clean 403. That is what makes onboarding a new vendor a matter of
+          issuing a credential rather than exchanging PDFs.
+
+          Written standard:
+          [Part 16](https://github.com/rneubauer/apx/blob/main/docs/standard/16-discovery.md).
+      - name: Data
+        description: |-
+          **Reading and writing parking data, and staying in sync.**
+
+          The data routes themselves are APDS 4.1's own, mounted verbatim:
+          `/places`, `/sessions`, `/rates`, `/rights/specs`, `/rights/assigned`,
+          `/observations`, `/contacts`, `/quotes`. APX invents nothing here on
+          purpose, because data exchange is the part the industry already
+          agreed on.
+
+          What APX adds is a **profile** over those routes, all of it additive
+          and invisible to a client that ignores it: full versus change update
+          semantics, tombstones for deletions, and a cursor-based change feed
+          that is ordered, gapless, and exactly-once, so a partner that goes
+          offline for an hour replays precisely what it missed. Partial writes
+          make `null` mean *clear this field* and omission mean *leave it
+          alone*, which retires the oldest bug in data integration.
+
+          The one net-new read here is the occupancy snapshot: how full a
+          garage, level, or zone is right now, without walking the whole Place
+          hierarchy.
+
+          Written standard:
+          [Part 5](https://github.com/rneubauer/apx/blob/main/docs/standard/05-data.md).
+      - name: Subscription
+        description: |-
+          **Push instead of poll.** A superset-compatible profile of the APDS
+          4.1 `/webhooks` endpoint: stock APDS subscription bodies work here
+          unmodified.
+
+          Webhooks without rules are where integrations go to die, so the
+          delivery contract is normative rather than best-effort. Every delivery
+          is one uniform envelope, HMAC-signed so the receiver can prove it is
+          genuine, carrying a stable event id so duplicates are detectable.
+          Failed deliveries follow a published retry schedule before the
+          subscription is marked failed, which itself raises an alert. The
+          delivery ledger records every attempt and its result.
+
+          Subscriptions filter by place and by severity, so a partner receives
+          only its own world, and an event whose place cannot be resolved is
+          dropped rather than leaked. Server-sent events carry the same
+          envelopes for consumers that cannot host a public endpoint.
+
+          Written standard:
+          [Part 8](https://github.com/rneubauer/apx/blob/main/docs/standard/08-events.md).
+      - name: Alerts
+        description: |-
+          **Knowing something is wrong.** A net-new domain: APDS has no alert,
+          event, or notification class.
+
+          One `Alert` resource covers the operational conditions an attendant or
+          a monitoring system acts on: a device fault, a blocked lane, a vehicle
+          in a space it should not be, an occupancy threshold crossed, a payment
+          exception. Alert *types* are an open vocabulary, seeded from the APDS
+          use-case exception list and extensible by any implementer through
+          their own code list. Severity, by contrast, is a closed five-level
+          scale, because filtering on it has to mean the same thing everywhere.
+
+          The lifecycle is raised, acknowledged, resolved, with an immutable
+          audit of every transition.
+
+          Written standard:
+          [Part 7](https://github.com/rneubauer/apx/blob/main/docs/standard/07-alerts.md).
+      - name: Control
+        description: |-
+          **Doing things in the real world.** APDS inventories devices and marks
+          access-controlled places but defines no actuation. This is it.
+
+          Everything physical goes through one audited command plane rather than
+          scattered verbs: vend a gate, hold it open, close a lane, issue a lost
+          ticket, push a rate table, apply a validation, set a device state,
+          display a message, restart a device. Commands are **idempotent** (a
+          retry must not vend the gate twice), **perishable** (a vend requested
+          ten minutes ago must not fire now), and audited end to end.
+
+          The response is deliberately not a success boolean. It is a command
+          resource whose `confirmationLevel` distinguishes *accepted* from *the
+          device acknowledged it* from *the outcome was physically verified*. A
+          consumer, an AI agent especially, must not claim a stronger outcome
+          than that level supports.
+
+          Also here: the lane inquiry that populates a call-center screen-pop,
+          the validation-provider list for a place, and live device status.
+
+          Written standard:
+          [Part 6](https://github.com/rneubauer/apx/blob/main/docs/standard/06-control.md).
+      - name: Accounts
+        description: |-
+          **Money.** Account and balance lookup, taking a payment, refunds,
+          voids and captures, accounting write-back, and payment history.
+
+          APDS models a `Payment` but not the *act* of taking one. The APX
+          `PaymentRecord` is that action record: addressable, idempotent, and
+          reconcilable, and every approved one is materialized as an APDS
+          Payment so downstream APDS consumers see it without speaking APX.
+
+          Two rules shape this domain. Full card numbers never appear anywhere.
+          And because one endpoint often fronts many facilities, every payment
+          names the place it belongs to, so revenue stays attributable and a
+          grant cannot leak across sites.
+
+          APDS publishes no payment events, which leaves financial analytics
+          blind; APX closes that with a payment-recorded topic.
+
+          Written standard:
+          [Part 13](https://github.com/rneubauer/apx/blob/main/docs/standard/13-accounts-payments-lpr.md).
+      - name: LPR
+        description: |-
+          **Plates.** A camera read *is* an APDS `Observation`, so ingest is the
+          standard data route every integration already uses. No bespoke
+          ingestion API.
+
+          The genuinely new need is the **join**: which ticket goes with this
+          plate, and which plate with this ticket. That is the one endpoint this
+          domain adds, answering with the session, the confidence score, and an
+          access-controlled image link.
+
+          Modern engines know more than a plate string, so a read may also carry
+          per-attribute confidence for plate, state, make, model and colour, the
+          runner-up plate strings the engine rejected, how many plates it saw,
+          which face of the vehicle it read, and whether the vehicle was
+          approaching, receding, or stopped. From those the server derives
+          whether the vehicle travelled with or **against** the lane's
+          configured direction, which is how a gateless site detects a car
+          entering through the exit.
+
+          Written standard:
+          [Part 13](https://github.com/rneubauer/apx/blob/main/docs/standard/13-accounts-payments-lpr.md).
+      - name: Reservations
+        description: |-
+          **Booking ahead**, expressed as conventions over native APDS routes
+          rather than a parallel booking system.
+
+          Quote through the APDS quote route, book by creating an
+          `AssignedRight` carrying the APX reservation extension, amend and
+          cancel through the same surface, and check in by linking the arrival
+          to the right. The reservation is therefore a first-class APDS object
+          any APDS consumer can read, not an APX-only record that has to be
+          synchronized.
+
+          The hard parts this domain pins down are the ones integrations usually
+          get wrong: how a prepaid booking binds to the session the vehicle
+          actually starts, what happens when the plate is misread, and when a
+          no-show is declared.
+
+          Written standard:
+          [Part 14](https://github.com/rneubauer/apx/blob/main/docs/standard/14-reservations-permits.md).
+      - name: Permits
+        description: |-
+          **Pooled permits**: issuing from a finite allocation, over the APDS
+          right-specification and right-pool model.
+
+          The cases that matter are the ones a naive implementation breaks on: a
+          pool that runs out, a household or company credential valid for
+          several vehicles, and issuance that must stay attributable when
+          allocations are audited later.
+
+          Written standard:
+          [Part 14](https://github.com/rneubauer/apx/blob/main/docs/standard/14-reservations-permits.md).
+      - name: Tolling
+        description: |-
+          **Toll transactions**, a net-new domain: APDS has no toll entity.
+
+          Everything is still built to APDS conventions. A toll point is
+          equipment in the place hierarchy, the reads are native `Observation`s,
+          money is the APDS amount shape, and settlement links a Payment
+          reference. A transaction runs created, priced, paid, and a dispute can
+          move any non-voided transaction aside for resolution.
+
+          Creation is idempotent, because gantries retry in storms.
+
+          Written standard:
+          [Part 15](https://github.com/rneubauer/apx/blob/main/docs/standard/15-tolling.md).
+      - name: Resolution
+        description: |-
+          **When a customer presses the intercom.** The agent, human or AI,
+          should not have to log into another system, find the facility, find
+          the lane, find the transaction, and reconstruct what happened.
+
+          One call assembles the context from whatever identifiers the caller
+          has: a phone number, a lane, a plate, a ticket, a credential, a
+          reservation code. The server resolves every relationship it can and
+          does not fail because some identifiers are missing.
+
+          The important design decision is that **the server, not the agent,
+          decides what may be done**. The context returns the allowed actions,
+          already evaluated against policy, including which ones require
+          supervisor approval. Writes then go through the existing command plane
+          rather than a second one. A refund an agent should not offer is simply
+          not in the list.
+
+          Written standard:
+          [Part 17](https://github.com/rneubauer/apx/blob/main/docs/standard/17-resolution.md).
+      - name: Support
+        description: |-
+          **What happened on the last call.** Support-interaction history for a
+          resolution context: who spoke to the customer, through which channel,
+          about what, and what was done.
+
+          It exists so the second call is not the first call again, and so an
+          action taken during an interaction can be traced back to the
+          conversation that prompted it.
+
+          Written standard:
+          [Part 17](https://github.com/rneubauer/apx/blob/main/docs/standard/17-resolution.md).
+      - name: Violations
+        description: |-
+          **Enforcement, from camera to citation to appeal.** A net-new domain,
+          and the one with the most legal exposure.
+
+          One `Violation` resource covers tickets, notices, and citations alike,
+          through detection (automated, guided, or manual), review, issuance,
+          settlement by Payment reference, appeal, and void. Guided enforcement
+          is supported by an eligibility check a handheld calls before an
+          officer writes anything, composed from the rights and sessions that
+          remain authoritative.
+
+          What makes this domain unusual is that **the law at the location is
+          data**. A per-place enforcement policy records which notice methods
+          are lawful, the penalty cap, and the escalation schedule, and the
+          server enforces it: an issuance by a method the jurisdiction does not
+          permit, past the notice deadline, above the cap, or at a place whose
+          required signage was not posted, is refused. The posted signage itself
+          is on file, with its text and photograph, as it stood at the moment of
+          the finding.
+
+          Written standard:
+          [Part 19](https://github.com/rneubauer/apx/blob/main/docs/standard/19-violations.md).
+      - name: Validations
+        description: |-
+          **The merchant side**, from enrolment to invoice.
+
+          The lane-side act of applying a validation is a command in the control
+          plane. This domain is everything around it: enrolling a merchant at a
+          place with a benefit and its rules, issuing instrument stock (codes,
+          QR, stamps), the redemption ledger every channel writes to, and
+          closable billing statements.
+
+          The ledger is the point. A validation applied at a pay station, by an
+          agent console, or through a merchant's own app lands in one place, so
+          the month-end statement is a query rather than a reconciliation.
+          Closed statements are immutable, and a reversal after closing appears
+          as a credit on the next one.
+
+          A merchant-confined scope lets a venue check codes, issue its own
+          stock, and read its own statements without seeing anyone else's.
+
+          Written standard:
+          [Part 20](https://github.com/rneubauer/apx/blob/main/docs/standard/20-validations.md).
+      - name: Credentials
+        description: |-
+          **The card, the fob, the tag, the phone.** The lifecycle of anything
+          presented at a lane: issue, activate, suspend, resume, report lost,
+          revoke, replace, plus access-event history.
+
+          The rule that makes this domain worth having is **materialization**:
+          an active credential record MUST appear on the holder's APDS assigned
+          right, and MUST be removed when it is suspended, lost, revoked, or
+          expired. A lane that speaks only APDS therefore refuses the lost card
+          at six o'clock because the office replaced it at noon. There is no
+          second list to keep in sync.
+
+          APDS has no access events, so granted and denied presentations with
+          their reasons are recorded here and published as a topic.
+
+          Written standard:
+          [Part 21](https://github.com/rneubauer/apx/blob/main/docs/standard/21-credentials.md).
+      - name: Valet
+        description: |-
+          **Custody.** A net-new domain: APDS has no valet entity, only a
+          restriction flag.
+
+          The stay and the money remain the APDS session. What APDS has no words
+          for is who has the keys, where the car is, when it was asked for, who
+          it was handed to, and what condition it was in. A ticket records
+          drop-off with a condition report (notes, per-panel damage entries,
+          walk-around photographs, and the customer's acknowledgement), the
+          parked position and key location, the retrieval request and its ETA,
+          staging, and a verified handback.
+
+          Retrieval works from a text, an app, a web page, a voice bot, a kiosk,
+          or the stand, through one customer-facing scope confined to the
+          caller's own ticket and minimized so it exposes status and ETA but
+          never where the car or the keys are.
+
+          The acknowledged drop-off report is what answers "that scratch wasn't
+          there" a week later.
+
+          Written standard:
+          [Part 22](https://github.com/rneubauer/apx/blob/main/docs/standard/22-valet.md).
+
+  # ===== Navigation grouping ===============================================
+  - target: $.x-tagGroups
+    description: Group sixteen domains into five readable areas (Redoc; ignored elsewhere).
+    update:
+      - name: Start here
+        tags: [Discovery]
+      - name: Platform
+        tags: [Data, Subscription, Control, Alerts]
+      - name: Commerce
+        tags: [Accounts, Reservations, Permits, Validations, Tolling]
+      - name: Vehicles and access
+        tags: [LPR, Credentials, Valet]
+      - name: Enforcement and service
+        tags: [Violations, Resolution, Support]

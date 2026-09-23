@@ -1,0 +1,720 @@
+# APX examples overlay — one worked payload per resource schema.
+#
+# A reference that shows a schema tree but no payload makes every reader
+# invent their own first request. Redoc and Swagger UI both surface a
+# schema-level example wherever that schema is referenced, so one example per
+# resource reaches every operation that returns it.
+#
+# PROVENANCE. Every payload here is lifted verbatim from docs/scenarios/,
+# where it sits under an `apx:validate <Schema>` marker and is already checked
+# against that exact schema by `npm run scenarios:check`. They are then checked
+# AGAIN in place by `npm run examples:check`, which validates every
+# schema-level `examples` entry in the bundle. An example cannot rot without
+# CI failing.
+#
+# STYLE. Payloads are written as JSON (valid YAML) rather than YAML block
+# style, deliberately: unquoted timestamps would be parsed into dates and
+# re-emitted in a different shape. Quoting everything keeps the bytes the
+# reader sees identical to the bytes the scenario validated.
+#
+# Applied to spec/dist/apx-v1.{yaml,json} by tools/apply-overlay.mjs, after
+# the data and docs overlays.
+overlay: 1.0.0
+info:
+  title: APX examples overlay (one worked payload per resource)
+  version: 0.9.0
+
+actions:
+  # ===== Control (Part 6) ==================================================
+  - target: $.components.schemas['Command'].examples
+    description: Scenario 02 — a call-center gate vend, succeeded, with its audit.
+    update:
+      - {
+          "id": "5e8d7c6b-4a39-4281-b0f1-2e3d4c5b6a70",
+          "version": 5,
+          "commandType": "vendGate",
+          "target": { "id": "b2000000-0000-4000-8000-000000000002", "className": "VehicularAccess" },
+          "requestedBy": { "id": "a1000000-0000-4000-8000-000000000001", "className": "Organisation" },
+          "reason": "customer assistance — cinema validation applied, remainder waived per policy",
+          "expiryTime": "2026-08-06T18:16:00Z",
+          "status": "succeeded",
+          "statusHistory": [
+            { "state": "received", "time": "2026-08-06T18:14:31Z", "actor": "apx-operator" },
+            { "state": "accepted", "time": "2026-08-06T18:14:31Z", "actor": "lakeside-parcs" },
+            { "state": "dispatched", "time": "2026-08-06T18:14:32Z", "actor": "lakeside-parcs" },
+            { "state": "executing", "time": "2026-08-06T18:14:32Z", "actor": "gate-c1000000-0002" },
+            { "state": "succeeded", "time": "2026-08-06T18:14:34Z", "actor": "gate-c1000000-0002", "detail": "barrier raised" }
+          ]
+        }
+  - target: $.components.schemas['DeviceStatus'].examples
+    description: Scenario 02 — a pay station that stopped answering.
+    update:
+      - {
+          "device": { "id": "c1000000-0000-4000-8000-000000000003", "className": "SupplementalEquipment" },
+          "deviceState": "fault",
+          "lastCommunication": "2026-08-06T18:16:55Z",
+          "stateChangedTime": "2026-08-06T18:17:40Z"
+        }
+  - target: $.components.schemas['LaneStatus'].examples
+    description: "Scenario 01 — the screen-pop: ticket, plate read, and a denied monthly."
+    update:
+      - {
+          "lane": { "id": "b2000000-0000-4000-8000-000000000002", "className": "VehicularAccess" },
+          "currentTicket": {
+            "ticketNumber": "T-1001",
+            "session": { "id": "f1000000-0000-4000-8000-000000000001", "className": "Session" },
+            "issuedTime": "2026-08-06T08:02:11Z",
+            "amountDue": { "currencyType": "USD", "currencyValue": 9.00 },
+            "paidInFull": false,
+            "validations": [],
+            "lpr": {
+              "plate": "SYN-1234",
+              "confidence": 0.97,
+              "observation": { "id": "f2000000-0000-4000-8000-000000000001", "className": "Observation" },
+              "imageLink": "https://api.lakeside-garage.example/lpr/f2000000.jpg"
+            }
+          },
+          "monthlyCredential": {
+            "credential": { "id": "e3000000-0000-4000-8000-000000000001", "className": "Credential" },
+            "cardNumber": "MC-0777",
+            "accessGranted": false,
+            "denialReason": "account past due",
+            "lastActivity": "2026-08-05T18:22:00Z",
+            "recentEvents": [
+              { "time": "2026-08-05T18:22:00Z", "event": "exit", "lane": { "id": "b2000000-0000-4000-8000-000000000002", "className": "VehicularAccess" } },
+              { "time": "2026-08-05T08:04:31Z", "event": "entry", "lane": { "id": "b2000000-0000-4000-8000-000000000001", "className": "VehicularAccess" } }
+            ]
+          }
+        }
+  - target: $.components.schemas['ValidationProvider'].examples
+    description: Scenario 02 — a venue allowed to validate at this place.
+    update:
+      - {
+          "provider": { "id": "a2000000-0000-4000-8000-000000000011", "className": "Organisation" },
+          "name": "Lakeside Cinema",
+          "validationType": "twoHoursComped",
+          "benefit": { "description": "First two hours comped", "duration": "PT2H" }
+        }
+
+  # ===== Alerts (Part 7) ===================================================
+  - target: $.components.schemas['Alert'].examples
+    description: Scenario 02 — a device fault, acknowledged, with its audit.
+    update:
+      - {
+          "id": "7b8c9d0e-1f2a-4b3c-8d4e-5f6a7b8c9d0e",
+          "version": 2,
+          "alertType": "deviceFault",
+          "severity": "major",
+          "status": "acknowledged",
+          "source": {
+            "device": { "id": "c1000000-0000-4000-8000-000000000003", "className": "SupplementalEquipment" },
+            "place": "b1000000-0000-4000-8000-000000000001"
+          },
+          "occurrenceTime": "2026-08-06T18:17:40Z",
+          "detectionTime": "2026-08-06T18:17:41Z",
+          "description": [{ "language": "en", "string": "Pay station 3 not responding" }],
+          "statusHistory": [
+            { "state": "raised", "time": "2026-08-06T18:17:41Z", "actor": "lakeside-parcs" },
+            { "state": "acknowledged", "time": "2026-08-06T18:19:05Z", "actor": "apx-operator", "detail": "field tech dispatched" }
+          ]
+        }
+
+  # ===== Data and delivery (Parts 5, 8) ====================================
+  - target: $.components.schemas['OccupancySnapshot'].examples
+    description: Scenario 07 — how full the garage is right now.
+    update:
+      - {
+          "place": { "id": "b1000000-0000-4000-8000-000000000001", "className": "Place" },
+          "computedAt": "2026-08-25T17:45:00Z",
+          "supply": { "supplyViewType": "spaceView", "supplyQuantity": 420 },
+          "demand": {
+            "count": 361,
+            "percentage": 85.9,
+            "occupancyCalculation": "counted",
+            "recordDateTime": "2026-08-25T17:44:30Z"
+          },
+          "available": 59
+        }
+  - target: $.components.schemas['ChangeFeedPage'].examples
+    # The scenario's payload ends `"next": null` (meaning last page). It is
+    # omitted here, which says the same thing, because an explicit JSON null
+    # anywhere in an example crashes Spectral's OAS ruleset outright
+    # ("Cannot read properties of null"). Do not add it back.
+    description: Scenario 03 — one page of the cursor feed, including a tombstone.
+    update:
+      - {
+          "publicationTime": "2026-08-06T18:20:00Z",
+          "publisher": { "id": "a1000000-0000-4000-8000-000000000001", "className": "Organisation" },
+          "updateMode": "change",
+          "items": [
+            {
+              "id": "f1000000-0000-4000-8000-000000000001",
+              "version": 4,
+              "className": "Session",
+              "segments": [{ "actualEnd": "2026-08-06T18:14:34Z" }]
+            }
+          ],
+          "deleted": [
+            {
+              "id": "f1000000-0000-4000-8000-000000000099",
+              "className": "Session",
+              "deleteTimestamp": "2026-08-06T17:58:12Z"
+            }
+          ],
+          "cursor": "c:00042"
+        }
+  - target: $.components.schemas['EventEnvelope'].examples
+    description: Scenario 05 — a reservation no-show, delivered.
+    update:
+      - {
+          "id": "3b4c5d6e-7f8a-4b9c-8d0e-1f2a3b4c5d6e",
+          "type": "apx.reservation.noshow.v1",
+          "source": "https://api.lakeside-garage.example/v1",
+          "subject": { "id": "e2000000-0000-4000-8000-000000000003", "className": "AssignedRight" },
+          "time": "2026-08-14T19:30:00Z",
+          "data": {
+            "reservation": { "id": "e2000000-0000-4000-8000-000000000003", "className": "AssignedRight" },
+            "reservationState": "noShow",
+            "plannedStart": "2026-08-14T18:00:00Z"
+          }
+        }
+  - target: $.components.schemas['DeliveryRecord'].examples
+    description: Scenario 03 — one row of the delivery ledger.
+    update:
+      - {
+          "deliveryId": "4d5e6f7a-8b9c-4d0e-9f1a-2b3c4d5e6f7a",
+          "eventId": "2a3b4c5d-6e7f-4890-9a0b-1c2d3e4f5a6b",
+          "attempts": 1,
+          "status": "delivered",
+          "lastCode": 200,
+          "time": "2026-08-06T18:17:42Z"
+        }
+
+  # ===== Errors (Part 12) ==================================================
+  - target: $.components.schemas['Problem'].examples
+    description: Scenario 01 — a registered problem type, as every APX error looks.
+    update:
+      - {
+          "type": "https://apx-standard.org/problems/target-not-found",
+          "title": "Target not found",
+          "status": 404,
+          "detail": "No lane b2000000-0000-4000-8000-00000000dead at this place.",
+          "instance": "/v1/lanes/b2000000-0000-4000-8000-00000000dead/current"
+        }
+
+  # ===== Accounts and payments (Part 13) ===================================
+  - target: $.components.schemas['PaymentRecord'].examples
+    description: Scenario 04 — a lost-ticket payment with its accounting write-back.
+    update:
+      - {
+          "id": "9c0d1e2f-3a4b-4c5d-8e6f-7a8b9c0d1e2f",
+          "transactionID": "PARIS-20260806-00347",
+          "place": { "id": "b1000000-0000-4000-8000-000000000001", "className": "Place" },
+          "dateCollected": "2026-08-06T18:26:40Z",
+          "amount": { "currencyType": "USD", "currencyValue": 4.50 },
+          "method": "card",
+          "paymentStatus": "approved",
+          "ticketNumber": "T-1001",
+          "cardLast4": "0777",
+          "postings": [
+            {
+              "confirmationNumber": "CONF-88214",
+              "accountUpdated": false,
+              "postedTo": "PARIS",
+              "time": "2026-08-06T18:26:41Z"
+            }
+          ]
+        }
+  - target: $.components.schemas['Posting'].examples
+    description: Scenario 04 — the write-back line on its own.
+    update:
+      - {
+          "confirmationNumber": "CONF-88214",
+          "accountUpdated": false,
+          "postedTo": "PARIS",
+          "time": "2026-08-06T18:26:41Z"
+        }
+  - target: $.components.schemas['PaymentLink'].examples
+    description: Scenario 08 — a pay-by-text link sent to clear a balance hold.
+    update:
+      - {
+          "id": "e6000000-0000-4000-8000-000000000002",
+          "version": 1,
+          "place": { "id": "b1000000-0000-4000-8000-000000000001", "className": "Place" },
+          "account": { "id": "c2000000-0000-4000-8000-000000000004", "className": "Account" },
+          "amount": { "currencyType": "USD", "currencyValue": 185.00 },
+          "channel": "sms",
+          "sentTo": "+1•••••••4567",
+          "status": "sent",
+          "expiresAt": "2026-09-02T22:15:41Z",
+          "resolutionContext": { "id": "e5000000-0000-4000-8000-000000000001", "className": "ResolutionContext" },
+          "correlationId": "7c9e6679-7425-40de-944b-e07fc1f90ae7"
+        }
+
+  # ===== LPR (Part 13) =====================================================
+  - target: $.components.schemas['LprRead'].examples
+    description: Scenario 22 — a gateless read that travelled against the lane.
+    update:
+      - {
+          "plate": "RVR-8821",
+          "place": { "id": "b1000000-0000-4000-8000-000000000006", "className": "Place" },
+          "confidence": 0.91,
+          "detail": {
+            "plate": { "value": "RVR-8821", "confidence": 0.91 },
+            "stateProvince": { "value": "IL", "confidence": 0.88 },
+            "make": { "value": "Ford", "confidence": 0.94 },
+            "model": { "value": "F-150", "confidence": 0.71 },
+            "color": { "value": "grey", "confidence": 0.83 },
+            "bodyType": { "value": "pickup", "confidence": 0.96 },
+            "platesRead": 1,
+            "plateFace": "rear",
+            "movement": "receding",
+            "captureGroup": "cam-exit-1/20260921T074108/0417",
+            "engine": "vendor-x/7.2"
+          },
+          "laneTravel": "againstLane",
+          "observation": { "id": "f2000000-0000-4000-8000-000000000741", "className": "Observation" },
+          "observationDateTime": "2026-09-21T07:41:08Z",
+          "session": { "id": "f1000000-0000-4000-8000-000000000741", "className": "Session" },
+          "imageLink": "https://api.riverside-lot.example/lpr/f2000000-741-plate.jpg",
+          "recentReservations": []
+        }
+  - target: $.components.schemas['LprReadDetail'].examples
+    description: Scenario 22 — what the camera knew, attribute by attribute.
+    update:
+      - {
+          "plate": { "value": "RVR-8821", "confidence": 0.91 },
+          "stateProvince": { "value": "IL", "confidence": 0.88 },
+          "make": { "value": "Ford", "confidence": 0.94 },
+          "model": { "value": "F-150", "confidence": 0.71 },
+          "color": { "value": "grey", "confidence": 0.83 },
+          "bodyType": { "value": "pickup", "confidence": 0.96 },
+          "platesRead": 1,
+          "plateFace": "rear",
+          "movement": "receding",
+          "captureGroup": "cam-exit-1/20260921T074108/0417",
+          "engine": "vendor-x/7.2"
+        }
+
+  # ===== Reservations (Part 14) ============================================
+  - target: $.components.schemas['ReservationExtension'].examples
+    description: Scenario 05 — the reservation extension riding on an APDS AssignedRight.
+    update:
+      - {
+          "reservationState": "checkedIn",
+          "plannedStart": "2026-08-14T18:00:00Z",
+          "plannedEnd": "2026-08-15T01:00:00Z",
+          "checkInSession": { "id": "f1000000-0000-4000-8000-000000000014", "className": "Session" }
+        }
+  - target: $.components.schemas['ReservationSummary'].examples
+    description: Scenario 05 — the compact form used in lists and lookups.
+    update:
+      - {
+          "reservation": { "id": "e2000000-0000-4000-8000-000000000002", "className": "AssignedRight" },
+          "reservationState": "checkedIn",
+          "plannedStart": "2026-08-14T18:00:00Z",
+          "plannedEnd": "2026-08-15T01:00:00Z"
+        }
+
+  # ===== Resolution and support (Part 17) ==================================
+  - target: $.components.schemas['ResolutionContext'].examples
+    description: Scenario 11 — a missing validation, one action allowed and one refused by policy.
+    update:
+      - {
+          "id": "e5000000-0000-4000-8000-000000000013",
+          "version": 1,
+          "computedAt": "2026-09-05T20:12:44Z",
+          "status": "full",
+          "issue": {
+            "code": "validationMissing",
+            "display": "Customer reports a merchant validation that is not applied to the ticket"
+          },
+          "place": { "id": "b1000000-0000-4000-8000-000000000001", "className": "Place" },
+          "laneStatus": {
+            "lane": { "id": "b2000000-0000-4000-8000-000000000002", "className": "VehicularAccess" },
+            "currentTicket": {
+              "ticketNumber": "T-70443",
+              "session": { "id": "c4000000-0000-4000-8000-000000000023", "className": "Session" },
+              "amountDue": { "currencyType": "USD", "currencyValue": 14.00 },
+              "paidInFull": false,
+              "validations": []
+            }
+          },
+          "allowedActions": [
+            {
+              "action": "applyValidation",
+              "display": "Apply merchant validation",
+              "target": { "id": "b2000000-0000-4000-8000-000000000002", "className": "VehicularAccess" },
+              "allowed": true,
+              "requiresApproval": false,
+              "execution": { "type": "control", "command": "applyValidation" }
+            },
+            {
+              "action": "vendGate",
+              "display": "Vend gate",
+              "target": { "id": "b2000000-0000-4000-8000-000000000002", "className": "VehicularAccess" },
+              "allowed": false,
+              "execution": { "type": "control", "command": "vendGate" },
+              "reason": {
+                "code": "sessionUnpaid",
+                "display": "A validation adjusts the amount due; it does not waive the remainder.",
+                "policy": "no-vend-while-unpaid"
+              }
+            }
+          ],
+          "recommendedAction": {
+            "action": "applyValidation",
+            "reason": "The ticket carries no validation; if the claimed provider is on the place's list, apply it and requote."
+          }
+        }
+  - target: $.components.schemas['PassbackStatus'].examples
+    description: Scenario 13 — "it says I'm already inside".
+    update:
+      - {
+          "credential": { "id": "c3000000-0000-4000-8000-000000000013", "className": "Credential" },
+          "state": "violation",
+          "expectedPresence": "outside",
+          "recordedPresence": "inside",
+          "lastAccess": {
+            "direction": "entry",
+            "occurredAt": "2026-09-01T08:03:47Z",
+            "place": { "id": "b1000000-0000-4000-8000-000000000001", "className": "Place" },
+            "lane": { "id": "b2000000-0000-4000-8000-000000000001", "className": "VehicularAccess" }
+          }
+        }
+  - target: $.components.schemas['PlateCandidate'].examples
+    description: Scenario 14 — a candidate offered for plate correction.
+    update:
+      - {
+          "plate": "SVN-4821",
+          "country": "US",
+          "stateProvince": "FL",
+          "confidence": 0.97,
+          "observationDateTime": "2026-09-02T22:39:04Z",
+          "lane": { "id": "b2000000-0000-4000-8000-000000000002", "className": "VehicularAccess" },
+          "observation": { "id": "f2000000-0000-4000-8000-000000000014", "className": "Observation" },
+          "plateImage": "https://api.lakeside-garage.example/v1/media/f2000000-0014/plate.jpg"
+        }
+  - target: $.components.schemas['SupportInteraction'].examples
+    description: Scenario 08 — an AI agent's call, resolved, with the action it took.
+    update:
+      - {
+          "id": "e7000000-0000-4000-8000-000000000003",
+          "version": 1,
+          "channel": "voice",
+          "agentType": "ai",
+          "agent": "callcenter-ai-agent-07",
+          "startedAt": "2026-09-02T21:14:02Z",
+          "endedAt": "2026-09-02T21:18:30Z",
+          "place": { "id": "b1000000-0000-4000-8000-000000000001", "className": "Place" },
+          "issue": { "code": "accountBalanceDenied", "display": "Monthly parker denied because of outstanding balance" },
+          "summary": "Balance hold at Exit 3; customer paid $185.00 via payment link; exited normally.",
+          "subjects": {
+            "holder": { "id": "c1000000-0000-4000-8000-000000000003", "className": "RightHolder" },
+            "account": { "id": "c2000000-0000-4000-8000-000000000004", "className": "Account" },
+            "plate": "SYN-1234"
+          },
+          "actions": [
+            { "id": "e6000000-0000-4000-8000-000000000002", "className": "PaymentLink" }
+          ],
+          "interactionId": "interaction-938383",
+          "resolution": { "code": "resolved", "display": "Paid and exited" },
+          "correlationId": "7c9e6679-7425-40de-944b-e07fc1f90ae7"
+        }
+
+  # ===== Violations (Part 19) ==============================================
+  - target: $.components.schemas['Violation'].examples
+    description: Scenario 16 — an automated overstay, issued by mail.
+    update:
+      - {
+          "id": "d3000000-0000-4000-8000-000000000001",
+          "version": 2,
+          "violationType": "expiredRight",
+          "violationStatus": "issued",
+          "place": { "id": "b1000000-0000-4000-8000-000000000004", "className": "Place" },
+          "detection": {
+            "mode": "automated",
+            "detectedTime": "2026-09-18T09:31:04Z",
+            "detector": { "id": "b2000000-0000-4000-8000-000000000031", "className": "SupplementalEquipment" },
+            "principal": "lpr-pipeline-lot-c",
+            "confidence": 0.94,
+            "rule": "paybyplate-expiry-15m"
+          },
+          "vehicle": { "credentialType": "licensePlate", "credentialIdentification": "SYN-4471", "jurisdiction": "US-IL" },
+          "observations": [ { "id": "f2000000-0000-4000-8000-000000000041", "className": "Observation" } ],
+          "relatedSession": { "id": "f1000000-0000-4000-8000-000000000044", "className": "Session" },
+          "notice": {
+            "noticeKind": "notice",
+            "noticeNumber": "LG-2026-018301",
+            "issuedTime": "2026-09-18T09:31:09Z",
+            "issuedBy": { "id": "a1000000-0000-4000-8000-000000000001", "className": "Organisation" },
+            "deliveryMethod": "mail"
+          },
+          "amount": { "currencyType": "USD", "currencyValue": 35.00 },
+          "dueTime": "2026-10-18T23:59:59Z",
+          "statusHistory": [
+            { "state": "detected", "time": "2026-09-18T09:31:05Z", "actor": "lpr-pipeline-lot-c", "detail": "rule paybyplate-expiry-15m; grace to 09:20 elapsed" },
+            { "state": "issued", "time": "2026-09-18T09:31:09Z", "actor": "lpr-pipeline-lot-c", "detail": "policy lot-c-auto-issue (confidence 0.94 ≥ 0.9); notice LG-2026-018301 queued for mail" }
+          ]
+        }
+  - target: $.components.schemas['EligibilityResult'].examples
+    description: Scenario 17 — the handheld check before an officer writes anything.
+    update:
+      - {
+          "place": { "id": "b1000000-0000-4000-8000-000000000003", "className": "Place" },
+          "credential": { "credentialType": "licensePlate", "credentialIdentification": "SYN-8820" },
+          "checkedTime": "2026-09-18T10:14:05Z",
+          "entitled": false,
+          "basis": [
+            {
+              "right": { "id": "e1000000-0000-4000-8000-000000000027", "className": "AssignedRight" },
+              "rightType": "monthlyPermit",
+              "validFrom": "2026-09-01T00:00:00Z",
+              "validTo": "2026-09-30T23:59:59Z",
+              "status": "wrongPlace"
+            }
+          ],
+          "suggestedViolationType": "wrongPlace",
+          "lastRead": {
+            "observation": { "id": "f2000000-0000-4000-8000-000000000052", "className": "Observation" },
+            "observationDateTime": "2026-09-18T08:31:47Z",
+            "confidence": 0.96,
+            "imageLink": "https://api.lakeside-garage.example/lpr/f2000000-0052.jpg"
+          }
+        }
+  - target: $.components.schemas['EnforcementPolicy'].examples
+    description: Scenario 19 — the law at the location, as data the server enforces.
+    update:
+      - {
+          "id": "d4000000-0000-4000-8000-000000000001",
+          "version": 1,
+          "place": { "id": "b1000000-0000-4000-8000-000000000004", "className": "Place" },
+          "name": "State private-lot notice rules — Lot C",
+          "policyStatus": "active",
+          "effectiveFrom": "2026-07-01T00:00:00Z",
+          "authority": { "jurisdiction": "US-IL", "citation": "Synthetic Stat. §12-405 (private lot notices)" },
+          "deliveryRules": [
+            { "detectionModes": [ "automated" ], "deliveryMethods": [ "mail", "electronic" ], "noticeDeadline": "P14D",
+              "minimumEvidence": { "observations": 1, "images": 1, "locationRequired": true } },
+            { "detectionModes": [ "guided", "manual" ], "deliveryMethods": [ "windshield", "handed" ], "noticeDeadline": "PT1H" }
+          ],
+          "penaltyCap": { "maximumMultipleOfUnpaid": 2, "onExceed": "refuse" },
+          "escalation": [
+            { "step": "late-30", "afterDays": 30, "addPercent": 25, "description": "25% late penalty" },
+            { "step": "late-60", "afterDays": 60, "addAmount": { "currencyType": "USD", "currencyValue": 15.00 }, "description": "Collection referral fee" }
+          ],
+          "overallCeiling": { "maximumMultipleOfIssued": 3 },
+          "appealWindowDays": 21,
+          "paymentGraceDays": 14,
+          "signageRequired": true,
+          "statusHistory": [
+            { "state": "active", "time": "2026-06-20T14:00:00Z", "actor": "backoffice-jlee", "detail": "loaded from counsel's summary of §12-405" }
+          ]
+        }
+  - target: $.components.schemas['Signage'].examples
+    description: Scenario 19 — the posted sign on file, as it stood at the finding.
+    update:
+      - {
+          "id": "d5000000-0000-4000-8000-000000000001",
+          "version": 1,
+          "place": { "id": "b1000000-0000-4000-8000-000000000004", "className": "Place" },
+          "text": [
+            { "language": "en", "string": "PAY BY PLATE. Unpaid or expired parking is subject to a $35 notice; unpaid notices increase 25% after 30 days. Appeals: lakeside-garage.example/appeals within 21 days." },
+            { "language": "es", "string": "PAGUE POR PLACA. El estacionamiento sin pagar o vencido está sujeto a un aviso de $35; los avisos impagos aumentan 25% después de 30 días. Apelaciones: lakeside-garage.example/appeals dentro de 21 días." }
+          ],
+          "signageStatus": "active",
+          "effectiveFrom": "2026-07-01T00:00:00Z",
+          "location": { "type": "Point", "coordinates": [ -87.6214, 41.8827 ] },
+          "imageLink": "https://api.lakeside-garage.example/signage/lot-c-entrance-2026-07.jpg",
+          "signType": "entrance",
+          "policy": { "id": "d4000000-0000-4000-8000-000000000001", "className": "EnforcementPolicy" },
+          "statusHistory": [
+            { "state": "active", "time": "2026-06-28T10:12:00Z", "actor": "backoffice-jlee", "detail": "installed 2026-06-28, photographed" }
+          ]
+        }
+
+  # ===== Validations (Part 20) =============================================
+  - target: $.components.schemas['ValidationProgram'].examples
+    description: Scenario 18 — a restaurant enrolled, with its benefit, rules, and billing.
+    update:
+      - {
+          "id": "e5000000-0000-4000-8000-000000000001",
+          "version": 1,
+          "place": { "id": "b1000000-0000-4000-8000-000000000001", "className": "Place" },
+          "provider": { "id": "a2000000-0000-4000-8000-000000000077", "className": "Organisation" },
+          "name": "Harbor Bistro",
+          "validationType": "twoHourComp",
+          "programStatus": "active",
+          "benefit": { "description": "First two hours comped", "duration": "PT2H" },
+          "rules": { "maxPerTicket": 1, "maxPerDay": 200, "validityWindow": "P1D", "stackable": false },
+          "billing": { "model": "merchantPays", "unitPrice": { "currencyType": "USD", "currencyValue": 4.00 }, "billingCycle": "monthly" },
+          "issuanceMethods": [ "qrCode" ],
+          "statusHistory": [
+            { "state": "active", "time": "2026-09-01T15:02:11Z", "actor": "backoffice-jlee", "detail": "enrolled" }
+          ]
+        }
+  - target: $.components.schemas['ValidationIssuance'].examples
+    description: Scenario 18 — a batch of codes, returned exactly once.
+    update:
+      - {
+          "id": "e6000000-0000-4000-8000-000000000003",
+          "version": 1,
+          "program": { "id": "e5000000-0000-4000-8000-000000000001", "className": "ValidationProgram" },
+          "quantity": 50,
+          "method": "qrCode",
+          "validFrom": "2026-09-12T17:00:00Z",
+          "validTo": "2026-09-13T17:00:00Z",
+          "issuedTo": "front-of-house",
+          "codes": [ "HB-7Q2M-K9X4-3TPD", "HB-A1C8-ZR5N-W6LJ", "HB-P0V3-E7HS-M2QY" ],
+          "issuanceStatus": "issued"
+        }
+  - target: $.components.schemas['ValidationInstrument'].examples
+    description: Scenario 18 — one code, looked up before it is redeemed.
+    update:
+      - {
+          "code": "HB-7Q2M-K9X4-3TPD",
+          "program": { "id": "e5000000-0000-4000-8000-000000000001", "className": "ValidationProgram" },
+          "issuance": { "id": "e6000000-0000-4000-8000-000000000003", "className": "ValidationIssuance" },
+          "instrumentStatus": "valid",
+          "validFrom": "2026-09-12T17:00:00Z",
+          "validTo": "2026-09-13T17:00:00Z",
+          "benefit": { "description": "First two hours comped", "duration": "PT2H" }
+        }
+  - target: $.components.schemas['ValidationRedemption'].examples
+    description: Scenario 18 — a redemption at the pay station, in the one ledger.
+    update:
+      - {
+          "id": "e7000000-0000-4000-8000-000000000041",
+          "version": 1,
+          "program": { "id": "e5000000-0000-4000-8000-000000000001", "className": "ValidationProgram" },
+          "place": { "id": "b1000000-0000-4000-8000-000000000001", "className": "Place" },
+          "instrumentCode": "HB-7Q2M-K9X4-3TPD",
+          "ticketNumber": "T-2210",
+          "session": { "id": "f1000000-0000-4000-8000-000000000210", "className": "Session" },
+          "appliedTime": "2026-09-12T21:33:05Z",
+          "channel": "payStation",
+          "appliedBy": "paystation-b2000000-0007",
+          "validationId": "VAL-20260912-000318",
+          "amountReduced": { "currencyType": "USD", "currencyValue": 6.00 },
+          "durationComped": "PT2H",
+          "redemptionStatus": "applied",
+          "statusHistory": [
+            { "state": "applied", "time": "2026-09-12T21:33:05Z", "actor": "paystation-b2000000-0007", "detail": "T-2210 amount due 9.00 → 3.00" }
+          ]
+        }
+  - target: $.components.schemas['ValidationStatement'].examples
+    description: Scenario 18 — a closed month, immutable, with its billable total.
+    update:
+      - {
+          "id": "e8000000-0000-4000-8000-000000000009",
+          "version": 1,
+          "program": { "id": "e5000000-0000-4000-8000-000000000001", "className": "ValidationProgram" },
+          "place": { "id": "b1000000-0000-4000-8000-000000000001", "className": "Place" },
+          "periodStart": "2026-09-01T00:00:00Z",
+          "periodEnd": "2026-10-01T00:00:00Z",
+          "statementStatus": "closed",
+          "billingModel": "merchantPays",
+          "redemptionCount": 412,
+          "reversedCount": 3,
+          "totalReduced": { "currencyType": "USD", "currencyValue": 2418.00 },
+          "billableAmount": { "currencyType": "USD", "currencyValue": 1648.00 },
+          "lines": [
+            {
+              "redemption": { "id": "e7000000-0000-4000-8000-000000000041", "className": "ValidationRedemption" },
+              "appliedTime": "2026-09-12T21:33:05Z",
+              "ticketNumber": "T-2210",
+              "amountReduced": { "currencyType": "USD", "currencyValue": 6.00 },
+              "billable": { "currencyType": "USD", "currencyValue": 4.00 }
+            }
+          ],
+          "closedTime": "2026-10-01T09:00:12Z",
+          "closedBy": "backoffice-jlee"
+        }
+
+  # ===== Credentials (Part 21) =============================================
+  - target: $.components.schemas['CredentialRecord'].examples
+    description: Scenario 20 — the replacement card, linked to the one it replaces.
+    update:
+      - {
+          "id": "d6000000-0000-4000-8000-000000000102",
+          "version": 1,
+          "credentialType": "rfid",
+          "credentialIdentification": "C-0051207",
+          "credentialAssignedType": "customer",
+          "holder": { "id": "c1000000-0000-4000-8000-000000000102", "className": "RightHolder" },
+          "account": { "id": "7a8b9c0d-1e2f-4a3b-8c4d-5e6f7a8b9c0d", "className": "Account" },
+          "assignedRights": [ { "id": "e1000000-0000-4000-8000-000000000102", "className": "AssignedRight" } ],
+          "places": [ { "id": "b1000000-0000-4000-8000-000000000001", "className": "Place" } ],
+          "validity": { "start": "2026-01-01T00:00:00Z", "end": "2026-12-31T23:59:59Z" },
+          "media": { "form": "physicalCard", "serialNumber": "HID-77A3-006903", "batch": "2026-Q3-A", "issuedTime": "2026-09-19T12:04:20Z", "deposit": { "currencyType": "USD", "currencyValue": 25.00 }, "depositStatus": "held" },
+          "credentialStatus": "active",
+          "replaces": { "id": "d6000000-0000-4000-8000-000000000101", "className": "CredentialRecord" },
+          "statusHistory": [
+            { "state": "issued", "time": "2026-09-19T12:04:20Z", "actor": "agent-0212", "detail": "replacement for d6000000-…-0101 (lost)" },
+            { "state": "active", "time": "2026-09-19T12:04:20Z", "actor": "agent-0212" }
+          ]
+        }
+  - target: $.components.schemas['CredentialAccessEvent'].examples
+    description: Scenario 20 — the replaced card refused at the gate, with the reason.
+    update:
+      - {
+          "id": "d7000000-0000-4000-8000-000000000410",
+          "credential": { "id": "d6000000-0000-4000-8000-000000000101", "className": "CredentialRecord" },
+          "occurredAt": "2026-09-19T18:02:17Z",
+          "place": { "id": "b1000000-0000-4000-8000-000000000001", "className": "Place" },
+          "lane": { "id": "b2000000-0000-4000-8000-000000000001", "className": "VehicularAccess" },
+          "device": { "id": "b2000000-0000-4000-8000-000000000011", "className": "SupplementalEquipment" },
+          "direction": "entry",
+          "outcome": "denied",
+          "denialReason": "credentialReplaced"
+        }
+
+  # ===== Valet (Part 22) ===================================================
+  - target: $.components.schemas['ValetTicket'].examples
+    description: "Scenario 21 — mid-lifecycle: the car has been asked for, with an ETA."
+    update:
+      - {
+          "id": "d8000000-0000-4000-8000-000000000419",
+          "version": 3,
+          "place": { "id": "b1000000-0000-4000-8000-000000000005", "className": "Place" },
+          "ticketNumber": "V-20419",
+          "vehicle": { "credentialType": "licensePlate", "credentialIdentification": "SYN-7734", "make": "Audi", "colour": "grey" },
+          "dropOff": { "time": "2026-09-20T18:30:14Z" },
+          "retrieval": {
+            "requestedTime": "2026-09-20T20:41:03Z",
+            "channel": "sms",
+            "requestedBy": "customer",
+            "etaMinutes": 8,
+            "promisedTime": "2026-09-20T20:49:03Z"
+          },
+          "valetStatus": "requested",
+          "statusHistory": [
+            { "state": "dropped", "time": "2026-09-20T18:30:14Z", "actor": "attendant-0031" },
+            { "state": "parked", "time": "2026-09-20T18:36:40Z", "actor": "runner-0107" },
+            { "state": "requested", "time": "2026-09-20T20:41:03Z", "actor": "customer", "detail": "channel sms; eta 8 min" }
+          ]
+        }
+  - target: $.components.schemas['ConditionReport'].examples
+    description: Scenario 21 — the acknowledged drop-off report that answers a damage claim.
+    update:
+      - {
+          "notes": "Scuff on rear bumper, driver side, approx 6 cm. Interior clean.",
+          "damage": [
+            { "area": "rearBumper", "description": "6 cm scuff, driver side", "severity": "minor", "imageLink": "https://api.lakeside-garage.example/valet/v-20419/in-rear-bumper.jpg" }
+          ],
+          "imageLinks": [
+            "https://api.lakeside-garage.example/valet/v-20419/in-front.jpg",
+            "https://api.lakeside-garage.example/valet/v-20419/in-driver.jpg",
+            "https://api.lakeside-garage.example/valet/v-20419/in-rear.jpg",
+            "https://api.lakeside-garage.example/valet/v-20419/in-passenger.jpg"
+          ],
+          "recordedTime": "2026-09-20T18:30:02Z",
+          "recordedBy": "scanner-0031",
+          "customerAcknowledged": true
+        }
+
+# Still without an example, because no scenario exercises them: Account,
+# DiscoveryDocument, TollTransaction (the whole tolling domain has no
+# scenario), PoolAvailability, and ApxEventSubscription in response shape.
+# Writing a scenario for each is the better fix than inventing a payload,
+# because a scenario keeps the example honest.
