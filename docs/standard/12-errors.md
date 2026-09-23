@@ -11,6 +11,13 @@ error shapes (`ResponseStatus`); implementations SHOULD additionally accept
 
 Base URI: `https://apx-standard.org/problems/`
 
+A `type` URI is a **stable identifier, not a location**. Per RFC 9457 §3.1.1
+it need not dereference, and clients MUST match on the exact string rather
+than fetching it. The base URI above is therefore fixed even though the
+domain is not yet delegated (Part 11 §11.2), and it will not change when the
+domain goes live. The human-readable documentation for every type is the
+table below.
+
 | Slug | Status | When |
 |---|---|---|
 | `insufficient-scope` | 403 | Token lacks the operation's OAuth scope |
