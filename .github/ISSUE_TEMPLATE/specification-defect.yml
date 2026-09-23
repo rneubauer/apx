@@ -1,0 +1,54 @@
+name: Specification defect
+description: Something in the standard is wrong, contradictory, or impossible to implement
+title: "defect: <short description>"
+labels: ["defect"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        For anything with a **security** consequence, do not open an issue.
+        Follow SECURITY.md instead: a weak control in the specification is
+        inherited by every conforming implementation, so it is coordinated
+        privately first.
+
+        Precedence, so we agree on which artifact is at fault: for
+        APX-defined paths the effective OpenAPI document prevails over the
+        prose, and the prose is the defect. For APDS-native paths the
+        vendored APDS document prevails (Part 0 §0.5).
+  - type: input
+    id: where
+    attributes:
+      label: Where
+      description: Part and section, schema name, or path and method.
+      placeholder: Part 19 §19.10, or POST /v1/violations/{id}/issue
+    validations:
+      required: true
+  - type: textarea
+    id: problem
+    attributes:
+      label: What the standard says, and what is wrong with it
+      description: Quote the sentence or the schema fragment if you can.
+    validations:
+      required: true
+  - type: textarea
+    id: consequence
+    attributes:
+      label: What goes wrong for an implementer
+      description: >
+        A concrete call sequence, payload, or scenario that cannot be built,
+        or one that two conforming servers would answer differently.
+    validations:
+      required: true
+  - type: input
+    id: edition
+    attributes:
+      label: Edition
+      description: From spec/edition.json, or the release tag you read.
+      placeholder: "0.9.0"
+    validations:
+      required: true
+  - type: textarea
+    id: suggestion
+    attributes:
+      label: Suggested fix (optional)
+      description: Wording, a schema change, or simply the option you would prefer.

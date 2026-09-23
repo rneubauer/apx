@@ -1,6 +1,8 @@
 # APX Part 0 — Scope and Overview
 
-**Status:** Draft v0.1 · **Normative unless marked otherwise.** The key words
+**Status:** Draft, edition 0.9.0. The exact set of artifacts this edition
+pins is `spec/edition.json` (Part 3 §3.4) · **Normative unless marked
+otherwise.** The key words
 MUST, MUST NOT, REQUIRED, SHALL, SHOULD, MAY are to be interpreted as
 described in RFC 2119 / RFC 8174.
 

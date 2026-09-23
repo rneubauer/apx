@@ -30,8 +30,36 @@ jobs:
         run: npm run registries:check && npm run spec:profile && npm run examples:check
       - name: Scenario payload validation
         run: npm run scenarios:check
-      - name: Committed bundle is fresh (spec/dist matches source)
-        run: git diff --exit-code spec/dist
+      - name: Committed artifacts are fresh (bundle and edition manifest match source)
+        run: git diff --exit-code spec/dist spec/edition.json
+
+  # The documentation site is generated, so a broken generator is a broken
+  # publish. The Docs workflow only runs after merge, which is too late to
+  # learn that. Build the whole site on every PR instead.
+  # Ubuntu only: the redocly CLI throws a libuv assertion on exit under
+  # Windows, which would fail this job for a reason that is not ours.
+  docs-site:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+      - run: npm ci
+      - name: Rebuild bundles
+        run: npm run spec:bundle && npm run spec:profile
+      - name: Assemble the documentation site
+        run: npm run docs:build
+      - name: Every published artifact is present
+        run: |
+          for f in index.html reference.html parcs.html apx-standard.md \
+                   edition.json apx-v1.yaml apx-v1.json apx-parcs.json \
+                   registries/index.html registries/registry.schema.json; do
+            test -s "site/$f" || { echo "missing or empty: site/$f"; exit 1; }
+          done
+          grep -q '{{APX_' site/index.html && { echo "unsubstituted placeholder in index.html"; exit 1; }
+          echo "site/ complete"
 
   # A standard's cardinal sin is silently breaking the contract. Gate every
   # PR on an API-diff of the committed bundle against the base branch.

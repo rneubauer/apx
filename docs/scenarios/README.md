@@ -1,6 +1,6 @@
 # APX Scenarios — the API at work
 
-Twenty-two end-to-end stories showing real wire exchanges against an APX
+Twenty-three end-to-end stories showing real wire exchanges against an APX
 implementation. Every JSON payload marked with an `<!-- apx:validate … -->`
 comment is machine-validated against the bundled spec by
 `npm run scenarios:check` — the samples cannot drift from the standard.
@@ -29,6 +29,7 @@ comment is machine-validated against the bundled spec by
 | [20](20-credential-lost-card-replacement.md) | Lost keycard — replaced on the phone at noon, the old card denied at the gate at six, the access log says why | `apx-credentials`, `apx-accounts`, `apx-events` |
 | [21](21-valet-dropoff-retrieve-handback.md) | Valet — drop-off with a scanned condition report, "bring my car" by text with an ETA, staged, verified handback, and the scratch that was already there | `apx-valet`, `apx-events` |
 | [22](22-lpr-gateless-wrong-way.md) | Gateless lot — a car comes in through the exit lane: rear plate, receding, `laneTravel: againstLane`, alert raised, session still opened; a correct exit with two plates read, per-attribute confidences, and the runner-up plate | `apx-lpr`, `apx-alerts`, `apx-events` |
+| [23](23-tolling-gantry-dispute.md) | Tolling — a gantry retry that must not double-bill, settlement against an account, a misread plate disputed and refunded, and a resolved dispute that cannot be reopened | `apx-tolling`, `apx-accounts`, `apx-events` |
 
 ## Conventions
 

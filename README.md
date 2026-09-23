@@ -65,10 +65,14 @@ npm run docs:build     # assemble the documentation site into site/
 Requires Node 20+. No Docker, no native modules.
 
 **Browsable docs** are published from `main` to GitHub Pages:
-<https://rneubauer.github.io/apx/> is the landing page,
-`/reference.html` the full API reference, `/parcs.html` the PARCS starter
-profile, and the bundles are served alongside them at `/apx-v1.yaml`,
-`/apx-v1.json`, and `/apx-parcs.json`.
+<https://rneubauer.github.io/apx/> is the landing page, listing every module
+with a link to its section of the reference and to the part that governs it.
+`/reference.html` is the full API reference, `/parcs.html` the PARCS starter
+profile, and `/apx-standard.md` the whole written standard compiled into one
+document. Served alongside them: the bundles at `/apx-v1.yaml`,
+`/apx-v1.json`, and `/apx-parcs.json`, the code-list registries under
+`/registries/`, and `/edition.json`, which pins by checksum exactly what
+this edition comprises.
 CI validates every push and PR; pull requests are additionally gated by an
 oasdiff breaking-change check against the base branch's bundle.
 

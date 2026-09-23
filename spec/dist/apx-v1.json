@@ -13129,7 +13129,65 @@
           "extensions": {
             "$ref": "#/components/schemas/Extensions"
           }
-        }
+        },
+        "examples": [
+          {
+            "id": "e9000000-0000-4000-8000-000000000802",
+            "version": 5,
+            "tollPoint": {
+              "id": "b4000000-0000-4000-8000-000000000001",
+              "className": "SupplementalEquipment"
+            },
+            "credential": {
+              "credentialType": "licensePlate",
+              "credentialIdentification": "SYN-9930"
+            },
+            "pricing": {
+              "currencyType": "USD",
+              "currencyValue": 2.75
+            },
+            "payment": {
+              "id": "9c0d1e2f-3a4b-4c5d-8e6f-7a8b9c0d1902",
+              "className": "PaymentRecord"
+            },
+            "transactionStatus": "resolved",
+            "dispute": {
+              "reason": "wrongVehicle",
+              "openedTime": "2026-10-02T15:20:11Z",
+              "resolvedTime": "2026-10-03T09:41:02Z",
+              "resolution": "refunded"
+            },
+            "statusHistory": [
+              {
+                "state": "created",
+                "time": "2026-09-22T07:52:31Z",
+                "actor": "gantry-hc-01",
+                "detail": "plate fallback, confidence 0.71"
+              },
+              {
+                "state": "priced",
+                "time": "2026-09-22T07:52:31Z",
+                "actor": "toll-pricing"
+              },
+              {
+                "state": "paid",
+                "time": "2026-09-23T02:11:41Z",
+                "actor": "billing-batch"
+              },
+              {
+                "state": "disputed",
+                "time": "2026-10-02T15:20:11Z",
+                "actor": "agent-0219"
+              },
+              {
+                "state": "resolved",
+                "time": "2026-10-03T09:41:02Z",
+                "actor": "backoffice-jlee",
+                "detail": "refunded; gantry hc-01 flagged for recalibration"
+              }
+            ]
+          }
+        ]
       },
       "TollPaymentAttachment": {
         "title": "TollPaymentAttachment",

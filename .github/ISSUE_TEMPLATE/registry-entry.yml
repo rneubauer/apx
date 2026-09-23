@@ -1,0 +1,71 @@
+name: Registry entry request
+description: Propose a new value for an APX code-list registry (Part 11 §11.3)
+title: "registry: add <definedValue> to <registry>"
+labels: ["registry-request"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Anyone may request an entry: implementer, vendor, or operator. No
+        membership is required, and you do not have to wait for us. Part 3
+        §3.3 lets you publish your own code list immediately and reference
+        it; an accepted request migrates the value into the APX registry.
+
+        Maintainers accept, reject with reasons, or defer **within 60 days**
+        (Part 11 §11.3).
+  - type: dropdown
+    id: registry
+    attributes:
+      label: Which registry
+      options:
+        - apx-command-types
+        - apx-alert-types
+        - apx-device-states
+        - apx-topics
+        - apx-conformance-classes
+        - apx-issue-types
+        - apx-violation-types
+    validations:
+      required: true
+  - type: input
+    id: defined-value
+    attributes:
+      label: Proposed definedValue
+      description: camelCase, matching the existing entries. One value per issue.
+      placeholder: evBayNotCharging
+    validations:
+      required: true
+  - type: textarea
+    id: description
+    attributes:
+      label: Proposed entryDescription
+      description: One or two sentences, in the style of the entries already in that file.
+    validations:
+      required: true
+  - type: textarea
+    id: use-case
+    attributes:
+      label: Use case
+      description: >
+        Who needs this and what breaks without it. Name the operator, vendor,
+        or jurisdiction if you can. A registry entry is a long-lived
+        commitment, so a concrete case is worth more than a general one.
+    validations:
+      required: true
+  - type: textarea
+    id: existing
+    attributes:
+      label: Why an existing value does not fit
+      description: >
+        Entries are add-only and are never re-meant, so a near-miss cannot be
+        redefined later. Tell us which existing value you considered.
+    validations:
+      required: true
+  - type: input
+    id: interim
+    attributes:
+      label: Interim value already in use (optional)
+      description: >
+        If you are publishing this in your own code list under Part 3 §3.3,
+        give the key so we can document the alias on acceptance.
+      placeholder: "apds-ext:acmecorp:alerts@1.0 → evBayNotCharging"
