@@ -30,8 +30,8 @@ jobs:
         run: npm run registries:check && npm run spec:profile && npm run examples:check
       - name: Scenario payload validation
         run: npm run scenarios:check
-      - name: Committed bundle is fresh (spec/dist matches source)
-        run: git diff --exit-code spec/dist
+      - name: Committed artifacts are fresh (bundle and edition manifest match source)
+        run: git diff --exit-code spec/dist spec/edition.json
 
   # A standard's cardinal sin is silently breaking the contract. Gate every
   # PR on an API-diff of the committed bundle against the base branch.

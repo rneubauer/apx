@@ -11,7 +11,9 @@ API surface APDS deliberately leaves out — real-time delivery, operational
 control, alerting, discovery, and the customer-service layer built on
 them — expressed entirely in APDS's own vocabulary. One machine-readable
 OpenAPI 3.1 document, a written standard of 23 parts plus a conformance
-annex, seven open registries, and twenty-two CI-validated end-to-end scenarios.
+annex, seven open registries, and twenty-three CI-validated end-to-end
+scenarios. `spec/edition.json` pins the exact artifacts of this edition by
+checksum, so "adopt APX" names a fixed set of files rather than a branch.
 
 ## Why we believe it belongs with APDS
 
@@ -40,8 +42,11 @@ annex, seven open registries, and twenty-two CI-validated end-to-end scenarios.
    rule); the PARCS Starter Profile is a 26-endpoint minimum; every list
    paginates the APDS way; codegen is exercised in CI. During drafting we
    found and documented two defects in the published APDS artifact
-   (Part 1 §1.3) — vendored untouched, reported upstream — which we offer
-   as evidence the erratum discipline works.
+   (Part 1 §1.3), vendored untouched and worked around only in our own
+   validators. They are not yet filed in your tracker: we did not want to
+   open issues against a published release before the working group had
+   seen the analysis. We bring them with this submission and will file
+   them wherever you prefer.
 5. **It answers the industry's next question.** Part 17 standardizes the
    customer-service surface — one aggregated resolution context and
    server-side, policy-decided allowed actions — with a rule we believe
@@ -51,7 +56,7 @@ annex, seven open registries, and twenty-two CI-validated end-to-end scenarios.
 ## What we are candid about
 
 - **Two known upstream errata** in `apds-api-4.1.yaml` (Part 1 §1.3),
-  reported to your repository.
+  documented in our written standard but **not yet filed** with you.
 - **A deliberate absence:** APX defines no raw single-ticket price
   override. Validations and discounts are the sanctioned, auditable
   per-ticket adjustment mechanism, and the rate deck stays authoritative
@@ -71,7 +76,7 @@ annex, seven open registries, and twenty-two CI-validated end-to-end scenarios.
 
 Technical review by the working group; a decision on adoption, adoption
 with changes, or chartering a joint task group; and — independent of that
-outcome — acceptance of the two errata reports. The repository, its CI,
+outcome — a route for filing the two errata. The repository, its CI,
 browsable reference documentation, and the scenario suite are public;
 every wire example is schema-validated against the specification in CI,
 and a schema-conformant mock server (`npm run mock`, Prism over the

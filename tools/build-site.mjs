@@ -30,7 +30,7 @@ const REG_OUT = join(SITE, 'registries');
 
 const BUNDLES = ['apx-v1.yaml', 'apx-v1.json', 'apx-parcs.json'];
 const PAGES = ['index.html'];
-const RENDERED = ['reference.html', 'parcs.html'];
+const RENDERED = ['reference.html', 'parcs.html', 'apx-standard.md'];
 
 const escapeHtml = (s) =>
   String(s).replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' })[c]);
@@ -50,6 +50,9 @@ for (const page of RENDERED) {
 for (const bundle of BUNDLES) {
   copyFileSync(join(DIST, bundle), join(SITE, bundle));
 }
+
+// The edition manifest: what this edition pins, by checksum (Part 3 §3.4).
+copyFileSync(join(ROOT, 'spec', 'edition.json'), join(SITE, 'edition.json'));
 
 // ----- registries: copy, then index them from their own contents -----------
 const registryFiles = readdirSync(REG_SRC)
