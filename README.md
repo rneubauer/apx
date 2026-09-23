@@ -83,7 +83,7 @@ Version history: [CHANGELOG.md](CHANGELOG.md).
 
 ## Status
 
-**v0.9.0 — complete v1 draft.** All domains specified: data profile,
+**v0.9.1 — complete v1 draft.** All domains specified: data profile,
 delivery fabric, control, alerts, discovery, accounts & payments, LPR,
 reservations, permits, tolling, customer service & resolution, violations
 (enforcement), validation programs, credential lifecycle, valet. This repository contains the specification
