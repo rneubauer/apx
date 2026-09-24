@@ -203,6 +203,18 @@ actions:
           retry must not vend the gate twice), **perishable** (a vend requested
           ten minutes ago must not fire now), and audited end to end.
 
+          Two optional features close open tickets at the exit lane without
+          touching the deck. **Negotiated rates:** a RateTable flagged
+          `negotiable` (the `apds-ext:apx:ratepolicy@1.0` decoration, which
+          rides with the table on every `/rates` sync) may be pushed to the
+          one car in the lane, and the command names the agent who chose it.
+          **Ticket matching:** when no ticket is in the machine the lane
+          inquiry offers the open sessions that plausibly belong to the
+          vehicle — by plate read, credential, account phone, or reservation
+          — and `matchTicket` binds the exit to the real entry, priced from
+          the real entry time, with the agent on the record. The lost-ticket
+          fee becomes the fallback, not the default.
+
           The response is deliberately not a success boolean. It is a command
           resource whose `confirmationLevel` distinguishes *accepted* from *the
           device acknowledged it* from *the outcome was physically verified*. A

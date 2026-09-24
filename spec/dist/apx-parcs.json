@@ -2,7 +2,7 @@
   "openapi": "3.1.0",
   "info": {
     "title": "APX — PARCS Starter Profile",
-    "version": "0.9.1",
+    "version": "0.10.0",
     "summary": "An open companion standard to APDS 4.1",
     "license": {
       "name": "MIT",
@@ -49,7 +49,7 @@
     },
     {
       "name": "Control",
-      "description": "**Doing things in the real world.** APDS inventories devices and marks\naccess-controlled places but defines no actuation. This is it.\n\nEverything physical goes through one audited command plane rather than\nscattered verbs: vend a gate, hold it open, close a lane, issue a lost\nticket, push a rate table, apply a validation, set a device state,\ndisplay a message, restart a device. Commands are **idempotent** (a\nretry must not vend the gate twice), **perishable** (a vend requested\nten minutes ago must not fire now), and audited end to end.\n\nThe response is deliberately not a success boolean. It is a command\nresource whose `confirmationLevel` distinguishes *accepted* from *the\ndevice acknowledged it* from *the outcome was physically verified*. A\nconsumer, an AI agent especially, must not claim a stronger outcome\nthan that level supports.\n\nAlso here: the lane inquiry that populates a call-center screen-pop,\nthe validation-provider list for a place, and live device status.\n\nWritten standard:\n[Part 6](https://github.com/rneubauer/apx/blob/main/docs/standard/06-control.md)."
+      "description": "**Doing things in the real world.** APDS inventories devices and marks\naccess-controlled places but defines no actuation. This is it.\n\nEverything physical goes through one audited command plane rather than\nscattered verbs: vend a gate, hold it open, close a lane, issue a lost\nticket, push a rate table, apply a validation, set a device state,\ndisplay a message, restart a device. Commands are **idempotent** (a\nretry must not vend the gate twice), **perishable** (a vend requested\nten minutes ago must not fire now), and audited end to end.\n\nTwo optional features close open tickets at the exit lane without\ntouching the deck. **Negotiated rates:** a RateTable flagged\n`negotiable` (the `apds-ext:apx:ratepolicy@1.0` decoration, which\nrides with the table on every `/rates` sync) may be pushed to the\none car in the lane, and the command names the agent who chose it.\n**Ticket matching:** when no ticket is in the machine the lane\ninquiry offers the open sessions that plausibly belong to the\nvehicle — by plate read, credential, account phone, or reservation\n— and `matchTicket` binds the exit to the real entry, priced from\nthe real entry time, with the agent on the record. The lost-ticket\nfee becomes the fallback, not the default.\n\nThe response is deliberately not a success boolean. It is a command\nresource whose `confirmationLevel` distinguishes *accepted* from *the\ndevice acknowledged it* from *the outcome was physically verified*. A\nconsumer, an AI agent especially, must not claim a stronger outcome\nthan that level supports.\n\nAlso here: the lane inquiry that populates a call-center screen-pop,\nthe validation-provider list for a place, and live device status.\n\nWritten standard:\n[Part 6](https://github.com/rneubauer/apx/blob/main/docs/standard/06-control.md)."
     },
     {
       "name": "Accounts",
@@ -3481,7 +3481,7 @@
           "Control"
         ],
         "summary": "Lane inquiry — current transaction context (screen-pop)",
-        "description": "The ticket/credential currently in the machine at this lane, amount\ndue, applied validations, latest LPR read, and monthly-credential\ncontext including the last 10 activity events.",
+        "description": "The ticket/credential currently in the machine at this lane, amount\ndue, applied validations, latest LPR read, and monthly-credential\ncontext including the last 10 activity events. When no ticket is in\nthe machine — or when a lookup parameter is given — also\n`matchCandidates[]`: the open sessions at the place that plausibly\nbelong to the vehicle in the lane (Part 6 §6.7), for a driver who\nhas lost the ticket.",
         "parameters": [
           {
             "name": "id",
@@ -3492,6 +3492,30 @@
               "format": "uuid"
             },
             "description": "VehicularAccess (lane) UUID."
+          },
+          {
+            "name": "plate",
+            "in": "query",
+            "schema": {
+              "type": "string"
+            },
+            "description": "Ticket-matching override — the plate as the driver reads it, when the camera missed or misread (Part 6 §6.7)."
+          },
+          {
+            "name": "phone",
+            "in": "query",
+            "schema": {
+              "type": "string"
+            },
+            "description": "Ticket-matching override — a permit holder's phone number, resolved through the account registry (Part 13 §13.1); never a call-routing identifier (Part 17 §17.1)."
+          },
+          {
+            "name": "credential",
+            "in": "query",
+            "schema": {
+              "type": "string"
+            },
+            "description": "Ticket-matching override — a credential identification (card number, tag) the driver names."
           }
         ],
         "responses": {
@@ -5170,7 +5194,7 @@
           },
           "commandType": {
             "type": "string",
-            "description": "definedValue from apx-command-types (vendGate, lostTicket, pushRate, applyValidation, …).",
+            "description": "definedValue from apx-command-types (vendGate, lostTicket, pushRate, applyValidation, pushNegotiatedRate, matchTicket, …).",
             "examples": [
               "vendGate"
             ]
@@ -5181,11 +5205,26 @@
           },
           "parameters": {
             "type": "object",
-            "description": "Command-type-specific parameters. Normative parameter schemas per\ncommandType are given in Part 6 (e.g. lostTicket.method,\npushRate.rateTable VersionedReference, applyValidation.ticket +\nprovider, displayMessage.message, setDeviceState.state)."
+            "description": "Command-type-specific parameters. Normative parameter schemas per\ncommandType are given in Part 6 (e.g. lostTicket.method,\npushRate.rateTable VersionedReference, applyValidation.ticket +\nprovider, displayMessage.message, setDeviceState.state,\npushNegotiatedRate.rateTable VersionedReference to a RateTable\nflagged negotiable, matchTicket.session + evidence)."
           },
           "requestedBy": {
-            "description": "The agent/organisation requesting the action (defaults to the token's apx_org).",
+            "description": "The organisation requesting the action (defaults to the token's apx_org).",
             "$ref": "#/components/schemas/Reference"
+          },
+          "agent": {
+            "type": "string",
+            "description": "Opaque principal of the human or AI agent who initiated the command\n(mirrors SupportInteraction.agent, Part 17 §17.6). Distinct from\nrequestedBy (the organisation) and from approval.approvedBy (the\napprover). REQUIRED for pushNegotiatedRate and matchTicket (Part 6\n§6.6–6.7): who selected the rate, who made the match.",
+            "examples": [
+              "agent:j.okafor"
+            ]
+          },
+          "agentType": {
+            "type": "string",
+            "enum": [
+              "human",
+              "ai"
+            ],
+            "description": "Whether `agent` is a person or an AI agent (mirrors SupportInteraction.agentType)."
           },
           "reason": {
             "type": "string",
@@ -5397,7 +5436,44 @@
                     "$ref": "#/components/schemas/Url"
                   }
                 }
+              },
+              "negotiatedRate": {
+                "type": "object",
+                "description": "The negotiated rate in effect on this ticket, if a\npushNegotiatedRate command succeeded for it (Part 6 §6.6). Absent\nwhen the ticket prices from the lane's normal rate deck.",
+                "required": [
+                  "rateTable",
+                  "command"
+                ],
+                "properties": {
+                  "rateTable": {
+                    "description": "The RateTable selected (VersionedReference — the exact version applied).",
+                    "$ref": "#/components/schemas/VersionedReference"
+                  },
+                  "command": {
+                    "description": "The pushNegotiatedRate Command that applied it — carries `agent`, `reason`, and the audit trail.",
+                    "$ref": "#/components/schemas/Reference"
+                  },
+                  "agent": {
+                    "type": "string",
+                    "description": "The principal who selected the rate (copied from the command for the screen-pop)."
+                  },
+                  "policy": {
+                    "description": "The table's `apds-ext:apx:ratepolicy@1.0` decoration as it stood when applied (its displayName is what the agent saw).",
+                    "$ref": "#/components/schemas/RatePolicy"
+                  }
+                }
+              },
+              "matchedCommand": {
+                "description": "When this ticket was bound to an open session by a matchTicket\ncommand (Part 6 §6.7), the Command that made the match — carries\n`agent`, `parameters.evidence`, and the audit trail. Absent for a\nticket physically inserted at the lane.",
+                "$ref": "#/components/schemas/Reference"
               }
+            }
+          },
+          "matchCandidates": {
+            "type": "array",
+            "description": "Open sessions at this lane's place that plausibly belong to the\nvehicle in the lane, best first (Part 6 §6.7). Computed when the lane\nhas no ticket in the machine, or whenever the caller passes a\n`plate`, `phone`, or `credential` lookup parameter. ADVISORY: the\nagent confirms with the driver; the server never binds a candidate\nwithout a matchTicket command.",
+            "items": {
+              "$ref": "#/components/schemas/MatchCandidate"
             }
           },
           "monthlyCredential": {
@@ -7195,6 +7271,120 @@
             "type": "string"
           }
         }
+      },
+      "RatePolicy": {
+        "title": "RatePolicy",
+        "description": "Level B decoration on an APDS RateTable, carried in its `extensions`\ncontainer as `apds-ext:apx:ratepolicy@1.0` (Part 6 §6.6). APDS models\nthe rate deck completely; it has no way to say which tables an agent\nmay offer as a negotiated rate. This is that flag — and because it\nrides inside the RateTable, every consumer mirroring the deck through\nthe native `/rates` route (Part 5 §5.2) receives it with the table, no\nsecond query. APX deliberately defines NO selection rules here (length\nof stay, time of day, caller type): the system presenting the deck to\nan agent or a third party applies its own guardrails. The server's only\nrule is enforcement — a pushNegotiatedRate naming a table that is not\nflagged negotiable is refused (422 rate-not-negotiable).",
+        "type": "object",
+        "required": [
+          "negotiable"
+        ],
+        "properties": {
+          "negotiable": {
+            "type": "boolean",
+            "description": "Whether this RateTable MAY be selected by a pushNegotiatedRate command."
+          },
+          "displayName": {
+            "type": "string",
+            "description": "Short agent-facing label for the table when offered as a negotiated rate (e.g. \"Customer-service flat $20\")."
+          },
+          "note": {
+            "type": "string",
+            "description": "Free-text guidance for the presenting system or agent. Informative — never evaluated by the server."
+          }
+        },
+        "examples": [
+          {
+            "negotiable": true,
+            "displayName": "Customer-service flat $20",
+            "note": "Offer for rate complaints referred by on-site tenants. Log the tenant in reason."
+          }
+        ]
+      },
+      "MatchCandidate": {
+        "title": "MatchCandidate",
+        "description": "An open session at the place that plausibly belongs to the vehicle in\nthe lane (Part 6 §6.7). Produced by the lane inquiry from the lane's\nown LPR read, a presented credential, the account registry (by plate\nor phone), or a checked-in reservation. Composes APDS references; adds\nno parallel session store. Advisory until a matchTicket command binds\none.",
+        "type": "object",
+        "required": [
+          "session",
+          "matchedBy",
+          "confidence"
+        ],
+        "properties": {
+          "session": {
+            "description": "The open APDS Session this candidate proposes.",
+            "$ref": "#/components/schemas/Reference"
+          },
+          "ticketNumber": {
+            "type": "string",
+            "description": "The entry ticket number, if a ticket was issued at entry."
+          },
+          "entryTime": {
+            "$ref": "#/components/schemas/DateTime"
+          },
+          "entryLane": {
+            "description": "The VehicularAccess the session entered through.",
+            "$ref": "#/components/schemas/Reference"
+          },
+          "plate": {
+            "type": "string",
+            "description": "The plate recorded on the session at entry, if any."
+          },
+          "matchedBy": {
+            "type": "string",
+            "enum": [
+              "plateRead",
+              "credential",
+              "account",
+              "reservation"
+            ],
+            "description": "How this candidate was found: the lane's LPR read against the entry\nread (plateRead); a credential presented at the lane (credential);\nthe account registry by plate or phone (account); a checked-in\nreservation carrying the plate (reservation)."
+          },
+          "evidence": {
+            "description": "The record that produced the match — the entry Observation, the\nCredential, the RightHolder account, or the AssignedRight — so the\nagent can show it and the matchTicket command can cite it.",
+            "$ref": "#/components/schemas/Reference"
+          },
+          "confidence": {
+            "type": "number",
+            "minimum": 0,
+            "maximum": 1,
+            "description": "Server's confidence that this is the vehicle in the lane (a plate-read match projects APDS Confidence.overallConfidence)."
+          },
+          "amountDueIfMatched": {
+            "description": "What the exit would price at from this session's true entry time — so the agent can tell the driver before matching.",
+            "$ref": "#/components/schemas/AmountInCurrency"
+          },
+          "imageLink": {
+            "description": "The entry image, for visual confirmation (access-controlled per Part 9 §9.6).",
+            "$ref": "#/components/schemas/Url"
+          }
+        },
+        "examples": [
+          {
+            "session": {
+              "id": "c4000000-0000-4000-8000-000000000051",
+              "className": "Session"
+            },
+            "ticketNumber": "T-4502",
+            "entryTime": "2026-09-24T08:02:17Z",
+            "entryLane": {
+              "id": "b2000000-0000-4000-8000-000000000001",
+              "className": "VehicularAccess"
+            },
+            "plate": "KLM4410",
+            "matchedBy": "plateRead",
+            "evidence": {
+              "id": "f2000000-0000-4000-8000-000000000911",
+              "className": "Observation"
+            },
+            "confidence": 0.94,
+            "amountDueIfMatched": {
+              "currencyType": "USD",
+              "currencyValue": 14
+            },
+            "imageLink": "https://api.lakeside-garage.example/lpr/f2000000-0911.jpg"
+          }
+        ]
       },
       "StructureTypeEnum": {
         "title": "StructureTypeEnum",

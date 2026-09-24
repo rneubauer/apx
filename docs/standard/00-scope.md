@@ -1,6 +1,6 @@
 # APX Part 0 — Scope and Overview
 
-**Status:** Draft, edition 0.9.1. The exact set of artifacts this edition
+**Status:** Draft, edition 0.10.0. The exact set of artifacts this edition
 pins is `spec/edition.json` (Part 3 §3.4) · **Normative unless marked
 otherwise.** The key words
 MUST, MUST NOT, REQUIRED, SHALL, SHOULD, MAY are to be interpreted as

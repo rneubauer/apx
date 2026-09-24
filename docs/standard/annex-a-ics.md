@@ -69,6 +69,10 @@ implementation has the named capability).
 | APX-CTL-06 | vendGate, lostTicket, pushRate, applyValidation implemented; lane inquiry; provider query; device status | §6.5 |
 | APX-CTL-07 | `applyValidation` with unlisted provider → 422 `validation-provider-unknown` | §6.3 |
 | APX-CTL-08 | Lost-ticket fee taken from the rate deck's disclosed lostTicketFee line; absent line → command fails | §6.1 |
+| APX-CTL-09 | *(conditional — negotiated rates)* `pushNegotiatedRate` applies only to the target lane's current ticket, never the deck; a table not flagged `apds-ext:apx:ratepolicy@1.0` `negotiable` for the place → 422 `rate-not-negotiable`; the flag travels inside the RateTable on `/rates` | §6.6 |
+| APX-CTL-10 | *(conditional — negotiated rates)* `agent` REQUIRED on `pushNegotiatedRate` (400 `agent-required`); the lane's `currentTicket.negotiatedRate` names the table version and the command | §6.6 |
+| APX-CTL-11 | *(conditional — ticket matching)* Lane inquiry returns advisory `matchCandidates[]` when no ticket is in the machine or a `plate`/`phone`/`credential` lookup is given; the server never binds without `matchTicket` | §6.7 |
+| APX-CTL-12 | *(conditional — ticket matching)* `matchTicket` with `agent` REQUIRED prices the exit from the matched session's true entry time, materializes the exit into the APDS Session on vend (`SessionUpdated`), refuses a closed/foreign session (422 `session-not-open`) and an empty lane (409 `lane-no-current-transaction`) | §6.7 |
 
 ## A.6 `apx-alerts`
 

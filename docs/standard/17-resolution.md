@@ -101,8 +101,11 @@ and each category is owned by the module that already models it:
    parameters: `credential`; read side `GET /v1/credentials/{id}/passback`)
    and `courtesyExit` (a gate vend recorded as a tracked courtesy against
    the account/holder in parameters — servers MUST count it toward
-   courtesy policy and surface it in `recentOverrides`). Control MUST NOT
-   become a dumping ground for non-physical writes.
+   courtesy policy and surface it in `recentOverrides`). Registry v3 adds
+   `pushNegotiatedRate` and `matchTicket` (Part 6 §6.6–6.7): both act on
+   the current transaction at a lane, which is why they are commands and
+   not domain writes. Control MUST NOT become a dumping ground for
+   non-physical writes.
 2. **Transactional/business → the owning domain API.** Plate correction is
    `PUT /v1/sessions/{id}/plate` (§17.5); validations are §6.3; rates are
    the native `/rates` machinery.

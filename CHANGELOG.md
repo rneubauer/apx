@@ -6,6 +6,54 @@ conformance/versioning rules in Part 3 of the written standard.
 The machine-readable spec (`spec/openapi/apx.yaml`, bundled as
 `spec/dist/apx-v1.*`) is normative; entries here are informative.
 
+## [0.10.0] — 2026-09-24
+
+Negotiated rates and ticket matching (Part 6 §6.6–6.7, optional features
+of class `apx-control`). Both close open tickets at the exit lane; neither
+touches the rate deck.
+
+**The rate deck was never missing.** APDS 4.1 owns `RateTable` and serves
+it at `/rates` with `modified_since`; the APX data overlay already put that
+route in the Part 5 change feed. Part 5 §5.2 now says so in one paragraph
+for a third party mirroring the deck. What APDS cannot say is which tables
+an agent may *offer*: new Level B decoration `apds-ext:apx:ratepolicy@1.0`
+(`RatePolicy`: `negotiable`, `displayName`, `note`) on the RateTable, so
+the flag travels with the deck on every sync. New command
+`pushNegotiatedRate` (registry `apx-command-types` v3) applies a flagged
+table to the **current ticket at the lane only** — `pushRate` remains the
+deck-level correction — and is refused for an unflagged table
+(`422 rate-not-negotiable`) or an empty lane
+(`409 lane-no-current-transaction`). The lane inquiry shows
+`currentTicket.negotiatedRate` (table version, command, agent). APX
+deliberately defines **no selection rules** — no length-of-stay bands or
+time windows; the presenting system applies its own guardrails — and **no
+free-form amount**: selection from the deck keeps §6.3's revenue-integrity
+rule intact.
+
+**Ticket matching.** A driver at the exit with no ticket used to get the
+lost-ticket fee or a courtesy vend; the entry was usually recorded anyway.
+`GET /v1/lanes/{id}/current` now returns advisory `matchCandidates[]`
+(`MatchCandidate`: open session, entry time and lane, `matchedBy`
+plateRead | credential | account | reservation, evidence, confidence,
+`amountDueIfMatched`, entry image) when no ticket is in the machine or
+when a `plate`, `phone`, or `credential` lookup is passed — `phone` is an
+account key per Part 13, not a call identifier, and Part 17 §17.1's
+layering rule is unchanged. New command `matchTicket` (`parameters.session`
++ `evidence`) binds the lane's transaction to the open session, prices the
+exit from its true entry time, and MUST close the APDS Session on vend
+with `SessionUpdated`; refused for a closed or foreign session
+(`422 session-not-open`). `lostTicket` is the explicit fallback.
+
+**Who did it.** `Command` gains optional `agent` and `agentType`
+(`human | ai`, mirroring SupportInteraction), REQUIRED on both new
+commands (`400 agent-required`): distinct from `requestedBy` (the
+organisation) and `approval.approvedBy` (the approver). Part 12 gains four
+problem types; Annex A.5 gains conditional rows APX-CTL-09 through 12;
+Part 17 §17.4 lists the registry v3 entries. Scenarios 24 (negotiated
+rate from the mirrored deck, refused when unflagged) and 25 (plate-read
+candidate matched, permit holder found by phone, closed session refused).
+Examples overlay: `RatePolicy`, `MatchCandidate`.
+
 ## [0.9.1] — 2026-09-23
 
 Submission-readiness pass. No change to any route, schema, or required
