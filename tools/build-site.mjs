@@ -20,6 +20,7 @@
 import { copyFileSync, mkdirSync, readFileSync, readdirSync, writeFileSync, existsSync } from 'node:fs';
 import { join, dirname } from 'node:path';
 import { fileURLToPath } from 'node:url';
+import { ICONS, FALLBACK } from './site-icons.mjs';
 
 const ROOT = join(dirname(fileURLToPath(import.meta.url)), '..');
 const SITE = join(ROOT, 'site');
@@ -171,8 +172,14 @@ const modulesHtml = groups
         const tag = tags.get(name);
         const p = part(tag.description);
         moduleCount += 1;
+        if (!ICONS[name]) {
+          console.warn(`[docs:site] WARN no icon for module "${name}" — add one to tools/site-icons.mjs`);
+        }
         return `      <div class="mod">
-        <a class="mod-name" href="reference.html#tag/${encodeURIComponent(name)}">${escapeHtml(name)}</a>
+        <div class="mod-h">
+          <span class="mod-i">${ICONS[name] ?? FALLBACK}</span>
+          <a class="mod-name" href="reference.html#tag/${encodeURIComponent(name)}">${escapeHtml(name)}</a>
+        </div>
         <p class="mod-d">${escapeHtml(lead(tag.description))}</p>
         <p class="mod-l"><a href="reference.html#tag/${encodeURIComponent(name)}">API reference</a>${
           p ? ` · <a href="${escapeHtml(p.href)}">${escapeHtml(p.label)}</a>` : ''
