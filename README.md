@@ -22,7 +22,7 @@ an APX implementation without changes. APX adds only what APDS lacks:
 |---|---|---|
 | Data profile | Full/Change updates, tombstones, cursor change feed | APDS native routes (`/places`, `/sessions`, `/rates`, `/rights/*`, `/observations`, `/quotes`) |
 | Delivery fabric | HMAC-signed webhooks, normative retries, delivery ledger, SSE | APDS `/webhooks` + `EventSubscription` (superset-compatible) |
-| Control | Command plane (vend gate, lost ticket, rate push, validations…), lane inquiry, device status | `SupplementalEquipment`, `HierarchyElementReference` |
+| Control | Command plane (vend gate, lost ticket, rate push, validations…), lane inquiry, device status; negotiated rates selected from deck tables flagged `negotiable`, applied to the one ticket in the lane with the selecting agent on the audit; ticket matching — open-session candidates by plate, phone, or credential and an agent-attributed `matchTicket` that closes the open ticket at the real fare | `SupplementalEquipment`, `HierarchyElementReference` |
 | Alerts | Alert lifecycle + open taxonomies | `UserDefinedCodeList`, Use Case C.2.2 exception vocabulary |
 | Discovery | Credential-scoped capability documents | OAuth2 scopes + place grants |
 | Accounts & payments | Balance lookup, take-payment, accounting write-back, payment history | `RightHolder`, `Payment` |
@@ -83,7 +83,7 @@ Version history: [CHANGELOG.md](CHANGELOG.md).
 
 ## Status
 
-**v0.9.1 — complete v1 draft.** All domains specified: data profile,
+**v0.10.0 — complete v1 draft.** All domains specified: data profile,
 delivery fabric, control, alerts, discovery, accounts & payments, LPR,
 reservations, permits, tolling, customer service & resolution, violations
 (enforcement), validation programs, credential lifecycle, valet. This repository contains the specification

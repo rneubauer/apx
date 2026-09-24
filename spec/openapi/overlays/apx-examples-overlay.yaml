@@ -22,7 +22,7 @@
 overlay: 1.0.0
 info:
   title: APX examples overlay (one worked payload per resource)
-  version: 0.9.0
+  version: 0.10.0
 
 actions:
   # ===== Control (Part 6) ==================================================
@@ -54,6 +54,29 @@ actions:
           "deviceState": "fault",
           "lastCommunication": "2026-08-06T18:16:55Z",
           "stateChangedTime": "2026-08-06T18:17:40Z"
+        }
+  - target: $.components.schemas['RatePolicy'].examples
+    description: Scenario 24 — the deck decoration that says a table may be offered as a negotiated rate.
+    update:
+      - {
+          "negotiable": true,
+          "displayName": "Customer-service flat $20",
+          "note": "Offer for rate complaints referred by on-site tenants. Log the tenant in reason."
+        }
+  - target: $.components.schemas['MatchCandidate'].examples
+    description: Scenario 25 — an open session offered for a driver with no ticket, found from the lane's plate read.
+    update:
+      - {
+          "session": { "id": "c4000000-0000-4000-8000-000000000051", "className": "Session" },
+          "ticketNumber": "T-4502",
+          "entryTime": "2026-09-24T08:02:17Z",
+          "entryLane": { "id": "b2000000-0000-4000-8000-000000000001", "className": "VehicularAccess" },
+          "plate": "KLM4410",
+          "matchedBy": "plateRead",
+          "evidence": { "id": "f2000000-0000-4000-8000-000000000911", "className": "Observation" },
+          "confidence": 0.94,
+          "amountDueIfMatched": { "currencyType": "USD", "currencyValue": 14.0 },
+          "imageLink": "https://api.lakeside-garage.example/lpr/f2000000-0911.jpg"
         }
   - target: $.components.schemas['LaneStatus'].examples
     description: "Scenario 01 — the screen-pop: ticket, plate read, and a denied monthly."

@@ -62,6 +62,15 @@ Rules:
    served after the change; the client then runs `mode=full` for those
    subtrees before relying on the feed for them.
 
+**Rate deck mirroring (informative).** A third-party system that needs the
+operator's rate deck — a call platform, a reservation channel, a revenue
+system — mirrors it exactly this way: `GET /rates?place_ids=…&mode=full`
+once, then `mode=change` with the cursor. APDS `RateTable` is the rate
+model; APX adds none. What APX does add rides *inside* each table: the
+`apds-ext:apx:ratepolicy@1.0` decoration (Part 6 §6.6) says which tables
+an agent may offer as a negotiated rate, so the mirror carries that flag
+without a second query.
+
 **Machine-readability (normative).** The `mode`/`cursor` parameters and the
 `ChangeFeedPage` response alternate are declared by the APX data-profile
 overlay (`spec/openapi/overlays/apx-data-overlay.yaml`, OpenAPI Overlay

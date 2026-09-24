@@ -25,7 +25,7 @@ Command:
       readOnly: true
     commandType:
       type: string
-      description: definedValue from apx-command-types (vendGate, lostTicket, pushRate, applyValidation, …).
+      description: definedValue from apx-command-types (vendGate, lostTicket, pushRate, applyValidation, pushNegotiatedRate, matchTicket, …).
       examples: [vendGate]
     target:
       description: |-
@@ -38,10 +38,25 @@ Command:
         Command-type-specific parameters. Normative parameter schemas per
         commandType are given in Part 6 (e.g. lostTicket.method,
         pushRate.rateTable VersionedReference, applyValidation.ticket +
-        provider, displayMessage.message, setDeviceState.state).
+        provider, displayMessage.message, setDeviceState.state,
+        pushNegotiatedRate.rateTable VersionedReference to a RateTable
+        flagged negotiable, matchTicket.session + evidence).
     requestedBy:
-      description: The agent/organisation requesting the action (defaults to the token's apx_org).
+      description: The organisation requesting the action (defaults to the token's apx_org).
       $ref: "../../../vendor/apds/4.1/apds-api-4.1.yaml#/components/schemas/Reference"
+    agent:
+      type: string
+      description: |-
+        Opaque principal of the human or AI agent who initiated the command
+        (mirrors SupportInteraction.agent, Part 17 §17.6). Distinct from
+        requestedBy (the organisation) and from approval.approvedBy (the
+        approver). REQUIRED for pushNegotiatedRate and matchTicket (Part 6
+        §6.6–6.7): who selected the rate, who made the match.
+      examples: ["agent:j.okafor"]
+    agentType:
+      type: string
+      enum: [human, ai]
+      description: Whether `agent` is a person or an AI agent (mirrors SupportInteraction.agentType).
     reason:
       type: string
       description: Free-text or code-list reason for the action (audit).
@@ -190,6 +205,44 @@ LaneStatus:
               $ref: "../../../vendor/apds/4.1/apds-api-4.1.yaml#/components/schemas/Reference"
             imageLink:
               $ref: "../../../vendor/apds/4.1/apds-api-4.1.yaml#/components/schemas/Url"
+        negotiatedRate:
+          type: object
+          description: |-
+            The negotiated rate in effect on this ticket, if a
+            pushNegotiatedRate command succeeded for it (Part 6 §6.6). Absent
+            when the ticket prices from the lane's normal rate deck.
+          required: [rateTable, command]
+          properties:
+            rateTable:
+              description: The RateTable selected (VersionedReference — the exact version applied).
+              $ref: "../../../vendor/apds/4.1/apds-api-4.1.yaml#/components/schemas/VersionedReference"
+            command:
+              description: The pushNegotiatedRate Command that applied it — carries `agent`, `reason`, and the audit trail.
+              $ref: "../../../vendor/apds/4.1/apds-api-4.1.yaml#/components/schemas/Reference"
+            agent:
+              type: string
+              description: The principal who selected the rate (copied from the command for the screen-pop).
+            policy:
+              description: The table's `apds-ext:apx:ratepolicy@1.0` decoration as it stood when applied (its displayName is what the agent saw).
+              $ref: "#/RatePolicy"
+        matchedCommand:
+          description: |-
+            When this ticket was bound to an open session by a matchTicket
+            command (Part 6 §6.7), the Command that made the match — carries
+            `agent`, `parameters.evidence`, and the audit trail. Absent for a
+            ticket physically inserted at the lane.
+          $ref: "../../../vendor/apds/4.1/apds-api-4.1.yaml#/components/schemas/Reference"
+    matchCandidates:
+      type: array
+      description: |-
+        Open sessions at this lane's place that plausibly belong to the
+        vehicle in the lane, best first (Part 6 §6.7). Computed when the lane
+        has no ticket in the machine, or whenever the caller passes a
+        `plate`, `phone`, or `credential` lookup parameter. ADVISORY: the
+        agent confirms with the driver; the server never binds a candidate
+        without a matchTicket command.
+      items:
+        $ref: "#/MatchCandidate"
     monthlyCredential:
       type: object
       description: Monthly-parker credential context at the lane, if presented.
@@ -250,3 +303,82 @@ ValidationProvider:
         duration:
           description: Comped parking time (ISO 8601), valued at the applicable rate.
           $ref: "../../../vendor/apds/4.1/apds-api-4.1.yaml#/components/schemas/Duration"
+
+RatePolicy:
+  title: RatePolicy
+  description: |-
+    Level B decoration on an APDS RateTable, carried in its `extensions`
+    container as `apds-ext:apx:ratepolicy@1.0` (Part 6 §6.6). APDS models
+    the rate deck completely; it has no way to say which tables an agent
+    may offer as a negotiated rate. This is that flag — and because it
+    rides inside the RateTable, every consumer mirroring the deck through
+    the native `/rates` route (Part 5 §5.2) receives it with the table, no
+    second query. APX deliberately defines NO selection rules here (length
+    of stay, time of day, caller type): the system presenting the deck to
+    an agent or a third party applies its own guardrails. The server's only
+    rule is enforcement — a pushNegotiatedRate naming a table that is not
+    flagged negotiable is refused (422 rate-not-negotiable).
+  type: object
+  required: [negotiable]
+  properties:
+    negotiable:
+      type: boolean
+      description: Whether this RateTable MAY be selected by a pushNegotiatedRate command.
+    displayName:
+      type: string
+      description: Short agent-facing label for the table when offered as a negotiated rate (e.g. "Customer-service flat $20").
+    note:
+      type: string
+      description: Free-text guidance for the presenting system or agent. Informative — never evaluated by the server.
+
+MatchCandidate:
+  title: MatchCandidate
+  description: |-
+    An open session at the place that plausibly belongs to the vehicle in
+    the lane (Part 6 §6.7). Produced by the lane inquiry from the lane's
+    own LPR read, a presented credential, the account registry (by plate
+    or phone), or a checked-in reservation. Composes APDS references; adds
+    no parallel session store. Advisory until a matchTicket command binds
+    one.
+  type: object
+  required: [session, matchedBy, confidence]
+  properties:
+    session:
+      description: The open APDS Session this candidate proposes.
+      $ref: "../../../vendor/apds/4.1/apds-api-4.1.yaml#/components/schemas/Reference"
+    ticketNumber:
+      type: string
+      description: The entry ticket number, if a ticket was issued at entry.
+    entryTime:
+      $ref: "../../../vendor/apds/4.1/apds-api-4.1.yaml#/components/schemas/DateTime"
+    entryLane:
+      description: The VehicularAccess the session entered through.
+      $ref: "../../../vendor/apds/4.1/apds-api-4.1.yaml#/components/schemas/Reference"
+    plate:
+      type: string
+      description: The plate recorded on the session at entry, if any.
+    matchedBy:
+      type: string
+      enum: [plateRead, credential, account, reservation]
+      description: |-
+        How this candidate was found: the lane's LPR read against the entry
+        read (plateRead); a credential presented at the lane (credential);
+        the account registry by plate or phone (account); a checked-in
+        reservation carrying the plate (reservation).
+    evidence:
+      description: |-
+        The record that produced the match — the entry Observation, the
+        Credential, the RightHolder account, or the AssignedRight — so the
+        agent can show it and the matchTicket command can cite it.
+      $ref: "../../../vendor/apds/4.1/apds-api-4.1.yaml#/components/schemas/Reference"
+    confidence:
+      type: number
+      minimum: 0
+      maximum: 1
+      description: Server's confidence that this is the vehicle in the lane (a plate-read match projects APDS Confidence.overallConfidence).
+    amountDueIfMatched:
+      description: What the exit would price at from this session's true entry time — so the agent can tell the driver before matching.
+      $ref: "../../../vendor/apds/4.1/apds-api-4.1.yaml#/components/schemas/AmountInCurrency"
+    imageLink:
+      description: The entry image, for visual confirmation (access-controlled per Part 9 §9.6).
+      $ref: "../../../vendor/apds/4.1/apds-api-4.1.yaml#/components/schemas/Url"

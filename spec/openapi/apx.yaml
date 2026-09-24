@@ -2,7 +2,7 @@ openapi: 3.1.0
 
 info:
   title: APX — APDS Parking eXtensions
-  version: 0.9.1
+  version: 0.10.0
   summary: An open companion standard to APDS 4.1
   description: |-
     **APX (APDS Parking eXtensions)** is an additive companion standard to the
@@ -592,13 +592,29 @@ paths:
       description: |-
         The ticket/credential currently in the machine at this lane, amount
         due, applied validations, latest LPR read, and monthly-credential
-        context including the last 10 activity events.
+        context including the last 10 activity events. When no ticket is in
+        the machine — or when a lookup parameter is given — also
+        `matchCandidates[]`: the open sessions at the place that plausibly
+        belong to the vehicle in the lane (Part 6 §6.7), for a driver who
+        has lost the ticket.
       parameters:
         - name: id
           in: path
           required: true
           schema: { type: string, format: uuid }
           description: VehicularAccess (lane) UUID.
+        - name: plate
+          in: query
+          schema: { type: string }
+          description: Ticket-matching override — the plate as the driver reads it, when the camera missed or misread (Part 6 §6.7).
+        - name: phone
+          in: query
+          schema: { type: string }
+          description: Ticket-matching override — a permit holder's phone number, resolved through the account registry (Part 13 §13.1); never a call-routing identifier (Part 17 §17.1).
+        - name: credential
+          in: query
+          schema: { type: string }
+          description: Ticket-matching override — a credential identification (card number, tag) the driver names.
       responses:
         "200":
           description: Current lane status.
@@ -4079,6 +4095,10 @@ components:
       $ref: "./domains/control/schemas.yaml#/LaneStatus"
     ValidationProvider:
       $ref: "./domains/control/schemas.yaml#/ValidationProvider"
+    RatePolicy:
+      $ref: "./domains/control/schemas.yaml#/RatePolicy"
+    MatchCandidate:
+      $ref: "./domains/control/schemas.yaml#/MatchCandidate"
     Account:
       $ref: "./domains/accounts/schemas.yaml#/Account"
     PaymentRecord:

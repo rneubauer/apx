@@ -12,12 +12,22 @@ actuation. This Part adds it, referencing APDS entities throughout.
   original command; same key + different body is `409`.
 - `commandType` values are OPEN (registry `apx-command-types`): `vendGate`,
   `holdGateOpen`, `closeLane`, `lostTicket`, `pushRate`, `applyValidation`,
-  `setDeviceState`, `displayMessage`, `restartDevice`.
+  `setDeviceState`, `displayMessage`, `restartDevice`; the Part 17
+  passback and courtesy entries (registry v2); `pushNegotiatedRate` and
+  `matchTicket` (registry v3, §6.6–6.7).
 - Normative parameters per type: `lostTicket.method` (string, operator code
   list); `pushRate.rateTable` (VersionedReference to RateTable);
   `applyValidation.ticket` + `applyValidation.provider` (Reference);
   `displayMessage.message` (MultilingualString); `setDeviceState.state`
-  (apx-device-states value).
+  (apx-device-states value); `pushNegotiatedRate.rateTable`
+  (VersionedReference to a RateTable flagged negotiable, §6.6);
+  `matchTicket.session` (Reference to an open Session) and
+  `matchTicket.evidence` (Reference, §6.7).
+- `agent` / `agentType` (optional on every command; REQUIRED on
+  `pushNegotiatedRate` and `matchTicket`) name the human or AI principal
+  who initiated the command — distinct from `requestedBy` (the
+  organisation) and `approval.approvedBy` (the approver). A command that
+  requires `agent` and lacks it is refused with `400 agent-required`.
 - `target` is a Reference to a SupplementalEquipment (device) or a
   HierarchyElement (lane/place). Legacy "location id + lane number"
   addressing used by existing PARCS integrations maps to the Place UUID +
@@ -120,3 +130,108 @@ screenshot link — an APDS Observation), and monthly-credential context
 `apx-control` requires: §6.1 command plane with vendGate, lostTicket,
 pushRate, applyValidation; §6.2 lane inquiry; §6.3 provider query; §6.4
 device status; the grant rule; and command/device event publication.
+
+Negotiated rates (§6.6) and ticket matching (§6.7) are **optional
+features** of the class. An implementation that lists `pushNegotiatedRate`
+or `matchTicket` in its capability document (Part 16) MUST meet the
+corresponding section in full (Annex A rows APX-CTL-09 through 12).
+
+## 6.6 Negotiated rates (optional feature)
+
+APDS owns the rate deck: `RateTable`, its collections and lines, served
+and mirrored through the native `/rates` route (Part 5 §5.2). APX adds no
+rate model. What the deck cannot say is which of its tables an agent may
+offer a driver on the phone, and who offered it. This section adds
+exactly that.
+
+- **The flag.** A RateTable that MAY be offered as a negotiated rate
+  carries the Level B decoration `apds-ext:apx:ratepolicy@1.0`
+  (`RatePolicy`: `negotiable`, optional `displayName`, `note`) in its
+  `extensions` container (Part 4 §4.3). Because the decoration is inside
+  the table, every consumer that syncs `/rates` receives it with the
+  deck. The set of negotiable tables at a place is therefore the set of
+  tables that apply there and carry `negotiable: true` — no second
+  registry, no second query.
+- **The command.** `pushNegotiatedRate` with `parameters.rateTable`
+  (VersionedReference) and a lane target applies that table to the
+  **current ticket at the lane only**. It never changes the lane's deck;
+  the next car prices normally. (`pushRate` remains the deck-level
+  correction, with its supervisor-grade consequences.) Servers MUST
+  refuse a table that is not flagged negotiable for the target's place,
+  or that does not apply there, with `422 rate-not-negotiable`, and MUST
+  refuse the command at a lane with no transaction in progress with
+  `409 lane-no-current-transaction`.
+- **Who chose it.** `agent` is REQUIRED (`400 agent-required` otherwise),
+  `agentType` SHOULD be given, and `reason` SHOULD be. The lane inquiry
+  then shows `currentTicket.negotiatedRate` — the table at the exact
+  version applied, the command, and the agent — so a later context at
+  the lane, a dispute, or a revenue report sees who chose what, from the
+  same audit record every other command has.
+- **Selection, not invention (design rule).** The agent selects a table
+  from the deck; APX defines no free-form negotiated amount. This keeps
+  §6.3's rule intact — every reduction on a ticket is attributable to a
+  named deck table, validation, or discount — and keeps revenue integrity
+  by construction. A deck that wants a range publishes tables for it.
+- **No selection rules, deliberately.** APX does not say when a negotiable
+  table may be chosen: no length-of-stay bands, no time windows, no caller
+  categories. Such rules multiply fast and differ by operator; the system
+  presenting the deck to an agent or a third party applies its own
+  guardrails, and Part 17 §17.3's policy layer can gate the action per
+  context. The server enforces only the flag.
+- **APDS alignment (informative).** The negotiated table is an ordinary
+  APDS RateTable, so the resulting Session segment references it exactly
+  as any other rate; a stock APDS consumer sees a session priced by a
+  named table, which is the truth.
+
+## 6.7 Ticket matching (optional feature)
+
+A driver at the exit lane without a ticket is the garage's most common
+revenue leak: the choice today is a lost-ticket fee the driver resents or
+a courtesy vend the operator absorbs. The entry usually *was* recorded —
+by the camera, by a credential, by a reservation — and this section lets
+the agent find it and bind the exit to it, so the open ticket closes at
+the real fare.
+
+- **Candidates.** When the lane has no ticket in the machine, or when the
+  caller passes `plate`, `phone`, or `credential` on
+  `GET /v1/lanes/{id}/current`, the server returns `matchCandidates[]`:
+  open sessions at the place that plausibly belong to the vehicle in the
+  lane, best first. Sources are the lane's own LPR read against entry
+  reads (`plateRead`), a credential presented at the lane (`credential`),
+  the account registry by plate or phone (`account`, Part 13 §13.1), and
+  a checked-in reservation carrying the plate (`reservation`). Each
+  candidate names the session, its entry time and lane, how it was
+  matched, the evidence record, a confidence, and SHOULD carry
+  `amountDueIfMatched` so the agent can quote the fare before matching.
+  Candidates are **advisory**: the server MUST NOT bind one without a
+  command.
+- **Phone is an account key, not a call identifier.** The `phone`
+  parameter resolves a permit holder through the account registry exactly
+  as `GET /v1/accounts?phone=` does. It is not a telephony identifier and
+  Part 17 §17.1's layering rule is unchanged: the call platform still
+  maps call → lane before calling APX.
+- **The command.** `matchTicket` with `parameters.session` (Reference to
+  the chosen open Session), `parameters.evidence` (Reference, SHOULD be
+  given — the Observation, Credential, RightHolder, or AssignedRight that
+  justified the match), and `agent` REQUIRED (`400 agent-required`) binds
+  the current transaction at the target lane to that session. The exit
+  then prices from the session's true entry time under the rate that
+  applied to it; `lostTicket` is not involved. Servers MUST refuse a
+  session that is closed, already bound to an exit, or at another place
+  with `422 session-not-open`, and an empty lane with
+  `409 lane-no-current-transaction`.
+- **Materialization (normative).** On vend the matched Session MUST close
+  in APDS terms — the exit segment, end time, and the exit Observation
+  where one exists — and MUST publish `SessionUpdated`, so a plain APDS
+  client reading `/sessions/{id}` sees one complete stay. The lane's
+  `currentTicket` carries `matchedCommand` until the vehicle leaves. APX
+  keeps no parallel matching store: the match *is* the session's exit.
+- **Fallback stays explicit.** When no candidate is right, `lostTicket`
+  applies as §6.1 defines it. Both paths close the open ticket and both
+  are attributable; the difference is the fare, and the audit shows which
+  path was taken and by whom.
+- **No matching rules, deliberately.** APX does not define how confident
+  a candidate must be, whether the driver must read the plate back, or
+  what a supervisor must approve. As with §6.6 those are operator policy,
+  presented through Part 17 §17.3's allowed actions when a context is in
+  play, and applied by the presenting system otherwise.
