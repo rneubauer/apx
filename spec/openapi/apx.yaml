@@ -201,7 +201,13 @@ paths:
         with `ResponseStatus`, exactly as APDS documents. An APX client
         sends `Prefer: return=representation` and receives `201` with the
         full subscription INCLUDING the signing secret (returned exactly
-        once, in that response only).
+        once, in that response only; webhook transport only).
+
+        Refusals at creation (Part 8 §8.1): a topic the credential could
+        not read synchronously is 403 `insufficient-scope` (Part 9 §9.6(4));
+        a `filters.places` entry outside the token's `apx_places` grant is
+        403 `insufficient-grant`. Send `Idempotency-Key` to make a retried
+        create safe.
       parameters:
         - name: Prefer
           in: header
@@ -213,6 +219,7 @@ paths:
           schema:
             type: string
             enum: [return=representation]
+        - $ref: "#/components/parameters/IdempotencyKeyOptional"
       requestBody:
         required: true
         content:
@@ -223,7 +230,9 @@ paths:
         "200":
           description: |-
             Stock APDS contract — subscription approved and activated
-            (request did not ask for the APX representation).
+            (request did not ask for the APX representation). `ids[]`
+            carries the new subscription's id as its single entry, so a
+            stock client can later revoke it (Part 8 §8.1).
           content:
             application/json:
               schema:
@@ -239,17 +248,32 @@ paths:
         "202":
           description: |-
             Stock APDS contract — subscription request received; will be
-            processed and then approved/declined.
+            processed and then approved/declined. `ids[]` carries the new
+            subscription's id as its single entry (Part 8 §8.1).
           content:
             application/json:
               schema:
                 $ref: "../vendor/apds/4.1/apds-api-4.1.yaml#/components/schemas/ResponseStatus"
         "400":
-          description: Missing/unknown topics or endpoint.
+          description: |-
+            An unregistered topic (`unknown-topic`), or a body that fails the
+            schema or a field rule (`invalid-request`, with `errors[]`): a
+            webhook-transport subscription without `endpoint`, an empty
+            `topics[]`, a secret under 32 bytes of entropy, or an
+            `extensions` key outside the Part 4 §4.3 pattern.
           content:
             application/problem+json:
               schema:
                 $ref: "#/components/schemas/Problem"
+        "409":
+          description: |-
+            The `Idempotency-Key` was already used with a different body
+            (`idempotency-conflict`). A replay with the same body returns
+            the subscription as it now stands (Part 4 §4.2a) — never the
+            secret a second time.
+          content:
+            application/problem+json:
+              schema: { $ref: "#/components/schemas/Problem" }
         "401": { $ref: "#/components/responses/Unauthorized" }
         "403": { $ref: "#/components/responses/Forbidden" }
         "429": { $ref: "#/components/responses/TooManyRequests" }
@@ -289,6 +313,29 @@ paths:
         schema:
           type: string
         description: Unique identifier for the existing subscription
+    get:
+      operationId: get-webhooks-id
+      security:
+        - apxOAuth: ["apx.subscriptions:manage"]
+        - oAuth: [po, sp, ad]
+      tags: [Subscription]
+      summary: Read one subscription (APX additive operation)
+      description: |-
+        Returns one subscription the caller may see — its status,
+        `activeKeyIds`, and filters — without paging through `GET
+        /webhooks`. Secrets are never returned. Readable in every state,
+        including `failed` (Part 8 §8.1).
+      responses:
+        "200":
+          description: The subscription (secret never returned).
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApxEventSubscription"
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+        "404": { $ref: "#/components/responses/NotFound" }
+        "429": { $ref: "#/components/responses/TooManyRequests" }
     patch:
       operationId: patch-webhooks-id
       security:
@@ -296,13 +343,23 @@ paths:
         - oAuth: [po, sp, ad]
       tags: [Subscription]
       summary: Update a subscription (APX additive operation)
-      description: Update topics, endpoint, filters, status (resume a failed subscription), or rotate the secret.
+      description: |-
+        Update topics, endpoint, filters, or status (pause, resume a paused
+        or failed subscription), or rotate the secret. The body is a JSON
+        Merge Patch over the subscription: send only what changes
+        (Part 8 §8.1). The precondition is `If-Match` or the body
+        `version`; a stale one is 409 `version-conflict` (Part 4 §4.2a).
+        While the subscription is `failed`, the only PATCH accepted is one
+        that sets `status: active`; any other is 410
+        `subscription-failed`.
+      parameters:
+        - $ref: "#/components/parameters/IfMatch"
       requestBody:
         required: true
         content:
           application/json:
             schema:
-              $ref: "#/components/schemas/ApxEventSubscription"
+              $ref: "./domains/events/schemas.yaml#/ApxEventSubscriptionPatch"
       responses:
         "200":
           description: Updated subscription (secret never returned).
@@ -316,6 +373,18 @@ paths:
             application/problem+json:
               schema:
                 $ref: "#/components/schemas/Problem"
+        "409":
+          description: Stale `If-Match` or body `version` (`version-conflict`, Part 4 §4.2a).
+          content:
+            application/problem+json:
+              schema: { $ref: "#/components/schemas/Problem" }
+        "410":
+          description: |-
+            The subscription is `failed` and the body does not set
+            `status: active` (`subscription-failed`, Part 8 §8.1).
+          content:
+            application/problem+json:
+              schema: { $ref: "#/components/schemas/Problem" }
         "400": { $ref: "#/components/responses/BadRequest" }
         "401": { $ref: "#/components/responses/Unauthorized" }
         "403": { $ref: "#/components/responses/Forbidden" }
@@ -353,7 +422,13 @@ paths:
         - oAuth: [po, sp, ad]
       tags: [Subscription]
       summary: Delivery ledger for a subscription
-      description: Returns the delivery records (attempts, status, last HTTP code) for auditing.
+      description: |-
+        Returns the delivery records for auditing: one per (event,
+        subscription), with the attempt count, status, last HTTP code, and
+        the per-attempt history (`attemptHistory`: each attempt's
+        `APX-Delivery-Id`, time, and code — Part 8 §8.3). Newest first.
+        Readable in every subscription state. An event held while the
+        subscription is `paused` has no record until its first attempt.
       parameters:
         - name: id
           in: path
@@ -361,6 +436,23 @@ paths:
           schema:
             type: string
         - $ref: "../vendor/apds/4.1/apds-api-4.1.yaml#/components/parameters/page"
+        - name: status
+          in: query
+          required: false
+          description: Only records in this delivery status.
+          schema:
+            type: string
+            enum: [delivered, retrying, failed]
+        - name: eventId
+          in: query
+          required: false
+          description: Only the record of this EventEnvelope.id.
+          schema: { type: string, format: uuid }
+        - name: since
+          in: query
+          required: false
+          description: Only records whose latest attempt is at or after this instant (RFC 3339).
+          schema: { type: string, format: date-time }
       responses:
         "200":
           description: Delivery records.
@@ -393,8 +485,18 @@ paths:
       summary: Server-Sent Events stream (conformance class apx-events-sse)
       description: |-
         Streams EventEnvelopes for a subscription with `transport: sse`.
-        Each SSE event carries `id:` = per-subscription sequence and `data:`
-        = the envelope JSON. Reconnect with `Last-Event-ID` to resume.
+        Frame grammar (normative, Part 8 §8.4): one event per frame, an
+        `id:` line carrying the per-subscription sequence (a decimal
+        integer), a single `data:` line carrying the envelope JSON, and a
+        blank line; `retry:` and comment lines MAY appear. Reconnect with
+        `Last-Event-ID` to resume strictly after that sequence.
+
+        Checks run in this order: the subscription exists and is visible
+        (else 404), its transport is `sse` (else 404 `target-not-found` —
+        there is no stream for it), it is not `failed` (else 410
+        `subscription-failed`), and `Last-Event-ID` is still buffered (else
+        410 `stream-position-expired`; re-sync through the Part 5 change
+        feed, then reconnect without `Last-Event-ID`).
       parameters:
         - name: subscription
           in: query
@@ -409,21 +511,29 @@ paths:
             type: string
       responses:
         "200":
-          description: text/event-stream of EventEnvelope objects.
+          description: |-
+            text/event-stream of EventEnvelope objects, one per frame
+            (`id: <sequence>`, `data: <EventEnvelope JSON>`, blank line).
           content:
             text/event-stream:
               schema:
                 type: string
+                description: SSE frames per Part 8 §8.4; each `data:` line validates as an EventEnvelope.
         "401": { $ref: "#/components/responses/Unauthorized" }
         "403": { $ref: "#/components/responses/Forbidden" }
         "429": { $ref: "#/components/responses/TooManyRequests" }
         "404":
-          description: No such subscription, or subscription transport is not sse.
+          description: |-
+            No such subscription, or its transport is not sse — both
+            `target-not-found` (transport is checked before status).
           content:
             application/problem+json:
               schema: { $ref: "#/components/schemas/Problem" }
         "410":
-          description: Subscription exhausted its retry schedule and is failed (`subscription-failed`, Part 12).
+          description: |-
+            The subscription exhausted its retry schedule and is failed
+            (`subscription-failed`), or `Last-Event-ID` is older than the
+            server's buffer (`stream-position-expired`) — Part 8 §8.4.
           content:
             application/problem+json:
               schema: { $ref: "#/components/schemas/Problem" }
@@ -4074,11 +4184,142 @@ webhooks:
         across retries), and `APX-Key-Id` (REQUIRED during secret-rotation
         overlap windows — Part 9 §9.4). Respond 2xx to acknowledge;
         anything else triggers the normative retry schedule (Part 8).
+
+        **Every attempt is signed afresh (normative, Part 8 §8.3):**
+        `APX-Timestamp` is the time of that attempt and `APX-Signature` is
+        computed over it and the unchanged body, so a retry an hour later
+        still falls inside the receiver's ±5-minute window. The body — and
+        with it the envelope `id` and `time` — is byte-identical across
+        attempts.
+
+        The typed entries below (`apx-native-event` and one per APX topic
+        whose data schema lives outside its own domain) name the `data`
+        schema each topic carries (Part 8 §8.7); they are the same POST.
       requestBody:
         content:
           application/json:
             schema:
               $ref: "#/components/schemas/EventEnvelope"
+      responses:
+        "200":
+          description: Acknowledged.
+  apx-native-event:
+    post:
+      operationId: receive-apx-native-event
+      summary: APDS EventTypeEnum topic delivery
+      description: |-
+        A delivery on an APDS 4.1 topic (`SessionCreated`, `PlaceUpdated`,
+        …): `type` is an APDS `EventTypeEnum` value, `data` the APDS
+        `EventData` shape (the created/updated entity; for a `*Deleted`
+        topic the last state), and `subject` references the entity
+        (Part 5 §5.4, Part 8 §8.2). Signed and retried like every delivery.
+      parameters: &deliveryHeaders
+        - name: APX-Signature
+          in: header
+          required: true
+          description: '`v1=` + hex HMAC-SHA256(secret, APX-Timestamp + "." + raw body), computed per attempt.'
+          schema: { type: string, pattern: "^v1=[0-9a-f]{64}$" }
+        - name: APX-Timestamp
+          in: header
+          required: true
+          description: RFC 3339 time of THIS attempt (not of the event or of the first attempt).
+          schema: { type: string, format: date-time }
+        - name: APX-Delivery-Id
+          in: header
+          required: true
+          description: UUID unique per attempt; the envelope `id` is the dedup key.
+          schema: { type: string, format: uuid }
+        - name: APX-Key-Id
+          in: header
+          required: false
+          description: The signing key's id — REQUIRED during a rotation overlap (Part 9 §9.4).
+          schema: { type: string }
+      requestBody:
+        content:
+          application/json:
+            schema:
+              allOf:
+                - $ref: "#/components/schemas/EventEnvelope"
+                - type: object
+                  properties:
+                    type:
+                      $ref: "../vendor/apds/4.1/apds-api-4.1.yaml#/components/schemas/EventTypeEnum"
+                    data:
+                      $ref: "../vendor/apds/4.1/apds-api-4.1.yaml#/components/schemas/EventData"
+      responses:
+        "200":
+          description: Acknowledged.
+  apx.subscription.failed.v1:
+    post:
+      operationId: receive-apx-subscription-failed
+      summary: A subscription exhausted its retry schedule
+      description: |-
+        Published when a subscription enters `failed` (Part 8 §8.3).
+        `subject` references the subscription (`className`
+        `ApxEventSubscription`); `data` is a SubscriptionFailure. Delivered
+        to other subscriptions of the same `apx_org` that list the topic,
+        never to the failed one.
+      parameters: *deliveryHeaders
+      requestBody:
+        content:
+          application/json:
+            schema:
+              allOf:
+                - $ref: "#/components/schemas/EventEnvelope"
+                - type: object
+                  properties:
+                    type: { const: apx.subscription.failed.v1 }
+                    data:
+                      $ref: "./domains/events/schemas.yaml#/SubscriptionFailure"
+      responses:
+        "200":
+          description: Acknowledged.
+  apx.data.observation.created.v1:
+    post:
+      operationId: receive-apx-data-observation-created
+      summary: An Observation was ingested
+      description: |-
+        One event per ingested read. `data` is the APDS
+        `ObservationElement` (an ingested ObservationSet yields one event
+        per element); `subject` references it with `className`
+        `ObservationElement`; publishers MUST populate `elementIds` with
+        the observing lane or place, which is the event's place binding
+        (Part 8 §8.5). Plate values are subject to Part 9 §9.6.
+      parameters: *deliveryHeaders
+      requestBody:
+        content:
+          application/json:
+            schema:
+              allOf:
+                - $ref: "#/components/schemas/EventEnvelope"
+                - type: object
+                  properties:
+                    type: { const: apx.data.observation.created.v1 }
+                    data:
+                      $ref: "../vendor/apds/4.1/apds-api-4.1.yaml#/components/schemas/ObservationElement"
+      responses:
+        "200":
+          description: Acknowledged.
+  apx.reservation.noshow.v1:
+    post:
+      operationId: receive-apx-reservation-noshow
+      summary: A reservation reached its no-show condition
+      description: |-
+        `data` is a ReservationSummary (`reservation`, `reservationState`
+        `noShow`, `plannedStart`); `subject` references the AssignedRight
+        (Part 14 §14.1, Part 8 §8.7).
+      parameters: *deliveryHeaders
+      requestBody:
+        content:
+          application/json:
+            schema:
+              allOf:
+                - $ref: "#/components/schemas/EventEnvelope"
+                - type: object
+                  properties:
+                    type: { const: apx.reservation.noshow.v1 }
+                    data:
+                      $ref: "#/components/schemas/ReservationSummary"
       responses:
         "200":
           description: Acknowledged.

@@ -33,26 +33,16 @@ ApxEventSubscription:
       enum: [webhook, sse]
       default: webhook
     filters:
-      type: object
-      description: Server-side delivery filtering.
-      properties:
-        places:
-          type: array
-          description: Only events bound to these HierarchyElement subtrees are delivered.
-          items:
-            type: string
-            format: uuid
-        severityFloor:
-          type: string
-          description: For alert topics — minimum severity delivered.
-          enum: [info, warning, minor, major, critical]
+      $ref: "#/SubscriptionFilters"
     secret:
       type: string
       description: |-
         HMAC signing secret (≥32 bytes of entropy, used as raw UTF-8 key
-        material). Server-generated when absent and returned EXACTLY ONCE —
-        in the Prefer=representation creation response. Never present in
-        GET/PATCH responses.
+        material; shorter is 400 `invalid-request`). For `transport:
+        webhook` only: server-generated when absent and returned EXACTLY
+        ONCE — in the Prefer=representation creation response. Never
+        present in GET/PATCH responses. An SSE subscription has nothing to
+        sign and gets no secret (Part 8 §8.1).
     secretRef:
       type: string
       writeOnly: true
@@ -60,6 +50,22 @@ ApxEventSubscription:
         Identifier of an out-of-band-exchanged secret (Part 9 §9.4) —
         supply INSTEAD of `secret` when key material must never transit
         the API. Never a secret value itself.
+    keyId:
+      type: string
+      writeOnly: true
+      description: |-
+        Identifier the client chooses for the key it supplies with `secret`
+        or `secretRef`; deliveries signed with that key carry it in
+        `APX-Key-Id`. Server-assigned when absent (Part 8 §8.1).
+    retireKeyIds:
+      type: array
+      writeOnly: true
+      description: |-
+        PATCH only: key ids to retire now, ending a rotation overlap early.
+        Retiring the last active key is 400 `invalid-request`. Without it,
+        the server retires the superseded key 24 hours after the rotation
+        (Part 8 §8.1).
+      items: { type: string }
     activeKeyIds:
       type: array
       readOnly: true
@@ -71,7 +77,12 @@ ApxEventSubscription:
     status:
       type: string
       enum: [active, paused, failed]
-      description: failed = retry schedule exhausted; PATCH status=active to resume.
+      description: |-
+        `active` delivers; `paused` holds matching events for up to 24 hours
+        and delivers them in order on resume (Part 8 §8.1); `failed` is
+        server-assigned when the retry schedule is exhausted (a client
+        setting it is 400 `invalid-request`). PATCH `status: active` to
+        resume a paused or failed subscription.
     recordInfo:
       $ref: "../common/schemas.yaml#/RecordInfo"
     extensions:
@@ -106,3 +117,133 @@ DeliveryRecord:
       description: Last HTTP status code received from the endpoint (0 = network error).
     time:
       $ref: "../../../vendor/apds/4.1/apds-api-4.1.yaml#/components/schemas/DateTime"
+    attemptHistory:
+      type: array
+      description: |-
+        Every attempt so far, oldest first (Part 8 §8.3). `deliveryId` and
+        `lastCode` above are those of the latest entry. The normative
+        schedule makes at most 27 attempts per event.
+      items:
+        $ref: "#/DeliveryAttempt"
+
+DeliveryAttempt:
+  title: DeliveryAttempt
+  description: One delivery attempt of one event to one subscription.
+  type: object
+  required:
+    - deliveryId
+    - time
+    - code
+  properties:
+    deliveryId:
+      type: string
+      format: uuid
+      description: The attempt's `APX-Delivery-Id` (unique per attempt).
+    time:
+      description: When the attempt was sent — also its `APX-Timestamp` (each attempt is signed afresh, Part 8 §8.3).
+      $ref: "../../../vendor/apds/4.1/apds-api-4.1.yaml#/components/schemas/DateTime"
+    code:
+      type: integer
+      description: HTTP status code received (0 = network error or timeout).
+
+SubscriptionFilters:
+  title: SubscriptionFilters
+  type: object
+  description: Server-side delivery filtering.
+  properties:
+    places:
+      type: array
+      description: |-
+        Only events bound to these HierarchyElement subtrees are delivered
+        (Part 8 §8.5). Every entry must lie inside the token's `apx_places`
+        grant, else 403 `insufficient-grant`.
+      items:
+        type: string
+        format: uuid
+    severityFloor:
+      type: string
+      description: For alert topics — minimum severity delivered.
+      enum: [info, warning, minor, major, critical]
+
+ApxEventSubscriptionPatch:
+  title: ApxEventSubscriptionPatch
+  description: |-
+    Body of `PATCH /webhooks/{id}`: a JSON Merge Patch (RFC 7396) over
+    ApxEventSubscription. Members present replace the stored value, an
+    explicit `null` clears an optional member, and absent members are
+    unchanged — so `{"status": "active"}` alone resumes a subscription.
+    `version`, when given, is the precondition (Part 4 §4.2a); a stale one
+    is 409 `version-conflict`. `id`, `activeKeyIds`, and `recordInfo` are
+    server-managed and cannot be patched.
+  type: object
+  properties:
+    version:
+      type: integer
+      minimum: 1
+      description: The version the client last read.
+    endpoint:
+      $ref: "../../../vendor/apds/4.1/apds-api-4.1.yaml#/components/schemas/Url"
+    topics:
+      type: array
+      minItems: 1
+      items:
+        type: string
+    transport:
+      type: string
+      enum: [webhook, sse]
+    filters:
+      description: Replaces the stored filters; `{}` removes every filter.
+      $ref: "#/SubscriptionFilters"
+    secret:
+      type: string
+      description: A new signing secret; starts a rotation overlap (Part 8 §8.1).
+    secretRef:
+      type: string
+      writeOnly: true
+    keyId:
+      type: string
+      writeOnly: true
+    retireKeyIds:
+      type: array
+      writeOnly: true
+      items: { type: string }
+    status:
+      type: string
+      enum: [active, paused, failed]
+      description: |-
+        `active` or `paused` — the client-settable states. `failed` is
+        server-assigned; a PATCH setting it is 400 `invalid-request`.
+    extensions:
+      $ref: "../common/schemas.yaml#/Extensions"
+
+SubscriptionFailure:
+  title: SubscriptionFailure
+  description: |-
+    Data of `apx.subscription.failed.v1` (Part 8 §8.3): which subscription
+    stopped, where it was delivering, and the attempt that exhausted the
+    schedule. The envelope `subject` references the same subscription.
+  type: object
+  required:
+    - subscription
+    - failedTime
+  properties:
+    subscription:
+      description: The subscription (`className` `ApxEventSubscription`).
+      $ref: "../../../vendor/apds/4.1/apds-api-4.1.yaml#/components/schemas/Reference"
+    endpoint:
+      description: The endpoint that stopped answering (webhook transport).
+      $ref: "../../../vendor/apds/4.1/apds-api-4.1.yaml#/components/schemas/Url"
+    failedTime:
+      description: When the subscription entered `failed`.
+      $ref: "../../../vendor/apds/4.1/apds-api-4.1.yaml#/components/schemas/DateTime"
+    firstFailedEventId:
+      type: string
+      format: uuid
+      description: EventEnvelope.id of the first event that could not be delivered.
+    attempts:
+      type: integer
+      minimum: 1
+      description: Attempts made for that event before the schedule was exhausted.
+    lastCode:
+      type: integer
+      description: The last HTTP status code received (0 = network error).

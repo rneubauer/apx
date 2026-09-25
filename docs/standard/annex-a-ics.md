@@ -30,10 +30,10 @@ implementation has the named capability).
 | ID | Requirement | Source |
 |---|---|---|
 | APX-DATA-01 | The eight native APDS routes served | §5.6 |
-| APX-DATA-02 | `APX-Update-Mode: full\|change` on writes; explicit-null clears, absent unchanged; stale version → `version-conflict` | §5.1 |
-| APX-DATA-03 | `mode=change` feed on /places, /sessions, /rates, /rights/assigned returning ChangeFeedPage | §5.2, §5.6 |
+| APX-DATA-02 | `APX-Update-Mode: full\|change` on updates (creates are always full); change body validated as `ChangePayload` with each member checked against the native property schema; explicit-null clears, absent unchanged; stale version → `version-conflict`; `Accept: application/problem+json` on a native route → registered Problem | §5.1, §5.1a |
+| APX-DATA-03 | `mode=change` feed on /places, /sessions, /rates, /rights/assigned (and /observations where ingest is served) returning ChangeFeedPage | §5.2, §5.6 |
 | APX-DATA-04 | Feed ordered and gapless per (class, credential, filter set); replay from any issued cursor exactly-once | §5.2 r1, r5–6 |
-| APX-DATA-05 | Cursors honored ≥7 days; older → `target-not-found`; tombstones emitted and retained for the window | §5.2 r2, r4 |
+| APX-DATA-05 | Cursors honored ≥7 days; older or foreign → 404 `target-not-found` (always a Problem); tombstones emitted and retained for the window | §5.2 r2, r4–5 |
 | APX-DATA-06 | Grant expansion signaled via `grantAdditions` on the first page after the change | §5.2 r7 |
 | APX-DATA-07 | Client sending no APX headers/params observes pure APDS 4.1 behavior | §5.6 |
 | APX-DATA-08 **C** (holds occupancy) | `GET /v1/places/{id}/occupancy` served; snapshot derivable from the Place hierarchy | §5.5 |
@@ -42,20 +42,20 @@ implementation has the named capability).
 
 | ID | Requirement | Source |
 |---|---|---|
-| APX-EVT-01 | Stock APDS `EventSubscription` accepted; stock request → APDS 200/202 ResponseStatus; `Prefer: return=representation` → 201 with one-time secret | §8.1 |
+| APX-EVT-01 | Stock APDS `EventSubscription` accepted; stock request → APDS 200/202 ResponseStatus with the new id as the single `ids[]` entry; `Prefer: return=representation` → 201 with one-time secret (webhook transport); `Idempotency-Key` replay returns the subscription without the secret | §8.1 |
 | APX-EVT-02 | Every delivery HMAC-SHA256-signed (`APX-Signature`, `APX-Timestamp`, `APX-Delivery-Id`); ±5-min replay window enforced by receivers | §8.3, §9.4 |
-| APX-EVT-03 | Retry schedule 0s/30s/2m/10m/1h then hourly to 24h; exhaustion → status `failed` + `apx.subscription.failed.v1` | §8.3 |
-| APX-EVT-04 | Envelope `id` stable across retries; `APX-Delivery-Id` unique per attempt | §8.3 |
+| APX-EVT-03 | Retry schedule 0s/30s/2m/10m/1h then hourly to 24h, as delays between consecutive attempts (27 attempts); every attempt in `attemptHistory`; exhaustion → status `failed` + `apx.subscription.failed.v1` (data `SubscriptionFailure`) | §8.3 |
+| APX-EVT-04 | Envelope `id` and body stable across retries; `APX-Delivery-Id` unique per attempt; every attempt re-signed with its own `APX-Timestamp` | §8.3 |
 | APX-EVT-05 | Per-topic place binding populated; `filters.places` matches bound place; unbindable events never delivered beyond grant | §8.5 |
 | APX-EVT-06 | EventTypeEnum topics published for every entity class served for writes; APX topics of every claimed class published | §8.6 |
-| APX-EVT-07 | Secret ≥32 bytes entropy; `APX-Key-Id` on every delivery during rotation overlap | §9.4 |
+| APX-EVT-07 | Secret ≥32 bytes entropy; `APX-Key-Id` on every delivery during rotation overlap; overlap ends on `retireKeyIds` or 24 h after rotation | §8.1, §9.4 |
 
 ## A.4 `apx-events-sse`
 
 | ID | Requirement | Source |
 |---|---|---|
 | APX-SSE-01 | `GET /v1/events/stream` for transport=sse subscriptions; `id:` = per-subscription sequence | §8.4 |
-| APX-SSE-02 | `Last-Event-ID` resumes strictly after that sequence; ≥1000 events or 15 min buffered | §8.4 |
+| APX-SSE-02 | `Last-Event-ID` resumes strictly after that sequence; ≥1000 events or 15 min buffered; older than the buffer → 410 `stream-position-expired` | §8.4 |
 
 ## A.5 `apx-control`
 
