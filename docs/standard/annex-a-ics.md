@@ -111,18 +111,18 @@ implementation has the named capability).
 
 | ID | Requirement | Source |
 |---|---|---|
-| APX-LPR-01 | Ingest via native `POST /observations`; cross-lookup plate↔ticket with confidence + imagery links | §13.3 |
-| APX-LPR-02 | `LprRead.place` populated; `apx.data.observation.created.v1` published per ingest | §13.5, §13.4 |
+| APX-LPR-01 | Ingest via native `POST /observations`; cross-lookup plate↔ticket (and by Observation id) with confidence + imagery links; a lookup with no key → 400 `invalid-request`; value-keyed lookups bounded by the grant and never 403, entity-keyed ones outside it → 403 | §13.3, §13.5(4) |
+| APX-LPR-02 | `LprRead.place` populated; `apx.data.observation.created.v1` published per ingest; purged imagery removed and flagged `purgedImagery`, purged reads absent from every lookup | §13.5, §13.4, §13.3b |
 | APX-LPR-03 | **C** (engine supplies it): `apds-ext:apx:lpr-read@1.0` accepted on ingest and projected as `LprRead.detail` / `PlateCandidate.detail`; winning values mirrored into the APDS-native fields; per-attribute confidences 0–1; nothing guessed when absent | §13.3a(1–3) |
-| APX-LPR-04 | `laneTravel` derived from `plateFace` + `movement` + camera orientation + lane `accessType`; `unknown` when inputs are missing; `againstLane` SHOULD raise `wrongWayTravel` and MUST still open/match the Session | §13.3a(4–5) |
+| APX-LPR-04 | `laneTravel` derived from `plateFace` + `movement` + camera orientation + lane `accessType`; `unknown` when inputs are missing; `againstLane` SHOULD raise `wrongWayTravel` (`relatedEntity` the Session, the Observation under `apds-ext:apx:alert-evidence@1.0`) and MUST still open/match the Session | §13.3a(4–5) |
 
 ## A.11 `apx-reservations` / A.12 `apx-permits`
 
 | ID | Requirement | Source |
 |---|---|---|
-| APX-RSV-01 | Reservations as native Quote→AssignedRight with `apds-ext:apx:reservation@1.0`; lifecycle per Part 14 | §14 |
-| APX-RSV-02 | Holder ids treated as local; cross-system correlation by plate; place-scoped history lookups | §14.1a |
-| APX-RSV-03 | `PUT /v1/sessions/{id}/assigned-right` materializes into the APDS Session (`segments[].assignedRight`) + SessionUpdated; unlinkable right → 409 | §14.1b |
+| APX-RSV-01 | Reservations as native Quote→AssignedRight with `apds-ext:apx:reservation@1.0`; lifecycle per the Part 14 transition table (illegal → 409); `plannedUses[0]` authoritative and mirrored by the extension | §14 |
+| APX-RSV-02 | Holder ids treated as local; cross-system correlation by plate; place-scoped history lookups; recent lookup requires `plate` or `holder` (both intersect) | §14.1a |
+| APX-RSV-03 | `PUT /v1/sessions/{id}/assigned-right` materializes into the APDS Session (`segments[].assignedRight`) + SessionUpdated; unlinkable right, or a different right on a linked session → 409 `right-not-linkable`; unlink reverts the segment and the reservation state | §14.1b |
 | APX-PRM-01 | Pooled issuance over RightSpecification/RightPool; exhaustion → 409 `pool-exhausted`; refusals per §14.2a; Idempotency-Key replay consumes no second slot | §14.2, §14.2a |
 | APX-PRM-02 | Issued permit materialized onto the native AssignedRight per §14.2b (CustomerCredential holder, VehicleCredential per vehicle, PlannedUse + `expiry`); native `credential_id` filters resolve against the identification string; cancellation or expiry returns the slot | §14.2b, §14.2c |
 
@@ -141,11 +141,11 @@ implementation has the named capability).
 | APX-RES-01 | Context resolves from any parking-domain identifiers; never fails for absent ones; no telephony identifiers accepted | §17.1–17.2 |
 | APX-RES-02 | Partial results supported; context never includes sections the token couldn't read directly | §17.2 |
 | APX-RES-03 | AllowedActions evaluated server-side; denied/gated actions carry machine-readable reasons | §17.3 |
-| APX-RES-04 | Policy decisions BINDING on execution: 403 `action-not-allowed` / `approval-required` | §17.3 |
-| APX-RES-05 | `recommendedAction` is one of allowedActions; execution descriptors name only supported actions | §17.3 |
-| APX-RES-06 | Support interactions recorded/queryable; summaries not transcripts | §17.6 |
-| APX-RES-07 **C** (tracks passback) | Passback read + resetPassback/forceIn/forceOut commands | §17.4 |
-| APX-RES-08 **C** (stores LPR) | Plate candidates read + `PUT /v1/sessions/{id}/plate` materializing into the APDS Session + SessionUpdated | §17.5 |
+| APX-RES-04 | Policy decisions BINDING on execution, on commands and on domain operations alike: 403 `action-not-allowed` / `approval-required`; a command type the named context does not offer → 403 `action-not-allowed` | §17.3 |
+| APX-RES-05 | `recommendedAction` is one of allowedActions (runtime check); execution descriptors name only supported actions and satisfy the `AllowedAction` conditional rules | §17.3 |
+| APX-RES-06 | Support interactions recorded (idempotent under `Idempotency-Key`), completable by versioned PUT, queryable by subject or `correlationId`; summaries not transcripts | §17.6 |
+| APX-RES-07 **C** (tracks passback) | Passback read + resetPassback/forceIn/forceOut commands; a known but untracked credential → 200 `state: unknown` | §17.4, §17.8 |
+| APX-RES-08 **C** (stores LPR) | Plate candidates read + `PUT /v1/sessions/{id}/plate` materializing into the APDS Session + SessionUpdated; stale `If-Match` → 409 `version-conflict`; closed session outside the dispute window → 422 `session-not-open` | §17.5 |
 
 ## A.15 `apx-violations`
 

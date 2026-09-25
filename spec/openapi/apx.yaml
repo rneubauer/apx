@@ -3354,10 +3354,42 @@ paths:
       description: |-
         Customer history for screen-pops and dispute handling: the same
         holder's most recent reservations (newest planned start first),
-        resolved from a plate or an explicit RightHolder id.
+        resolved from a plate or an explicit RightHolder id. At least one
+        of `plate` or `holder` is REQUIRED (400 `invalid-request`
+        otherwise); when both are given the result is their intersection
+        (reservations of that holder carrying that plate). `from`/`to`,
+        `state`, `country`, and `stateProvince` narrow further (Part 14
+        §14.1a).
       parameters:
         - { name: plate, in: query, schema: { type: string } }
         - { name: holder, in: query, schema: { type: string, format: uuid } }
+        - name: country
+          in: query
+          description: |-
+            Plate issuing country (APDS VehicleAncillaryIdentification.country
+            vocabulary). Qualifies `plate`; absent, the plate string alone
+            is matched.
+          schema: { type: string, examples: [US] }
+        - name: stateProvince
+          in: query
+          description: Plate issuing state/province (APDS VehicleAncillaryIdentification.stateProvince vocabulary). Qualifies `plate`.
+          schema: { type: string, examples: [FL] }
+        - name: from
+          in: query
+          description: |-
+            Only reservations whose `plannedStart` is at or after this
+            instant. `from` later than `to` is 400 `invalid-request`.
+          schema: { type: string, format: date-time }
+        - name: to
+          in: query
+          description: Only reservations whose `plannedStart` is before this instant.
+          schema: { type: string, format: date-time }
+        - name: state
+          in: query
+          description: Only reservations currently in this `reservationState`.
+          schema:
+            type: string
+            enum: [confirmed, amended, cancelled, checkedIn, noShow]
         - name: place
           in: query
           description: |-
@@ -3379,12 +3411,22 @@ paths:
                     maxItems: 10
                     items: { $ref: "#/components/schemas/ReservationSummary" }
         "400":
-          description: Neither plate nor holder given.
+          description: |-
+            Neither plate nor holder given, or an inverted `from`/`to`
+            window (problem type `invalid-request`).
           content:
             application/problem+json:
               schema: { $ref: "#/components/schemas/Problem" }
         "401": { $ref: "#/components/responses/Unauthorized" }
         "403": { $ref: "#/components/responses/Forbidden" }
+        "404":
+          description: |-
+            The named `place` does not exist (problem type
+            `target-not-found`). A place that exists outside the caller's
+            grant is 403 `insufficient-grant` (Part 9 §9.3a).
+          content:
+            application/problem+json:
+              schema: { $ref: "#/components/schemas/Problem" }
         "429": { $ref: "#/components/responses/TooManyRequests" }
 
   /v1/sessions/{id}/assigned-right:
@@ -3407,8 +3449,18 @@ paths:
         parallel store. Pricing consequences (the prepaid rate replacing
         the drive-up rate) follow from the link per the implementation's
         normal rating.
+
+        Re-sending the same link is a no-op 200. A link naming a DIFFERENT
+        right on a session already linked to one is 409
+        `right-not-linkable` ("session already linked"); undo the first
+        link with POST /v1/sessions/{id}/assigned-right/unlink. `If-Match`
+        carries the APDS Session `version` the client read (Part 4 §4.2a).
+        Where the resolution context gated this action, the approval
+        evidence rides `approval`; a policy refusal is 403
+        `action-not-allowed` or `approval-required` (Part 17 §17.3).
       parameters:
         - { name: id, in: path, required: true, schema: { type: string, format: uuid }, description: APDS Session UUID. }
+        - $ref: "#/components/parameters/IfMatch"
       requestBody:
         required: true
         content:
@@ -3424,6 +3476,9 @@ paths:
                   type: string
                   description: The presented code, kept as audit evidence for the link.
                 reason: { type: string }
+                approval:
+                  description: Approval evidence, when the resolution context marked this action requiresApproval (Part 17 §17.3).
+                  $ref: "#/components/schemas/Approval"
       responses:
         "200":
           description: The link, applied.
@@ -3437,6 +3492,10 @@ paths:
                     $ref: "../vendor/apds/4.1/apds-api-4.1.yaml#/components/schemas/Reference"
                   assignedRight:
                     $ref: "../vendor/apds/4.1/apds-api-4.1.yaml#/components/schemas/Reference"
+                  version:
+                    type: integer
+                    minimum: 1
+                    description: The APDS Session `version` after the write (Part 4 §4.2a).
         "401": { $ref: "#/components/responses/Unauthorized" }
         "403": { $ref: "#/components/responses/Forbidden" }
         "404":
@@ -3445,11 +3504,86 @@ paths:
             application/problem+json:
               schema: { $ref: "#/components/schemas/Problem" }
         "409":
-          description: The AssignedRight is not linkable (already consumed elsewhere, outside its validity, or wrong place).
+          description: |-
+            The AssignedRight is not linkable (`right-not-linkable`: already
+            consumed elsewhere, outside its validity, wrong place, in
+            reservationState `cancelled` or `noShow`, or the session is
+            already linked to a different right), or `If-Match` names a
+            stale Session version (`version-conflict`, Part 4 §4.2a).
           content:
             application/problem+json:
               schema: { $ref: "#/components/schemas/Problem" }
         "400": { $ref: "#/components/responses/BadRequest" }
+        "429": { $ref: "#/components/responses/TooManyRequests" }
+
+  /v1/sessions/{id}/assigned-right/unlink:
+    post:
+      operationId: post-apx-v1-sessions-id-assigned-right-unlink
+      security:
+        - apxOAuth: ["apx.reservations:manage"]
+      tags: [Reservations]
+      summary: Undo a session's link to its AssignedRight
+      description: |-
+        The audited undo of PUT /v1/sessions/{id}/assigned-right (Part 14
+        §14.1b): removes the linked AssignedRight from the session's
+        current segment, reverts the segment to the implementation's
+        drive-up right, and returns the reservation to its pre-check-in
+        `reservationState` (`confirmed` or `amended`, clearing
+        `checkInSession`). MUST materialize in the underlying APDS Session
+        and MUST publish SessionUpdated, like the link. `reason` is
+        REQUIRED. Unlinking a session that carries no linked right is a
+        no-op 200 without `unlinkedRight`. A closed Session is 422
+        `session-not-open`.
+      parameters:
+        - { name: id, in: path, required: true, schema: { type: string, format: uuid }, description: APDS Session UUID. }
+        - $ref: "#/components/parameters/IfMatch"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [reason]
+              properties:
+                reason:
+                  type: string
+                  minLength: 1
+                  description: Why the link is being undone (audit).
+                approval:
+                  description: Approval evidence, when the resolution context marked this action requiresApproval (Part 17 §17.3).
+                  $ref: "#/components/schemas/Approval"
+      responses:
+        "200":
+          description: The session, unlinked.
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [session]
+                properties:
+                  session:
+                    $ref: "../vendor/apds/4.1/apds-api-4.1.yaml#/components/schemas/Reference"
+                  unlinkedRight:
+                    description: The AssignedRight the session no longer consumes. Absent when there was nothing to unlink.
+                    $ref: "../vendor/apds/4.1/apds-api-4.1.yaml#/components/schemas/Reference"
+                  version:
+                    type: integer
+                    minimum: 1
+                    description: The APDS Session `version` after the write.
+        "400": { $ref: "#/components/responses/BadRequest" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+        "404": { $ref: "#/components/responses/NotFound" }
+        "409":
+          description: "`If-Match` names a stale Session version (`version-conflict`, Part 4 §4.2a)."
+          content:
+            application/problem+json:
+              schema: { $ref: "#/components/schemas/Problem" }
+        "422":
+          description: The Session is closed (`session-not-open`); pricing has settled.
+          content:
+            application/problem+json:
+              schema: { $ref: "#/components/schemas/Problem" }
         "429": { $ref: "#/components/responses/TooManyRequests" }
 
   /v1/permits/pools/{rightSpecId}/availability:
@@ -4093,8 +4227,20 @@ paths:
         visible to plain APDS clients reading /sessions/{id} — this route
         is a business-action façade over APDS-modeled state, never a
         parallel store.
+
+        `If-Match` carries the APDS Session `version` the client read; a
+        stale one is 409 `version-conflict` (Part 4 §4.2a). A closed
+        Session may be corrected only inside the operator's dispute
+        window and only with `reason`; otherwise 422 `session-not-open`
+        (Part 17 §17.5). The 200 echoes only the plate values the caller
+        supplied and discloses no other plate-bearing data; candidate
+        reads stay under apx.lpr:read (Part 9 §9.6). Where the resolution
+        context gated this action, the approval evidence rides `approval`;
+        a policy refusal is 403 `action-not-allowed` or
+        `approval-required` (Part 17 §17.3).
       parameters:
         - { name: id, in: path, required: true, schema: { type: string, format: uuid }, description: APDS Session UUID. }
+        - $ref: "#/components/parameters/IfMatch"
       requestBody:
         required: true
         content:
@@ -4110,6 +4256,9 @@ paths:
                   description: The Observation candidate this correction is based on.
                   $ref: "../vendor/apds/4.1/apds-api-4.1.yaml#/components/schemas/Reference"
                 reason: { type: string }
+                approval:
+                  description: Approval evidence, when the resolution context marked this action requiresApproval (Part 17 §17.3).
+                  $ref: "#/components/schemas/Approval"
       responses:
         "200":
           description: The corrected association.
@@ -4126,11 +4275,28 @@ paths:
                   stateProvince: { type: string }
                   observation:
                     $ref: "../vendor/apds/4.1/apds-api-4.1.yaml#/components/schemas/Reference"
+                  version:
+                    type: integer
+                    minimum: 1
+                    description: The APDS Session `version` after the write (Part 4 §4.2a).
         "401": { $ref: "#/components/responses/Unauthorized" }
         "403": { $ref: "#/components/responses/Forbidden" }
         "429": { $ref: "#/components/responses/TooManyRequests" }
         "404":
           description: No such session.
+          content:
+            application/problem+json:
+              schema: { $ref: "#/components/schemas/Problem" }
+        "409":
+          description: "`If-Match` names a stale Session version (`version-conflict`, Part 4 §4.2a); nothing is written."
+          content:
+            application/problem+json:
+              schema: { $ref: "#/components/schemas/Problem" }
+        "422":
+          description: |-
+            The Session is closed and outside the operator's dispute
+            window, or closed and the correction carries no `reason`
+            (`session-not-open`, Part 17 §17.5).
           content:
             application/problem+json:
               schema: { $ref: "#/components/schemas/Problem" }
@@ -4151,9 +4317,30 @@ paths:
         (per-attribute confidences for plate, state, make, model, color;
         alternate reads; plates read; plate face; movement) and the
         server-derived `laneTravel` (Part 13 §13.3a).
+
+        At least one of `plate`, `ticket`, or `observation` is REQUIRED;
+        a call with none is 400 `invalid-request`, never a bulk export
+        (Part 9 §9.6). Keys given together intersect. Results are bounded
+        by the caller's `apx_places` grant (Part 13 §13.5); a value-keyed
+        lookup under an empty grant is an empty 200 (Part 9 §9.3a).
       parameters:
         - { name: plate, in: query, schema: { type: string } }
         - { name: ticket, in: query, schema: { type: string } }
+        - name: observation
+          in: query
+          description: |-
+            Lookup by the underlying APDS Observation id — the read-back
+            route for one ingested read (APDS 4.1 has no GET
+            /observations/{id}).
+          schema: { type: string, format: uuid }
+        - name: place
+          in: query
+          description: |-
+            Narrow results below the grant to one HierarchyElement and its
+            subtree (Part 13 §13.5(3)). A place outside the caller's
+            `apx_places` grant is 403 `insufficient-grant`. Servers that do
+            not narrow MAY ignore it.
+          schema: { type: string, format: uuid }
         - $ref: "../vendor/apds/4.1/apds-api-4.1.yaml#/components/parameters/page"
       responses:
         "200":
@@ -4168,6 +4355,11 @@ paths:
                   data:
                     type: array
                     items: { $ref: "#/components/schemas/LprRead" }
+        "400":
+          description: None of `plate`, `ticket`, or `observation` given (problem type `invalid-request`).
+          content:
+            application/problem+json:
+              schema: { $ref: "#/components/schemas/Problem" }
         "401": { $ref: "#/components/responses/Unauthorized" }
         "403": { $ref: "#/components/responses/Forbidden" }
         "429": { $ref: "#/components/responses/TooManyRequests" }
@@ -4435,7 +4627,11 @@ paths:
             application/json:
               schema: { $ref: "#/components/schemas/ResolutionContext" }
         "400":
-          description: No usable identifier supplied.
+          description: |-
+            No usable identifier supplied: the body carries none of the
+            identifying members (device, place, lane, session, holder,
+            credential, plate, ticketNumber, reservationCode) — problem type
+            `invalid-request` (Part 17 §17.1).
           content:
             application/problem+json:
               schema: { $ref: "#/components/schemas/Problem" }
@@ -4542,7 +4738,7 @@ paths:
                     type: array
                     items: { $ref: "#/components/schemas/PlateCandidate" }
         "400":
-          description: Neither session nor lane given.
+          description: Neither session nor lane given (problem type `invalid-request`).
           content:
             application/problem+json:
               schema: { $ref: "#/components/schemas/Problem" }
@@ -4563,11 +4759,16 @@ paths:
         `forceIn` / `forceOut` commands (Part 17 §17.4). Scope
         apx.control:read; the place grant must cover the credential's
         last-access place.
+
+        A credential the server knows but does not track for passback (a
+        transient ticket at a site without anti-passback) is 200 with
+        `state: unknown`, not 404; 404 means the credential does not
+        exist (Part 17 §17.8).
       parameters:
         - { name: id, in: path, required: true, schema: { type: string, format: uuid }, description: APDS Credential UUID. }
       responses:
         "200":
-          description: Passback status.
+          description: Passback status (`state` is `unknown` for a known credential whose passback is not tracked).
           content:
             application/json:
               schema: { $ref: "#/components/schemas/PassbackStatus" }
@@ -4575,7 +4776,7 @@ paths:
         "403": { $ref: "#/components/responses/Forbidden" }
         "429": { $ref: "#/components/responses/TooManyRequests" }
         "404":
-          description: No such credential or no passback tracking.
+          description: No such credential (problem type `target-not-found`).
           content:
             application/problem+json:
               schema: { $ref: "#/components/schemas/Problem" }
@@ -4591,6 +4792,14 @@ paths:
         Records one customer-service interaction (human or AI) so future
         resolution contexts can surface it. Summaries, not transcripts
         (Part 9 §9.6). Scope apx.support:manage.
+
+        A console MAY record the interaction when the call is answered and
+        complete it later with PUT /v1/support/interactions/{id}. Clients
+        that retry SHOULD send `Idempotency-Key`: a replay returns the
+        current record with 200, a different body under the same key is
+        409 `idempotency-conflict` (Part 4 §4.2a).
+      parameters:
+        - $ref: "#/components/parameters/IdempotencyKeyOptional"
       requestBody:
         required: true
         content:
@@ -4602,13 +4811,23 @@ paths:
           content:
             application/json:
               schema: { $ref: "#/components/schemas/SupportInteraction" }
+        "200":
+          description: Idempotent replay — the interaction's current representation (Part 4 §4.2a).
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/SupportInteraction" }
         "400":
-          description: Invalid interaction.
+          description: Invalid interaction (problem type `invalid-request`).
           content:
             application/problem+json:
               schema: { $ref: "#/components/schemas/Problem" }
         "401": { $ref: "#/components/responses/Unauthorized" }
         "403": { $ref: "#/components/responses/Forbidden" }
+        "409":
+          description: Same `Idempotency-Key` replayed with a different body (`idempotency-conflict`).
+          content:
+            application/problem+json:
+              schema: { $ref: "#/components/schemas/Problem" }
         "429": { $ref: "#/components/responses/TooManyRequests" }
     get:
       operationId: get-apx-v1-support-interactions
@@ -4618,8 +4837,11 @@ paths:
       summary: Support history for a subject
       description: |-
         Recent interactions filtered by any subject key. At least one
-        filter is required. Scope apx.support:manage (or apx.resolution:read
-        for read-only consumers).
+        filter is required; none is 400 `invalid-request`. `correlationId`, `interactionId`, and
+        `credential` each suffice on their own, so one correlation id
+        reconstructs the episode (Part 17 §17.7). Scope
+        apx.support:manage (or apx.resolution:read for read-only
+        consumers).
       parameters:
         - { name: plate, in: query, schema: { type: string } }
         - { name: holder, in: query, schema: { type: string, format: uuid } }
@@ -4627,6 +4849,9 @@ paths:
         - { name: session, in: query, schema: { type: string, format: uuid } }
         - { name: place, in: query, schema: { type: string, format: uuid } }
         - { name: since, in: query, schema: { type: string, format: date-time } }
+        - { name: correlationId, in: query, description: Correlation chain id (Part 17 §17.7). Exact match., schema: { type: string, format: uuid } }
+        - { name: interactionId, in: query, description: The calling application's opaque interaction identifier. Exact match., schema: { type: string } }
+        - { name: credential, in: query, description: APDS Credential UUID (matches `subjects.credential`)., schema: { type: string, format: uuid } }
         - $ref: "../vendor/apds/4.1/apds-api-4.1.yaml#/components/parameters/page"
       responses:
         "200":
@@ -4642,12 +4867,81 @@ paths:
                     type: array
                     items: { $ref: "#/components/schemas/SupportInteraction" }
         "400":
-          description: No filter given.
+          description: No filter given (problem type `invalid-request`).
           content:
             application/problem+json:
               schema: { $ref: "#/components/schemas/Problem" }
         "401": { $ref: "#/components/responses/Unauthorized" }
         "403": { $ref: "#/components/responses/Forbidden" }
+        "429": { $ref: "#/components/responses/TooManyRequests" }
+
+  /v1/support/interactions/{id}:
+    parameters:
+      - { name: id, in: path, required: true, schema: { type: string, format: uuid }, description: SupportInteraction id. }
+    get:
+      operationId: get-apx-v1-support-interactions-id
+      security:
+        - apxOAuth: ["apx.support:manage"]
+        - apxOAuth: ["apx.resolution:read"]
+      tags: [Support]
+      summary: Read one support interaction
+      description: |-
+        One recorded interaction by id (Part 17 §17.6). Scope
+        apx.support:manage, or apx.resolution:read for read-only
+        consumers; the interaction's `place` must be inside the caller's
+        grant.
+      responses:
+        "200":
+          description: The interaction.
+          headers:
+            ETag:
+              description: The interaction's `version` as an entity tag (Part 4 §4.2a).
+              schema: { type: string }
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/SupportInteraction" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+        "404": { $ref: "#/components/responses/NotFound" }
+        "429": { $ref: "#/components/responses/TooManyRequests" }
+    put:
+      operationId: put-apx-v1-support-interactions-id
+      security:
+        - apxOAuth: ["apx.support:manage"]
+      tags: [Support]
+      summary: Update (complete) a support interaction
+      description: |-
+        Replaces the interaction — typically to complete a record opened
+        when the call was answered with `endedAt`, `resolution`, `summary`,
+        and `actions` (Part 17 §17.6). Optimistic concurrency per Part 4
+        §4.2a: send the `version` last read as `If-Match` (or in the
+        body); a stale one is 409 `version-conflict`. The server
+        increments `version` and publishes
+        `apx.support.interaction.recorded.v1` again; consumers tell a
+        create from an update by `version`. `id` in the body, when
+        present, MUST equal the path id. Scope apx.support:manage.
+      parameters:
+        - $ref: "#/components/parameters/IfMatch"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/SupportInteraction" }
+      responses:
+        "200":
+          description: The updated interaction.
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/SupportInteraction" }
+        "400": { $ref: "#/components/responses/BadRequest" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+        "404": { $ref: "#/components/responses/NotFound" }
+        "409":
+          description: Stale `version` (`version-conflict`, Part 4 §4.2a); nothing is written.
+          content:
+            application/problem+json:
+              schema: { $ref: "#/components/schemas/Problem" }
         "429": { $ref: "#/components/responses/TooManyRequests" }
 
   # ===== Discovery (optional class apx-discovery; Part 16) ===== #
