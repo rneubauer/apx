@@ -40,15 +40,32 @@ ReservationSummary:
 
 PoolAvailability:
   title: PoolAvailability
-  description: Availability of a pooled RightSpecification (APDS RightPool profile).
+  description: |-
+    Availability of one RightPool of a pooled RightSpecification (APDS
+    RightPool profile, Part 14 §14.2). `issued` =
+    `RightPool.distributedAssignedRights`, `available` =
+    `RightPool.availableAssignedRights`, `capacity` = their sum.
   type: object
   required: [rightSpecification, capacity, issued, available]
   properties:
     rightSpecification:
       $ref: "../../../vendor/apds/4.1/apds-api-4.1.yaml#/components/schemas/VersionedReference"
-    capacity: { type: integer, minimum: 0 }
+    pool:
+      description: The RightPool these counts are for (selected per Part 14 §14.2).
+      $ref: "../../../vendor/apds/4.1/apds-api-4.1.yaml#/components/schemas/VersionedReference"
+    validity:
+      description: The selected pool's validity window (APDS `RightPool.validity`), when it has one.
+      $ref: "../../../vendor/apds/4.1/apds-api-4.1.yaml#/components/schemas/Validity"
+    capacity:
+      type: integer
+      minimum: 0
+      description: Permits the pool can issue in total (`issued` + `available`); may exceed `spaces` when the operator oversells.
     issued: { type: integer, minimum: 0 }
     available: { type: integer, minimum: 0 }
+    spaces:
+      type: integer
+      minimum: 0
+      description: Physical spaces behind the pool, when the operator sells above that count. Informative.
 
 PermitIssueRequest:
   title: PermitIssueRequest
@@ -62,19 +79,59 @@ PermitIssueRequest:
     rightSpecification:
       $ref: "../../../vendor/apds/4.1/apds-api-4.1.yaml#/components/schemas/VersionedReference"
     holder:
+      description: |-
+        The RightHolder the permit is issued to; materialized as a
+        `CustomerCredential` on the AssignedRight (Part 14 §14.2).
       $ref: "../../../vendor/apds/4.1/apds-api-4.1.yaml#/components/schemas/Reference"
     credentials:
       type: array
-      description: Vehicle credentials (e.g. plates) usable under this one permit.
+      description: |-
+        Vehicle credentials (e.g. plates) usable under this one permit; each
+        is materialized as a `VehicleCredential` (Part 14 §14.2).
       items:
         type: object
         properties:
-          credentialType: { type: string }
-          credentialIdentification: { type: string }
+          credentialType:
+            type: string
+            description: |-
+              An APDS `CredentialTypeEnum` value, which MUST also be in the
+              RightSpecification's `credentials` allow-list (Part 14 §14.2).
+            examples: [licensePlate]
+          credentialIdentification:
+            type: string
+            description: What the lane reads — the plate string, tag id, or card number.
     validity:
       type: object
+      description: |-
+        The permit's validity window; materialized as one `PlannedUse`
+        (`startTime`/`endTime`) and `expiry` = `end` (Part 14 §14.2).
       properties:
         start:
           $ref: "../../../vendor/apds/4.1/apds-api-4.1.yaml#/components/schemas/DateTime"
         end:
           $ref: "../../../vendor/apds/4.1/apds-api-4.1.yaml#/components/schemas/DateTime"
+    extensions:
+      description: |-
+        Extension container (Part 4 §4.3). `apds-ext:apx:permit@1.0` links
+        a renewal to the permit it renews (Part 14 §14.2).
+      allOf:
+        - $ref: "../common/schemas.yaml#/Extensions"
+        - type: object
+          properties:
+            "apds-ext:apx:permit@1.0":
+              $ref: "#/PermitExtension"
+
+PermitExtension:
+  title: PermitExtension
+  description: |-
+    The `apds-ext:apx:permit@1.0` extension object (Part 14 §14.2): links a
+    renewal permit to the one it renews, so a portal can follow the chain.
+  type: object
+  properties:
+    renews:
+      description: The AssignedRight this permit renews.
+      $ref: "../../../vendor/apds/4.1/apds-api-4.1.yaml#/components/schemas/Reference"
+    renewedBy:
+      description: Set by the server on the renewed permit when a renewal is issued.
+      readOnly: true
+      $ref: "../../../vendor/apds/4.1/apds-api-4.1.yaml#/components/schemas/Reference"

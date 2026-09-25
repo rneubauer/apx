@@ -15,6 +15,12 @@ Account:
       $ref: "../../../vendor/apds/4.1/apds-api-4.1.yaml#/components/schemas/Reference"
     name: { type: string }
     phone: { type: string }
+    email:
+      type: string
+      description: |-
+        Contact e-mail on file. Personal data under the same Part 9 §9.6
+        minimization rule as `phone`: returned only under
+        `apx.accounts:read` (Part 13 §13.1).
     cardNumber:
       type: string
       description: Access credential number (NOT a payment card PAN).
@@ -75,8 +81,32 @@ PaymentRecord:
       description: card | autoAttendant | cash | other (implementer code list). autoAttendant = PCI-compliant IVR captures the card out of band.
     paymentStatus:
       type: string
-      enum: [approved, declined, reversed]
+      description: |-
+        `authorized` = funds held, not yet captured (only when the create
+        asked `captureLater`; not yet money, and never materialized as an
+        APDS Payment). `approved` = captured. `declined` = refused by the
+        payment layer. `reversed` = voided, or refunded in full. Transitions
+        per Part 13 §13.1a; consumers MUST tolerate values added later.
+      enum: [approved, declined, reversed, authorized]
       readOnly: true
+    captureLater:
+      type: boolean
+      default: false
+      description: |-
+        Create-time intent: `true` asks for authorization only (the record
+        is created `authorized` and is settled later by
+        `POST /v1/payments/{id}/capture` or released by `…/void`). Absent or
+        `false` = sale (authorize and capture at once). A server that does
+        not model an authorization lifecycle refuses `true` with 422
+        `request-unprocessable` (Part 13 §13.1a).
+    refundedAmount:
+      description: |-
+        Cumulative amount refunded so far (Part 13 §13.1a). Absent or zero
+        = nothing refunded. When it reaches `amount` the record is
+        `reversed`; a partial refund leaves it `approved` with this member
+        showing what was given back.
+      readOnly: true
+      $ref: "../../../vendor/apds/4.1/apds-api-4.1.yaml#/components/schemas/AmountInCurrency"
     account:
       $ref: "../../../vendor/apds/4.1/apds-api-4.1.yaml#/components/schemas/Reference"
     ticketNumber: { type: string }
@@ -173,4 +203,18 @@ PostingRequest:
     account:
       description: Account to post against when the payment isn't already account-bound.
       $ref: "../../../vendor/apds/4.1/apds-api-4.1.yaml#/components/schemas/Reference"
+    note: { type: string }
+
+PaymentLinkCancel:
+  title: PaymentLinkCancel
+  description: |-
+    Request body cancelling a payment link before the customer pays
+    (Part 13 §13.1a). The body is optional; `reason` is recorded on the
+    link's audit trail.
+  type: object
+  properties:
+    reason:
+      type: string
+      description: Why the link was cancelled (implementer code list, e.g. wrongRecipient, paidOtherwise).
+      examples: [wrongRecipient]
     note: { type: string }

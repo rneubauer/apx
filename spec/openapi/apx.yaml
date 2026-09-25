@@ -899,7 +899,10 @@ paths:
         - apxOAuth: ["apx.tolling:manage"]
       tags: [Tolling]
       summary: Create a toll transaction (idempotent)
-      description: Binds Observation refs + credential + pricing. Idempotency-Key REQUIRED.
+      description: |-
+        Binds Observation refs + credential + pricing. Idempotency-Key
+        REQUIRED. Created `priced` when `pricing` is given, otherwise
+        `created` (priced later via `POST …/{id}/price`; Part 15 §15.1).
       parameters:
         - { name: Idempotency-Key, in: header, required: true, schema: { type: string } }
       requestBody:
@@ -909,7 +912,10 @@ paths:
             schema: { $ref: "#/components/schemas/TollTransaction" }
       responses:
         "200":
-          description: Idempotent replay — same key + same body returns the ORIGINAL transaction.
+          description: |-
+            Idempotent replay — same key + same body returns the transaction
+            the key created, in its current representation (`version` and
+            `transactionStatus` may have advanced; Part 4 §4.2a).
           content:
             application/json:
               schema: { $ref: "#/components/schemas/TollTransaction" }
@@ -919,7 +925,10 @@ paths:
             application/json:
               schema: { $ref: "#/components/schemas/TollTransaction" }
         "400":
-          description: Missing Idempotency-Key or invalid transaction.
+          description: |-
+            Missing Idempotency-Key (`idempotency-key-required`) or a body
+            that fails the schema, e.g. no `tollPoint` (`invalid-request`,
+            Part 12).
           content:
             application/problem+json:
               schema: { $ref: "#/components/schemas/Problem" }
@@ -937,10 +946,49 @@ paths:
         - apxOAuth: ["apx.tolling:manage"]
       tags: [Tolling]
       summary: List/filter toll transactions
-      description: Filter by plate and status.
+      description: |-
+        Filter by plate or credential, status, toll point, place, and time
+        window; all filters combine with AND (Part 15 §15.2). Results are
+        constrained to the caller's grant.
       parameters:
-        - { name: plate, in: query, schema: { type: string } }
-        - { name: status, in: query, schema: { type: string } }
+        - name: plate
+          in: query
+          description: Convenience alias for `credentialType=licensePlate&credentialIdentification=<plate>`.
+          schema: { type: string }
+        - name: status
+          in: query
+          description: |-
+            A `transactionStatus` value. A value outside that enum is 400
+            `invalid-request`, never an empty list.
+          schema: { type: string }
+        - name: tollPoint
+          in: query
+          description: The toll point (SupplementalEquipment id) that produced the transaction.
+          schema: { type: string, format: uuid }
+        - name: place
+          in: query
+          description: |-
+            Comma-separated HierarchyElement ids, subtree-inclusive. A place
+            outside the caller's grant is 403 `insufficient-grant`.
+          style: form
+          explode: false
+          schema: { type: array, items: { type: string, format: uuid } }
+        - name: credentialType
+          in: query
+          description: Matches `credential.credentialType` (an APDS CredentialTypeEnum value, e.g. `rfid`).
+          schema: { type: string }
+        - name: credentialIdentification
+          in: query
+          description: Matches `credential.credentialIdentification` exactly (a plate string or tag id).
+          schema: { type: string }
+        - name: since
+          in: query
+          description: Only transactions created at or after this instant (`statusHistory[0].time`), RFC 3339.
+          schema: { type: string, format: date-time }
+        - name: until
+          in: query
+          description: Only transactions created before this instant (`statusHistory[0].time`), RFC 3339.
+          schema: { type: string, format: date-time }
         - $ref: "../vendor/apds/4.1/apds-api-4.1.yaml#/components/parameters/page"
       responses:
         "200":
@@ -955,6 +1003,7 @@ paths:
                   data:
                     type: array
                     items: { $ref: "#/components/schemas/TollTransaction" }
+        "400": { $ref: "#/components/responses/BadRequest" }
         "401": { $ref: "#/components/responses/Unauthorized" }
         "403": { $ref: "#/components/responses/Forbidden" }
         "429": { $ref: "#/components/responses/TooManyRequests" }
@@ -991,9 +1040,16 @@ paths:
         - apxOAuth: ["apx.tolling:manage"]
       tags: [Tolling]
       summary: Attach the settling Payment reference
-      description: Transitions the transaction to paid.
+      description: |-
+        Transitions the transaction to paid. Allowed from `priced`, and from
+        `resolved` with resolution `upheld` or `adjusted` on an unpaid
+        transaction; anything else is 409 `toll-transition-illegal` (Part 15
+        §15.1). Re-attaching the payment already attached returns 200
+        unchanged, so a replayed billing batch is harmless.
+        Idempotency-Key optional (Part 4 §4.2a).
       parameters:
         - { name: id, in: path, required: true, schema: { type: string, format: uuid } }
+        - $ref: "#/components/parameters/IdempotencyKeyOptional"
       requestBody:
         required: true
         content:
@@ -1014,6 +1070,96 @@ paths:
             application/problem+json:
               schema: { $ref: "#/components/schemas/Problem" }
         "400": { $ref: "#/components/responses/BadRequest" }
+        "409":
+          description: |-
+            The transaction's state does not accept a payment (`created`,
+            `disputed`, `voided`, `resolved` as `refunded` or already paid,
+            or `paid` with a different payment — `toll-transition-illegal`),
+            or Idempotency-Key replayed with a different body
+            (`idempotency-conflict`).
+          content:
+            application/problem+json:
+              schema: { $ref: "#/components/schemas/Problem" }
+
+  /v1/tolling/transactions/{id}/price:
+    post:
+      operationId: post-apx-v1-tolling-transactions-id-price
+      security:
+        - apxOAuth: ["apx.tolling:manage"]
+      tags: [Tolling]
+      summary: Price a created toll transaction
+      description: |-
+        For pricing engines outside the APX server: sets `pricing` on a
+        `created` transaction and moves it to `priced` (Part 15 §15.1).
+        From any other state 409 `toll-transition-illegal`; a later price
+        change goes through a dispute. Idempotency-Key optional.
+      parameters:
+        - { name: id, in: path, required: true, schema: { type: string, format: uuid } }
+        - $ref: "#/components/parameters/IdempotencyKeyOptional"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "./domains/tolling/schemas.yaml#/TollPricing" }
+      responses:
+        "200":
+          description: The transaction, now `priced`.
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/TollTransaction" }
+        "400": { $ref: "#/components/responses/BadRequest" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+        "404": { $ref: "#/components/responses/NotFound" }
+        "409":
+          description: |-
+            Not `created` (`toll-transition-illegal`), or Idempotency-Key
+            replayed with a different body (`idempotency-conflict`).
+          content:
+            application/problem+json:
+              schema: { $ref: "#/components/schemas/Problem" }
+        "429": { $ref: "#/components/responses/TooManyRequests" }
+
+  /v1/tolling/transactions/{id}/void:
+    post:
+      operationId: post-apx-v1-tolling-transactions-id-void
+      security:
+        - apxOAuth: ["apx.tolling:manage"]
+      tags: [Tolling]
+      summary: Void a toll transaction
+      description: |-
+        Terminal: the charge should never have been raised (a duplicate, an
+        exempt service vehicle, a misread). Allowed from `created` and
+        `priced` only; a paid charge is corrected by a dispute resolved
+        `refunded`, so `paid`, `disputed`, `resolved`, and `voided` are 409
+        `toll-transition-illegal` (Part 15 §15.1). Idempotency-Key optional.
+      parameters:
+        - { name: id, in: path, required: true, schema: { type: string, format: uuid } }
+        - $ref: "#/components/parameters/IdempotencyKeyOptional"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "./domains/tolling/schemas.yaml#/TollVoid" }
+      responses:
+        "200":
+          description: The transaction, now `voided`.
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/TollTransaction" }
+        "400": { $ref: "#/components/responses/BadRequest" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+        "404": { $ref: "#/components/responses/NotFound" }
+        "409":
+          description: |-
+            Not `created` or `priced` (`toll-transition-illegal`), or
+            Idempotency-Key replayed with a different body
+            (`idempotency-conflict`).
+          content:
+            application/problem+json:
+              schema: { $ref: "#/components/schemas/Problem" }
+        "429": { $ref: "#/components/responses/TooManyRequests" }
 
   /v1/tolling/transactions/{id}/disputes:
     post:
@@ -1022,7 +1168,12 @@ paths:
         - apxOAuth: ["apx.tolling:manage"]
       tags: [Tolling]
       summary: Open a dispute
-      description: Re-disputing a resolved/voided transaction is 409 dispute-closed.
+      description: |-
+        Opened by the operator, on the holder's behalf or on its own
+        initiative (Part 15 §15.1). Allowed from `priced` and `paid`.
+        Re-disputing a `resolved` transaction is 409 `dispute-closed`; a
+        `created`, `voided`, or already `disputed` transaction is 409
+        `toll-transition-illegal`.
       parameters:
         - { name: id, in: path, required: true, schema: { type: string, format: uuid } }
       requestBody:
@@ -1037,7 +1188,10 @@ paths:
             application/json:
               schema: { $ref: "#/components/schemas/TollTransaction" }
         "409":
-          description: Dispute closed.
+          description: |-
+            The dispute is already resolved (`dispute-closed`), or the
+            transaction's state does not allow a dispute
+            (`toll-transition-illegal`).
           content:
             application/problem+json:
               schema: { $ref: "#/components/schemas/Problem" }
@@ -1054,7 +1208,11 @@ paths:
         - apxOAuth: ["apx.tolling:manage"]
       tags: [Tolling]
       summary: Resolve a dispute
-      description: Resolution values (upheld/refunded/adjusted) are implementer code lists.
+      description: |-
+        Allowed from `disputed` only. Base resolution values upheld |
+        refunded | adjusted | withdrawn (Part 15 §15.1); `adjusted` carries
+        `adjustedPricing`, which replaces `pricing` (the old amount moves to
+        `dispute.originalPricing`).
       parameters:
         - { name: id, in: path, required: true, schema: { type: string, format: uuid } }
       requestBody:
@@ -1069,7 +1227,10 @@ paths:
             application/json:
               schema: { $ref: "#/components/schemas/TollTransaction" }
         "409":
-          description: No open dispute.
+          description: |-
+            No open dispute: the dispute is already resolved
+            (`dispute-closed`), or the transaction was never disputed
+            (`toll-transition-illegal`).
           content:
             application/problem+json:
               schema: { $ref: "#/components/schemas/Problem" }
@@ -3298,9 +3459,21 @@ paths:
         - apxOAuth: ["apx.permits:manage"]
       tags: [Permits]
       summary: Pool availability for a pooled RightSpecification
-      description: Profile over APDS RightPool — capacity, issued, available.
+      description: |-
+        Profile over APDS RightPool — capacity, issued, available — for one
+        pool of the RightSpecification. With neither `pool` nor `at`, the
+        pool whose validity contains now, else the earliest future pool
+        (Part 14 §14.2).
       parameters:
         - { name: rightSpecId, in: path, required: true, schema: { type: string, format: uuid } }
+        - name: pool
+          in: query
+          description: A RightPool id of this RightSpecification; takes precedence over `at`.
+          schema: { type: string, format: uuid }
+        - name: at
+          in: query
+          description: Select the pool whose validity contains this instant (e.g. a date in November for a November pool), RFC 3339.
+          schema: { type: string, format: date-time }
       responses:
         "200":
           description: Availability.
@@ -3325,13 +3498,27 @@ paths:
       summary: Issue a permit from a pool (multi-vehicle credentials)
       description: |-
         Creates a native AssignedRight (APDS annual-permit pattern — one
-        right, many vehicles). Pool exhaustion is 409 pool-exhausted.
+        right, many vehicles), materialized per Part 14 §14.2. Pool
+        exhaustion is 409 pool-exhausted. A client that may retry SHOULD
+        send `Idempotency-Key`: a retried issue without one consumes a
+        second pool slot.
+      parameters:
+        - $ref: "#/components/parameters/IdempotencyKeyOptional"
       requestBody:
         required: true
         content:
           application/json:
             schema: { $ref: "#/components/schemas/PermitIssueRequest" }
       responses:
+        "200":
+          description: |-
+            Idempotent replay — same key + same body returns the AssignedRight
+            the key issued, in its current representation; no second slot is
+            consumed (Part 4 §4.2a).
+          content:
+            application/json:
+              schema:
+                $ref: "../vendor/apds/4.1/apds-api-4.1.yaml#/components/schemas/AssignedRight"
         "201":
           description: The issued AssignedRight (native APDS entity).
           content:
@@ -3339,7 +3526,22 @@ paths:
               schema:
                 $ref: "../vendor/apds/4.1/apds-api-4.1.yaml#/components/schemas/AssignedRight"
         "409":
-          description: Pool exhausted.
+          description: |-
+            Pool exhausted (`pool-exhausted`); Idempotency-Key replayed with a
+            different body (`idempotency-conflict`); a stale
+            `rightSpecification.version` (`version-conflict`); or a credential
+            identification already active on another permit at the place
+            (`credential-identification-in-use`, Part 14 §14.2).
+          content:
+            application/problem+json:
+              schema: { $ref: "#/components/schemas/Problem" }
+        "422":
+          description: |-
+            The `rightSpecification` or `holder` names nothing that exists
+            or is visible (`reference-unknown`); or the RightSpecification has
+            no `rightPools`, or a `credentialType` is not in its
+            `credentials` allow-list (`request-unprocessable`, `detail` names
+            the rule; Part 14 §14.2).
           content:
             application/problem+json:
               schema: { $ref: "#/components/schemas/Problem" }
@@ -3355,13 +3557,31 @@ paths:
       security:
         - apxOAuth: ["apx.accounts:read"]
       tags: [Accounts]
-      summary: Look up accounts by name/phone/card/plate
-      description: Any combination of filters; returns accounts with balances and status.
+      summary: Look up accounts by name/phone/email/card/plate
+      description: |-
+        Any combination of filters; returns accounts with balances and
+        status. Results are constrained to the caller's `apx_places` grant
+        (Part 13 §13.5); under an absent or empty grant the answer is an
+        empty 200 (Part 9 §9.3a).
       parameters:
         - { name: name, in: query, schema: { type: string } }
         - { name: phone, in: query, schema: { type: string } }
+        - name: email
+          in: query
+          description: Exact contact e-mail (case-insensitive). Personal data (Part 9 §9.6).
+          schema: { type: string }
         - { name: card, in: query, schema: { type: string } }
         - { name: plate, in: query, schema: { type: string } }
+        - name: place
+          in: query
+          description: |-
+            Narrow results below the grant (Part 13 §13.5(3)): comma-separated
+            HierarchyElement ids, subtree-inclusive. A place outside the
+            caller's grant is 403 `insufficient-grant`. Servers that do not
+            implement narrowing ignore it.
+          style: form
+          explode: false
+          schema: { type: array, items: { type: string, format: uuid } }
         - $ref: "../vendor/apds/4.1/apds-api-4.1.yaml#/components/parameters/page"
       responses:
         "200":
@@ -3415,7 +3635,9 @@ paths:
       description: |-
         Takes a payment against an account or ticket. Idempotency-Key
         REQUIRED. autoAttendant method = PCI-compliant IVR captures the card
-        out of band; APX never carries PANs. Declines are 422.
+        out of band; APX never carries PANs. Declines are 422. With
+        `captureLater: true` the payment is authorized only and created
+        `authorized` (Part 13 §13.1a).
       parameters:
         - { name: Idempotency-Key, in: header, required: true, schema: { type: string } }
       requestBody:
@@ -3425,29 +3647,40 @@ paths:
             schema: { $ref: "#/components/schemas/PaymentRecord" }
       responses:
         "200":
-          description: Idempotent replay — same key + same body returns the ORIGINAL payment.
+          description: |-
+            Idempotent replay — same key + same body returns the payment the
+            key created, in its current representation (Part 4 §4.2a).
           content:
             application/json:
               schema: { $ref: "#/components/schemas/PaymentRecord" }
         "201":
-          description: Approved payment with transactionID.
+          description: Approved payment with transactionID (or `authorized` when `captureLater` was asked).
           content:
             application/json:
               schema: { $ref: "#/components/schemas/PaymentRecord" }
         "400":
-          description: Missing Idempotency-Key (`idempotency-key-required`, Part 12) or no account/ticket to settle.
+          description: |-
+            Missing Idempotency-Key (`idempotency-key-required`), or a body
+            that fails the schema or names neither `account` nor
+            `ticketNumber` to settle (`invalid-request`, Part 12).
           content:
             application/problem+json:
               schema: { $ref: "#/components/schemas/Problem" }
         "401": { $ref: "#/components/responses/Unauthorized" }
         "403": { $ref: "#/components/responses/Forbidden" }
         "409":
-          description: Idempotency-Key replayed with a different body.
+          description: Idempotency-Key replayed with a different body (`idempotency-conflict`).
           content:
             application/problem+json:
               schema: { $ref: "#/components/schemas/Problem" }
         "422":
-          description: Payment declined.
+          description: |-
+            Payment declined (`payment-declined`; the problem SHOULD carry a
+            `payment` member referencing the recorded declined PaymentRecord,
+            Part 13 §13.1); a body carrying card data beyond the truncated
+            last four (`personal-data-not-permitted`, refused before it is
+            persisted or logged); or `captureLater` on a server without an
+            authorization lifecycle (`request-unprocessable`).
           content:
             application/problem+json:
               schema: { $ref: "#/components/schemas/Problem" }
@@ -3457,10 +3690,15 @@ paths:
       security:
         - apxOAuth: ["apx.accounts:read"]
       tags: [Accounts]
-      summary: Payment history by ticket
+      summary: Payment history by ticket, card digits, or account
       description: |-
-        Payments made on a ticket. Privacy rule: last-4 lookup without a
-        date is constrained to the last 8 hours.
+        Payments made on a ticket or an account (Part 13 §13.2). At least
+        one key — `ticketLast4`, `cardLast4`, `ticketNumber`, or `account` —
+        is REQUIRED; `date` and `place` only narrow, and a query with no key
+        is 400 `invalid-request`. Privacy rule: a truncated-key lookup
+        without a `date` is constrained to the last 8 hours; `ticketNumber`
+        and `account` are exempt. Results are constrained to the caller's
+        grant (§13.5).
       parameters:
         - { name: ticketLast4, in: query, schema: { type: string } }
         - name: cardLast4
@@ -3468,9 +3706,28 @@ paths:
           description: |-
             Truncated payment-card digits — the transient-parker lookup of
             last resort (no LPR, no readable ticket). Same recent-window
-            privacy rule as ticketLast4.
+            privacy rule as ticketLast4. At most four digits: a value
+            carrying more is refused with 422 `personal-data-not-permitted`
+            before the request is logged (Part 13 §13.2).
           schema: { type: string }
+        - name: ticketNumber
+          in: query
+          description: Full ticket number, exact match. Exempt from the 8-hour window.
+          schema: { type: string }
+        - name: account
+          in: query
+          description: Account id — every payment on the account (a statement view). Exempt from the 8-hour window.
+          schema: { type: string, format: uuid }
         - { name: date, in: query, schema: { type: string, format: date } }
+        - name: place
+          in: query
+          description: |-
+            Narrow results below the grant (Part 13 §13.5(3)): comma-separated
+            HierarchyElement ids, subtree-inclusive. A place outside the
+            caller's grant is 403 `insufficient-grant`. Never a key on its own.
+          style: form
+          explode: false
+          schema: { type: array, items: { type: string, format: uuid } }
         - $ref: "../vendor/apds/4.1/apds-api-4.1.yaml#/components/parameters/page"
       responses:
         "200":
@@ -3485,8 +3742,17 @@ paths:
                   data:
                     type: array
                     items: { $ref: "#/components/schemas/PaymentRecord" }
+        "400": { $ref: "#/components/responses/BadRequest" }
         "401": { $ref: "#/components/responses/Unauthorized" }
         "403": { $ref: "#/components/responses/Forbidden" }
+        "422":
+          description: |-
+            A query parameter carries more card digits than the truncated
+            last four (`personal-data-not-permitted`, Part 13 §13.2). The
+            server refuses before logging the request.
+          content:
+            application/problem+json:
+              schema: { $ref: "#/components/schemas/Problem" }
         "429": { $ref: "#/components/responses/TooManyRequests" }
 
   /v1/payments/{id}/postings:
@@ -3496,7 +3762,11 @@ paths:
         - apxOAuth: ["apx.payments:write"]
       tags: [Accounts]
       summary: Accounting write-back (PARIS-style)
-      description: Posts the payment to the monthly-parking/AR system; returns confirmation and new balance.
+      description: |-
+        Posts the payment to the monthly-parking/AR system; returns
+        confirmation and new balance. Only an `approved` payment can be
+        posted; any other state is 409 `payment-state-illegal` (Part 13
+        §13.1a).
       parameters:
         - { name: id, in: path, required: true, schema: { type: string, format: uuid } }
       requestBody:
@@ -3512,6 +3782,11 @@ paths:
               schema: { $ref: "#/components/schemas/Posting" }
         "404":
           description: No such payment.
+          content:
+            application/problem+json:
+              schema: { $ref: "#/components/schemas/Problem" }
+        "409":
+          description: The payment is not `approved` (`payment-state-illegal`, Part 13 §13.1a).
           content:
             application/problem+json:
               schema: { $ref: "#/components/schemas/Problem" }
@@ -3549,7 +3824,10 @@ paths:
                   $ref: "#/components/schemas/Approval"
       responses:
         "200":
-          description: The payment, now reversed/partially refunded.
+          description: |-
+            The payment with `refundedAmount` increased; `reversed` once the
+            cumulative refund reaches `amount`, otherwise still `approved`
+            (Part 13 §13.1a).
           content:
             application/json:
               schema: { $ref: "#/components/schemas/PaymentRecord" }
@@ -3561,8 +3839,18 @@ paths:
           content:
             application/problem+json:
               schema: { $ref: "#/components/schemas/Problem" }
+        "422":
+          description: |-
+            The requested `amount` exceeds what remains refundable (`amount`
+            minus `refundedAmount`) — `request-unprocessable`.
+          content:
+            application/problem+json:
+              schema: { $ref: "#/components/schemas/Problem" }
         "409":
-          description: Not refundable in its current state, or Idempotency-Key replayed with a different body.
+          description: |-
+            Not refundable in its current state — only `approved` is
+            (`payment-state-illegal`, Part 13 §13.1a) — or Idempotency-Key
+            replayed with a different body (`idempotency-conflict`).
           content:
             application/problem+json:
               schema: { $ref: "#/components/schemas/Problem" }
@@ -3575,16 +3863,20 @@ paths:
         - apxOAuth: ["apx.payments:write"]
       tags: [Accounts]
       summary: Void an authorized, uncaptured payment
-      description: Financial domain action (Part 17 §17.4). Idempotency-Key REQUIRED. Scope apx.payments:write.
+      description: |-
+        Financial domain action (Part 17 §17.4). Releases an `authorized`
+        payment: `authorized → reversed` (Part 13 §13.1a). Idempotency-Key
+        REQUIRED. Scope apx.payments:write.
       parameters:
         - { name: id, in: path, required: true, schema: { type: string, format: uuid } }
         - { name: Idempotency-Key, in: header, required: true, schema: { type: string } }
       responses:
         "200":
-          description: The voided payment.
+          description: The voided payment, now `reversed`.
           content:
             application/json:
               schema: { $ref: "#/components/schemas/PaymentRecord" }
+        "400": { $ref: "#/components/responses/BadRequest" }
         "401": { $ref: "#/components/responses/Unauthorized" }
         "403": { $ref: "#/components/responses/Forbidden" }
         "429": { $ref: "#/components/responses/TooManyRequests" }
@@ -3594,7 +3886,10 @@ paths:
             application/problem+json:
               schema: { $ref: "#/components/schemas/Problem" }
         "409":
-          description: Already captured or otherwise not voidable.
+          description: |-
+            Not `authorized` (already captured, declined, or reversed —
+            `payment-state-illegal`), or Idempotency-Key replayed with a
+            different body (`idempotency-conflict`).
           content:
             application/problem+json:
               schema: { $ref: "#/components/schemas/Problem" }
@@ -3606,7 +3901,11 @@ paths:
         - apxOAuth: ["apx.payments:write"]
       tags: [Accounts]
       summary: Capture a previously authorized payment
-      description: Financial domain action (Part 17 §17.4). Idempotency-Key REQUIRED. Scope apx.payments:write.
+      description: |-
+        Financial domain action (Part 17 §17.4). Settles an `authorized`
+        payment: `authorized → approved`, optionally for a lower `amount`
+        than was authorized (Part 13 §13.1a). Idempotency-Key REQUIRED.
+        Scope apx.payments:write.
       parameters:
         - { name: id, in: path, required: true, schema: { type: string, format: uuid } }
         - { name: Idempotency-Key, in: header, required: true, schema: { type: string } }
@@ -3618,10 +3917,11 @@ paths:
               type: object
               properties:
                 amount:
+                  description: Amount to capture; at most the authorized amount. Omit to capture in full.
                   $ref: "../vendor/apds/4.1/apds-api-4.1.yaml#/components/schemas/AmountInCurrency"
       responses:
         "200":
-          description: The captured payment.
+          description: The captured payment, now `approved` with `amount` = the captured amount.
           content:
             application/json:
               schema: { $ref: "#/components/schemas/PaymentRecord" }
@@ -3633,8 +3933,16 @@ paths:
           content:
             application/problem+json:
               schema: { $ref: "#/components/schemas/Problem" }
+        "422":
+          description: Capture `amount` exceeds the authorized amount (`request-unprocessable`).
+          content:
+            application/problem+json:
+              schema: { $ref: "#/components/schemas/Problem" }
         "409":
-          description: Not capturable in its current state.
+          description: |-
+            Not `authorized` (`payment-state-illegal`, Part 13 §13.1a), or
+            Idempotency-Key replayed with a different body
+            (`idempotency-conflict`).
           content:
             application/problem+json:
               schema: { $ref: "#/components/schemas/Problem" }
@@ -3662,7 +3970,10 @@ paths:
             schema: { $ref: "#/components/schemas/PaymentLink" }
       responses:
         "200":
-          description: Idempotent replay — same key + same body returns the ORIGINAL link.
+          description: |-
+            Idempotent replay — same key + same body returns the link the key
+            created, in its current representation (`status` may have
+            advanced; Part 4 §4.2a).
           content:
             application/json:
               schema: { $ref: "#/components/schemas/PaymentLink" }
@@ -3672,7 +3983,10 @@ paths:
             application/json:
               schema: { $ref: "#/components/schemas/PaymentLink" }
         "400":
-          description: No account/ticket/session to settle, or unsupported channel.
+          description: |-
+            Missing Idempotency-Key (`idempotency-key-required`), or a body
+            that fails the schema or names no account, ticket, or session to
+            settle (`invalid-request`, Part 12).
           content:
             application/problem+json:
               schema: { $ref: "#/components/schemas/Problem" }
@@ -3684,6 +3998,81 @@ paths:
           content:
             application/problem+json:
               schema: { $ref: "#/components/schemas/Problem" }
+        "422":
+          description: |-
+            A `channel` this server does not deliver on
+            (`request-unprocessable`), or a body carrying card data
+            (`personal-data-not-permitted`, refused before it is persisted or
+            logged; Part 13 §13.1).
+          content:
+            application/problem+json:
+              schema: { $ref: "#/components/schemas/Problem" }
+
+  /v1/payment-links/{id}:
+    get:
+      operationId: get-apx-v1-payment-links-id
+      security:
+        - apxOAuth: ["apx.accounts:read"]
+        - apxOAuth: ["apx.payments:write"]
+      tags: [Accounts]
+      summary: Read a payment link
+      description: |-
+        The link's current lifecycle state (`sent → opened → paid | expired
+        | cancelled`, Part 13 §13.1a) and, once paid, the resulting
+        PaymentRecord. Grant-checked on the link's `place`.
+      parameters:
+        - { name: id, in: path, required: true, schema: { type: string, format: uuid } }
+      responses:
+        "200":
+          description: The payment link.
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/PaymentLink" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+        "404": { $ref: "#/components/responses/NotFound" }
+        "429": { $ref: "#/components/responses/TooManyRequests" }
+
+  /v1/payment-links/{id}/cancel:
+    post:
+      operationId: post-apx-v1-payment-links-id-cancel
+      security:
+        - apxOAuth: ["apx.payments:write"]
+      tags: [Accounts]
+      summary: Cancel a payment link
+      description: |-
+        Kills a link before the customer pays (sent to the wrong number,
+        paid another way): `sent | opened → cancelled`. The hosted page MUST
+        stop accepting payment from that instant. A link that is `paid`,
+        `expired`, or already `cancelled` is 409 `payment-state-illegal`
+        (Part 13 §13.1a). Idempotency-Key optional (Part 4 §4.2a).
+      parameters:
+        - { name: id, in: path, required: true, schema: { type: string, format: uuid } }
+        - $ref: "#/components/parameters/IdempotencyKeyOptional"
+      requestBody:
+        required: false
+        content:
+          application/json:
+            schema: { $ref: "./domains/accounts/schemas.yaml#/PaymentLinkCancel" }
+      responses:
+        "200":
+          description: The link, now `cancelled` (or its current representation on an idempotent replay).
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/PaymentLink" }
+        "400": { $ref: "#/components/responses/BadRequest" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+        "404": { $ref: "#/components/responses/NotFound" }
+        "409":
+          description: |-
+            The link is `paid`, `expired`, or already `cancelled`
+            (`payment-state-illegal`), or Idempotency-Key replayed with a
+            different body (`idempotency-conflict`).
+          content:
+            application/problem+json:
+              schema: { $ref: "#/components/schemas/Problem" }
+        "429": { $ref: "#/components/responses/TooManyRequests" }
 
   /v1/sessions/{id}/plate:
     put:
