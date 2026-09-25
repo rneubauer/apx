@@ -33,6 +33,7 @@ GET /v1/credentials?account=7a8b9c0d-1e2f-4a3b-8c4d-5e6f7a8b9c0d&status=active H
       "assignedRights": [ { "id": "e1000000-0000-4000-8000-000000000102", "className": "AssignedRight" } ],
       "places": [ { "id": "b1000000-0000-4000-8000-000000000001", "className": "Place" } ],
       "validity": { "start": "2026-01-01T00:00:00Z", "end": "2026-12-31T23:59:59Z" },
+      "activateOnStart": true,
       "media": { "form": "physicalCard", "serialNumber": "HID-77A3-004512", "batch": "2025-Q4-B", "issuedTime": "2025-12-28T15:10:00Z", "deposit": { "currencyType": "USD", "currencyValue": 25.0 }, "depositStatus": "held" },
       "credentialStatus": "active",
       "statusHistory": [
@@ -45,8 +46,10 @@ GET /v1/credentials?account=7a8b9c0d-1e2f-4a3b-8c4d-5e6f7a8b9c0d&status=active H
 ```
 
 An HID proximity card (`credentialType: rfid`, `media.form:
-physicalCard`), issued in December with a $25 deposit, active since
-January 1, materialized on the parker's monthly AssignedRight.
+physicalCard`), issued in December with a $25 deposit and
+`activateOnStart`, so the server activated it itself on January 1
+(actor `system`, Part 21 §21.1 rule 6); materialized on the parker's
+monthly AssignedRight.
 
 ## Step 2 — Report it lost
 
@@ -136,8 +139,15 @@ old record now reads:
   "version": 6,
   "credentialType": "rfid",
   "credentialIdentification": "C-0048812",
+  "credentialAssignedType": "customer",
+  "holder": { "id": "c1000000-0000-4000-8000-000000000102", "className": "RightHolder" },
+  "account": { "id": "7a8b9c0d-1e2f-4a3b-8c4d-5e6f7a8b9c0d", "className": "Account" },
+  "assignedRights": [ { "id": "e1000000-0000-4000-8000-000000000102", "className": "AssignedRight" } ],
+  "places": [ { "id": "b1000000-0000-4000-8000-000000000001", "className": "Place" } ],
+  "validity": { "start": "2026-01-01T00:00:00Z", "end": "2026-12-31T23:59:59Z" },
+  "activateOnStart": true,
   "credentialStatus": "replaced",
-  "media": { "form": "physicalCard", "serialNumber": "HID-77A3-004512", "depositStatus": "forfeited" },
+  "media": { "form": "physicalCard", "serialNumber": "HID-77A3-004512", "batch": "2025-Q4-B", "issuedTime": "2025-12-28T15:10:00Z", "deposit": { "currencyType": "USD", "currencyValue": 25.0 }, "depositStatus": "forfeited" },
   "replacedBy": { "id": "d6000000-0000-4000-8000-000000000102", "className": "CredentialRecord" },
   "statusHistory": [
     { "state": "issued", "time": "2025-12-28T15:10:00Z", "actor": "frontdesk-mkim" },
@@ -148,7 +158,11 @@ old record now reads:
 }
 ```
 
-A second `replace` on the old record now would be refused with 409
+The old record keeps everything it had (Part 21 §21.3) — only its
+status, `replacedBy`, the deposit status, and the history changed. Its
+`assignedRights` now records where it *was* materialized; being
+`replaced`, it opens nothing. A second `replace` on the old record now
+would be refused with 409
 `credential-not-replaceable`; a retry of the same call with the same
 `Idempotency-Key` returns the same successor.
 

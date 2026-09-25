@@ -37,6 +37,12 @@ ConditionReport:
             enum: [minor, moderate, major]
           imageLink:
             $ref: "../../../vendor/apds/4.1/apds-api-4.1.yaml#/components/schemas/Url"
+          recordedTime:
+            description: Set by the server on an entry appended after drop-off (`POST …/condition`, Part 22 §22.2 rule 3); absent on the original entries, which share the report's `recordedTime`.
+            $ref: "../../../vendor/apds/4.1/apds-api-4.1.yaml#/components/schemas/DateTime"
+          recordedBy:
+            type: string
+            description: Opaque principal that recorded an appended entry.
     imageLinks:
       type: array
       description: Walk-around photos or scan captures, as access-controlled links.
@@ -62,11 +68,16 @@ ValetTicket:
     damage claim look at.
 
     Lifecycle (Part 22 §22.1): `dropped → parked → requested → retrieving
-    → staged → handedBack → closed`; `cancel-retrieval` returns
-    `requested | retrieving` to `parked`; `dropped → handedBack` is
-    allowed before the car moves; `closed` is server-side when the stay
-    settles. `cancelled` is terminal for a drop-off abandoned before
-    custody.
+    (pickup) → staged → handedBack → closed`; `cancel-retrieval` returns
+    `requested | retrieving` to `parked`; `park` re-parks a `staged` car;
+    `dropped → handedBack` is allowed before the car moves; `closed` is
+    server-side when the stay settles. `cancel` moves a `dropped` ticket
+    to the terminal `cancelled` (custody never taken).
+
+    As a create body: `storage`, `retrieval`, `handback`, `statusHistory`,
+    and `recordInfo` are server-written — a server MUST ignore values a
+    client sends for them (Part 22 §22.1 rule 5). `session` and
+    `assignedRight` MAY be sent when the operator opened them first.
   type: object
   required:
     - id
@@ -202,12 +213,13 @@ ValetTicket:
         etaMinutes:
           type: integer
           minimum: 0
-          description: The operator's current estimate; recomputed as the queue moves.
+          description: Whole minutes from now until `promisedTime`, never negative — `max(0, floor(promisedTime − now))` — recomputed on every read and event (Part 22 §22.3 rule 1). For a scheduled pickup it counts down to `requestedFor`.
         promisedTime:
-          description: When the car is promised at the staging lane (requestedTime + eta, or requestedFor).
+          description: When the car is promised at the staging lane — `requestedFor` when scheduled, else `requestedTime` plus the operator's estimate.
           $ref: "../../../vendor/apds/4.1/apds-api-4.1.yaml#/components/schemas/DateTime"
         retrievingBy:
           type: string
+          description: Opaque principal of the runner fetching the car (set by `pickup`).
         stagingLane:
           $ref: "../../../vendor/apds/4.1/apds-api-4.1.yaml#/components/schemas/Reference"
         stagedTime:
@@ -290,6 +302,31 @@ ValetRetrievalRequest:
     interaction:
       type: string
       description: Opaque interaction id (Part 17 §17.6) when raised through a support channel or bot.
+    note:
+      type: string
+
+ValetCancelRequest:
+  title: ValetCancelRequest
+  description: Request body abandoning a drop-off before custody was taken; the ticket becomes `cancelled` (terminal).
+  type: object
+  required: [reason]
+  properties:
+    reason:
+      type: string
+      description: Implementer code list (customerLeft, selfParked, duplicateTicket, refused…).
+      examples: [customerLeft]
+    note:
+      type: string
+
+ValetPickupRequest:
+  title: ValetPickupRequest
+  description: Request body recording that a runner has gone to fetch the car (`requested → retrieving`).
+  type: object
+  properties:
+    retrievingBy:
+      type: string
+      description: Opaque principal of the runner; absent = the calling principal.
+      examples: [runner-0107]
     note:
       type: string
 

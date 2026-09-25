@@ -147,25 +147,24 @@ Content-Type: application/json
   "place": { "id": "b1000000-0000-4000-8000-000000000005", "className": "Place" },
   "ticketNumber": "V-20419",
   "vehicle": { "credentialType": "licensePlate", "credentialIdentification": "SYN-7734", "make": "Audi", "colour": "grey" },
+  "customer": { "displayName": "R. Ortega" },
   "dropOff": { "time": "2026-09-20T18:30:14Z" },
   "retrieval": {
     "requestedTime": "2026-09-20T20:41:03Z",
     "channel": "sms",
-    "requestedBy": "customer",
     "etaMinutes": 8,
     "promisedTime": "2026-09-20T20:49:03Z"
   },
-  "valetStatus": "requested",
-  "statusHistory": [
-    { "state": "dropped", "time": "2026-09-20T18:30:14Z", "actor": "attendant-0031" },
-    { "state": "parked", "time": "2026-09-20T18:36:40Z", "actor": "runner-0107" },
-    { "state": "requested", "time": "2026-09-20T20:41:03Z", "actor": "customer", "detail": "channel sms; eta 8 min" }
-  ]
+  "valetStatus": "requested"
 }
 ```
 
-This is the **minimized** read the customer scope gets: no `storage`,
-no key tag, no attendant ids, no condition images — status and ETA. The
+This is the **minimized** read the customer scope gets — exactly the
+Part 22 §22.5 member list: no `storage`, no key tag, no
+`statusHistory` (its actors are attendant ids), no condition report —
+status and ETA. Had the guest texted "CAR" again a minute later, the
+same call would return this same ticket with a 200 and nothing new on
+the runner board (§22.3 rule 4). The
 gateway texts back "Your car will be ready in about 8 minutes at the
 front entrance." `apx.valet.retrieval.requested.v1` lands on the runner
 board. Had the guest used the hotel's PWA or the voice bot instead, the
@@ -181,7 +180,7 @@ GET /v1/valet/queue?place=b1000000-0000-4000-8000-000000000005 HTTP/1.1
 <!-- apx:validate ValetTicket at /data/0 -->
 ```json
 {
-  "meta": { "totalCount": 3 },
+  "meta": { "referenceInstant": 1789936920, "offset": 0, "pageSize": 100, "total": 3 },
   "data": [
     {
       "id": "d8000000-0000-4000-8000-000000000419",

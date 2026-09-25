@@ -2791,11 +2791,17 @@ paths:
       tags: [Credentials]
       summary: Issue a credential (idempotent)
       description: |-
-        Creates a CredentialRecord in `issued` (or `active` when
-        `validity.start` is past and the request says so via the
-        `activate` transition afterwards). `Idempotency-Key` REQUIRED.
+        Creates a CredentialRecord in `issued`. It becomes `active` either
+        by a later `activate` call or, when the body sets
+        `activateOnStart: true`, by the server itself at `validity.start`
+        (at once when that is absent or past), with actor `system` (Part 21
+        §21.1 rule 6). `Idempotency-Key` REQUIRED.
         `credentialIdentification` MUST be unique per `credentialType`
-        (409 `credential-identification-in-use`). Publishes
+        among non-terminal records (409 `credential-identification-in-use`,
+        whose `detail` MUST NOT identify the holding record, holder, or
+        place — §21.5). Server-assigned members in the body (`id`,
+        `version`, `credentialStatus`, `suspension`, `replacedBy`,
+        `statusHistory`, `recordInfo`) are ignored. Publishes
         `apx.credentials.status.v1`.
       parameters:
         - { name: Idempotency-Key, in: header, required: true, schema: { type: string } }
@@ -2816,19 +2822,23 @@ paths:
             application/json:
               schema: { $ref: "#/components/schemas/CredentialRecord" }
         "400":
-          description: Missing Idempotency-Key or invalid record.
+          description: Missing Idempotency-Key (`idempotency-key-required`) or a record that fails the schema (`invalid-request`, with `errors[]`).
           content:
             application/problem+json:
               schema: { $ref: "#/components/schemas/Problem" }
         "401": { $ref: "#/components/responses/Unauthorized" }
         "403": { $ref: "#/components/responses/Forbidden" }
         "409":
-          description: Identification already in use for this type, or Idempotency-Key replayed with a different body.
+          description: Identification already in use for this type (`credential-identification-in-use`), or Idempotency-Key replayed with a different body (`idempotency-conflict`).
           content:
             application/problem+json:
               schema: { $ref: "#/components/schemas/Problem" }
         "422":
-          description: Unknown holder, account, assigned right, or place.
+          description: |-
+            Unknown holder, account, assigned right, or place
+            (`reference-unknown`); or a validity window that is already over
+            or inverted — `validity.end` not in the future, or before
+            `validity.start` (`request-unprocessable`, Part 21 §21.1 rule 7).
           content:
             application/problem+json:
               schema: { $ref: "#/components/schemas/Problem" }
@@ -2843,6 +2853,8 @@ paths:
         Filter by holder, account, type, identification, status, and place
         (subtree-inclusive). Results are constrained to the caller's place
         grant; identification values are personal data under Part 9 §9.6.
+        A lookup by `identification` that matches only records outside the
+        grant returns an empty 200 (Part 9 §9.3a).
       parameters:
         - { name: holder, in: query, schema: { type: string, format: uuid } }
         - { name: account, in: query, schema: { type: string, format: uuid } }
@@ -2941,7 +2953,7 @@ paths:
         - apxOAuth: ["apx.credentials:manage"]
       tags: [Credentials]
       summary: Suspend a credential
-      description: "Transition `active → suspended` (optionally `until`); the lane MUST deny it meanwhile. Any other state is 409 `credential-transition-illegal`."
+      description: "Transition `active → suspended` (optionally `until`, which MUST be in the future — else 422 `request-unprocessable`); the lane MUST deny it meanwhile. Any other state is 409 `credential-transition-illegal`."
       parameters:
         - { name: id, in: path, required: true, schema: { type: string, format: uuid } }
       requestBody:
@@ -2964,6 +2976,11 @@ paths:
               schema: { $ref: "#/components/schemas/Problem" }
         "409":
           description: Illegal transition.
+          content:
+            application/problem+json:
+              schema: { $ref: "#/components/schemas/Problem" }
+        "422":
+          description: "`until` is not in the future (`request-unprocessable`, Part 21 §21.1 rule 7); nothing is written."
           content:
             application/problem+json:
               schema: { $ref: "#/components/schemas/Problem" }
@@ -3089,9 +3106,12 @@ paths:
         Issues a successor `active` record inheriting holder, account,
         assigned rights, places, and validity; links `replaces`/`replacedBy`;
         moves THIS record to `replaced` and swaps the APDS CredentialAssigned
-        atomically. Allowed from `active`, `suspended`, or `lost`; terminal
-        states are 409 `credential-not-replaceable`. `Idempotency-Key`
-        REQUIRED. Returns the successor.
+        atomically. The predecessor keeps every other field it had (§21.3).
+        Allowed from `active`, `suspended`, or `lost`. From `issued` it is
+        409 `credential-transition-illegal` (revoke it and issue anew);
+        `credential-not-replaceable` is reserved for the terminal states
+        `revoked`, `expired`, `replaced`. `Idempotency-Key` REQUIRED.
+        Returns the successor.
       parameters:
         - { name: id, in: path, required: true, schema: { type: string, format: uuid } }
         - { name: Idempotency-Key, in: header, required: true, schema: { type: string } }
@@ -3112,7 +3132,7 @@ paths:
             application/json:
               schema: { $ref: "#/components/schemas/CredentialRecord" }
         "400":
-          description: Missing Idempotency-Key or invalid request.
+          description: Missing Idempotency-Key (`idempotency-key-required`) or a body that fails the schema (`invalid-request`).
           content:
             application/problem+json:
               schema: { $ref: "#/components/schemas/Problem" }
@@ -3124,7 +3144,11 @@ paths:
             application/problem+json:
               schema: { $ref: "#/components/schemas/Problem" }
         "409":
-          description: Not replaceable from the current state, successor identification in use, or key replayed with a different body.
+          description: |-
+            Terminal record (`credential-not-replaceable`), a record still
+            `issued` (`credential-transition-illegal`), successor
+            identification in use (`credential-identification-in-use`), or
+            key replayed with a different body (`idempotency-conflict`).
           content:
             application/problem+json:
               schema: { $ref: "#/components/schemas/Problem" }
@@ -3144,9 +3168,13 @@ paths:
       parameters:
         - { name: id, in: path, required: true, schema: { type: string, format: uuid } }
         - { name: since, in: query, schema: { type: string, format: date-time } }
+        - { name: until, in: query, description: "Exclusive upper bound on `occurredAt`.", schema: { type: string, format: date-time } }
         - name: outcome
           in: query
           schema: { type: string, enum: [granted, denied] }
+        - name: direction
+          in: query
+          schema: { type: string, enum: [entry, exit] }
         - $ref: "../vendor/apds/4.1/apds-api-4.1.yaml#/components/parameters/page"
       responses:
         "200":
@@ -3170,6 +3198,62 @@ paths:
               schema: { $ref: "#/components/schemas/Problem" }
         "429": { $ref: "#/components/responses/TooManyRequests" }
 
+  /v1/access-events:
+    get:
+      operationId: get-apx-v1-access-events
+      security:
+        - apxOAuth: ["apx.credentials:read"]
+      tags: [Credentials]
+      summary: Access events by place, lane, or reader
+      description: |-
+        Every access attempt at the caller's granted places, newest first —
+        including presentations that matched no CredentialRecord
+        (`denialReason: unknownCredential`, carrying `presented`). "Every
+        denial at lane 1 tonight" is `?lane=…&outcome=denied&since=…`.
+        Results are constrained to the caller's place grant; naming a
+        place, lane, or device outside it is 403 `insufficient-grant`
+        (Part 9 §9.3a). Retention per Part 9 §9.6. The same events are
+        published as `apx.credentials.access.v1` (Part 21 §21.4).
+      parameters:
+        - name: place
+          in: query
+          description: HierarchyElement ids, comma-separated; subtree-inclusive.
+          style: form
+          explode: false
+          schema:
+            type: array
+            items: { type: string, format: uuid }
+        - { name: lane, in: query, description: The VehicularAccess., schema: { type: string, format: uuid } }
+        - { name: device, in: query, description: The reader (SupplementalEquipment)., schema: { type: string, format: uuid } }
+        - { name: credential, in: query, description: A CredentialRecord id., schema: { type: string, format: uuid } }
+        - name: outcome
+          in: query
+          schema: { type: string, enum: [granted, denied] }
+        - { name: denialReason, in: query, schema: { type: string } }
+        - name: direction
+          in: query
+          schema: { type: string, enum: [entry, exit] }
+        - { name: since, in: query, description: "Inclusive lower bound on `occurredAt`.", schema: { type: string, format: date-time } }
+        - { name: until, in: query, description: "Exclusive upper bound on `occurredAt`.", schema: { type: string, format: date-time } }
+        - $ref: "../vendor/apds/4.1/apds-api-4.1.yaml#/components/parameters/page"
+      responses:
+        "200":
+          description: Paginated access events (APDS PaginatedList shape).
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  meta:
+                    $ref: "../vendor/apds/4.1/apds-api-4.1.yaml#/components/schemas/PaginatedListMeta"
+                  data:
+                    type: array
+                    items: { $ref: "./domains/credentials/schemas.yaml#/AccessEvent" }
+        "400": { $ref: "#/components/responses/BadRequest" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+        "429": { $ref: "#/components/responses/TooManyRequests" }
+
   # ===== Valet (optional class apx-valet; Part 22) ===== #
   # Net-new: APDS has no valet entity. The stay is a native Session; this
   # adds custody, keys, condition evidence, the retrieval queue, staging,
@@ -3185,7 +3269,13 @@ paths:
         Creates the ValetTicket in `dropped` with the drop-off condition
         report. `Idempotency-Key` REQUIRED (handhelds and scanning devices
         retry). The server SHOULD open the APDS Session for the stay and
-        reference it. Publishes `apx.valet.ticket.status.v1`.
+        reference it, unless the body already references one. `storage`,
+        `retrieval`, `handback`, `statusHistory`, and `recordInfo` in the
+        body are ignored — the server writes them (Part 22 §22.1 rule 5).
+        A `customer.contactChannel.handle` that carries a raw phone number
+        or e-mail address SHOULD be refused with 422
+        `personal-data-not-permitted` rather than stored or silently
+        masked (§22.6). Publishes `apx.valet.ticket.status.v1`.
       parameters:
         - { name: Idempotency-Key, in: header, required: true, schema: { type: string } }
       requestBody:
@@ -3205,19 +3295,23 @@ paths:
             application/json:
               schema: { $ref: "#/components/schemas/ValetTicket" }
         "400":
-          description: Missing Idempotency-Key or invalid ticket.
+          description: Missing Idempotency-Key (`idempotency-key-required`) or a ticket that fails the schema (`invalid-request`, with `errors[]`).
           content:
             application/problem+json:
               schema: { $ref: "#/components/schemas/Problem" }
         "401": { $ref: "#/components/responses/Unauthorized" }
         "403": { $ref: "#/components/responses/Forbidden" }
         "409":
-          description: Idempotency-Key replayed with a different body.
+          description: Idempotency-Key replayed with a different body (`idempotency-conflict`).
           content:
             application/problem+json:
               schema: { $ref: "#/components/schemas/Problem" }
         "422":
-          description: Unknown place, lane, or customer reference.
+          description: |-
+            Unknown place, lane, session, or customer reference
+            (`reference-unknown`), or a raw phone number or e-mail address
+            where an opaque handle is required (`personal-data-not-permitted`,
+            §22.6).
           content:
             application/problem+json:
               schema: { $ref: "#/components/schemas/Problem" }
@@ -3304,9 +3398,16 @@ paths:
       summary: Read a valet ticket
       description: |-
         Full record for operator scopes. A `apx.valet:request` token sees
-        only its own ticket, with `storage`, attendant principals, and
-        condition images omitted (Part 22 §22.5) — enough to show status
-        and ETA.
+        only its own ticket, as the minimized projection of Part 22 §22.5
+        — `id`, `version`, `place`, `ticketNumber`, `vehicle`,
+        `customer.displayName`, `dropOff.time`, `retrieval.{requestedTime,
+        requestedFor, channel, etaMinutes, promisedTime, stagingLane,
+        stagedTime, cancelledTime}`, `handback.time`, `valetStatus`, and
+        `extensions`; everything else, including `statusHistory`, is
+        omitted. The same projection applies to the ticket a
+        `apx.valet:request` token gets back from `retrieve` and
+        `cancel-retrieval`. An operator token gets 403 `insufficient-grant` for a
+        ticket at a place outside its grant (Part 9 §9.3a).
       parameters:
         - { name: id, in: path, required: true, schema: { type: string, format: uuid } }
       responses:
@@ -3318,7 +3419,7 @@ paths:
         "401": { $ref: "#/components/responses/Unauthorized" }
         "403": { $ref: "#/components/responses/Forbidden" }
         "404":
-          description: No such ticket (or outside the caller's grant).
+          description: No such ticket, or — for an `apx.valet:request` token — a ticket it is not bound to (`target-not-found`; existence is never disclosed, Part 9 §9.3a).
           content:
             application/problem+json:
               schema: { $ref: "#/components/schemas/Problem" }
@@ -3331,9 +3432,19 @@ paths:
         - apxOAuth: ["apx.valet:manage"]
       tags: [Valet]
       summary: Record the parked position and key location
-      description: "Transition `dropped → parked` (or update `storage` while `parked`). Any other state is 409 `valet-transition-illegal`."
+      description: |-
+        Transition `dropped → parked`; update `storage` while `parked`; or
+        re-park a `staged` car the customer is not collecting yet
+        (`staged → parked`: records the new `storage`, clears
+        `retrieval.stagingLane`/`stagedTime`, and sets
+        `retrieval.cancelledTime` and `cancelReason: re-parked`). Any
+        other state is 409 `valet-transition-illegal`. Send `If-Match`
+        with the version last read so two runners cannot overwrite each
+        other's `storage`: a stale value is 409 `version-conflict` (Part 4
+        §4.2a); without it the write is last-writer-wins.
       parameters:
         - { name: id, in: path, required: true, schema: { type: string, format: uuid } }
+        - $ref: "#/components/parameters/IfMatch"
       requestBody:
         required: true
         content:
@@ -3353,7 +3464,7 @@ paths:
             application/problem+json:
               schema: { $ref: "#/components/schemas/Problem" }
         "409":
-          description: Illegal transition.
+          description: Illegal transition (`valet-transition-illegal`), or a stale `If-Match` (`version-conflict`).
           content:
             application/problem+json:
               schema: { $ref: "#/components/schemas/Problem" }
@@ -3373,9 +3484,14 @@ paths:
         page, or voice bot calls this on `apx.valet:request` for its own
         ticket; attendants and the call center on `apx.valet:manage`. The
         server sets `retrieval.etaMinutes` and `promisedTime` and
-        publishes `apx.valet.retrieval.requested.v1`. From `dropped` (not
-        yet parked) it is 409 `valet-vehicle-not-located`; any other state
-        is 409 `valet-transition-illegal`.
+        publishes `apx.valet.retrieval.requested.v1`. A repeat while
+        `requested` or `retrieving` ("CAR" texted twice) is not an error:
+        200 with the current ticket and ETA, nothing appended or
+        republished, and the body's `requestedFor` ignored (to reschedule,
+        `cancel-retrieval` then `retrieve`). From `dropped` (not yet
+        parked) it is 409 `valet-vehicle-not-located`; from `staged`,
+        `handedBack`, `closed`, or `cancelled` it is 409
+        `valet-transition-illegal`.
       parameters:
         - { name: id, in: path, required: true, schema: { type: string, format: uuid } }
       requestBody:
@@ -3385,14 +3501,14 @@ paths:
             schema: { $ref: "#/components/schemas/ValetRetrievalRequest" }
       responses:
         "200":
-          description: Requested ticket with ETA.
+          description: Requested ticket with ETA (or the unchanged ticket, for a repeat while `requested`/`retrieving`).
           content:
             application/json:
               schema: { $ref: "#/components/schemas/ValetTicket" }
         "401": { $ref: "#/components/responses/Unauthorized" }
         "403": { $ref: "#/components/responses/Forbidden" }
         "404":
-          description: No such ticket (or outside the caller's grant).
+          description: No such ticket, or — for an `apx.valet:request` token — a ticket it is not bound to (`target-not-found`, Part 9 §9.3a). An operator token gets 403 `insufficient-grant` for a ticket outside its grant.
           content:
             application/problem+json:
               schema: { $ref: "#/components/schemas/Problem" }
@@ -3412,7 +3528,7 @@ paths:
         - apxOAuth: ["apx.valet:request"]
       tags: [Valet]
       summary: Cancel an open retrieval request
-      description: "Transition `requested | retrieving → parked` (a staged car is re-parked by the operator, not cancelled here). Any other state is 409 `valet-transition-illegal`."
+      description: "Transition `requested | retrieving → parked`. A staged car is re-parked by the operator with `park`, not cancelled here. Any other state is 409 `valet-transition-illegal`."
       parameters:
         - { name: id, in: path, required: true, schema: { type: string, format: uuid } }
       requestBody:
@@ -3429,7 +3545,7 @@ paths:
         "401": { $ref: "#/components/responses/Unauthorized" }
         "403": { $ref: "#/components/responses/Forbidden" }
         "404":
-          description: No such ticket (or outside the caller's grant).
+          description: No such ticket, or — for an `apx.valet:request` token — a ticket it is not bound to (`target-not-found`, Part 9 §9.3a). An operator token gets 403 `insufficient-grant` for a ticket outside its grant.
           content:
             application/problem+json:
               schema: { $ref: "#/components/schemas/Problem" }
@@ -3523,6 +3639,130 @@ paths:
               schema: { $ref: "#/components/schemas/Problem" }
         "429": { $ref: "#/components/responses/TooManyRequests" }
         "400": { $ref: "#/components/responses/BadRequest" }
+
+  /v1/valet/tickets/{id}/pickup:
+    post:
+      operationId: post-apx-v1-valet-tickets-id-pickup
+      security:
+        - apxOAuth: ["apx.valet:manage"]
+      tags: [Valet]
+      summary: A runner has gone for the car
+      description: |-
+        Transition `requested → retrieving`; sets
+        `retrieval.retrievingBy` (the body's value, else the calling
+        principal) — what the runner board shows as "on its way". Optional:
+        `stage` from `requested` remains valid, and a server MAY infer
+        `retrieving` from its own runner assignment instead (Part 22 §22.1
+        rule 2). Any other state is 409 `valet-transition-illegal`.
+      parameters:
+        - { name: id, in: path, required: true, schema: { type: string, format: uuid } }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "./domains/valet/schemas.yaml#/ValetPickupRequest" }
+      responses:
+        "200":
+          description: Ticket in `retrieving`.
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/ValetTicket" }
+        "400": { $ref: "#/components/responses/BadRequest" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+        "404": { $ref: "#/components/responses/NotFound" }
+        "409":
+          description: Illegal transition (`valet-transition-illegal`).
+          content:
+            application/problem+json:
+              schema: { $ref: "#/components/schemas/Problem" }
+        "429": { $ref: "#/components/responses/TooManyRequests" }
+
+  /v1/valet/tickets/{id}/cancel:
+    post:
+      operationId: post-apx-v1-valet-tickets-id-cancel
+      security:
+        - apxOAuth: ["apx.valet:manage"]
+      tags: [Valet]
+      summary: Abandon a drop-off before custody (terminal)
+      description: |-
+        Transition `dropped → cancelled` — the driver left before the car
+        moved, or the ticket was opened in error. Appends
+        `statusHistory[]` and publishes `apx.valet.ticket.status.v1`; the
+        server SHOULD close the APDS Session it opened at drop-off at no
+        charge. A customer who changes their mind *after* the walk-around
+        but takes the car back is `handback` from `dropped` instead. Any
+        other state is 409 `valet-transition-illegal`.
+      parameters:
+        - { name: id, in: path, required: true, schema: { type: string, format: uuid } }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "./domains/valet/schemas.yaml#/ValetCancelRequest" }
+      responses:
+        "200":
+          description: Ticket `cancelled`.
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/ValetTicket" }
+        "400": { $ref: "#/components/responses/BadRequest" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+        "404": { $ref: "#/components/responses/NotFound" }
+        "409":
+          description: Illegal transition (`valet-transition-illegal`).
+          content:
+            application/problem+json:
+              schema: { $ref: "#/components/schemas/Problem" }
+        "429": { $ref: "#/components/responses/TooManyRequests" }
+
+  /v1/valet/tickets/{id}/condition:
+    post:
+      operationId: post-apx-v1-valet-tickets-id-condition
+      security:
+        - apxOAuth: ["apx.valet:manage"]
+      tags: [Valet]
+      summary: Append a condition-report correction
+      description: |-
+        Records a finding made after drop-off — the door ding a runner sees
+        at P3 — without editing the drop-off report (Part 22 §22.2 rule 3).
+        Each `damage[]` entry is appended to
+        `dropOff.conditionReport.damage[]` stamped with a server-set
+        `recordedTime` and `recordedBy` (the body's `recordedBy`, else the
+        calling principal); `imageLinks[]` are appended to the report's
+        `imageLinks[]`; `notes` becomes the `detail` of a new
+        `statusHistory[]` entry whose `state` is the unchanged
+        `valetStatus`. The report's original `notes`, `recordedTime`,
+        `recordedBy`, and `customerAcknowledged` never change, and
+        `customerAcknowledged` in the body is ignored. Legal in any state
+        except `closed` and `cancelled` (409 `valet-transition-illegal`).
+        Send `Idempotency-Key` when retrying: an append retried without
+        one is appended twice.
+      parameters:
+        - { name: id, in: path, required: true, schema: { type: string, format: uuid } }
+        - $ref: "#/components/parameters/IdempotencyKeyOptional"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/ConditionReport" }
+      responses:
+        "200":
+          description: The ticket with the correction appended (or, on an idempotent replay, the current ticket).
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/ValetTicket" }
+        "400": { $ref: "#/components/responses/BadRequest" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+        "404": { $ref: "#/components/responses/NotFound" }
+        "409":
+          description: Ticket `closed` or `cancelled` (`valet-transition-illegal`), or Idempotency-Key replayed with a different body (`idempotency-conflict`).
+          content:
+            application/problem+json:
+              schema: { $ref: "#/components/schemas/Problem" }
+        "429": { $ref: "#/components/responses/TooManyRequests" }
 
   # ===== Reservations & permits (optional classes; Part 14) ===== #
   # Reservations use NATIVE routes (/quotes, /rights/assigned) with the
