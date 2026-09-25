@@ -565,7 +565,10 @@ paths:
               $ref: "#/components/schemas/Command"
       responses:
         "200":
-          description: Idempotent replay — same key + same body returns the ORIGINAL command (Part 6 §6.1).
+          description: |-
+            Idempotent replay — same key + same body returns the command as
+            it currently stands, not a snapshot of the first response (Part 4
+            §4.2a, Part 6 §6.1).
           content:
             application/json:
               schema:
@@ -577,7 +580,11 @@ paths:
               schema:
                 $ref: "#/components/schemas/Command"
         "400":
-          description: Missing Idempotency-Key, unknown commandType, or missing target.
+          description: |-
+            Missing Idempotency-Key (`idempotency-key-required`); an unknown
+            `commandType`, a missing `target`, or a parameter that fails its
+            §6.1 definition (`invalid-request`, with `errors[]`); or a command
+            that requires `agent` without one (`agent-required`) — Part 12.
           content:
             application/problem+json:
               schema: { $ref: "#/components/schemas/Problem" }
@@ -592,15 +599,89 @@ paths:
             application/problem+json:
               schema: { $ref: "#/components/schemas/Problem" }
         "409":
-          description: Idempotency-Key replayed with a different body.
+          description: |-
+            Idempotency-Key replayed with a different body
+            (`idempotency-conflict`), or `pushNegotiatedRate` / `matchTicket`
+            at a lane with no transaction in progress
+            (`lane-no-current-transaction`) — Part 12.
           content:
             application/problem+json:
               schema: { $ref: "#/components/schemas/Problem" }
         "422":
-          description: Command expired before dispatch (`command-expired`) or unknown validation provider (`validation-provider-unknown`) — Part 12.
+          description: |-
+            Refused synchronously, nothing dispatched: command expired before
+            dispatch (`command-expired`); unknown validation provider
+            (`validation-provider-unknown`); `lostTicket` at a place whose
+            applicable rate deck has no `lostTicketFee` line
+            (`lost-ticket-fee-undefined`, Part 6 §6.1); a RateTable not
+            flagged negotiable (`rate-not-negotiable`); a session that is not
+            open (`session-not-open`); or a parameter Reference that names
+            nothing (`reference-unknown`) — Part 12.
           content:
             application/problem+json:
               schema: { $ref: "#/components/schemas/Problem" }
+        "429": { $ref: "#/components/responses/TooManyRequests" }
+
+    get:
+      operationId: get-apx-v1-commands
+      security:
+        - apxOAuth: ["apx.control:read"]
+      tags: [Control]
+      summary: List and filter commands (the audit query)
+      description: |-
+        The commands the caller may see, newest first by the time the
+        command was received, each with its full `statusHistory` (Part 6
+        §6.1b). Only commands whose target lies inside the token's
+        `apx_places` grant are returned; naming a `place` outside the grant
+        is 403 `insufficient-grant`. All filters combine with AND.
+      parameters:
+        - name: target
+          in: query
+          schema: { type: string, format: uuid }
+          description: Commands whose `target.id` is this device, lane, or place.
+        - name: place
+          in: query
+          style: form
+          explode: false
+          schema:
+            type: array
+            items: { type: string, format: uuid }
+          description: Comma-separated HierarchyElement ids; subtree-inclusive (a command at a lane matches its parent Place).
+        - name: commandType
+          in: query
+          schema: { type: string }
+          description: An apx-command-types value (or an implementer's own).
+        - name: status
+          in: query
+          schema: { type: string, enum: [received, accepted, rejected, dispatched, executing, succeeded, failed, expired, cancelled] }
+        - name: agent
+          in: query
+          schema: { type: string }
+          description: Commands whose `agent` equals this principal.
+        - name: since
+          in: query
+          schema: { type: string, format: date-time }
+          description: Received at or after this instant (the first `statusHistory` entry).
+        - name: until
+          in: query
+          schema: { type: string, format: date-time }
+          description: Received before this instant.
+        - $ref: "../vendor/apds/4.1/apds-api-4.1.yaml#/components/parameters/page"
+      responses:
+        "200":
+          description: Paginated commands (APDS PaginatedList shape).
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  meta:
+                    $ref: "../vendor/apds/4.1/apds-api-4.1.yaml#/components/schemas/PaginatedListMeta"
+                  data:
+                    type: array
+                    items: { $ref: "#/components/schemas/Command" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/Forbidden" }
         "429": { $ref: "#/components/responses/TooManyRequests" }
 
   /v1/commands/{id}:
@@ -651,7 +732,7 @@ paths:
             application/json:
               schema: { $ref: "#/components/schemas/Command" }
         "409":
-          description: Not cancellable from the current state.
+          description: Not cancellable from the current state (`command-not-cancellable`).
           content:
             application/problem+json:
               schema: { $ref: "#/components/schemas/Problem" }
@@ -667,8 +748,24 @@ paths:
         - apxOAuth: ["apx.control:read"]
       tags: [Control]
       summary: List device status overlays
-      description: Live DeviceStatus for every SupplementalEquipment the caller may see.
+      description: |-
+        Live DeviceStatus for every SupplementalEquipment the caller may
+        see, optionally narrowed by place and state (Part 6 §6.4). Naming a
+        `place` outside the token's `apx_places` grant is 403
+        `insufficient-grant`.
       parameters:
+        - name: place
+          in: query
+          style: form
+          explode: false
+          schema:
+            type: array
+            items: { type: string, format: uuid }
+          description: Comma-separated HierarchyElement ids; subtree-inclusive (a device on a lane matches its parent Place).
+        - name: deviceState
+          in: query
+          schema: { type: string }
+          description: An apx-device-states value, e.g. `fault` for everything in fault.
         - $ref: "../vendor/apds/4.1/apds-api-4.1.yaml#/components/parameters/page"
       responses:
         "200":
@@ -3696,8 +3793,9 @@ paths:
       summary: Raise an alert (idempotent)
       description: |-
         Raises an alert. The `Idempotency-Key` header is REQUIRED: replaying
-        the same key with the same body returns the original alert (200);
-        the same key with a different body is 409 idempotency-conflict.
+        the same key with the same body returns the alert as it currently
+        stands (200, Part 4 §4.2a); the same key with a different body is
+        409 idempotency-conflict. A client MAY supply `id` (Part 7 §7.1).
       parameters:
         - name: Idempotency-Key
           in: header
@@ -3712,7 +3810,10 @@ paths:
               $ref: "#/components/schemas/Alert"
       responses:
         "200":
-          description: Idempotent replay — same key + same body returns the ORIGINAL alert.
+          description: |-
+            Idempotent replay — same key + same body returns the alert as it
+            currently stands (e.g. already acknowledged), not a snapshot of the
+            first response (Part 4 §4.2a).
           content:
             application/json:
               schema:
@@ -3724,7 +3825,10 @@ paths:
               schema:
                 $ref: "#/components/schemas/Alert"
         "400":
-          description: Missing Idempotency-Key or invalid alert.
+          description: |-
+            Missing Idempotency-Key (`idempotency-key-required`) or a body that
+            fails the Alert schema, e.g. an unknown `severity` or no
+            `detectionTime` (`invalid-request`, with `errors[]`) — Part 12.
           content:
             application/problem+json:
               schema:
@@ -3733,7 +3837,10 @@ paths:
         "403": { $ref: "#/components/responses/Forbidden" }
         "429": { $ref: "#/components/responses/TooManyRequests" }
         "409":
-          description: Idempotency-Key replayed with a different body.
+          description: |-
+            Idempotency-Key replayed with a different body
+            (`idempotency-conflict`), or a client-supplied `id` that already
+            exists (`id-collision`) — Part 12.
           content:
             application/problem+json:
               schema:
@@ -3744,7 +3851,12 @@ paths:
         - apxOAuth: ["apx.alerts:read"]
       tags: [Alerts]
       summary: List/filter alerts
-      description: Filter by status, severityFloor, type, place (subtree-inclusive), since.
+      description: |-
+        Filter by status, severityFloor, type, place (subtree-inclusive),
+        device, relatedEntity, since. Alerts with no place binding (e.g.
+        `webhookDeliveryFailed`) are visible to tokens of the owning
+        organisation and are excluded whenever `place` is given (Part 7
+        §7.1).
       parameters:
         - name: status
           in: query
@@ -3758,6 +3870,14 @@ paths:
         - name: place
           in: query
           schema: { type: string, format: uuid }
+        - name: device
+          in: query
+          schema: { type: string, format: uuid }
+          description: Alerts whose `source.device.id` is this SupplementalEquipment.
+        - name: relatedEntity
+          in: query
+          schema: { type: string, format: uuid }
+          description: Alerts whose `relatedEntity.id` is this entity (a Session, a Subscription, a Command…).
         - name: since
           in: query
           schema: { type: string, format: date-time }
@@ -3817,12 +3937,22 @@ paths:
         - apxOAuth: ["apx.alerts:write"]
       tags: [Alerts]
       summary: Acknowledge an alert
-      description: "Transition raised → acknowledged. Illegal transitions are 409."
+      description: |-
+        Transition raised → acknowledged. Illegal transitions are 409
+        `alert-transition-illegal`. The optional body annotates the history
+        entry this transition appends (Part 7 §7.2); a request with no body
+        is unchanged.
       parameters:
         - name: id
           in: path
           required: true
           schema: { type: string, format: uuid }
+      requestBody:
+        required: false
+        content:
+          application/json:
+            schema:
+              $ref: "./domains/alerts/schemas.yaml#/AlertTransition"
       responses:
         "200":
           description: Acknowledged alert.
@@ -3830,8 +3960,9 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/Alert"
+        "400": { $ref: "#/components/responses/BadRequest" }
         "409":
-          description: Illegal transition.
+          description: Illegal transition from the current state (`alert-transition-illegal`, Part 7 §7.3).
           content:
             application/problem+json:
               schema:
@@ -3848,12 +3979,22 @@ paths:
         - apxOAuth: ["apx.alerts:write"]
       tags: [Alerts]
       summary: Resolve an alert
-      description: "Transition raised|acknowledged → resolved. Illegal transitions are 409."
+      description: |-
+        Transition raised|acknowledged → resolved. Illegal transitions are 409
+        `alert-transition-illegal`. The optional body annotates the history
+        entry this transition appends (Part 7 §7.2); a request with no body
+        is unchanged.
       parameters:
         - name: id
           in: path
           required: true
           schema: { type: string, format: uuid }
+      requestBody:
+        required: false
+        content:
+          application/json:
+            schema:
+              $ref: "./domains/alerts/schemas.yaml#/AlertTransition"
       responses:
         "200":
           description: Resolved alert.
@@ -3861,8 +4002,9 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/Alert"
+        "400": { $ref: "#/components/responses/BadRequest" }
         "409":
-          description: Illegal transition.
+          description: Illegal transition from the current state (`alert-transition-illegal`, Part 7 §7.3).
           content:
             application/problem+json:
               schema:

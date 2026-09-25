@@ -61,34 +61,39 @@ implementation has the named capability).
 
 | ID | Requirement | Source |
 |---|---|---|
-| APX-CTL-01 | `POST /v1/commands` with REQUIRED Idempotency-Key; same key+body → original (200); different body → 409 | §6.1 |
+| APX-CTL-01 | `POST /v1/commands` with REQUIRED Idempotency-Key; same key+body → the command as it currently stands (200); different body → 409 `idempotency-conflict`; unknown `commandType` or missing `target` → 400 `invalid-request` | §6.1 |
 | APX-CTL-02 | Commands perishable: past `expiryTime` → `expired`, MUST NOT fire | §6.1 |
 | APX-CTL-03 | Immutable append-only `statusHistory` on every transition; transitions publish `apx.control.command.status.v1` | §6.1 |
-| APX-CTL-04 | Cancel allowed until `dispatched`; after → 409 `command-not-cancellable` | §6.1 |
+| APX-CTL-04 | Cancel allowed until `dispatched`; after → 409 `command-not-cancellable`; a `holdGateOpen` is released by its `expiryTime`, a later `closeLane`, or a `setDeviceState` on the held gate, and then `succeeded` | §6.1 |
 | APX-CTL-05 | `confirmationLevel` reported truthfully; consumers never overclaim beyond it | §6.1 |
 | APX-CTL-06 | vendGate, lostTicket, pushRate, applyValidation implemented; lane inquiry; provider query; device status | §6.5 |
 | APX-CTL-07 | `applyValidation` with unlisted provider → 422 `validation-provider-unknown` | §6.3 |
-| APX-CTL-08 | Lost-ticket fee taken from the rate deck's disclosed lostTicketFee line; absent line → command fails | §6.1 |
+| APX-CTL-08 | Lost-ticket fee taken from the rate deck's disclosed lostTicketFee line; absent line → synchronous 422 `lost-ticket-fee-undefined`, no command created or dispatched | §6.1 |
 | APX-CTL-09 | *(conditional — negotiated rates)* `pushNegotiatedRate` applies only to the target lane's current ticket, never the deck; a table not flagged `apds-ext:apx:ratepolicy@1.0` `negotiable` for the place → 422 `rate-not-negotiable`; the flag travels inside the RateTable on `/rates` | §6.6 |
 | APX-CTL-10 | *(conditional — negotiated rates)* `agent` REQUIRED on `pushNegotiatedRate` (400 `agent-required`); the lane's `currentTicket.negotiatedRate` names the table version and the command | §6.6 |
 | APX-CTL-11 | *(conditional — ticket matching)* Lane inquiry returns advisory `matchCandidates[]` when no ticket is in the machine or a `plate`/`phone`/`credential` lookup is given; the server never binds without `matchTicket` | §6.7 |
 | APX-CTL-12 | *(conditional — ticket matching)* `matchTicket` with `agent` REQUIRED prices the exit from the matched session's true entry time, materializes the exit into the APDS Session on vend (`SessionUpdated`), refuses a closed/foreign session (422 `session-not-open`) and an empty lane (409 `lane-no-current-transaction`) | §6.7 |
+| APX-CTL-13 | `GET /v1/commands` returns only grant-scoped commands and honours `target`, `place` (subtree), `commandType`, `status`, `agent`, `since`, `until`; `GET /v1/devices` honours `place` (subtree) and `deviceState`; a `place` outside the grant → 403 `insufficient-grant` | §6.1b, §6.4 |
+| APX-CTL-14 | A `succeeded` `lostTicket`, `matchTicket`, or `pushNegotiatedRate` carries `result` with the §6.1a members, consistent with the lane inquiry | §6.1a |
 
 ## A.6 `apx-alerts`
 
 | ID | Requirement | Source |
 |---|---|---|
-| APX-ALT-01 | Alert lifecycle raised→acknowledged→resolved with immutable statusHistory; illegal transitions → 409 | §7 |
-| APX-ALT-02 | Idempotent raise (Idempotency-Key semantics as APX-CTL-01) | §7 |
-| APX-ALT-03 | Alert types from `apx-alert-types` (open registry); subtree-inclusive place filtering | §7 |
+| APX-ALT-01 | Alert lifecycle raised→acknowledged→resolved with immutable statusHistory; illegal transitions → 409 `alert-transition-illegal`; an `AlertTransition` body's `detail` and `agent` are recorded on the appended history entry | §7.2, §7.3 |
+| APX-ALT-02 | Idempotent raise (Idempotency-Key semantics as APX-CTL-01; a replay returns the alert as it currently stands) | §7.2 |
+| APX-ALT-03 | Alert types from `apx-alert-types` (open registry); subtree-inclusive place filtering; `device` and `relatedEntity` filters honoured | §7.1, §7.2 |
+| APX-ALT-04 | An alert still `raised` or `acknowledged` at its `expiryTime` becomes `expired` and publishes `apx.alert.status.v1`; an alert without one never expires | §7.3 |
+| APX-ALT-05 | An alert with no place binding is visible to every token of its organisation regardless of `apx_places`, never to other organisations, and excluded from `place`-filtered lists | §7.1 |
 
 ## A.7 `apx-discovery`
 
 | ID | Requirement | Source |
 |---|---|---|
-| APX-DSC-01 | `GET /v1/discovery` reflects the presented token's scopes/org/places exactly | §16.2 |
-| APX-DSC-02 | Soundness: every listed endpoint/command callable; unlisted APX endpoints → 403 | §16.2 |
+| APX-DSC-01 | `GET /v1/discovery` reflects the presented token's scopes/org/places exactly; no `apx_places` claim → `places: []`; `conformanceClasses` ⊆ the bootstrap document's | §16.2 |
+| APX-DSC-02 | Soundness: every listed endpoint/command callable for at least one target in the granted places; an unlisted endpoint the server implements → 403 `insufficient-scope`; an endpoint of an unclaimed class → 404 `target-not-found` | §16.2, §9.3a |
 | APX-DSC-03 | Two clients with different grants receive different documents | §16.2 |
+| APX-DSC-04 | Offered optional features listed in `features` of the bootstrap document and of every discovery document whose client holds a scope of the class | §16.1, §16.2, §6.5 |
 
 ## A.8 `apx-accounts` / A.9 `apx-payment-history`
 
@@ -196,7 +201,9 @@ implementation has the named capability).
 
 | ID | Requirement | Source |
 |---|---|---|
-| APX-TLS-01 | Mutual TLS on all APX endpoints; TLS 1.2 minimum (1.3 RECOMMENDED); client identity bound to the OAuth client | §9.1 |
+| APX-TLS-01 | Client certificate required on every APX and APDS-native route except `/.well-known/apx-configuration`; TLS 1.2 minimum (1.3 RECOMMENDED); a connection without one is refused at the handshake | §9.1, §16.3 |
+| APX-TLS-02 | `/.well-known/apx-configuration` retrievable without a client certificate and lists `apx-mtls` | §16.3 |
+| APX-TLS-03 | Tokens certificate-bound per RFC 8705 (SHOULD); a token whose binding does not match the connection certificate → 401 `unauthenticated` | §16.3 |
 
 ## A.20 Implementation Conformance Statement (template)
 

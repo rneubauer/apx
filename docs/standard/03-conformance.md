@@ -30,6 +30,16 @@ its row:
 | `apx-resolution` | `apx-control` |
 | `apx-mtls` | — (composable with any set) |
 
+A claim that is not closed under this table is non-conforming; a client
+reading one treats the dependent class as not offered (Part 16 §16.1).
+
+**Vendor classes.** A vendor that defines its own conformance class (§3.3)
+MUST name it `<vendor-ns>-<class>` (e.g. `acmecorp-loyalty`), where
+`<vendor-ns>` is the namespace of its extension keys, and MUST NOT begin it
+with `apx-`, which is reserved for classes in the registry. Vendor classes
+MAY be advertised alongside APX classes in the bootstrap and discovery
+documents (Part 16); clients MUST ignore classes they do not recognise.
+
 The numbered requirements for each class, and the Implementation
 Conformance Statement (ICS) template a certification body or implementer
 fills in, are in **Annex A**.

@@ -18,7 +18,10 @@ DiscoveryDocument:
       $ref: "../../../vendor/apds/4.1/apds-api-4.1.yaml#/components/schemas/Reference"
     conformanceClasses:
       type: array
-      description: Server classes usable by this client (intersection with its scopes).
+      description: |-
+        Server classes usable by this client (intersection with its
+        scopes). Always a subset of the bootstrap document's
+        `conformanceClasses` (Part 16 §16.2).
       items: { type: string }
     scopes:
       type: array
@@ -29,28 +32,134 @@ DiscoveryDocument:
         Granted HierarchyElement subtree roots (token claim apx_places),
         reflected exactly. Fail-closed semantics (Part 9 §9.3): an empty
         array means NO places; the explicit wildcard entry "*" means all
-        places.
+        places. A token with no `apx_places` claim is reflected as `[]`,
+        never by omitting the member (Part 16 §16.2).
       items: { type: string }
     endpoints:
       type: array
-      description: Concrete callable endpoints (APDS-native + APX).
+      description: |-
+        Callable endpoints (APDS-native, APX, and vendor routes under
+        `/apx/x/<vendor-ns>/`), each callable for at least one target inside
+        the granted places (Part 16 §16.2).
       items:
         type: object
         required: [path, methods]
         properties:
-          path: { type: string }
+          path:
+            type: string
+            description: |-
+              The OpenAPI path template exactly as it appears in the bundle
+              (`/v1/commands/{id}`; APDS-native routes unchanged), relative
+              to the bootstrap document's `apiBase`.
+            examples: ["/v1/commands/{id}"]
           methods:
             type: array
-            items: { type: string }
+            description: Upper-case HTTP method names.
+            items: { type: string, examples: [GET] }
     commandTypes:
       type: array
-      description: Command types this client may execute (empty without apx.control:execute).
+      description: |-
+        Command types this client may execute (empty without
+        apx.control:execute). A permission list; what the host offers is
+        `features` (Part 16 §16.2).
       items: { type: string }
+    features:
+      type: array
+      description: |-
+        Optional features of claimed classes that this client may use
+        (Part 6 §6.5: `negotiatedRates`, `ticketMatching`). Listed whenever
+        the host offers the feature and the client holds a read or execute
+        scope of the class, so a read-only client can see it too.
+      items: { type: string }
+      examples: [["negotiatedRates", "ticketMatching"]]
     topics:
       type: array
-      description: Topics this client may subscribe to.
+      description: |-
+        Topics this client may subscribe to: APX registry topics, APDS
+        `EventTypeEnum` values (Part 8), and vendor topics (`<vendor-ns>.`).
       items: { type: string }
     rateLimits:
       type: object
-      description: Advisory per-client limits.
+      description: |-
+        Advisory per-credential limits (Part 16 §16.2). Defined keys:
+        `requestsPerMinute`, `commandsPerMinute`, `burst` (most requests in
+        any one second), `subscriptionsMax`, `streamConnectionsMax`. Every
+        value is a per-credential integer; other keys are advisory vendor
+        additions.
       additionalProperties: { type: integer }
+      examples: [{ requestsPerMinute: 600, commandsPerMinute: 60 }]
+    extensions:
+      $ref: "../common/schemas.yaml#/Extensions"
+
+# Canonical definition of the bootstrap document. apx.yaml's
+# components.schemas.ApxConfiguration is expected to $ref this entry; every
+# member added here is optional, so the change is additive.
+ApxConfiguration:
+  type: object
+  description: Unauthenticated bootstrap configuration document.
+  required:
+    - apxVersion
+    - apdsVersion
+    - tokenEndpoint
+    - conformanceClasses
+  properties:
+    apxVersion:
+      type: string
+      description: |-
+        APX standard version implemented (semver). This is the edition
+        (Part 3 §3.4) whose Parts and registries the implementation
+        follows; when `edition` is also present the two are equal.
+      examples: ["0.1.0"]
+    edition:
+      type: string
+      description: The APX edition implemented (Part 3 §3.4), as named in its `spec/edition.json`.
+      examples: ["0.11.0"]
+    apdsVersion:
+      type: string
+      description: APDS version this implementation extends.
+      examples: ["4.1"]
+    tokenEndpoint:
+      type: string
+      format: uri
+      description: OAuth2 token endpoint (client-credentials grant).
+    apiBase:
+      type: string
+      format: uri
+      description: |-
+        The URL every path in the bundle is relative to (APX `/v1/…` and
+        APDS-native routes alike). Absent means the origin root that serves
+        this document. REQUIRED when the API is mounted elsewhere (Part 16
+        §16.1).
+      examples: ["https://api.citypark.example/parking"]
+    conformanceClasses:
+      type: array
+      description: |-
+        APX conformance classes this implementation supports, closed under
+        the Part 3 §3.1 dependency table, plus any vendor classes
+        (`<vendor-ns>-<class>`). Clients ignore classes they do not
+        recognise.
+      items:
+        type: string
+      examples:
+        - ["apx-data", "apx-events", "apx-control", "apx-alerts", "apx-discovery"]
+    features:
+      type: array
+      description: Optional features the implementation offers (Part 6 §6.5, Part 16 §16.1).
+      items: { type: string }
+      examples: [["negotiatedRates", "ticketMatching"]]
+    registries:
+      type: object
+      description: |-
+        Locations of the published UserDefinedCodeList registries, keyed by
+        the registry `name` from Part 11 (vendor lists by their own name).
+      additionalProperties:
+        type: string
+        format: uri
+    registryVersions:
+      type: object
+      description: The version of each registry the implementation validates against, keyed as `registries`.
+      additionalProperties: { type: integer, minimum: 1 }
+      examples: [{ "apx-command-types": 3 }]
+    extensions:
+      $ref: "../common/schemas.yaml#/Extensions"
+

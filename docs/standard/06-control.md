@@ -9,7 +9,12 @@ actuation. This Part adds it, referencing APDS entities throughout.
 `POST /v1/commands` (scope `apx.control:execute`):
 
 - **`Idempotency-Key` header REQUIRED** — same key + same body returns the
-  original command; same key + different body is `409`.
+  command as it currently stands (`200`, Part 4 §4.2a), not a snapshot of
+  the first response; same key + different body is
+  `409 idempotency-conflict`.
+- A request that names an unknown `commandType`, omits `target`, or
+  carries a parameter that fails its definition below is refused with
+  `400 invalid-request` (Part 12 §12.4).
 - `commandType` values are OPEN (registry `apx-command-types`): `vendGate`,
   `holdGateOpen`, `closeLane`, `lostTicket`, `pushRate`, `applyValidation`,
   `setDeviceState`, `displayMessage`, `restartDevice`; the Part 17
@@ -22,7 +27,11 @@ actuation. This Part adds it, referencing APDS entities throughout.
   (apx-device-states value); `pushNegotiatedRate.rateTable`
   (VersionedReference to a RateTable flagged negotiable, §6.6);
   `matchTicket.session` (Reference to an open Session) and
-  `matchTicket.evidence` (Reference, §6.7).
+  `matchTicket.evidence` (Reference, §6.7); `resetPassback.credential`,
+  `forceIn.credential`, and `forceOut.credential` (Reference to a
+  Credential); `courtesyExit.holder` (Reference to the RightHolder the
+  courtesy is counted against). Part 17 §17.4 defines when those four are
+  used; their parameters are the ones named here.
 - `agent` / `agentType` (optional on every command; REQUIRED on
   `pushNegotiatedRate` and `matchTicket`) name the human or AI principal
   who initiated the command — distinct from `requestedBy` (the
@@ -37,7 +46,19 @@ actuation. This Part adds it, referencing APDS entities throughout.
   10 minutes ago must not open the gate now).
 - The response is `202` with the Command in state `received`/`accepted` —
   richer than a bare success/failure boolean because execution is
-  asynchronous and audited.
+  asynchronous and audited. Refusals the server can decide from its own
+  state at POST time (an unknown provider, a missing lost-ticket fee, a
+  table not flagged negotiable, a session that is not open) are
+  synchronous `4xx` responses and nothing is dispatched; outcomes only the
+  device can report arrive as `failed` in `statusHistory`.
+- **Hold-open release (normative).** A `holdGateOpen` stays `executing`
+  while the gate is held. It is released by its own `expiryTime` (the
+  instant the hold ends, as well as the dispatch deadline), by a later
+  `closeLane` at the same lane, or by a `setDeviceState` on the held gate
+  device; on release it transitions to `succeeded` with the releasing
+  cause in `detail`. A hold is never cancelled once dispatched
+  (`409 command-not-cancellable`, §6.1); a hold with no `expiryTime` holds
+  until one of the two releasing commands.
 - `confirmationLevel` distinguishes how far success is physically
   confirmed: `accepted` (command taken), `deviceAcknowledged` (device
   acked), `physicallyConfirmed` (outcome verified, e.g. gate-state
@@ -52,6 +73,7 @@ transaction is tracked end to end. Transitions
 publish `apx.control.command.status.v1`.
 
 - `GET /v1/commands/{id}` — poll state (scope `apx.control:read`).
+- `GET /v1/commands` — the audit query (§6.1b).
 - `POST /v1/commands/{id}/cancel` — allowed until `dispatched`;
   afterwards `409 command-not-cancellable`.
 
@@ -64,12 +86,45 @@ the rate deck** — a flat RateLine identified by `description:
 rate via the native `/rates` lookup and updated like any rate (including
 via `pushRate`). A successful `lostTicket` command issues a new lost ticket
 AT the target lane whose `amountDue` is that fee (in the rate line
-collection's currency); a rate deck with no lostTicketFee line makes the
-command fail rather than guess. The command result names the issued ticket
-and fee; the lane inquiry (§6.2) then shows it as the current ticket, and
+collection's currency). A rate deck with no lostTicketFee line makes the
+command fail rather than guess: the deck is server-side state, so the
+server MUST refuse the `POST` synchronously with
+`422 lost-ticket-fee-undefined` and MUST NOT create or dispatch a command.
+The command's `result` (§6.1a) names the issued ticket, its session, and
+the fee; the lane inquiry (§6.2) then shows it as the current ticket, and
 the normal flow applies: take a payment (Part 13), apply a validation
 (§6.3), or vend (§6.1). The fee is never silently waived — reducing it is
 an explicit validation or payment event on the audit record.
+
+### 6.1a Command result
+
+A command that reaches `succeeded` carries a `result` object
+(`CommandResult`) naming what it produced, so a console can continue
+without parsing `statusHistory[].detail` or making a second call. The
+members are normative per command type:
+
+| commandType | `result` members |
+|---|---|
+| `lostTicket` | `ticketNumber`, `session` (Reference), `amountDue` (the fee) |
+| `matchTicket` | `session` (the matched Session), `amountDue` (priced from its true entry) |
+| `pushNegotiatedRate` | `rateTable` (VersionedReference, the version applied), `amountDue` |
+
+Other command types leave `result` absent. `result` is server-assigned and
+absent before `succeeded`; it restates, and never contradicts, what the
+lane inquiry shows.
+
+### 6.1b Listing commands (the audit query)
+
+`GET /v1/commands` (scope `apx.control:read`) returns the commands the
+caller may see, newest first, in the APDS `{meta, data}` envelope, each with
+its full `statusHistory`. Filters, all optional and combined with AND:
+`target` (the device, lane, or place id), `place` (comma-separated,
+subtree-inclusive), `commandType`, `status`, `agent`, and `since` / `until`
+(the instant the command was received). Only commands whose target lies
+inside the token's `apx_places` grant are returned; naming a `place`
+outside it is `403 insufficient-grant` (Part 9 §9.3). This is the route for
+"what was vended at lane 2 between 18:00 and 19:00, and by whom" — the same
+records `apx.control.command.status.v1` publishes, readable after the fact.
 
 ## 6.2 Lane inquiry (screen-pop)
 
@@ -120,6 +175,10 @@ screenshot link — an APDS Observation), and monthly-credential context
   APDS SupplementalEquipment. States (registry `apx-device-states`) mirror
   the RefillPointStatusEnum style: `available, occupied, inoperative,
   outOfService, fault, unknown`.
+- The list takes two optional filters: `place` (comma-separated
+  HierarchyElement ids, subtree-inclusive, as the APDS `place` filter) and
+  `deviceState` (one `apx-device-states` value, e.g. `fault`). A `place`
+  outside the token's grant is `403 insufficient-grant`.
 - State changes publish `apx.control.device.state.v1`. A transition to
   `fault` SHOULD auto-raise a `deviceFault` alert (Part 7).
 - The same object may decorate APDS payloads as
@@ -132,9 +191,14 @@ pushRate, applyValidation; §6.2 lane inquiry; §6.3 provider query; §6.4
 device status; the grant rule; and command/device event publication.
 
 Negotiated rates (§6.6) and ticket matching (§6.7) are **optional
-features** of the class. An implementation that lists `pushNegotiatedRate`
-or `matchTicket` in its capability document (Part 16) MUST meet the
-corresponding section in full (Annex A rows APX-CTL-09 through 12).
+features** of the class, named `negotiatedRates` and `ticketMatching`. An
+implementation that offers either MUST list it in the `features` member of
+`/.well-known/apx-configuration` (Part 16 §16.1) and of every discovery
+document whose client holds an `apx.control` scope (Part 16 §16.2), and MUST
+meet the corresponding section in full (Annex A rows APX-CTL-09 through
+12). `commandTypes` in a discovery document remains the permission list:
+`pushNegotiatedRate` or `matchTicket` appears there only for a client that
+may execute it, and never for a host that does not offer the feature.
 
 ## 6.6 Negotiated rates (optional feature)
 
