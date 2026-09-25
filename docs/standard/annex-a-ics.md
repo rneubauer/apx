@@ -172,24 +172,24 @@ implementation has the named capability).
 
 | ID | Requirement | Source |
 |---|---|---|
-| APX-CRD-01 | Lifecycle per §21.1 with immutable `statusHistory[]`; illegal transitions → 409 `credential-transition-illegal`; terminal replace → 409 `credential-not-replaceable`; identification unique per type among non-terminal records → 409 `credential-identification-in-use` | §21.1 |
+| APX-CRD-01 | Lifecycle per §21.1 with immutable `statusHistory[]`; illegal transitions (including `replace` from `issued`) → 409 `credential-transition-illegal`; terminal replace → 409 `credential-not-replaceable`; identification unique per type among non-terminal records → 409 `credential-identification-in-use` whose `detail` identifies no record, holder, or place; a window already over (`validity.end`, suspend `until`) → 422 `request-unprocessable` | §21.1 |
 | APX-CRD-02 | Active records materialized as APDS `CredentialAssigned` (`identifier` → the record) on every listed AssignedRight; removed/ended on suspend, lost, revoke, expire; restored on resume; lane denies non-active credentials from the transition instant | §21.2 |
-| APX-CRD-03 | `replace` idempotent and atomic on the AssignedRight (one `AssignedRightUpdated`); `replaces`/`replacedBy` linked; deposit settled per `oldDepositStatus` | §21.3 |
-| APX-CRD-04 | Access events recorded with outcome and seeded `denialReason`; `GET …/access-events` served; `apx.credentials.access.v1` published; passback corrections remain Part 17 | §21.4 |
+| APX-CRD-03 | `replace` idempotent and atomic on the AssignedRight (one `AssignedRightUpdated`); `replaces`/`replacedBy` linked; deposit settled per `oldDepositStatus`; the predecessor retains all other fields | §21.3 |
+| APX-CRD-04 | Access events recorded with outcome and seeded `denialReason`; unmatched presentations recorded as `AccessEvent` with `presented`; `GET …/{id}/access-events` and `GET /v1/access-events` served, grant-scoped; `apx.credentials.access.v1` published; passback corrections remain Part 17 | §21.4 |
 | APX-CRD-05 | Identification, serials, and access events under Part 9 §9.6; no identification-in-use oracle outside `apx.credentials:manage` | §21.5 |
-| APX-CRD-06 | `apx.credentials.status.v1` on every transition including server-side `expired` and timed resume | §21.1, §21.6 |
+| APX-CRD-06 | `apx.credentials.status.v1` on every transition including server-side `expired`, timed resume, and activation at `validity.start` (`activateOnStart`) | §21.1, §21.6 |
 
 ## A.18 `apx-valet`
 
 | ID | Requirement | Source |
 |---|---|---|
-| APX-VLT-01 | Lifecycle per §22.1 with immutable `statusHistory[]`; illegal transitions → 409 `valet-transition-illegal`; `retrieve` from `dropped` → 409 `valet-vehicle-not-located`; drop-off idempotent | §22.1 |
+| APX-VLT-01 | Lifecycle per §22.1 with immutable `statusHistory[]`, every state reachable by a route (`pickup`, `cancel`, re-`park` from `staged`); illegal transitions → 409 `valet-transition-illegal`; `retrieve` from `dropped` → 409 `valet-vehicle-not-located`; drop-off idempotent and ignores client-sent server-written members; `park` honours `If-Match` (409 `version-conflict`) | §22.1 |
 | APX-VLT-02 | ValetTicket references the APDS Session (and AssignedRight where issued) and never restates the stay or the money; `closed` follows Session settlement | §22, §22.1, §22.4 |
-| APX-VLT-03 | Drop-off condition report immutable after `dropped` (corrections as new dated entries); imagery as access-controlled links; `customerAcknowledged` captured where obtainable | §22.2 |
-| APX-VLT-04 | `retrieve` sets `etaMinutes` and `promisedTime` and publishes `apx.valet.retrieval.requested.v1`; queue ordered by `promisedTime`; scheduled pickups surface inside the horizon | §22.3 |
+| APX-VLT-03 | Drop-off condition report immutable after `dropped` (corrections appended through `POST …/condition` as new dated entries); imagery as access-controlled links; `customerAcknowledged` captured where obtainable | §22.2 |
+| APX-VLT-04 | `retrieve` sets `etaMinutes` (minutes until `promisedTime`, never negative) and `promisedTime` and publishes `apx.valet.retrieval.requested.v1`; a repeat while `requested`/`retrieving` is 200 with nothing republished; queue ordered by `promisedTime`; scheduled pickups surface inside the horizon | §22.3 |
 | APX-VLT-05 | Handback verifies the claimant; failure → 403 `valet-verification-failed` recorded in `statusHistory`; `verificationValue` never stored; handback condition report recorded | §22.4 |
-| APX-VLT-06 | `apx.valet:request` confined to the caller's own ticket(s); minimized read (no storage, key tag, attendant principals, or condition images); can only read, retrieve, cancel-retrieval | §22.5 |
-| APX-VLT-07 | No raw phone/e-mail on the ticket (`contactChannel.handle` opaque/masked); condition-imagery retention published | §22.6 |
+| APX-VLT-06 | `apx.valet:request` confined to the caller's own ticket(s) — any other ticket → 404 `target-not-found`; operator tokens outside the grant → 403 `insufficient-grant`; minimized read returns exactly the §22.5 member list (no `statusHistory`, storage, key tag, or condition report); can only read, retrieve, cancel-retrieval | §22.5 |
+| APX-VLT-07 | No raw phone/e-mail on the ticket (`contactChannel.handle` opaque/masked; SHOULD refuse with 422 `personal-data-not-permitted`); condition-imagery retention published | §22.6 |
 | APX-VLT-08 | `apx.valet.ticket.status.v1` on every transition; place-bound on `ValetTicket.place` | §22.7 |
 
 ## A.19 `apx-mtls`
