@@ -15,7 +15,11 @@ ValidationBenefit:
     `duration` (comped time, valued at the applicable rate), or
     `percentage` (proportionate discount — the APDS RateDiscount
     `discountRate` semantics) applies; `description` is always present so
-    agents can answer disputes in plain language.
+    agents can answer disputes in plain language. A program body whose
+    benefit carries none or more than one of the three is refused with
+    422 `request-unprocessable` (Part 20 §20.1); the rule is stated here
+    rather than as a schema `oneOf` so that existing request bodies keep
+    validating.
   type: object
   required: [description]
   properties:
@@ -44,8 +48,9 @@ ValidationProgram:
     list when `apx-validations` is claimed.
 
     Lifecycle (Part 20 §20.1): `active ⇄ suspended`, either → `ended`
-    (terminal). Status changes go through `PUT` with the current
-    `version` (409 `version-conflict` when stale).
+    (terminal). Status changes go through `PUT` with the version last
+    read as `If-Match` or body `version` (Part 4 §4.2a; 409
+    `version-conflict` when stale).
   type: object
   required:
     - id
@@ -101,7 +106,12 @@ ValidationProgram:
           $ref: "../../../vendor/apds/4.1/apds-api-4.1.yaml#/components/schemas/Duration"
         stackable:
           type: boolean
-          description: Whether this program may combine with other programs on the same ticket.
+          description: |-
+            Whether this program may combine with other programs on the
+            same ticket. Evaluated both ways (Part 20 §20.3 rule 3): a
+            redemption is refused when the incoming program is not
+            stackable and another program is already applied, or when any
+            program already applied is not stackable.
         applicableRateTables:
           type: array
           description: Restrict to these APDS RateTables; absent = all tables at the place that accept validations.
@@ -202,12 +212,102 @@ ValidationIssuance:
       type: string
       enum: [issued, void]
       readOnly: true
+      description: "`void` after `POST …/issuances/{issuanceId}/void` (Part 20 §20.2 rule 5)."
+    voidDetail:
+      $ref: "#/ValidationVoidDetail"
     note:
       type: string
     recordInfo:
       $ref: "../common/schemas.yaml#/RecordInfo"
     extensions:
       $ref: "../common/schemas.yaml#/Extensions"
+
+ValidationIssuanceRequest:
+  title: ValidationIssuanceRequest
+  description: |-
+    Request body for `POST /v1/validations/programs/{id}/issuances`: the
+    writable members of `ValidationIssuance`. The program is the one the
+    path names; `program` MAY be repeated in the body, and a value that
+    differs from the path is 422 `request-unprocessable` (Part 20 §20.2).
+    Server-assigned members (`id`, `version`, `codes`, `issuanceStatus`)
+    are ignored if sent.
+  type: object
+  required: [quantity, method]
+  properties:
+    id:
+      type: string
+      format: uuid
+      readOnly: true
+    version:
+      type: integer
+      minimum: 1
+      readOnly: true
+    program:
+      description: Optional; defaults to, and MUST equal, the program in the path.
+      $ref: "../../../vendor/apds/4.1/apds-api-4.1.yaml#/components/schemas/Reference"
+    quantity:
+      type: integer
+      minimum: 1
+    method:
+      type: string
+      enum: [code, qrCode, stamp, digital, api]
+    validFrom:
+      $ref: "../../../vendor/apds/4.1/apds-api-4.1.yaml#/components/schemas/DateTime"
+    validTo:
+      description: Expiry of every instrument in the batch; defaults from the program's `rules.validityWindow`.
+      $ref: "../../../vendor/apds/4.1/apds-api-4.1.yaml#/components/schemas/DateTime"
+    issuedTo:
+      type: string
+      description: Opaque principal or merchant contact the stock was handed to.
+    codes:
+      type: array
+      readOnly: true
+      items:
+        type: string
+    issuanceStatus:
+      type: string
+      enum: [issued, void]
+      readOnly: true
+    note:
+      type: string
+    recordInfo:
+      $ref: "../common/schemas.yaml#/RecordInfo"
+    extensions:
+      $ref: "../common/schemas.yaml#/Extensions"
+
+ValidationVoid:
+  title: ValidationVoid
+  description: |-
+    Request body voiding an issuance batch or a single instrument code
+    (Part 20 §20.2 rule 5) — a stolen sheet, a leaked code, a misprint.
+  type: object
+  required: [reason]
+  properties:
+    reason:
+      type: string
+      description: Implementer code list — lost, stolen, leaked, misprint, programEnded.
+      examples: [stolen]
+    note:
+      type: string
+
+ValidationVoidDetail:
+  title: ValidationVoidDetail
+  description: Who voided an issuance or instrument, when, and why. Present once `void`.
+  type: object
+  readOnly: true
+  properties:
+    reason:
+      type: string
+    note:
+      type: string
+    time:
+      $ref: "../../../vendor/apds/4.1/apds-api-4.1.yaml#/components/schemas/DateTime"
+    actor:
+      type: string
+    voidedCount:
+      type: integer
+      minimum: 0
+      description: On an issuance, how many un-redeemed instruments the void moved to `void` (redeemed ones are unaffected).
 
 ValidationInstrument:
   title: ValidationInstrument
@@ -234,6 +334,8 @@ ValidationInstrument:
     redemption:
       description: The ValidationRedemption that consumed the code, when `redeemed`.
       $ref: "../../../vendor/apds/4.1/apds-api-4.1.yaml#/components/schemas/Reference"
+    voidDetail:
+      $ref: "#/ValidationVoidDetail"
     extensions:
       $ref: "../common/schemas.yaml#/Extensions"
 
@@ -311,6 +413,15 @@ ValidationRedemption:
           $ref: "../../../vendor/apds/4.1/apds-api-4.1.yaml#/components/schemas/DateTime"
         actor:
           type: string
+        closedStatement:
+          description: |-
+            When the redemption was already billed on a closed statement:
+            that statement. It is not edited; the correction is a credit
+            line on the next closed statement (Part 20 §20.4).
+          $ref: "../../../vendor/apds/4.1/apds-api-4.1.yaml#/components/schemas/Reference"
+        creditedOn:
+          description: The closed statement carrying the credit line for this reversal; absent until that period closes.
+          $ref: "../../../vendor/apds/4.1/apds-api-4.1.yaml#/components/schemas/Reference"
     statusHistory:
       type: array
       description: Immutable, append-only lifecycle audit (Part 4 §4.2).
@@ -408,8 +519,15 @@ ValidationStatement:
       description: Sum of `amountReduced` over applied redemptions.
       $ref: "../../../vendor/apds/4.1/apds-api-4.1.yaml#/components/schemas/AmountInCurrency"
     billableAmount:
-      description: What the merchant owes for the period under the program's billing model.
+      description: |-
+        What the merchant owes for the period under the program's billing
+        model, net of any `credit` lines (reversals of redemptions billed
+        on an earlier closed statement, Part 20 §20.6).
       $ref: "../../../vendor/apds/4.1/apds-api-4.1.yaml#/components/schemas/AmountInCurrency"
+    creditCount:
+      type: integer
+      minimum: 0
+      description: Number of `credit` lines — post-closure reversals credited in this period.
     lines:
       type: array
       description: Per-redemption detail; MAY be omitted from list responses.
@@ -417,10 +535,20 @@ ValidationStatement:
         type: object
         required: [redemption, appliedTime]
         properties:
+          lineKind:
+            type: string
+            enum: [redemption, credit]
+            description: |-
+              `redemption` (default when absent) — a redemption applied in
+              the period. `credit` — a redemption billed on an earlier
+              closed statement and reversed since; `billable` is negative.
           redemption:
             $ref: "../../../vendor/apds/4.1/apds-api-4.1.yaml#/components/schemas/Reference"
           appliedTime:
             $ref: "../../../vendor/apds/4.1/apds-api-4.1.yaml#/components/schemas/DateTime"
+          originalStatement:
+            description: For a `credit` line, the closed statement that billed the redemption.
+            $ref: "../../../vendor/apds/4.1/apds-api-4.1.yaml#/components/schemas/Reference"
           ticketNumber:
             type: string
           amountReduced:
