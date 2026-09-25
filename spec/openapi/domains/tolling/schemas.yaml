@@ -24,8 +24,15 @@ TollTransaction:
       type: object
       description: The credential observed (licensePlate, rfid transponder…).
       properties:
-        credentialType: { type: string }
-        credentialIdentification: { type: string }
+        credentialType:
+          type: string
+          description: |-
+            Read technology. Senders SHOULD use an APDS `CredentialTypeEnum`
+            value (`licensePlate`, `rfid`, …); Part 15 §15.1.
+          examples: [licensePlate, rfid]
+        credentialIdentification:
+          type: string
+          description: What was read — the plate string or the transponder/tag id, as read.
     pricing:
       $ref: "../../../vendor/apds/4.1/apds-api-4.1.yaml#/components/schemas/AmountInCurrency"
     payment:
@@ -45,7 +52,22 @@ TollTransaction:
           $ref: "../../../vendor/apds/4.1/apds-api-4.1.yaml#/components/schemas/DateTime"
         resolution:
           type: string
-          description: upheld | refunded | adjusted (implementer code list).
+          description: |-
+            Base values upheld | refunded | adjusted | withdrawn (Part 15
+            §15.1); implementers MAY add their own.
+        disputedBy:
+          description: |-
+            The party on whose behalf the dispute was raised (RightHolder,
+            Organisation, or Contact); absent for an operator-initiated
+            dispute (Part 15 §15.1).
+          readOnly: true
+          $ref: "../../../vendor/apds/4.1/apds-api-4.1.yaml#/components/schemas/Reference"
+        originalPricing:
+          description: |-
+            Set by the server when an `adjusted` resolution rewrites
+            `pricing`: the amount before the adjustment (Part 15 §15.1).
+          readOnly: true
+          $ref: "../../../vendor/apds/4.1/apds-api-4.1.yaml#/components/schemas/AmountInCurrency"
     statusHistory:
       type: array
       description: Immutable lifecycle audit (Part 4 §4.2).
@@ -82,10 +104,17 @@ TollDisputeOpen:
   properties:
     reason:
       type: string
-      description: Dispute reason (implementer code list).
-      examples: [wrongVehicle]
+      description: |-
+        Dispute reason. Base values wrongVehicle | duplicateCharge |
+        wrongClass | notLiable | other (Part 15 §15.1); implementers MAY
+        add their own.
+      examples: [wrongVehicle, duplicateCharge]
     detail: { type: string }
     disputedBy:
+      description: |-
+        The party on whose behalf the operator raises the dispute
+        (RightHolder, Organisation, or Contact). MAY be absent for an
+        operator-initiated dispute (Part 15 §15.1).
       $ref: "../../../vendor/apds/4.1/apds-api-4.1.yaml#/components/schemas/Reference"
 
 TollDisputeResolution:
@@ -96,6 +125,41 @@ TollDisputeResolution:
   properties:
     resolution:
       type: string
-      description: Resolution value (implementer code list — upheld, refunded, adjusted…).
+      description: |-
+        Resolution. Base values upheld | refunded | adjusted | withdrawn
+        (Part 15 §15.1); implementers MAY add their own.
       examples: [refunded]
+    adjustedPricing:
+      description: |-
+        The new amount owed. REQUIRED when `resolution` is `adjusted`
+        (otherwise 400 `invalid-request`) and ignored for any other value;
+        the server moves the old `pricing` to `dispute.originalPricing`
+        (Part 15 §15.1).
+      $ref: "../../../vendor/apds/4.1/apds-api-4.1.yaml#/components/schemas/AmountInCurrency"
+    note: { type: string }
+
+TollPricing:
+  title: TollPricing
+  description: |-
+    Request body pricing a `created` toll transaction (Part 15 §15.1), for
+    operators whose pricing engine runs outside the APX server.
+  type: object
+  required: [pricing]
+  properties:
+    pricing:
+      $ref: "../../../vendor/apds/4.1/apds-api-4.1.yaml#/components/schemas/AmountInCurrency"
+    detail:
+      type: string
+      description: Pricing basis recorded in `statusHistory` (e.g. vehicle class, rate id).
+
+TollVoid:
+  title: TollVoid
+  description: Request body voiding a toll transaction that should never have been charged (Part 15 §15.1).
+  type: object
+  required: [reason]
+  properties:
+    reason:
+      type: string
+      description: Why the transaction is void (implementer code list, e.g. duplicate, exemptVehicle, misread).
+      examples: [duplicate]
     note: { type: string }

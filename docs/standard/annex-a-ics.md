@@ -97,8 +97,10 @@ implementation has the named capability).
 | APX-ACC-01 | Account lookup by any filter combination; results constrained to the caller's grant | §13.1, §13.5 |
 | APX-ACC-02 | Take-payment idempotent; declines → 422; approved account payments reduce balance | §13.1 |
 | APX-ACC-03 | `PaymentRecord.place` populated (site binding); `apx.accounts.payment.recorded.v1` published for every recorded payment | §13.5, §13.4 |
-| APX-ACC-04 | Payment links / refund / void / capture as domain operations with Idempotency-Key; refunds gated per policy | §13.1a |
-| APX-PHX-01 | Truncated-key lookups without `date` constrained to last 8 hours, not configurable wider | §13.2, §9.6 |
+| APX-ACC-04 | Payment links / refund / void / capture as domain operations with Idempotency-Key; refunds gated per policy; payment links readable and cancellable | §13.1a |
+| APX-ACC-05 | Payment state machine per the §13.1a table (`authorized` via `captureLater`, capture/void, cumulative `refundedAmount`); every other action → 409 `payment-state-illegal`; the recorded event re-published on every status or amount change | §13.1a, §13.4 |
+| APX-ACC-06 | More than four card digits in any body member or query parameter → 422 `personal-data-not-permitted`, refused before persisting or logging | §13.1, §13.2 |
+| APX-PHX-01 | Truncated-key lookups without `date` constrained to last 8 hours, not configurable wider; `ticketNumber` and `account` exempt; a query with no key → 400 | §13.2, §9.6 |
 
 ## A.10 `apx-lpr`
 
@@ -116,7 +118,8 @@ implementation has the named capability).
 | APX-RSV-01 | Reservations as native Quote→AssignedRight with `apds-ext:apx:reservation@1.0`; lifecycle per Part 14 | §14 |
 | APX-RSV-02 | Holder ids treated as local; cross-system correlation by plate; place-scoped history lookups | §14.1a |
 | APX-RSV-03 | `PUT /v1/sessions/{id}/assigned-right` materializes into the APDS Session (`segments[].assignedRight`) + SessionUpdated; unlinkable right → 409 | §14.1b |
-| APX-PRM-01 | Pooled issuance over RightSpecification/RightPool; exhaustion → 409 `pool-exhausted` | §14.2 |
+| APX-PRM-01 | Pooled issuance over RightSpecification/RightPool; exhaustion → 409 `pool-exhausted`; refusals per §14.2a; Idempotency-Key replay consumes no second slot | §14.2, §14.2a |
+| APX-PRM-02 | Issued permit materialized onto the native AssignedRight per §14.2b (CustomerCredential holder, VehicleCredential per vehicle, PlannedUse + `expiry`); native `credential_id` filters resolve against the identification string; cancellation or expiry returns the slot | §14.2b, §14.2c |
 
 ## A.13 `apx-tolling`
 
@@ -124,6 +127,7 @@ implementation has the named capability).
 |---|---|---|
 | APX-TOL-01 | TollTransaction idempotent create binding Observations→pricing→Payment reference | §15 |
 | APX-TOL-02 | Dispute lifecycle; re-dispute of closed → 409 `dispute-closed` | §15 |
+| APX-TOL-03 | Transitions per the §15.1 table (price, payment, void, dispute, resolve); anything else → 409 `toll-transition-illegal`; re-attaching the attached payment → 200 unchanged; `adjusted` moves the old amount to `dispute.originalPricing` | §15.1, §15.2 |
 
 ## A.14 `apx-resolution`
 
