@@ -1,0 +1,13 @@
+{
+  "id": "8f42db32-72e6-48b8-ab5d-af2fa623837e",
+  "version": 1,
+  "name": "apx-toll-dispute-resolutions",
+  "creator": { "id": "a1000000-0000-4000-8000-000000000001", "className": "Organisation" },
+  "locator": "https://apx-standard.org/registries/apx-toll-dispute-resolutions.json",
+  "userDefinedCodeListEntries": [
+    { "definedValue": "upheld", "entryDescription": "The charge stands as priced.", "entryIndex": 0 },
+    { "definedValue": "refunded", "entryDescription": "The money is returned; the transaction is settled by the refund (Part 13 §13.1a).", "entryIndex": 1 },
+    { "definedValue": "adjusted", "entryDescription": "A new amount is owed; the resolution carries `adjustedPricing` and the original is kept in `dispute.originalPricing`.", "entryIndex": 2 },
+    { "definedValue": "withdrawn", "entryDescription": "The disputing party abandoned the dispute; the charge stands.", "entryIndex": 3 }
+  ]
+}

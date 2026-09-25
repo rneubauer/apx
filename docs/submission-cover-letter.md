@@ -11,7 +11,7 @@ API surface APDS deliberately leaves out — real-time delivery, operational
 control, alerting, discovery, and the customer-service layer built on
 them — expressed entirely in APDS's own vocabulary. One machine-readable
 OpenAPI 3.1 document, a written standard of 23 parts plus a conformance
-annex, seven open registries, and twenty-three CI-validated end-to-end
+annex, nine open registries, and twenty-five CI-validated end-to-end
 scenarios. `spec/edition.json` pins the exact artifacts of this edition by
 checksum, so "adopt APX" names a fixed set of files rather than a branch.
 
@@ -50,6 +50,9 @@ checksum, so "adopt APX" names a fixed set of files rather than a branch.
    offending snippet and a minimal suggested fix. We offer them as evidence
    the erratum discipline works: a companion standard that validates every
    payload in CI finds defects in its base that prose review does not.
+   A later vetting pass, which exercised every conformance class against
+   the bundle, found nine more; they are written up in `docs/errata/`
+   (004–012) in the same form and ready to file.
 5. **It answers the industry's next question.** Part 17 standardizes the
    customer-service surface — one aggregated resolution context and
    server-side, policy-decided allowed actions — with a rule we believe
@@ -58,11 +61,13 @@ checksum, so "adopt APX" names a fixed set of files rather than a branch.
 
 ## What we are candid about
 
-- **Three known upstream errata** in `apds-api-4.1.yaml` (Part 1 §1.3),
-  filed with you as issues #33, #34, and #35 and still open at the time of
-  writing. Two are worked around in our validators; the third needs no
-  workaround. None is a blocker for APX, and none originates here: our
-  vendored copy is byte-identical to your published document.
+- **Twelve known upstream errata** in `apds-api-4.1.yaml` (Part 1 §1.3).
+  Three are filed with you as issues #33, #34, and #35 and still open at
+  the time of writing; nine more are documented in `docs/errata/` and ready
+  to file. Where APX needs a working shape before APDS ships a fix, a
+  narrow overlay supplies it; `ReferenceToQuote` (erratum 008) has no
+  additive workaround. None is a blocker for APX, and none originates
+  here: our vendored copy is byte-identical to your published document.
 - **A deliberate absence:** APX defines no raw single-ticket price
   override. Validations and discounts are the sanctioned, auditable
   per-ticket adjustment mechanism, and the rate deck stays authoritative

@@ -21,12 +21,13 @@ integration over live PARCS state.
   published, §13.4), and the problem SHOULD carry a `payment` extension
   member — a Reference to that declined PaymentRecord — so the caller can
   cite it without a second lookup. `captureLater: true` asks for an
-  authorization only (§13.1a). Approved account payments reduce the
-  account balance. Scope `apx.payments:write`.
+  authorization only — a hold (§13.1a). Captured account payments reduce
+  the account balance; a hold does not until it is captured. Scope
+  `apx.payments:write`.
 - `POST /v1/payments/{id}/postings` — accounting write-back
   (PARIS-style): posts account/card/amount/transaction
   ID to the AR system and returns `{confirmationNumber, accountUpdated,
-  newBalance}`. Only an `approved` payment can be posted.
+  newBalance}`. Only an `approved`, captured payment can be posted.
 - **No card data (normative).** No APX request carries more than the
   truncated last four card digits, in a body member or a query parameter.
   A server that receives more (a PAN in `cardLast4`, an undeclared
@@ -56,30 +57,48 @@ control commands (Part 17 §17.4):
   Refunds SHOULD require approval by default operator policy; approval
   evidence rides the request when the resolution context demanded it.
 - `POST /v1/payments/{id}/void` / `POST /v1/payments/{id}/capture` —
-  authorization lifecycle where the implementation models it.
+  release or settle a hold, where the implementation models an
+  authorization lifecycle.
 
 The four payment actions take a REQUIRED `Idempotency-Key`; link cancel
 takes an optional one (Part 4 §4.2a). Completion of a link-initiated
 payment publishes `apx.accounts.payment.recorded.v1` like any other.
 
 **Payment states and transitions (normative).** `paymentStatus` is one of
-`authorized`, `approved`, `declined`, `reversed`:
+`approved`, `declined`, `reversed`. An approved payment also carries
+`captureStatus`: `captured` (funds collected; absent means the same) or
+`authorized` — a **hold**, where the payment layer approved an
+authorization-only request, funds are held, and nothing is collected:
 
-| From | Action | To | Notes |
+| From (`paymentStatus` / `captureStatus`) | Action | To | Notes |
 |---|---|---|---|
-| (create, sale) | `POST /v1/payments` | `approved` or `declined` | the default |
-| (create, `captureLater: true`) | `POST /v1/payments` | `authorized` or `declined` | a server without an authorization lifecycle refuses `captureLater` with `422 request-unprocessable` |
-| `authorized` | capture | `approved` | `amount` MAY be lowered to the captured amount; more than was authorized is `422 request-unprocessable` |
-| `authorized` | void | `reversed` | funds released |
-| `approved` | refund | `approved` or `reversed` | `refundedAmount` grows by the refund; the record becomes `reversed` when `refundedAmount` reaches `amount`. A refund above what remains is `422 request-unprocessable` |
-| `approved` | posting | `approved` | the AR write-back |
+| (create, sale) | `POST /v1/payments` | `approved` / `captured` (or absent), or `declined` | the default |
+| (create, `captureLater: true`) | `POST /v1/payments` | `approved` / `authorized` (a hold), or `declined` | a server without an authorization lifecycle refuses `captureLater` with `422 request-unprocessable` |
+| `approved` / `authorized` | capture | `approved` / `captured` | `amount` MAY be lowered to the captured amount; more than was authorized is `422 request-unprocessable` |
+| `approved` / `authorized` | void | `reversed` / `authorized` | hold released, nothing collected |
+| `approved` / `captured` | refund | `approved` or `reversed` | `refundedAmount` grows by the refund; the record becomes `reversed` when `refundedAmount` reaches `amount`. A refund above what remains is `422 request-unprocessable` |
+| `approved` / `captured` | posting | unchanged | the AR write-back |
 
-Every other combination — refunding or posting an `authorized`,
-`declined`, or `reversed` payment, capturing or voiding anything not
-`authorized` — is `409 payment-state-illegal`, and nothing changes.
-`declined` and `reversed` are terminal. Only `approved` materializes as an
-APDS `Payment` (§13.6), so an authorization materializes on capture.
-Consumers MUST treat an unknown `paymentStatus` value as "not yet money".
+Every other combination — refunding or posting a hold or a `declined` or
+`reversed` payment, capturing or voiding anything that is not a hold — is
+`409 payment-state-illegal`, and nothing changes. `declined` and
+`reversed` are terminal.
+
+**Holds stay out of sight of consumers that predate `captureStatus`
+(normative).** A hold is returned to the caller that created it (the 201,
+its idempotent replay, and capture/void responses), but:
+
+1. `GET /v1/payments` MUST NOT return a hold unless the query carries
+   `captureStatus=authorized` (§13.2);
+2. `apx.accounts.payment.recorded.v1` MUST NOT be published for a hold; it
+   is first published at capture, with the captured record. Voiding a
+   hold publishes nothing, since no consumer was told of it and no money
+   moved;
+3. a hold is never materialized as an APDS `Payment` (§13.6) and does not
+   change an account balance until it is captured.
+
+A hold's record therefore reads `paymentStatus: approved` only to its own
+creator and to callers who ask for holds.
 
 ## 13.2 `apx-payment-history`
 
@@ -101,6 +120,11 @@ Consumers MUST treat an unknown `paymentStatus` value as "not yet money".
   A `cardLast4` (or any other parameter) carrying more than four card
   digits is `422 personal-data-not-permitted`, refused before the request
   is logged (§13.1).
+  **Holds (normative):** results exclude holds (`captureStatus:
+  authorized`, §13.1a) unless the query carries `captureStatus=authorized`,
+  which returns only holds; `captureStatus=captured` returns only
+  collected payments. `captureStatus` narrows a keyed query and is never a
+  key on its own.
 
 ## 13.3 `apx-lpr`
 
@@ -216,10 +240,11 @@ LPR analytics. APX closes both gaps (registry `apx-topics`):
   device. Event `data` is the PaymentRecord. Implementations claiming
   `apx-accounts` MUST publish it. It is published on creation (declined
   attempts included) **and again on every change** to `paymentStatus`,
-  `amount`, or `refundedAmount` (capture, void, refund), always carrying
-  the full current record; consumers key on `data.id` and keep the latest
-  by event `time`, so a finance feed learns of every reversal without
-  double-counting.
+  `amount`, or `refundedAmount` (refund), always carrying the full current
+  record; consumers key on `data.id` and keep the latest by event `time`,
+  so a finance feed learns of every reversal without double-counting. A
+  hold (§13.1a) is not published at creation: its first event is at
+  capture, and voiding a hold publishes nothing.
 - `apx.data.observation.created.v1` — published for every ingested
   Observation (LPR read, RFID hit, sensor event). Event `data` is the
   APDS Observation; `subject` references it. Implementations claiming
@@ -290,15 +315,17 @@ relate field-by-field:
 | `dateCollected` | `dateCollected` | identical (`dateAuthorised` has no APX field; authorization time is the record's creation) |
 | `amount` | `paymentLines[].value` summed | APX carries the total; line itemization stays APDS-side |
 | `method` | — | APX-only (PCI-safe method label; APDS has no per-payment method) |
-| `paymentStatus` | — | APX-only; APDS Payment records only collected payments — `approved` is the only state that maps (`authorized` materializes on capture) |
-| `refundedAmount`, `captureLater` | — | APX-only lifecycle members (§13.1a); APDS `PaymentTypeEnum` has no refund value, so a partial refund is visible only on the APX surface |
+| `paymentStatus` | — | APX-only; APDS Payment records only collected payments — `approved` with `captureStatus` `captured` (or absent) is the only state that maps |
+| `captureStatus`, `captureLater` | — | APX-only (§13.1a); a hold (`captureStatus: authorized`) is not materialized until it is captured |
+| `refundedAmount` | — | APX-only lifecycle member (§13.1a); APDS `PaymentTypeEnum` has no refund value, so a partial refund is visible only on the APX surface |
 | `account` | `idCode` / RightHolder linkage | correlation, not identity |
 | `place` | — | APX-only site binding (§13.5) |
 | `ticketNumber`, `cardLast4`, `postings` | — | APX-only call-center/AR surface |
 | — | `serviceProvider` | APDS-required; populated by the implementation when materializing |
 
 **Materialization rule:** an implementation that persists APDS `Payment`
-entities MUST materialize every `approved` PaymentRecord as (or bind it
+entities MUST materialize every `approved`, captured PaymentRecord (a hold
+only once it is captured) as (or bind it
 to) a native `Payment` with a `paymentLines` entry of `paymentType:
 payment` and `value` = `amount`, so plain APDS consumers see the money
 without speaking APX. Declined and reversed records exist only on the APX

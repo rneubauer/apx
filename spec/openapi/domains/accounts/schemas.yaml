@@ -82,23 +82,38 @@ PaymentRecord:
     paymentStatus:
       type: string
       description: |-
-        `authorized` = funds held, not yet captured (only when the create
-        asked `captureLater`; not yet money, and never materialized as an
-        APDS Payment). `approved` = captured. `declined` = refused by the
-        payment layer. `reversed` = voided, or refunded in full. Transitions
-        per Part 13 §13.1a; consumers MUST tolerate values added later.
-      enum: [approved, declined, reversed, authorized]
+        The payment layer's answer. `approved` = approved (for a hold, see
+        `captureStatus`); `declined` = refused by the payment layer;
+        `reversed` = a hold voided, or a payment refunded in full.
+        Transitions per Part 13 §13.1a.
+      enum: [approved, declined, reversed]
       readOnly: true
+    captureStatus:
+      type: string
+      readOnly: true
+      description: |-
+        Whether an approved payment's funds have been collected (Part 13
+        §13.1a). `authorized` = a hold: the payment layer approved an
+        authorization-only request (`captureLater: true`), funds are held,
+        nothing is collected yet; settled by
+        `POST /v1/payments/{id}/capture` or released by `…/void`.
+        `captured` = collected. Absent = `captured` (a sale). A hold is
+        returned to the caller that created it, but is not listed by
+        `GET /v1/payments` unless asked for, is not published on
+        `apx.accounts.payment.recorded.v1`, and is not materialized as an
+        APDS Payment until captured.
+      enum: [authorized, captured]
     captureLater:
       type: boolean
       default: false
       description: |-
         Create-time intent: `true` asks for authorization only (the record
-        is created `authorized` and is settled later by
-        `POST /v1/payments/{id}/capture` or released by `…/void`). Absent or
-        `false` = sale (authorize and capture at once). A server that does
-        not model an authorization lifecycle refuses `true` with 422
-        `request-unprocessable` (Part 13 §13.1a).
+        is created `paymentStatus: approved`, `captureStatus: authorized`
+        and is settled later by `POST /v1/payments/{id}/capture` or
+        released by `…/void`). Absent or `false` = sale (authorize and
+        capture at once). A server that does not model an authorization
+        lifecycle refuses `true` with 422 `request-unprocessable` (Part 13
+        §13.1a).
     refundedAmount:
       description: |-
         Cumulative amount refunded so far (Part 13 §13.1a). Absent or zero
@@ -170,6 +185,17 @@ PaymentLink:
       format: uuid
     resolutionContext:
       $ref: "../../../vendor/apds/4.1/apds-api-4.1.yaml#/components/schemas/Reference"
+    resolutionContextVersion:
+      type: integer
+      minimum: 1
+      readOnly: true
+      description: |-
+        The `version` of the ResolutionContext whose allowed actions this
+        write was checked against, recorded by the server so the decision stays
+        reconstructible after the context is recomputed or expires (Part 17 §17.2).
+    approval:
+      description: Approval evidence, when the context's AllowedAction for the link said requiresApproval (Part 17 §17.3).
+      $ref: "../control/schemas.yaml#/Approval"
     recordInfo:
       $ref: "../common/schemas.yaml#/RecordInfo"
     extensions:

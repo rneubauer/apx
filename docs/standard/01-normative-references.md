@@ -18,6 +18,7 @@
 - **RFC 6749** — OAuth 2.0 (client credentials grant)
 - **RFC 7240** — Prefer Header for HTTP
 - **RFC 8615** — Well-Known URIs
+- **RFC 8705** — OAuth 2.0 Mutual-TLS Client Authentication and Certificate-Bound Access Tokens (class `apx-mtls`, Part 16 §16.3)
 - **RFC 9457** — Problem Details for HTTP APIs
 - **OpenAPI Specification 3.1.0** and **Overlay Specification 1.0.0**
 - **JSON Schema 2020-12**

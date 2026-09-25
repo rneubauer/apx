@@ -64,6 +64,14 @@ Command:
     resolutionContext:
       description: The ResolutionContext this command resolves (Part 17) — links the action into the interaction's audit chain.
       $ref: "../../../vendor/apds/4.1/apds-api-4.1.yaml#/components/schemas/Reference"
+    resolutionContextVersion:
+      type: integer
+      minimum: 1
+      readOnly: true
+      description: |-
+        The `version` of the ResolutionContext whose allowed actions this
+        write was checked against, recorded by the server so the decision stays
+        reconstructible after the context is recomputed or expires (Part 17 §17.2).
     correlationId:
       type: string
       format: uuid
@@ -321,8 +329,9 @@ ValidationProvider:
       type: object
       description: |-
         What the validation is WORTH — disclosed in the lookup so agents can
-        answer disputes. Exactly one of amount (money off) or duration
-        (comped time, priced at the applicable rate) applies.
+        answer disputes. Exactly one of amount (money off), duration
+        (comped time, priced at the applicable rate), or percentage
+        (proportionate discount) applies.
       required: [description]
       properties:
         description:
@@ -335,6 +344,11 @@ ValidationProvider:
         duration:
           description: Comped parking time (ISO 8601), valued at the applicable rate.
           $ref: "../../../vendor/apds/4.1/apds-api-4.1.yaml#/components/schemas/Duration"
+        percentage:
+          type: number
+          minimum: 0
+          maximum: 100
+          description: Proportionate discount on the amount due, mirrored from a percentage ValidationProgram (Part 20 §20.1).
 
 RatePolicy:
   title: RatePolicy

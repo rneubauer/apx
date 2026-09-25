@@ -24,6 +24,7 @@ implementation has the named capability).
 | APX-CORE-09 | `GET /.well-known/apx-configuration` served unauthenticated at host root | §16.1 |
 | APX-CORE-10 | Personal-data minimization, access-controlled imagery, published retention with purge | §9.6 |
 | APX-CORE-11 | Aggregated/imported HierarchyElements: source id preserved or aliased via `operatorDefinedReference` | §4.1a, §18.2 |
+| APX-CORE-12 | `/.well-known/apx-configuration` `conformanceClasses` are closed under the §3.1 dependency table and list only registry values or vendor classes | §3.1, §16.1 |
 
 ## A.2 `apx-data`
 
@@ -103,7 +104,7 @@ implementation has the named capability).
 | APX-ACC-02 | Take-payment idempotent; declines → 422; approved account payments reduce balance | §13.1 |
 | APX-ACC-03 | `PaymentRecord.place` populated (site binding); `apx.accounts.payment.recorded.v1` published for every recorded payment | §13.5, §13.4 |
 | APX-ACC-04 | Payment links / refund / void / capture as domain operations with Idempotency-Key; refunds gated per policy; payment links readable and cancellable | §13.1a |
-| APX-ACC-05 | Payment state machine per the §13.1a table (`authorized` via `captureLater`, capture/void, cumulative `refundedAmount`); every other action → 409 `payment-state-illegal`; the recorded event re-published on every status or amount change | §13.1a, §13.4 |
+| APX-ACC-05 | Payment state machine per the §13.1a table (a hold = `approved` + `captureStatus: authorized` via `captureLater`, capture/void, cumulative `refundedAmount`); every other action → 409 `payment-state-illegal`; holds excluded from `GET /v1/payments` unless `captureStatus=authorized`, never published or materialized until captured; the recorded event re-published on every status or amount change | §13.1a, §13.2, §13.4 |
 | APX-ACC-06 | More than four card digits in any body member or query parameter → 422 `personal-data-not-permitted`, refused before persisting or logging | §13.1, §13.2 |
 | APX-PHX-01 | Truncated-key lookups without `date` constrained to last 8 hours, not configurable wider; `ticketNumber` and `account` exempt; a query with no key → 400 | §13.2, §9.6 |
 

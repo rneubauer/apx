@@ -126,7 +126,7 @@ and each category is owned by the module that already models it:
    `resetPassback`, `forceIn`, `forceOut` (anti-passback correction;
    parameters: `credential`; read side `GET /v1/credentials/{id}/passback`)
    and `courtesyExit` (a gate vend recorded as a tracked courtesy against
-   the account/holder in parameters — servers MUST count it toward
+   the holder named by `parameters.holder`, Part 6 §6.1 — servers MUST count it toward
    courtesy policy and surface it in `recentOverrides`, where each
    `OverrideRecord` SHOULD copy the Command's `agent`, `agentType`, and
    `reason` so "who granted it, and why" needs no second read). Registry v3 adds

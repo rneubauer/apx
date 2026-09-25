@@ -42,8 +42,9 @@ dispute. APX v1 defines no customer-channel dispute scope. The base codes
 are, for `reason`: `wrongVehicle`, `duplicateCharge`, `wrongClass`,
 `notLiable`, `other`; for `resolution`: `upheld` (charge stands),
 `refunded` (money returned), `adjusted` (new amount owed), `withdrawn`
-(the disputing party abandoned it). Senders SHOULD use the base codes and
-MAY add implementer codes (Part 11). A resolution of `adjusted` MUST carry
+(the disputing party abandoned it). The base codes are registered as
+`apx-toll-dispute-reasons` and `apx-toll-dispute-resolutions`. Senders SHOULD use
+them and MAY add implementer codes (Part 11). A resolution of `adjusted` MUST carry
 `adjustedPricing`; the server replaces `pricing` with it and keeps the old
 amount in `dispute.originalPricing`, so `pricing` changes after `priced`
 only through this path.

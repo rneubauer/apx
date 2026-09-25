@@ -2,7 +2,7 @@ openapi: 3.1.0
 
 info:
   title: APX — APDS Parking eXtensions
-  version: 0.10.0
+  version: 0.11.0
   summary: An open companion standard to APDS 4.1
   description: |-
     **APX (APDS Parking eXtensions)** is an additive companion standard to the
@@ -2812,7 +2812,7 @@ paths:
             schema: { $ref: "#/components/schemas/CredentialRecord" }
       responses:
         "200":
-          description: Idempotent replay — same key + same body returns the ORIGINAL record.
+          description: Idempotent replay — same key + same body returns the record as it stands now (Part 4 §4.2a).
           content:
             application/json:
               schema: { $ref: "#/components/schemas/CredentialRecord" }
@@ -3122,7 +3122,7 @@ paths:
             schema: { $ref: "#/components/schemas/CredentialReplaceRequest" }
       responses:
         "200":
-          description: Idempotent replay — returns the ORIGINAL successor.
+          description: Idempotent replay — returns the successor as it stands now (Part 4 §4.2a).
           content:
             application/json:
               schema: { $ref: "#/components/schemas/CredentialRecord" }
@@ -3285,7 +3285,7 @@ paths:
             schema: { $ref: "#/components/schemas/ValetTicket" }
       responses:
         "200":
-          description: Idempotent replay — same key + same body returns the ORIGINAL ticket.
+          description: Idempotent replay — same key + same body returns the ticket as it stands now (Part 4 §4.2a).
           content:
             application/json:
               schema: { $ref: "#/components/schemas/ValetTicket" }
@@ -4193,8 +4193,10 @@ paths:
         Takes a payment against an account or ticket. Idempotency-Key
         REQUIRED. autoAttendant method = PCI-compliant IVR captures the card
         out of band; APX never carries PANs. Declines are 422. With
-        `captureLater: true` the payment is authorized only and created
-        `authorized` (Part 13 §13.1a).
+        `captureLater: true` the payment is authorized only: a hold,
+        created `paymentStatus: approved` with `captureStatus: authorized`,
+        returned to this caller but not published or listed by default
+        until captured (Part 13 §13.1a).
       parameters:
         - { name: Idempotency-Key, in: header, required: true, schema: { type: string } }
       requestBody:
@@ -4211,7 +4213,7 @@ paths:
             application/json:
               schema: { $ref: "#/components/schemas/PaymentRecord" }
         "201":
-          description: Approved payment with transactionID (or `authorized` when `captureLater` was asked).
+          description: Approved payment with transactionID (a hold with `captureStatus` `authorized` when `captureLater` was asked).
           content:
             application/json:
               schema: { $ref: "#/components/schemas/PaymentRecord" }
@@ -4255,7 +4257,8 @@ paths:
         is 400 `invalid-request`. Privacy rule: a truncated-key lookup
         without a `date` is constrained to the last 8 hours; `ticketNumber`
         and `account` are exempt. Results are constrained to the caller's
-        grant (§13.5).
+        grant (§13.5). Holds (`captureStatus: authorized`) are omitted
+        unless `captureStatus=authorized` is asked for.
       parameters:
         - { name: ticketLast4, in: query, schema: { type: string } }
         - name: cardLast4
@@ -4285,6 +4288,15 @@ paths:
           style: form
           explode: false
           schema: { type: array, items: { type: string, format: uuid } }
+        - name: captureStatus
+          in: query
+          description: |-
+            `authorized` lists only holds (authorization-only payments not
+            yet captured), which are otherwise never returned; `captured`
+            lists only collected payments (the default behaviour made
+            explicit). Absent = holds excluded (Part 13 §13.2). Never a key
+            on its own.
+          schema: { type: string, enum: [authorized, captured] }
         - $ref: "../vendor/apds/4.1/apds-api-4.1.yaml#/components/parameters/page"
       responses:
         "200":
@@ -4419,11 +4431,12 @@ paths:
       security:
         - apxOAuth: ["apx.payments:write"]
       tags: [Accounts]
-      summary: Void an authorized, uncaptured payment
+      summary: Void a hold (an authorized, uncaptured payment)
       description: |-
-        Financial domain action (Part 17 §17.4). Releases an `authorized`
-        payment: `authorized → reversed` (Part 13 §13.1a). Idempotency-Key
-        REQUIRED. Scope apx.payments:write.
+        Financial domain action (Part 17 §17.4). Releases a hold
+        (`captureStatus: authorized`): `paymentStatus` becomes `reversed`,
+        nothing was collected, and no event is published (Part 13 §13.1a).
+        Idempotency-Key REQUIRED. Scope apx.payments:write.
       parameters:
         - { name: id, in: path, required: true, schema: { type: string, format: uuid } }
         - { name: Idempotency-Key, in: header, required: true, schema: { type: string } }
@@ -4444,8 +4457,8 @@ paths:
               schema: { $ref: "#/components/schemas/Problem" }
         "409":
           description: |-
-            Not `authorized` (already captured, declined, or reversed —
-            `payment-state-illegal`), or Idempotency-Key replayed with a
+            Not a hold — already captured, declined, or reversed
+            (`payment-state-illegal`) — or Idempotency-Key replayed with a
             different body (`idempotency-conflict`).
           content:
             application/problem+json:
@@ -4457,12 +4470,14 @@ paths:
       security:
         - apxOAuth: ["apx.payments:write"]
       tags: [Accounts]
-      summary: Capture a previously authorized payment
+      summary: Capture a hold (a previously authorized payment)
       description: |-
-        Financial domain action (Part 17 §17.4). Settles an `authorized`
-        payment: `authorized → approved`, optionally for a lower `amount`
-        than was authorized (Part 13 §13.1a). Idempotency-Key REQUIRED.
-        Scope apx.payments:write.
+        Financial domain action (Part 17 §17.4). Settles a hold:
+        `captureStatus` `authorized → captured` (`paymentStatus` stays
+        `approved`), optionally for a lower `amount` than was authorized.
+        The capture is when the payment is published and materialized
+        (Part 13 §13.1a). Idempotency-Key REQUIRED. Scope
+        apx.payments:write.
       parameters:
         - { name: id, in: path, required: true, schema: { type: string, format: uuid } }
         - { name: Idempotency-Key, in: header, required: true, schema: { type: string } }
@@ -4478,7 +4493,7 @@ paths:
                   $ref: "../vendor/apds/4.1/apds-api-4.1.yaml#/components/schemas/AmountInCurrency"
       responses:
         "200":
-          description: The captured payment, now `approved` with `amount` = the captured amount.
+          description: The captured payment, now `captureStatus` `captured` with `amount` = the captured amount.
           content:
             application/json:
               schema: { $ref: "#/components/schemas/PaymentRecord" }
@@ -4497,9 +4512,9 @@ paths:
               schema: { $ref: "#/components/schemas/Problem" }
         "409":
           description: |-
-            Not `authorized` (`payment-state-illegal`, Part 13 §13.1a), or
-            Idempotency-Key replayed with a different body
-            (`idempotency-conflict`).
+            Not a hold — already captured, declined, or reversed
+            (`payment-state-illegal`, Part 13 §13.1a) — or Idempotency-Key
+            replayed with a different body (`idempotency-conflict`).
           content:
             application/problem+json:
               schema: { $ref: "#/components/schemas/Problem" }
@@ -5837,36 +5852,4 @@ components:
       $ref: "./domains/resolution/schemas.yaml#/SupportInteraction"
 
     ApxConfiguration:
-      type: object
-      description: Unauthenticated bootstrap configuration document.
-      required:
-        - apxVersion
-        - apdsVersion
-        - tokenEndpoint
-        - conformanceClasses
-      properties:
-        apxVersion:
-          type: string
-          description: APX standard version implemented (semver).
-          examples: ["0.1.0"]
-        apdsVersion:
-          type: string
-          description: APDS version this implementation extends.
-          examples: ["4.1"]
-        tokenEndpoint:
-          type: string
-          format: uri
-          description: OAuth2 token endpoint (client-credentials grant).
-        conformanceClasses:
-          type: array
-          description: APX conformance classes this implementation supports.
-          items:
-            type: string
-          examples:
-            - ["apx-data", "apx-events", "apx-control", "apx-alerts", "apx-discovery"]
-        registries:
-          type: object
-          description: Locations of the published UserDefinedCodeList registries.
-          additionalProperties:
-            type: string
-            format: uri
+      $ref: "./domains/discovery/schemas.yaml#/ApxConfiguration"
