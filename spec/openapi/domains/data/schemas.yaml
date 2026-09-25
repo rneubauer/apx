@@ -26,9 +26,11 @@ ChangeFeedPage:
       const: change
     items:
       type: array
-      description: Changed APDS entities of the route's class (verbatim APDS schemas).
+      description: |-
+        Changed APDS entities of the route's class, each a change payload
+        (identity plus only the changed members; Part 5 §5.1).
       items:
-        type: object
+        $ref: "#/ChangePayload"
     deleted:
       type: array
       description: Tombstones for deleted entities.
@@ -52,6 +54,36 @@ ChangeFeedPage:
       type: [string, "null"]
       format: uri-reference
       description: Link to the next page when more changes are immediately available; null otherwise.
+
+ChangePayload:
+  title: ChangePayload
+  description: |-
+    A change-mode payload for any native APDS entity class (Part 5 §5.1):
+    the entity's identity plus only the members that changed. An absent
+    member is unchanged; an explicit `null` clears it. Nested objects that
+    carry their own `id` (a Session segment, say) follow the same rule.
+
+    This schema checks the envelope only (identity present, any member may
+    be null). Each member present is still validated by the server against
+    the class's native property schema, and a member the class does not
+    define is refused with 400 (Part 5 §5.1a). It is the request schema of
+    a native `PUT` sent with `APX-Update-Mode: change`, and the shape of
+    every `ChangeFeedPage` item.
+  type: object
+  required:
+    - id
+  properties:
+    id:
+      type: string
+      minLength: 1
+      description: The entity's identifier (APDS VersionedIdentity.id).
+    version:
+      type: integer
+      minimum: 1
+      description: |-
+        On a write, the version the client last read (the precondition,
+        Part 4 §4.2a); on a feed item, the version after the change.
+  additionalProperties: true
 
 OccupancySnapshot:
   title: OccupancySnapshot

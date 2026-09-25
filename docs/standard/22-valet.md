@@ -27,29 +27,55 @@ condition report), `storage` (space or zone, key location), `retrieval`
 **Lifecycle (normative).**
 
 ```
-dropped ──park──▶ parked ──retrieve──▶ requested ──▶ retrieving ──stage──▶ staged ──handback──▶ handedBack ──▶ closed
-   │                 ▲                     │              │
-   │                 └──cancel-retrieval───┴──────────────┘
-   └──handback (before the car moved)──▶ handedBack
-dropped ──▶ cancelled (custody never taken; terminal)
+dropped ──park──▶ parked ──retrieve──▶ requested ──pickup──▶ retrieving ──stage──▶ staged ──handback──▶ handedBack ──▶ closed
+   │               ▲  ▲                    │                     │                   │
+   │               │  └──cancel-retrieval──┴─────────────────────┘                   │
+   │               └──────────────────park (re-park)─────────────────────────────────┘
+   │                             requested ──stage──▶ staged   (pickup is optional)
+   ├──handback (before the car moved)──▶ handedBack
+   └──cancel──▶ cancelled (custody never taken; terminal)
 ```
 
-1. `park` is valid from `dropped` (and MAY be repeated while `parked` to
-   update `storage`); `retrieve` from `parked` only — from `dropped` it
-   is 409 `valet-vehicle-not-located` (nobody knows where the car is
-   yet); `cancel-retrieval` from `requested | retrieving`; `stage` from
+1. `park` is valid from `dropped`, MAY be repeated while `parked` to
+   update `storage`, and re-parks a `staged` car the customer is not
+   collecting yet (`staged → parked`: new `storage`, staging cleared,
+   `retrieval.cancelledTime` set with `cancelReason: re-parked`).
+   `retrieve` from `parked` — from `dropped` it is 409
+   `valet-vehicle-not-located` (nobody knows where the car is yet), and
+   a repeat while `requested` or `retrieving` is answered 200 with the
+   current ticket (§22.3 rule 4). `pickup` from `requested`;
+   `cancel-retrieval` from `requested | retrieving`; `stage` from
    `requested | retrieving`; `handback` from `staged`, or from `dropped`
-   for a customer who changes their mind before the car moved. Any
-   other transition is 409 `valet-transition-illegal`.
-2. `requested → retrieving` is the runner picking the car up; it is a
-   server-recorded step (the operator's app marks it) with no separate
-   API operation — implementations MAY expose it via `park`-style
-   updates or infer it from the runner's assignment.
+   for a customer who changes their mind before the car moved; `cancel`
+   from `dropped` only. Any other transition is 409
+   `valet-transition-illegal`.
+2. `requested → retrieving` is the runner picking the car up. The
+   operator's app records it with `POST …/{id}/pickup`, which sets
+   `retrieval.retrievingBy`; an implementation MAY instead infer it from
+   its own runner assignment. The step is optional — `stage` directly
+   from `requested` is conforming — but where it is recorded, `pickup`
+   is the only API route that records it.
 3. `handedBack → closed` is server-side when the APDS Session settles
-   (paid, or comped); both are settled states. `cancelled` is terminal.
+   (paid, or comped); both are settled states. `cancelled` is terminal:
+   `POST …/{id}/cancel` (with a `reason`) ends a drop-off whose custody
+   was never taken — the driver left for the self-park deck
+   mid-walk-around — and the server SHOULD close the APDS Session it
+   opened at no charge.
 4. Every transition appends `statusHistory[]` and publishes
    `apx.valet.ticket.status.v1`; `retrieve` additionally publishes
    `apx.valet.retrieval.requested.v1`.
+5. **Server-written members (normative).** `ValetTicket` is both the
+   create body and the resource. On `POST /v1/valet/tickets` the server
+   MUST ignore any `storage`, `retrieval`, `handback`, `statusHistory`,
+   or `recordInfo` the client sends — they are written only by `park`,
+   `retrieve`, `pickup`, `stage`, `handback`, and the server itself, and
+   `statusHistory[]` is the authoritative audit (Part 4 §4.2). `session`
+   and `assignedRight` MAY be sent when the operator opened them before
+   the drop-off call; otherwise the server opens the Session.
+6. **Concurrency.** `park` accepts `If-Match` with the version last read
+   (Part 4 §4.2a): two runners moving the same car get one 200 and one
+   409 `version-conflict`, rather than a ticket pointing at a space the
+   car is not in. Without `If-Match` it is last-writer-wins.
 
 ## 22.2 Drop-off and condition evidence (normative)
 
@@ -65,7 +91,13 @@ dropped ──▶ cancelled (custody never taken; terminal)
    drop-off report binding.
 3. The drop-off condition report is immutable once the ticket leaves
    `dropped`; corrections are new `damage[]` entries with a later
-   `recordedTime`, never edits.
+   `recordedTime`, never edits. `POST …/{id}/condition` is the route:
+   it appends each `damage[]` entry to `dropOff.conditionReport.damage[]`
+   with a server-set `recordedTime` and `recordedBy`, appends
+   `imageLinks[]`, and records `notes` as a `statusHistory[]` entry
+   without changing `valetStatus`. It is legal in every state except
+   `closed` and `cancelled`, and never alters the report's original
+   entries, `notes`, or `customerAcknowledged`.
 
 ## 22.3 Retrieval and the queue
 
@@ -76,15 +108,26 @@ where the request came from (`sms`, `app`, `web`, `voiceBot`, `kiosk`,
 or support channel raised it — no telephony identifiers in the contract.
 
 1. The server MUST set `retrieval.etaMinutes` and `promisedTime` on
-   every request and SHOULD recompute `etaMinutes` as the queue moves;
-   the customer-facing read (§22.5) is how a text, app, or bot shows
-   "your car will be ready in 8 minutes".
+   every request. `promisedTime` is `requestedFor` for a scheduled
+   pickup, else `requestedTime` plus the operator's estimate;
+   `etaMinutes` is the whole minutes from now until `promisedTime`,
+   never negative (`max(0, floor(promisedTime − now))`), recomputed on
+   every read and event — so a 07:30 pickup booked at 22:10 reads 560
+   and counts down. The customer-facing read (§22.5) is how a text, app,
+   or bot shows "your car will be ready in 8 minutes".
 2. `GET /v1/valet/queue?place=` returns tickets in `requested`,
    `retrieving`, or `staged` ordered by `promisedTime` — the runner
    board. Scheduled pickups appear once inside `horizonMinutes`.
 3. `stage` records the car at the staging lane and SHOULD notify the
    customer's `contactChannel`; how (push, SMS, callback) is the
    implementer's — APX carries the state, not the message.
+4. **Repeated requests.** Guests text twice. A `retrieve` while the
+   ticket is already `requested` or `retrieving` returns 200 with the
+   current ticket and ETA; nothing is appended to `statusHistory[]`,
+   `apx.valet.retrieval.requested.v1` is not republished, and a
+   `requestedFor` in the repeat is ignored (rescheduling is
+   `cancel-retrieval` then `retrieve`). From `staged`, `handedBack`,
+   `closed`, or `cancelled` it remains 409 `valet-transition-illegal`.
 
 ## 22.4 Handback (normative)
 
@@ -108,19 +151,44 @@ pages, and voice bots. A token carrying it (and not `:read`/`:manage`)
 is confined to the ticket(s) it was minted for (the implementation binds
 the token to the ticket at drop-off, e.g. via the claim link or code):
 it MAY read those tickets, `retrieve`, and `cancel-retrieval`; it MUST
-NOT list, park, stage, or hand back. The read is **minimized**:
-`storage`, attendant principals, `dropOff.keyTag`, and condition images
-are omitted; status, `retrieval.etaMinutes`, `promisedTime`,
-`stagingLane`, `ticketNumber`, and the vehicle summary are returned. A
-bot acting for the customer uses the same scope and sets
-`channel: voiceBot` with an `interaction` id.
+NOT list, park, pick up, stage, cancel, amend the condition report, or
+hand back. Every ticket it receives — from `GET …/{id}`, `retrieve`, and
+`cancel-retrieval`, and on any event subscription it holds — is
+**minimized** to exactly these members:
+
+- `id`, `version`, `place`, `ticketNumber`, `vehicle`, `valetStatus`,
+  `extensions`;
+- `customer.displayName`;
+- `dropOff.time`;
+- `retrieval.requestedTime`, `requestedFor`, `channel`, `etaMinutes`,
+  `promisedTime`, `stagingLane`, `stagedTime`, `cancelledTime`;
+- `handback.time`.
+
+Everything else is omitted — `storage`, `statusHistory[]` (its `actor`
+values are attendant principals), every other `dropOff` member
+(including `keyTag` and the condition report), `retrieval.requestedBy`,
+`retrievingBy`, `interaction`, the rest of `customer` and `handback`,
+`session`, `assignedRight`, and `recordInfo`. A bot acting for the
+customer uses the same scope and sets `channel: voiceBot` with an
+`interaction` id.
+
+**Tickets the caller may not see (normative, Part 9 §9.3a).** An
+operator token (`apx.valet:read` or `:manage`) addressing a ticket at a
+place outside its `apx_places` grant receives 403 `insufficient-grant`.
+An `apx.valet:request` token addressing any ticket it is not bound to —
+whether that ticket exists or not — receives 404 `target-not-found`, so
+a claim link cannot be used to enumerate tickets.
 
 ## 22.6 Privacy
 
 Plates, customer handles, and condition imagery are personal data under
 Part 9 §9.6. `customer.contactChannel.handle` is opaque or masked;
 implementations MUST NOT carry raw phone numbers or e-mail addresses on
-the ticket (the contact system holds them, referenced by `contact`).
+the ticket (the contact system holds them, referenced by `contact`). A
+server receiving one SHOULD refuse the request with 422
+`personal-data-not-permitted` (`detail` naming the member) rather
+than store it or mask it silently, so the integration that sent it
+finds out.
 Retention for condition imagery MUST be published; the drop-off report
 SHOULD be retained at least as long as the operator's damage-claim
 window.
@@ -139,7 +207,7 @@ ticket's events.
 
 | Operation | Scope |
 |---|---|
-| `POST /v1/valet/tickets`, `POST …/{id}/park`, `/stage`, `/handback` | `apx.valet:manage` |
+| `POST /v1/valet/tickets`, `POST …/{id}/park`, `/pickup`, `/stage`, `/handback`, `/cancel`, `/condition` | `apx.valet:manage` |
 | `GET /v1/valet/tickets`, `GET /v1/valet/queue` | `apx.valet:read` |
 | `GET …/{id}` | `apx.valet:read`, or `apx.valet:request` (own, minimized) |
 | `POST …/{id}/retrieve`, `/cancel-retrieval` | `apx.valet:manage`, or `apx.valet:request` (own) |

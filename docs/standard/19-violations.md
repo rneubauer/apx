@@ -40,31 +40,47 @@ and `evidence[]` (references and links), `notice` (what was issued),
 
 ```
 detected ──review──▶ confirmed ──issue──▶ issued ──payment──▶ paid ──▶ closed
-   │                                        │  ▲
-   └──review──▶ dismissed                   │  │ upheld / reduced
-                                            ▼  │
-                                        appealed ──dismissed──▶ closed
-any non-terminal state ──void──▶ voided
+   └──review──▶ dismissed
+
+issued ──appeals──▶ appealed ──upheld / reduced──▶ issued
+paid   ──appeals──▶ appealed ──upheld / reduced──▶ paid     (pay-then-appeal)
+                    appealed ──dismissed─────────▶ closed
+
+every non-terminal state ──void──▶ voided
 ```
 
+The **terminal** states are `dismissed`, `closed`, and `voided`; every
+other state (`detected`, `confirmed`, `issued`, `appealed`, `paid`) is
+non-terminal.
+
 1. `review` is valid only from `detected`; `issue` from `confirmed`, or
-   from `detected` when `detection.mode` is `automated` AND the operator's
-   policy permits unreviewed issuance. A `guided` or `manual` detection
-   MUST pass through `review` before `issue` — 409
-   `violation-not-issuable` otherwise.
-2. `payment` is valid only from `issued`; `appeals` only from `issued`;
-   `appeals/resolve` only from `appealed`. Any other transition is 409
-   `violation-transition-illegal`. `paid → closed` is a server-side
-   administrative transition (reconciliation complete, refund window
-   elapsed — operator policy) with no API operation; both are settled
-   states and neither accepts further transitions except `void`.
-3. One appeal per violation. `upheld` returns to `issued`; `reduced`
-   returns to `issued` with `amount` replaced by `adjustedAmount`;
-   `dismissed` moves to `closed`. A second appeal, or an appeal on a
-   closed/voided violation, is 409 `appeal-closed`.
-4. `void` is terminal from any non-terminal state and never deletes
+   from `detected` when `detection.mode` is `automated` AND the policy in
+   force permits unreviewed issuance (§19.4 rule 1). A `guided` or
+   `manual` detection MUST pass through `review` before `issue` — 409
+   `violation-not-issuable` otherwise. A `dismiss` decision MUST carry a
+   `reason`; without one it is 400 `invalid-request`.
+2. `payment` is valid only from `issued`; `appeals` from `issued`, or
+   from `paid` within the policy's `appealWindowDays` (pay-then-appeal,
+   §19.6); `appeals/resolve` only from `appealed`. Any other transition
+   is 409 `violation-transition-illegal`, except the appeal refusals of
+   rule 3. `paid → closed` is a server-side administrative transition
+   (reconciliation complete, appeal and refund windows elapsed —
+   operator policy) with no API operation.
+3. One appeal per violation. The state it was opened from is recorded
+   as `appeal.openedFrom`. `upheld` returns to that state (`issued` or
+   `paid`); `reduced` does the same with `amount` replaced by
+   `adjustedAmount` (REQUIRED; 400 `invalid-request` without it);
+   `dismissed` moves to `closed`. **`appeal-closed`** is the refusal for
+   the appeal itself: opening a second appeal, opening one on a
+   `closed` or `voided` violation or after the appeal window, and
+   resolving when no appeal is open, whatever the state. Opening an
+   appeal on a violation that was never issued (`detected`,
+   `confirmed`, `dismissed`) is `violation-transition-illegal`.
+4. `void` is valid from every non-terminal state and never deletes
    anything: the record, evidence links, and `statusHistory[]` remain
-   readable.
+   readable. Voiding a `paid` violation SHOULD carry the Part 13
+   `refund` reference that returned the money. `void` from a terminal
+   state is 409 `violation-transition-illegal`.
 5. A detection whose eligibility check finds the vehicle **entitled** is
    still recorded — as `dismissed`, with the basis — so the audit trail
    shows what was checked. Implementations MAY suppress creation under a
@@ -87,9 +103,13 @@ caller's place grant (Part 9 §9.3).
 - `POST /v1/violations` — record a detection. **Idempotency-Key
   REQUIRED** (cameras and handhelds retry; a retry must not create a
   second violation). The server performs the §19.3 eligibility check and
-  records it. Publishes `apx.violations.detected.v1`.
-- `GET /v1/violations?plate=&status=&type=&place=&detectionMode=&since=`
-  / `GET …/{id}`.
+  records it. Publishes `apx.violations.detected.v1`. An unknown `place`
+  or a `violationType` outside the served registries is 422
+  `reference-unknown`; a malformed body is 400 `invalid-request`.
+- `GET /v1/violations?plate=&noticeNumber=&status=&type=&place=&detectionMode=&since=&until=`
+  / `GET …/{id}`. `noticeNumber` is the lookup a driver can make with
+  what they hold; like `plate`, it names no place, so it returns only
+  violations at granted places (Part 9 §9.3a rule 3).
 - `POST …/{id}/review` — `confirm` | `dismiss` (guided enforcement). A
   `violationType` in the body corrects the detector's classification.
 - `POST …/{id}/issue` — issue the warning/notice/citation: `noticeKind`,
@@ -98,9 +118,13 @@ caller's place grant (Part 9 §9.3).
 - `POST …/{id}/payment` — attach the settling Payment reference → `paid`.
   The payment itself is taken through Part 13 (`POST /v1/payments`, a
   payment link, or an APDS Payment ingested from a pay station).
-- `POST …/{id}/appeals` — open the appeal; `POST …/{id}/appeals/resolve`
-  — `upheld` | `reduced` (+ `adjustedAmount`) | `dismissed`.
-- `POST …/{id}/void` — void with reason.
+- `POST …/{id}/appeals` — open the appeal (from `issued`, or from `paid`
+  within the appeal window); `POST …/{id}/appeals/resolve` — `upheld` |
+  `reduced` (+ `adjustedAmount`) | `dismissed`, with `refund` on a
+  pay-then-appeal.
+- `POST …/{id}/void` — void with reason (and `refund` when `paid`).
+- The versioned `PUT`s on policies and signage take the version last
+  read as `If-Match` or body `version` (Part 4 §4.2a).
 - `GET /v1/enforcement/eligibility?credential=&credentialType=&place=&at=`
   — §19.3. Lives under `/v1/enforcement` rather than `/v1/violations/…`
   because no violation exists yet when the question is asked (and to
@@ -150,9 +174,14 @@ counterpart of Part 6's lane inquiry. It returns an `EligibilityResult`:
    `observations[]` reference or one `evidence[]` link, and SHOULD carry
    `detection.confidence` and `detection.rule`. Whether an automated
    detection may proceed `detected → issued` without review is operator
-   policy; the policy MUST be published in operator documentation and the
-   `issue` call MUST be refused (409 `violation-not-issuable`) where it
-   forbids it.
+   policy. Where the EnforcementPolicy in force (§19.10) carries
+   `unreviewedIssuance`, that is the policy: the server MUST refuse
+   `issue` (409 `violation-not-issuable`) unless `permitted` is true,
+   the detection's `confidence` is at least `minimumConfidence` (when
+   set), and its `violationType` is in `violationTypes` (when set).
+   Where the policy is silent, the rule MUST be published in operator
+   documentation and enforced the same way. Publishing it on the policy
+   lets pipelines read it from `…/policies/effective` in advance.
 2. **Guided.** A `guided` detection MUST be reviewed by a human before
    issuance. Implementations SHOULD publish `apx.violations.detected.v1`
    so handhelds can queue candidates; the eligibility check result at
@@ -183,9 +212,18 @@ owed; `payment` is the reference to how it was settled — an APX
 the reference, or a `PaymentLink` for pay-by-mail/online) or a native APDS
 `Payment`. Attaching it moves the violation to `paid` and, where the
 implementation claims `apx-accounts`, the payment's own
-`apx.accounts.payment.recorded.v1` event fires as usual. Refunds after a
-`dismissed` appeal use Part 13 §13.1a (`/v1/payments/{id}/refund`); the
-violation stays `closed`.
+`apx.accounts.payment.recorded.v1` event fires as usual.
+
+**Pay then appeal.** A driver may pay first and contest later: an
+appeal opened from `paid` within the policy's `appealWindowDays` moves
+the violation to `appealed` with `appeal.openedFrom: paid`, and no
+escalation applies meanwhile. `upheld` returns it to `paid`. `reduced`
+returns it to `paid` with the new `amount`, and the difference is
+refunded through Part 13 §13.1a (`/v1/payments/{id}/refund`); `dismissed`
+closes it and the whole payment is refunded the same way. The resolve
+call carries the refund's reference as `refund`, recorded on
+`appeal.refund`. The money moves only through Part 13; this Part records
+the link.
 
 Appeal reasons and resolutions are implementer code lists (jurisdictional
 vocabulary varies too widely to close); `apx-violation-types` is the only
@@ -219,14 +257,20 @@ Should APDS standardize an enforcement or citation entity natively, Part 3
 ## 19.9 Location of the finding
 
 `Violation.location` carries where the vehicle was and from where it was
-observed, in the APDS `Observation.Location` shape: `observedLocation`
-and `observerLocation` (APDS `PointLocation`, GeoJSON Point) plus
-`observedLocationTextual` (`MultilingualString`) and `accuracyMetres`.
+observed. It is **modelled on** the APDS `Observation.Location` shape and
+reuses its member names and types — `observedLocation` and
+`observerLocation` (APDS `PointLocation`, GeoJSON Point) and
+`observedLocationTextual` (`MultilingualString`) — with two differences:
+`observerLocation` is optional here (APDS requires it; a finding from a
+fixed sensor may have none), and APX adds `accuracyMetres`. It is not a
+`$ref` to the APDS schema, so an APDS `Location` copied from an
+Observation validates here, but not necessarily the reverse.
 
 1. GeoJSON positions are `[longitude, latitude]` **in that order**.
    Enforcement tools that store latitude first MUST swap on the wire;
    implementations SHOULD reject positions whose first element is
-   outside −180..180.
+   outside −180..180 (400 `invalid-request`, `errors[].pointer` naming
+   the position).
 2. `guided` and `manual` detections SHOULD carry `observerLocation` (the
    officer's position) — it is the evidence that the officer could see
    the vehicle and the signage. `automated` detections SHOULD copy
@@ -260,31 +304,51 @@ principle Part 17 applies to allowed actions.
      the entry's `minimumEvidence`, or `locationRequired` and no
      `location.observedLocation` → `delivery-method-not-permitted`
      (`detail` names the missing evidence);
-   - `amount` exceeds `penaltyCap` and `onExceed` is `refuse` →
-     `penalty-exceeds-cap`; with `clamp`, the server issues at the cap
-     and records `amountHistory[].reason: cap`;
+   - `amount` exceeds the cap and `onExceed` is `refuse` →
+     `penalty-exceeds-cap`; with `clamp`, the server issues at the cap.
+     The cap is the lowest `penaltyCap` bound; the relative bounds
+     (`maximumMultipleOfUnpaid`, `maximumPercentOverUnpaid`) apply to
+     the unpaid parking fee for the stay, which the server derives from
+     the rate deck in force and records as `unpaidAmount`, with the
+     resulting cap as `capAmount`;
    - `signageRequired` is true and no Signage (§19.11) was in force at
      `place` or an ancestor at `detectedTime` → `signage-required`.
    On success the server freezes `policy` (VersionedReference),
-   `signage[]`, and the first `amountHistory` entry (`reason: issued`)
-   onto the violation. A place with **no** policy in force issues
-   without these checks; implementations SHOULD alert (Part 7) when a
-   place under an enforcement class has none.
+   `signage[]`, `unpaidAmount` and `capAmount` (where a cap applied),
+   and the first `amountHistory` entry onto the violation. That entry
+   is `reason: issued` with the issued amount; when the amount was
+   clamped it is instead a single entry `reason: cap` whose `amount` is
+   the clamped figure and whose `requestedAmount` is what `issue` asked
+   for. A place with **no** policy in force issues without these
+   checks; implementations SHOULD alert (Part 7) when a place under an
+   enforcement class has none.
 3. **Escalation is server-applied.** For a violation in `issued`, each
    `escalation[]` step fires once, when `afterDays` have elapsed since
    `notice.issuedTime` (and never before `paymentGraceDays`), adding
    `addAmount` and/or `addPercent` of the current amount, subject to
-   `overallCeiling`. The result is appended to `amountHistory[]`
-   (`reason: escalation`, `step`) and `apx.violations.status.v1` is
-   published. Steps MUST NOT fire while `appealed`; a violation
-   returning to `issued` after `upheld`/`reduced` resumes the schedule
-   from its original `issuedTime`. Clients MUST NOT compute penalties
-   themselves.
-4. `appealWindowDays`: an appeal opened within the window MUST be
-   accepted (subject to §19.1 rule 3); outside it, implementations MAY
-   refuse with 409 `appeal-closed`.
+   `overallCeiling`: a step that would pass the ceiling clamps to it.
+   The result is appended to `amountHistory[]` (`reason: escalation`,
+   `step`) and `apx.violations.status.v1` is published. **The clock
+   pauses during an appeal:** steps MUST NOT fire while `appealed`, and
+   days spent `appealed` do not count toward `afterDays` or
+   `paymentGraceDays`. A violation returning to `issued` after
+   `upheld`/`reduced` therefore resumes the schedule where it stood
+   when the appeal opened; nothing that "fell due" during the appeal
+   fires on return. A policy step whose fixed `addAmount` alone exceeds
+   `overallCeiling.maximumAmount` is refused at policy create or update
+   (422 `request-unprocessable`); steps that merely could reach the
+   ceiling are lawful. Clients MUST NOT compute penalties themselves.
+4. `appealWindowDays`: an appeal opened within the window, from
+   `issued` or from `paid`, MUST be accepted (subject to §19.1 rule 3);
+   outside it, implementations MAY refuse with 409 `appeal-closed`.
 5. A violation keeps the policy version it was issued under; policy
-   updates (`PUT`) affect issuance and escalation from then on only.
+   updates (`PUT`, with the version last read per Part 4 §4.2a) affect
+   issuance and escalation from then on only.
+6. **Errors on policy and signage writes.** A body Reference that names
+   nothing visible (an unknown `place`) is 422 `reference-unknown`; an
+   inconsistent policy (an inverted effective window, the fixed step of
+   rule 3) is 422 `request-unprocessable`; a body that fails the schema
+   is 400 `invalid-request` (Part 12 §12.4).
 
 ## 19.11 Signage (normative)
 

@@ -40,6 +40,31 @@ Two token claims bound a client's world:
 Discovery (`GET /v1/discovery`) MUST reflect scopes and grants exactly:
 a client can call everything its discovery document lists, and nothing more.
 
+## 9.3a Visibility outside the grant (normative)
+
+Three rules settle what a caller learns about records it may not see:
+
+1. **Place grant.** A request that names a place, lane, device, or a
+   resource addressed by id whose owning place lies outside `apx_places`
+   receives 403 `insufficient-grant` (§9.3). This is unchanged.
+2. **Narrower ownership scopes.** Where a Part confines a credential to
+   its own records inside a granted place (a merchant's own validation
+   programs, a valet customer's own ticket), a record outside that scope
+   is reported as 404 `target-not-found`, exactly as a record that does
+   not exist. The answer never confirms another party's record.
+3. **Lookups that name no place.** A list or lookup that names no place
+   (by plate, phone, card digits, ticket) returns only records at granted
+   places. Under an absent or empty grant it returns `200` with an empty
+   `data` array, never 403: the request targeted nothing outside the grant,
+   and a 403 would reveal that matching records exist. Resources that
+   belong to no place (a subscription, a subscription-failure alert) are
+   scoped to the caller's `apx_org` instead.
+
+An APX endpoint of a conformance class the server does not claim is 404
+`target-not-found`; an endpoint the server does implement but the token's
+scopes do not cover is 403 `insufficient-scope` (§9.2). Discovery lists
+neither.
+
 ## 9.4 Webhook authenticity
 
 - Every webhook delivery MUST be signed: `APX-Signature: v1=<hex>` where
@@ -55,7 +80,9 @@ a client can call everything its discovery document lists, and nothing more.
   the old one is retired); **during the overlap, every delivery MUST carry
   `APX-Key-Id` naming the signing key** so receivers verify against the
   right key instead of trying both. Outside a rotation window the header
-  is OPTIONAL.
+  is OPTIONAL. The overlap ends when the subscriber retires the old key
+  (`PATCH` with `retireKeyIds`) or 24 hours after the rotation, whichever
+  comes first (Part 8 §8.1).
 
 ## 9.5 Token issuance
 
@@ -74,7 +101,9 @@ payment history — are subject to this clause:
    carry more personal data than the requesting scope needs: full PANs are
    never carried (Part 0 §0.4); plate values appear only under `apx.lpr:*`,
    `apx.tolling:*`, `apx.violations:*`, or `apx.accounts:*` scopes;
-   imagery is carried as links, never inline.
+   imagery is carried as links, never inline. `PUT /v1/sessions/{id}/plate`
+   (scope `apx.data:write`) echoes only the plate values the caller
+   supplied and discloses no other plate-bearing data (Part 17 §17.5).
 2. **Access-controlled imagery (normative).** `imageLink` and any other
    media URL MUST require the same authentication and place grant as the
    API call that produced it. Unauthenticated, long-lived image URLs do
@@ -89,6 +118,9 @@ payment history — are subject to this clause:
 4. **Purpose limitation (normative).** Subscriptions to plate-bearing
    topics require the corresponding read scope; a subscription MUST NOT
    deliver a topic the credential could not read synchronously.
+   Implementations MUST refuse such a subscription at creation or update
+   with 403 `insufficient-scope`, naming the topic and the missing scope
+   in `detail` (Part 8 §8.1).
 5. **Truncated-key lookups.** The 8-hour window on `ticketLast4`/
    `cardLast4` lookups (Part 13 §13.2) is a privacy control, not a
    convenience limit; implementations MUST NOT widen it by configuration.

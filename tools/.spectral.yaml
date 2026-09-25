@@ -36,6 +36,20 @@ rules:
       functionOptions:
         match: "^\\/((\\.well-known|[a-z0-9\\-._]+|\\{[a-zA-Z][a-zA-Z0-9]*\\})\\/?)*$"
 
+  # Part 12 §12.3: every secured APX operation declares the shared auth and
+  # throttling responses. Scoped to APX-owned paths (/v1/…, /webhooks…);
+  # APDS-native paths are covered by the data overlay.
+  apx-auth-responses-declared:
+    description: Secured APX operations must declare 401, 403, and 429 (Part 12 §12.3).
+    severity: error
+    given: "$.paths[?(@property.match(/^\\/(v1|webhooks)(\\/|$)/))][get,post,put,patch,delete].responses"
+    then:
+      function: schema
+      functionOptions:
+        schema:
+          type: object
+          required: ["401", "403", "429"]
+
   apx-operation-description:
     description: Every operation needs a description (normative text lives in the spec too).
     severity: warn

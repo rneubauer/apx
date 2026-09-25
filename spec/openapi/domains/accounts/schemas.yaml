@@ -15,6 +15,12 @@ Account:
       $ref: "../../../vendor/apds/4.1/apds-api-4.1.yaml#/components/schemas/Reference"
     name: { type: string }
     phone: { type: string }
+    email:
+      type: string
+      description: |-
+        Contact e-mail on file. Personal data under the same Part 9 §9.6
+        minimization rule as `phone`: returned only under
+        `apx.accounts:read` (Part 13 §13.1).
     cardNumber:
       type: string
       description: Access credential number (NOT a payment card PAN).
@@ -75,8 +81,47 @@ PaymentRecord:
       description: card | autoAttendant | cash | other (implementer code list). autoAttendant = PCI-compliant IVR captures the card out of band.
     paymentStatus:
       type: string
+      description: |-
+        The payment layer's answer. `approved` = approved (for a hold, see
+        `captureStatus`); `declined` = refused by the payment layer;
+        `reversed` = a hold voided, or a payment refunded in full.
+        Transitions per Part 13 §13.1a.
       enum: [approved, declined, reversed]
       readOnly: true
+    captureStatus:
+      type: string
+      readOnly: true
+      description: |-
+        Whether an approved payment's funds have been collected (Part 13
+        §13.1a). `authorized` = a hold: the payment layer approved an
+        authorization-only request (`captureLater: true`), funds are held,
+        nothing is collected yet; settled by
+        `POST /v1/payments/{id}/capture` or released by `…/void`.
+        `captured` = collected. Absent = `captured` (a sale). A hold is
+        returned to the caller that created it, but is not listed by
+        `GET /v1/payments` unless asked for, is not published on
+        `apx.accounts.payment.recorded.v1`, and is not materialized as an
+        APDS Payment until captured.
+      enum: [authorized, captured]
+    captureLater:
+      type: boolean
+      default: false
+      description: |-
+        Create-time intent: `true` asks for authorization only (the record
+        is created `paymentStatus: approved`, `captureStatus: authorized`
+        and is settled later by `POST /v1/payments/{id}/capture` or
+        released by `…/void`). Absent or `false` = sale (authorize and
+        capture at once). A server that does not model an authorization
+        lifecycle refuses `true` with 422 `request-unprocessable` (Part 13
+        §13.1a).
+    refundedAmount:
+      description: |-
+        Cumulative amount refunded so far (Part 13 §13.1a). Absent or zero
+        = nothing refunded. When it reaches `amount` the record is
+        `reversed`; a partial refund leaves it `approved` with this member
+        showing what was given back.
+      readOnly: true
+      $ref: "../../../vendor/apds/4.1/apds-api-4.1.yaml#/components/schemas/AmountInCurrency"
     account:
       $ref: "../../../vendor/apds/4.1/apds-api-4.1.yaml#/components/schemas/Reference"
     ticketNumber: { type: string }
@@ -140,6 +185,17 @@ PaymentLink:
       format: uuid
     resolutionContext:
       $ref: "../../../vendor/apds/4.1/apds-api-4.1.yaml#/components/schemas/Reference"
+    resolutionContextVersion:
+      type: integer
+      minimum: 1
+      readOnly: true
+      description: |-
+        The `version` of the ResolutionContext whose allowed actions this
+        write was checked against, recorded by the server so the decision stays
+        reconstructible after the context is recomputed or expires (Part 17 §17.2).
+    approval:
+      description: Approval evidence, when the context's AllowedAction for the link said requiresApproval (Part 17 §17.3).
+      $ref: "../control/schemas.yaml#/Approval"
     recordInfo:
       $ref: "../common/schemas.yaml#/RecordInfo"
     extensions:
@@ -173,4 +229,18 @@ PostingRequest:
     account:
       description: Account to post against when the payment isn't already account-bound.
       $ref: "../../../vendor/apds/4.1/apds-api-4.1.yaml#/components/schemas/Reference"
+    note: { type: string }
+
+PaymentLinkCancel:
+  title: PaymentLinkCancel
+  description: |-
+    Request body cancelling a payment link before the customer pays
+    (Part 13 §13.1a). The body is optional; `reason` is recorded on the
+    link's audit trail.
+  type: object
+  properties:
+    reason:
+      type: string
+      description: Why the link was cancelled (implementer code list, e.g. wrongRecipient, paidOtherwise).
+      examples: [wrongRecipient]
     note: { type: string }

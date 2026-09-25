@@ -8,13 +8,27 @@
 # (tools/apply-overlay.mjs, run by `npm run spec:bundle`) produces the
 # effective API description. The vendored APDS source is never touched.
 #
-# Scope: exactly the four list routes Part 5 §5.6 requires the change feed
-# on. Plain APDS clients are unaffected — mode defaults to `full`, and the
-# stock response shape remains a conforming branch of the oneOf.
+# Scope (Part 5 §5.6, §5.1a):
+#  - the change feed (mode/cursor, ChangeFeedPage) on the five feed routes,
+#    and the 404 a stale or foreign cursor gets;
+#  - APX-Update-Mode and the ChangePayload body on the six native PUTs;
+#  - the problem+json alternative on native 400/404/409, and the shared
+#    401/403/429 on every native operation (Part 12 §12.1, §12.3);
+#  - narrow workarounds for APDS 4.1 defects, each naming its erratum in
+#    docs/errata/ (004–012). Remove a workaround in the same change that
+#    vendors a corrected APDS release.
+# Everything here is additive for a stock APDS client: parameters are
+# optional with stock defaults, the stock body and response shapes remain
+# conforming branches, and the added media types are selected only by an
+# APX `Accept` header.
+#
+# Authoring landmines: an explicit JSON null in an example crashes
+# Spectral, and an unquoted ": " in a description breaks the YAML parse —
+# quote every description.
 overlay: 1.0.0
 info:
-  title: APX data-profile overlay (change feed on native APDS list routes)
-  version: 0.2.0
+  title: APX data-profile overlay (Part 5 data profile over the native APDS routes)
+  version: 0.11.0
 
 actions:
   # ----- /places -----
@@ -80,3 +94,930 @@ actions:
         oneOf:
           - $ref: "#/components/schemas/AssignedRightList"
           - $ref: "#/components/schemas/ChangeFeedPage"
+
+  # ----- /observations (F-DATA-11): the change feed Part 13 §13.4 promises -----
+  - target: $.paths['/observations'].get.parameters
+    description: "Add the APX data-profile mode/cursor parameters."
+    update:
+      - $ref: "#/components/parameters/ModeParam"
+      - $ref: "#/components/parameters/CursorParam"
+  - target: $.paths['/observations'].get.responses['200'].content['application/json'].schema
+    remove: true
+  - target: $.paths['/observations'].get.responses['200'].content['application/json']
+    description: "mode=full returns the stock APDS list; mode=change returns a ChangeFeedPage."
+    update:
+      schema:
+        oneOf:
+          - allOf:
+              - $ref: "#/components/schemas/PaginatedListMeta"
+              - type: object
+                properties:
+                  data:
+                    type: array
+                    items:
+                      $ref: "#/components/schemas/ObservationElement"
+          - $ref: "#/components/schemas/ChangeFeedPage"
+
+  # ----- /places (F-DATA-15): subtree filter for the grant-expansion re-sync -----
+  - target: $.paths['/places'].get.parameters
+    description: "Add the native place filter (subtree-inclusive, as on /sessions) so a grantAdditions subtree can be full-synced (Part 5 §5.2 rule 7)."
+    update:
+      - $ref: "#/components/parameters/place_ids"
+
+  # ----- Feed routes (F-DATA-04): a cursor error is an APX error -----
+  - target: $.paths['/places'].get.responses
+    description: "Declare the cursor refusal of Part 5 §5.2 rules 2 and 5."
+    update:
+      '404':
+        description: "mode=change only: the cursor is unknown, older than the retention window, or was issued for another (class, credential, filter set) — problem type `target-not-found`; re-sync with mode=full (Part 5 §5.2 rules 2 and 5). The cursor is an APX parameter, so this refusal is always a Problem."
+        content:
+          application/problem+json:
+            schema:
+              $ref: "#/components/schemas/Problem"
+  - target: $.paths['/sessions'].get.responses
+    description: "Declare the cursor refusal of Part 5 §5.2 rules 2 and 5."
+    update:
+      '404':
+        description: "mode=change only: the cursor is unknown, older than the retention window, or was issued for another (class, credential, filter set) — problem type `target-not-found`; re-sync with mode=full (Part 5 §5.2 rules 2 and 5). The cursor is an APX parameter, so this refusal is always a Problem."
+        content:
+          application/problem+json:
+            schema:
+              $ref: "#/components/schemas/Problem"
+  - target: $.paths['/rates'].get.responses
+    description: "Declare the cursor refusal of Part 5 §5.2 rules 2 and 5."
+    update:
+      '404':
+        description: "mode=change only: the cursor is unknown, older than the retention window, or was issued for another (class, credential, filter set) — problem type `target-not-found`; re-sync with mode=full (Part 5 §5.2 rules 2 and 5). The cursor is an APX parameter, so this refusal is always a Problem."
+        content:
+          application/problem+json:
+            schema:
+              $ref: "#/components/schemas/Problem"
+  - target: $.paths['/rights/assigned'].get.responses
+    description: "Declare the cursor refusal of Part 5 §5.2 rules 2 and 5."
+    update:
+      '404':
+        description: "mode=change only: the cursor is unknown, older than the retention window, or was issued for another (class, credential, filter set) — problem type `target-not-found`; re-sync with mode=full (Part 5 §5.2 rules 2 and 5). The cursor is an APX parameter, so this refusal is always a Problem."
+        content:
+          application/problem+json:
+            schema:
+              $ref: "#/components/schemas/Problem"
+  - target: $.paths['/observations'].get.responses
+    description: "Declare the cursor refusal of Part 5 §5.2 rules 2 and 5."
+    update:
+      '404':
+        description: "mode=change only: the cursor is unknown, older than the retention window, or was issued for another (class, credential, filter set) — problem type `target-not-found`; re-sync with mode=full (Part 5 §5.2 rules 2 and 5). The cursor is an APX parameter, so this refusal is always a Problem."
+        content:
+          application/problem+json:
+            schema:
+              $ref: "#/components/schemas/Problem"
+
+  # ----- Native PUTs (F-DATA-01, F-DATA-02): the update-mode header and the change body -----
+  - target: $.paths['/places/{id}'].put.parameters
+    description: "Declare APX-Update-Mode (optional, default full)."
+    update:
+      - &updateMode
+        name: APX-Update-Mode
+        in: header
+        required: false
+        description: "APX data profile (Part 5 §5.1). `full` (default, stock APDS behavior): the body is the complete current state. `change`: the body is a ChangePayload — identity plus only the changed members; absent = unchanged, explicit null = clear. A stale `version` in change mode is 409 `version-conflict`."
+        schema:
+          type: string
+          enum: [full, change]
+          default: full
+  - target: $.paths['/places/{id}'].put.requestBody.content['application/json'].schema
+    remove: true
+  - target: $.paths['/places/{id}'].put.requestBody.content['application/json']
+    description: "Full mode validates against HierarchyElement; change mode against ChangePayload (Part 5 §5.1a)."
+    update:
+      schema:
+        anyOf:
+          - $ref: "#/components/schemas/HierarchyElement"
+          - $ref: "#/components/schemas/ChangePayload"
+  - target: $.paths['/contacts/{contactId}'].put.parameters
+    description: "Declare APX-Update-Mode (optional, default full)."
+    update:
+      - *updateMode
+  - target: $.paths['/contacts/{contactId}'].put.requestBody.content['application/json'].schema
+    remove: true
+  - target: $.paths['/contacts/{contactId}'].put.requestBody.content['application/json']
+    description: "Full mode validates against ContactPoint; change mode against ChangePayload (Part 5 §5.1a)."
+    update:
+      schema:
+        anyOf:
+          - $ref: "#/components/schemas/ContactPoint"
+          - $ref: "#/components/schemas/ChangePayload"
+  - target: $.paths['/rights/specs/{id}'].put.parameters
+    description: "Declare APX-Update-Mode (optional, default full)."
+    update:
+      - *updateMode
+  - target: $.paths['/rights/specs/{id}'].put.requestBody.content['application/json'].schema
+    remove: true
+  - target: $.paths['/rights/specs/{id}'].put.requestBody.content['application/json']
+    description: "Full mode validates against RightSpecification; change mode against ChangePayload (Part 5 §5.1a)."
+    update:
+      schema:
+        anyOf:
+          - $ref: "#/components/schemas/RightSpecification"
+          - $ref: "#/components/schemas/ChangePayload"
+  - target: $.paths['/rates/{id}'].put.parameters
+    description: "Declare APX-Update-Mode (optional, default full)."
+    update:
+      - *updateMode
+  - target: $.paths['/rates/{id}'].put.requestBody.content['application/json'].schema
+    remove: true
+  - target: $.paths['/rates/{id}'].put.requestBody.content['application/json']
+    description: "Full mode validates against RateTable; change mode against ChangePayload (Part 5 §5.1a)."
+    update:
+      schema:
+        anyOf:
+          - $ref: "#/components/schemas/RateTable"
+          - $ref: "#/components/schemas/ChangePayload"
+  - target: $.paths['/sessions/{id}'].put.parameters
+    description: "Declare APX-Update-Mode (optional, default full)."
+    update:
+      - *updateMode
+  - target: $.paths['/sessions/{id}'].put.requestBody.content['application/json'].schema
+    remove: true
+  - target: $.paths['/sessions/{id}'].put.requestBody.content['application/json']
+    description: "Full mode validates against Session; change mode against ChangePayload (Part 5 §5.1a)."
+    update:
+      schema:
+        anyOf:
+          - $ref: "#/components/schemas/Session"
+          - $ref: "#/components/schemas/ChangePayload"
+  - target: $.paths['/rights/assigned/{id}'].put.parameters
+    description: "Declare APX-Update-Mode (optional, default full)."
+    update:
+      - *updateMode
+  - target: $.paths['/rights/assigned/{id}'].put.requestBody.content['application/json'].schema
+    remove: true
+  - target: $.paths['/rights/assigned/{id}'].put.requestBody.content['application/json']
+    description: "Full mode validates against AssignedRight; change mode against ChangePayload (Part 5 §5.1a)."
+    update:
+      schema:
+        anyOf:
+          - $ref: "#/components/schemas/AssignedRight"
+          - $ref: "#/components/schemas/ChangePayload"
+
+  # ----- POST /observations (F-DATA-08, F-DATA-09; errata 005, 006) -----
+  - target: $.paths['/observations'].post.requestBody.content['application/json'].schema
+    remove: true
+  - target: $.paths['/observations'].post.requestBody.content['application/json']
+    description: "Drop the wrapper discriminator that collides with ObservationElement.type; the branches are distinguished by their required members."
+    update:
+      schema:
+        oneOf:
+          - $ref: "#/components/schemas/ObservationElement"
+          - $ref: "#/components/schemas/ObservationSet"
+  - target: $.paths['/observations'].post
+    description: "Declare the responses the vendored operation omits (as on the other native creates)."
+    update:
+      responses:
+        '201':
+          description: "Observation (or ObservationSet) created (APDS ResponseStatus, as on the other native creates)."
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ResponseStatus"
+        '400':
+          description: "Observation can not be created due to invalid or missing data. APX (Part 5 §5.1a, Part 12 §12.1): with `Accept: application/problem+json`, problem type `invalid-request` (with `errors[]`)."
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ResponseStatus"
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+        '409':
+          description: "Observation can not be created due to conflict (id already exists). APX: with `Accept: application/problem+json`, problem type `id-collision`."
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ResponseStatus"
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+
+  # ----- POST /quotes (F-DATA-10, F-RSV-01; erratum 007) -----
+  - target: $.paths['/quotes'].post
+    description: "Declare the quote request body the vendored operation omits (optional, so no stock client is refused)."
+    update:
+      requestBody:
+        required: false
+        description: "The quote request: a QuoteRightRequest (new right) or a QuoteSessionExtensionRequest (extend a session). Undeclared in APDS 4.1 (APX erratum 007)."
+        content:
+          application/json:
+            schema:
+              oneOf:
+                - $ref: "#/components/schemas/QuoteRightRequest"
+                - $ref: "#/components/schemas/QuoteSessionExtensionRequest"
+
+  # ----- Response-code parity (F-DATA-14; erratum 012) -----
+  - target: $.paths['/rates'].post.responses
+    description: "POST /rates declares no 400/409, unlike every other native create."
+    update:
+      '400':
+        description: "RateTable can not be created due to invalid or missing data. APX: with `Accept: application/problem+json`, problem type `invalid-request`."
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ResponseStatus"
+          application/problem+json:
+            schema:
+              $ref: "#/components/schemas/Problem"
+      '409':
+        description: "RateTable can not be created due to conflict (id already exists). APX: with `Accept: application/problem+json`, problem type `id-collision`."
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ResponseStatus"
+          application/problem+json:
+            schema:
+              $ref: "#/components/schemas/Problem"
+  - target: $.paths['/rights/assigned/{id}'].put.responses
+    description: "PUT /rights/assigned/{id} declares no 404, unlike every other native PUT."
+    update:
+      '404':
+        description: "AssignedRight can not be updated as it has not been found (servers that upsert answer 201 instead). APX: with `Accept: application/problem+json`, problem type `target-not-found`."
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ResponseStatus"
+          application/problem+json:
+            schema:
+              $ref: "#/components/schemas/Problem"
+
+  # ----- Native 400/404/409 (F-DATA-05, F-RSV-08): the problem+json alternative (Part 12 §12.1) -----
+  - target: $.paths['/places'].post.responses['400']
+    update:
+      description: "Bad Request. APX (Part 5 §5.1a, Part 12 §12.1): a client sending `Accept: application/problem+json` receives problem type `invalid-request` (with `errors[]`) instead of ResponseStatus."
+      content:
+        application/problem+json:
+          schema:
+            $ref: "#/components/schemas/Problem"
+  - target: $.paths['/places'].post.responses['409']
+    update:
+      description: "Conflict. APX (Part 5 §5.1a, Part 12 §12.1): a client sending `Accept: application/problem+json` receives problem type `id-collision` (client-supplied id already exists) instead of ResponseStatus."
+      content:
+        application/problem+json:
+          schema:
+            $ref: "#/components/schemas/Problem"
+  - target: $.paths['/places/{id}'].get.responses['404']
+    update:
+      description: "Not Found. APX (Part 5 §5.1a, Part 12 §12.1): a client sending `Accept: application/problem+json` receives problem type `target-not-found` instead of ResponseStatus."
+      content:
+        application/problem+json:
+          schema:
+            $ref: "#/components/schemas/Problem"
+  - target: $.paths['/places/{id}'].put.responses['400']
+    update:
+      description: "Bad Request. APX (Part 5 §5.1a, Part 12 §12.1): a client sending `Accept: application/problem+json` receives problem type `invalid-request` (with `errors[]`) instead of ResponseStatus."
+      content:
+        application/problem+json:
+          schema:
+            $ref: "#/components/schemas/Problem"
+  - target: $.paths['/places/{id}'].put.responses['404']
+    update:
+      description: "Not Found. APX (Part 5 §5.1a, Part 12 §12.1): a client sending `Accept: application/problem+json` receives problem type `target-not-found` instead of ResponseStatus."
+      content:
+        application/problem+json:
+          schema:
+            $ref: "#/components/schemas/Problem"
+  - target: $.paths['/places/{id}'].put.responses['409']
+    update:
+      description: "Conflict. APX (Part 5 §5.1a, Part 12 §12.1): a client sending `Accept: application/problem+json` receives problem type `version-conflict` (stale `version`) instead of ResponseStatus."
+      content:
+        application/problem+json:
+          schema:
+            $ref: "#/components/schemas/Problem"
+  - target: $.paths['/places/{id}'].delete.responses['400']
+    update:
+      description: "Bad Request. APX (Part 5 §5.1a, Part 12 §12.1): a client sending `Accept: application/problem+json` receives problem type `invalid-request` (with `errors[]`) instead of ResponseStatus."
+      content:
+        application/problem+json:
+          schema:
+            $ref: "#/components/schemas/Problem"
+  - target: $.paths['/places/{id}'].delete.responses['404']
+    update:
+      description: "Not Found. APX (Part 5 §5.1a, Part 12 §12.1): a client sending `Accept: application/problem+json` receives problem type `target-not-found` instead of ResponseStatus."
+      content:
+        application/problem+json:
+          schema:
+            $ref: "#/components/schemas/Problem"
+  - target: $.paths['/places/{id}'].delete.responses['409']
+    update:
+      description: "Conflict. APX (Part 5 §5.1a, Part 12 §12.1): a client sending `Accept: application/problem+json` receives the most specific registered problem type (Part 12 §12.4) instead of ResponseStatus."
+      content:
+        application/problem+json:
+          schema:
+            $ref: "#/components/schemas/Problem"
+  - target: $.paths['/contacts'].post.responses['400']
+    update:
+      description: "BAD REQUEST. APX (Part 5 §5.1a, Part 12 §12.1): a client sending `Accept: application/problem+json` receives problem type `invalid-request` (with `errors[]`) instead of ResponseStatus."
+      content:
+        application/problem+json:
+          schema:
+            $ref: "#/components/schemas/Problem"
+  - target: $.paths['/contacts'].post.responses['409']
+    update:
+      description: "CONFLICT. APX (Part 5 §5.1a, Part 12 §12.1): a client sending `Accept: application/problem+json` receives problem type `id-collision` (client-supplied id already exists) instead of ResponseStatus."
+      content:
+        application/problem+json:
+          schema:
+            $ref: "#/components/schemas/Problem"
+  - target: $.paths['/contacts/{contactId}'].get.responses['404']
+    update:
+      description: "contact not found. APX (Part 5 §5.1a, Part 12 §12.1): a client sending `Accept: application/problem+json` receives problem type `target-not-found` instead of ResponseStatus."
+      content:
+        application/problem+json:
+          schema:
+            $ref: "#/components/schemas/Problem"
+  - target: $.paths['/contacts/{contactId}'].put.responses['404']
+    update:
+      description: "NOT FOUND. APX (Part 5 §5.1a, Part 12 §12.1): a client sending `Accept: application/problem+json` receives problem type `target-not-found` instead of ResponseStatus."
+      content:
+        application/problem+json:
+          schema:
+            $ref: "#/components/schemas/Problem"
+  - target: $.paths['/contacts/{contactId}'].delete.responses['404']
+    update:
+      description: "NOT FOUND. APX (Part 5 §5.1a, Part 12 §12.1): a client sending `Accept: application/problem+json` receives problem type `target-not-found` instead of ResponseStatus."
+      content:
+        application/problem+json:
+          schema:
+            $ref: "#/components/schemas/Problem"
+  - target: $.paths['/contacts/{contactId}'].delete.responses['409']
+    update:
+      description: "CONFLICT. APX (Part 5 §5.1a, Part 12 §12.1): a client sending `Accept: application/problem+json` receives the most specific registered problem type (Part 12 §12.4) instead of ResponseStatus."
+      content:
+        application/problem+json:
+          schema:
+            $ref: "#/components/schemas/Problem"
+  - target: $.paths['/rights/specs'].post.responses['400']
+    update:
+      description: "Bad Request. APX (Part 5 §5.1a, Part 12 §12.1): a client sending `Accept: application/problem+json` receives problem type `invalid-request` (with `errors[]`) instead of ResponseStatus."
+      content:
+        application/problem+json:
+          schema:
+            $ref: "#/components/schemas/Problem"
+  - target: $.paths['/rights/specs'].post.responses['409']
+    update:
+      description: "Conflict. APX (Part 5 §5.1a, Part 12 §12.1): a client sending `Accept: application/problem+json` receives problem type `id-collision` (client-supplied id already exists) instead of ResponseStatus."
+      content:
+        application/problem+json:
+          schema:
+            $ref: "#/components/schemas/Problem"
+  - target: $.paths['/rights/specs/{id}'].get.responses['404']
+    update:
+      description: "Not Found. APX (Part 5 §5.1a, Part 12 §12.1): a client sending `Accept: application/problem+json` receives problem type `target-not-found` instead of ResponseStatus."
+      content:
+        application/problem+json:
+          schema:
+            $ref: "#/components/schemas/Problem"
+  - target: $.paths['/rights/specs/{id}'].put.responses['400']
+    update:
+      description: "Bad Request. APX (Part 5 §5.1a, Part 12 §12.1): a client sending `Accept: application/problem+json` receives problem type `invalid-request` (with `errors[]`) instead of ResponseStatus."
+      content:
+        application/problem+json:
+          schema:
+            $ref: "#/components/schemas/Problem"
+  - target: $.paths['/rights/specs/{id}'].put.responses['404']
+    update:
+      description: "Not Found. APX (Part 5 §5.1a, Part 12 §12.1): a client sending `Accept: application/problem+json` receives problem type `target-not-found` instead of ResponseStatus."
+      content:
+        application/problem+json:
+          schema:
+            $ref: "#/components/schemas/Problem"
+  - target: $.paths['/rights/specs/{id}'].put.responses['409']
+    update:
+      description: "Conflict. APX (Part 5 §5.1a, Part 12 §12.1): a client sending `Accept: application/problem+json` receives problem type `version-conflict` (stale `version`) instead of ResponseStatus."
+      content:
+        application/problem+json:
+          schema:
+            $ref: "#/components/schemas/Problem"
+  - target: $.paths['/rights/specs/{id}'].delete.responses['400']
+    update:
+      description: "Bad Request. APX (Part 5 §5.1a, Part 12 §12.1): a client sending `Accept: application/problem+json` receives problem type `invalid-request` (with `errors[]`) instead of ResponseStatus."
+      content:
+        application/problem+json:
+          schema:
+            $ref: "#/components/schemas/Problem"
+  - target: $.paths['/rights/specs/{id}'].delete.responses['404']
+    update:
+      description: "Not Found. APX (Part 5 §5.1a, Part 12 §12.1): a client sending `Accept: application/problem+json` receives problem type `target-not-found` instead of ResponseStatus."
+      content:
+        application/problem+json:
+          schema:
+            $ref: "#/components/schemas/Problem"
+  - target: $.paths['/rights/specs/{id}'].delete.responses['409']
+    update:
+      description: "Conflict. APX (Part 5 §5.1a, Part 12 §12.1): a client sending `Accept: application/problem+json` receives the most specific registered problem type (Part 12 §12.4) instead of ResponseStatus."
+      content:
+        application/problem+json:
+          schema:
+            $ref: "#/components/schemas/Problem"
+  - target: $.paths['/rates/{id}'].get.responses['404']
+    update:
+      description: "Not Found. APX (Part 5 §5.1a, Part 12 §12.1): a client sending `Accept: application/problem+json` receives problem type `target-not-found` instead of ResponseStatus."
+      content:
+        application/problem+json:
+          schema:
+            $ref: "#/components/schemas/Problem"
+  - target: $.paths['/rates/{id}'].put.responses['400']
+    update:
+      description: "Bad Request. APX (Part 5 §5.1a, Part 12 §12.1): a client sending `Accept: application/problem+json` receives problem type `invalid-request` (with `errors[]`) instead of ResponseStatus."
+      content:
+        application/problem+json:
+          schema:
+            $ref: "#/components/schemas/Problem"
+  - target: $.paths['/rates/{id}'].put.responses['404']
+    update:
+      description: "Not Found. APX (Part 5 §5.1a, Part 12 §12.1): a client sending `Accept: application/problem+json` receives problem type `target-not-found` instead of ResponseStatus."
+      content:
+        application/problem+json:
+          schema:
+            $ref: "#/components/schemas/Problem"
+  - target: $.paths['/rates/{id}'].put.responses['409']
+    update:
+      description: "Conflict. APX (Part 5 §5.1a, Part 12 §12.1): a client sending `Accept: application/problem+json` receives problem type `version-conflict` (stale `version`) instead of ResponseStatus."
+      content:
+        application/problem+json:
+          schema:
+            $ref: "#/components/schemas/Problem"
+  - target: $.paths['/rates/{id}'].delete.responses['400']
+    update:
+      description: "Bad Request. APX (Part 5 §5.1a, Part 12 §12.1): a client sending `Accept: application/problem+json` receives problem type `invalid-request` (with `errors[]`) instead of ResponseStatus."
+      content:
+        application/problem+json:
+          schema:
+            $ref: "#/components/schemas/Problem"
+  - target: $.paths['/rates/{id}'].delete.responses['404']
+    update:
+      description: "Not Found. APX (Part 5 §5.1a, Part 12 §12.1): a client sending `Accept: application/problem+json` receives problem type `target-not-found` instead of ResponseStatus."
+      content:
+        application/problem+json:
+          schema:
+            $ref: "#/components/schemas/Problem"
+  - target: $.paths['/rates/{id}'].delete.responses['409']
+    update:
+      description: "Conflict. APX (Part 5 §5.1a, Part 12 §12.1): a client sending `Accept: application/problem+json` receives the most specific registered problem type (Part 12 §12.4) instead of ResponseStatus."
+      content:
+        application/problem+json:
+          schema:
+            $ref: "#/components/schemas/Problem"
+  - target: $.paths['/sessions'].post.responses['400']
+    update:
+      description: "Bad Request. APX (Part 5 §5.1a, Part 12 §12.1): a client sending `Accept: application/problem+json` receives problem type `invalid-request` (with `errors[]`) instead of ResponseStatus."
+      content:
+        application/problem+json:
+          schema:
+            $ref: "#/components/schemas/Problem"
+  - target: $.paths['/sessions'].post.responses['409']
+    update:
+      description: "Conflict. APX (Part 5 §5.1a, Part 12 §12.1): a client sending `Accept: application/problem+json` receives problem type `id-collision` (client-supplied id already exists) instead of ResponseStatus."
+      content:
+        application/problem+json:
+          schema:
+            $ref: "#/components/schemas/Problem"
+  - target: $.paths['/sessions/{id}'].get.responses['404']
+    update:
+      description: "Not Found. APX (Part 5 §5.1a, Part 12 §12.1): a client sending `Accept: application/problem+json` receives problem type `target-not-found` instead of ResponseStatus."
+      content:
+        application/problem+json:
+          schema:
+            $ref: "#/components/schemas/Problem"
+  - target: $.paths['/sessions/{id}'].put.responses['400']
+    update:
+      description: "Bad Request. APX (Part 5 §5.1a, Part 12 §12.1): a client sending `Accept: application/problem+json` receives problem type `invalid-request` (with `errors[]`) instead of ResponseStatus."
+      content:
+        application/problem+json:
+          schema:
+            $ref: "#/components/schemas/Problem"
+  - target: $.paths['/sessions/{id}'].put.responses['404']
+    update:
+      description: "Not Found. APX (Part 5 §5.1a, Part 12 §12.1): a client sending `Accept: application/problem+json` receives problem type `target-not-found` instead of ResponseStatus."
+      content:
+        application/problem+json:
+          schema:
+            $ref: "#/components/schemas/Problem"
+  - target: $.paths['/sessions/{id}'].put.responses['409']
+    update:
+      description: "Conflict. APX (Part 5 §5.1a, Part 12 §12.1): a client sending `Accept: application/problem+json` receives problem type `version-conflict` (stale `version`) instead of ResponseStatus."
+      content:
+        application/problem+json:
+          schema:
+            $ref: "#/components/schemas/Problem"
+  - target: $.paths['/sessions/{id}'].delete.responses['400']
+    update:
+      description: "Bad Request. APX (Part 5 §5.1a, Part 12 §12.1): a client sending `Accept: application/problem+json` receives problem type `invalid-request` (with `errors[]`) instead of ResponseStatus."
+      content:
+        application/problem+json:
+          schema:
+            $ref: "#/components/schemas/Problem"
+  - target: $.paths['/sessions/{id}'].delete.responses['404']
+    update:
+      description: "Not Found. APX (Part 5 §5.1a, Part 12 §12.1): a client sending `Accept: application/problem+json` receives problem type `target-not-found` instead of ResponseStatus."
+      content:
+        application/problem+json:
+          schema:
+            $ref: "#/components/schemas/Problem"
+  - target: $.paths['/sessions/{id}'].delete.responses['409']
+    update:
+      description: "Conflict. APX (Part 5 §5.1a, Part 12 §12.1): a client sending `Accept: application/problem+json` receives the most specific registered problem type (Part 12 §12.4) instead of ResponseStatus."
+      content:
+        application/problem+json:
+          schema:
+            $ref: "#/components/schemas/Problem"
+  - target: $.paths['/rights/assigned'].post.responses['400']
+    update:
+      description: "Bad Request. APX (Part 5 §5.1a, Part 12 §12.1): a client sending `Accept: application/problem+json` receives problem type `invalid-request` (with `errors[]`) instead of ResponseStatus."
+      content:
+        application/problem+json:
+          schema:
+            $ref: "#/components/schemas/Problem"
+  - target: $.paths['/rights/assigned'].post.responses['409']
+    update:
+      description: "Conflict. APX (Part 5 §5.1a, Part 12 §12.1): a client sending `Accept: application/problem+json` receives problem type `id-collision` (client-supplied id already exists) instead of ResponseStatus."
+      content:
+        application/problem+json:
+          schema:
+            $ref: "#/components/schemas/Problem"
+  - target: $.paths['/rights/assigned/{id}'].get.responses['404']
+    update:
+      description: "Not Found. APX (Part 5 §5.1a, Part 12 §12.1): a client sending `Accept: application/problem+json` receives problem type `target-not-found` instead of ResponseStatus."
+      content:
+        application/problem+json:
+          schema:
+            $ref: "#/components/schemas/Problem"
+  - target: $.paths['/rights/assigned/{id}'].put.responses['400']
+    update:
+      description: "Bad Request. APX (Part 5 §5.1a, Part 12 §12.1): a client sending `Accept: application/problem+json` receives problem type `invalid-request` (with `errors[]`) instead of ResponseStatus."
+      content:
+        application/problem+json:
+          schema:
+            $ref: "#/components/schemas/Problem"
+  - target: $.paths['/rights/assigned/{id}'].put.responses['409']
+    update:
+      description: "Conflict. APX (Part 5 §5.1a, Part 12 §12.1): a client sending `Accept: application/problem+json` receives problem type `version-conflict` (stale `version`) instead of ResponseStatus."
+      content:
+        application/problem+json:
+          schema:
+            $ref: "#/components/schemas/Problem"
+  - target: $.paths['/rights/assigned/{id}'].delete.responses['400']
+    update:
+      description: "Bad Request. APX (Part 5 §5.1a, Part 12 §12.1): a client sending `Accept: application/problem+json` receives problem type `invalid-request` (with `errors[]`) instead of ResponseStatus."
+      content:
+        application/problem+json:
+          schema:
+            $ref: "#/components/schemas/Problem"
+  - target: $.paths['/rights/assigned/{id}'].delete.responses['404']
+    update:
+      description: "Not Found. APX (Part 5 §5.1a, Part 12 §12.1): a client sending `Accept: application/problem+json` receives problem type `target-not-found` instead of ResponseStatus."
+      content:
+        application/problem+json:
+          schema:
+            $ref: "#/components/schemas/Problem"
+  - target: $.paths['/rights/assigned/{id}'].delete.responses['409']
+    update:
+      description: "Conflict. APX (Part 5 §5.1a, Part 12 §12.1): a client sending `Accept: application/problem+json` receives the most specific registered problem type (Part 12 §12.4) instead of ResponseStatus."
+      content:
+        application/problem+json:
+          schema:
+            $ref: "#/components/schemas/Problem"
+
+  # ----- Every native operation (F-DATA-03): the shared auth and throttling responses (Part 9, Part 12 §12.3) -----
+  - target: $.paths['/places'].get.responses
+    update:
+      '401':
+        $ref: "#/components/responses/Unauthorized"
+      '403':
+        $ref: "#/components/responses/Forbidden"
+      '429':
+        $ref: "#/components/responses/TooManyRequests"
+  - target: $.paths['/places'].post.responses
+    update:
+      '401':
+        $ref: "#/components/responses/Unauthorized"
+      '403':
+        $ref: "#/components/responses/Forbidden"
+      '429':
+        $ref: "#/components/responses/TooManyRequests"
+  - target: $.paths['/places/{id}'].get.responses
+    update:
+      '401':
+        $ref: "#/components/responses/Unauthorized"
+      '403':
+        $ref: "#/components/responses/Forbidden"
+      '429':
+        $ref: "#/components/responses/TooManyRequests"
+  - target: $.paths['/places/{id}'].put.responses
+    update:
+      '401':
+        $ref: "#/components/responses/Unauthorized"
+      '403':
+        $ref: "#/components/responses/Forbidden"
+      '429':
+        $ref: "#/components/responses/TooManyRequests"
+  - target: $.paths['/places/{id}'].delete.responses
+    update:
+      '401':
+        $ref: "#/components/responses/Unauthorized"
+      '403':
+        $ref: "#/components/responses/Forbidden"
+      '429':
+        $ref: "#/components/responses/TooManyRequests"
+  - target: $.paths['/observations'].get.responses
+    update:
+      '401':
+        $ref: "#/components/responses/Unauthorized"
+      '403':
+        $ref: "#/components/responses/Forbidden"
+      '429':
+        $ref: "#/components/responses/TooManyRequests"
+  - target: $.paths['/observations'].post.responses
+    update:
+      '401':
+        $ref: "#/components/responses/Unauthorized"
+      '403':
+        $ref: "#/components/responses/Forbidden"
+      '429':
+        $ref: "#/components/responses/TooManyRequests"
+  - target: $.paths['/contacts'].get.responses
+    update:
+      '401':
+        $ref: "#/components/responses/Unauthorized"
+      '403':
+        $ref: "#/components/responses/Forbidden"
+      '429':
+        $ref: "#/components/responses/TooManyRequests"
+  - target: $.paths['/contacts'].post.responses
+    update:
+      '401':
+        $ref: "#/components/responses/Unauthorized"
+      '403':
+        $ref: "#/components/responses/Forbidden"
+      '429':
+        $ref: "#/components/responses/TooManyRequests"
+  - target: $.paths['/contacts/{contactId}'].get.responses
+    update:
+      '401':
+        $ref: "#/components/responses/Unauthorized"
+      '403':
+        $ref: "#/components/responses/Forbidden"
+      '429':
+        $ref: "#/components/responses/TooManyRequests"
+  - target: $.paths['/contacts/{contactId}'].put.responses
+    update:
+      '401':
+        $ref: "#/components/responses/Unauthorized"
+      '403':
+        $ref: "#/components/responses/Forbidden"
+      '429':
+        $ref: "#/components/responses/TooManyRequests"
+  - target: $.paths['/contacts/{contactId}'].delete.responses
+    update:
+      '401':
+        $ref: "#/components/responses/Unauthorized"
+      '403':
+        $ref: "#/components/responses/Forbidden"
+      '429':
+        $ref: "#/components/responses/TooManyRequests"
+  - target: $.paths['/rights/specs'].get.responses
+    update:
+      '401':
+        $ref: "#/components/responses/Unauthorized"
+      '403':
+        $ref: "#/components/responses/Forbidden"
+      '429':
+        $ref: "#/components/responses/TooManyRequests"
+  - target: $.paths['/rights/specs'].post.responses
+    update:
+      '401':
+        $ref: "#/components/responses/Unauthorized"
+      '403':
+        $ref: "#/components/responses/Forbidden"
+      '429':
+        $ref: "#/components/responses/TooManyRequests"
+  - target: $.paths['/rights/specs/{id}'].get.responses
+    update:
+      '401':
+        $ref: "#/components/responses/Unauthorized"
+      '403':
+        $ref: "#/components/responses/Forbidden"
+      '429':
+        $ref: "#/components/responses/TooManyRequests"
+  - target: $.paths['/rights/specs/{id}'].put.responses
+    update:
+      '401':
+        $ref: "#/components/responses/Unauthorized"
+      '403':
+        $ref: "#/components/responses/Forbidden"
+      '429':
+        $ref: "#/components/responses/TooManyRequests"
+  - target: $.paths['/rights/specs/{id}'].delete.responses
+    update:
+      '401':
+        $ref: "#/components/responses/Unauthorized"
+      '403':
+        $ref: "#/components/responses/Forbidden"
+      '429':
+        $ref: "#/components/responses/TooManyRequests"
+  - target: $.paths['/rates'].get.responses
+    update:
+      '401':
+        $ref: "#/components/responses/Unauthorized"
+      '403':
+        $ref: "#/components/responses/Forbidden"
+      '429':
+        $ref: "#/components/responses/TooManyRequests"
+  - target: $.paths['/rates'].post.responses
+    update:
+      '401':
+        $ref: "#/components/responses/Unauthorized"
+      '403':
+        $ref: "#/components/responses/Forbidden"
+      '429':
+        $ref: "#/components/responses/TooManyRequests"
+  - target: $.paths['/rates/{id}'].get.responses
+    update:
+      '401':
+        $ref: "#/components/responses/Unauthorized"
+      '403':
+        $ref: "#/components/responses/Forbidden"
+      '429':
+        $ref: "#/components/responses/TooManyRequests"
+  - target: $.paths['/rates/{id}'].put.responses
+    update:
+      '401':
+        $ref: "#/components/responses/Unauthorized"
+      '403':
+        $ref: "#/components/responses/Forbidden"
+      '429':
+        $ref: "#/components/responses/TooManyRequests"
+  - target: $.paths['/rates/{id}'].delete.responses
+    update:
+      '401':
+        $ref: "#/components/responses/Unauthorized"
+      '403':
+        $ref: "#/components/responses/Forbidden"
+      '429':
+        $ref: "#/components/responses/TooManyRequests"
+  - target: $.paths['/sessions'].get.responses
+    update:
+      '401':
+        $ref: "#/components/responses/Unauthorized"
+      '403':
+        $ref: "#/components/responses/Forbidden"
+      '429':
+        $ref: "#/components/responses/TooManyRequests"
+  - target: $.paths['/sessions'].post.responses
+    update:
+      '401':
+        $ref: "#/components/responses/Unauthorized"
+      '403':
+        $ref: "#/components/responses/Forbidden"
+      '429':
+        $ref: "#/components/responses/TooManyRequests"
+  - target: $.paths['/sessions/{id}'].get.responses
+    update:
+      '401':
+        $ref: "#/components/responses/Unauthorized"
+      '403':
+        $ref: "#/components/responses/Forbidden"
+      '429':
+        $ref: "#/components/responses/TooManyRequests"
+  - target: $.paths['/sessions/{id}'].put.responses
+    update:
+      '401':
+        $ref: "#/components/responses/Unauthorized"
+      '403':
+        $ref: "#/components/responses/Forbidden"
+      '429':
+        $ref: "#/components/responses/TooManyRequests"
+  - target: $.paths['/sessions/{id}'].delete.responses
+    update:
+      '401':
+        $ref: "#/components/responses/Unauthorized"
+      '403':
+        $ref: "#/components/responses/Forbidden"
+      '429':
+        $ref: "#/components/responses/TooManyRequests"
+  - target: $.paths['/rights/assigned'].get.responses
+    update:
+      '401':
+        $ref: "#/components/responses/Unauthorized"
+      '403':
+        $ref: "#/components/responses/Forbidden"
+      '429':
+        $ref: "#/components/responses/TooManyRequests"
+  - target: $.paths['/rights/assigned'].post.responses
+    update:
+      '401':
+        $ref: "#/components/responses/Unauthorized"
+      '403':
+        $ref: "#/components/responses/Forbidden"
+      '429':
+        $ref: "#/components/responses/TooManyRequests"
+  - target: $.paths['/rights/assigned/{id}'].get.responses
+    update:
+      '401':
+        $ref: "#/components/responses/Unauthorized"
+      '403':
+        $ref: "#/components/responses/Forbidden"
+      '429':
+        $ref: "#/components/responses/TooManyRequests"
+  - target: $.paths['/rights/assigned/{id}'].put.responses
+    update:
+      '401':
+        $ref: "#/components/responses/Unauthorized"
+      '403':
+        $ref: "#/components/responses/Forbidden"
+      '429':
+        $ref: "#/components/responses/TooManyRequests"
+  - target: $.paths['/rights/assigned/{id}'].delete.responses
+    update:
+      '401':
+        $ref: "#/components/responses/Unauthorized"
+      '403':
+        $ref: "#/components/responses/Forbidden"
+      '429':
+        $ref: "#/components/responses/TooManyRequests"
+  - target: $.paths['/quotes'].get.responses
+    update:
+      '401':
+        $ref: "#/components/responses/Unauthorized"
+      '403':
+        $ref: "#/components/responses/Forbidden"
+      '429':
+        $ref: "#/components/responses/TooManyRequests"
+  - target: $.paths['/quotes'].post.responses
+    update:
+      '401':
+        $ref: "#/components/responses/Unauthorized"
+      '403':
+        $ref: "#/components/responses/Forbidden"
+      '429':
+        $ref: "#/components/responses/TooManyRequests"
+
+  # ----- Upstream schema workarounds (errata 004, 009, 010, 011) -----
+  - target: $.components.schemas.RateTable.allOf['1'].required
+    remove: true
+  - target: $.components.schemas.RateTable.allOf['1']
+    description: "Erratum 004: validityStart and activeTimes are required but never defined (the window lives in validity, active times in RateLineCollection)."
+    update:
+      required: [rateTableName, availability, rateLineCollections]
+  - target: $.components.schemas.Identifiers.properties
+    description: "Erratum 009: rateTableId is required but only rateTableID is declared; declare the required spelling."
+    update:
+      rateTableId:
+        description: "The quoted RateTable (the spelling Identifiers.required names). Publishers send this member; rateTableID is the APDS 4.1 declared spelling of the same reference and MAY accompany it (APX erratum 009)."
+        $ref: "#/components/schemas/VersionedReference"
+  - target: $.components.schemas.HierarchyElement.allOf['1'].properties
+    description: "Erratum 010: declare the APDS extension container (Use Case §C.2.5) that no 4.1 entity schema carries."
+    update:
+      extensions:
+        description: "The APDS extension container (Use Case Document §C.2.5; Part 4 §4.3). Undeclared on APDS 4.1 entities (APX erratum 010)."
+        $ref: "#/components/schemas/Extensions"
+  - target: $.components.schemas.Session.allOf['1'].properties
+    update:
+      extensions:
+        description: "The APDS extension container (Use Case Document §C.2.5; Part 4 §4.3). Undeclared on APDS 4.1 entities (APX erratum 010)."
+        $ref: "#/components/schemas/Extensions"
+  - target: $.components.schemas.RateTable.allOf['1'].properties
+    update:
+      extensions:
+        description: "The APDS extension container (Use Case Document §C.2.5; Part 4 §4.3). Undeclared on APDS 4.1 entities (APX erratum 010)."
+        $ref: "#/components/schemas/Extensions"
+  - target: $.components.schemas.RightSpecification.allOf['1'].properties
+    update:
+      extensions:
+        description: "The APDS extension container (Use Case Document §C.2.5; Part 4 §4.3). Undeclared on APDS 4.1 entities (APX erratum 010)."
+        $ref: "#/components/schemas/Extensions"
+  - target: $.components.schemas.AssignedRight.allOf['1'].properties
+    update:
+      extensions:
+        description: "The APDS extension container (Use Case Document §C.2.5; Part 4 §4.3). Undeclared on APDS 4.1 entities (APX erratum 010)."
+        $ref: "#/components/schemas/Extensions"
+  - target: $.components.schemas.ContactPoint.allOf['2'].properties
+    update:
+      extensions:
+        description: "The APDS extension container (Use Case Document §C.2.5; Part 4 §4.3). Undeclared on APDS 4.1 entities (APX erratum 010)."
+        $ref: "#/components/schemas/Extensions"
+  - target: $.components.schemas.ObservationElement.allOf['1'].properties
+    update:
+      extensions:
+        description: "The APDS extension container (Use Case Document §C.2.5; Part 4 §4.3). Undeclared on APDS 4.1 entities (APX erratum 010)."
+        $ref: "#/components/schemas/Extensions"
+  - target: $.components.schemas.ObservationSet.allOf['1'].properties
+    update:
+      extensions:
+        description: "The APDS extension container (Use Case Document §C.2.5; Part 4 §4.3). Undeclared on APDS 4.1 entities (APX erratum 010)."
+        $ref: "#/components/schemas/Extensions"
+  - target: $.components.schemas.GeoJsonObject.properties
+    description: "Erratum 011: GeoJsonObject declares no coordinates member."
+    update:
+      coordinates:
+        type: array
+        items:
+          description: "A position member (number) or a nested position array, by geometry type."
+        description: "RFC 7946 §3.1 coordinates of a geometry object — for a Point, [longitude, latitude] or [longitude, latitude, elevation] in WGS 84 decimal degrees. Undeclared in APDS 4.1 (APX erratum 011)."

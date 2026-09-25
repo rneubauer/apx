@@ -1,0 +1,14 @@
+{
+  "id": "af40f60e-7bf2-479b-95d8-eaf134a21a9f",
+  "version": 1,
+  "name": "apx-toll-dispute-reasons",
+  "creator": { "id": "a1000000-0000-4000-8000-000000000001", "className": "Organisation" },
+  "locator": "https://apx-standard.org/registries/apx-toll-dispute-reasons.json",
+  "userDefinedCodeListEntries": [
+    { "definedValue": "wrongVehicle", "entryDescription": "The charged vehicle is not the disputing party's (misread or cloned plate).", "entryIndex": 0 },
+    { "definedValue": "duplicateCharge", "entryDescription": "The same passage was charged more than once.", "entryIndex": 1 },
+    { "definedValue": "wrongClass", "entryDescription": "The vehicle class used for pricing is wrong.", "entryIndex": 2 },
+    { "definedValue": "notLiable", "entryDescription": "The party is not liable for the passage (exempt vehicle, sold or stolen vehicle, rental transfer).", "entryIndex": 3 },
+    { "definedValue": "other", "entryDescription": "Any other reason; the dispute `detail` explains it.", "entryIndex": 4 }
+  ]
+}

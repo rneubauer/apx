@@ -2,7 +2,7 @@
   "openapi": "3.1.0",
   "info": {
     "title": "APX — PARCS Starter Profile",
-    "version": "0.10.0",
+    "version": "0.11.0",
     "summary": "An open companion standard to APDS 4.1",
     "license": {
       "name": "MIT",
@@ -116,6 +116,9 @@
                 }
               }
             }
+          },
+          "429": {
+            "$ref": "#/components/responses/TooManyRequests"
           }
         }
       }
@@ -183,6 +186,9 @@
           },
           {
             "$ref": "#/components/parameters/CursorParam"
+          },
+          {
+            "$ref": "#/components/parameters/place_ids"
           }
         ],
         "responses": {
@@ -202,6 +208,25 @@
                 }
               }
             }
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "404": {
+            "description": "mode=change only: the cursor is unknown, older than the retention window, or was issued for another (class, credential, filter set) — problem type `target-not-found`; re-sync with mode=full (Part 5 §5.2 rules 2 and 5). The cursor is an APX parameter, so this refusal is always a Problem.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "429": {
+            "$ref": "#/components/responses/TooManyRequests"
           }
         }
       },
@@ -250,7 +275,7 @@
             }
           },
           "400": {
-            "description": "Bad Request",
+            "description": "Bad Request. APX (Part 5 §5.1a, Part 12 §12.1): a client sending `Accept: application/problem+json` receives problem type `invalid-request` (with `errors[]`) instead of ResponseStatus.",
             "content": {
               "application/json": {
                 "schema": {
@@ -265,11 +290,22 @@
                     }
                   }
                 }
+              },
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
               }
             }
           },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
           "409": {
-            "description": "Conflict",
+            "description": "Conflict. APX (Part 5 §5.1a, Part 12 §12.1): a client sending `Accept: application/problem+json` receives problem type `id-collision` (client-supplied id already exists) instead of ResponseStatus.",
             "content": {
               "application/json": {
                 "schema": {
@@ -284,8 +320,16 @@
                     }
                   }
                 }
+              },
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
               }
             }
+          },
+          "429": {
+            "$ref": "#/components/responses/TooManyRequests"
           }
         }
       }
@@ -338,8 +382,14 @@
               }
             }
           },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
           "404": {
-            "description": "Not Found",
+            "description": "Not Found. APX (Part 5 §5.1a, Part 12 §12.1): a client sending `Accept: application/problem+json` receives problem type `target-not-found` instead of ResponseStatus.",
             "content": {
               "application/json": {
                 "schema": {
@@ -354,8 +404,16 @@
                     }
                   }
                 }
+              },
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
               }
             }
+          },
+          "429": {
+            "$ref": "#/components/responses/TooManyRequests"
           }
         }
       },
@@ -378,7 +436,14 @@
           "content": {
             "application/json": {
               "schema": {
-                "$ref": "#/components/schemas/HierarchyElement"
+                "anyOf": [
+                  {
+                    "$ref": "#/components/schemas/HierarchyElement"
+                  },
+                  {
+                    "$ref": "#/components/schemas/ChangePayload"
+                  }
+                ]
               }
             }
           }
@@ -404,7 +469,7 @@
             }
           },
           "400": {
-            "description": "Bad Request",
+            "description": "Bad Request. APX (Part 5 §5.1a, Part 12 §12.1): a client sending `Accept: application/problem+json` receives problem type `invalid-request` (with `errors[]`) instead of ResponseStatus.",
             "content": {
               "application/json": {
                 "schema": {
@@ -419,11 +484,22 @@
                     }
                   }
                 }
+              },
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
               }
             }
           },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
           "404": {
-            "description": "Not Found",
+            "description": "Not Found. APX (Part 5 §5.1a, Part 12 §12.1): a client sending `Accept: application/problem+json` receives problem type `target-not-found` instead of ResponseStatus.",
             "content": {
               "application/json": {
                 "schema": {
@@ -438,11 +514,16 @@
                     }
                   }
                 }
+              },
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
               }
             }
           },
           "409": {
-            "description": "Conflict",
+            "description": "Conflict. APX (Part 5 §5.1a, Part 12 §12.1): a client sending `Accept: application/problem+json` receives problem type `version-conflict` (stale `version`) instead of ResponseStatus.",
             "content": {
               "application/json": {
                 "schema": {
@@ -457,10 +538,34 @@
                     }
                   }
                 }
+              },
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
               }
             }
+          },
+          "429": {
+            "$ref": "#/components/responses/TooManyRequests"
           }
-        }
+        },
+        "parameters": [
+          {
+            "name": "APX-Update-Mode",
+            "in": "header",
+            "required": false,
+            "description": "APX data profile (Part 5 §5.1). `full` (default, stock APDS behavior): the body is the complete current state. `change`: the body is a ChangePayload — identity plus only the changed members; absent = unchanged, explicit null = clear. A stale `version` in change mode is 409 `version-conflict`.",
+            "schema": {
+              "type": "string",
+              "enum": [
+                "full",
+                "change"
+              ],
+              "default": "full"
+            }
+          }
+        ]
       },
       "delete": {
         "summary": "Delete Place",
@@ -497,7 +602,7 @@
             }
           },
           "400": {
-            "description": "Bad Request",
+            "description": "Bad Request. APX (Part 5 §5.1a, Part 12 §12.1): a client sending `Accept: application/problem+json` receives problem type `invalid-request` (with `errors[]`) instead of ResponseStatus.",
             "content": {
               "application/json": {
                 "schema": {
@@ -512,11 +617,22 @@
                     }
                   }
                 }
+              },
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
               }
             }
           },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
           "404": {
-            "description": "Not Found",
+            "description": "Not Found. APX (Part 5 §5.1a, Part 12 §12.1): a client sending `Accept: application/problem+json` receives problem type `target-not-found` instead of ResponseStatus.",
             "content": {
               "application/json": {
                 "schema": {
@@ -531,11 +647,16 @@
                     }
                   }
                 }
+              },
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
               }
             }
           },
           "409": {
-            "description": "Conflict",
+            "description": "Conflict. APX (Part 5 §5.1a, Part 12 §12.1): a client sending `Accept: application/problem+json` receives the most specific registered problem type (Part 12 §12.4) instead of ResponseStatus.",
             "content": {
               "application/json": {
                 "schema": {
@@ -550,8 +671,16 @@
                     }
                   }
                 }
+              },
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
               }
             }
+          },
+          "429": {
+            "$ref": "#/components/responses/TooManyRequests"
           }
         }
       }
@@ -591,6 +720,12 @@
           },
           {
             "$ref": "#/components/parameters/end_after"
+          },
+          {
+            "$ref": "#/components/parameters/ModeParam"
+          },
+          {
+            "$ref": "#/components/parameters/CursorParam"
           }
         ],
         "responses": {
@@ -599,25 +734,51 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "allOf": [
+                  "oneOf": [
                     {
-                      "$ref": "#/components/schemas/PaginatedListMeta"
-                    },
-                    {
-                      "type": "object",
-                      "properties": {
-                        "data": {
-                          "type": "array",
-                          "items": {
-                            "$ref": "#/components/schemas/ObservationElement"
+                      "allOf": [
+                        {
+                          "$ref": "#/components/schemas/PaginatedListMeta"
+                        },
+                        {
+                          "type": "object",
+                          "properties": {
+                            "data": {
+                              "type": "array",
+                              "items": {
+                                "$ref": "#/components/schemas/ObservationElement"
+                              }
+                            }
                           }
                         }
-                      }
+                      ]
+                    },
+                    {
+                      "$ref": "#/components/schemas/ChangeFeedPage"
                     }
                   ]
                 }
               }
             }
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "404": {
+            "description": "mode=change only: the cursor is unknown, older than the retention window, or was issued for another (class, credential, filter set) — problem type `target-not-found`; re-sync with mode=full (Part 5 §5.2 rules 2 and 5). The cursor is an APX parameter, so this refusal is always a Problem.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "429": {
+            "$ref": "#/components/responses/TooManyRequests"
           }
         }
       },
@@ -632,38 +793,6 @@
           "required": true,
           "content": {
             "application/json": {
-              "schema": {
-                "allOf": [
-                  {
-                    "type": "object",
-                    "properties": {
-                      "type": {
-                        "$ref": "#/components/schemas/ObservationDataType"
-                      }
-                    }
-                  },
-                  {
-                    "oneOf": [
-                      {
-                        "$ref": "#/components/schemas/ObservationElement"
-                      },
-                      {
-                        "$ref": "#/components/schemas/ObservationSet"
-                      }
-                    ],
-                    "discriminator": {
-                      "propertyName": "type",
-                      "mapping": {
-                        "ObservationElement": "#/components/schemas/ObservationElement",
-                        "ObvservationSet": "#/components/schemas/ObservationSet"
-                      }
-                    }
-                  }
-                ],
-                "required": [
-                  "type"
-                ]
-              },
               "examples": {
                 "single-element": {
                   "value": {
@@ -688,8 +817,69 @@
                     }
                   }
                 }
+              },
+              "schema": {
+                "oneOf": [
+                  {
+                    "$ref": "#/components/schemas/ObservationElement"
+                  },
+                  {
+                    "$ref": "#/components/schemas/ObservationSet"
+                  }
+                ]
               }
             }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Observation (or ObservationSet) created (APDS ResponseStatus, as on the other native creates).",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ResponseStatus"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Observation can not be created due to invalid or missing data. APX (Part 5 §5.1a, Part 12 §12.1): with `Accept: application/problem+json`, problem type `invalid-request` (with `errors[]`).",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ResponseStatus"
+                }
+              },
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "409": {
+            "description": "Observation can not be created due to conflict (id already exists). APX: with `Accept: application/problem+json`, problem type `id-collision`.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ResponseStatus"
+                }
+              },
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "429": {
+            "$ref": "#/components/responses/TooManyRequests"
           }
         }
       }
@@ -783,6 +973,15 @@
               }
             }
           },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "429": {
+            "$ref": "#/components/responses/TooManyRequests"
+          },
           "500": {
             "description": "Internal Server Error",
             "content": {
@@ -833,7 +1032,7 @@
             }
           },
           "400": {
-            "description": "BAD REQUEST",
+            "description": "BAD REQUEST. APX (Part 5 §5.1a, Part 12 §12.1): a client sending `Accept: application/problem+json` receives problem type `invalid-request` (with `errors[]`) instead of ResponseStatus.",
             "content": {
               "application/json": {
                 "schema": {
@@ -848,11 +1047,22 @@
                     }
                   }
                 }
+              },
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
               }
             }
           },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
           "409": {
-            "description": "CONFLICT",
+            "description": "CONFLICT. APX (Part 5 §5.1a, Part 12 §12.1): a client sending `Accept: application/problem+json` receives problem type `id-collision` (client-supplied id already exists) instead of ResponseStatus.",
             "content": {
               "application/json": {
                 "schema": {
@@ -867,8 +1077,16 @@
                     }
                   }
                 }
+              },
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
               }
             }
+          },
+          "429": {
+            "$ref": "#/components/responses/TooManyRequests"
           }
         }
       }
@@ -929,8 +1147,14 @@
               }
             }
           },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
           "404": {
-            "description": "contact not found",
+            "description": "contact not found. APX (Part 5 §5.1a, Part 12 §12.1): a client sending `Accept: application/problem+json` receives problem type `target-not-found` instead of ResponseStatus.",
             "content": {
               "application/json": {
                 "schema": {
@@ -945,8 +1169,16 @@
                     }
                   }
                 }
+              },
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
               }
             }
+          },
+          "429": {
+            "$ref": "#/components/responses/TooManyRequests"
           },
           "500": {
             "description": "Internal Server Error",
@@ -981,7 +1213,14 @@
           "content": {
             "application/json": {
               "schema": {
-                "$ref": "#/components/schemas/ContactPoint"
+                "anyOf": [
+                  {
+                    "$ref": "#/components/schemas/ContactPoint"
+                  },
+                  {
+                    "$ref": "#/components/schemas/ChangePayload"
+                  }
+                ]
               }
             }
           }
@@ -1006,8 +1245,14 @@
               }
             }
           },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
           "404": {
-            "description": "NOT FOUND",
+            "description": "NOT FOUND. APX (Part 5 §5.1a, Part 12 §12.1): a client sending `Accept: application/problem+json` receives problem type `target-not-found` instead of ResponseStatus.",
             "content": {
               "application/json": {
                 "schema": {
@@ -1022,10 +1267,34 @@
                     }
                   }
                 }
+              },
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
               }
             }
+          },
+          "429": {
+            "$ref": "#/components/responses/TooManyRequests"
           }
-        }
+        },
+        "parameters": [
+          {
+            "name": "APX-Update-Mode",
+            "in": "header",
+            "required": false,
+            "description": "APX data profile (Part 5 §5.1). `full` (default, stock APDS behavior): the body is the complete current state. `change`: the body is a ChangePayload — identity plus only the changed members; absent = unchanged, explicit null = clear. A stale `version` in change mode is 409 `version-conflict`.",
+            "schema": {
+              "type": "string",
+              "enum": [
+                "full",
+                "change"
+              ],
+              "default": "full"
+            }
+          }
+        ]
       },
       "delete": {
         "summary": "delete existing contact",
@@ -1054,8 +1323,14 @@
               }
             }
           },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
           "404": {
-            "description": "NOT FOUND",
+            "description": "NOT FOUND. APX (Part 5 §5.1a, Part 12 §12.1): a client sending `Accept: application/problem+json` receives problem type `target-not-found` instead of ResponseStatus.",
             "content": {
               "application/json": {
                 "schema": {
@@ -1070,11 +1345,16 @@
                     }
                   }
                 }
+              },
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
               }
             }
           },
           "409": {
-            "description": "CONFLICT",
+            "description": "CONFLICT. APX (Part 5 §5.1a, Part 12 §12.1): a client sending `Accept: application/problem+json` receives the most specific registered problem type (Part 12 §12.4) instead of ResponseStatus.",
             "content": {
               "application/json": {
                 "schema": {
@@ -1089,8 +1369,16 @@
                     }
                   }
                 }
+              },
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
               }
             }
+          },
+          "429": {
+            "$ref": "#/components/responses/TooManyRequests"
           }
         }
       }
@@ -1152,6 +1440,15 @@
                 }
               }
             }
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "429": {
+            "$ref": "#/components/responses/TooManyRequests"
           }
         }
       },
@@ -1200,7 +1497,7 @@
             }
           },
           "400": {
-            "description": "Bad Request",
+            "description": "Bad Request. APX (Part 5 §5.1a, Part 12 §12.1): a client sending `Accept: application/problem+json` receives problem type `invalid-request` (with `errors[]`) instead of ResponseStatus.",
             "content": {
               "application/json": {
                 "schema": {
@@ -1215,11 +1512,22 @@
                     }
                   }
                 }
+              },
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
               }
             }
           },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
           "409": {
-            "description": "Conflict",
+            "description": "Conflict. APX (Part 5 §5.1a, Part 12 §12.1): a client sending `Accept: application/problem+json` receives problem type `id-collision` (client-supplied id already exists) instead of ResponseStatus.",
             "content": {
               "application/json": {
                 "schema": {
@@ -1234,8 +1542,16 @@
                     }
                   }
                 }
+              },
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
               }
             }
+          },
+          "429": {
+            "$ref": "#/components/responses/TooManyRequests"
           }
         }
       }
@@ -1288,8 +1604,14 @@
               }
             }
           },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
           "404": {
-            "description": "Not Found",
+            "description": "Not Found. APX (Part 5 §5.1a, Part 12 §12.1): a client sending `Accept: application/problem+json` receives problem type `target-not-found` instead of ResponseStatus.",
             "content": {
               "application/json": {
                 "schema": {
@@ -1304,8 +1626,16 @@
                     }
                   }
                 }
+              },
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
               }
             }
+          },
+          "429": {
+            "$ref": "#/components/responses/TooManyRequests"
           }
         }
       },
@@ -1328,7 +1658,14 @@
           "content": {
             "application/json": {
               "schema": {
-                "$ref": "#/components/schemas/RightSpecification"
+                "anyOf": [
+                  {
+                    "$ref": "#/components/schemas/RightSpecification"
+                  },
+                  {
+                    "$ref": "#/components/schemas/ChangePayload"
+                  }
+                ]
               }
             }
           }
@@ -1354,7 +1691,7 @@
             }
           },
           "400": {
-            "description": "Bad Request",
+            "description": "Bad Request. APX (Part 5 §5.1a, Part 12 §12.1): a client sending `Accept: application/problem+json` receives problem type `invalid-request` (with `errors[]`) instead of ResponseStatus.",
             "content": {
               "application/json": {
                 "schema": {
@@ -1369,11 +1706,22 @@
                     }
                   }
                 }
+              },
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
               }
             }
           },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
           "404": {
-            "description": "Not Found",
+            "description": "Not Found. APX (Part 5 §5.1a, Part 12 §12.1): a client sending `Accept: application/problem+json` receives problem type `target-not-found` instead of ResponseStatus.",
             "content": {
               "application/json": {
                 "schema": {
@@ -1388,11 +1736,16 @@
                     }
                   }
                 }
+              },
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
               }
             }
           },
           "409": {
-            "description": "Conflict",
+            "description": "Conflict. APX (Part 5 §5.1a, Part 12 §12.1): a client sending `Accept: application/problem+json` receives problem type `version-conflict` (stale `version`) instead of ResponseStatus.",
             "content": {
               "application/json": {
                 "schema": {
@@ -1407,10 +1760,34 @@
                     }
                   }
                 }
+              },
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
               }
             }
+          },
+          "429": {
+            "$ref": "#/components/responses/TooManyRequests"
           }
-        }
+        },
+        "parameters": [
+          {
+            "name": "APX-Update-Mode",
+            "in": "header",
+            "required": false,
+            "description": "APX data profile (Part 5 §5.1). `full` (default, stock APDS behavior): the body is the complete current state. `change`: the body is a ChangePayload — identity plus only the changed members; absent = unchanged, explicit null = clear. A stale `version` in change mode is 409 `version-conflict`.",
+            "schema": {
+              "type": "string",
+              "enum": [
+                "full",
+                "change"
+              ],
+              "default": "full"
+            }
+          }
+        ]
       },
       "delete": {
         "summary": "Delete RightSpecification",
@@ -1447,7 +1824,7 @@
             }
           },
           "400": {
-            "description": "Bad Request",
+            "description": "Bad Request. APX (Part 5 §5.1a, Part 12 §12.1): a client sending `Accept: application/problem+json` receives problem type `invalid-request` (with `errors[]`) instead of ResponseStatus.",
             "content": {
               "application/json": {
                 "schema": {
@@ -1462,11 +1839,22 @@
                     }
                   }
                 }
+              },
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
               }
             }
           },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
           "404": {
-            "description": "Not Found",
+            "description": "Not Found. APX (Part 5 §5.1a, Part 12 §12.1): a client sending `Accept: application/problem+json` receives problem type `target-not-found` instead of ResponseStatus.",
             "content": {
               "application/json": {
                 "schema": {
@@ -1481,11 +1869,16 @@
                     }
                   }
                 }
+              },
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
               }
             }
           },
           "409": {
-            "description": "Conflict",
+            "description": "Conflict. APX (Part 5 §5.1a, Part 12 §12.1): a client sending `Accept: application/problem+json` receives the most specific registered problem type (Part 12 §12.4) instead of ResponseStatus.",
             "content": {
               "application/json": {
                 "schema": {
@@ -1500,8 +1893,16 @@
                     }
                   }
                 }
+              },
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
               }
             }
+          },
+          "429": {
+            "$ref": "#/components/responses/TooManyRequests"
           }
         }
       }
@@ -1576,6 +1977,25 @@
                 }
               }
             }
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "404": {
+            "description": "mode=change only: the cursor is unknown, older than the retention window, or was issued for another (class, credential, filter set) — problem type `target-not-found`; re-sync with mode=full (Part 5 §5.2 rules 2 and 5). The cursor is an APX parameter, so this refusal is always a Problem.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "429": {
+            "$ref": "#/components/responses/TooManyRequests"
           }
         }
       },
@@ -1613,6 +2033,45 @@
                 }
               }
             }
+          },
+          "400": {
+            "description": "RateTable can not be created due to invalid or missing data. APX: with `Accept: application/problem+json`, problem type `invalid-request`.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ResponseStatus"
+                }
+              },
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "409": {
+            "description": "RateTable can not be created due to conflict (id already exists). APX: with `Accept: application/problem+json`, problem type `id-collision`.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ResponseStatus"
+                }
+              },
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "429": {
+            "$ref": "#/components/responses/TooManyRequests"
           }
         }
       }
@@ -1665,8 +2124,14 @@
               }
             }
           },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
           "404": {
-            "description": "Not Found",
+            "description": "Not Found. APX (Part 5 §5.1a, Part 12 §12.1): a client sending `Accept: application/problem+json` receives problem type `target-not-found` instead of ResponseStatus.",
             "content": {
               "application/json": {
                 "schema": {
@@ -1681,8 +2146,16 @@
                     }
                   }
                 }
+              },
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
               }
             }
+          },
+          "429": {
+            "$ref": "#/components/responses/TooManyRequests"
           }
         }
       },
@@ -1705,7 +2178,14 @@
           "content": {
             "application/json": {
               "schema": {
-                "$ref": "#/components/schemas/RateTable"
+                "anyOf": [
+                  {
+                    "$ref": "#/components/schemas/RateTable"
+                  },
+                  {
+                    "$ref": "#/components/schemas/ChangePayload"
+                  }
+                ]
               }
             }
           }
@@ -1722,7 +2202,7 @@
             }
           },
           "400": {
-            "description": "Bad Request",
+            "description": "Bad Request. APX (Part 5 §5.1a, Part 12 §12.1): a client sending `Accept: application/problem+json` receives problem type `invalid-request` (with `errors[]`) instead of ResponseStatus.",
             "content": {
               "application/json": {
                 "schema": {
@@ -1737,11 +2217,22 @@
                     }
                   }
                 }
+              },
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
               }
             }
           },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
           "404": {
-            "description": "Not Found",
+            "description": "Not Found. APX (Part 5 §5.1a, Part 12 §12.1): a client sending `Accept: application/problem+json` receives problem type `target-not-found` instead of ResponseStatus.",
             "content": {
               "application/json": {
                 "schema": {
@@ -1756,11 +2247,16 @@
                     }
                   }
                 }
+              },
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
               }
             }
           },
           "409": {
-            "description": "Conflict",
+            "description": "Conflict. APX (Part 5 §5.1a, Part 12 §12.1): a client sending `Accept: application/problem+json` receives problem type `version-conflict` (stale `version`) instead of ResponseStatus.",
             "content": {
               "application/json": {
                 "schema": {
@@ -1775,10 +2271,34 @@
                     }
                   }
                 }
+              },
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
               }
             }
+          },
+          "429": {
+            "$ref": "#/components/responses/TooManyRequests"
           }
-        }
+        },
+        "parameters": [
+          {
+            "name": "APX-Update-Mode",
+            "in": "header",
+            "required": false,
+            "description": "APX data profile (Part 5 §5.1). `full` (default, stock APDS behavior): the body is the complete current state. `change`: the body is a ChangePayload — identity plus only the changed members; absent = unchanged, explicit null = clear. A stale `version` in change mode is 409 `version-conflict`.",
+            "schema": {
+              "type": "string",
+              "enum": [
+                "full",
+                "change"
+              ],
+              "default": "full"
+            }
+          }
+        ]
       },
       "delete": {
         "summary": "Delete RateTable",
@@ -1815,7 +2335,7 @@
             }
           },
           "400": {
-            "description": "Bad Request",
+            "description": "Bad Request. APX (Part 5 §5.1a, Part 12 §12.1): a client sending `Accept: application/problem+json` receives problem type `invalid-request` (with `errors[]`) instead of ResponseStatus.",
             "content": {
               "application/json": {
                 "schema": {
@@ -1830,11 +2350,22 @@
                     }
                   }
                 }
+              },
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
               }
             }
           },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
           "404": {
-            "description": "Not Found",
+            "description": "Not Found. APX (Part 5 §5.1a, Part 12 §12.1): a client sending `Accept: application/problem+json` receives problem type `target-not-found` instead of ResponseStatus.",
             "content": {
               "application/json": {
                 "schema": {
@@ -1849,11 +2380,16 @@
                     }
                   }
                 }
+              },
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
               }
             }
           },
           "409": {
-            "description": "Conflict",
+            "description": "Conflict. APX (Part 5 §5.1a, Part 12 §12.1): a client sending `Accept: application/problem+json` receives the most specific registered problem type (Part 12 §12.4) instead of ResponseStatus.",
             "content": {
               "application/json": {
                 "schema": {
@@ -1868,8 +2404,16 @@
                     }
                   }
                 }
+              },
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
               }
             }
+          },
+          "429": {
+            "$ref": "#/components/responses/TooManyRequests"
           }
         }
       }
@@ -1965,6 +2509,25 @@
                 }
               }
             }
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "404": {
+            "description": "mode=change only: the cursor is unknown, older than the retention window, or was issued for another (class, credential, filter set) — problem type `target-not-found`; re-sync with mode=full (Part 5 §5.2 rules 2 and 5). The cursor is an APX parameter, so this refusal is always a Problem.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "429": {
+            "$ref": "#/components/responses/TooManyRequests"
           }
         }
       },
@@ -2013,7 +2576,7 @@
             }
           },
           "400": {
-            "description": "Bad Request",
+            "description": "Bad Request. APX (Part 5 §5.1a, Part 12 §12.1): a client sending `Accept: application/problem+json` receives problem type `invalid-request` (with `errors[]`) instead of ResponseStatus.",
             "content": {
               "application/json": {
                 "schema": {
@@ -2028,11 +2591,22 @@
                     }
                   }
                 }
+              },
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
               }
             }
           },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
           "409": {
-            "description": "Conflict",
+            "description": "Conflict. APX (Part 5 §5.1a, Part 12 §12.1): a client sending `Accept: application/problem+json` receives problem type `id-collision` (client-supplied id already exists) instead of ResponseStatus.",
             "content": {
               "application/json": {
                 "schema": {
@@ -2047,8 +2621,16 @@
                     }
                   }
                 }
+              },
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
               }
             }
+          },
+          "429": {
+            "$ref": "#/components/responses/TooManyRequests"
           }
         }
       }
@@ -2101,8 +2683,14 @@
               }
             }
           },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
           "404": {
-            "description": "Not Found",
+            "description": "Not Found. APX (Part 5 §5.1a, Part 12 §12.1): a client sending `Accept: application/problem+json` receives problem type `target-not-found` instead of ResponseStatus.",
             "content": {
               "application/json": {
                 "schema": {
@@ -2117,8 +2705,16 @@
                     }
                   }
                 }
+              },
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
               }
             }
+          },
+          "429": {
+            "$ref": "#/components/responses/TooManyRequests"
           }
         }
       },
@@ -2141,7 +2737,14 @@
           "content": {
             "application/json": {
               "schema": {
-                "$ref": "#/components/schemas/Session"
+                "anyOf": [
+                  {
+                    "$ref": "#/components/schemas/Session"
+                  },
+                  {
+                    "$ref": "#/components/schemas/ChangePayload"
+                  }
+                ]
               }
             }
           }
@@ -2167,7 +2770,7 @@
             }
           },
           "400": {
-            "description": "Bad Request",
+            "description": "Bad Request. APX (Part 5 §5.1a, Part 12 §12.1): a client sending `Accept: application/problem+json` receives problem type `invalid-request` (with `errors[]`) instead of ResponseStatus.",
             "content": {
               "application/json": {
                 "schema": {
@@ -2182,11 +2785,22 @@
                     }
                   }
                 }
+              },
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
               }
             }
           },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
           "404": {
-            "description": "Not Found",
+            "description": "Not Found. APX (Part 5 §5.1a, Part 12 §12.1): a client sending `Accept: application/problem+json` receives problem type `target-not-found` instead of ResponseStatus.",
             "content": {
               "application/json": {
                 "schema": {
@@ -2201,11 +2815,16 @@
                     }
                   }
                 }
+              },
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
               }
             }
           },
           "409": {
-            "description": "Conflict",
+            "description": "Conflict. APX (Part 5 §5.1a, Part 12 §12.1): a client sending `Accept: application/problem+json` receives problem type `version-conflict` (stale `version`) instead of ResponseStatus.",
             "content": {
               "application/json": {
                 "schema": {
@@ -2220,10 +2839,34 @@
                     }
                   }
                 }
+              },
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
               }
             }
+          },
+          "429": {
+            "$ref": "#/components/responses/TooManyRequests"
           }
-        }
+        },
+        "parameters": [
+          {
+            "name": "APX-Update-Mode",
+            "in": "header",
+            "required": false,
+            "description": "APX data profile (Part 5 §5.1). `full` (default, stock APDS behavior): the body is the complete current state. `change`: the body is a ChangePayload — identity plus only the changed members; absent = unchanged, explicit null = clear. A stale `version` in change mode is 409 `version-conflict`.",
+            "schema": {
+              "type": "string",
+              "enum": [
+                "full",
+                "change"
+              ],
+              "default": "full"
+            }
+          }
+        ]
       },
       "delete": {
         "summary": "Delete Session",
@@ -2260,7 +2903,7 @@
             }
           },
           "400": {
-            "description": "Bad Request",
+            "description": "Bad Request. APX (Part 5 §5.1a, Part 12 §12.1): a client sending `Accept: application/problem+json` receives problem type `invalid-request` (with `errors[]`) instead of ResponseStatus.",
             "content": {
               "application/json": {
                 "schema": {
@@ -2275,11 +2918,22 @@
                     }
                   }
                 }
+              },
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
               }
             }
           },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
           "404": {
-            "description": "Not Found",
+            "description": "Not Found. APX (Part 5 §5.1a, Part 12 §12.1): a client sending `Accept: application/problem+json` receives problem type `target-not-found` instead of ResponseStatus.",
             "content": {
               "application/json": {
                 "schema": {
@@ -2294,11 +2948,16 @@
                     }
                   }
                 }
+              },
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
               }
             }
           },
           "409": {
-            "description": "Conflict",
+            "description": "Conflict. APX (Part 5 §5.1a, Part 12 §12.1): a client sending `Accept: application/problem+json` receives the most specific registered problem type (Part 12 §12.4) instead of ResponseStatus.",
             "content": {
               "application/json": {
                 "schema": {
@@ -2313,8 +2972,16 @@
                     }
                   }
                 }
+              },
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
               }
             }
+          },
+          "429": {
+            "$ref": "#/components/responses/TooManyRequests"
           }
         }
       }
@@ -2410,6 +3077,25 @@
                 }
               }
             }
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "404": {
+            "description": "mode=change only: the cursor is unknown, older than the retention window, or was issued for another (class, credential, filter set) — problem type `target-not-found`; re-sync with mode=full (Part 5 §5.2 rules 2 and 5). The cursor is an APX parameter, so this refusal is always a Problem.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "429": {
+            "$ref": "#/components/responses/TooManyRequests"
           }
         }
       },
@@ -2466,7 +3152,7 @@
             }
           },
           "400": {
-            "description": "Bad Request",
+            "description": "Bad Request. APX (Part 5 §5.1a, Part 12 §12.1): a client sending `Accept: application/problem+json` receives problem type `invalid-request` (with `errors[]`) instead of ResponseStatus.",
             "content": {
               "application/json": {
                 "schema": {
@@ -2481,11 +3167,22 @@
                     }
                   }
                 }
+              },
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
               }
             }
           },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
           "409": {
-            "description": "Conflict",
+            "description": "Conflict. APX (Part 5 §5.1a, Part 12 §12.1): a client sending `Accept: application/problem+json` receives problem type `id-collision` (client-supplied id already exists) instead of ResponseStatus.",
             "content": {
               "application/json": {
                 "schema": {
@@ -2500,8 +3197,16 @@
                     }
                   }
                 }
+              },
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
               }
             }
+          },
+          "429": {
+            "$ref": "#/components/responses/TooManyRequests"
           }
         }
       }
@@ -2554,8 +3259,14 @@
               }
             }
           },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
           "404": {
-            "description": "Not Found",
+            "description": "Not Found. APX (Part 5 §5.1a, Part 12 §12.1): a client sending `Accept: application/problem+json` receives problem type `target-not-found` instead of ResponseStatus.",
             "content": {
               "application/json": {
                 "schema": {
@@ -2570,8 +3281,16 @@
                     }
                   }
                 }
+              },
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
               }
             }
+          },
+          "429": {
+            "$ref": "#/components/responses/TooManyRequests"
           }
         }
       },
@@ -2594,7 +3313,14 @@
           "content": {
             "application/json": {
               "schema": {
-                "$ref": "#/components/schemas/AssignedRight"
+                "anyOf": [
+                  {
+                    "$ref": "#/components/schemas/AssignedRight"
+                  },
+                  {
+                    "$ref": "#/components/schemas/ChangePayload"
+                  }
+                ]
               }
             }
           }
@@ -2639,7 +3365,7 @@
             }
           },
           "400": {
-            "description": "Bad Request",
+            "description": "Bad Request. APX (Part 5 §5.1a, Part 12 §12.1): a client sending `Accept: application/problem+json` receives problem type `invalid-request` (with `errors[]`) instead of ResponseStatus.",
             "content": {
               "application/json": {
                 "schema": {
@@ -2654,11 +3380,37 @@
                     }
                   }
                 }
+              },
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "404": {
+            "description": "AssignedRight can not be updated as it has not been found (servers that upsert answer 201 instead). APX: with `Accept: application/problem+json`, problem type `target-not-found`.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ResponseStatus"
+                }
+              },
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
               }
             }
           },
           "409": {
-            "description": "Conflict",
+            "description": "Conflict. APX (Part 5 §5.1a, Part 12 §12.1): a client sending `Accept: application/problem+json` receives problem type `version-conflict` (stale `version`) instead of ResponseStatus.",
             "content": {
               "application/json": {
                 "schema": {
@@ -2673,10 +3425,34 @@
                     }
                   }
                 }
+              },
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
               }
             }
+          },
+          "429": {
+            "$ref": "#/components/responses/TooManyRequests"
           }
-        }
+        },
+        "parameters": [
+          {
+            "name": "APX-Update-Mode",
+            "in": "header",
+            "required": false,
+            "description": "APX data profile (Part 5 §5.1). `full` (default, stock APDS behavior): the body is the complete current state. `change`: the body is a ChangePayload — identity plus only the changed members; absent = unchanged, explicit null = clear. A stale `version` in change mode is 409 `version-conflict`.",
+            "schema": {
+              "type": "string",
+              "enum": [
+                "full",
+                "change"
+              ],
+              "default": "full"
+            }
+          }
+        ]
       },
       "delete": {
         "summary": "Delete AssignedRight",
@@ -2713,7 +3489,7 @@
             }
           },
           "400": {
-            "description": "Bad Request",
+            "description": "Bad Request. APX (Part 5 §5.1a, Part 12 §12.1): a client sending `Accept: application/problem+json` receives problem type `invalid-request` (with `errors[]`) instead of ResponseStatus.",
             "content": {
               "application/json": {
                 "schema": {
@@ -2728,11 +3504,22 @@
                     }
                   }
                 }
+              },
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
               }
             }
           },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
           "404": {
-            "description": "Not Found",
+            "description": "Not Found. APX (Part 5 §5.1a, Part 12 §12.1): a client sending `Accept: application/problem+json` receives problem type `target-not-found` instead of ResponseStatus.",
             "content": {
               "application/json": {
                 "schema": {
@@ -2747,11 +3534,16 @@
                     }
                   }
                 }
+              },
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
               }
             }
           },
           "409": {
-            "description": "Conflict",
+            "description": "Conflict. APX (Part 5 §5.1a, Part 12 §12.1): a client sending `Accept: application/problem+json` receives the most specific registered problem type (Part 12 §12.4) instead of ResponseStatus.",
             "content": {
               "application/json": {
                 "schema": {
@@ -2766,8 +3558,16 @@
                     }
                   }
                 }
+              },
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
               }
             }
+          },
+          "429": {
+            "$ref": "#/components/responses/TooManyRequests"
           }
         }
       }
@@ -2826,6 +3626,15 @@
                 }
               }
             }
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "429": {
+            "$ref": "#/components/responses/TooManyRequests"
           }
         }
       },
@@ -2866,6 +3675,33 @@
                     }
                   ]
                 }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "429": {
+            "$ref": "#/components/responses/TooManyRequests"
+          }
+        },
+        "requestBody": {
+          "required": false,
+          "description": "The quote request: a QuoteRightRequest (new right) or a QuoteSessionExtensionRequest (extend a session). Undeclared in APDS 4.1 (APX erratum 007).",
+          "content": {
+            "application/json": {
+              "schema": {
+                "oneOf": [
+                  {
+                    "$ref": "#/components/schemas/QuoteRightRequest"
+                  },
+                  {
+                    "$ref": "#/components/schemas/QuoteSessionExtensionRequest"
+                  }
+                ]
               }
             }
           }
@@ -2910,6 +3746,12 @@
               }
             }
           },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
           "404": {
             "description": "No such place element.",
             "content": {
@@ -2919,6 +3761,9 @@
                 }
               }
             }
+          },
+          "429": {
+            "$ref": "#/components/responses/TooManyRequests"
           }
         }
       }
@@ -2944,7 +3789,7 @@
           "Subscription"
         ],
         "summary": "Subscribe to event topics (APDS-compatible superset)",
-        "description": "Creates a subscription. A stock APDS 4.1 `EventSubscription`\n(`{endpoint, topics[]}` with EventTypeEnum values) is a valid body;\nAPX fields (transport, filters, secret) are additive.\n\n**Response negotiation (normative, Part 8 §8.1):** the stock APDS\n4.1 response contract is preserved — a request WITHOUT\n`Prefer: return=representation` receives the native APDS `200`/`202`\nwith `ResponseStatus`, exactly as APDS documents. An APX client\nsends `Prefer: return=representation` and receives `201` with the\nfull subscription INCLUDING the signing secret (returned exactly\nonce, in that response only).",
+        "description": "Creates a subscription. A stock APDS 4.1 `EventSubscription`\n(`{endpoint, topics[]}` with EventTypeEnum values) is a valid body;\nAPX fields (transport, filters, secret) are additive.\n\n**Response negotiation (normative, Part 8 §8.1):** the stock APDS\n4.1 response contract is preserved — a request WITHOUT\n`Prefer: return=representation` receives the native APDS `200`/`202`\nwith `ResponseStatus`, exactly as APDS documents. An APX client\nsends `Prefer: return=representation` and receives `201` with the\nfull subscription INCLUDING the signing secret (returned exactly\nonce, in that response only; webhook transport only).\n\nRefusals at creation (Part 8 §8.1): a topic the credential could\nnot read synchronously is 403 `insufficient-scope` (Part 9 §9.6(4));\na `filters.places` entry outside the token's `apx_places` grant is\n403 `insufficient-grant`. Send `Idempotency-Key` to make a retried\ncreate safe.",
         "parameters": [
           {
             "name": "Prefer",
@@ -2957,6 +3802,9 @@
                 "return=representation"
               ]
             }
+          },
+          {
+            "$ref": "#/components/parameters/IdempotencyKeyOptional"
           }
         ],
         "requestBody": {
@@ -2971,7 +3819,7 @@
         },
         "responses": {
           "200": {
-            "description": "Stock APDS contract — subscription approved and activated\n(request did not ask for the APX representation).",
+            "description": "Stock APDS contract — subscription approved and activated\n(request did not ask for the APX representation). `ids[]`\ncarries the new subscription's id as its single entry, so a\nstock client can later revoke it (Part 8 §8.1).",
             "content": {
               "application/json": {
                 "schema": {
@@ -2991,7 +3839,7 @@
             }
           },
           "202": {
-            "description": "Stock APDS contract — subscription request received; will be\nprocessed and then approved/declined.",
+            "description": "Stock APDS contract — subscription request received; will be\nprocessed and then approved/declined. `ids[]` carries the new\nsubscription's id as its single entry (Part 8 §8.1).",
             "content": {
               "application/json": {
                 "schema": {
@@ -3001,7 +3849,7 @@
             }
           },
           "400": {
-            "description": "Missing/unknown topics or endpoint.",
+            "description": "An unregistered topic (`unknown-topic`), or a body that fails the\nschema or a field rule (`invalid-request`, with `errors[]`): a\nwebhook-transport subscription without `endpoint`, an empty\n`topics[]`, a secret under 32 bytes of entropy, or an\n`extensions` key outside the Part 4 §4.3 pattern.",
             "content": {
               "application/problem+json": {
                 "schema": {
@@ -3009,6 +3857,25 @@
                 }
               }
             }
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "409": {
+            "description": "The `Idempotency-Key` was already used with a different body\n(`idempotency-conflict`). A replay with the same body returns\nthe subscription as it now stands (Part 4 §4.2a) — never the\nsecret a second time.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "429": {
+            "$ref": "#/components/responses/TooManyRequests"
           }
         }
       },
@@ -3084,6 +3951,52 @@
           "description": "Unique identifier for the existing subscription"
         }
       ],
+      "get": {
+        "operationId": "get-webhooks-id",
+        "security": [
+          {
+            "apxOAuth": [
+              "apx.subscriptions:manage"
+            ]
+          },
+          {
+            "oAuth": [
+              "po",
+              "sp",
+              "ad"
+            ]
+          }
+        ],
+        "tags": [
+          "Subscription"
+        ],
+        "summary": "Read one subscription (APX additive operation)",
+        "description": "Returns one subscription the caller may see — its status,\n`activeKeyIds`, and filters — without paging through `GET\n/webhooks`. Secrets are never returned. Readable in every state,\nincluding `failed` (Part 8 §8.1).",
+        "responses": {
+          "200": {
+            "description": "The subscription (secret never returned).",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApxEventSubscription"
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          },
+          "429": {
+            "$ref": "#/components/responses/TooManyRequests"
+          }
+        }
+      },
       "patch": {
         "operationId": "patch-webhooks-id",
         "security": [
@@ -3104,13 +4017,18 @@
           "Subscription"
         ],
         "summary": "Update a subscription (APX additive operation)",
-        "description": "Update topics, endpoint, filters, status (resume a failed subscription), or rotate the secret.",
+        "description": "Update topics, endpoint, filters, or status (pause, resume a paused\nor failed subscription), or rotate the secret. The body is a JSON\nMerge Patch over the subscription: send only what changes\n(Part 8 §8.1). The precondition is `If-Match` or the body\n`version`; a stale one is 409 `version-conflict` (Part 4 §4.2a).\nWhile the subscription is `failed`, the only PATCH accepted is one\nthat sets `status: active`; any other is 410\n`subscription-failed`.",
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/IfMatch"
+          }
+        ],
         "requestBody": {
           "required": true,
           "content": {
             "application/json": {
               "schema": {
-                "$ref": "#/components/schemas/ApxEventSubscription"
+                "$ref": "#/components/schemas/ApxEventSubscriptionPatch"
               }
             }
           }
@@ -3126,6 +4044,15 @@
               }
             }
           },
+          "400": {
+            "$ref": "#/components/responses/BadRequest"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
           "404": {
             "description": "No such subscription.",
             "content": {
@@ -3135,6 +4062,29 @@
                 }
               }
             }
+          },
+          "409": {
+            "description": "Stale `If-Match` or body `version` (`version-conflict`, Part 4 §4.2a).",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "410": {
+            "description": "The subscription is `failed` and the body does not set\n`status: active` (`subscription-failed`, Part 8 §8.1).",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "429": {
+            "$ref": "#/components/responses/TooManyRequests"
           }
         }
       },
@@ -3170,6 +4120,12 @@
               }
             }
           },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
           "404": {
             "description": "Subscription not found.",
             "content": {
@@ -3179,6 +4135,9 @@
                 }
               }
             }
+          },
+          "429": {
+            "$ref": "#/components/responses/TooManyRequests"
           }
         }
       }
@@ -3204,7 +4163,7 @@
           "Subscription"
         ],
         "summary": "Delivery ledger for a subscription",
-        "description": "Returns the delivery records (attempts, status, last HTTP code) for auditing.",
+        "description": "Returns the delivery records for auditing: one per (event,\nsubscription), with the attempt count, status, last HTTP code, and\nthe per-attempt history (`attemptHistory`: each attempt's\n`APX-Delivery-Id`, time, and code — Part 8 §8.3). Newest first.\nReadable in every subscription state. An event held while the\nsubscription is `paused` has no record until its first attempt.",
         "parameters": [
           {
             "name": "id",
@@ -3216,6 +4175,40 @@
           },
           {
             "$ref": "#/components/parameters/page"
+          },
+          {
+            "name": "status",
+            "in": "query",
+            "required": false,
+            "description": "Only records in this delivery status.",
+            "schema": {
+              "type": "string",
+              "enum": [
+                "delivered",
+                "retrying",
+                "failed"
+              ]
+            }
+          },
+          {
+            "name": "eventId",
+            "in": "query",
+            "required": false,
+            "description": "Only the record of this EventEnvelope.id.",
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "since",
+            "in": "query",
+            "required": false,
+            "description": "Only records whose latest attempt is at or after this instant (RFC 3339).",
+            "schema": {
+              "type": "string",
+              "format": "date-time"
+            }
           }
         ],
         "responses": {
@@ -3299,7 +4292,7 @@
         },
         "responses": {
           "200": {
-            "description": "Idempotent replay — same key + same body returns the ORIGINAL command (Part 6 §6.1).",
+            "description": "Idempotent replay — same key + same body returns the command as\nit currently stands, not a snapshot of the first response (Part 4\n§4.2a, Part 6 §6.1).",
             "content": {
               "application/json": {
                 "schema": {
@@ -3319,7 +4312,7 @@
             }
           },
           "400": {
-            "description": "Missing Idempotency-Key, unknown commandType, or missing target.",
+            "description": "Missing Idempotency-Key (`idempotency-key-required`); an unknown\n`commandType`, a missing `target`, or a parameter that fails its\n§6.1 definition (`invalid-request`, with `errors[]`); or a command\nthat requires `agent` without one (`agent-required`) — Part 12.",
             "content": {
               "application/problem+json": {
                 "schema": {
@@ -3342,7 +4335,7 @@
             }
           },
           "409": {
-            "description": "Idempotency-Key replayed with a different body.",
+            "description": "Idempotency-Key replayed with a different body\n(`idempotency-conflict`), or `pushNegotiatedRate` / `matchTicket`\nat a lane with no transaction in progress\n(`lane-no-current-transaction`) — Part 12.",
             "content": {
               "application/problem+json": {
                 "schema": {
@@ -3352,7 +4345,7 @@
             }
           },
           "422": {
-            "description": "Command expired before dispatch (`command-expired`) or unknown validation provider (`validation-provider-unknown`) — Part 12.",
+            "description": "Refused synchronously, nothing dispatched: command expired before\ndispatch (`command-expired`); unknown validation provider\n(`validation-provider-unknown`); `lostTicket` at a place whose\napplicable rate deck has no `lostTicketFee` line\n(`lost-ticket-fee-undefined`, Part 6 §6.1); a RateTable not\nflagged negotiable (`rate-not-negotiable`); a session that is not\nopen (`session-not-open`); or a parameter Reference that names\nnothing (`reference-unknown`) — Part 12.",
             "content": {
               "application/problem+json": {
                 "schema": {
@@ -3360,6 +4353,133 @@
                 }
               }
             }
+          },
+          "429": {
+            "$ref": "#/components/responses/TooManyRequests"
+          }
+        }
+      },
+      "get": {
+        "operationId": "get-apx-v1-commands",
+        "security": [
+          {
+            "apxOAuth": [
+              "apx.control:read"
+            ]
+          }
+        ],
+        "tags": [
+          "Control"
+        ],
+        "summary": "List and filter commands (the audit query)",
+        "description": "The commands the caller may see, newest first by the time the\ncommand was received, each with its full `statusHistory` (Part 6\n§6.1b). Only commands whose target lies inside the token's\n`apx_places` grant are returned; naming a `place` outside the grant\nis 403 `insufficient-grant`. All filters combine with AND.",
+        "parameters": [
+          {
+            "name": "target",
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            },
+            "description": "Commands whose `target.id` is this device, lane, or place."
+          },
+          {
+            "name": "place",
+            "in": "query",
+            "style": "form",
+            "explode": false,
+            "schema": {
+              "type": "array",
+              "items": {
+                "type": "string",
+                "format": "uuid"
+              }
+            },
+            "description": "Comma-separated HierarchyElement ids; subtree-inclusive (a command at a lane matches its parent Place)."
+          },
+          {
+            "name": "commandType",
+            "in": "query",
+            "schema": {
+              "type": "string"
+            },
+            "description": "An apx-command-types value (or an implementer's own)."
+          },
+          {
+            "name": "status",
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "enum": [
+                "received",
+                "accepted",
+                "rejected",
+                "dispatched",
+                "executing",
+                "succeeded",
+                "failed",
+                "expired",
+                "cancelled"
+              ]
+            }
+          },
+          {
+            "name": "agent",
+            "in": "query",
+            "schema": {
+              "type": "string"
+            },
+            "description": "Commands whose `agent` equals this principal."
+          },
+          {
+            "name": "since",
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "format": "date-time"
+            },
+            "description": "Received at or after this instant (the first `statusHistory` entry)."
+          },
+          {
+            "name": "until",
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "format": "date-time"
+            },
+            "description": "Received before this instant."
+          },
+          {
+            "$ref": "#/components/parameters/page"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Paginated commands (APDS PaginatedList shape).",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "meta": {
+                      "$ref": "#/components/schemas/PaginatedListMeta"
+                    },
+                    "data": {
+                      "type": "array",
+                      "items": {
+                        "$ref": "#/components/schemas/Command"
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
           },
           "429": {
             "$ref": "#/components/responses/TooManyRequests"
@@ -3404,6 +4524,12 @@
               }
             }
           },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
           "404": {
             "description": "No such command.",
             "content": {
@@ -3413,6 +4539,9 @@
                 }
               }
             }
+          },
+          "429": {
+            "$ref": "#/components/responses/TooManyRequests"
           }
         }
       }
@@ -3454,8 +4583,17 @@
               }
             }
           },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          },
           "409": {
-            "description": "Not cancellable from the current state.",
+            "description": "Not cancellable from the current state (`command-not-cancellable`).",
             "content": {
               "application/problem+json": {
                 "schema": {
@@ -3463,6 +4601,9 @@
                 }
               }
             }
+          },
+          "429": {
+            "$ref": "#/components/responses/TooManyRequests"
           }
         }
       }
@@ -3529,6 +4670,12 @@
               }
             }
           },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
           "404": {
             "description": "No such lane or no live state.",
             "content": {
@@ -3538,6 +4685,9 @@
                 }
               }
             }
+          },
+          "429": {
+            "$ref": "#/components/responses/TooManyRequests"
           }
         }
       }
@@ -3619,8 +4769,30 @@
           "Control"
         ],
         "summary": "List device status overlays",
-        "description": "Live DeviceStatus for every SupplementalEquipment the caller may see.",
+        "description": "Live DeviceStatus for every SupplementalEquipment the caller may\nsee, optionally narrowed by place and state (Part 6 §6.4). Naming a\n`place` outside the token's `apx_places` grant is 403\n`insufficient-grant`.",
         "parameters": [
+          {
+            "name": "place",
+            "in": "query",
+            "style": "form",
+            "explode": false,
+            "schema": {
+              "type": "array",
+              "items": {
+                "type": "string",
+                "format": "uuid"
+              }
+            },
+            "description": "Comma-separated HierarchyElement ids; subtree-inclusive (a device on a lane matches its parent Place)."
+          },
+          {
+            "name": "deviceState",
+            "in": "query",
+            "schema": {
+              "type": "string"
+            },
+            "description": "An apx-device-states value, e.g. `fault` for everything in fault."
+          },
           {
             "$ref": "#/components/parameters/page"
           }
@@ -3696,6 +4868,12 @@
               }
             }
           },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
           "404": {
             "description": "No such device.",
             "content": {
@@ -3705,6 +4883,9 @@
                 }
               }
             }
+          },
+          "429": {
+            "$ref": "#/components/responses/TooManyRequests"
           }
         }
       }
@@ -3715,12 +4896,320 @@
       "post": {
         "operationId": "receive-apx-event",
         "summary": "Signed APX event delivery",
-        "description": "Every webhook delivery POSTs one EventEnvelope with headers\n`APX-Signature` (v1=HMAC-SHA256(secret, timestamp + \".\" + body)),\n`APX-Timestamp` (RFC 3339, ±5 min replay window),\n`APX-Delivery-Id` (unique per attempt; envelope `id` is stable\nacross retries), and `APX-Key-Id` (REQUIRED during secret-rotation\noverlap windows — Part 9 §9.4). Respond 2xx to acknowledge;\nanything else triggers the normative retry schedule (Part 8).",
+        "description": "Every webhook delivery POSTs one EventEnvelope with headers\n`APX-Signature` (v1=HMAC-SHA256(secret, timestamp + \".\" + body)),\n`APX-Timestamp` (RFC 3339, ±5 min replay window),\n`APX-Delivery-Id` (unique per attempt; envelope `id` is stable\nacross retries), and `APX-Key-Id` (REQUIRED during secret-rotation\noverlap windows — Part 9 §9.4). Respond 2xx to acknowledge;\nanything else triggers the normative retry schedule (Part 8).\n\n**Every attempt is signed afresh (normative, Part 8 §8.3):**\n`APX-Timestamp` is the time of that attempt and `APX-Signature` is\ncomputed over it and the unchanged body, so a retry an hour later\nstill falls inside the receiver's ±5-minute window. The body — and\nwith it the envelope `id` and `time` — is byte-identical across\nattempts.\n\nThe typed entries below (`apx-native-event` and one per APX topic\nwhose data schema lives outside its own domain) name the `data`\nschema each topic carries (Part 8 §8.7); they are the same POST.",
         "requestBody": {
           "content": {
             "application/json": {
               "schema": {
                 "$ref": "#/components/schemas/EventEnvelope"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Acknowledged."
+          }
+        }
+      }
+    },
+    "apx-native-event": {
+      "post": {
+        "operationId": "receive-apx-native-event",
+        "summary": "APDS EventTypeEnum topic delivery",
+        "description": "A delivery on an APDS 4.1 topic (`SessionCreated`, `PlaceUpdated`,\n…): `type` is an APDS `EventTypeEnum` value, `data` the APDS\n`EventData` shape (the created/updated entity; for a `*Deleted`\ntopic the last state), and `subject` references the entity\n(Part 5 §5.4, Part 8 §8.2). Signed and retried like every delivery.",
+        "parameters": [
+          {
+            "name": "APX-Signature",
+            "in": "header",
+            "required": true,
+            "description": "`v1=` + hex HMAC-SHA256(secret, APX-Timestamp + \".\" + raw body), computed per attempt.",
+            "schema": {
+              "type": "string",
+              "pattern": "^v1=[0-9a-f]{64}$"
+            }
+          },
+          {
+            "name": "APX-Timestamp",
+            "in": "header",
+            "required": true,
+            "description": "RFC 3339 time of THIS attempt (not of the event or of the first attempt).",
+            "schema": {
+              "type": "string",
+              "format": "date-time"
+            }
+          },
+          {
+            "name": "APX-Delivery-Id",
+            "in": "header",
+            "required": true,
+            "description": "UUID unique per attempt; the envelope `id` is the dedup key.",
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "APX-Key-Id",
+            "in": "header",
+            "required": false,
+            "description": "The signing key's id — REQUIRED during a rotation overlap (Part 9 §9.4).",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "allOf": [
+                  {
+                    "$ref": "#/components/schemas/EventEnvelope"
+                  },
+                  {
+                    "type": "object",
+                    "properties": {
+                      "type": {
+                        "$ref": "#/components/schemas/EventTypeEnum"
+                      },
+                      "data": {
+                        "$ref": "#/components/schemas/EventData"
+                      }
+                    }
+                  }
+                ]
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Acknowledged."
+          }
+        }
+      }
+    },
+    "apx.subscription.failed.v1": {
+      "post": {
+        "operationId": "receive-apx-subscription-failed",
+        "summary": "A subscription exhausted its retry schedule",
+        "description": "Published when a subscription enters `failed` (Part 8 §8.3).\n`subject` references the subscription (`className`\n`ApxEventSubscription`); `data` is a SubscriptionFailure. Delivered\nto other subscriptions of the same `apx_org` that list the topic,\nnever to the failed one.",
+        "parameters": [
+          {
+            "name": "APX-Signature",
+            "in": "header",
+            "required": true,
+            "description": "`v1=` + hex HMAC-SHA256(secret, APX-Timestamp + \".\" + raw body), computed per attempt.",
+            "schema": {
+              "type": "string",
+              "pattern": "^v1=[0-9a-f]{64}$"
+            }
+          },
+          {
+            "name": "APX-Timestamp",
+            "in": "header",
+            "required": true,
+            "description": "RFC 3339 time of THIS attempt (not of the event or of the first attempt).",
+            "schema": {
+              "type": "string",
+              "format": "date-time"
+            }
+          },
+          {
+            "name": "APX-Delivery-Id",
+            "in": "header",
+            "required": true,
+            "description": "UUID unique per attempt; the envelope `id` is the dedup key.",
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "APX-Key-Id",
+            "in": "header",
+            "required": false,
+            "description": "The signing key's id — REQUIRED during a rotation overlap (Part 9 §9.4).",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "allOf": [
+                  {
+                    "$ref": "#/components/schemas/EventEnvelope"
+                  },
+                  {
+                    "type": "object",
+                    "properties": {
+                      "type": {
+                        "const": "apx.subscription.failed.v1"
+                      },
+                      "data": {
+                        "$ref": "#/components/schemas/SubscriptionFailure"
+                      }
+                    }
+                  }
+                ]
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Acknowledged."
+          }
+        }
+      }
+    },
+    "apx.data.observation.created.v1": {
+      "post": {
+        "operationId": "receive-apx-data-observation-created",
+        "summary": "An Observation was ingested",
+        "description": "One event per ingested read. `data` is the APDS\n`ObservationElement` (an ingested ObservationSet yields one event\nper element); `subject` references it with `className`\n`ObservationElement`; publishers MUST populate `elementIds` with\nthe observing lane or place, which is the event's place binding\n(Part 8 §8.5). Plate values are subject to Part 9 §9.6.",
+        "parameters": [
+          {
+            "name": "APX-Signature",
+            "in": "header",
+            "required": true,
+            "description": "`v1=` + hex HMAC-SHA256(secret, APX-Timestamp + \".\" + raw body), computed per attempt.",
+            "schema": {
+              "type": "string",
+              "pattern": "^v1=[0-9a-f]{64}$"
+            }
+          },
+          {
+            "name": "APX-Timestamp",
+            "in": "header",
+            "required": true,
+            "description": "RFC 3339 time of THIS attempt (not of the event or of the first attempt).",
+            "schema": {
+              "type": "string",
+              "format": "date-time"
+            }
+          },
+          {
+            "name": "APX-Delivery-Id",
+            "in": "header",
+            "required": true,
+            "description": "UUID unique per attempt; the envelope `id` is the dedup key.",
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "APX-Key-Id",
+            "in": "header",
+            "required": false,
+            "description": "The signing key's id — REQUIRED during a rotation overlap (Part 9 §9.4).",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "allOf": [
+                  {
+                    "$ref": "#/components/schemas/EventEnvelope"
+                  },
+                  {
+                    "type": "object",
+                    "properties": {
+                      "type": {
+                        "const": "apx.data.observation.created.v1"
+                      },
+                      "data": {
+                        "$ref": "#/components/schemas/ObservationElement"
+                      }
+                    }
+                  }
+                ]
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Acknowledged."
+          }
+        }
+      }
+    },
+    "apx.reservation.noshow.v1": {
+      "post": {
+        "operationId": "receive-apx-reservation-noshow",
+        "summary": "A reservation reached its no-show condition",
+        "description": "`data` is a ReservationSummary (`reservation`, `reservationState`\n`noShow`, `plannedStart`); `subject` references the AssignedRight\n(Part 14 §14.1, Part 8 §8.7).",
+        "parameters": [
+          {
+            "name": "APX-Signature",
+            "in": "header",
+            "required": true,
+            "description": "`v1=` + hex HMAC-SHA256(secret, APX-Timestamp + \".\" + raw body), computed per attempt.",
+            "schema": {
+              "type": "string",
+              "pattern": "^v1=[0-9a-f]{64}$"
+            }
+          },
+          {
+            "name": "APX-Timestamp",
+            "in": "header",
+            "required": true,
+            "description": "RFC 3339 time of THIS attempt (not of the event or of the first attempt).",
+            "schema": {
+              "type": "string",
+              "format": "date-time"
+            }
+          },
+          {
+            "name": "APX-Delivery-Id",
+            "in": "header",
+            "required": true,
+            "description": "UUID unique per attempt; the envelope `id` is the dedup key.",
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "APX-Key-Id",
+            "in": "header",
+            "required": false,
+            "description": "The signing key's id — REQUIRED during a rotation overlap (Part 9 §9.4).",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "allOf": [
+                  {
+                    "$ref": "#/components/schemas/EventEnvelope"
+                  },
+                  {
+                    "type": "object",
+                    "properties": {
+                      "type": {
+                        "const": "apx.reservation.noshow.v1"
+                      },
+                      "data": {
+                        "$ref": "#/components/schemas/ReservationSummary"
+                      }
+                    }
+                  }
+                ]
               }
             }
           }
@@ -3799,9 +5288,16 @@
         "properties": {
           "apxVersion": {
             "type": "string",
-            "description": "APX standard version implemented (semver).",
+            "description": "APX standard version implemented (semver). This is the edition\n(Part 3 §3.4) whose Parts and registries the implementation\nfollows; when `edition` is also present the two are equal.",
             "examples": [
               "0.1.0"
+            ]
+          },
+          "edition": {
+            "type": "string",
+            "description": "The APX edition implemented (Part 3 §3.4), as named in its `spec/edition.json`.",
+            "examples": [
+              "0.11.0"
             ]
           },
           "apdsVersion": {
@@ -3816,9 +5312,17 @@
             "format": "uri",
             "description": "OAuth2 token endpoint (client-credentials grant)."
           },
+          "apiBase": {
+            "type": "string",
+            "format": "uri",
+            "description": "The URL every path in the bundle is relative to (APX `/v1/…` and\nAPDS-native routes alike). Absent means the origin root that serves\nthis document. REQUIRED when the API is mounted elsewhere (Part 16\n§16.1).",
+            "examples": [
+              "https://api.citypark.example/parking"
+            ]
+          },
           "conformanceClasses": {
             "type": "array",
-            "description": "APX conformance classes this implementation supports.",
+            "description": "APX conformance classes this implementation supports, closed under\nthe Part 3 §3.1 dependency table, plus any vendor classes\n(`<vendor-ns>-<class>`). Clients ignore classes they do not\nrecognise.",
             "items": {
               "type": "string"
             },
@@ -3832,13 +5336,42 @@
               ]
             ]
           },
+          "features": {
+            "type": "array",
+            "description": "Optional features the implementation offers (Part 6 §6.5, Part 16 §16.1).",
+            "items": {
+              "type": "string"
+            },
+            "examples": [
+              [
+                "negotiatedRates",
+                "ticketMatching"
+              ]
+            ]
+          },
           "registries": {
             "type": "object",
-            "description": "Locations of the published UserDefinedCodeList registries.",
+            "description": "Locations of the published UserDefinedCodeList registries, keyed by\nthe registry `name` from Part 11 (vendor lists by their own name).",
             "additionalProperties": {
               "type": "string",
               "format": "uri"
             }
+          },
+          "registryVersions": {
+            "type": "object",
+            "description": "The version of each registry the implementation validates against, keyed as `registries`.",
+            "additionalProperties": {
+              "type": "integer",
+              "minimum": 1
+            },
+            "examples": [
+              {
+                "apx-command-types": 3
+              }
+            ]
+          },
+          "extensions": {
+            "$ref": "#/components/schemas/Extensions"
           }
         }
       },
@@ -3889,9 +5422,9 @@
           },
           "items": {
             "type": "array",
-            "description": "Changed APDS entities of the route's class (verbatim APDS schemas).",
+            "description": "Changed APDS entities of the route's class, each a change payload\n(identity plus only the changed members; Part 5 §5.1).",
             "items": {
-              "type": "object"
+              "$ref": "#/components/schemas/ChangePayload"
             }
           },
           "deleted": {
@@ -3950,6 +5483,55 @@
               }
             ],
             "cursor": "c:00042"
+          }
+        ]
+      },
+      "Problem": {
+        "title": "Problem",
+        "description": "RFC 9457 problem details. APX problem `type` URIs are registered in the\nAPX problem-type registry. Used for all APX error responses; APDS-native\nroutes may alternatively use the APDS ResponseStatus shape.",
+        "type": "object",
+        "required": [
+          "type",
+          "title",
+          "status"
+        ],
+        "properties": {
+          "type": {
+            "type": "string",
+            "format": "uri",
+            "description": "Problem type URI from the APX problem registry.",
+            "examples": [
+              "https://apx-standard.org/problems/insufficient-grant"
+            ]
+          },
+          "title": {
+            "type": "string",
+            "description": "Short human-readable summary of the problem type."
+          },
+          "status": {
+            "type": "integer",
+            "minimum": 100,
+            "maximum": 599,
+            "description": "HTTP status code."
+          },
+          "detail": {
+            "type": "string",
+            "description": "Human-readable explanation specific to this occurrence."
+          },
+          "instance": {
+            "type": "string",
+            "format": "uri-reference",
+            "description": "URI reference identifying this specific occurrence."
+          }
+        },
+        "additionalProperties": true,
+        "examples": [
+          {
+            "type": "https://apx-standard.org/problems/target-not-found",
+            "title": "Target not found",
+            "status": 404,
+            "detail": "No lane b2000000-0000-4000-8000-00000000dead at this place.",
+            "instance": "/v1/lanes/b2000000-0000-4000-8000-00000000dead/current"
           }
         ]
       },
@@ -4032,6 +5614,10 @@
                 "items": {
                   "$ref": "#/components/schemas/ResponsibilityRoleAssignment"
                 }
+              },
+              "extensions": {
+                "description": "The APDS extension container (Use Case Document §C.2.5; Part 4 §4.3). Undeclared on APDS 4.1 entities (APX erratum 010).",
+                "$ref": "#/components/schemas/Extensions"
               }
             }
           }
@@ -4072,6 +5658,27 @@
         "required": [
           "status"
         ]
+      },
+      "ChangePayload": {
+        "title": "ChangePayload",
+        "description": "A change-mode payload for any native APDS entity class (Part 5 §5.1):\nthe entity's identity plus only the members that changed. An absent\nmember is unchanged; an explicit `null` clears it. Nested objects that\ncarry their own `id` (a Session segment, say) follow the same rule.\n\nThis schema checks the envelope only (identity present, any member may\nbe null). Each member present is still validated by the server against\nthe class's native property schema, and a member the class does not\ndefine is refused with 400 (Part 5 §5.1a). It is the request schema of\na native `PUT` sent with `APX-Update-Mode: change`, and the shape of\nevery `ChangeFeedPage` item.",
+        "type": "object",
+        "required": [
+          "id"
+        ],
+        "properties": {
+          "id": {
+            "type": "string",
+            "minLength": 1,
+            "description": "The entity's identifier (APDS VersionedIdentity.id)."
+          },
+          "version": {
+            "type": "integer",
+            "minimum": 1,
+            "description": "On a write, the version the client last read (the precondition,\nPart 4 §4.2a); on a feed item, the version after the change."
+          }
+        },
+        "additionalProperties": true
       },
       "PaginatedListMeta": {
         "title": "PaginatedListMeta",
@@ -4184,6 +5791,10 @@
               },
               "characterConfidence": {
                 "$ref": "#/components/schemas/CharacterConfidence"
+              },
+              "extensions": {
+                "description": "The APDS extension container (Use Case Document §C.2.5; Part 4 §4.3). Undeclared on APDS 4.1 entities (APX erratum 010).",
+                "$ref": "#/components/schemas/Extensions"
               }
             },
             "required": [
@@ -4198,15 +5809,6 @@
         "description": "A specific collection of observation details intended to be used for one specific observation instance.",
         "x-tags": [
           "observation"
-        ]
-      },
-      "ObservationDataType": {
-        "title": "ObservationDataType",
-        "description": "used as discriminator between a single observation element and an observation set",
-        "type": "string",
-        "enum": [
-          "ObservationElement",
-          "ObservationSet"
         ]
       },
       "ObservationSet": {
@@ -4233,6 +5835,10 @@
                 "items": {
                   "$ref": "#/components/schemas/ObservationElement"
                 }
+              },
+              "extensions": {
+                "description": "The APDS extension container (Use Case Document §C.2.5; Part 4 §4.3). Undeclared on APDS 4.1 entities (APX erratum 010).",
+                "$ref": "#/components/schemas/Extensions"
               }
             },
             "required": [
@@ -4316,6 +5922,10 @@
                 "items": {
                   "$ref": "#/components/schemas/GeoJsonObject"
                 }
+              },
+              "extensions": {
+                "description": "The APDS extension container (Use Case Document §C.2.5; Part 4 §4.3). Undeclared on APDS 4.1 entities (APX erratum 010).",
+                "$ref": "#/components/schemas/Extensions"
               }
             },
             "required": [
@@ -4418,6 +6028,10 @@
               },
               "rateTransition": {
                 "$ref": "#/components/schemas/RateTransition"
+              },
+              "extensions": {
+                "description": "The APDS extension container (Use Case Document §C.2.5; Part 4 §4.3). Undeclared on APDS 4.1 entities (APX erratum 010).",
+                "$ref": "#/components/schemas/Extensions"
               }
             },
             "required": [
@@ -4500,13 +6114,15 @@
                 "items": {
                   "$ref": "#/components/schemas/RateLineCollection"
                 }
+              },
+              "extensions": {
+                "description": "The APDS extension container (Use Case Document §C.2.5; Part 4 §4.3). Undeclared on APDS 4.1 entities (APX erratum 010).",
+                "$ref": "#/components/schemas/Extensions"
               }
             },
             "required": [
               "rateTableName",
               "availability",
-              "validityStart",
-              "activeTimes",
               "rateLineCollections"
             ]
           }
@@ -4580,6 +6196,10 @@
               },
               "identifiedVehicle": {
                 "$ref": "#/components/schemas/VehicleAncillaryIdentification"
+              },
+              "extensions": {
+                "description": "The APDS extension container (Use Case Document §C.2.5; Part 4 §4.3). Undeclared on APDS 4.1 entities (APX erratum 010).",
+                "$ref": "#/components/schemas/Extensions"
               }
             },
             "required": [
@@ -4698,6 +6318,10 @@
               },
               "monetaryValue": {
                 "$ref": "#/components/schemas/MonetaryValue"
+              },
+              "extensions": {
+                "description": "The APDS extension container (Use Case Document §C.2.5; Part 4 §4.3). Undeclared on APDS 4.1 entities (APX erratum 010).",
+                "$ref": "#/components/schemas/Extensions"
               }
             },
             "required": [
@@ -4973,55 +6597,6 @@
           }
         ]
       },
-      "Problem": {
-        "title": "Problem",
-        "description": "RFC 9457 problem details. APX problem `type` URIs are registered in the\nAPX problem-type registry. Used for all APX error responses; APDS-native\nroutes may alternatively use the APDS ResponseStatus shape.",
-        "type": "object",
-        "required": [
-          "type",
-          "title",
-          "status"
-        ],
-        "properties": {
-          "type": {
-            "type": "string",
-            "format": "uri",
-            "description": "Problem type URI from the APX problem registry.",
-            "examples": [
-              "https://apx-standard.org/problems/insufficient-grant"
-            ]
-          },
-          "title": {
-            "type": "string",
-            "description": "Short human-readable summary of the problem type."
-          },
-          "status": {
-            "type": "integer",
-            "minimum": 100,
-            "maximum": 599,
-            "description": "HTTP status code."
-          },
-          "detail": {
-            "type": "string",
-            "description": "Human-readable explanation specific to this occurrence."
-          },
-          "instance": {
-            "type": "string",
-            "format": "uri-reference",
-            "description": "URI reference identifying this specific occurrence."
-          }
-        },
-        "additionalProperties": true,
-        "examples": [
-          {
-            "type": "https://apx-standard.org/problems/target-not-found",
-            "title": "Target not found",
-            "status": 404,
-            "detail": "No lane b2000000-0000-4000-8000-00000000dead at this place.",
-            "instance": "/v1/lanes/b2000000-0000-4000-8000-00000000dead/current"
-          }
-        ]
-      },
       "ApxEventSubscription": {
         "title": "ApxEventSubscription",
         "description": "Superset of the APDS 4.1 EventSubscription. A stock APDS client sending\nonly `{endpoint, topics}` (EventTypeEnum values) gets stock behavior;\nthe APX fields are additive and optional.",
@@ -5060,38 +6635,29 @@
             "default": "webhook"
           },
           "filters": {
-            "type": "object",
-            "description": "Server-side delivery filtering.",
-            "properties": {
-              "places": {
-                "type": "array",
-                "description": "Only events bound to these HierarchyElement subtrees are delivered.",
-                "items": {
-                  "type": "string",
-                  "format": "uuid"
-                }
-              },
-              "severityFloor": {
-                "type": "string",
-                "description": "For alert topics — minimum severity delivered.",
-                "enum": [
-                  "info",
-                  "warning",
-                  "minor",
-                  "major",
-                  "critical"
-                ]
-              }
-            }
+            "$ref": "#/components/schemas/SubscriptionFilters"
           },
           "secret": {
             "type": "string",
-            "description": "HMAC signing secret (≥32 bytes of entropy, used as raw UTF-8 key\nmaterial). Server-generated when absent and returned EXACTLY ONCE —\nin the Prefer=representation creation response. Never present in\nGET/PATCH responses."
+            "description": "HMAC signing secret (≥32 bytes of entropy, used as raw UTF-8 key\nmaterial; shorter is 400 `invalid-request`). For `transport:\nwebhook` only: server-generated when absent and returned EXACTLY\nONCE — in the Prefer=representation creation response. Never\npresent in GET/PATCH responses. An SSE subscription has nothing to\nsign and gets no secret (Part 8 §8.1)."
           },
           "secretRef": {
             "type": "string",
             "writeOnly": true,
             "description": "Identifier of an out-of-band-exchanged secret (Part 9 §9.4) —\nsupply INSTEAD of `secret` when key material must never transit\nthe API. Never a secret value itself."
+          },
+          "keyId": {
+            "type": "string",
+            "writeOnly": true,
+            "description": "Identifier the client chooses for the key it supplies with `secret`\nor `secretRef`; deliveries signed with that key carry it in\n`APX-Key-Id`. Server-assigned when absent (Part 8 §8.1)."
+          },
+          "retireKeyIds": {
+            "type": "array",
+            "writeOnly": true,
+            "description": "PATCH only: key ids to retire now, ending a rotation overlap early.\nRetiring the last active key is 400 `invalid-request`. Without it,\nthe server retires the superseded key 24 hours after the rotation\n(Part 8 §8.1).",
+            "items": {
+              "type": "string"
+            }
           },
           "activeKeyIds": {
             "type": "array",
@@ -5108,10 +6674,74 @@
               "paused",
               "failed"
             ],
-            "description": "failed = retry schedule exhausted; PATCH status=active to resume."
+            "description": "`active` delivers; `paused` holds matching events for up to 24 hours\nand delivers them in order on resume (Part 8 §8.1); `failed` is\nserver-assigned when the retry schedule is exhausted (a client\nsetting it is 400 `invalid-request`). PATCH `status: active` to\nresume a paused or failed subscription."
           },
           "recordInfo": {
             "$ref": "#/components/schemas/RecordInfo"
+          },
+          "extensions": {
+            "$ref": "#/components/schemas/Extensions"
+          }
+        }
+      },
+      "ApxEventSubscriptionPatch": {
+        "title": "ApxEventSubscriptionPatch",
+        "description": "Body of `PATCH /webhooks/{id}`: a JSON Merge Patch (RFC 7396) over\nApxEventSubscription. Members present replace the stored value, an\nexplicit `null` clears an optional member, and absent members are\nunchanged — so `{\"status\": \"active\"}` alone resumes a subscription.\n`version`, when given, is the precondition (Part 4 §4.2a); a stale one\nis 409 `version-conflict`. `id`, `activeKeyIds`, and `recordInfo` are\nserver-managed and cannot be patched.",
+        "type": "object",
+        "properties": {
+          "version": {
+            "type": "integer",
+            "minimum": 1,
+            "description": "The version the client last read."
+          },
+          "endpoint": {
+            "$ref": "#/components/schemas/Url"
+          },
+          "topics": {
+            "type": "array",
+            "minItems": 1,
+            "items": {
+              "type": "string"
+            }
+          },
+          "transport": {
+            "type": "string",
+            "enum": [
+              "webhook",
+              "sse"
+            ]
+          },
+          "filters": {
+            "description": "Replaces the stored filters; `{}` removes every filter.",
+            "$ref": "#/components/schemas/SubscriptionFilters"
+          },
+          "secret": {
+            "type": "string",
+            "description": "A new signing secret; starts a rotation overlap (Part 8 §8.1)."
+          },
+          "secretRef": {
+            "type": "string",
+            "writeOnly": true
+          },
+          "keyId": {
+            "type": "string",
+            "writeOnly": true
+          },
+          "retireKeyIds": {
+            "type": "array",
+            "writeOnly": true,
+            "items": {
+              "type": "string"
+            }
+          },
+          "status": {
+            "type": "string",
+            "enum": [
+              "active",
+              "paused",
+              "failed"
+            ],
+            "description": "`active` or `paused` — the client-settable states. `failed` is\nserver-assigned; a PATCH setting it is 400 `invalid-request`."
           },
           "extensions": {
             "$ref": "#/components/schemas/Extensions"
@@ -5157,6 +6787,13 @@
           },
           "time": {
             "$ref": "#/components/schemas/DateTime"
+          },
+          "attemptHistory": {
+            "type": "array",
+            "description": "Every attempt so far, oldest first (Part 8 §8.3). `deliveryId` and\n`lastCode` above are those of the latest entry. The normative\nschedule makes at most 27 attempts per event.",
+            "items": {
+              "$ref": "#/components/schemas/DeliveryAttempt"
+            }
           }
         },
         "examples": [
@@ -5205,7 +6842,7 @@
           },
           "parameters": {
             "type": "object",
-            "description": "Command-type-specific parameters. Normative parameter schemas per\ncommandType are given in Part 6 (e.g. lostTicket.method,\npushRate.rateTable VersionedReference, applyValidation.ticket +\nprovider, displayMessage.message, setDeviceState.state,\npushNegotiatedRate.rateTable VersionedReference to a RateTable\nflagged negotiable, matchTicket.session + evidence)."
+            "description": "Command-type-specific parameters. Normative parameter schemas per\ncommandType are given in Part 6 (e.g. lostTicket.method,\npushRate.rateTable VersionedReference, applyValidation.ticket +\nprovider, displayMessage.message, setDeviceState.state,\npushNegotiatedRate.rateTable VersionedReference to a RateTable\nflagged negotiable, matchTicket.session + evidence,\nresetPassback/forceIn/forceOut.credential, courtesyExit.holder)."
           },
           "requestedBy": {
             "description": "The organisation requesting the action (defaults to the token's apx_org).",
@@ -5233,6 +6870,12 @@
           "resolutionContext": {
             "description": "The ResolutionContext this command resolves (Part 17) — links the action into the interaction's audit chain.",
             "$ref": "#/components/schemas/Reference"
+          },
+          "resolutionContextVersion": {
+            "type": "integer",
+            "minimum": 1,
+            "readOnly": true,
+            "description": "The `version` of the ResolutionContext whose allowed actions this\nwrite was checked against, recorded by the server so the decision stays\nreconstructible after the context is recomputed or expires (Part 17 §17.2)."
           },
           "correlationId": {
             "type": "string",
@@ -5304,6 +6947,9 @@
                 }
               }
             }
+          },
+          "result": {
+            "$ref": "#/components/schemas/CommandResult"
           },
           "recordInfo": {
             "$ref": "#/components/schemas/RecordInfo"
@@ -5601,7 +7247,7 @@
           },
           "benefit": {
             "type": "object",
-            "description": "What the validation is WORTH — disclosed in the lookup so agents can\nanswer disputes. Exactly one of amount (money off) or duration\n(comped time, priced at the applicable rate) applies.",
+            "description": "What the validation is WORTH — disclosed in the lookup so agents can\nanswer disputes. Exactly one of amount (money off), duration\n(comped time, priced at the applicable rate), or percentage\n(proportionate discount) applies.",
             "required": [
               "description"
             ],
@@ -5621,6 +7267,12 @@
               "duration": {
                 "description": "Comped parking time (ISO 8601), valued at the applicable rate.",
                 "$ref": "#/components/schemas/Duration"
+              },
+              "percentage": {
+                "type": "number",
+                "minimum": 0,
+                "maximum": 100,
+                "description": "Proportionate discount on the amount due, mirrored from a percentage ValidationProgram (Part 20 §20.1)."
               }
             }
           }
@@ -5751,6 +7403,147 @@
             }
           }
         ]
+      },
+      "EventTypeEnum": {
+        "title": "EventTypeEnum",
+        "type": "string",
+        "enum": [
+          "AssignedRightCreated",
+          "AssignedRightUpdated",
+          "AssignedRightDeleted",
+          "SessionCreated",
+          "SessionUpdated",
+          "SessionDeleted",
+          "PlaceCreated",
+          "PlaceUpdated",
+          "PlaceDeleted",
+          "RightSpecificationCreated",
+          "RightSpecificationUpdated",
+          "RightSpecificationDeleted",
+          "RateCreated",
+          "RateUpdated",
+          "RateDeleted",
+          "OrganisationCreated",
+          "OrganisationUpdated",
+          "OrganisationDeleted"
+        ]
+      },
+      "EventData": {
+        "title": "EventData",
+        "description": "data of created / updated / deleted record",
+        "type": "object",
+        "oneOf": [
+          {
+            "$ref": "#/components/schemas/HierarchyElement"
+          },
+          {
+            "$ref": "#/components/schemas/RightSpecification"
+          },
+          {
+            "$ref": "#/components/schemas/RateTable"
+          },
+          {
+            "$ref": "#/components/schemas/AssignedRight"
+          },
+          {
+            "$ref": "#/components/schemas/Session"
+          },
+          {
+            "$ref": "#/components/schemas/Contact"
+          }
+        ]
+      },
+      "SubscriptionFailure": {
+        "title": "SubscriptionFailure",
+        "description": "Data of `apx.subscription.failed.v1` (Part 8 §8.3): which subscription\nstopped, where it was delivering, and the attempt that exhausted the\nschedule. The envelope `subject` references the same subscription.",
+        "type": "object",
+        "required": [
+          "subscription",
+          "failedTime"
+        ],
+        "properties": {
+          "subscription": {
+            "description": "The subscription (`className` `ApxEventSubscription`).",
+            "$ref": "#/components/schemas/Reference"
+          },
+          "endpoint": {
+            "description": "The endpoint that stopped answering (webhook transport).",
+            "$ref": "#/components/schemas/Url"
+          },
+          "failedTime": {
+            "description": "When the subscription entered `failed`.",
+            "$ref": "#/components/schemas/DateTime"
+          },
+          "firstFailedEventId": {
+            "type": "string",
+            "format": "uuid",
+            "description": "EventEnvelope.id of the first event that could not be delivered."
+          },
+          "attempts": {
+            "type": "integer",
+            "minimum": 1,
+            "description": "Attempts made for that event before the schedule was exhausted."
+          },
+          "lastCode": {
+            "type": "integer",
+            "description": "The last HTTP status code received (0 = network error)."
+          }
+        }
+      },
+      "ReservationSummary": {
+        "title": "ReservationSummary",
+        "description": "Compact view of one past/current reservation, for customer-history\nlookups. Also the `data` of `apx.reservation.noshow.v1` (Part 14\n§14.1 step 6).",
+        "type": "object",
+        "required": [
+          "reservation"
+        ],
+        "properties": {
+          "reservation": {
+            "$ref": "#/components/schemas/Reference"
+          },
+          "reservationState": {
+            "type": "string",
+            "enum": [
+              "confirmed",
+              "amended",
+              "cancelled",
+              "checkedIn",
+              "noShow"
+            ]
+          },
+          "plannedStart": {
+            "$ref": "#/components/schemas/DateTime"
+          },
+          "plannedEnd": {
+            "$ref": "#/components/schemas/DateTime"
+          },
+          "noShowAfter": {
+            "description": "When a reservation not yet checked in lapses to `noShow` (see ReservationExtension.noShowAfter).",
+            "$ref": "#/components/schemas/DateTime"
+          }
+        },
+        "examples": [
+          {
+            "reservation": {
+              "id": "e2000000-0000-4000-8000-000000000002",
+              "className": "AssignedRight"
+            },
+            "reservationState": "checkedIn",
+            "plannedStart": "2026-08-14T18:00:00Z",
+            "plannedEnd": "2026-08-15T01:00:00Z"
+          }
+        ]
+      },
+      "Extensions": {
+        "title": "Extensions",
+        "description": "The official APDS extension container (Use Case Document §C.2.5).\nKeys MUST follow `apds-ext:<namespace>:<class>@<major>.<minor>`.\nImplementations MUST preserve unknown extension keys on round-trip\n(tolerant reader, faithful writer).",
+        "type": "object",
+        "propertyNames": {
+          "pattern": "^apds-ext:[a-z0-9-]+:[a-z0-9-]+@[0-9]+\\.[0-9]+$"
+        },
+        "additionalProperties": {
+          "type": "object"
+        }
       },
       "PaginatedList": {
         "title": "PaginatedList",
@@ -6467,6 +8260,13 @@
             "items": {
               "type": "number"
             }
+          },
+          "coordinates": {
+            "type": "array",
+            "items": {
+              "description": "A position member (number) or a nested position array, by geometry type."
+            },
+            "description": "RFC 7946 §3.1 coordinates of a geometry object — for a Point, [longitude, latitude] or [longitude, latitude, elevation] in WGS 84 decimal degrees. Undeclared in APDS 4.1 (APX erratum 011)."
           }
         },
         "required": [
@@ -7216,15 +9016,30 @@
           "recordDateTime"
         ]
       },
-      "Extensions": {
-        "title": "Extensions",
-        "description": "The official APDS extension container (Use Case Document §C.2.5).\nKeys MUST follow `apds-ext:<namespace>:<class>@<major>.<minor>`.\nImplementations MUST preserve unknown extension keys on round-trip\n(tolerant reader, faithful writer).",
+      "SubscriptionFilters": {
+        "title": "SubscriptionFilters",
         "type": "object",
-        "propertyNames": {
-          "pattern": "^apds-ext:[a-z0-9-]+:[a-z0-9-]+@[0-9]+\\.[0-9]+$"
-        },
-        "additionalProperties": {
-          "type": "object"
+        "description": "Server-side delivery filtering.",
+        "properties": {
+          "places": {
+            "type": "array",
+            "description": "Only events bound to these HierarchyElement subtrees are delivered\n(Part 8 §8.5). Every entry must lie inside the token's `apx_places`\ngrant, else 403 `insufficient-grant`.",
+            "items": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          "severityFloor": {
+            "type": "string",
+            "description": "For alert topics — minimum severity delivered.",
+            "enum": [
+              "info",
+              "warning",
+              "minor",
+              "major",
+              "critical"
+            ]
+          }
         }
       },
       "RecordInfo": {
@@ -7252,6 +9067,31 @@
           }
         }
       },
+      "DeliveryAttempt": {
+        "title": "DeliveryAttempt",
+        "description": "One delivery attempt of one event to one subscription.",
+        "type": "object",
+        "required": [
+          "deliveryId",
+          "time",
+          "code"
+        ],
+        "properties": {
+          "deliveryId": {
+            "type": "string",
+            "format": "uuid",
+            "description": "The attempt's `APX-Delivery-Id` (unique per attempt)."
+          },
+          "time": {
+            "description": "When the attempt was sent — also its `APX-Timestamp` (each attempt is signed afresh, Part 8 §8.3).",
+            "$ref": "#/components/schemas/DateTime"
+          },
+          "code": {
+            "type": "integer",
+            "description": "HTTP status code received (0 = network error or timeout)."
+          }
+        }
+      },
       "Approval": {
         "title": "Approval",
         "description": "Approval evidence, REQUIRED on a write whose AllowedAction said\nrequiresApproval (Part 17 §17.3). Servers MUST reject a\nrequires-approval action without it (403 approval-required). One shared\nshape for control commands and domain actions (e.g. refunds).",
@@ -7269,6 +9109,33 @@
           },
           "note": {
             "type": "string"
+          }
+        }
+      },
+      "CommandResult": {
+        "title": "CommandResult",
+        "description": "The structured outcome of a command, populated by the server when the\ncommand reaches `succeeded` (Part 6 §6.1a) and absent before then. Members\nare normative per command type: `lostTicket` → `ticketNumber`, `session`,\n`amountDue`; `matchTicket` → `session`, `amountDue`;\n`pushNegotiatedRate` → `rateTable`, `amountDue`. Other command types\nleave it absent unless a registry entry says otherwise. It restates what\nthe lane inquiry shows, so a console can continue (print, take payment)\nwithout parsing `statusHistory[].detail` or making a second call.",
+        "type": "object",
+        "readOnly": true,
+        "properties": {
+          "ticketNumber": {
+            "type": "string",
+            "description": "The ticket the command issued or bound (lostTicket)."
+          },
+          "session": {
+            "description": "The APDS Session the ticket belongs to (lostTicket, matchTicket).",
+            "$ref": "#/components/schemas/Reference"
+          },
+          "amountDue": {
+            "description": "The amount due on the ticket immediately after the command.",
+            "$ref": "#/components/schemas/AmountInCurrency"
+          },
+          "rateTable": {
+            "description": "The RateTable at the exact version applied (pushNegotiatedRate).",
+            "$ref": "#/components/schemas/VersionedReference"
+          },
+          "extensions": {
+            "$ref": "#/components/schemas/Extensions"
           }
         }
       },
@@ -8130,6 +9997,10 @@
             "$ref": "#/components/schemas/VersionedReference"
           },
           "rightSpecificationId": {
+            "$ref": "#/components/schemas/VersionedReference"
+          },
+          "rateTableId": {
+            "description": "The quoted RateTable (the spelling Identifiers.required names). Publishers send this member; rateTableID is the APDS 4.1 declared spelling of the same reference and MAY accompany it (APX erratum 009).",
             "$ref": "#/components/schemas/VersionedReference"
           }
         },
@@ -9725,6 +11596,67 @@
         ]
       }
     },
+    "responses": {
+      "TooManyRequests": {
+        "description": "Rate limited (problem type `rate-limited`, Part 12).",
+        "headers": {
+          "Retry-After": {
+            "description": "Seconds to wait before retrying (RFC 9110).",
+            "schema": {
+              "type": "integer",
+              "minimum": 0
+            }
+          }
+        },
+        "content": {
+          "application/problem+json": {
+            "schema": {
+              "$ref": "#/components/schemas/Problem"
+            }
+          }
+        }
+      },
+      "Unauthorized": {
+        "description": "Missing, malformed, expired, or revoked access token (problem type\n`unauthenticated`, Part 12).",
+        "content": {
+          "application/problem+json": {
+            "schema": {
+              "$ref": "#/components/schemas/Problem"
+            }
+          }
+        }
+      },
+      "Forbidden": {
+        "description": "Insufficient scope (problem type `insufficient-scope`) or place\ngrant (`insufficient-grant`) for this operation (Part 9).",
+        "content": {
+          "application/problem+json": {
+            "schema": {
+              "$ref": "#/components/schemas/Problem"
+            }
+          }
+        }
+      },
+      "NotFound": {
+        "description": "The addressed resource does not exist (problem type\n`target-not-found`). A resource at a place outside the caller's\n`apx_places` grant is 403 `insufficient-grant` instead (Part 9 §9.3).\nA resource that exists but lies outside a narrower ownership scope\n(a merchant's own programs, a valet customer's own ticket) is\nreported as 404, so the answer never confirms another party's\nrecord exists (Part 9 §9.3a).",
+        "content": {
+          "application/problem+json": {
+            "schema": {
+              "$ref": "#/components/schemas/Problem"
+            }
+          }
+        }
+      },
+      "BadRequest": {
+        "description": "The request is malformed: the body or a parameter fails the\noperation's schema or a normative field rule (problem type\n`invalid-request`, with an `errors[]` member naming each offending\nJSON Pointer), or a REQUIRED Idempotency-Key is absent\n(`idempotency-key-required`). Part 12.",
+        "content": {
+          "application/problem+json": {
+            "schema": {
+              "$ref": "#/components/schemas/Problem"
+            }
+          }
+        }
+      }
+    },
     "parameters": {
       "latitude": {
         "schema": {
@@ -9897,15 +11829,6 @@
           "type": "string"
         }
       },
-      "version": {
-        "schema": {
-          "type": "integer",
-          "minimum": 1
-        },
-        "in": "query",
-        "name": "version",
-        "description": "Previous version number. Useful when a reference to a resource version is found in another dataset, and that version is no longer the latest one. Latest version is assumed when this parameter is not used."
-      },
       "place_ids": {
         "schema": {
           "type": "array",
@@ -9918,6 +11841,15 @@
         "in": "query",
         "explode": false,
         "style": "form"
+      },
+      "version": {
+        "schema": {
+          "type": "integer",
+          "minimum": 1
+        },
+        "in": "query",
+        "name": "version",
+        "description": "Previous version number. Useful when a reference to a resource version is found in another dataset, and that version is no longer the latest one. Latest version is assumed when this parameter is not used."
       },
       "start_before": {
         "schema": {
@@ -10096,46 +12028,26 @@
             "QuoteSessionExtensionResponse"
           ]
         }
-      }
-    },
-    "responses": {
-      "Unauthorized": {
-        "description": "Missing or invalid access token.",
-        "content": {
-          "application/problem+json": {
-            "schema": {
-              "$ref": "#/components/schemas/Problem"
-            }
-          }
+      },
+      "IdempotencyKeyOptional": {
+        "name": "Idempotency-Key",
+        "in": "header",
+        "required": false,
+        "description": "When given, the operation is idempotent per Part 4 §4.2a: a replay\nwith the same body returns the current representation (200), a\ndifferent body is 409 `idempotency-conflict`. Clients that retry\nSHOULD send it.",
+        "schema": {
+          "type": "string"
         }
       },
-      "Forbidden": {
-        "description": "Insufficient scope (problem type `insufficient-scope`) or place\ngrant (`insufficient-grant`) for this operation (Part 9).",
-        "content": {
-          "application/problem+json": {
-            "schema": {
-              "$ref": "#/components/schemas/Problem"
-            }
-          }
-        }
-      },
-      "TooManyRequests": {
-        "description": "Rate limited (problem type `rate-limited`, Part 12).",
-        "headers": {
-          "Retry-After": {
-            "description": "Seconds to wait before retrying (RFC 9110).",
-            "schema": {
-              "type": "integer",
-              "minimum": 0
-            }
-          }
-        },
-        "content": {
-          "application/problem+json": {
-            "schema": {
-              "$ref": "#/components/schemas/Problem"
-            }
-          }
+      "IfMatch": {
+        "name": "If-Match",
+        "in": "header",
+        "required": false,
+        "description": "The `version` the client last read, as an entity tag (`\"7\"`). A\nstale value is 409 `version-conflict`; nothing is written (Part 4\n§4.2a). Equivalent to sending `version` in the body.",
+        "schema": {
+          "type": "string",
+          "examples": [
+            "\"7\""
+          ]
         }
       }
     }

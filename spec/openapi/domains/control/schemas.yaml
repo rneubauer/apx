@@ -40,7 +40,8 @@ Command:
         pushRate.rateTable VersionedReference, applyValidation.ticket +
         provider, displayMessage.message, setDeviceState.state,
         pushNegotiatedRate.rateTable VersionedReference to a RateTable
-        flagged negotiable, matchTicket.session + evidence).
+        flagged negotiable, matchTicket.session + evidence,
+        resetPassback/forceIn/forceOut.credential, courtesyExit.holder).
     requestedBy:
       description: The organisation requesting the action (defaults to the token's apx_org).
       $ref: "../../../vendor/apds/4.1/apds-api-4.1.yaml#/components/schemas/Reference"
@@ -63,6 +64,14 @@ Command:
     resolutionContext:
       description: The ResolutionContext this command resolves (Part 17) — links the action into the interaction's audit chain.
       $ref: "../../../vendor/apds/4.1/apds-api-4.1.yaml#/components/schemas/Reference"
+    resolutionContextVersion:
+      type: integer
+      minimum: 1
+      readOnly: true
+      description: |-
+        The `version` of the ResolutionContext whose allowed actions this
+        write was checked against, recorded by the server so the decision stays
+        reconstructible after the context is recomputed or expires (Part 17 §17.2).
     correlationId:
       type: string
       format: uuid
@@ -102,8 +111,39 @@ Command:
             $ref: "../../../vendor/apds/4.1/apds-api-4.1.yaml#/components/schemas/DateTime"
           actor: { type: string }
           detail: { type: string }
+    result:
+      $ref: "#/CommandResult"
     recordInfo:
       $ref: "../common/schemas.yaml#/RecordInfo"
+    extensions:
+      $ref: "../common/schemas.yaml#/Extensions"
+
+CommandResult:
+  title: CommandResult
+  description: |-
+    The structured outcome of a command, populated by the server when the
+    command reaches `succeeded` (Part 6 §6.1a) and absent before then. Members
+    are normative per command type: `lostTicket` → `ticketNumber`, `session`,
+    `amountDue`; `matchTicket` → `session`, `amountDue`;
+    `pushNegotiatedRate` → `rateTable`, `amountDue`. Other command types
+    leave it absent unless a registry entry says otherwise. It restates what
+    the lane inquiry shows, so a console can continue (print, take payment)
+    without parsing `statusHistory[].detail` or making a second call.
+  type: object
+  readOnly: true
+  properties:
+    ticketNumber:
+      type: string
+      description: The ticket the command issued or bound (lostTicket).
+    session:
+      description: The APDS Session the ticket belongs to (lostTicket, matchTicket).
+      $ref: "../../../vendor/apds/4.1/apds-api-4.1.yaml#/components/schemas/Reference"
+    amountDue:
+      description: The amount due on the ticket immediately after the command.
+      $ref: "../../../vendor/apds/4.1/apds-api-4.1.yaml#/components/schemas/AmountInCurrency"
+    rateTable:
+      description: The RateTable at the exact version applied (pushNegotiatedRate).
+      $ref: "../../../vendor/apds/4.1/apds-api-4.1.yaml#/components/schemas/VersionedReference"
     extensions:
       $ref: "../common/schemas.yaml#/Extensions"
 
@@ -289,8 +329,9 @@ ValidationProvider:
       type: object
       description: |-
         What the validation is WORTH — disclosed in the lookup so agents can
-        answer disputes. Exactly one of amount (money off) or duration
-        (comped time, priced at the applicable rate) applies.
+        answer disputes. Exactly one of amount (money off), duration
+        (comped time, priced at the applicable rate), or percentage
+        (proportionate discount) applies.
       required: [description]
       properties:
         description:
@@ -303,6 +344,11 @@ ValidationProvider:
         duration:
           description: Comped parking time (ISO 8601), valued at the applicable rate.
           $ref: "../../../vendor/apds/4.1/apds-api-4.1.yaml#/components/schemas/Duration"
+        percentage:
+          type: number
+          minimum: 0
+          maximum: 100
+          description: Proportionate discount on the amount due, mirrored from a percentage ValidationProgram (Part 20 §20.1).
 
 RatePolicy:
   title: RatePolicy

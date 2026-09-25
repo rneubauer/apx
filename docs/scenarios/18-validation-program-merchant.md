@@ -61,7 +61,8 @@ center's provider lookup and the merchant program are one thing.
 ## Step 2 — The restaurant issues its own codes
 
 Harbor Bistro's iPad, on the merchant scope, prints a sheet of 50 QR
-codes. The codes come back **once**:
+codes. The body need not repeat the program — the path names it
+(`ValidationIssuanceRequest`). The codes come back **once**:
 
 ```http
 POST /v1/validations/programs/e5000000-0000-4000-8000-000000000001/issuances HTTP/1.1
@@ -245,6 +246,7 @@ Content-Type: application/json
 restaurant is invoiced $1,648.00 from this statement's `id`; the $2,418
 of parking actually comped is the operator's number for the P&L. The
 statement is now immutable — a reversal on any of these redemptions from
-here on is refused with 409 `statement-closed` and lands instead as a
-credit line on October's statement. `apx.validations.statement.closed.v1`
-tells the accounting integration the invoice can go out.
+here on still succeeds, but leaves this statement untouched: it lands as
+a negative `credit` line on October's statement (§20.4, §20.6).
+`apx.validations.statement.closed.v1` tells the accounting integration
+the invoice can go out.

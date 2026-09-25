@@ -33,7 +33,13 @@ Callers present whatever parking-domain identifiers they have
 (`ResolutionResolveRequest`): lane, place, device, plate, ticket number,
 credential, reservation code, session, holder. Servers MUST resolve every
 relationship they can and MUST NOT fail because some identifiers are
-absent.
+absent. At least one of those nine identifying members MUST be present;
+`interactionId`, `correlationId`, and `channel` are correlation metadata
+and do not count, so a body carrying only them is 400 `invalid-request`.
+Unknown members are ignored (tolerant reader) and never used for
+resolution. (The schema states only `minProperties: 1`; narrowing it to
+the identifying members would reject bodies existing clients send, so the
+rule is enforced by the server.)
 
 **Layering rule (normative):** APX resolution accepts NO telephony
 identifiers — no SIP URIs, no phone numbers. The intercom is typically a
@@ -51,6 +57,13 @@ it as `device`.)
 - `GET /v1/resolution/contexts/{id}` — recompute; `version` increments when
   anything material changed. Contexts MAY expire (RECOMMENDED ≥ 1 hour);
   after expiry, re-resolve.
+- **Decision audit.** Because a context recomputes, the decisions an
+  action was checked against can change minutes later. When a command or
+  domain action names a `resolutionContext`, the server SHOULD record in
+  that action's audit trail the context `version` its enforcement check
+  used, and SHOULD retain the `allowedActions` of every version so used
+  for the audit retention period, even after the context expires from
+  the read route — "policy allowed it at the time" must stay provable.
 - **Partial results (normative):** a server MUST NOT delay the whole
   context because one source is slow. It MAY return `status: partial` with
   `pendingSources[]`; the caller re-reads to refresh. Target latencies
@@ -84,11 +97,24 @@ is the policy layer's interoperable surface:
    plane. A `POST /v1/commands` for an action the current context
    evaluates as `allowed=false` MUST be rejected
    (`403 action-not-allowed`); one requiring approval MUST be rejected
-   without `approval` evidence (`403 approval-required`). Policy content
+   without `approval` evidence (`403 approval-required`). Enforcement
+   applies equally to the domain operations an `execution.type: domain`
+   descriptor names (`PUT /v1/sessions/{id}/plate`,
+   `PUT /v1/sessions/{id}/assigned-right`,
+   `POST /v1/sessions/{id}/assigned-right/unlink`, the payment surface);
+   their approval evidence rides the request body's `approval` member.
+   A command that names a `resolutionContext` whose current
+   `allowedActions` do not include its command type MUST be refused with
+   `403 action-not-allowed` (not offered is not allowed); a command that
+   names no `resolutionContext` is subject only to Part 9. Policy content
    (courtesy limits, thresholds, roles) is operator-defined and out of
    APX scope — only the decision format and its enforcement are normative.
 4. `recommendedAction` is advisory, never binding, and MUST be one of the
-   allowed actions.
+   allowed actions (a runtime rule; the schema cannot state it).
+5. **Descriptor consistency.** The schema enforces the conditional rules
+   of `AllowedAction`: `reason` is present whenever `allowed` is false or
+   `requiresApproval` is true; `execution.type: control` carries
+   `command`, `execution.type: domain` carries `operationId`.
 
 ## 17.4 Action categories (normative)
 
@@ -100,8 +126,10 @@ and each category is owned by the module that already models it:
    `resetPassback`, `forceIn`, `forceOut` (anti-passback correction;
    parameters: `credential`; read side `GET /v1/credentials/{id}/passback`)
    and `courtesyExit` (a gate vend recorded as a tracked courtesy against
-   the account/holder in parameters — servers MUST count it toward
-   courtesy policy and surface it in `recentOverrides`). Registry v3 adds
+   the holder named by `parameters.holder`, Part 6 §6.1 — servers MUST count it toward
+   courtesy policy and surface it in `recentOverrides`, where each
+   `OverrideRecord` SHOULD copy the Command's `agent`, `agentType`, and
+   `reason` so "who granted it, and why" needs no second read). Registry v3 adds
    `pushNegotiatedRate` and `matchTicket` (Part 6 §6.6–6.7): both act on
    the current transaction at a lane, which is why they are commands and
    not domain writes. Control MUST NOT become a dumping ground for
@@ -149,15 +177,51 @@ decoration, `PlateCandidate.detail` returns it, and the engine's
 `alternateReads` SHOULD be offered as additional candidates — the plate the
 engine ranked second is usually the one the agent is looking for.
 
+**Concurrency (normative).** Two agents can hold the same session open.
+`PUT /v1/sessions/{id}/plate` and `PUT /v1/sessions/{id}/assigned-right`
+take `If-Match` with the APDS Session `version` the client read; a stale
+one is 409 `version-conflict` and nothing is written (Part 4 §4.2a).
+Without `If-Match` the write is last-writer-wins, as before. The 200
+carries the Session's new `version`.
+
+**Closed sessions (normative).** On a pay-by-plate site the plate is the
+billing key, so correcting it after settlement moves a charge between
+keepers. A correction on an open Session is always allowed. A correction
+on a closed Session (ended, billed, or bound to an exit) is allowed only
+inside the operator's dispute window and only with `reason` — it is then
+an audited financial adjustment; otherwise it is 422 `session-not-open`.
+
+**Scope of the echo.** The plate write is authorized by `apx.data:write`.
+Its 200 echoes only the plate values the caller itself supplied and MUST
+NOT disclose any other plate-bearing data (earlier plates, candidates,
+imagery); those remain under `apx.lpr:read` (Part 9 §9.6). Where the
+resolution context gated the correction, the approval evidence rides the
+body's `approval` member (§17.3).
+
 ## 17.6 Support interactions and topics
 
 - `POST /v1/support/interactions` / `GET /v1/support/interactions?…`
   (scope `apx.support:manage`) record and query interaction history —
   summaries and command references, never transcripts (Part 9 §9.6).
   Recorded interactions surface in later contexts' `supportHistory`.
+- **Retries.** The POST takes an optional `Idempotency-Key`; clients that
+  retry SHOULD send it. A replay returns the current record with 200; the
+  same key with a different body is 409 `idempotency-conflict` (Part 4
+  §4.2a). Without it, a lost 201 retried records the call twice.
+- **Open, then complete.** A console MAY record the interaction when the
+  call is answered, so the correlation id exists from the first second,
+  and complete it with `PUT /v1/support/interactions/{id}` (`endedAt`,
+  `resolution`, `summary`, `actions`), which follows Part 4 §4.2a
+  (`If-Match` or body `version`; 409 `version-conflict` when stale).
+  `GET /v1/support/interactions/{id}` reads one record.
+- **Lookup keys.** Besides the subject filters, the list accepts
+  `correlationId`, `interactionId`, and `credential`, each sufficient on
+  its own, so the §17.7 chain can be walked from either end. A call with
+  no filter is 400 `invalid-request`.
 - New topics (registry v4): `apx.resolution.context.created.v1`,
   `apx.support.interaction.recorded.v1`. Place binding per Part 8 §8.5
-  (the context's/interaction's `place`).
+  (the context's/interaction's `place`). The interaction topic is
+  published on create and on every update; `version` tells them apart.
 
 ## 17.7 Correlation (normative)
 
@@ -181,6 +245,10 @@ scope projection), §17.3 allowed-actions evaluation AND its command-plane
 enforcement, and §17.6 support interactions. Requires `apx-control`.
 Passback (§17.4 read + commands) and plate candidates (§17.5) are REQUIRED
 where the implementation tracks passback / stores LPR reads respectively,
-and otherwise omitted (discovery then does not list them). The issue
+and otherwise omitted (discovery then does not list them). An
+implementation that serves the passback read answers a credential it
+knows but does not track (a transient ticket) with 200 and
+`state: unknown`; 404 `target-not-found` means the credential does not
+exist. The issue
 vocabulary is the open `apx-issue-types` registry (v1, 11 entries) —
 implementers extend per Part 11.

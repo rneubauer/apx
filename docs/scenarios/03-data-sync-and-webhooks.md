@@ -58,8 +58,12 @@ APDS `Place`/`Session` shapes):
 
 ```http
 GET /places HTTP/1.1
-GET /sessions?modified_since=2026-08-01T00:00:00Z HTTP/1.1
+GET /sessions?modified_since=1785542400 HTTP/1.1
 ```
+
+`modified_since` is APDS's own parameter and takes a **Unix epoch
+integer** (`1785542400` is 2026-08-01T00:00:00Z), not the RFC 3339 string
+every APX time uses (Part 5 §5.2 rule 3).
 
 A plain APDS 4.1 client could stop here and be fully functional. APX adds
 the next part.
@@ -114,8 +118,11 @@ superset of the stock APDS `EventSubscription`:
 ```http
 POST /webhooks HTTP/1.1
 Content-Type: application/json
+Prefer: return=representation
+Idempotency-Key: 5b0e2c1a-city-onboarding
 ```
 
+<!-- apx:request POST /webhooks -->
 <!-- apx:validate ApxEventSubscription -->
 ```json
 {
@@ -227,6 +234,9 @@ GET /webhooks/3c4d5e6f-7a8b-4c9d-8e0f-1a2b3c4d5e6f/deliveries HTTP/1.1
 }
 ```
 
-Retries follow the normative backoff schedule; a subscription that keeps
-failing flips to `status: failed` and emits `apx.subscription.failed.v1` —
-the fabric reports on itself.
+Retries follow the normative backoff schedule, and each retry is signed
+afresh — a new `APX-Timestamp` and `APX-Delivery-Id`, the same body and
+envelope `id` — so an hour-late retry still passes the receiver's
+±5-minute window (Part 8 §8.3). A subscription that keeps failing flips to
+`status: failed` and emits `apx.subscription.failed.v1` — the fabric
+reports on itself.

@@ -13,6 +13,8 @@ APX open vocabularies are published as **APDS UserDefinedCodeList documents**
 | `apx-conformance-classes` | Conformance classes | `.well-known/apx-configuration` |
 | `apx-issue-types` | Resolution issue classification | `ResolutionIssue.code` (Part 17) |
 | `apx-violation-types` | Enforcement violation classification (open; jurisdictional vocabularies extend it) | `Violation.violationType`, `EligibilityResult.suggestedViolationType` (Part 19) |
+| `apx-toll-dispute-reasons` | Toll dispute reasons (open) | `TollTransaction.dispute.reason` (Part 15) |
+| `apx-toll-dispute-resolutions` | Toll dispute resolutions (open) | `TollTransaction.dispute.resolution` (Part 15) |
 
 ## 11.1 Rules
 

@@ -6,6 +6,101 @@ conformance/versioning rules in Part 3 of the written standard.
 The machine-readable spec (`spec/openapi/apx.yaml`, bundled as
 `spec/dist/apx-v1.*`) is normative; entries here are informative.
 
+## [0.11.0] — 2026-09-25
+
+Vetting release. Every conformance class was exercised by private
+scenario suites that validate request bodies, query parameters, status
+codes, and response bodies against the bundle; this edition closes what
+they found. Every change is additive: nothing is removed, renamed, or
+narrowed. Findings that could only be fixed by a breaking change are
+deferred to a future major and listed at the end.
+
+**Errors you can actually produce.** Many declared error responses had no
+registered problem type, so no conforming body existed for them. Part 12
+registers `unauthenticated` (401), `invalid-request` (400, with an
+`errors[]` member naming each JSON Pointer), `reference-unknown` and
+`request-unprocessable` (422), `personal-data-not-permitted`,
+`lost-ticket-fee-undefined`, `stream-position-expired` (410), and the four
+missing illegal-transition types (alert, toll, payment, reservation).
+§12.3 now requires every secured operation to declare 401, 403, and 429,
+every id-addressed one 404, and every one with a body 400; 96 missing
+declarations were added and a Spectral rule keeps it true. §12.4 says how
+to choose a type.
+
+**Two cross-cutting rules.** Part 4 §4.2a gives one optimistic-concurrency
+rule for every versioned write (`If-Match`, or `version` in the body, as
+the precondition; 409 `version-conflict` when stale) and says an
+idempotent replay returns the current representation. Part 9 §9.3a says
+what a caller learns outside its grant: 403 for the place grant, 404 for
+narrower ownership scopes, and an empty 200 for place-less lookups under
+an empty grant.
+
+**Data and events.** The data profile now covers the APDS-native routes in
+the OpenAPI itself: native PUTs declare `APX-Update-Mode` and accept a
+`ChangePayload` body; native 400/404/409 offer `application/problem+json`
+beside `ResponseStatus`; every native operation declares 401/403/429; the
+change feed extends to `/observations`. Nine newly found APDS 4.1 defects
+are recorded as errata 004–012 and worked around narrowly in the data
+overlay. The delivery fabric now requires every retry to be re-signed with
+a fresh `APX-Timestamp` (without it the replay window rejected every retry
+after five minutes), records each attempt in the ledger, and adds
+`GET /webhooks/{id}`, merge-patch updates with version checks, idempotent
+creation, key retirement, and a named data schema for every topic.
+`tools/validate-scenarios.mjs` gains an `apx:request` marker that validates
+request bodies too.
+
+**Control, alerts, discovery.** Control gains an audit query,
+`GET /v1/commands`; a structured `Command.result` for `lostTicket`,
+`matchTicket`, and `pushNegotiatedRate`; a synchronous 422 for a lost
+ticket with no fee line; `place` and `deviceState` filters on devices; and
+fixed parameter names for the passback and courtesy commands. Alerts gain
+`expiryTime`, an optional note-and-agent body on acknowledge and resolve,
+and `device`/`relatedEntity` filters. Discovery documents gain `features`,
+`extensions`, `apiBase`, `edition`, and `registryVersions`; Part 16 §16.3
+specifies what `apx-mtls` changes on the wire.
+
+**Accounts, tolling, permits.** Payments gain an explicit state machine
+(authorize-only holds via `captureLater`, reported as `captureStatus: authorized`; cumulative `refundedAmount`;
+`payment-state-illegal`), readable and cancellable payment links, more
+lookup filters, and refusal of card data before it is logged. Tolling
+gains price and void routes, a transition table, list filters, and a
+defined `adjusted` resolution; its dispute codes are registered as
+`apx-toll-dispute-reasons` and `apx-toll-dispute-resolutions`. Permit
+issue takes an optional `Idempotency-Key` (a retry no longer burns pool
+capacity) and §14.2b defines how a permit lands on the native
+AssignedRight.
+
+**LPR, resolution, reservations.** LPR reads require a key, accept
+`place` and `observation`, and return `lane`, `cameraId`, and
+`extensions`; §13.3b defines purged reads. The plate and assigned-right
+session writes take `If-Match` and approval evidence, and a new unlink
+route undoes a link. Support interactions can be read, completed, and
+filtered by `correlationId`. Reservations gain a transition table and
+more filters; public scenarios 05 and 06 now match the OpenAPI.
+
+**Violations, validations.** Terminal violation states are named once,
+a paid violation can be voided with a refund or appealed within the
+window, the escalation clock pauses during an appeal, and each violation
+records its unpaid fee and cap. A redemption reversed in a closed period
+is now credited on the next statement instead of refused, so
+`statement-closed` is reserved and no longer returned. Issuance batches
+and codes can be voided, and public scenario 18 now validates.
+
+**Credentials, valet.** Credentials can activate at `validity.start`,
+and a new `GET /v1/access-events` lists attempts by place and lane,
+including cards that match no record. Valet gains `pickup`, `cancel`, and
+`condition` routes, re-parking of a staged car, a harmless repeated
+`retrieve`, and an exact customer-scope field list; public scenarios 20
+and 21 now validate.
+
+**Deferred to a future major (breaking).** Existing single-UUID `place`
+filters stay single-valued (turning them into lists changes their type);
+new filters added in this edition take lists. Schema-level `if/then`
+rules, `pattern` constraints on existing parameters, and readOnly on
+create-body members stay in prose with a declared refusal, because adding
+them would narrow requests clients already send. `ReferenceToQuote`
+(erratum 008) has no additive workaround and waits for APDS.
+
 ## [0.10.0] — 2026-09-24
 
 Negotiated rates and ticket matching (Part 6 §6.6–6.7, optional features

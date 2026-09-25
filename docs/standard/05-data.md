@@ -18,10 +18,44 @@ generalizes this to **all** the entity classes above, in both directions:
   unchanged.** This is the APDS null-out sentinel rule, made normative for
   every class.
 
-Writes (`POST`, `PUT` on native routes) declare their mode with the request
+Updates (`PUT` on native routes) declare their mode with the request
 header `APX-Update-Mode: full|change` (default `full`, preserving stock
-APDS behavior). Servers MUST reject a change-mode write targeting a stale
-`version` with problem `version-conflict`.
+APDS behavior). A create (`POST`) has no prior state to merge into, so it
+always carries the complete state; a server receiving
+`APX-Update-Mode: change` on a `POST` treats the body as full. Servers
+MUST reject a change-mode write targeting a stale `version` with problem
+`version-conflict`.
+
+## 5.1a Validating writes, and the error dialect (normative)
+
+The native request schemas describe complete objects, so a change-mode
+body cannot validate against them. The data overlay therefore declares
+each native `PUT` body as `anyOf [<native schema>, ChangePayload]`:
+
+- With `APX-Update-Mode: full` (or no header) the body MUST validate
+  against the native schema. Validators that know the header SHOULD
+  apply that branch alone.
+- With `APX-Update-Mode: change` the body MUST validate against
+  `ChangePayload`: `id` present, `version` optional (the precondition
+  when present, Part 4 §4.2a), and any member MAY be `null`. The server
+  MUST also validate every member present against the class's native
+  property schema, treating `null` as "clear" and nested objects that
+  carry their own `id` (a Session segment) by the same change rule, and
+  MUST refuse a member the class does not define with 400.
+  `ChangePayload` is also the shape of every `ChangeFeedPage` item, so
+  what a writer sends and what a reader receives are the same thing.
+
+Native routes keep their APDS error shape (`ResponseStatus`) by default.
+The overlay adds `application/problem+json` (`Problem`) as a second
+media type on every native 400, 404, and 409; a client that sends
+`Accept: application/problem+json` MUST receive the Problem, with the
+registered type: `invalid-request` for a 400, `target-not-found` for a
+404, `id-collision` for a 409 on a create and `version-conflict` for a
+409 on an update. The overlay also declares the shared 401, 403, and 429
+(`unauthenticated`, `insufficient-scope`/`insufficient-grant`,
+`rate-limited`) on every native operation; these have no APDS
+equivalent and are always Problems. A cursor refusal (§5.2) is always a
+Problem too, because the cursor is an APX parameter.
 
 ## 5.2 Change feed (pull deltas)
 
@@ -41,9 +75,13 @@ Rules:
    cursor yields every change after it exactly once.
 2. Cursors are opaque; clients MUST NOT parse them. Servers MUST retain
    enough history to honor cursors at least 7 days old; older cursors get
-   problem `target-not-found` and the client re-syncs with `mode=full`.
+   404 with problem `target-not-found` (always a Problem, §5.1a) and the
+   client re-syncs with `mode=full`.
 3. When no cursor is held, clients use the NATIVE `modified_since`
-   parameter (stock APDS) and then switch to cursors.
+   parameter (stock APDS) and then switch to cursors. Note the type:
+   APDS declares `modified_since` as a **Unix epoch integer** (seconds),
+   not an RFC 3339 string like every APX time — `modified_since=1785542400`,
+   not `modified_since=2026-08-01T00:00:00Z`.
 4. Tombstones MUST be emitted for deletes and retained for the same window.
 5. **Cursor scope.** A cursor is scoped to (entity class, credential,
    filter set). Presenting a cursor with a different filter set or from a
@@ -60,7 +98,9 @@ Rules:
    subtree's history. Servers MUST signal this by including the new
    subtree roots in `ChangeFeedPage.grantAdditions` on the first page
    served after the change; the client then runs `mode=full` for those
-   subtrees before relying on the feed for them.
+   subtrees before relying on the feed for them, selecting each with the
+   native `place` filter (subtree-inclusive; the data overlay adds it to
+   `/places`, which APDS 4.1 omits).
 
 **Rate deck mirroring (informative).** A third-party system that needs the
 operator's rate deck — a call platform, a reservation channel, a revenue
@@ -75,8 +115,11 @@ without a second query.
 `ChangeFeedPage` response alternate are declared by the APX data-profile
 overlay (`spec/openapi/overlays/apx-data-overlay.yaml`, OpenAPI Overlay
 1.0), applied to the bundled document by the build (Part 0 §0.5, Part 3
-§3.4). The overlay decorates exactly the four §5.6 routes; the vendored
-APDS document itself is never modified.
+§3.4). The overlay decorates exactly the five §5.6 feed routes, declares
+the §5.1 header and body on the native `PUT`s and the §5.1a responses on
+every native operation, and carries the narrow workarounds for the APDS
+4.1 errata listed in Part 1 §1.3; the vendored APDS document itself is
+never modified.
 
 **Design note (informative) — why the feed rides the native routes.** A
 separate APX route family (`/v1/changes?class=…`) would have been fully
@@ -98,7 +141,9 @@ SHOULD use change-mode writes.
 
 Change events are delivered over the fabric (Part 8) using APDS's own
 `EventTypeEnum` topics (`SessionCreated`, `PlaceUpdated`, …). The event
-`data` is the APDS `EventData` shape; `subject` references the entity. A
+`data` is the APDS `EventData` shape; `subject` references the entity.
+Both schemas are in the bundle through the `apx-native-event` webhook
+entry (Part 8 §8.7), so a validator can check an envelope against them. A
 subscriber holding a cursor MAY treat events as wake-ups and pull via
 `mode=change` (recommended for exactly-once processing).
 
@@ -127,9 +172,33 @@ demand table. APX adds one convenience read:
 
 ## 5.6 Conformance
 
-`apx-data` requires: the eight native routes; §5.1 modes on writes; §5.2
-change feed on `/places`, `/sessions`, `/rates`, `/rights/assigned`; the
-stock-APDS compatibility guarantee (a client sending no APX headers/params
-observes pure APDS 4.1 behavior). Implementations that hold occupancy data
-for an element MUST serve §5.5 for it; implementations with no occupancy
-data MAY omit the endpoint entirely (discovery then does not list it).
+`apx-data` requires: the eight native routes; §5.1 modes on updates and
+the §5.1a validation and error-dialect rules; §5.2 change feed on
+`/places`, `/sessions`, `/rates`, `/rights/assigned`, and — where the
+implementation serves observation ingest — `/observations` (the
+exactly-once path Part 13 §13.4 relies on); the stock-APDS compatibility
+guarantee (a client sending no APX headers/params observes pure APDS 4.1
+behavior). Implementations that hold occupancy data for an element MUST
+serve §5.5 for it; implementations with no occupancy data MAY omit the
+endpoint entirely (discovery then does not list it).
+
+## 5.7 Known APDS 4.1 behaviour on the native routes (informative)
+
+Some native routes differ from their siblings in ways a client written
+against one will misread on the next. They are APDS 4.1 as published
+(Part 1 §1.3, errata 005, 007, 012); servers MUST NOT "fix" them in a
+way that breaks a stock client:
+
+- `POST /rates` answers **200**, not 201, on success (the data overlay
+  adds the missing 400 and 409 for parity).
+- `PUT /rights/assigned/{id}` declares **201** — a server MAY upsert
+  there; one that does not answers 404 (added by the overlay).
+- Only `GET /contacts` and `GET /contacts/{contactId}` declare 500.
+- `POST /observations` declares no responses in APDS; the overlay
+  declares 201/400/409 in the `ResponseStatus` shape of the other native
+  creates, and replaces the self-contradictory request wrapper with a
+  plain `oneOf [ObservationElement, ObservationSet]` (an element's `type`
+  is its `CredentialTypeEnum` value).
+- `POST /quotes` declares no request body in APDS; the overlay declares
+  an optional `QuoteRightRequest | QuoteSessionExtensionRequest`.
+  `GET /quotes` returns the single matching quote object, not a list.

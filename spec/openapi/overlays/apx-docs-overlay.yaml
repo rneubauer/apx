@@ -20,7 +20,7 @@
 overlay: 1.0.0
 info:
   title: APX documentation overlay (orientation, domain narrative, nav grouping)
-  version: 0.9.0
+  version: 0.11.0
 
 actions:
   # ===== Orientation =======================================================
@@ -66,7 +66,8 @@ actions:
       - Errors are RFC 9457 `application/problem+json` with a registered
         `type` URI you can program against, never a bare string.
       - Mutating operations a device may retry require an `Idempotency-Key`.
-        Replaying a key with the same body returns the original result; with a
+        Replaying a key with the same body returns the resource as it stands
+        now (Part 4 §4.2a), never a second copy; with a
         different body it is a conflict.
       - Lifecycles are audited: resources with states carry an immutable,
         append-only `statusHistory[]`.
