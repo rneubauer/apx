@@ -19,6 +19,10 @@ Alert:
       type: string
       format: uuid
       readOnly: true
+      description: |-
+        Server-assigned when the raise carries none. A client MAY supply its
+        own UUID on raise (Part 4 §4.1, Part 7 §7.1); an id that already
+        exists is 409 `id-collision`.
     version:
       type: integer
       minimum: 1
@@ -54,6 +58,15 @@ Alert:
       $ref: "../../../vendor/apds/4.1/apds-api-4.1.yaml#/components/schemas/DateTime"
     detectionTime:
       $ref: "../../../vendor/apds/4.1/apds-api-4.1.yaml#/components/schemas/DateTime"
+    expiryTime:
+      description: |-
+        The end of the alert's validity window (Part 7 §7.3). Settable on
+        raise; when absent the server MAY default it by policy per
+        `alertType`, and returns the value it applies. If the alert is still
+        `raised` or `acknowledged` at this instant the server transitions it
+        to `expired` and publishes `apx.alert.status.v1`. Absent means the
+        alert never expires on its own.
+      $ref: "../../../vendor/apds/4.1/apds-api-4.1.yaml#/components/schemas/DateTime"
     description:
       description: Human-readable detail.
       $ref: "../../../vendor/apds/4.1/apds-api-4.1.yaml#/components/schemas/MultilingualString"
@@ -75,5 +88,29 @@ Alert:
             type: string
     recordInfo:
       $ref: "../common/schemas.yaml#/RecordInfo"
+    extensions:
+      $ref: "../common/schemas.yaml#/Extensions"
+
+AlertTransition:
+  title: AlertTransition
+  description: |-
+    Optional body of `POST /v1/alerts/{id}/acknowledge` and `/resolve`
+    (Part 7 §7.2). Annotates the `statusHistory[]` entry the transition
+    appends. Sending no body is equivalent to sending `{}`.
+  type: object
+  properties:
+    detail:
+      type: string
+      description: Copied verbatim into the appended history entry's `detail`.
+      examples: ["field tech dispatched, ETA 40 min"]
+    agent:
+      type: string
+      description: |-
+        The human or AI principal acting through the calling client (as
+        `Command.agent`, Part 6 §6.1). When given it is recorded as the
+        appended entry's `actor`; otherwise `actor` is the principal
+        derived from the token. Attribution only: authorization is always
+        the token's.
+      examples: ["agent:j.okafor"]
     extensions:
       $ref: "../common/schemas.yaml#/Extensions"

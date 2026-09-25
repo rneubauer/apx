@@ -40,7 +40,8 @@ Command:
         pushRate.rateTable VersionedReference, applyValidation.ticket +
         provider, displayMessage.message, setDeviceState.state,
         pushNegotiatedRate.rateTable VersionedReference to a RateTable
-        flagged negotiable, matchTicket.session + evidence).
+        flagged negotiable, matchTicket.session + evidence,
+        resetPassback/forceIn/forceOut.credential, courtesyExit.holder).
     requestedBy:
       description: The organisation requesting the action (defaults to the token's apx_org).
       $ref: "../../../vendor/apds/4.1/apds-api-4.1.yaml#/components/schemas/Reference"
@@ -102,8 +103,39 @@ Command:
             $ref: "../../../vendor/apds/4.1/apds-api-4.1.yaml#/components/schemas/DateTime"
           actor: { type: string }
           detail: { type: string }
+    result:
+      $ref: "#/CommandResult"
     recordInfo:
       $ref: "../common/schemas.yaml#/RecordInfo"
+    extensions:
+      $ref: "../common/schemas.yaml#/Extensions"
+
+CommandResult:
+  title: CommandResult
+  description: |-
+    The structured outcome of a command, populated by the server when the
+    command reaches `succeeded` (Part 6 §6.1a) and absent before then. Members
+    are normative per command type: `lostTicket` → `ticketNumber`, `session`,
+    `amountDue`; `matchTicket` → `session`, `amountDue`;
+    `pushNegotiatedRate` → `rateTable`, `amountDue`. Other command types
+    leave it absent unless a registry entry says otherwise. It restates what
+    the lane inquiry shows, so a console can continue (print, take payment)
+    without parsing `statusHistory[].detail` or making a second call.
+  type: object
+  readOnly: true
+  properties:
+    ticketNumber:
+      type: string
+      description: The ticket the command issued or bound (lostTicket).
+    session:
+      description: The APDS Session the ticket belongs to (lostTicket, matchTicket).
+      $ref: "../../../vendor/apds/4.1/apds-api-4.1.yaml#/components/schemas/Reference"
+    amountDue:
+      description: The amount due on the ticket immediately after the command.
+      $ref: "../../../vendor/apds/4.1/apds-api-4.1.yaml#/components/schemas/AmountInCurrency"
+    rateTable:
+      description: The RateTable at the exact version applied (pushNegotiatedRate).
+      $ref: "../../../vendor/apds/4.1/apds-api-4.1.yaml#/components/schemas/VersionedReference"
     extensions:
       $ref: "../common/schemas.yaml#/Extensions"
 
