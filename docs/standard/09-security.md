@@ -40,6 +40,31 @@ Two token claims bound a client's world:
 Discovery (`GET /v1/discovery`) MUST reflect scopes and grants exactly:
 a client can call everything its discovery document lists, and nothing more.
 
+## 9.3a Visibility outside the grant (normative)
+
+Three rules settle what a caller learns about records it may not see:
+
+1. **Place grant.** A request that names a place, lane, device, or a
+   resource addressed by id whose owning place lies outside `apx_places`
+   receives 403 `insufficient-grant` (§9.3). This is unchanged.
+2. **Narrower ownership scopes.** Where a Part confines a credential to
+   its own records inside a granted place (a merchant's own validation
+   programs, a valet customer's own ticket), a record outside that scope
+   is reported as 404 `target-not-found`, exactly as a record that does
+   not exist. The answer never confirms another party's record.
+3. **Lookups that name no place.** A list or lookup that names no place
+   (by plate, phone, card digits, ticket) returns only records at granted
+   places. Under an absent or empty grant it returns `200` with an empty
+   `data` array, never 403: the request targeted nothing outside the grant,
+   and a 403 would reveal that matching records exist. Resources that
+   belong to no place (a subscription, a subscription-failure alert) are
+   scoped to the caller's `apx_org` instead.
+
+An APX endpoint of a conformance class the server does not claim is 404
+`target-not-found`; an endpoint the server does implement but the token's
+scopes do not cover is 403 `insufficient-scope` (§9.2). Discovery lists
+neither.
+
 ## 9.4 Webhook authenticity
 
 - Every webhook delivery MUST be signed: `APX-Signature: v1=<hex>` where

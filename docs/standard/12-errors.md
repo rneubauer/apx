@@ -63,6 +63,16 @@ table below.
 | `rate-not-negotiable` | 422 | `pushNegotiatedRate` names a RateTable not flagged negotiable for the target's place, or one that does not apply there (Part 6 §6.6) |
 | `lane-no-current-transaction` | 409 | `pushNegotiatedRate` or `matchTicket` at a lane with no vehicle transaction in progress (Part 6 §6.6–6.7) |
 | `session-not-open` | 422 | `matchTicket` names a Session that is closed, already bound to an exit, or at a different place (Part 6 §6.7) |
+| `unauthenticated` | 401 | Access token missing, malformed, expired, or revoked (Part 9 §9.1) |
+| `invalid-request` | 400 | Body or parameter fails the operation's schema or a normative field rule; carries `errors[]` (§12.4) |
+| `reference-unknown` | 422 | A Reference or registered code value in the body names nothing that exists or is visible to the caller |
+| `request-unprocessable` | 422 | Well-formed body that fails a documented consistency rule of the resource (e.g. an inverted validity window, an ambiguous benefit); `detail` names the rule |
+| `personal-data-not-permitted` | 422 | The request carries personal data the surface must never accept, e.g. a full card number or a raw phone number where a handle is required (Part 9 §9.6, Part 0 §0.4) |
+| `lost-ticket-fee-undefined` | 422 | `lostTicket` at a place whose applicable rate deck has no `lostTicketFee` line (Part 6 §6.1) |
+| `alert-transition-illegal` | 409 | Alert transition requested from a state that does not allow it (Part 7) |
+| `toll-transition-illegal` | 409 | TollTransaction or dispute operation from a state that does not allow it (Part 15) |
+| `payment-state-illegal` | 409 | Refund, void, capture, or posting on a payment whose state does not allow it (Part 13 §13.1a) |
+| `reservation-transition-illegal` | 409 | Reservation transition (amend, check-in, cancel, no-show) from a state that does not allow it (Part 14 §14.1) |
 
 Problem responses SHOULD include `detail` and MAY carry additional members
 (RFC 9457 extension members), including an `extensions` container.
@@ -73,3 +83,22 @@ Problem responses SHOULD include `detail` and MAY carry additional members
 - 202 for accepted-but-asynchronous work (commands).
 - Pagination, where APX defines list endpoints, follows the APDS
   `PaginatedList` metadata shape.
+- **Every secured APX operation declares 401, 403, and 429; every
+  operation addressed by a path id declares 404; every operation that
+  takes a body declares 400** (the shared `Unauthorized`, `Forbidden`,
+  `TooManyRequests`, `NotFound`, and `BadRequest` responses). The Spectral
+  ruleset enforces this on the bundle, so a new operation cannot ship
+  without them.
+
+## 12.4 Choosing a type
+
+A server picks the most specific registered type that applies, in this
+order: a domain slug (`violation-transition-illegal`,
+`validation-provider-unknown`, …); then `reference-unknown` or
+`request-unprocessable` for a well-formed body the server cannot act on;
+then `invalid-request` for a body or parameter that fails its schema.
+
+`invalid-request` SHOULD carry an `errors` extension member: an array of
+`{ "pointer": "<RFC 6901 JSON Pointer into the request>", "detail":
+"<human-readable reason>" }`, one per offending location, so a console
+can mark the field rather than parse `detail`.

@@ -177,6 +177,9 @@ paths:
           content:
             application/problem+json:
               schema: { $ref: "#/components/schemas/Problem" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+        "429": { $ref: "#/components/responses/TooManyRequests" }
 
   # ===== Delivery fabric: superset profile of APDS /webhooks ===== #
   /webhooks:
@@ -247,6 +250,9 @@ paths:
             application/problem+json:
               schema:
                 $ref: "#/components/schemas/Problem"
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+        "429": { $ref: "#/components/responses/TooManyRequests" }
     get:
       operationId: get-webhooks
       security:
@@ -310,6 +316,10 @@ paths:
             application/problem+json:
               schema:
                 $ref: "#/components/schemas/Problem"
+        "400": { $ref: "#/components/responses/BadRequest" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+        "429": { $ref: "#/components/responses/TooManyRequests" }
     delete:
       operationId: delete-webhooks-id
       security:
@@ -331,6 +341,9 @@ paths:
             application/json:
               schema:
                 $ref: "../vendor/apds/4.1/apds-api-4.1.yaml#/components/schemas/ResponseStatus"
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+        "429": { $ref: "#/components/responses/TooManyRequests" }
 
   /webhooks/{id}/deliveries:
     get:
@@ -504,6 +517,9 @@ paths:
           content:
             application/problem+json:
               schema: { $ref: "#/components/schemas/Problem" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+        "429": { $ref: "#/components/responses/TooManyRequests" }
 
   /v1/commands/{id}/cancel:
     post:
@@ -529,6 +545,10 @@ paths:
           content:
             application/problem+json:
               schema: { $ref: "#/components/schemas/Problem" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+        "404": { $ref: "#/components/responses/NotFound" }
+        "429": { $ref: "#/components/responses/TooManyRequests" }
 
   /v1/devices:
     get:
@@ -581,6 +601,9 @@ paths:
           content:
             application/problem+json:
               schema: { $ref: "#/components/schemas/Problem" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+        "429": { $ref: "#/components/responses/TooManyRequests" }
 
   /v1/lanes/{id}/current:
     get:
@@ -626,6 +649,9 @@ paths:
           content:
             application/problem+json:
               schema: { $ref: "#/components/schemas/Problem" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+        "429": { $ref: "#/components/responses/TooManyRequests" }
 
   /v1/validations/providers:
     get:
@@ -747,6 +773,9 @@ paths:
           content:
             application/problem+json:
               schema: { $ref: "#/components/schemas/Problem" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+        "429": { $ref: "#/components/responses/TooManyRequests" }
 
   /v1/tolling/transactions/{id}/payment:
     post:
@@ -777,6 +806,7 @@ paths:
           content:
             application/problem+json:
               schema: { $ref: "#/components/schemas/Problem" }
+        "400": { $ref: "#/components/responses/BadRequest" }
 
   /v1/tolling/transactions/{id}/disputes:
     post:
@@ -804,6 +834,11 @@ paths:
           content:
             application/problem+json:
               schema: { $ref: "#/components/schemas/Problem" }
+        "400": { $ref: "#/components/responses/BadRequest" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+        "404": { $ref: "#/components/responses/NotFound" }
+        "429": { $ref: "#/components/responses/TooManyRequests" }
 
   /v1/tolling/transactions/{id}/disputes/resolve:
     post:
@@ -831,6 +866,11 @@ paths:
           content:
             application/problem+json:
               schema: { $ref: "#/components/schemas/Problem" }
+        "400": { $ref: "#/components/responses/BadRequest" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+        "404": { $ref: "#/components/responses/NotFound" }
+        "429": { $ref: "#/components/responses/TooManyRequests" }
 
   # ===== Violations / enforcement (optional class apx-violations; Part 19) ===== #
   # Net-new like tolling: APDS has no violation entity. Eligibility comes
@@ -993,6 +1033,7 @@ paths:
             application/problem+json:
               schema: { $ref: "#/components/schemas/Problem" }
         "429": { $ref: "#/components/responses/TooManyRequests" }
+        "400": { $ref: "#/components/responses/BadRequest" }
 
   /v1/violations/{id}/issue:
     post:
@@ -1045,6 +1086,7 @@ paths:
             application/problem+json:
               schema: { $ref: "#/components/schemas/Problem" }
         "429": { $ref: "#/components/responses/TooManyRequests" }
+        "400": { $ref: "#/components/responses/BadRequest" }
 
   /v1/violations/{id}/payment:
     post:
@@ -1084,6 +1126,7 @@ paths:
             application/problem+json:
               schema: { $ref: "#/components/schemas/Problem" }
         "429": { $ref: "#/components/responses/TooManyRequests" }
+        "400": { $ref: "#/components/responses/BadRequest" }
 
   /v1/violations/{id}/appeals:
     post:
@@ -1122,6 +1165,7 @@ paths:
             application/problem+json:
               schema: { $ref: "#/components/schemas/Problem" }
         "429": { $ref: "#/components/responses/TooManyRequests" }
+        "400": { $ref: "#/components/responses/BadRequest" }
 
   /v1/violations/{id}/appeals/resolve:
     post:
@@ -1160,6 +1204,7 @@ paths:
             application/problem+json:
               schema: { $ref: "#/components/schemas/Problem" }
         "429": { $ref: "#/components/responses/TooManyRequests" }
+        "400": { $ref: "#/components/responses/BadRequest" }
 
   /v1/violations/{id}/void:
     post:
@@ -1198,6 +1243,7 @@ paths:
             application/problem+json:
               schema: { $ref: "#/components/schemas/Problem" }
         "429": { $ref: "#/components/responses/TooManyRequests" }
+        "400": { $ref: "#/components/responses/BadRequest" }
 
   /v1/enforcement/eligibility:
     get:
@@ -1425,6 +1471,7 @@ paths:
             application/problem+json:
               schema: { $ref: "#/components/schemas/Problem" }
         "429": { $ref: "#/components/responses/TooManyRequests" }
+        "400": { $ref: "#/components/responses/BadRequest" }
 
   /v1/enforcement/signage:
     post:
@@ -1602,6 +1649,7 @@ paths:
             application/problem+json:
               schema: { $ref: "#/components/schemas/Problem" }
         "429": { $ref: "#/components/responses/TooManyRequests" }
+        "400": { $ref: "#/components/responses/BadRequest" }
 
   # ===== Validations program management (optional class apx-validations; Part 20) ===== #
   # Builds on Part 6 §6.3: the provider lookup (/v1/validations/providers)
@@ -1758,6 +1806,7 @@ paths:
             application/problem+json:
               schema: { $ref: "#/components/schemas/Problem" }
         "429": { $ref: "#/components/responses/TooManyRequests" }
+        "400": { $ref: "#/components/responses/BadRequest" }
 
   /v1/validations/programs/{id}/issuances:
     parameters:
@@ -2036,6 +2085,7 @@ paths:
             application/problem+json:
               schema: { $ref: "#/components/schemas/Problem" }
         "429": { $ref: "#/components/responses/TooManyRequests" }
+        "400": { $ref: "#/components/responses/BadRequest" }
 
   /v1/validations/programs/{id}/statement:
     get:
@@ -2331,6 +2381,7 @@ paths:
             application/problem+json:
               schema: { $ref: "#/components/schemas/Problem" }
         "429": { $ref: "#/components/responses/TooManyRequests" }
+        "400": { $ref: "#/components/responses/BadRequest" }
 
   /v1/credentials/{id}/suspend:
     post:
@@ -2366,6 +2417,7 @@ paths:
             application/problem+json:
               schema: { $ref: "#/components/schemas/Problem" }
         "429": { $ref: "#/components/responses/TooManyRequests" }
+        "400": { $ref: "#/components/responses/BadRequest" }
 
   /v1/credentials/{id}/resume:
     post:
@@ -2401,6 +2453,7 @@ paths:
             application/problem+json:
               schema: { $ref: "#/components/schemas/Problem" }
         "429": { $ref: "#/components/responses/TooManyRequests" }
+        "400": { $ref: "#/components/responses/BadRequest" }
 
   /v1/credentials/{id}/report-lost:
     post:
@@ -2436,6 +2489,7 @@ paths:
             application/problem+json:
               schema: { $ref: "#/components/schemas/Problem" }
         "429": { $ref: "#/components/responses/TooManyRequests" }
+        "400": { $ref: "#/components/responses/BadRequest" }
 
   /v1/credentials/{id}/revoke:
     post:
@@ -2471,6 +2525,7 @@ paths:
             application/problem+json:
               schema: { $ref: "#/components/schemas/Problem" }
         "429": { $ref: "#/components/responses/TooManyRequests" }
+        "400": { $ref: "#/components/responses/BadRequest" }
 
   /v1/credentials/{id}/replace:
     post:
@@ -2752,6 +2807,7 @@ paths:
             application/problem+json:
               schema: { $ref: "#/components/schemas/Problem" }
         "429": { $ref: "#/components/responses/TooManyRequests" }
+        "400": { $ref: "#/components/responses/BadRequest" }
 
   /v1/valet/tickets/{id}/retrieve:
     post:
@@ -2795,6 +2851,7 @@ paths:
             application/problem+json:
               schema: { $ref: "#/components/schemas/Problem" }
         "429": { $ref: "#/components/responses/TooManyRequests" }
+        "400": { $ref: "#/components/responses/BadRequest" }
 
   /v1/valet/tickets/{id}/cancel-retrieval:
     post:
@@ -2831,6 +2888,7 @@ paths:
             application/problem+json:
               schema: { $ref: "#/components/schemas/Problem" }
         "429": { $ref: "#/components/responses/TooManyRequests" }
+        "400": { $ref: "#/components/responses/BadRequest" }
 
   /v1/valet/tickets/{id}/stage:
     post:
@@ -2866,6 +2924,7 @@ paths:
             application/problem+json:
               schema: { $ref: "#/components/schemas/Problem" }
         "429": { $ref: "#/components/responses/TooManyRequests" }
+        "400": { $ref: "#/components/responses/BadRequest" }
 
   /v1/valet/tickets/{id}/handback:
     post:
@@ -2912,6 +2971,7 @@ paths:
             application/problem+json:
               schema: { $ref: "#/components/schemas/Problem" }
         "429": { $ref: "#/components/responses/TooManyRequests" }
+        "400": { $ref: "#/components/responses/BadRequest" }
 
   # ===== Reservations & permits (optional classes; Part 14) ===== #
   # Reservations use NATIVE routes (/quotes, /rights/assigned) with the
@@ -2955,6 +3015,9 @@ paths:
           content:
             application/problem+json:
               schema: { $ref: "#/components/schemas/Problem" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+        "429": { $ref: "#/components/responses/TooManyRequests" }
 
   /v1/sessions/{id}/assigned-right:
     put:
@@ -3018,6 +3081,8 @@ paths:
           content:
             application/problem+json:
               schema: { $ref: "#/components/schemas/Problem" }
+        "400": { $ref: "#/components/responses/BadRequest" }
+        "429": { $ref: "#/components/responses/TooManyRequests" }
 
   /v1/permits/pools/{rightSpecId}/availability:
     get:
@@ -3040,6 +3105,9 @@ paths:
           content:
             application/problem+json:
               schema: { $ref: "#/components/schemas/Problem" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+        "429": { $ref: "#/components/responses/TooManyRequests" }
 
   /v1/permits/issue:
     post:
@@ -3068,6 +3136,10 @@ paths:
           content:
             application/problem+json:
               schema: { $ref: "#/components/schemas/Problem" }
+        "400": { $ref: "#/components/responses/BadRequest" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+        "429": { $ref: "#/components/responses/TooManyRequests" }
 
   # ===== Accounts, payments, LPR (optional classes; Part 13) ===== #
   /v1/accounts:
@@ -3122,6 +3194,9 @@ paths:
           content:
             application/problem+json:
               schema: { $ref: "#/components/schemas/Problem" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+        "429": { $ref: "#/components/responses/TooManyRequests" }
 
   /v1/payments:
     post:
@@ -3233,6 +3308,10 @@ paths:
           content:
             application/problem+json:
               schema: { $ref: "#/components/schemas/Problem" }
+        "400": { $ref: "#/components/responses/BadRequest" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+        "429": { $ref: "#/components/responses/TooManyRequests" }
 
   /v1/payments/{id}/refund:
     post:
@@ -3280,6 +3359,7 @@ paths:
           content:
             application/problem+json:
               schema: { $ref: "#/components/schemas/Problem" }
+        "400": { $ref: "#/components/responses/BadRequest" }
 
   /v1/payments/{id}/void:
     post:
@@ -3351,6 +3431,7 @@ paths:
           content:
             application/problem+json:
               schema: { $ref: "#/components/schemas/Problem" }
+        "400": { $ref: "#/components/responses/BadRequest" }
 
   /v1/payment-links:
     post:
@@ -3457,6 +3538,7 @@ paths:
           content:
             application/problem+json:
               schema: { $ref: "#/components/schemas/Problem" }
+        "400": { $ref: "#/components/responses/BadRequest" }
 
   /v1/lpr/reads:
     get:
@@ -3614,6 +3696,9 @@ paths:
             application/problem+json:
               schema:
                 $ref: "#/components/schemas/Problem"
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+        "429": { $ref: "#/components/responses/TooManyRequests" }
 
   /v1/alerts/{id}/acknowledge:
     post:
@@ -3641,6 +3726,10 @@ paths:
             application/problem+json:
               schema:
                 $ref: "#/components/schemas/Problem"
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+        "404": { $ref: "#/components/responses/NotFound" }
+        "429": { $ref: "#/components/responses/TooManyRequests" }
 
   /v1/alerts/{id}/resolve:
     post:
@@ -3668,6 +3757,10 @@ paths:
             application/problem+json:
               schema:
                 $ref: "#/components/schemas/Problem"
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+        "404": { $ref: "#/components/responses/NotFound" }
+        "429": { $ref: "#/components/responses/TooManyRequests" }
 
   # ===== Customer Service & Resolution (optional class apx-resolution; Part 17) ===== #
   /v1/resolution/contexts:
@@ -3940,6 +4033,8 @@ paths:
           content:
             application/problem+json:
               schema: { $ref: "#/components/schemas/Problem" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+        "429": { $ref: "#/components/responses/TooManyRequests" }
 
   # ===== APX routes ===== #
   /.well-known/apx-configuration:
@@ -3961,6 +4056,7 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/ApxConfiguration"
+        "429": { $ref: "#/components/responses/TooManyRequests" }
 
 security:
   - apxOAuth: []
@@ -3993,10 +4089,53 @@ components:
       $ref: "./domains/data/schemas.yaml#/ModeParam"
     CursorParam:
       $ref: "./domains/data/schemas.yaml#/CursorParam"
+    IfMatch:
+      name: If-Match
+      in: header
+      required: false
+      description: |-
+        The `version` the client last read, as an entity tag (`"7"`). A
+        stale value is 409 `version-conflict`; nothing is written (Part 4
+        §4.2a). Equivalent to sending `version` in the body.
+      schema: { type: string, examples: ['"7"'] }
+    IdempotencyKeyOptional:
+      name: Idempotency-Key
+      in: header
+      required: false
+      description: |-
+        When given, the operation is idempotent per Part 4 §4.2a: a replay
+        with the same body returns the current representation (200), a
+        different body is 409 `idempotency-conflict`. Clients that retry
+        SHOULD send it.
+      schema: { type: string }
 
   responses:
+    BadRequest:
+      description: |-
+        The request is malformed: the body or a parameter fails the
+        operation's schema or a normative field rule (problem type
+        `invalid-request`, with an `errors[]` member naming each offending
+        JSON Pointer), or a REQUIRED Idempotency-Key is absent
+        (`idempotency-key-required`). Part 12.
+      content:
+        application/problem+json:
+          schema: { $ref: "#/components/schemas/Problem" }
     Unauthorized:
-      description: Missing or invalid access token.
+      description: |-
+        Missing, malformed, expired, or revoked access token (problem type
+        `unauthenticated`, Part 12).
+      content:
+        application/problem+json:
+          schema: { $ref: "#/components/schemas/Problem" }
+    NotFound:
+      description: |-
+        The addressed resource does not exist (problem type
+        `target-not-found`). A resource at a place outside the caller's
+        `apx_places` grant is 403 `insufficient-grant` instead (Part 9 §9.3).
+        A resource that exists but lies outside a narrower ownership scope
+        (a merchant's own programs, a valet customer's own ticket) is
+        reported as 404, so the answer never confirms another party's
+        record exists (Part 9 §9.3a).
       content:
         application/problem+json:
           schema: { $ref: "#/components/schemas/Problem" }

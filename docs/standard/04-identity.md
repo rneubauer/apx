@@ -72,6 +72,33 @@ to APDS entities (e.g. `apds-ext:apx:devicestatus@1.0` on a
 `SupplementalEquipment` in a Place payload). These Level B decorations are
 the only way APX data appears inside APDS payloads.
 
+## 4.2a Optimistic concurrency and idempotent replay (normative)
+
+Every APX write that replaces or amends a versioned resource (a `PUT`, a
+`PATCH`, or a state-changing action on a resource that carries `version`)
+follows one rule, so a stale writer never silently wins:
+
+1. **The precondition is the version the client last read.** A client
+   SHOULD send it as `If-Match: "<version>"` (the version integer as an
+   entity tag). A client MAY instead send the resource's `version` member
+   in the body, with the same meaning; `version` is marked readOnly because
+   the server assigns it, and this is the one place a client echoes it
+   back. `version` in a body is never "the next version".
+2. **A stale precondition is 409 `version-conflict`**, with the current
+   `version` in `detail`. Nothing is written.
+3. **No precondition** means last-writer-wins. Servers MAY refuse such a
+   write with 428 Precondition Required on resources whose Part says so.
+4. On success the response carries the new `version` and SHOULD carry
+   `ETag: "<version>"`.
+
+**Idempotent replay.** Where an operation takes `Idempotency-Key`, a
+replay of the same key with the same body returns the resource's
+**current** representation with the original status code's success class
+(200 for a replayed create), not a snapshot taken when it was first
+created. The same key with a different body is 409 `idempotency-conflict`.
+Keys are scoped to the credential and the operation, and servers MUST
+retain them for at least 24 hours.
+
 ## 4.4 Datatype conventions
 
 APX reuses APDS datatypes by `$ref`: `DateTime` (RFC 3339), `Duration`
