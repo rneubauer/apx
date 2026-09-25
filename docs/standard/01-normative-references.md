@@ -36,11 +36,14 @@
 ## 1.3 Known APDS 4.1 errata
 
 APX vendors the APDS 4.1 OpenAPI document **verbatim** (checksum-guarded),
-including its defects. Filing-ready reports for all three, each with the
-offending snippet and a minimal suggested fix, are in
+including its defects. Filing-ready reports for all twelve below, each
+with the offending snippet and a minimal suggested fix, are in
 [`docs/errata/`](../errata/README.md), which tracks their status upstream. Verified against `parkingdata/spec` at `master` on
 2026-09-23: the published document was byte-identical to the vendored copy,
-so all three are live in the current release.
+so all of them are live in the current release. Where APX needs a working
+shape before APDS ships a fix, the data overlay (Part 5 §5.6) supplies it
+in the bundled document, narrowly, citing the erratum; the vendored file
+is never touched.
 
 Implementers validating payloads against the raw schemas should be aware
 of:
@@ -67,3 +70,37 @@ of:
    tooling does not. APX needs no workaround for this one. Filed upstream as
    [parkingdata/spec#35](https://github.com/parkingdata/spec/issues/35);
    remove on a corrected release.
+4. **`RateTable` requires two members it never defines**
+   (`validityStart`, `activeTimes`), so no rate table validates. The data
+   overlay drops them from `required`. [Erratum 004](../errata/004-ratetable-phantom-required.md).
+5. **`POST /observations` declares no responses.** The overlay declares
+   201/400/409 `ResponseStatus`, as on the other native creates.
+   [Erratum 005](../errata/005-observations-post-no-responses.md).
+6. **`POST /observations`: the wrapper `type` collides with
+   `ObservationElement.type`**, so no single observation validates. The
+   overlay replaces the request schema with a plain
+   `oneOf [ObservationElement, ObservationSet]`.
+   [Erratum 006](../errata/006-observations-discriminator-collision.md).
+7. **`POST /quotes` declares no request body**, and `GET /quotes` returns
+   one object from a list query. The overlay adds an optional request
+   body; the `GET` is documented as is (Part 5 §5.7).
+   [Erratum 007](../errata/007-quotes-post-no-request-body.md).
+8. **`ReferenceToQuote` is a `oneOf` of two identical branches**, so
+   booking from a quote reference never validates. No additive
+   workaround exists; book with the full `AssignedRight`.
+   [Erratum 008](../errata/008-referencetoquote-identical-branches.md).
+9. **`Identifiers` requires `rateTableId` but declares `rateTableID`.**
+   The overlay declares the required spelling.
+   [Erratum 009](../errata/009-identifiers-ratetableid-spelling.md).
+10. **No entity schema declares `extensions`** (Use Case §C.2.5). The
+    overlay declares it on the eight native entity schemas.
+    [Erratum 010](../errata/010-entities-no-extensions.md).
+11. **`GeoJsonObject` declares no `coordinates`.** The overlay declares an
+    optional array. [Erratum 011](../errata/011-geojsonobject-no-coordinates.md).
+12. **Response-code irregularities** on `POST /rates` (200, no 400/409),
+    `PUT /rights/assigned/{id}` (201, no 404), and the contact reads
+    (only 500s). The overlay adds the missing codes; Part 5 §5.7 records
+    the rest. [Erratum 012](../errata/012-native-response-code-irregularities.md).
+
+Remove an entry, and its overlay action, in the same change that vendors a
+corrected APDS release.
