@@ -14,29 +14,28 @@ entirely on the set-time-then-extend path.
 
 ## Step 1 — Book the set window
 
+The plate on file is a `CredentialAssigned` under
+`rightHolder.credentials[]` (Part 14 §14.1 step 2); the window is
+`plannedUses[0]`, mirrored by the extension:
+
 ```http
 POST /rights/assigned HTTP/1.1
 Content-Type: application/json
-
-{
-  "rightSpecification": { "id": "e1000000-0000-4000-8000-000000000001", "version": 1, "className": "RightSpecification" },
-  "credentials": [{ "credentialType": "licensePlate", "identifier": "SYN-5150" }],
-  "extensions": {
-    "apds-ext:apx:reservation@1.0": {
-      "reservationState": "confirmed",
-      "plannedStart": "2026-08-11T06:00:00Z",
-      "plannedEnd": "2026-08-11T18:00:00Z"
-    }
-  }
-}
 ```
 
+<!-- apx:validate AssignedRight -->
 <!-- apx:validate ReservationExtension at /extensions/apds-ext:apx:reservation@1.0 -->
 ```json
 {
   "id": "e2000000-0000-4000-8000-000000000004",
   "version": 1,
   "rightSpecification": { "id": "e1000000-0000-4000-8000-000000000001", "version": 1, "className": "RightSpecification" },
+  "rightHolder": {
+    "credentials": [
+      { "type": "licensePlate", "credentialAssignedType": "vehicle", "identifier": { "id": "SYN-5150", "className": "USNumberPlate" } }
+    ]
+  },
+  "plannedUses": [ { "startTime": "2026-08-11T06:00:00Z", "endTime": "2026-08-11T18:00:00Z" } ],
   "extensions": {
     "apds-ext:apx:reservation@1.0": {
       "reservationState": "confirmed",
@@ -47,8 +46,23 @@ Content-Type: application/json
 }
 ```
 
-The window is a hard contract: `plannedStart`/`plannedEnd` are what the
-no-show sweep, the rate engine, and the availability calculation all read.
+The create answers `201` with an APDS `ResponseStatus` naming the id; the
+platform reads the right back with `GET /rights/assigned/{id}` when it
+needs the stored object:
+
+<!-- apx:validate ResponseStatus -->
+```json
+{
+  "status": "ok",
+  "code": 201,
+  "message": "Assigned right created successfully.",
+  "ids": [ "e2000000-0000-4000-8000-000000000004" ]
+}
+```
+
+The window is a hard contract: `plannedUses[0]` (and its mirror,
+`plannedStart`/`plannedEnd`) is what the no-show sweep, the rate engine,
+and the availability calculation all read.
 
 ## Step 2 — Extension #1, before arrival
 
@@ -58,14 +72,22 @@ new end time:
 
 ```http
 PUT /rights/assigned/e2000000-0000-4000-8000-000000000004 HTTP/1.1
+Content-Type: application/json
 ```
 
+<!-- apx:validate AssignedRight -->
 <!-- apx:validate ReservationExtension at /extensions/apds-ext:apx:reservation@1.0 -->
 ```json
 {
   "id": "e2000000-0000-4000-8000-000000000004",
-  "version": 2,
+  "version": 1,
   "rightSpecification": { "id": "e1000000-0000-4000-8000-000000000001", "version": 1, "className": "RightSpecification" },
+  "rightHolder": {
+    "credentials": [
+      { "type": "licensePlate", "credentialAssignedType": "vehicle", "identifier": { "id": "SYN-5150", "className": "USNumberPlate" } }
+    ]
+  },
+  "plannedUses": [ { "startTime": "2026-08-11T06:00:00Z", "endTime": "2026-08-11T20:00:00Z" } ],
   "extensions": {
     "apds-ext:apx:reservation@1.0": {
       "reservationState": "amended",
@@ -76,20 +98,32 @@ PUT /rights/assigned/e2000000-0000-4000-8000-000000000004 HTTP/1.1
 }
 ```
 
-Note `version: 2` — writes are change-mode, so a stale-version PUT (two
-amendments racing) is rejected rather than silently last-writer-wins.
+Note `version: 1` — the body cites the version the platform last read,
+and the server stores version 2 (Part 4 §4.2a). A second amendment still
+citing version 1 (two amendments racing) is rejected with
+`version-conflict` rather than silently last-writer-wins. The body keeps
+the AssignedRight's required members until APDS has a change-mode schema
+(Part 14 §14.1 step 3).
 
 ## Step 3 — Check-in
 
 Tuesday 05:52, the entry camera reads `SYN-5150`; the PARCS creates the
-native `Session` and the extension records the linkage:
+native `Session` and the extension records the linkage. A plain
+`GET /rights/assigned/{id}` returns:
 
+<!-- apx:validate AssignedRight -->
 <!-- apx:validate ReservationExtension at /extensions/apds-ext:apx:reservation@1.0 -->
 ```json
 {
   "id": "e2000000-0000-4000-8000-000000000004",
   "version": 3,
   "rightSpecification": { "id": "e1000000-0000-4000-8000-000000000001", "version": 1, "className": "RightSpecification" },
+  "rightHolder": {
+    "credentials": [
+      { "type": "licensePlate", "credentialAssignedType": "vehicle", "identifier": { "id": "SYN-5150", "className": "USNumberPlate" } }
+    ]
+  },
+  "plannedUses": [ { "startTime": "2026-08-11T06:00:00Z", "endTime": "2026-08-11T20:00:00Z" } ],
   "extensions": {
     "apds-ext:apx:reservation@1.0": {
       "reservationState": "checkedIn",
@@ -139,14 +173,27 @@ Content-Type: application/json
 
 The server can honor 22:00. The platform shows the price (from the place's
 disclosed rate deck), the traveler taps accept, and the reservation's
-`plannedEnd` moves the same way as before — a change-mode `PUT`:
+`plannedEnd` moves the same way as before — a change-mode `PUT` citing
+the version last read (3); the server stores version 4:
 
+```http
+PUT /rights/assigned/e2000000-0000-4000-8000-000000000004 HTTP/1.1
+Content-Type: application/json
+```
+
+<!-- apx:validate AssignedRight -->
 <!-- apx:validate ReservationExtension at /extensions/apds-ext:apx:reservation@1.0 -->
 ```json
 {
   "id": "e2000000-0000-4000-8000-000000000004",
-  "version": 4,
+  "version": 3,
   "rightSpecification": { "id": "e1000000-0000-4000-8000-000000000001", "version": 1, "className": "RightSpecification" },
+  "rightHolder": {
+    "credentials": [
+      { "type": "licensePlate", "credentialAssignedType": "vehicle", "identifier": { "id": "SYN-5150", "className": "USNumberPlate" } }
+    ]
+  },
+  "plannedUses": [ { "startTime": "2026-08-11T06:00:00Z", "endTime": "2026-08-11T22:00:00Z" } ],
   "extensions": {
     "apds-ext:apx:reservation@1.0": {
       "reservationState": "checkedIn",

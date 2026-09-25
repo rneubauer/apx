@@ -40,6 +40,11 @@ AllowedAction:
     support (Part 17 §17.3).
   type: object
   required: [action, allowed]
+  allOf:
+    - if: { required: [allowed], properties: { allowed: { const: false } } }
+      then: { required: [reason] }
+    - if: { required: [requiresApproval], properties: { requiresApproval: { const: true } } }
+      then: { required: [reason] }
   properties:
     action:
       type: string
@@ -68,6 +73,11 @@ AllowedAction:
       type: object
       description: How to execute (RECOMMENDED). Exactly one of command/operationId per type.
       required: [type]
+      allOf:
+        - if: { required: [type], properties: { type: { const: control } } }
+          then: { required: [command] }
+        - if: { required: [type], properties: { type: { const: domain } } }
+          then: { required: [operationId] }
       properties:
         type:
           type: string
@@ -169,6 +179,13 @@ PlateCandidate:
       $ref: "../../../vendor/apds/4.1/apds-api-4.1.yaml#/components/schemas/Url"
     vehicleImage:
       $ref: "../../../vendor/apds/4.1/apds-api-4.1.yaml#/components/schemas/Url"
+    purgedImagery:
+      type: boolean
+      readOnly: true
+      description: True when imagery for this read existed and was purged under the retention schedule (Part 13 §13.3b); `plateImage`/`vehicleImage` are then absent.
+    extensions:
+      description: The underlying Observation's `extensions`, minus the `apds-ext:apx:lpr-read@1.0` block (which is `detail`) — Part 13 §13.3a.
+      $ref: "../common/schemas.yaml#/Extensions"
 
 OverrideRecord:
   title: OverrideRecord
@@ -189,6 +206,17 @@ OverrideRecord:
       $ref: "../../../vendor/apds/4.1/apds-api-4.1.yaml#/components/schemas/Reference"
     place:
       $ref: "../../../vendor/apds/4.1/apds-api-4.1.yaml#/components/schemas/Reference"
+    agent:
+      type: string
+      description: The human or AI principal who initiated the override, copied from the summarized Command's `agent`.
+      examples: ["agent:j.okafor"]
+    agentType:
+      type: string
+      enum: [human, ai]
+      description: Copied from the summarized Command's `agentType`.
+    reason:
+      type: string
+      description: The override's recorded reason, copied from the summarized Command's `reason`.
 
 SupportInteraction:
   title: SupportInteraction
@@ -268,7 +296,15 @@ ResolutionResolveRequest:
   description: |-
     Whatever PARKING-DOMAIN identifiers are currently known — the server
     resolves every relationship it can (Part 17 §17.2). At least one
-    identifying property is required; all are optional individually.
+    IDENTIFYING member is required — `device`, `place`, `lane`,
+    `session`, `holder`, `credential`, `plate`, `ticketNumber`, or
+    `reservationCode`; all are optional individually. `interactionId`,
+    `correlationId`, and `channel` are correlation metadata and do not
+    count: a body without an identifying member is 400 `invalid-request`
+    (Part 17 §17.1). Unknown members are ignored (tolerant reader) and
+    never used for resolution. (`minProperties: 1` is the only part of
+    this rule the schema states; the full rule is enforced by the
+    server.)
 
     Deliberately NO telephony identifiers (SIP URIs, phone numbers): the
     call platform that owns the intercom maps call → lane/device on its

@@ -55,10 +55,22 @@ payment publishes `apx.accounts.payment.recorded.v1` like any other.
 
 - Ingest is NATIVE: LPR vendors `POST /observations` (APDS route) with
   Confidence and Image — nothing new to implement.
-- `GET /v1/lpr/reads?plate=|ticket=` — the bidirectional cross-lookup:
-  plate → ticket/session (+ accuracy + screenshot),
-  ticket → plate. Scope `apx.lpr:read`. Every read carries its (required)
-  `place` binding (§13.5).
+- `GET /v1/lpr/reads?plate=|ticket=|observation=` — the bidirectional
+  cross-lookup: plate → ticket/session (+ accuracy + screenshot),
+  ticket → plate, and Observation id → read (the read-back route for one
+  ingested Observation, which APDS 4.1 lacks). Scope `apx.lpr:read`.
+  **At least one of `plate`, `ticket`, or `observation` is REQUIRED**; a
+  call with none is 400 `invalid-request`, never a bulk export (Part 9
+  §9.6). Keys given together intersect; the optional `place` narrows
+  below the grant (§13.5(3)). Every read carries its (required) `place`
+  binding (§13.5) and, where the Observation references one, its `lane`
+  (the lane `laneTravel` is derived from) and `cameraId`, so an entry
+  read and an exit read for the same ticket can be told apart.
+- **Extensions on the read.** `LprRead.extensions` and
+  `PlateCandidate.extensions` project the underlying Observation's
+  `extensions` container minus the `apds-ext:apx:lpr-read@1.0` block
+  (which is `detail`), so a vendor key preserved on ingest is visible
+  through the APX surface (Part 4 §4.3).
 
 ### 13.3a Read detail: per-attribute confidence and passage geometry (normative)
 
@@ -110,7 +122,11 @@ consumer still sees a valid Observation.
    Observation as evidence, and MUST still open or match the Session for
    the plate — the driver is charged for parking, not for the lot's
    geometry; what happens next (signage, enforcement under Part 19) is
-   operator policy.
+   operator policy. The alert's `relatedEntity` is the **Session** (what
+   an operator acts on); the evidence Observation(s) ride the alert's
+   `extensions` under `apds-ext:apx:alert-evidence@1.0` as
+   `{ "observations": [Reference, …] }`. The same shape serves any alert
+   whose subject and evidence are different entities.
 6. **Grouping.** `detail.captureGroup` links the reads of one passage
    (front and rear, several frames) so a consumer counting vehicles
    counts once. `LprRead` returns one row per Observation; the group id
@@ -119,6 +135,23 @@ consumer still sees a valid Observation.
    §9.6: it appears only under `apx.lpr:*` (and the Part 17 candidate
    route); make, model, and colour are carried as attributes of the
    read, not as a vehicle registry.
+
+### 13.3b Retention and purge of reads (normative)
+
+Part 9 §9.6 requires a published retention period for plate reads and
+imagery and purge on schedule. On the APX surface a purge looks like
+this, so "purged" and "never captured" stay distinguishable:
+
+1. **Imagery purge.** When a read's imagery passes its retention, the
+   server removes `imageLink` (and `PlateCandidate.plateImage` /
+   `vehicleImage`) from the read and sets `purgedImagery: true`. The read
+   itself survives until its own retention. A previously issued image
+   link MAY answer 404 or 410; it MUST NOT return the image.
+2. **Read purge.** When the read passes its retention, it disappears from
+   every APX lookup (`/v1/lpr/reads`, `/v1/lpr/candidates`, resolution
+   contexts) and the server emits the APDS entity's deletion on the Part 5
+   change feed, so downstream copies can follow. A purged read is not
+   tombstoned on the APX surface.
 
 ## 13.4 Eventing — the analytics feed
 
@@ -168,6 +201,15 @@ per location when one endpoint fronts many places (Part 8 §8.5, Part 9
 3. Implementations MAY additionally accept a `place` query parameter on
    these lookups to narrow results below the grant (the pattern
    established by `/v1/reservations/recent`, Part 14 §14.1a).
+4. **LPR lookups outside the grant** (Part 9 §9.3a). `GET /v1/lpr/reads`
+   declares the item 3 `place` parameter (the HierarchyElement and its
+   subtree). A lookup keyed by a value — `plate`, `ticket`, or an
+   `observation` id — returns only in-grant reads and is never 403 on
+   the key's account: under an empty grant it is an empty 200, so the
+   answer never confirms that a plate was seen somewhere the caller may
+   not look. A lookup that names an entity outside the grant —
+   `place=` on the reads, `lane=` or `session=` on `/v1/lpr/candidates`
+   — is 403 `insufficient-grant`.
 
 ## 13.6 PaymentRecord ↔ APDS Payment mapping (normative)
 

@@ -27,13 +27,30 @@ POST /quotes HTTP/1.1
 
 ## Step 2 — Book: an AssignedRight with the reservation extension
 
+The plate on file is a `CredentialAssigned` of type `licensePlate` under
+`rightHolder.credentials[]`, its `identifier` a Reference (Part 14 §14.1
+step 2). The booked window is `plannedUses[0]`, which is authoritative;
+the extension mirrors it. Native APDS creates carry a client-supplied `id`
+and `version: 1`:
+
 ```http
 POST /rights/assigned HTTP/1.1
 Content-Type: application/json
+```
 
+<!-- apx:validate AssignedRight -->
+<!-- apx:validate ReservationExtension at /extensions/apds-ext:apx:reservation@1.0 -->
+```json
 {
+  "id": "e2000000-0000-4000-8000-000000000002",
+  "version": 1,
   "rightSpecification": { "id": "e1000000-0000-4000-8000-000000000001", "version": 1, "className": "RightSpecification" },
-  "credentials": [{ "credentialType": "licensePlate", "identifier": "SYN-1234" }],
+  "rightHolder": {
+    "credentials": [
+      { "type": "licensePlate", "credentialAssignedType": "vehicle", "identifier": { "id": "SYN-1234", "className": "USNumberPlate" } }
+    ]
+  },
+  "plannedUses": [ { "startTime": "2026-08-14T18:00:00Z", "endTime": "2026-08-14T23:00:00Z" } ],
   "extensions": {
     "apds-ext:apx:reservation@1.0": {
       "reservationState": "confirmed",
@@ -44,21 +61,46 @@ Content-Type: application/json
 }
 ```
 
-The response is the full native `AssignedRight`; the extension rides in the
-standard `extensions` container (shown here trimmed to the fields the
-reservation platform reads back):
+The native create answers `201` with an APDS `ResponseStatus` naming the
+new id — not the resource:
 
+<!-- apx:validate ResponseStatus -->
+```json
+{
+  "status": "ok",
+  "code": 201,
+  "message": "Assigned right created successfully.",
+  "ids": [ "e2000000-0000-4000-8000-000000000002" ]
+}
+```
+
+The platform reads the right back to see what the server stored. The
+extension rides in the standard `extensions` container, now with the
+server-set `noShowAfter` (plannedStart plus the garage's 30-minute grace):
+
+```http
+GET /rights/assigned/e2000000-0000-4000-8000-000000000002 HTTP/1.1
+```
+
+<!-- apx:validate AssignedRight -->
 <!-- apx:validate ReservationExtension at /extensions/apds-ext:apx:reservation@1.0 -->
 ```json
 {
   "id": "e2000000-0000-4000-8000-000000000002",
   "version": 1,
   "rightSpecification": { "id": "e1000000-0000-4000-8000-000000000001", "version": 1, "className": "RightSpecification" },
+  "rightHolder": {
+    "credentials": [
+      { "type": "licensePlate", "credentialAssignedType": "vehicle", "identifier": { "id": "SYN-1234", "className": "USNumberPlate" } }
+    ]
+  },
+  "plannedUses": [ { "startTime": "2026-08-14T18:00:00Z", "endTime": "2026-08-14T23:00:00Z" } ],
   "extensions": {
     "apds-ext:apx:reservation@1.0": {
       "reservationState": "confirmed",
       "plannedStart": "2026-08-14T18:00:00Z",
-      "plannedEnd": "2026-08-14T23:00:00Z"
+      "plannedEnd": "2026-08-14T23:00:00Z",
+      "noShowAfter": "2026-08-14T18:30:00Z"
     }
   }
 }
@@ -70,18 +112,31 @@ reservation survives passing through systems that have never heard of APX.
 
 ## Step 3 — Amend: dinner ran long
 
-A native `PUT` on the same resource, extension state → `amended`:
+A native `PUT` on the same resource, extension state → `amended`. The
+body's `version` is the version the platform last read (1); the server
+stores version 2, and a racing write still citing 1 would be refused with
+`version-conflict` (Part 4 §4.2a). Until APDS publishes a change-mode
+schema, the body keeps the AssignedRight's required members (Part 14
+§14.1 step 3), and `plannedUses[0]` moves with the extension:
 
 ```http
 PUT /rights/assigned/e2000000-0000-4000-8000-000000000002 HTTP/1.1
+Content-Type: application/json
 ```
 
+<!-- apx:validate AssignedRight -->
 <!-- apx:validate ReservationExtension at /extensions/apds-ext:apx:reservation@1.0 -->
 ```json
 {
   "id": "e2000000-0000-4000-8000-000000000002",
-  "version": 2,
+  "version": 1,
   "rightSpecification": { "id": "e1000000-0000-4000-8000-000000000001", "version": 1, "className": "RightSpecification" },
+  "rightHolder": {
+    "credentials": [
+      { "type": "licensePlate", "credentialAssignedType": "vehicle", "identifier": { "id": "SYN-1234", "className": "USNumberPlate" } }
+    ]
+  },
+  "plannedUses": [ { "startTime": "2026-08-14T18:00:00Z", "endTime": "2026-08-15T01:00:00Z" } ],
   "extensions": {
     "apds-ext:apx:reservation@1.0": {
       "reservationState": "amended",
@@ -97,14 +152,21 @@ PUT /rights/assigned/e2000000-0000-4000-8000-000000000002 HTTP/1.1
 Friday 18:04. The entry camera reads `SYN-1234`; the PARCS matches it to the
 reservation's plate credential, opens the gate, creates the native
 `Session`, and flips the extension to `checkedIn` with a link to that
-session:
+session. A plain `GET /rights/assigned/{id}` now returns:
 
+<!-- apx:validate AssignedRight -->
 <!-- apx:validate ReservationExtension at /extensions/apds-ext:apx:reservation@1.0 -->
 ```json
 {
   "id": "e2000000-0000-4000-8000-000000000002",
   "version": 3,
   "rightSpecification": { "id": "e1000000-0000-4000-8000-000000000001", "version": 1, "className": "RightSpecification" },
+  "rightHolder": {
+    "credentials": [
+      { "type": "licensePlate", "credentialAssignedType": "vehicle", "identifier": { "id": "SYN-1234", "className": "USNumberPlate" } }
+    ]
+  },
+  "plannedUses": [ { "startTime": "2026-08-14T18:00:00Z", "endTime": "2026-08-15T01:00:00Z" } ],
   "extensions": {
     "apds-ext:apx:reservation@1.0": {
       "reservationState": "checkedIn",
@@ -142,9 +204,11 @@ GET /v1/reservations/recent?plate=SYN-1234 HTTP/1.1
 The no-show sweep runs after the grace period. The friend's reservation
 flips to `noShow` and the fabric announces it on
 `apx.reservation.noshow.v1` — the reservation platform refunds or charges
-per its own policy:
+per its own policy. The event's `data` is a `ReservationSummary` (Part 14
+§14.1 step 6):
 
 <!-- apx:validate EventEnvelope -->
+<!-- apx:validate ReservationSummary at /data -->
 ```json
 {
   "id": "3b4c5d6e-7f8a-4b9c-8d0e-1f2a3b4c5d6e",
@@ -155,7 +219,8 @@ per its own policy:
   "data": {
     "reservation": { "id": "e2000000-0000-4000-8000-000000000003", "className": "AssignedRight" },
     "reservationState": "noShow",
-    "plannedStart": "2026-08-14T18:00:00Z"
+    "plannedStart": "2026-08-14T18:00:00Z",
+    "noShowAfter": "2026-08-14T18:30:00Z"
   }
 }
 ```

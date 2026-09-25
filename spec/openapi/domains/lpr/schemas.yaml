@@ -42,8 +42,28 @@ LprRead:
     session:
       $ref: "../../../vendor/apds/4.1/apds-api-4.1.yaml#/components/schemas/Reference"
     imageLink:
-      description: Screenshot/still of the read (APDS Image).
+      description: |-
+        Screenshot/still of the read (APDS Image). Absent when no image was
+        taken or the imagery has been purged (see `purgedImagery`).
       $ref: "../../../vendor/apds/4.1/apds-api-4.1.yaml#/components/schemas/Url"
+    lane:
+      description: |-
+        The VehicularAccess (lane) the read was taken at, when the
+        Observation's `elementIds` reference one — the lane `laneTravel`
+        is derived from (Part 13 §13.3a). Lets a consumer tell an entry
+        read from an exit read.
+      $ref: "../../../vendor/apds/4.1/apds-api-4.1.yaml#/components/schemas/Reference"
+    cameraId:
+      type: string
+      description: The capturing camera (APDS Image.cameraID), opaque.
+    purgedImagery:
+      type: boolean
+      readOnly: true
+      description: |-
+        True when imagery for this read existed and was purged under the
+        published retention schedule (Part 13 §13.3b), so a consumer can
+        tell "picture purged" from "no picture taken". Absent or false
+        otherwise.
     recentReservations:
       type: array
       maxItems: 10
@@ -53,6 +73,13 @@ LprRead:
         reservation's own vehicle credentials.
       items:
         $ref: "../reservations/schemas.yaml#/ReservationSummary"
+    extensions:
+      description: |-
+        The underlying Observation's `extensions`, projected minus the
+        `apds-ext:apx:lpr-read@1.0` block (which is `detail`), so vendor
+        keys preserved on ingest are visible here (Part 13 §13.3a,
+        Part 4 §4.3).
+      $ref: "../common/schemas.yaml#/Extensions"
 
 AttributeRead:
   title: AttributeRead

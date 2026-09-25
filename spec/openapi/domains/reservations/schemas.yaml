@@ -7,7 +7,9 @@ ReservationExtension:
   description: |-
     The apds-ext:apx:reservation@1.0 extension object attached to a native
     AssignedRight. Presence of this extension marks the AssignedRight as a
-    reservation; state transitions follow Part 14.
+    reservation; state transitions follow Part 14 §14.1 (transition
+    table). `plannedStart`/`plannedEnd` MUST mirror the AssignedRight's
+    `plannedUses[0].startTime`/`endTime`, which is authoritative.
   type: object
   required: [reservationState]
   properties:
@@ -15,16 +17,29 @@ ReservationExtension:
       type: string
       enum: [confirmed, amended, cancelled, checkedIn, noShow]
     plannedStart:
+      description: Mirror of `plannedUses[0].startTime` (Part 14 §14.1).
       $ref: "../../../vendor/apds/4.1/apds-api-4.1.yaml#/components/schemas/DateTime"
     plannedEnd:
+      description: Mirror of `plannedUses[0].endTime` (Part 14 §14.1).
       $ref: "../../../vendor/apds/4.1/apds-api-4.1.yaml#/components/schemas/DateTime"
     checkInSession:
       description: Set when a Session referencing this AssignedRight is created.
       $ref: "../../../vendor/apds/4.1/apds-api-4.1.yaml#/components/schemas/Reference"
+    noShowAfter:
+      description: |-
+        SERVER-SET: the instant after which a reservation still without a
+        check-in transitions to `noShow` (`plannedStart` plus the
+        operator's grace period, Part 14 §14.1 step 6), so a platform can
+        tell a customer when the booking lapses. Clients do not send it.
+      readOnly: true
+      $ref: "../../../vendor/apds/4.1/apds-api-4.1.yaml#/components/schemas/DateTime"
 
 ReservationSummary:
   title: ReservationSummary
-  description: Compact view of one past/current reservation, for customer-history lookups.
+  description: |-
+    Compact view of one past/current reservation, for customer-history
+    lookups. Also the `data` of `apx.reservation.noshow.v1` (Part 14
+    §14.1 step 6).
   type: object
   required: [reservation]
   properties:
@@ -36,6 +51,9 @@ ReservationSummary:
     plannedStart:
       $ref: "../../../vendor/apds/4.1/apds-api-4.1.yaml#/components/schemas/DateTime"
     plannedEnd:
+      $ref: "../../../vendor/apds/4.1/apds-api-4.1.yaml#/components/schemas/DateTime"
+    noShowAfter:
+      description: When a reservation not yet checked in lapses to `noShow` (see ReservationExtension.noShowAfter).
       $ref: "../../../vendor/apds/4.1/apds-api-4.1.yaml#/components/schemas/DateTime"
 
 PoolAvailability:
