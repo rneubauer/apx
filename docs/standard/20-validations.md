@@ -24,11 +24,16 @@ subtree root): `benefit` (exactly one of `amount`, `duration`,
 `programStatus`.
 
 1. **Lifecycle:** `active ⇄ suspended`; either → `ended` (terminal).
-   Transitions and every other change go through `PUT` carrying the
-   `version` last read; a stale version is 409 `version-conflict` (Part 5
-   §5.1 full-update semantics). Any transition out of `ended` is 422
-   `program-not-active`. Every transition appends `statusHistory[]` and
-   publishes `apx.validations.program.status.v1`.
+   Transitions and every other change go through `PUT` (Part 5 §5.1
+   full-update semantics) with the version last read as the
+   precondition, sent as `If-Match` or as the body's `version` (Part 4
+   §4.2a); a stale version is 409 `version-conflict`. Any transition out
+   of `ended` is 422 `program-not-active`. Every transition appends
+   `statusHistory[]` and publishes `apx.validations.program.status.v1`.
+   On enrolment or update, a body Reference (`place`, `provider`, an
+   `applicableRateTables` entry) that names nothing visible is 422
+   `reference-unknown`; a `benefit` carrying none or more than one of
+   `amount`, `duration`, `percentage` is 422 `request-unprocessable`.
 2. **Provider list derivation (normative).** When `apx-validations` is
    claimed, `GET /v1/validations/providers?place=` MUST return exactly the
    `active` programs whose `place` is the queried element or an ancestor
@@ -44,8 +49,11 @@ subtree root): `benefit` (exactly one of `amount`, `duration`,
 ## 20.2 Instruments and issuance
 
 `POST /v1/validations/programs/{id}/issuances` issues a batch of
-`quantity` instruments of one `method`. **Idempotency-Key REQUIRED** — a
-retried print job must not double the stock.
+`quantity` instruments of one `method` to the program the path names.
+The body (`ValidationIssuanceRequest`) need not repeat `program`; one
+that differs from the path is 422 `request-unprocessable`, as is a
+`method` not in the program's `issuanceMethods`. **Idempotency-Key
+REQUIRED** — a retried print job must not double the stock.
 
 1. For `code`, `qrCode`, and `digital`, the server generates `codes[]`
    and returns them **exactly once**, in the 201 response (the Part 8 §8.1
@@ -62,6 +70,17 @@ retried print job must not double the stock.
    is **404, never 403** — the read MUST NOT act as an oracle for guessing
    codes. Implementations SHOULD rate-limit it per credential (Part 12
    §12.3).
+5. **Voiding stock.** `POST …/issuances/{issuanceId}/void` moves a batch
+   `issued → void` and every instrument in it that is `valid` or
+   `expired` to `void` — the stolen sheet of codes; instruments already
+   `redeemed` are unaffected and their redemptions stand until reversed.
+   `POST /v1/validations/instruments/{code}/void` voids one code; a
+   `redeemed` code is 422 `instrument-invalid` (reverse the redemption
+   first). Both take `{ reason, note }`, record `voidDetail`, and return
+   the resource unchanged (200) when it is already `void`. Scope:
+   `manage`, or `redeem` for the owning provider; outside that scope the
+   batch or code is 404 (§20.5). A voided code is refused at redemption
+   as `instrument-invalid` (§20.3 rule 2).
 
 ## 20.3 Redemption and the rule set (normative)
 
@@ -75,13 +94,19 @@ channel writes the same resource:
 
 At redemption the server MUST evaluate, in order, and refuse with 422:
 
-1. `program-not-active` — program not `active` (or place mismatch).
+1. `program-not-active` — program not `active`. A redemption whose
+   `place` is neither the program's place nor within its subtree is
+   instead `request-unprocessable`, with `detail` naming the program's
+   place, so a device can tell "wrong place, retry" from "program
+   suspended".
 2. `instrument-invalid` — `instrumentCode` given but unknown, `void`,
    `expired`, or already `redeemed`; or the program requires an
    instrument (no `api` method) and none was given.
 3. `redemption-limit-exceeded` — `rules.maxPerTicket` or
-   `rules.maxPerDay` would be exceeded, or `rules.stackable` is false and
-   another program is already applied to the ticket, or the session's
+   `rules.maxPerDay` would be exceeded; or stacking is refused, which
+   is evaluated **both ways**: the incoming program is not stackable and
+   another program is already applied to the ticket, **or** any program
+   already applied to the ticket is not stackable; or the session's
    rate table is not in `rules.applicableRateTables` (or does not accept
    validations per APDS `RateTable.validation`).
 
@@ -92,7 +117,10 @@ On success the server MUST: materialize the APDS-native record
 **actual** effect on the amount due, never the nominal benefit; consume
 the instrument (`redeemed`); and publish `apx.validations.redeemed.v1`.
 Where the implementation also claims `apx-control`, the lane's
-`currentTicket.validations[]` (Part 6) reflects the redemption.
+`currentTicket.validations[]` (Part 6) reflects the redemption. A
+redemption materialized from an `applyValidation` command carries it as
+`command`, and `GET /v1/validations/redemptions?command=` finds it from
+the command's id.
 
 The rule set above is closed so that two implementations evaluate the
 same program identically. Rules beyond it (day-of-week, minimum spend,
@@ -103,11 +131,21 @@ implementer's to enforce.
 
 `POST /v1/validations/redemptions/{id}/reverse` moves `applied →
 reversed`, restores the amount due on the session (and the APDS-native
-record), and returns the instrument to `valid` while still inside its
-window. Already reversed is 409 `redemption-reversed`. A redemption
-inside a **closed** statement period cannot be reversed (409
-`statement-closed`); the correction is a credit line on the next
-statement, so closed statements stay immutable (§20.6).
+record) while the session is still open, and returns the instrument to
+`valid` while still inside its window. Already reversed is 409
+`redemption-reversed`. For a session already closed and settled, the
+reversal is a billing correction only; it does not reopen the amount
+due.
+
+**Reversal after closure (normative).** A redemption already billed on
+a **closed** statement is reversed like any other — merchant
+disputes after invoicing are the normal case. The closed statement is
+never edited: the reversal records it as `reversal.closedStatement`,
+and the next statement closed for the program carries a negative
+`credit` line for the redemption (§20.6), whose id is then set as
+`reversal.creditedOn`. There is one ledger and no separate credit
+operation. Servers MUST NOT refuse such a reversal with
+`statement-closed`; that type is no longer returned by this operation.
 
 ## 20.5 Merchant scope (normative)
 
@@ -117,7 +155,13 @@ equals the token's `apx_org` (Part 9 §9.3): it MAY read those programs,
 issue their stock, check their codes, record and list their redemptions,
 and read their statements; it MUST NOT see other providers' programs or
 redemptions, enrol or update programs, reverse redemptions, or close
-statements. Operator scopes: `apx.validations:read` (all of the above,
+statements. **Another provider's resource is 404** `target-not-found`,
+exactly as one that does not exist, on every route — a program,
+issuance, instrument, redemption, or statement addressed by id, and
+every `…/programs/{id}/…` sub-route (Part 9 §9.3a rule 2: a narrower
+ownership scope inside a granted place). A place outside the token's
+`apx_places` grant remains 403 `insufficient-grant` (Part 9 §9.3), and
+lists simply omit other providers' records. Operator scopes: `apx.validations:read` (all of the above,
 read-only, across the place grant) and `apx.validations:manage`
 (everything). Plate values never appear on validation resources; ticket
 numbers and session references do, and are subject to Part 9 §9.6
@@ -139,8 +183,15 @@ merchant is billed `unitPrice` per redemption, or the actual
   operator's accounting system invoices from. Closed periods MUST NOT
   overlap (409 `statement-overlap`). Publishes
   `apx.validations.statement.closed.v1`.
-- Redemptions reversed after closure appear as negative `billable` lines
-  on the next closed statement, never as edits to the closed one.
+- Redemptions reversed after closure (§20.4) appear as `credit` lines —
+  `lineKind: credit`, a negative `billable`, and `originalStatement`
+  naming the statement that billed them — on the next statement closed
+  for the program, never as edits to the closed one. `billableAmount` is
+  net of them and `creditCount` counts them; the preview shows the
+  credits the period would carry. Closing the statement sets each
+  reversal's `reversal.creditedOn`.
+- A preview whose `from` is not before `to`, or a close whose
+  `periodStart` is not before `periodEnd`, is 400 `invalid-request`.
 
 APX does not invoice or take money for statements; that stays in the
 operator's accounting system (Part 0 §0.4). A statement's `id` is the
@@ -167,8 +218,9 @@ provider's programs (§20.5; Part 9 §9.6 rule 4).
 | `GET /v1/validations/programs`, `GET …/{id}` | `read` or `redeem` (own) |
 | `POST …/{id}/issuances` | `manage` or `redeem` (own) |
 | `GET …/{id}/issuances`, `GET /v1/validations/instruments/{code}` | `read` or `redeem` (own) |
+| `POST …/{id}/issuances/{issuanceId}/void`, `POST /v1/validations/instruments/{code}/void` | `manage` or `redeem` (own) |
 | `POST /v1/validations/redemptions` | `manage` or `redeem` (own) |
-| `GET /v1/validations/redemptions`, `GET …/{id}` | `read` or `redeem` (own) |
+| `GET /v1/validations/redemptions` (incl. `?command=`), `GET …/{id}` | `read` or `redeem` (own) |
 | `POST …/{id}/reverse` | `manage` |
 | `GET …/programs/{id}/statement` (preview), `GET …/programs/{id}/statements`, `GET /v1/validations/statements/{id}` | `read` or `redeem` (own) |
 | `POST …/programs/{id}/statements` (close) | `manage` |

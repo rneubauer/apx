@@ -18,12 +18,16 @@ Violation:
 
     Lifecycle (Part 19 §19.1): `detected → confirmed | dismissed`,
     `confirmed → issued`, `issued → paid | appealed`,
-    `appealed → issued (upheld, or reduced with amount replaced by
-    adjustedAmount) | closed (dismissed)`, `paid → closed` (server-side
-    administrative transition, no API operation). `voided` is terminal
-    from any state.
+    `paid → appealed` (pay-then-appeal, within the policy's
+    `appealWindowDays`), `appealed → issued | paid (upheld, or reduced
+    with amount replaced by adjustedAmount; back to the state the appeal
+    was opened from) | closed (dismissed)`, `paid → closed` (server-side
+    administrative transition, no API operation). The terminal states
+    are `dismissed`, `closed`, and `voided`; `void` is valid from every
+    other state (`detected`, `confirmed`, `issued`, `appealed`, `paid`).
     Automated detection MAY skip review (`detected → issued`) where the
-    operator's policy permits; guided detection MUST pass through review.
+    policy in force permits (`EnforcementPolicy.unreviewedIssuance`);
+    guided detection MUST pass through review.
   type: object
   required:
     - id
@@ -143,11 +147,15 @@ Violation:
     location:
       type: object
       description: |-
-        Where the violation was observed and from where — the APDS
-        Observation `Location` shape (Part 19 §19.9). GeoJSON positions
-        are [longitude, latitude] in that order; enforcement tools that
-        store latitude first MUST swap on the wire. Automated detections
-        SHOULD copy this from the underlying Observation.
+        Where the violation was observed and from where — modelled on the
+        APDS Observation `Location` shape (Part 19 §19.9), with two
+        differences: `observerLocation` is optional here (APDS requires
+        it; an automated finding copied from a fixed sensor may have
+        none), and `accuracyMetres` is added. The member names and the
+        `PointLocation` types are APDS's own. GeoJSON positions are
+        [longitude, latitude] in that order; enforcement tools that store
+        latitude first MUST swap on the wire. Automated detections SHOULD
+        copy this from the underlying Observation.
       properties:
         observedLocation:
           description: The vehicle's position (GeoJSON Point).
@@ -175,13 +183,35 @@ Violation:
         evidence of what was posted (Part 19 §19.11).
       items:
         $ref: "../../../vendor/apds/4.1/apds-api-4.1.yaml#/components/schemas/VersionedReference"
+    unpaidAmount:
+      description: |-
+        The unpaid parking fee this violation relates to — the basis for
+        the policy's relative penalty caps (`maximumMultipleOfUnpaid`,
+        `maximumPercentOverUnpaid`). Computed by the server at `issue`
+        from the rate deck in force for the stay and frozen with the
+        policy (Part 19 §19.10). Absent when the policy in force has no
+        relative cap or no fee could be derived.
+      readOnly: true
+      $ref: "../../../vendor/apds/4.1/apds-api-4.1.yaml#/components/schemas/AmountInCurrency"
+    capAmount:
+      description: |-
+        The effective penalty cap at `issue` (the lowest of the policy's
+        `penaltyCap` bounds, relative ones applied to `unpaidAmount`),
+        frozen so an appeal can check `penalty-exceeds-cap` without
+        recomputing it. Absent when no cap applied.
+      readOnly: true
+      $ref: "../../../vendor/apds/4.1/apds-api-4.1.yaml#/components/schemas/AmountInCurrency"
     amountHistory:
       type: array
       readOnly: true
       description: |-
         Every change to `amount`, in order: the issued amount, each
         server-applied escalation step, and each appeal reduction
-        (Part 19 §19.10). `amount` always equals the last entry.
+        (Part 19 §19.10). `amount` always equals the last entry. The
+        first entry is written at `issue`: `reason: issued`, or, when the
+        requested amount was clamped to the cap, a single entry with
+        `reason: cap`, the clamped `amount`, and the amount asked for in
+        `requestedAmount`.
       items:
         type: object
         required: [amount, time, reason]
@@ -196,6 +226,9 @@ Violation:
           step:
             type: string
             description: The policy escalation step id that fired, when `reason` is `escalation`.
+          requestedAmount:
+            description: The amount the `issue` call asked for, when `reason` is `cap` (the entry's `amount` is the clamped figure).
+            $ref: "../../../vendor/apds/4.1/apds-api-4.1.yaml#/components/schemas/AmountInCurrency"
           detail:
             type: string
     notice:
@@ -245,6 +278,13 @@ Violation:
           $ref: "../../../vendor/apds/4.1/apds-api-4.1.yaml#/components/schemas/Reference"
         openedTime:
           $ref: "../../../vendor/apds/4.1/apds-api-4.1.yaml#/components/schemas/DateTime"
+        openedFrom:
+          type: string
+          enum: [issued, paid]
+          description: |-
+            The state the appeal was opened from; `paid` is a
+            pay-then-appeal (Part 19 §19.6). `upheld` and `reduced` return
+            the violation to this state.
         resolvedTime:
           $ref: "../../../vendor/apds/4.1/apds-api-4.1.yaml#/components/schemas/DateTime"
         resolution:
@@ -253,6 +293,12 @@ Violation:
           examples: [dismissed]
         resolutionNote:
           type: string
+        refund:
+          description: |-
+            The Part 13 refund (APX PaymentRecord or APDS Payment) that
+            returned money on a pay-then-appeal resolved `reduced`
+            (partial) or `dismissed` (full).
+          $ref: "../../../vendor/apds/4.1/apds-api-4.1.yaml#/components/schemas/Reference"
     statusHistory:
       type: array
       description: Immutable, append-only lifecycle audit (Part 4 §4.2).
@@ -364,7 +410,11 @@ ViolationReview:
       enum: [confirm, dismiss]
     reason:
       type: string
-      description: Required when dismissing (implementer code list — permitDisplayed, plateMisread, gracePeriod…).
+      description: |-
+        Required when `decision` is `dismiss` (implementer code list —
+        permitDisplayed, plateMisread, gracePeriod…); a dismissal without
+        it is 400 `invalid-request` with `errors[].pointer` `/reason`
+        (Part 19 §19.1 rule 1).
       examples: [plateMisread]
     note:
       type: string
@@ -417,7 +467,7 @@ ViolationPaymentAttachment:
 
 ViolationAppealOpen:
   title: ViolationAppealOpen
-  description: Request body opening an appeal on an issued violation.
+  description: Request body opening an appeal on an issued violation, or on a paid one within the policy's appeal window (pay-then-appeal).
   type: object
   required: [reason]
   properties:
@@ -446,12 +496,22 @@ ViolationAppealResolution:
       type: string
       description: |-
         upheld | reduced | dismissed (implementer code list). `upheld` returns
-        the violation to `issued`; `reduced` returns it to `issued` with
-        `adjustedAmount`; `dismissed` closes it.
+        the violation to the state the appeal was opened from (`issued`, or
+        `paid` for a pay-then-appeal); `reduced` does the same with `amount`
+        replaced by `adjustedAmount`; `dismissed` closes it.
       examples: [reduced]
     adjustedAmount:
-      description: The new amount payable when `resolution` is `reduced`.
+      description: |-
+        The new amount payable. Required when `resolution` is `reduced`; a
+        `reduced` resolution without it is 400 `invalid-request` with
+        `errors[].pointer` `/adjustedAmount` (Part 19 §19.1 rule 3).
       $ref: "../../../vendor/apds/4.1/apds-api-4.1.yaml#/components/schemas/AmountInCurrency"
+    refund:
+      description: |-
+        For a pay-then-appeal resolved `reduced` or `dismissed`: the Part 13
+        refund returning the difference or the whole payment
+        (`POST /v1/payments/{id}/refund`). Recorded on `appeal.refund`.
+      $ref: "../../../vendor/apds/4.1/apds-api-4.1.yaml#/components/schemas/Reference"
     note:
       type: string
 
@@ -465,6 +525,11 @@ ViolationVoid:
       type: string
       description: Void reason (implementer code list — issuedInError, duplicate, policyException…).
       examples: [duplicate]
+    refund:
+      description: |-
+        When voiding a `paid` violation: the Part 13 refund that returned
+        the payment (SHOULD be given; Part 19 §19.1 rule 4).
+      $ref: "../../../vendor/apds/4.1/apds-api-4.1.yaml#/components/schemas/Reference"
     note:
       type: string
 
@@ -478,7 +543,8 @@ EnforcementPolicy:
     subtree inheritance — the nearest ancestor's policy applies unless a
     descendant overrides it. A machine-readable summary an operator
     configures from the governing statute; never the statute itself.
-    Edits use versioned `PUT` (409 `version-conflict` when stale).
+    Edits use versioned `PUT` with the version last read as `If-Match`
+    or body `version` (Part 4 §4.2a; 409 `version-conflict` when stale).
   type: object
   required: [id, version, place, policyStatus, effectiveFrom]
   properties:
@@ -549,9 +615,37 @@ EnforcementPolicy:
                 minimum: 0
               locationRequired:
                 type: boolean
+    unreviewedIssuance:
+      type: object
+      description: |-
+        Whether an `automated` detection may go `detected → issued`
+        without a human `review` (Part 19 §19.4 rule 1). When present the
+        server MUST apply it at `issue` (409 `violation-not-issuable`
+        otherwise); when absent the operator's published documentation
+        governs, as before. `guided` and `manual` detections are always
+        reviewed, whatever this says.
+      properties:
+        permitted:
+          type: boolean
+          default: false
+          description: True when unreviewed automated issuance is lawful and permitted at this place.
+        minimumConfidence:
+          type: number
+          minimum: 0
+          maximum: 1
+          description: Lowest `detection.confidence` that may be issued unreviewed; a detection below it, or with no confidence, needs review.
+        violationTypes:
+          type: array
+          description: The `violationType` values that may be issued unreviewed; absent = every type.
+          items:
+            type: string
     penaltyCap:
       type: object
-      description: Ceiling on the amount at `issue`. When more than one bound is present the lowest applies.
+      description: |-
+        Ceiling on the amount at `issue`. When more than one bound is
+        present the lowest applies. Relative bounds apply to the
+        violation's `unpaidAmount`, which the server computes and freezes
+        at `issue` together with the resulting `capAmount`.
       properties:
         maximumAmount:
           $ref: "../../../vendor/apds/4.1/apds-api-4.1.yaml#/components/schemas/AmountInCurrency"
@@ -572,8 +666,11 @@ EnforcementPolicy:
       description: |-
         Ordered, server-applied steps (Part 19 §19.10). Each fires once
         when `afterDays` have elapsed since `notice.issuedTime` with the
-        violation still `issued`; the result is appended to
-        `amountHistory` and never exceeds `overallCeiling`.
+        violation still `issued`; days spent `appealed` do not count
+        (the clock pauses during an appeal). The result is appended to
+        `amountHistory` and never exceeds `overallCeiling`. A step whose
+        fixed `addAmount` alone exceeds `overallCeiling.maximumAmount` is
+        refused at create/update (422 `request-unprocessable`).
       items:
         type: object
         required: [step, afterDays]
@@ -606,11 +703,14 @@ EnforcementPolicy:
     appealWindowDays:
       type: integer
       minimum: 0
-      description: Days after `notice.issuedTime` during which an appeal MUST be accepted.
+      description: |-
+        Days after `notice.issuedTime` during which an appeal MUST be
+        accepted — from `issued`, or from `paid` (pay-then-appeal). After
+        it, servers MAY refuse with 409 `appeal-closed`.
     paymentGraceDays:
       type: integer
       minimum: 0
-      description: Days after `notice.issuedTime` before the first escalation step MAY fire, regardless of `afterDays`.
+      description: Days after `notice.issuedTime` before the first escalation step MAY fire, regardless of `afterDays` (days spent `appealed` do not count).
     signageRequired:
       type: boolean
       description: When true, `issue` is refused (422 `signage-required`) unless Signage was in force at the place at `detectedTime`.
@@ -642,7 +742,7 @@ Signage:
     a HierarchyElement with subtree inheritance. Versioned so an appeal
     can show the sign as it stood on the day: superseding a sign is a
     new version or a new record with `effectiveTo` set, never an edit in
-    place of historical text. Edits use versioned `PUT`.
+    place of historical text. Edits use versioned `PUT` (Part 4 §4.2a).
   type: object
   required: [id, version, place, text, signageStatus, effectiveFrom]
   properties:

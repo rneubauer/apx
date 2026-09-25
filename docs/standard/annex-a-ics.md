@@ -143,29 +143,29 @@ implementation has the named capability).
 | ID | Requirement | Source |
 |---|---|---|
 | APX-VIO-01 | Violation idempotent create (Idempotency-Key semantics as APX-CTL-01); eligibility check performed and recorded at creation; entitled vehicles recorded as `dismissed` with basis | §19.1, §19.2 |
-| APX-VIO-02 | Lifecycle per §19.1 with immutable `statusHistory[]`; illegal transitions → 409 `violation-transition-illegal`; void never deletes | §19.1 |
-| APX-VIO-03 | `guided`/`manual` detections reviewed before issuance; unreviewed issue → 409 `violation-not-issuable`; automated unreviewed-issuance policy published | §19.4 |
-| APX-VIO-04 | One appeal per violation; `upheld`/`reduced`/`dismissed` semantics; closed → 409 `appeal-closed`; `amount` changes only via `reduced` | §19.1, §19.6 |
-| APX-VIO-05 | Settlement by Payment reference only (Part 13 takes the money); `paid` only from `issued` | §19.6 |
+| APX-VIO-02 | Lifecycle per §19.1 with immutable `statusHistory[]`; terminal states `dismissed`, `closed`, `voided`; illegal transitions → 409 `violation-transition-illegal`; void from every non-terminal state (incl. `paid`), never deletes | §19.1 |
+| APX-VIO-03 | `guided`/`manual` detections reviewed before issuance; unreviewed issue → 409 `violation-not-issuable`; automated unreviewed-issuance rule applied from `EnforcementPolicy.unreviewedIssuance` where present, otherwise published in operator documentation | §19.4 |
+| APX-VIO-04 | One appeal per violation, from `issued` or (within the appeal window) `paid`; `upheld`/`reduced` return to the state opened from, `dismissed` closes; `appeal-closed` for a second appeal, a closed/voided violation, a passed window, or a resolve with no open appeal; `amount` changes only via `reduced` | §19.1, §19.6 |
+| APX-VIO-05 | Settlement by Payment reference only (Part 13 takes the money, and returns it on a pay-then-appeal via `refund`); `paid` only from `issued` | §19.6 |
 | APX-VIO-06 | `GET /v1/enforcement/eligibility` derivable from held APDS rights/sessions; ancestor-bound rights count; `basis[]` never exceeds the token's `/rights/assigned` grant; `suggestedViolationType` advisory | §19.3 |
 | APX-VIO-07 | Evidence and `lastRead` imagery as access-controlled links; plate values only under `apx.violations:*`; retention published; appellant media treated as untrusted | §19.5, §9.6 |
 | APX-VIO-08 | `apx.violations.detected.v1`, `.issued.v1`, `.status.v1` published; place-bound on `Violation.place` | §19.7 |
-| APX-VIO-09 | `Violation.location` in the APDS Observation Location shape, GeoJSON [lon, lat]; guided/manual carry `observerLocation`; automated copies from the Observation | §19.9 |
-| APX-VIO-10 | Policy in force resolved by nearest-ancestor-or-self at `detectedTime`; `…/policies/effective` returns exactly what `issue` applies; refusals per §19.10 rule 2 with the named problem types; `policy`, `signage[]`, `amountHistory` frozen at issue | §19.10 |
-| APX-VIO-11 | Escalation server-applied per schedule, never before `paymentGraceDays`, never while `appealed`, never above `overallCeiling`; each step appended to `amountHistory` and published; clients never compute penalties | §19.10 |
+| APX-VIO-09 | `Violation.location` modelled on the APDS Observation Location shape (optional `observerLocation`, added `accuracyMetres`), GeoJSON [lon, lat]; guided/manual carry `observerLocation`; automated copies from the Observation | §19.9 |
+| APX-VIO-10 | Policy in force resolved by nearest-ancestor-or-self at `detectedTime`; `…/policies/effective` returns exactly what `issue` applies; refusals per §19.10 rule 2 with the named problem types; `policy`, `signage[]`, `unpaidAmount`, `capAmount`, and the first `amountHistory` entry (`issued`, or `cap` with `requestedAmount`) frozen at issue | §19.10 |
+| APX-VIO-11 | Escalation server-applied per schedule, never before `paymentGraceDays`, never while `appealed` (days appealed do not count), clamped at `overallCeiling`; each step appended to `amountHistory` and published; clients never compute penalties | §19.10 |
 | APX-VIO-12 | Signage history immutable (text change on a referenced record → 422 `signage-referenced`); in-force signage frozen on the violation at issue; `signageRequired` enforced | §19.11 |
 
 ## A.16 `apx-validations`
 
 | ID | Requirement | Source |
 |---|---|---|
-| APX-VAL-01 | Program lifecycle `active ⇄ suspended → ended` via versioned `PUT`; stale version → 409 `version-conflict`; out of `ended` → 422 `program-not-active`; `statusHistory[]` immutable | §20.1 |
+| APX-VAL-01 | Program lifecycle `active ⇄ suspended → ended` via versioned `PUT` (`If-Match` or body `version`, Part 4 §4.2a); stale version → 409 `version-conflict`; out of `ended` → 422 `program-not-active`; ambiguous benefit → 422 `request-unprocessable`; `statusHistory[]` immutable | §20.1 |
 | APX-VAL-02 | Provider list (Part 6) derived from active programs covering the queried place or an ancestor, each row carrying `program`; `applyValidation` materializes a `ValidationRedemption` | §20.1, §6.3 |
-| APX-VAL-03 | Issuance idempotent; `codes[]` returned exactly once; codes ≥ 64 bits entropy and implementation-unique; unknown/out-of-grant code → 404 never 403 | §20.2 |
-| APX-VAL-04 | Redemption idempotent; rule set evaluated in order with 422 `program-not-active` / `instrument-invalid` / `redemption-limit-exceeded`; APDS-native validation record materialized and returned as `validationId`; `amountReduced` is the actual effect | §20.3 |
-| APX-VAL-05 | Reversal restores amount due and instrument; already reversed → 409 `redemption-reversed`; inside a closed statement → 409 `statement-closed` | §20.4 |
-| APX-VAL-06 | `apx.validations:redeem` confined to the token's own provider (`apx_org`) for reads, issuance, redemption, and events; cannot enrol, reverse, or close | §20.5 |
-| APX-VAL-07 | Statement preview computable for any period; closed statements immutable and non-overlapping (409 `statement-overlap`); post-closure reversals appear as credit lines on the next statement | §20.6 |
+| APX-VAL-03 | Issuance idempotent, program taken from the path; `codes[]` returned exactly once; codes ≥ 64 bits entropy and implementation-unique; unknown/out-of-grant code → 404 never 403; batches and single codes voidable, redeemed codes unaffected | §20.2 |
+| APX-VAL-04 | Redemption idempotent; rule set evaluated in order with 422 `program-not-active` / `instrument-invalid` / `redemption-limit-exceeded` (place mismatch → `request-unprocessable`); `stackable` evaluated both ways; APDS-native validation record materialized and returned as `validationId`; `amountReduced` is the actual effect | §20.3 |
+| APX-VAL-05 | Reversal restores amount due (open session) and instrument; already reversed → 409 `redemption-reversed`; a redemption on a closed statement is reversed without editing it and credited on the next statement | §20.4 |
+| APX-VAL-06 | `apx.validations:redeem` confined to the token's own provider (`apx_org`) for reads, issuance, voiding, redemption, and events; another provider's resource → 404; cannot enrol, reverse, or close | §20.5 |
+| APX-VAL-07 | Statement preview computable for any period; closed statements immutable and non-overlapping (409 `statement-overlap`); post-closure reversals appear as `credit` lines on the next statement, `billableAmount` net of them | §20.6 |
 | APX-VAL-08 | `apx.validations.redeemed.v1`, `.program.status.v1`, `.statement.closed.v1` published; place-bound | §20.7 |
 
 ## A.17 `apx-credentials`

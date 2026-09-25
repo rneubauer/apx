@@ -888,8 +888,9 @@ paths:
         pipeline, a guided-enforcement handheld, or an officer directly
         (`detection.mode`). The `Idempotency-Key` header is REQUIRED:
         cameras and handhelds retry, and a retry must not create a second
-        violation. Same key + same body returns the ORIGINAL (200); same
-        key + different body is 409 idempotency-conflict. The server
+        violation. Same key + same body returns the violation's current
+        representation (200, Part 4 §4.2a); same key + different body is
+        409 idempotency-conflict. The server
         performs the eligibility check at creation and records it in
         `eligibilityCheck`; a vehicle found entitled is still recorded (as
         `dismissed`, with the basis) so the audit trail is complete.
@@ -903,7 +904,7 @@ paths:
             schema: { $ref: "#/components/schemas/Violation" }
       responses:
         "200":
-          description: Idempotent replay — same key + same body returns the ORIGINAL violation.
+          description: Idempotent replay — same key + same body returns the violation's current representation (Part 4 §4.2a).
           content:
             application/json:
               schema: { $ref: "#/components/schemas/Violation" }
@@ -913,7 +914,11 @@ paths:
             application/json:
               schema: { $ref: "#/components/schemas/Violation" }
         "400":
-          description: Missing Idempotency-Key or invalid violation.
+          description: |-
+            Missing Idempotency-Key (`idempotency-key-required`), or a body
+            that fails the schema or a §19.9 field rule — e.g. no
+            `detection`, or a position whose first element is outside
+            −180..180 (`invalid-request`, with `errors[]`).
           content:
             application/problem+json:
               schema: { $ref: "#/components/schemas/Problem" }
@@ -925,7 +930,10 @@ paths:
             application/problem+json:
               schema: { $ref: "#/components/schemas/Problem" }
         "422":
-          description: Unprocessable — unknown place, or `violationType` outside the served registries.
+          description: |-
+            `reference-unknown` — `place`, `space`, or another body
+            Reference names nothing visible to the caller, or
+            `violationType` is outside the served registries and code lists.
           content:
             application/problem+json:
               schema: { $ref: "#/components/schemas/Problem" }
@@ -937,12 +945,20 @@ paths:
       tags: [Violations]
       summary: List/filter violations
       description: |-
-        Filter by plate (credentialIdentification), status, type, place
-        (subtree-inclusive), detection mode, and `since` (detectedTime).
-        Results are constrained to the caller's place grant. Plate values
-        appear only under `apx.violations:*` scopes (Part 9 §9.6).
+        Filter by plate (credentialIdentification), notice number, status,
+        type, place (subtree-inclusive), detection mode, and the
+        `since`..`until` window on detectedTime. Results are constrained
+        to the caller's place grant; a lookup that names no place (by
+        plate or notice number) returns only violations at granted places
+        (Part 9 §9.3a). Plate values appear only under `apx.violations:*`
+        scopes (Part 9 §9.6).
       parameters:
         - { name: plate, in: query, schema: { type: string } }
+        - name: noticeNumber
+          in: query
+          required: false
+          schema: { type: string }
+          description: Exact match on `notice.noticeNumber` — the number the driver holds, and the payment `reference` (§19.6).
         - name: status
           in: query
           schema: { type: string, enum: [detected, confirmed, dismissed, issued, paid, appealed, closed, voided] }
@@ -952,6 +968,11 @@ paths:
           in: query
           schema: { type: string, enum: [automated, guided, manual] }
         - { name: since, in: query, schema: { type: string, format: date-time } }
+        - name: until
+          in: query
+          required: false
+          schema: { type: string, format: date-time }
+          description: Upper bound (exclusive) on `detection.detectedTime`.
         - $ref: "../vendor/apds/4.1/apds-api-4.1.yaml#/components/parameters/page"
       responses:
         "200":
@@ -1006,7 +1027,8 @@ paths:
         Transition `detected → confirmed` or `detected → dismissed`. The
         officer's decision is recorded with reason and reviewer; a
         `violationType` in the body corrects the detector's classification.
-        Any other starting state is 409 `violation-transition-illegal`.
+        `dismiss` without `reason` is 400 `invalid-request`. Any other
+        starting state is 409 `violation-transition-illegal`.
       parameters:
         - { name: id, in: path, required: true, schema: { type: string, format: uuid } }
       requestBody:
@@ -1044,17 +1066,22 @@ paths:
       summary: Issue the notice or citation
       description: |-
         Transition `confirmed → issued` — or `detected → issued` for
-        `automated` detections where operator policy allows unreviewed
-        issuance; a `guided` detection still in `detected` is 409
+        `automated` detections where the policy in force permits
+        unreviewed issuance (`EnforcementPolicy.unreviewedIssuance`, or
+        the operator's published documentation where the policy is
+        silent); a `guided` or `manual` detection still in `detected`, or
+        an automated one the policy does not permit, is 409
         `violation-not-issuable`. Sets `notice`, `amount`, and `dueTime`.
 
         The server resolves the EnforcementPolicy in force at `place`
         (Part 19 §19.10) and refuses with 422 when the request breaks it:
         `delivery-method-not-permitted`, `notice-deadline-passed`,
         `penalty-exceeds-cap` (or clamps, per the policy), or
-        `signage-required`. On success `policy`, `signage[]`, and the
-        first `amountHistory` entry are frozen onto the violation.
-        Publishes `apx.violations.issued.v1`.
+        `signage-required`. On success `policy`, `signage[]`,
+        `unpaidAmount`, `capAmount`, and the first `amountHistory` entry
+        (`reason: issued`, or `reason: cap` with `requestedAmount` when
+        clamped) are frozen onto the violation. Publishes
+        `apx.violations.issued.v1`.
       parameters:
         - { name: id, in: path, required: true, schema: { type: string, format: uuid } }
       requestBody:
@@ -1136,9 +1163,13 @@ paths:
       tags: [Violations]
       summary: Open an appeal
       description: |-
-        Transition `issued → appealed`. One appeal per violation: a second
-        appeal, or an appeal on a closed/voided violation, is 409
-        `appeal-closed`.
+        Transition `issued → appealed`, or `paid → appealed` within the
+        policy's `appealWindowDays` (pay-then-appeal, Part 19 §19.6); the
+        state it came from is recorded as `appeal.openedFrom`. One appeal
+        per violation: a second appeal, an appeal on a closed or voided
+        violation, or one outside the appeal window is 409
+        `appeal-closed`. From a state that was never issued (`detected`,
+        `confirmed`, `dismissed`) it is 409 `violation-transition-illegal`.
       parameters:
         - { name: id, in: path, required: true, schema: { type: string, format: uuid } }
       requestBody:
@@ -1160,7 +1191,7 @@ paths:
             application/problem+json:
               schema: { $ref: "#/components/schemas/Problem" }
         "409":
-          description: Appeal closed or already opened.
+          description: Appeal already opened once, violation closed/voided, or window passed (`appeal-closed`); or a state that was never issued (`violation-transition-illegal`).
           content:
             application/problem+json:
               schema: { $ref: "#/components/schemas/Problem" }
@@ -1175,9 +1206,12 @@ paths:
       tags: [Violations]
       summary: Resolve an appeal
       description: |-
-        `upheld` → back to `issued`; `reduced` → back to `issued` with
-        `amount` replaced by `adjustedAmount`; `dismissed` → `closed`.
-        No open appeal is 409 `appeal-closed`.
+        `upheld` → back to `appeal.openedFrom` (`issued`, or `paid` for a
+        pay-then-appeal); `reduced` → the same, with `amount` replaced by
+        `adjustedAmount` (400 `invalid-request` when it is absent);
+        `dismissed` → `closed`. A pay-then-appeal resolved `reduced` or
+        `dismissed` carries the Part 13 `refund` reference. No open
+        appeal, in whatever state, is 409 `appeal-closed`.
       parameters:
         - { name: id, in: path, required: true, schema: { type: string, format: uuid } }
       requestBody:
@@ -1214,9 +1248,11 @@ paths:
       tags: [Violations]
       summary: Void a violation
       description: |-
-        Terminal from any non-terminal state; the record and its
-        statusHistory remain readable. Already `closed`/`voided` is 409
-        `violation-transition-illegal`.
+        Valid from every non-terminal state (`detected`, `confirmed`,
+        `issued`, `appealed`, `paid`); the record and its statusHistory
+        remain readable. Voiding a `paid` violation SHOULD carry the Part
+        13 `refund` reference. From a terminal state (`dismissed`,
+        `closed`, `voided`) it is 409 `violation-transition-illegal`.
       parameters:
         - { name: id, in: path, required: true, schema: { type: string, format: uuid } }
       requestBody:
@@ -1238,7 +1274,7 @@ paths:
             application/problem+json:
               schema: { $ref: "#/components/schemas/Problem" }
         "409":
-          description: Already terminal.
+          description: Already terminal (`dismissed`, `closed`, or `voided`).
           content:
             application/problem+json:
               schema: { $ref: "#/components/schemas/Problem" }
@@ -1320,7 +1356,7 @@ paths:
             schema: { $ref: "#/components/schemas/EnforcementPolicy" }
       responses:
         "200":
-          description: Idempotent replay — same key + same body returns the ORIGINAL policy.
+          description: Idempotent replay — same key + same body returns the policy's current representation (Part 4 §4.2a).
           content:
             application/json:
               schema: { $ref: "#/components/schemas/EnforcementPolicy" }
@@ -1330,7 +1366,7 @@ paths:
             application/json:
               schema: { $ref: "#/components/schemas/EnforcementPolicy" }
         "400":
-          description: Missing Idempotency-Key or invalid policy.
+          description: Missing Idempotency-Key (`idempotency-key-required`) or a body that fails the schema (`invalid-request`, with `errors[]`).
           content:
             application/problem+json:
               schema: { $ref: "#/components/schemas/Problem" }
@@ -1342,7 +1378,13 @@ paths:
             application/problem+json:
               schema: { $ref: "#/components/schemas/Problem" }
         "422":
-          description: Unknown place, or an escalation step that could exceed the overall ceiling.
+          description: |-
+            `reference-unknown` — `place` names nothing visible to the
+            caller; or `request-unprocessable` — an inconsistent policy,
+            e.g. `effectiveTo` before `effectiveFrom`, or an escalation step
+            whose fixed `addAmount` alone exceeds
+            `overallCeiling.maximumAmount`. (Steps that only might reach
+            the ceiling are lawful: the ceiling clamps, §19.10 rule 3.)
           content:
             application/problem+json:
               schema: { $ref: "#/components/schemas/Problem" }
@@ -1438,10 +1480,14 @@ paths:
       tags: [Violations]
       summary: Update an enforcement policy (full update, versioned)
       description: |-
-        Full-update semantics with the `version` last read (409
-        `version-conflict` when stale). Changes apply to issuance and
-        escalation from the update onward; violations already issued keep
-        the `policy` version they were issued under.
+        Full-update semantics. The precondition is the `version` last
+        read, sent as `If-Match: "<version>"` or as the body's `version`
+        (Part 4 §4.2a); a stale one is 409 `version-conflict` and nothing
+        is written. Changes apply to issuance and escalation from the
+        update onward; violations already issued keep the `policy`
+        version they were issued under.
+      parameters:
+        - $ref: "#/components/parameters/IfMatch"
       requestBody:
         required: true
         content:
@@ -1461,12 +1507,12 @@ paths:
             application/problem+json:
               schema: { $ref: "#/components/schemas/Problem" }
         "409":
-          description: Stale version.
+          description: Stale version (`version-conflict`, current version in `detail`).
           content:
             application/problem+json:
               schema: { $ref: "#/components/schemas/Problem" }
         "422":
-          description: Invalid policy.
+          description: "`reference-unknown` (unknown `place`) or `request-unprocessable` (an inconsistent policy, as on create)."
           content:
             application/problem+json:
               schema: { $ref: "#/components/schemas/Problem" }
@@ -1494,7 +1540,7 @@ paths:
             schema: { $ref: "#/components/schemas/Signage" }
       responses:
         "200":
-          description: Idempotent replay — same key + same body returns the ORIGINAL record.
+          description: Idempotent replay — same key + same body returns the record's current representation (Part 4 §4.2a).
           content:
             application/json:
               schema: { $ref: "#/components/schemas/Signage" }
@@ -1504,7 +1550,7 @@ paths:
             application/json:
               schema: { $ref: "#/components/schemas/Signage" }
         "400":
-          description: Missing Idempotency-Key or invalid record.
+          description: Missing Idempotency-Key (`idempotency-key-required`) or a body that fails the schema (`invalid-request`, with `errors[]`).
           content:
             application/problem+json:
               schema: { $ref: "#/components/schemas/Problem" }
@@ -1516,7 +1562,7 @@ paths:
             application/problem+json:
               schema: { $ref: "#/components/schemas/Problem" }
         "422":
-          description: Unknown place.
+          description: "`reference-unknown` — `place` or `policy` names nothing visible to the caller."
           content:
             application/problem+json:
               schema: { $ref: "#/components/schemas/Problem" }
@@ -1616,10 +1662,13 @@ paths:
       tags: [Violations]
       summary: Update a signage record (full update, versioned)
       description: |-
-        Full-update semantics with the `version` last read (409
-        `version-conflict` when stale). Changing `text` on a record that
-        any issued violation references is refused (422
-        `signage-referenced`) — supersede it instead.
+        Full-update semantics. The precondition is the `version` last
+        read, sent as `If-Match: "<version>"` or as the body's `version`
+        (Part 4 §4.2a); a stale one is 409 `version-conflict`. Changing
+        `text` on a record that any issued violation references is
+        refused (422 `signage-referenced`) — supersede it instead.
+      parameters:
+        - $ref: "#/components/parameters/IfMatch"
       requestBody:
         required: true
         content:
@@ -1639,12 +1688,12 @@ paths:
             application/problem+json:
               schema: { $ref: "#/components/schemas/Problem" }
         "409":
-          description: Stale version.
+          description: Stale version (`version-conflict`, current version in `detail`).
           content:
             application/problem+json:
               schema: { $ref: "#/components/schemas/Problem" }
         "422":
-          description: Text change on a referenced record.
+          description: Text change on a referenced record (`signage-referenced`).
           content:
             application/problem+json:
               schema: { $ref: "#/components/schemas/Problem" }
@@ -1676,7 +1725,7 @@ paths:
             schema: { $ref: "#/components/schemas/ValidationProgram" }
       responses:
         "200":
-          description: Idempotent replay — same key + same body returns the ORIGINAL program.
+          description: Idempotent replay — same key + same body returns the program's current representation (Part 4 §4.2a).
           content:
             application/json:
               schema: { $ref: "#/components/schemas/ValidationProgram" }
@@ -1686,7 +1735,7 @@ paths:
             application/json:
               schema: { $ref: "#/components/schemas/ValidationProgram" }
         "400":
-          description: Missing Idempotency-Key or invalid program.
+          description: Missing Idempotency-Key (`idempotency-key-required`) or a body that fails the schema (`invalid-request`, with `errors[]`).
           content:
             application/problem+json:
               schema: { $ref: "#/components/schemas/Problem" }
@@ -1698,7 +1747,11 @@ paths:
             application/problem+json:
               schema: { $ref: "#/components/schemas/Problem" }
         "422":
-          description: Unknown place or provider, or a benefit with more than one of amount/duration/percentage.
+          description: |-
+            `reference-unknown` — `place`, `provider`, or an
+            `applicableRateTables` entry names nothing visible to the
+            caller; or `request-unprocessable` — a benefit carrying none or
+            more than one of amount/duration/percentage (§20.1).
           content:
             application/problem+json:
               schema: { $ref: "#/components/schemas/Problem" }
@@ -1748,7 +1801,11 @@ paths:
         - apxOAuth: ["apx.validations:redeem"]
       tags: [Validations]
       summary: Read a validation program
-      description: Returns the program including rules, billing, and the immutable statusHistory.
+      description: |-
+        Returns the program including rules, billing, and the immutable
+        statusHistory. A `redeem` token reading another provider's program
+        receives 404, exactly as for a program that does not exist (Part 9
+        §9.3a rule 2; Part 20 §20.5).
       responses:
         "200":
           description: The program.
@@ -1758,7 +1815,7 @@ paths:
         "401": { $ref: "#/components/responses/Unauthorized" }
         "403": { $ref: "#/components/responses/Forbidden" }
         "404":
-          description: No such program.
+          description: No such program, or another provider's program under a `redeem` token (`target-not-found`).
           content:
             application/problem+json:
               schema: { $ref: "#/components/schemas/Problem" }
@@ -1771,12 +1828,15 @@ paths:
       summary: Update a validation program (full update, versioned)
       description: |-
         Full-update semantics (Part 5 §5.1): the body carries the complete
-        program with the `version` the client last read; a stale version is
-        409 `version-conflict`. Status transitions: `active ⇄ suspended`,
-        either → `ended` (terminal; 422 `program-not-active` for any
-        transition out of `ended`). Benefit and rule changes apply to
-        redemptions from the update onward; existing instruments keep the
-        benefit they were issued with.
+        program. The precondition is the `version` last read, sent as
+        `If-Match: "<version>"` or as the body's `version` (Part 4 §4.2a);
+        a stale one is 409 `version-conflict`. Status transitions:
+        `active ⇄ suspended`, either → `ended` (terminal; 422
+        `program-not-active` for any transition out of `ended`). Benefit
+        and rule changes apply to redemptions from the update onward;
+        existing instruments keep the benefit they were issued with.
+      parameters:
+        - $ref: "#/components/parameters/IfMatch"
       requestBody:
         required: true
         content:
@@ -1796,12 +1856,16 @@ paths:
             application/problem+json:
               schema: { $ref: "#/components/schemas/Problem" }
         "409":
-          description: Stale version.
+          description: Stale version (`version-conflict`, current version in `detail`).
           content:
             application/problem+json:
               schema: { $ref: "#/components/schemas/Problem" }
         "422":
-          description: Illegal status transition or invalid benefit.
+          description: |-
+            `program-not-active` — a transition out of `ended`;
+            `request-unprocessable` — a benefit carrying none or more than
+            one of amount/duration/percentage; `reference-unknown` — a body
+            Reference names nothing visible to the caller.
           content:
             application/problem+json:
               schema: { $ref: "#/components/schemas/Problem" }
@@ -1819,10 +1883,12 @@ paths:
       tags: [Validations]
       summary: Issue a batch of validation instruments (idempotent)
       description: |-
-        Issues `quantity` instruments of `method` to the program.
-        `Idempotency-Key` REQUIRED — a retried print job must not double
-        the stock. For `code`/`qrCode`/`digital`, the generated `codes[]`
-        are returned in THIS response only. Program must be `active` (422
+        Issues `quantity` instruments of `method` to the program the path
+        names; the body need not repeat `program` (a value that differs
+        from the path is 422 `request-unprocessable`). `Idempotency-Key`
+        REQUIRED — a retried print job must not double the stock. For
+        `code`/`qrCode`/`digital`, the generated `codes[]` are returned in
+        THIS response only. Program must be `active` (422
         `program-not-active`).
       parameters:
         - { name: Idempotency-Key, in: header, required: true, schema: { type: string } }
@@ -1830,10 +1896,10 @@ paths:
         required: true
         content:
           application/json:
-            schema: { $ref: "#/components/schemas/ValidationIssuance" }
+            schema: { $ref: "./domains/validations/schemas.yaml#/ValidationIssuanceRequest" }
       responses:
         "200":
-          description: Idempotent replay — returns the ORIGINAL issuance (without codes).
+          description: Idempotent replay — returns the issuance's current representation, without codes (Part 4 §4.2a).
           content:
             application/json:
               schema: { $ref: "#/components/schemas/ValidationIssuance" }
@@ -1843,7 +1909,7 @@ paths:
             application/json:
               schema: { $ref: "#/components/schemas/ValidationIssuance" }
         "400":
-          description: Missing Idempotency-Key or invalid issuance.
+          description: Missing Idempotency-Key (`idempotency-key-required`) or a body that fails the schema (`invalid-request`, with `errors[]`).
           content:
             application/problem+json:
               schema: { $ref: "#/components/schemas/Problem" }
@@ -1860,7 +1926,10 @@ paths:
             application/problem+json:
               schema: { $ref: "#/components/schemas/Problem" }
         "422":
-          description: Program not active, or method not in the program's issuanceMethods.
+          description: |-
+            `program-not-active` — the program is not `active`;
+            `request-unprocessable` — `method` is not in the program's
+            `issuanceMethods`, or a body `program` differs from the path.
           content:
             application/problem+json:
               schema: { $ref: "#/components/schemas/Problem" }
@@ -1927,6 +1996,91 @@ paths:
               schema: { $ref: "#/components/schemas/Problem" }
         "429": { $ref: "#/components/responses/TooManyRequests" }
 
+  /v1/validations/programs/{id}/issuances/{issuanceId}/void:
+    parameters:
+      - { name: id, in: path, required: true, schema: { type: string, format: uuid } }
+      - { name: issuanceId, in: path, required: true, schema: { type: string, format: uuid } }
+    post:
+      operationId: post-apx-v1-validations-programs-id-issuances-issuanceid-void
+      security:
+        - apxOAuth: ["apx.validations:manage"]
+        - apxOAuth: ["apx.validations:redeem"]
+      tags: [Validations]
+      summary: Void an issuance batch
+      description: |-
+        Transition `issued → void` for the batch, and every instrument in
+        it that is `valid` or `expired` → `void` (Part 20 §20.2 rule 5) —
+        the stolen sheet of QR codes. Instruments already `redeemed` are
+        unaffected; their redemptions stand until reversed. The result's
+        `voidDetail.voidedCount` says how many codes were voided. A `redeem`
+        token may void only its own provider's batches (another
+        provider's is 404, §20.5). Voiding a batch already `void` returns
+        it unchanged (200). No event is published; the instrument read is
+        the source of truth.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "./domains/validations/schemas.yaml#/ValidationVoid" }
+      responses:
+        "200":
+          description: The voided issuance.
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/ValidationIssuance" }
+        "400": { $ref: "#/components/responses/BadRequest" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+        "404":
+          description: No such program or issuance, or another provider's under a `redeem` token (`target-not-found`).
+          content:
+            application/problem+json:
+              schema: { $ref: "#/components/schemas/Problem" }
+        "429": { $ref: "#/components/responses/TooManyRequests" }
+
+  /v1/validations/instruments/{code}/void:
+    parameters:
+      - { name: code, in: path, required: true, schema: { type: string } }
+    post:
+      operationId: post-apx-v1-validations-instruments-code-void
+      security:
+        - apxOAuth: ["apx.validations:manage"]
+        - apxOAuth: ["apx.validations:redeem"]
+      tags: [Validations]
+      summary: Void a single validation code
+      description: |-
+        Transition one instrument `valid` or `expired` → `void` (Part 20
+        §20.2 rule 5) — a single leaked code. A `redeemed` code cannot be
+        voided (422 `instrument-invalid`; reverse the redemption first).
+        Voiding a code already `void` returns it unchanged (200). As on
+        the read, a code outside the caller's grant or provider is 404,
+        never 403.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "./domains/validations/schemas.yaml#/ValidationVoid" }
+      responses:
+        "200":
+          description: The voided instrument.
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/ValidationInstrument" }
+        "400": { $ref: "#/components/responses/BadRequest" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+        "404":
+          description: Unknown code (or outside the caller's grant or provider).
+          content:
+            application/problem+json:
+              schema: { $ref: "#/components/schemas/Problem" }
+        "422":
+          description: The code is already `redeemed` (`instrument-invalid`).
+          content:
+            application/problem+json:
+              schema: { $ref: "#/components/schemas/Problem" }
+        "429": { $ref: "#/components/responses/TooManyRequests" }
+
   /v1/validations/redemptions:
     post:
       operationId: post-apx-v1-validations-redemptions
@@ -1941,8 +2095,9 @@ paths:
         Part 6 `applyValidation` command (which agents use to act on a
         lane; it materializes the same resource). `Idempotency-Key`
         REQUIRED. The server evaluates the program rules (Part 20 §20.3):
-        422 `program-not-active`, `instrument-invalid`,
-        `redemption-limit-exceeded`. On success the session gains the APDS
+        422 `program-not-active`, `request-unprocessable` (the body's
+        `place` is not the program's place or within its subtree),
+        `instrument-invalid`, `redemption-limit-exceeded`. On success the session gains the APDS
         `Segment.validationId` and `amountReduced` reflects the ACTUAL
         reduction. Publishes `apx.validations.redeemed.v1`.
       parameters:
@@ -1954,7 +2109,7 @@ paths:
             schema: { $ref: "#/components/schemas/ValidationRedemption" }
       responses:
         "200":
-          description: Idempotent replay — same key + same body returns the ORIGINAL redemption.
+          description: Idempotent replay — same key + same body returns the redemption's current representation (Part 4 §4.2a).
           content:
             application/json:
               schema: { $ref: "#/components/schemas/ValidationRedemption" }
@@ -1964,7 +2119,7 @@ paths:
             application/json:
               schema: { $ref: "#/components/schemas/ValidationRedemption" }
         "400":
-          description: Missing Idempotency-Key or invalid redemption.
+          description: Missing Idempotency-Key (`idempotency-key-required`) or a body that fails the schema (`invalid-request`, with `errors[]`).
           content:
             application/problem+json:
               schema: { $ref: "#/components/schemas/Problem" }
@@ -1976,7 +2131,13 @@ paths:
             application/problem+json:
               schema: { $ref: "#/components/schemas/Problem" }
         "422":
-          description: Program not active, instrument invalid/expired/used, or a program rule exceeded.
+          description: |-
+            In §20.3 order: `program-not-active` (program not `active`);
+            `request-unprocessable` (place mismatch — `detail` names the
+            program's place); `instrument-invalid` (unknown, void, expired,
+            or used code, or a required instrument absent);
+            `redemption-limit-exceeded` (a program rule refuses it);
+            `reference-unknown` (a body Reference names nothing visible).
           content:
             application/problem+json:
               schema: { $ref: "#/components/schemas/Problem" }
@@ -1988,9 +2149,17 @@ paths:
         - apxOAuth: ["apx.validations:redeem"]
       tags: [Validations]
       summary: List/filter redemptions
-      description: Filter by program, place, ticket, session, channel, status, and `since` (appliedTime).
+      description: |-
+        Filter by program, place, ticket, session, the Part 6 command that
+        applied it, channel, status, and `since` (appliedTime). A `redeem`
+        token sees only its own provider's redemptions (§20.5).
       parameters:
         - { name: program, in: query, schema: { type: string, format: uuid } }
+        - name: command
+          in: query
+          required: false
+          schema: { type: string, format: uuid }
+          description: The `applyValidation` Command (Part 6 §6.3) whose redemption to find — matches `ValidationRedemption.command`.
         - { name: place, in: query, schema: { type: string, format: uuid } }
         - { name: ticket, in: query, schema: { type: string } }
         - { name: session, in: query, schema: { type: string, format: uuid } }
@@ -2027,7 +2196,10 @@ paths:
         - apxOAuth: ["apx.validations:redeem"]
       tags: [Validations]
       summary: Read a redemption
-      description: Returns the redemption including any reversal and the immutable statusHistory.
+      description: |-
+        Returns the redemption including any reversal and the immutable
+        statusHistory. Another provider's redemption under a `redeem`
+        token is 404 (Part 9 §9.3a rule 2).
       parameters:
         - { name: id, in: path, required: true, schema: { type: string, format: uuid } }
       responses:
@@ -2039,7 +2211,7 @@ paths:
         "401": { $ref: "#/components/responses/Unauthorized" }
         "403": { $ref: "#/components/responses/Forbidden" }
         "404":
-          description: No such redemption.
+          description: No such redemption, or another provider's under a `redeem` token (`target-not-found`).
           content:
             application/problem+json:
               schema: { $ref: "#/components/schemas/Problem" }
@@ -2054,11 +2226,14 @@ paths:
       summary: Reverse a redemption
       description: |-
         Transition `applied → reversed`; the amount due on the session is
-        restored and the instrument (if any) returns to `valid` while
-        still within its window. Already reversed is 409
-        `redemption-reversed`. A redemption inside a CLOSED statement
-        period cannot be reversed (409 `statement-closed`) — issue a
-        credit on the next statement instead.
+        restored while the session is still open (Part 20 §20.4), and the
+        instrument (if any) returns to `valid` while still within its
+        window. Already reversed is 409 `redemption-reversed`. A
+        redemption already billed on a CLOSED statement is reversed too:
+        the closed statement is never edited; `reversal.closedStatement`
+        names it, and the next statement closed for the program carries a
+        negative `credit` line (`reversal.creditedOn` is set when it
+        closes, §20.6).
       parameters:
         - { name: id, in: path, required: true, schema: { type: string, format: uuid } }
       requestBody:
@@ -2080,7 +2255,7 @@ paths:
             application/problem+json:
               schema: { $ref: "#/components/schemas/Problem" }
         "409":
-          description: Already reversed, or inside a closed statement period.
+          description: Already reversed (`redemption-reversed`).
           content:
             application/problem+json:
               schema: { $ref: "#/components/schemas/Problem" }
@@ -2098,8 +2273,10 @@ paths:
       description: |-
         Computes the program's redemptions and billable total for
         `from`..`to` under its billing model — a preview
-        (`statementStatus: preview`, no `id`). Closing the period is
-        `POST …/statements`.
+        (`statementStatus: preview`, no `id`), including the `credit`
+        lines the period would carry. Closing the period is
+        `POST …/statements`. `from` not before `to` is 400
+        `invalid-request`.
       parameters:
         - { name: id, in: path, required: true, schema: { type: string, format: uuid } }
         - { name: from, in: query, required: true, schema: { type: string, format: date-time } }
@@ -2110,6 +2287,7 @@ paths:
           content:
             application/json:
               schema: { $ref: "#/components/schemas/ValidationStatement" }
+        "400": { $ref: "#/components/responses/BadRequest" }
         "401": { $ref: "#/components/responses/Unauthorized" }
         "403": { $ref: "#/components/responses/Forbidden" }
         "404":
@@ -2132,7 +2310,10 @@ paths:
         Freezes the period into an immutable statement the operator's
         accounting invoices from. `Idempotency-Key` REQUIRED. Periods MUST
         NOT overlap an existing closed statement (409 `statement-overlap`).
-        Publishes `apx.validations.statement.closed.v1`.
+        The statement carries a negative `credit` line for every
+        redemption reversed since an earlier statement billed it, and
+        sets `reversal.creditedOn` on each (Part 20 §20.6). Publishes
+        `apx.validations.statement.closed.v1`.
       parameters:
         - { name: Idempotency-Key, in: header, required: true, schema: { type: string } }
       requestBody:
@@ -2142,7 +2323,7 @@ paths:
             schema: { $ref: "#/components/schemas/ValidationStatementClose" }
       responses:
         "200":
-          description: Idempotent replay — same key + same body returns the ORIGINAL statement.
+          description: Idempotent replay — same key + same body returns the statement (Part 4 §4.2a; a closed statement never changes).
           content:
             application/json:
               schema: { $ref: "#/components/schemas/ValidationStatement" }
@@ -2152,7 +2333,7 @@ paths:
             application/json:
               schema: { $ref: "#/components/schemas/ValidationStatement" }
         "400":
-          description: Missing Idempotency-Key or invalid period.
+          description: Missing Idempotency-Key (`idempotency-key-required`), or a period whose `periodStart` is not before `periodEnd` or a body that fails the schema (`invalid-request`).
           content:
             application/problem+json:
               schema: { $ref: "#/components/schemas/Problem" }
@@ -2209,7 +2390,9 @@ paths:
         - apxOAuth: ["apx.validations:redeem"]
       tags: [Validations]
       summary: Read a closed statement
-      description: The immutable statement with `lines[]`.
+      description: |-
+        The immutable statement with `lines[]`. Another provider's
+        statement under a `redeem` token is 404 (Part 9 §9.3a rule 2).
       parameters:
         - { name: id, in: path, required: true, schema: { type: string, format: uuid } }
       responses:
@@ -2221,7 +2404,7 @@ paths:
         "401": { $ref: "#/components/responses/Unauthorized" }
         "403": { $ref: "#/components/responses/Forbidden" }
         "404":
-          description: No such statement.
+          description: No such statement, or another provider's under a `redeem` token (`target-not-found`).
           content:
             application/problem+json:
               schema: { $ref: "#/components/schemas/Problem" }
