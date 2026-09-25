@@ -177,7 +177,7 @@ const modulesHtml = groups
         }
         return `      <div class="mod">
         <div class="mod-h">
-          <span class="mod-i">${ICONS[name] ?? FALLBACK}</span>
+          <span class="tile">${ICONS[name] ?? FALLBACK}</span>
           <a class="mod-name" href="reference.html#tag/${encodeURIComponent(name)}">${escapeHtml(name)}</a>
         </div>
         <p class="mod-d">${escapeHtml(lead(tag.description))}</p>
