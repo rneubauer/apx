@@ -44,10 +44,12 @@ twelve are live in the currently published document.
 
 **Upstream activity.** A third party opened pull request
 [#36](https://github.com/parkingdata/spec/pull/36) on 2026-09-23 with the
-one-character fix for 003 (#35); it is open. 004 is the same kind of
-defect as the older issue [#32](https://github.com/parkingdata/spec/issues/32),
-where a maintainer confirmed that rate-usage fields are remnants of an
-earlier APDS version; 004 cites it.
+one-character fix for 003
+([#35](https://github.com/parkingdata/spec/issues/35)); it is open. 004 is
+the same kind of defect as the older issue
+[#32](https://github.com/parkingdata/spec/issues/32), where a maintainer
+confirmed that rate-usage fields are remnants of an earlier APDS version;
+004 cites it.
 
 ## The reports
 
