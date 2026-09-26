@@ -42,7 +42,11 @@ validity window in `validity.validityTimeSpecification`, active times in
 each `RateLineCollection` — fails validation, and one that adds two
 undocumented keys to pass has no type to give them. The two names look
 like members of an earlier draft that moved into `validity` and
-`RateLineCollection` without the `required` list following.
+`RateLineCollection` without the `required` list following. Issue #32
+reports the same kind of leftover in the rate domain, and a maintainer
+confirmed there that `RateUsageConditionsTypeEnum` is a remnant of an
+earlier version of APDS, from before rate usage moved into
+`RightSpecification`.
 
 ## Impact
 

@@ -19,7 +19,7 @@ comment pointing at the erratum.
 |---|---|---|
 | [001](001-reference-schema-unsatisfiable.md) | `Reference` is unsatisfiable: two required properties, at most one permitted | [#33](https://github.com/parkingdata/spec/issues/33), open |
 | [002](002-observations-example-invalid.md) | `POST /observations` `single-element` example matches neither branch of its own `oneOf` | [#34](https://github.com/parkingdata/spec/issues/34), open |
-| [003](003-observation-discriminator-typo.md) | Discriminator mapping key misspelled `ObvservationSet` | [#35](https://github.com/parkingdata/spec/issues/35), open |
+| [003](003-observation-discriminator-typo.md) | Discriminator mapping key misspelled `ObvservationSet` | [#35](https://github.com/parkingdata/spec/issues/35), open; fix proposed in PR [#36](https://github.com/parkingdata/spec/pull/36) |
 | [004](004-ratetable-phantom-required.md) | `RateTable` requires `validityStart` and `activeTimes`, which it never defines | not yet filed |
 | [005](005-observations-post-no-responses.md) | `POST /observations` declares no responses | not yet filed |
 | [006](006-observations-discriminator-collision.md) | `POST /observations` wrapper `type` collides with `ObservationElement.type`; no single observation validates | not yet filed |
@@ -35,11 +35,19 @@ are ready to file. Update this table as they are triaged.
 Remove an entry only once a corrected APDS release is vendored, because the
 workaround in our tooling has to come out at the same moment.
 
-**Verified against upstream on 2026-09-23.** `parkingdata/spec` at `master`
-was byte-identical to the vendored copy, commit
-`e10dcfc4cf5e45aaa2f46641a235333fb5585b1b` (2026-03-03), so all twelve
-are live in the currently published document (004–012 cite line numbers
-at that commit).
+**Verified against upstream.** 001–003 on 2026-09-23; all twelve again on
+2026-09-26, each claim checked against the vendored schema with `allOf`
+and `$ref` resolved, and every cited line number confirmed. On both dates
+`parkingdata/spec` at `master` was byte-identical to the vendored copy,
+commit `e10dcfc4cf5e45aaa2f46641a235333fb5585b1b` (2026-03-03), so all
+twelve are live in the currently published document.
+
+**Upstream activity.** A third party opened pull request
+[#36](https://github.com/parkingdata/spec/pull/36) on 2026-09-23 with the
+one-character fix for 003 (#35); it is open. 004 is the same kind of
+defect as the older issue [#32](https://github.com/parkingdata/spec/issues/32),
+where a maintainer confirmed that rate-usage fields are remnants of an
+earlier APDS version; 004 cites it.
 
 ## The reports
 
