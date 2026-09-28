@@ -34,6 +34,7 @@ curl -X POST https://auth.example.com/oauth2/token \
 | `GET /places/{id}/reservations` | `GET /rights/assigned?place={id}` (a reservation is an APDS AssignedRight carrying the `apds-ext:apx:reservation@1.0` extension; see Part 14) |
 | `GET /places/{id}/rights` | `GET /rights/assigned?place={id}` (tickets, monthlies); `GET /rights/specs` for the product definitions |
 | `GET /places/{id}/observations` | `GET /observations?place={id}`; LPR cross-lookup at `GET /v1/lpr/reads?plate=…` |
+| `PATCH /lpr/reads/{id} {direction}` (a later correction) | `PUT /v1/lpr/reads/{observation}/access-event` with `If-Match` — publishes `apx.data.observation.updated.v1` (Part 13 §13.3a(4)) |
 | `POST /lpr/reads {make, model, color, direction, …}` | Native `POST /observations` with the `apds-ext:apx:lpr-read@1.0` block in `extensions` — per-attribute confidences, alternate reads, `frameReads`, `platesRead`, `plateFace`, `movement` (`toward`/`away`), and the LPR system's `accessEvent` (`entry`/`exit`) (Part 13 §13.3a) |
 | `GET /places/{id}/transactions` | `GET /v1/payments?ticketLast4=…` (payment history); payment records also ride on APDS Sessions |
 | `GET /places/{id}/occupancy` | `GET /v1/places/{id}/occupancy` ✓ (APX convenience read — supply, latest demand, derived `available`; Part 5 §5.5) |

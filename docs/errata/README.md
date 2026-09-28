@@ -1,6 +1,6 @@
 # APDS 4.1 errata found while building APX
 
-Twelve issues in the published APDS 4.1 OpenAPI document, found by
+Thirteen issues in the published APDS 4.1 OpenAPI document, found by
 building a companion standard on top of it and validating every example —
 and, since 2026-09-25, every request and response of a private scenario
 suite covering each conformance class — in CI.
@@ -32,9 +32,11 @@ comment pointing at the erratum.
 | [010](010-entities-no-extensions.md) | No entity schema declares the `extensions` container of Use Case §C.2.5 | [#43](https://github.com/parkingdata/spec/issues/43), open |
 | [011](011-geojsonobject-no-coordinates.md) | `GeoJsonObject` declares no `coordinates` | [#44](https://github.com/parkingdata/spec/issues/44), open |
 | [012](012-native-response-code-irregularities.md) | Response codes on `/rates`, `/rights/assigned/{id}`, `/contacts` differ from their siblings | [#45](https://github.com/parkingdata/spec/issues/45), open |
+| [013](013-hierarchyelement-subtypes-unmapped.md) | `HierarchyElement` discriminator maps only three of ten types; `VehicularAccess` unreachable | not yet filed |
 
 001–003 were filed on 2026-09-23; 004–012 were found on 2026-09-25 and
-filed on 2026-09-28 as #37–#45. Update this table as they are triaged.
+filed on 2026-09-28 as #37–#45. 013 was found on 2026-09-28 while
+re-vetting LPR for 0.12.0. Update this table as they are triaged.
 Remove an entry only once a corrected APDS release is vendored, because the
 workaround in our tooling has to come out at the same moment.
 

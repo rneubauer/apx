@@ -63,9 +63,10 @@ checksum, so "adopt APX" names a fixed set of files rather than a branch.
 
 ## What we are candid about
 
-- **Twelve known upstream errata** in `apds-api-4.1.yaml` (Part 1 §1.3).
-  All twelve are filed with you, as issues #33–#35 and #37–#45, and still
-  open at the time of writing; each is also written up in `docs/errata/`. Where APX needs a working shape before APDS ships a fix, a
+- **Thirteen known upstream errata** in `apds-api-4.1.yaml` (Part 1 §1.3).
+  Twelve are filed with you, as issues #33–#35 and #37–#45, and still
+  open at the time of writing; the thirteenth, found on 2026-09-28, is
+  ready to file. Each is written up in `docs/errata/`. Where APX needs a working shape before APDS ships a fix, a
   narrow overlay supplies it; `ReferenceToQuote` (erratum 008) has no
   additive workaround. None is a blocker for APX, and none originates
   here: our vendored copy is byte-identical to your published document.

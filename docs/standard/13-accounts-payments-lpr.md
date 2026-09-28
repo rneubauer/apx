@@ -199,14 +199,19 @@ consumer still sees a valid Observation.
    the APX server MUST NOT infer it from `movement` or `plateFace`.
    Absent means `unknown`. The LPR system MAY revise it — for example
    after pairing the reads of one `captureGroup`, or an entry read with
-   an exit read — by replacing the Observation through native APDS
-   `PUT /observations/{id}` with the next `version`; the server then
-   publishes `apx.data.observation.updated.v1` (§13.4).
+   an exit read — through `PUT /v1/lpr/reads/{observation}/access-event`
+   (APDS 4.1 has no route that replaces one Observation). The server
+   writes the value into the Observation's decoration, increments its
+   `version`, and publishes `apx.data.observation.updated.v1` (§13.4);
+   `If-Match` guards against a stale revision (409 `version-conflict`),
+   and resending the current value changes nothing.
 5. **Lane cameras.** A lane's LPR cameras are described on its APDS
    `VehicularAccess` by the Level B decoration
    `apds-ext:apx:lane-cameras@1.0` (`LaneCameras`). Per camera:
    `cameraId`, which MUST be unique within the Place and MUST equal
-   `Image.cameraID` on that camera's reads; and `faces`: `inward`
+   `Image.cameraID` on that camera's reads (a write that would give two
+   lanes of one Place the same `cameraId` is 422
+   `request-unprocessable`); and `faces`: `inward`
    (looking into the facility, the way entering traffic travels) or
    `outward` (looking out of it, the way exiting traffic travels). Facing
    is relative to the facility, not to the lane's mode, so it holds on
@@ -299,8 +304,9 @@ LPR analytics. APX closes both gaps (registry `apx-topics`):
   `apx-lpr` MUST publish it; implementations serving `POST /observations`
   writes SHOULD publish it regardless.
 - `apx.data.observation.updated.v1` — published whenever an ingested
-  Observation is replaced through native `PUT /observations/{id}` (for
-  example the LPR system revising `accessEvent`, §13.3a(4)). Event `data`
+  Observation changes — today, when the LPR system revises `accessEvent`
+  through `PUT /v1/lpr/reads/{observation}/access-event` (§13.3a(4)),
+  and on any other replacement an implementation supports. Event `data`
   is the APDS Observation as it now stands; `subject` and place binding
   are those of `observation.created.v1`. Implementations claiming
   `apx-lpr` MUST publish it; consumers key on the Observation id and keep

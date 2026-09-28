@@ -1,7 +1,7 @@
 openapi: 3.1.0
 info:
   title: APX — APDS Parking eXtensions
-  version: 0.12.0
+  version: 0.12.1
   summary: An open companion standard to APDS 4.1
   license:
     name: MIT
@@ -217,6 +217,12 @@ paths:
             application/problem+json:
               schema:
                 $ref: '#/components/schemas/Problem'
+        '422':
+          description: A lane's `apds-ext:apx:lane-cameras@1.0` names a `cameraId` already configured on another lane of the same Place (problem type `request-unprocessable`, Part 13 §13.3a(5)); nothing is written.
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
         '429':
           $ref: '#/components/responses/TooManyRequests'
   /places/{id}:
@@ -346,6 +352,12 @@ paths:
                     status: error
                     code: 409
                     message: Place can not be updated due to conflicting data.
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+        '422':
+          description: A lane's `apds-ext:apx:lane-cameras@1.0` names a `cameraId` already configured on another lane of the same Place (problem type `request-unprocessable`, Part 13 §13.3a(5)); nothing is written.
+          content:
             application/problem+json:
               schema:
                 $ref: '#/components/schemas/Problem'
@@ -8474,6 +8486,100 @@ paths:
           $ref: '#/components/responses/Forbidden'
         '429':
           $ref: '#/components/responses/TooManyRequests'
+  /v1/lpr/reads/{observation}/access-event:
+    put:
+      operationId: put-apx-v1-lpr-reads-observation-access-event
+      security:
+        - apxOAuth:
+            - apx.data:write
+      tags:
+        - LPR
+      summary: Revise a read's access event
+      description: |-
+        The LPR system's revision of `accessEvent` on a read it ingested
+        (Part 13 §13.3a(4)) — for example after pairing the reads of one
+        `captureGroup`, or an entry read with an exit read. APDS 4.1 has no
+        route that replaces one Observation, so this is the revision route.
+
+        The server writes the value into the Observation's
+        `apds-ext:apx:lpr-read@1.0` decoration, increments the Observation
+        `version`, and publishes `apx.data.observation.updated.v1` with the
+        Observation as it now stands (Part 13 §13.4). Sending the value
+        the read already has is a no-op: 200 with the current `version`,
+        no new version, no event. `If-Match` carries the Observation
+        `version` the caller last saw; a stale one is 409
+        `version-conflict` and nothing is written (Part 4 §4.2a). A read
+        at a place outside the caller's `apx_places` grant is 403
+        `insufficient-grant`. The 200 carries no plate-bearing data.
+      parameters:
+        - name: observation
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+          description: The APDS Observation id of the read.
+        - $ref: '#/components/parameters/IfMatch'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - accessEvent
+              properties:
+                accessEvent:
+                  type: string
+                  enum:
+                    - entry
+                    - exit
+                    - unknown
+                  description: The revised access event (Part 13 §13.3a(4)).
+      responses:
+        '200':
+          description: The read's access event as it now stands.
+          content:
+            application/json:
+              schema:
+                type: object
+                required:
+                  - observation
+                  - accessEvent
+                  - version
+                properties:
+                  observation:
+                    $ref: '#/components/schemas/Reference'
+                  accessEvent:
+                    type: string
+                    enum:
+                      - entry
+                      - exit
+                      - unknown
+                  version:
+                    type: integer
+                    minimum: 1
+                    description: The Observation `version` after the write (Part 4 §4.2a).
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          description: No such LPR read (`target-not-found`).
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+        '409':
+          description: '`If-Match` names a stale Observation version (`version-conflict`, Part 4 §4.2a); nothing is written.'
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+        '429':
+          $ref: '#/components/responses/TooManyRequests'
   /v1/alerts:
     post:
       operationId: post-apx-v1-alerts
@@ -9496,9 +9602,10 @@ webhooks:
       operationId: receive-apx-data-observation-updated
       summary: An ingested Observation was replaced
       description: |-
-        Published whenever an ingested Observation is replaced through
-        native `PUT /observations/{id}` — for example the LPR system
-        revising `accessEvent` (Part 13 §13.3a(4), §13.4). `data` is the
+        Published whenever an ingested Observation changes — for example
+        the LPR system revising `accessEvent` through
+        `PUT /v1/lpr/reads/{observation}/access-event` (Part 13 §13.3a(4),
+        §13.4). `data` is the
         APDS `ObservationElement` as it now stands; `subject` and the place
         binding (`elementIds`) are as for `apx.data.observation.created.v1`.
         Consumers key on the Observation id and keep the highest `version`.
@@ -10045,10 +10152,25 @@ components:
         The official APDS extension container (Use Case Document §C.2.5).
         Keys MUST follow `apds-ext:<namespace>:<class>@<major>.<minor>`.
         Implementations MUST preserve unknown extension keys on round-trip
-        (tolerant reader, faithful writer).
+        (tolerant reader, faithful writer). An APX decoration key, wherever
+        the container appears, MUST carry a value valid against that
+        decoration's schema (Part 4 §4.3); other keys are any object.
       type: object
       propertyNames:
         pattern: ^apds-ext:[a-z0-9-]+:[a-z0-9-]+@[0-9]+\.[0-9]+$
+      properties:
+        apds-ext:apx:devicestatus@1.0:
+          $ref: '#/components/schemas/DeviceStatus'
+        apds-ext:apx:ratepolicy@1.0:
+          $ref: '#/components/schemas/RatePolicy'
+        apds-ext:apx:lpr-read@1.0:
+          $ref: '#/components/schemas/LprReadDetail'
+        apds-ext:apx:lane-cameras@1.0:
+          $ref: '#/components/schemas/LaneCameras'
+        apds-ext:apx:reservation@1.0:
+          $ref: '#/components/schemas/ReservationExtension'
+        apds-ext:apx:permit@1.0:
+          $ref: '#/components/schemas/PermitExtension'
       additionalProperties:
         type: object
     ApxResourceCore:
@@ -11732,8 +11854,8 @@ components:
             Whether this read was a vehicle entering or leaving the facility, as
             reported by the LPR system — not the lane's configured purpose (the
             lane's APDS `accessType`), and never inferred by the APX server.
-            Absent means `unknown`. The LPR system MAY revise it by replacing
-            the Observation (Part 13 §13.3a(4)).
+            Absent means `unknown`. The LPR system MAY revise it through
+            `PUT /v1/lpr/reads/{observation}/access-event` (Part 13 §13.3a(4)).
         captureGroup:
           type: string
           description: |-
@@ -15505,7 +15627,7 @@ components:
           type: string
           description: The APX edition implemented (Part 3 §3.4), as named in its `spec/edition.json`.
           examples:
-            - 0.12.0
+            - 0.12.1
         apdsVersion:
           type: string
           description: APDS version this implementation extends.
@@ -19494,6 +19616,20 @@ components:
             - revisedEndTime
       x-package: Quotes
       x-tags: Quotes
+    PermitExtension:
+      title: PermitExtension
+      description: |-
+        The `apds-ext:apx:permit@1.0` extension object (Part 14 §14.2): links a
+        renewal permit to the one it renews, so a portal can follow the chain.
+      type: object
+      properties:
+        renews:
+          description: The AssignedRight this permit renews.
+          $ref: '#/components/schemas/Reference'
+        renewedBy:
+          description: Set by the server on the renewed permit when a renewal is issued.
+          readOnly: true
+          $ref: '#/components/schemas/Reference'
     SubscriptionFilters:
       title: SubscriptionFilters
       type: object
@@ -19843,20 +19979,6 @@ components:
             - customerLeft
         note:
           type: string
-    PermitExtension:
-      title: PermitExtension
-      description: |-
-        The `apds-ext:apx:permit@1.0` extension object (Part 14 §14.2): links a
-        renewal permit to the one it renews, so a portal can follow the chain.
-      type: object
-      properties:
-        renews:
-          description: The AssignedRight this permit renews.
-          $ref: '#/components/schemas/Reference'
-        renewedBy:
-          description: Set by the server on the renewed permit when a renewal is issued.
-          readOnly: true
-          $ref: '#/components/schemas/Reference'
     PaymentLinkCancel:
       title: PaymentLinkCancel
       description: |-

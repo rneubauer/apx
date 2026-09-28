@@ -192,8 +192,8 @@ LprReadDetail:
         Whether this read was a vehicle entering or leaving the facility, as
         reported by the LPR system — not the lane's configured purpose (the
         lane's APDS `accessType`), and never inferred by the APX server.
-        Absent means `unknown`. The LPR system MAY revise it by replacing
-        the Observation (Part 13 §13.3a(4)).
+        Absent means `unknown`. The LPR system MAY revise it through
+        `PUT /v1/lpr/reads/{observation}/access-event` (Part 13 §13.3a(4)).
     captureGroup:
       type: string
       description: |-

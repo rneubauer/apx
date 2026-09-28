@@ -108,17 +108,31 @@ opens a session from the rear-plate read, which already says `entry`.
 
 A second later the LPR system pairs the two reads by `captureGroup`:
 the rear-plate read settled the passage, and the centre lane is in
-inbound mode. It replaces the front-plate Observation through the native
-APDS route, at the next `version`:
+inbound mode. It revises the front-plate read's access event, naming
+the version it last saw:
 
 ```http
-PUT /observations/f2000000-0000-4000-8000-000000000805 HTTP/1.1
+PUT /v1/lpr/reads/f2000000-0000-4000-8000-000000000805/access-event HTTP/1.1
 Content-Type: application/json
 If-Match: "1"
 ```
 
-The body is the Observation from Step 2 with `"version": 2` and
-`"accessEvent": "entry"`. How the LPR system paired them — by group, by
+<!-- apx:request PUT /v1/lpr/reads/f2000000-0000-4000-8000-000000000805/access-event -->
+```json
+{ "accessEvent": "entry" }
+```
+
+The server answers with the Observation's new version:
+
+```json
+{
+  "observation": { "id": "f2000000-0000-4000-8000-000000000805", "className": "Observation" },
+  "accessEvent": "entry",
+  "version": 2
+}
+```
+
+How the LPR system paired them — by group, by
 lane mode, or by preferring the rear plate — is its own logic; APX only
 carries the result (Part 13 §13.3a(4)).
 

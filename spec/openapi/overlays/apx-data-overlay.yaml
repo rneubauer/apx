@@ -28,7 +28,7 @@
 overlay: 1.0.0
 info:
   title: APX data-profile overlay (Part 5 data profile over the native APDS routes)
-  version: 0.12.0
+  version: 0.12.1
 
 actions:
   # ----- /places -----
@@ -1021,3 +1021,22 @@ actions:
         items:
           description: "A position member (number) or a nested position array, by geometry type."
         description: "RFC 7946 §3.1 coordinates of a geometry object — for a Point, [longitude, latitude] or [longitude, latitude, elevation] in WGS 84 decimal degrees. Undeclared in APDS 4.1 (APX erratum 011)."
+  # ----- Lane cameras (F-LPR-18): a duplicate cameraId within a Place -----
+  - target: $.paths['/places'].post.responses
+    description: "Declare the refusal of Part 13 §13.3a(5): a write that would give two lanes of one Place the same cameraId."
+    update:
+      '422':
+        description: "A lane's `apds-ext:apx:lane-cameras@1.0` names a `cameraId` already configured on another lane of the same Place (problem type `request-unprocessable`, Part 13 §13.3a(5)); nothing is written."
+        content:
+          application/problem+json:
+            schema:
+              $ref: "#/components/schemas/Problem"
+  - target: $.paths['/places/{id}'].put.responses
+    description: "Declare the refusal of Part 13 §13.3a(5): a write that would give two lanes of one Place the same cameraId."
+    update:
+      '422':
+        description: "A lane's `apds-ext:apx:lane-cameras@1.0` names a `cameraId` already configured on another lane of the same Place (problem type `request-unprocessable`, Part 13 §13.3a(5)); nothing is written."
+        content:
+          application/problem+json:
+            schema:
+              $ref: "#/components/schemas/Problem"
