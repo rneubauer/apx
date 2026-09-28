@@ -20,18 +20,18 @@ comment pointing at the erratum.
 | [001](001-reference-schema-unsatisfiable.md) | `Reference` is unsatisfiable: two required properties, at most one permitted | [#33](https://github.com/parkingdata/spec/issues/33), open |
 | [002](002-observations-example-invalid.md) | `POST /observations` `single-element` example matches neither branch of its own `oneOf` | [#34](https://github.com/parkingdata/spec/issues/34), open |
 | [003](003-observation-discriminator-typo.md) | Discriminator mapping key misspelled `ObvservationSet` | [#35](https://github.com/parkingdata/spec/issues/35), open; fix proposed in PR [#36](https://github.com/parkingdata/spec/pull/36) |
-| [004](004-ratetable-phantom-required.md) | `RateTable` requires `validityStart` and `activeTimes`, which it never defines | not yet filed |
-| [005](005-observations-post-no-responses.md) | `POST /observations` declares no responses | not yet filed |
-| [006](006-observations-discriminator-collision.md) | `POST /observations` wrapper `type` collides with `ObservationElement.type`; no single observation validates | not yet filed |
-| [007](007-quotes-post-no-request-body.md) | `POST /quotes` declares no request body; `GET /quotes` returns one object | not yet filed |
-| [008](008-referencetoquote-identical-branches.md) | `ReferenceToQuote` is a `oneOf` of two identical branches | not yet filed |
-| [009](009-identifiers-ratetableid-spelling.md) | `Identifiers` requires `rateTableId` but declares `rateTableID` | not yet filed |
-| [010](010-entities-no-extensions.md) | No entity schema declares the `extensions` container of Use Case §C.2.5 | not yet filed |
-| [011](011-geojsonobject-no-coordinates.md) | `GeoJsonObject` declares no `coordinates` | not yet filed |
-| [012](012-native-response-code-irregularities.md) | Response codes on `/rates`, `/rights/assigned/{id}`, `/contacts` differ from their siblings | not yet filed |
+| [004](004-ratetable-phantom-required.md) | `RateTable` requires `validityStart` and `activeTimes`, which it never defines | [#37](https://github.com/parkingdata/spec/issues/37), open |
+| [005](005-observations-post-no-responses.md) | `POST /observations` declares no responses | [#38](https://github.com/parkingdata/spec/issues/38), open |
+| [006](006-observations-discriminator-collision.md) | `POST /observations` wrapper `type` collides with `ObservationElement.type`; no single observation validates | [#39](https://github.com/parkingdata/spec/issues/39), open |
+| [007](007-quotes-post-no-request-body.md) | `POST /quotes` declares no request body; `GET /quotes` returns one object | [#40](https://github.com/parkingdata/spec/issues/40), open |
+| [008](008-referencetoquote-identical-branches.md) | `ReferenceToQuote` is a `oneOf` of two identical branches | [#41](https://github.com/parkingdata/spec/issues/41), open |
+| [009](009-identifiers-ratetableid-spelling.md) | `Identifiers` requires `rateTableId` but declares `rateTableID` | [#42](https://github.com/parkingdata/spec/issues/42), open |
+| [010](010-entities-no-extensions.md) | No entity schema declares the `extensions` container of Use Case §C.2.5 | [#43](https://github.com/parkingdata/spec/issues/43), open |
+| [011](011-geojsonobject-no-coordinates.md) | `GeoJsonObject` declares no `coordinates` | [#44](https://github.com/parkingdata/spec/issues/44), open |
+| [012](012-native-response-code-irregularities.md) | Response codes on `/rates`, `/rights/assigned/{id}`, `/contacts` differ from their siblings | [#45](https://github.com/parkingdata/spec/issues/45), open |
 
 001–003 were filed on 2026-09-23; 004–012 were found on 2026-09-25 and
-are ready to file. Update this table as they are triaged.
+filed on 2026-09-28 as #37–#45. Update this table as they are triaged.
 Remove an entry only once a corrected APDS release is vendored, because the
 workaround in our tooling has to come out at the same moment.
 
