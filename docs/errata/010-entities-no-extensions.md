@@ -1,6 +1,8 @@
-**Suggested title:** No APDS 4.1 entity schema declares the `extensions` container of Use Case §C.2.5
+**Suggested title:** Suggestion: declare the `extensions` container (Use Case §C.2.5) in the OpenAPI
 
 ---
+
+*Type: suggestion — this may well be intentional.*
 
 ## Summary
 
@@ -18,21 +20,20 @@ native routes: `HierarchyElement`, `Session`, `RateTable`,
 `RightSpecification`, `AssignedRight` (line 6738), `ContactPoint`,
 `ObservationElement`, `ObservationSet`.
 
-## Why it is a defect
+## Why it matters
 
-The extensions mechanism is normative in the use-case document and
-absent from the machine-readable contract. Payloads carrying it validate
-only because the entity schemas leave `additionalProperties` open, so:
-the key pattern is never checked (a malformed key such as
-`apds-ext:Vendor:Loyalty@1` passes), generated models drop the container
-on the floor, and a reader has no declared place to look for it.
+This may be deliberate — the open `additionalProperties` already lets
+the container through. Declaring it would add a little on top: the key pattern would be checked
+(a malformed key such as `apds-ext:Vendor:Loyalty@1` would be caught),
+generated models would keep the container, and readers would have a
+declared place to look for it.
 
 ## Impact
 
 Every extension profile built on APDS — APX's `ratepolicy`,
-`reservation`, and `lpr-read` decorations among them — rides on an
-undeclared property, and "preserve unknown extension keys on
-round-trip" cannot be tested against the schema.
+`reservation`, and `lpr-read` decorations among them — would be able
+to test "preserve unknown extension keys on round-trip" against the
+schema.
 
 ## Suggested fix
 
@@ -61,4 +62,4 @@ bundled document.
 
 ---
 
-*Found while building APX, an additive companion standard to APDS 4.1.*
+*Found while building APX, an additive companion standard to APDS 4.1. Thank you for all the work that has gone into APDS — happy to help with a fix if that is useful.*

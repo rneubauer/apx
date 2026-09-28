@@ -1,6 +1,8 @@
-**Suggested title:** `POST /observations`: the wrapper's `type` collides with `ObservationElement.type`, so no single observation validates
+**Suggested title:** `POST /observations`: the wrapper's `type` and `ObservationElement.type` overlap, so a single observation can't validate
 
 ---
+
+*Type: schema error.*
 
 ## Summary
 
@@ -8,7 +10,8 @@ The request schema of `POST /observations` constrains `type` twice with
 disjoint enums. The wrapper says `type` is `ObservationDataType`
 (`ObservationElement | ObservationSet`); the element branch says `type`
 is `CredentialTypeEnum` (`licensePlate`, `rfid`, …). Both apply to the
-same property, so no value satisfies them, and `type` is required.
+same property, so no value satisfies both — and `type` is required. We may be
+missing something here, but we could not find a value that works.
 
 ## Where
 
@@ -39,7 +42,7 @@ type:
   $ref: '#/components/schemas/CredentialTypeEnum'
 ```
 
-## Why it is a defect
+## Why it matters
 
 `type: licensePlate` fails the wrapper; `type: ObservationElement` fails
 the element; omitting `type` fails `required`. A single element can
@@ -88,4 +91,4 @@ and an element's `type` is its `CredentialTypeEnum` value.
 
 ---
 
-*Found while building APX, an additive companion standard to APDS 4.1.*
+*Found while building APX, an additive companion standard to APDS 4.1. Thank you for all the work that has gone into APDS — happy to help with a fix if that is useful.*

@@ -2,12 +2,14 @@
 
 ---
 
+*Type: schema error.*
+
 ## Summary
 
 `RateTable` lists two members in `required` that are not properties of
 `RateTable` or of anything it inherits. JSON Schema still demands the
-keys, so no rate table — including the ones in the APDS examples —
-validates against the schema.
+keys, so a rate table — including the ones in the APDS examples —
+does not validate against the schema as written.
 
 ## Where
 
@@ -34,7 +36,7 @@ RateTable:
         - rateLineCollections
 ```
 
-## Why it is a defect
+## Why it matters
 
 `required` names keys the instance must have; it does not care whether
 `properties` describes them. A client that sends a correct rate table —
@@ -51,9 +53,9 @@ earlier version of APDS, from before rate usage moved into
 ## Impact
 
 Every `POST /rates`, `PUT /rates/{id}`, and `GET /rates` payload fails
-schema validation, so generated clients and validating gateways reject
-the rate deck outright. Rate mirroring (the most common reason a third
-party reads APDS) cannot be validated at all.
+schema validation, so generated clients and validating gateways would
+reject the rate deck. Rate mirroring is a common reason for a third party
+to read APDS, so it seemed worth raising.
 
 ## Suggested fix
 
@@ -79,4 +81,4 @@ corrected release is vendored.
 
 ---
 
-*Found while building APX, an additive companion standard to APDS 4.1.*
+*Found while building APX, an additive companion standard to APDS 4.1. Thank you for all the work that has gone into APDS — happy to help with a fix if that is useful.*

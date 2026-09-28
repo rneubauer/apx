@@ -1,6 +1,8 @@
-**Suggested title:** `ReferenceToQuote` is a `oneOf` of two identical branches, so booking from a quote never validates
+**Suggested title:** `ReferenceToQuote` is a `oneOf` of two identical branches
 
 ---
+
+*Type: schema error.*
 
 ## Summary
 
@@ -35,17 +37,17 @@ ReferenceToQuote:
 It is used by `POST /rights/assigned` as
 `oneOf [AssignedRight, ReferenceToQuote]`.
 
-## Why it is a defect
+## Why it matters
 
-No instance can satisfy `ReferenceToQuote`. A full `AssignedRight` body
+As written, no instance can satisfy `ReferenceToQuote`. A full `AssignedRight` body
 passes the outer `oneOf` only by accident: the inner `oneOf` fails, which
 leaves exactly one outer branch matching. The documented flow "book the
 option you were quoted" therefore has no valid request.
 
 ## Impact
 
-High for reservations: booking by quote reference, the flow the quote
-model exists to support, cannot be expressed. Fixing the inner schema
+Mainly reservations: booking by quote reference, which the quote
+model is designed for, cannot currently be expressed in a valid request. Fixing the inner schema
 naively (making it satisfiable without required members) would break
 the other branch too, because then every `AssignedRight` body would also
 match `ReferenceToQuote`.
@@ -76,4 +78,4 @@ the schema.
 
 ---
 
-*Found while building APX, an additive companion standard to APDS 4.1.*
+*Found while building APX, an additive companion standard to APDS 4.1. Thank you for all the work that has gone into APDS — happy to help with a fix if that is useful.*
