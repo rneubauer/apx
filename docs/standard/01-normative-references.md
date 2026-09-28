@@ -117,6 +117,7 @@ of:
     `apds-ext:apx:lane-cameras@1.0` decoration (Part 4 §4.3), so camera
     configuration is validated; the APDS lane fields are carried as sent.
     [Erratum 013](../errata/013-hierarchyelement-subtypes-unmapped.md).
+    Filed upstream as [parkingdata/spec#46](https://github.com/parkingdata/spec/issues/46).
 
 Remove an entry, and its overlay action, in the same change that vendors a
 corrected APDS release.

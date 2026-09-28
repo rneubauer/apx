@@ -39,7 +39,7 @@ their own schemas, which were never conformant, now fail validation.
 **Added.** Erratum 013: APDS 4.1's `HierarchyElement` discriminator maps
 only `campus`, `place`, and `space`, so `VehicularAccess` — the lane —
 validates as a bare `HierarchyElement` and its `accessType` is never
-checked. Not yet filed upstream.
+checked. Filed upstream as parkingdata/spec#46.
 
 ## [0.12.0] — 2026-09-28
 

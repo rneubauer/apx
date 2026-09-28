@@ -64,9 +64,9 @@ checksum, so "adopt APX" names a fixed set of files rather than a branch.
 ## What we are candid about
 
 - **Thirteen known upstream errata** in `apds-api-4.1.yaml` (Part 1 §1.3).
-  Twelve are filed with you, as issues #33–#35 and #37–#45, and still
-  open at the time of writing; the thirteenth, found on 2026-09-28, is
-  ready to file. Each is written up in `docs/errata/`. Where APX needs a working shape before APDS ships a fix, a
+  All thirteen are filed with you, as issues #33–#35 and #37–#46, and
+  still open at the time of writing; each is also written up in
+  `docs/errata/`. Where APX needs a working shape before APDS ships a fix, a
   narrow overlay supplies it; `ReferenceToQuote` (erratum 008) has no
   additive workaround. None is a blocker for APX, and none originates
   here: our vendored copy is byte-identical to your published document.
@@ -89,7 +89,7 @@ checksum, so "adopt APX" names a fixed set of files rather than a branch.
 
 Technical review by the working group; a decision on adoption, adoption
 with changes, or chartering a joint task group; and — independent of that
-outcome — disposition of the twelve errata filed (#33–#35, #37–#45). The repository, its CI,
+outcome — disposition of the thirteen errata filed (#33–#35, #37–#46). The repository, its CI,
 browsable reference documentation, and the scenario suite are public;
 every wire example is schema-validated against the specification in CI,
 and a schema-conformant mock server (`npm run mock`, Prism over the
