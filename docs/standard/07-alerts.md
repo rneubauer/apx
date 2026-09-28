@@ -29,6 +29,12 @@ See the `Alert` schema. Key rules:
   is excluded from any `place`-filtered list, and may be raised by a token
   of that organisation with `apx.alerts:write` (Part 9 §9.3a rule 3). Tokens
   of other organisations never see it.
+- **Evidence other than the subject.** When what an operator acts on and
+  the evidence for the alert are different entities, `relatedEntity` is
+  the entity acted on (for example a Session) and the evidence rides the
+  alert's `extensions` under `apds-ext:apx:alert-evidence@1.0` as
+  `{ "observations": [Reference, …] }` (for example the LPR reads behind
+  it).
 
 ## 7.2 Endpoints
 

@@ -1,6 +1,6 @@
 # APX Scenarios — the API at work
 
-Twenty-five end-to-end stories showing real wire exchanges against an APX
+Twenty-six end-to-end stories showing real wire exchanges against an APX
 implementation. Every JSON payload marked with an `<!-- apx:validate … -->`
 comment is machine-validated against the bundled spec by
 `npm run scenarios:check` — the samples cannot drift from the standard.
@@ -28,10 +28,11 @@ comment is machine-validated against the bundled spec by
 | [19](19-violation-policy-signage-escalation.md) | The law at the location — policy and signage on file, a mailed notice refused, issued lawfully with coordinates, day-31 escalation | `apx-violations`, `apx-events` |
 | [20](20-credential-lost-card-replacement.md) | Lost keycard — replaced on the phone at noon, the old card denied at the gate at six, the access log says why | `apx-credentials`, `apx-accounts`, `apx-events` |
 | [21](21-valet-dropoff-retrieve-handback.md) | Valet — drop-off with a scanned condition report, "bring my car" by text with an ETA, staged, verified handback, and the scratch that was already there | `apx-valet`, `apx-events` |
-| [22](22-lpr-gateless-wrong-way.md) | Gateless lot — a car comes in through the exit lane: rear plate, receding, `laneTravel: againstLane`, alert raised, session still opened; a correct exit with two plates read, per-attribute confidences, and the runner-up plate | `apx-lpr`, `apx-alerts`, `apx-events` |
+| [22](22-lpr-shared-driveway.md) | Gateless lot, shared driveway in the snow — a car enters on the exit lane, front plate from one camera and rear plate from the other, one passage, `accessEvent: entry`, no wrong-way anything; the exit closes the session and `?session=` lists the whole visit | `apx-lpr` |
 | [23](23-tolling-gantry-dispute.md) | Tolling — a gantry retry that must not double-bill, settlement against an account, a misread plate disputed and refunded, and a resolved dispute that cannot be reopened | `apx-tolling`, `apx-accounts`, `apx-events` |
 | [24](24-negotiated-rate-exit-lane.md) | Negotiated rate — the mirrored deck says which tables are negotiable, the agent picks one for the car in the lane, the deck is untouched, and the audit names who chose it | `apx-control`, `apx-data`, `apx-resolution` |
 | [25](25-ticket-matching-exit-lane.md) | Ticket matching — no ticket at the exit: the camera's entry read is offered as a candidate, a permit holder is found by phone, the agent binds the open session, the exit prices from the real entry, and the lost-ticket fee is the fallback, not the default | `apx-control`, `apx-lpr`, `apx-accounts` |
+| [27](27-lpr-reversible-lane.md) | Reversible lane — one camera facing each way so a rear plate is read in either mode, an old front-plate camera on the entry lane, a read first reported `unknown` and corrected by the LPR system, and the `observation.updated.v1` event that carries the correction to billing | `apx-lpr`, `apx-events` |
 
 ## Conventions
 

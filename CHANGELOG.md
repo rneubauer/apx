@@ -6,6 +6,72 @@ conformance/versioning rules in Part 3 of the written standard.
 The machine-readable spec (`spec/openapi/apx.yaml`, bundled as
 `spec/dist/apx-v1.*`) is normative; entries here are informative.
 
+## [0.12.0] — 2026-09-28
+
+LPR reads say what happened; APX no longer derives what it means. An
+implementer with rear-reading cameras — how almost every site is set up
+— copied the facing-camera pairs of §13.3a(4) and inverted every
+`laneTravel` result, readers that report movement but no plate face had
+no rule, and Scenario 22 contradicted the rule it illustrated. The fix is
+to take the logic out: the cameras report camera facts, the LPR system
+reports whether the read was an entry or an exit, the lane records how
+its cameras are set up, and a Session is the visit between an entry and
+an exit. Every change to the wire format is additive; no field or value
+is removed or renamed.
+
+**Added.**
+- `LprReadDetail.accessEvent` (`entry | exit | unknown`), reported by
+  the LPR system and never inferred by the server. The lane a vehicle
+  used does not change it — on a shared driveway an entry on the exit
+  lane is still an entry. The LPR system MAY revise it by replacing the
+  Observation through native `PUT /observations/{id}` (Part 13
+  §13.3a(4)).
+- `apds-ext:apx:lane-cameras@1.0` (`LaneCameras`) on the APDS
+  `VehicularAccess`: each camera's `cameraId` (unique within the Place,
+  equal to `Image.cameraID`) and whether it `faces` `inward` or
+  `outward`. Facing is relative to the facility, so it holds on
+  reversible lanes, where one camera each way gets a rear plate in either
+  mode (§13.3a(5)).
+- `movement` values `toward` and `away`.
+- `LprReadDetail.frameReads` (how many frames read the plate — what lets
+  a one-plate camera call movement), `plateBox` (the plate's position as
+  fractions of the frame), `speed` (km/h, absent when not measured) and
+  `plateCategory`.
+- `GET /v1/lpr/reads?session=` — every read behind one visit (§13.3,
+  §13.5(4)).
+- Topic `apx.data.observation.updated.v1` (registry `apx-topics` v10),
+  published on every Observation replace so a revised `accessEvent`
+  reaches billing (§13.4, Part 8).
+- §13.3a(6) Reads, passages, and Sessions; §13.3a(8) ingest mapping —
+  the engine's read id as the Observation `id` so a re-send is `409
+  id-collision`, capture time (never arrival time) drives the Session,
+  no 0,0 locations, confidences on 0–1.
+- Scenario 27: a reversible lane with two cameras, a front-plate camera,
+  and a late correction. Annex A rows APX-LPR-05 and -06.
+
+**Changed.**
+- Scenario 22 rewritten as a shared driveway in the snow (file renamed
+  `22-lpr-shared-driveway.md`).
+- `bodyType` is the engine's own class label, carried as reported;
+  `platesRead` counts distinct plates, not frames.
+- APX defines no wrong-way travel. `wrongWayTravel` stays in
+  `apx-alert-types` (v3) as an operator-defined alert with a reworded
+  description; APX never raises it. The `apds-ext:apx:alert-evidence@1.0`
+  decoration, previously defined only in §13.3a, is now defined in Part 7
+  §7.1 for any alert.
+
+**Deprecated (removed at 1.0).**
+- `LprRead.laneTravel` — servers SHOULD return `unknown`.
+- `movement` values `approaching` and `receding` — accepted as synonyms
+  of `toward` and `away`.
+
+**Deferred.** A freight-identifiers module — USDOT numbers first,
+shipping-container codes later — as reads alongside plate reads, sharing
+`captureGroup` and lane cameras. APDS has no credential type for either,
+so it needs its own design and likely an upstream request. A standard
+`vehicleType` (APDS `VehicleTypeEnum`) on reads waits for a use case
+that prices LPR reads by vehicle type.
+
 ## [0.11.0] — 2026-09-25
 
 Vetting release. Every conformance class was exercised by private

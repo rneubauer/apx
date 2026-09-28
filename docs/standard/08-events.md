@@ -29,7 +29,8 @@ contract per-project. APX completes it — **as a superset**: a stock APDS
   read synchronously MUST be refused with 403 `insufficient-scope`,
   naming the topic and the missing scope in `detail` (Part 9 §9.6(4)); the
   read scope of a topic is the scope of the read route of its data
-  schema (e.g. `apx.lpr:read` for `apx.data.observation.created.v1`). A
+  schema (e.g. `apx.lpr:read` for `apx.data.observation.created.v1` and
+  `.updated.v1`). A
   `filters.places` entry outside the token's `apx_places` grant MUST be
   refused with 403 `insufficient-grant`, and a token with no `apx_places`
   claim cannot create a place-filtered subscription. A webhook-transport
@@ -154,9 +155,9 @@ event to be attributable to a location. The binding rule, per topic:
 2. Publishers MUST populate at least one of these bindings on every event
    whose topic concerns a physical location. In particular:
    `apx.accounts.payment.recorded.v1` data carries the (required)
-   `PaymentRecord.place`; `apx.data.observation.created.v1` publishers
-   MUST populate the `ObservationElement`'s `elementIds` with the
-   observing lane or place.
+   `PaymentRecord.place`; `apx.data.observation.created.v1` and
+   `apx.data.observation.updated.v1` publishers MUST populate the
+   `ObservationElement`'s `elementIds` with the observing lane or place.
 3. `filters.places` matches an event when its bound place is inside any
    granted subtree. An event with NO resolvable place binding matches only
    subscriptions without a `places` filter, and MUST NOT be delivered to a
@@ -187,5 +188,6 @@ schemas:
 | APDS `EventTypeEnum` values (`SessionCreated`, …) | APDS `EventData` (the entity; for `*Deleted`, its last state) | the entity |
 | `apx.subscription.failed.v1` | `SubscriptionFailure` (subscription Reference with `className` `ApxEventSubscription`, `endpoint`, `failedTime`, `firstFailedEventId`, `attempts`, `lastCode`) | the subscription |
 | `apx.data.observation.created.v1` | APDS `ObservationElement` — one event per element, so an ingested `ObservationSet` yields one event per read | the element (`className` `ObservationElement`) |
+| `apx.data.observation.updated.v1` | APDS `ObservationElement` as it stands after a native `PUT /observations/{id}` (e.g. a revised `accessEvent`, Part 13 §13.3a(4)); consumers keep the highest `version` | the element (`className` `ObservationElement`) |
 | `apx.reservation.noshow.v1` | `ReservationSummary` | the AssignedRight |
 | `apx.data.occupancy.v1` | `OccupancySnapshot` | the HierarchyElement |
