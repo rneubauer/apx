@@ -2,6 +2,8 @@
 
 ---
 
+*Type: schema error (a small typo).*
+
 ## Summary
 
 `Identifiers` (the compound reference in a quote `Option`) declares the
@@ -26,12 +28,12 @@ Identifiers:
     - rightSpecificationId
 ```
 
-## Why it is a defect
+## Why it matters
 
 A publisher following the declared property sends `rateTableID` and
 fails `required`; one following `required` sends an untyped key.
 Everywhere else in APDS identifiers end in `Id` (`rightSpecificationId`,
-`quoteResponseId`, `optionId`), so the property is the misspelling.
+`quoteResponseId`, `optionId`), so we assume `rateTableId` is the intended spelling.
 (`RateTable.rateTableID`, a MultilingualString label, is a different
 member and is not affected.)
 
@@ -58,4 +60,4 @@ key is typed. Publishers send `rateTableId`.
 
 ---
 
-*Found while building APX, an additive companion standard to APDS 4.1.*
+*Found while building APX, an additive companion standard to APDS 4.1. Thank you for all the work that has gone into APDS — happy to help with a fix if that is useful.*

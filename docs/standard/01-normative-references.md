@@ -37,7 +37,7 @@
 ## 1.3 Known APDS 4.1 errata
 
 APX vendors the APDS 4.1 OpenAPI document **verbatim** (checksum-guarded),
-including its defects. Filing-ready reports for all twelve below, each
+including its errata. Filing-ready reports for all twelve below, each
 with the offending snippet and a minimal suggested fix, are in
 [`docs/errata/`](../errata/README.md), which tracks their status upstream. Verified against `parkingdata/spec` at `master` on
 2026-09-23: the published document was byte-identical to the vendored copy,

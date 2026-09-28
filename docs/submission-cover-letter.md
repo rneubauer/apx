@@ -41,7 +41,7 @@ checksum, so "adopt APX" names a fixed set of files rather than a branch.
    (classes, capability discovery with a conformance-tested soundness
    rule); the PARCS Starter Profile is a 26-endpoint minimum; every list
    paginates the APDS way; codegen is exercised in CI. During drafting we
-   found and documented three defects in the published APDS artifact
+   found and documented three errors in the published APDS artifact
    (Part 1 §1.3), vendored untouched and worked around only in our own
    validators. All three are filed in your tracker as issues
    [#33](https://github.com/parkingdata/spec/issues/33),
@@ -49,10 +49,11 @@ checksum, so "adopt APX" names a fixed set of files rather than a branch.
    [#35](https://github.com/parkingdata/spec/issues/35), each with the
    offending snippet and a minimal suggested fix. We offer them as evidence
    the erratum discipline works: a companion standard that validates every
-   payload in CI finds defects in its base that prose review does not.
+   payload in CI finds issues in its base that prose review does not.
    A later vetting pass, which exercised every conformance class against
-   the bundle, found nine more, written up in `docs/errata/` (004–012)
-   in the same form and filed as
+   the bundle, found nine more (three of them consistency suggestions
+   rather than errors), written up in `docs/errata/` (004–012) in the
+   same form and filed as
    [#37](https://github.com/parkingdata/spec/issues/37)–[#45](https://github.com/parkingdata/spec/issues/45).
 5. **It answers the industry's next question.** Part 17 standardizes the
    customer-service surface — one aggregated resolution context and

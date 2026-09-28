@@ -1,12 +1,15 @@
-**Suggested title:** Response codes on `/rates`, `/rights/assigned/{id}`, and `/contacts` differ from their siblings
+**Suggested title:** Suggestion: align response codes on `/rates`, `/rights/assigned/{id}`, and `/contacts` with their siblings
 
 ---
 
+*Type: consistency suggestion — none of these is an error on its own.*
+
 ## Summary
 
-Three native operations break the response conventions every other
-operation of their kind follows. None is invalid on its own; together
-they mean a client written to the conventions of one route misreads the
+A consistency suggestion rather than a bug report. Three native
+operations use different response codes from the other operations of
+their kind. None is invalid, and each may be deliberate; we mention them
+because a client written to the conventions of one route can misread the
 next.
 
 ## Where
@@ -23,12 +26,13 @@ next.
 3. `paths./contacts.get` and `paths./contacts/{contactId}.get`: the only
    operations that declare **500**.
 
-## Why it is a defect
+## Why it matters
 
-Each is plausibly deliberate in isolation, but none is documented as an
-exception. A client that treats "201 on create, 404 on PUT to an unknown
-id" as the APDS convention mishandles `/rates` and `/rights/assigned`;
-a code generator produces a different error surface per route.
+A client that treats "201 on create, 404 on PUT to an unknown id" as
+the APDS convention can mishandle `/rates` and `/rights/assigned`, and a
+code generator produces a different error surface per route. Each
+difference may well be deliberate; if so, a short note documenting it
+would be enough.
 
 ## Impact
 
@@ -53,4 +57,4 @@ records the rest as known APDS 4.1 behaviour so implementers do not
 
 ---
 
-*Found while building APX, an additive companion standard to APDS 4.1.*
+*Found while building APX, an additive companion standard to APDS 4.1. Thank you for all the work that has gone into APDS — happy to help with a fix if that is useful.*

@@ -1,13 +1,16 @@
-**Suggested title:** `POST /quotes` declares no request body; `GET /quotes` returns one object from a list query
+**Suggested title:** `POST /quotes` declares no request body (plus a question about `GET /quotes`)
 
 ---
+
+*Type: omission, plus a consistency question.*
 
 ## Summary
 
 `POST /quotes` ("submit a request for a quote") has no `requestBody`, so
 the `QuoteRightRequest` or `QuoteSessionExtensionRequest` a client sends
-is undeclared. Separately, `GET /quotes` takes list filters but returns a
-single quote object, unlike every other APDS list route.
+is undeclared. Separately, and more of a question than a problem: `GET /quotes`
+takes list filters but returns a single quote object, unlike the other
+APDS list routes. That may be intentional.
 
 ## Where
 
@@ -22,19 +25,20 @@ single quote object, unlike every other APDS list route.
 The `POST` 200 also inlines `PaginatedListMeta` beside `data` rather than
 nesting it under `meta` as the other lists do.
 
-## Why it is a defect
+## Why it matters
 
 The quote request schemas exist (`QuoteRightRequest`,
 `QuoteSessionExtensionRequest`) and nothing references them from a
-request. A generated client has no parameter to send them in; a
-validating gateway sees a body on an operation that declares none. On the
-`GET`, a filter that matches two quotes has no declared way to return
-both.
+request. A generated client has no parameter to send them in. On the
+`GET`, if a single quote per query is the intent, a sentence saying so
+would help; if not, a filter that matches two quotes has no declared way
+to return both.
 
 ## Impact
 
 Every reservation channel and every session-extension flow starts with
-a quote. Implementers invent the request contract independently.
+a quote. Having the request body declared would help implementers
+agree on it.
 
 ## Suggested fix
 
@@ -50,7 +54,7 @@ a quote. Implementers invent the request contract independently.
                 - $ref: '#/components/schemas/QuoteSessionExtensionRequest'
 ```
 
-For the `GET`, return the standard list envelope (`meta` +
+For the `GET`, if it is meant to be a list, return the standard list envelope (`meta` +
 `data[]` of the four quote schemas) in the next major version, since
 changing it is not backward compatible.
 
@@ -63,4 +67,4 @@ matching quote.
 
 ---
 
-*Found while building APX, an additive companion standard to APDS 4.1.*
+*Found while building APX, an additive companion standard to APDS 4.1. Thank you for all the work that has gone into APDS — happy to help with a fix if that is useful.*

@@ -1,11 +1,14 @@
 # APDS 4.1 errata found while building APX
 
-Twelve defects in the published APDS 4.1 OpenAPI document, found by
+Twelve issues in the published APDS 4.1 OpenAPI document, found by
 building a companion standard on top of it and validating every example —
 and, since 2026-09-25, every request and response of a private scenario
 suite covering each conformance class — in CI.
+Nine are schema errors or omissions; three (010, 012, and the `GET /quotes`
+half of 007) are consistency suggestions that may well be intentional,
+and are filed as such. Each report says which kind it is.
 
-They are **defects in APDS, not in APX**. The APX repository vendors
+They are **in APDS, not in APX**. The APX repository vendors
 `apds-api-4.1.yaml` byte-identical and checksum-guarded (Part 0 §0.2,
 Part 1 §1.1), so none of them originates here, and none can be fixed here:
 the prime directive forbids editing the vendored file. Each is worked
@@ -15,7 +18,7 @@ comment pointing at the erratum.
 
 ## Status
 
-| # | Defect | Filed upstream |
+| # | Issue | Filed upstream |
 |---|---|---|
 | [001](001-reference-schema-unsatisfiable.md) | `Reference` is unsatisfiable: two required properties, at most one permitted | [#33](https://github.com/parkingdata/spec/issues/33), open |
 | [002](002-observations-example-invalid.md) | `POST /observations` `single-element` example matches neither branch of its own `oneOf` | [#34](https://github.com/parkingdata/spec/issues/34), open |
@@ -46,7 +49,7 @@ twelve are live in the currently published document.
 [#36](https://github.com/parkingdata/spec/pull/36) on 2026-09-23 with the
 one-character fix for 003
 ([#35](https://github.com/parkingdata/spec/issues/35)); it is open. 004 is
-the same kind of defect as the older issue
+the same kind of leftover as the older issue
 [#32](https://github.com/parkingdata/spec/issues/32), where a maintainer
 confirmed that rate-usage fields are remnants of an earlier APDS version;
 004 cites it.
@@ -54,7 +57,7 @@ confirmed that rate-usage fields are remnants of an earlier APDS version;
 ## The reports
 
 Each file is the issue body as filed, with the suggested title at the top.
-One issue per defect, because they are independent: 003 is a one-character
+One issue per report, because they are independent: 003 is a one-character
 fix that should not wait behind a discussion of 001. 005, 006, and 003
 all touch `POST /observations` and can be fixed in one upstream change, but
 are filed separately so each can be closed on its own.
@@ -67,6 +70,6 @@ reasoning stays in the package even if an issue is later closed.
 
 The APX cover letter offers these as evidence that the erratum discipline
 works: a companion standard that validates every payload in CI finds
-defects in its base that prose review does not. They travel with the
-submission so the working group can read exactly what will be filed rather
+issues in its base that prose review does not. They travel with the
+submission so the working group can read exactly what was filed rather
 than take the claim on trust.
