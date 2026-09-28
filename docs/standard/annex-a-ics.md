@@ -115,7 +115,7 @@ implementation has the named capability).
 | APX-LPR-01 | Ingest via native `POST /observations`; cross-lookup plate↔ticket (and by Observation id) with confidence + imagery links; a lookup with no key → 400 `invalid-request`; value-keyed lookups bounded by the grant and never 403, entity-keyed ones outside it → 403 | §13.3, §13.5(4) |
 | APX-LPR-02 | `LprRead.place` populated; `apx.data.observation.created.v1` published per ingest; purged imagery removed and flagged `purgedImagery`, purged reads absent from every lookup | §13.5, §13.4, §13.3b |
 | APX-LPR-03 | **C** (engine supplies it): `apds-ext:apx:lpr-read@1.0` accepted on ingest and projected as `LprRead.detail` / `PlateCandidate.detail`; winning values mirrored into the APDS-native fields; per-attribute confidences 0–1; nothing guessed when absent | §13.3a(1–3) |
-| APX-LPR-04 | `laneTravel` derived from `plateFace` + `movement` + camera orientation + lane `accessType`; `unknown` when inputs are missing; `againstLane` SHOULD raise `wrongWayTravel` (`relatedEntity` the Session, the Observation under `apds-ext:apx:alert-evidence@1.0`) and MUST still open/match the Session | §13.3a(4–5) |
+| APX-LPR-04 | `laneTravel` derived from `movement` (decides) else `plateFace` (inferred, forward travel assumed) against the camera mount (faces / follows) + lane `accessType`; one direction per `captureGroup`; `laneTravelBasis` SHOULD name the evidence; `unknown` when there is no usable evidence, no mount, or a `reversible` lane of unknown direction; `againstLane` SHOULD raise `wrongWayTravel` (`relatedEntity` the Session, the Observation under `apds-ext:apx:alert-evidence@1.0`) and MUST still open/match the Session | §13.3a(4–5) |
 
 ## A.11 `apx-reservations` / A.12 `apx-permits`
 

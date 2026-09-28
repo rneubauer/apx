@@ -29,10 +29,25 @@ LprRead:
       readOnly: true
       description: |-
         SERVER-DERIVED (Part 13 §13.3a): whether the vehicle was travelling
-        in the lane's configured direction. Derived from `detail.movement`,
-        `detail.plateFace`, the camera's configured orientation, and the
-        lane's APDS `VehicularAccess.accessType` (entry | exit | reversible).
-        `againstLane` is the gateless "entered on the exit lane" signal.
+        in the lane's configured direction. Derived from `detail.movement`
+        (which decides when present), else `detail.plateFace` (inferred,
+        assuming forward travel), the camera's configured mount (faces or
+        follows the lane's traffic), and the lane's APDS
+        `VehicularAccess.accessType` (entry | exit | reversible). The
+        evidence used is in `laneTravelBasis`. `againstLane` is the
+        gateless "entered on the exit lane" signal.
+    laneTravelBasis:
+      type: string
+      enum: [movement, plateFace, paired, unknown]
+      readOnly: true
+      description: |-
+        SERVER-DERIVED (Part 13 §13.3a): the evidence `laneTravel` rests on.
+        `movement` — the vehicle's reported motion against the camera mount;
+        `plateFace` — inferred from the plate face read, assuming the
+        vehicle drove forward (a reversing vehicle defeats it); `paired` —
+        resolved later by pairing reads of the same plate at the place;
+        `unknown` — no usable evidence. Consumers SHOULD consider it before
+        acting on `againstLane`.
     observation:
       description: The underlying APDS Observation.
       $ref: "../../../vendor/apds/4.1/apds-api-4.1.yaml#/components/schemas/Reference"

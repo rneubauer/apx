@@ -296,6 +296,7 @@ actions:
             "engine": "vendor-x/7.2"
           },
           "laneTravel": "againstLane",
+          "laneTravelBasis": "movement",
           "observation": { "id": "f2000000-0000-4000-8000-000000000741", "className": "Observation" },
           "observationDateTime": "2026-09-21T07:41:08Z",
           "session": { "id": "f1000000-0000-4000-8000-000000000741", "className": "Session" },

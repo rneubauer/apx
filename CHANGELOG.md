@@ -6,6 +6,28 @@ conformance/versioning rules in Part 3 of the written standard.
 The machine-readable spec (`spec/openapi/apx.yaml`, bundled as
 `spec/dist/apx-v1.*`) is normative; entries here are informative.
 
+## [Unreleased]
+
+**Lane travel works for either camera mount and any reader's evidence.**
+Part 13 §13.3a(4) derived `LprRead.laneTravel` from `plateFace` and
+`movement` with informative pairs only for a camera facing oncoming
+traffic; implementers with rear-reading cameras copied those pairs and
+inverted every result, and readers that report movement only, plate face
+only, or neither had no rule. The camera mount is now configuration with
+two values (faces the lane's traffic / follows it), with a table for
+both, the same on entry and exit lanes. `movement` decides when present;
+otherwise `plateFace` is used as an inference that assumes forward
+travel; a contradicting pair keeps `movement` and MAY be flagged; with
+neither, or `stopped`, the read is `unknown` and a server MAY resolve it
+later by pairing reads of the plate at the place. Reads of one
+`captureGroup` share one direction. New OPTIONAL, read-only
+`LprRead.laneTravelBasis` (`movement | plateFace | paired | unknown`)
+says which evidence the call rests on (additive); consumers SHOULD weigh
+it before acting on `againstLane`, and a `wrongWayTravel` alert raised on
+`plateFace` basis SHOULD say so. Annex A row APX-LPR-04 updated.
+Scenario 22's results are unchanged; its reads now carry
+`laneTravelBasis: movement`.
+
 ## [0.11.0] — 2026-09-25
 
 Vetting release. Every conformance class was exercised by private

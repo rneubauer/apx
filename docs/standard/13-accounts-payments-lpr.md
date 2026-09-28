@@ -179,25 +179,68 @@ consumer still sees a valid Observation.
    unknown`) is the vehicle's motion relative to the camera. These are
    camera facts; they say nothing about the lane by themselves.
 4. **Lane travel (server-derived).** The server MUST set
-   `LprRead.laneTravel` (`withLane | againstLane | unknown`) by combining
-   `plateFace` and `movement` with the camera's configured orientation
-   and the lane's APDS `VehicularAccess.accessType` (`entry | exit |
-   reversible`). The mapping from camera mount to lane direction is
-   implementation configuration (as Part 17 §17.1 treats the SIP-URI-to-
-   lane mapping); the *output* is interoperable. Informative canonical
-   case, camera facing the traffic it is meant to read: on an `exit`
-   lane, `front` + `approaching` = `withLane`, `rear` + `receding` =
-   `againstLane`; on an `entry` lane the same pairs are `withLane` and
-   `againstLane` respectively; a `reversible` lane yields `unknown`
-   unless the lane's current direction is known to the server. Without
-   `plateFace` or `movement`, `laneTravel` is `unknown`, never guessed.
+   `LprRead.laneTravel` (`withLane | againstLane | unknown`), and SHOULD
+   set `LprRead.laneTravelBasis` (`movement | plateFace | paired |
+   unknown`) to the evidence the call rests on, from the read's
+   `movement` and `plateFace`, the camera's configured **mount**, and the
+   lane's APDS `VehicularAccess.accessType` (`entry | exit |
+   reversible`). The mount is implementation configuration (as Part 17
+   §17.1 treats the SIP-URI-to-lane mapping) with two values: the camera
+   **faces** the traffic the lane is meant for (it reads front plates),
+   or it **follows** that traffic (it looks the way the traffic goes and
+   reads rear plates). `accessType` fixes which traffic the lane is meant
+   for; the rule is the same on `entry` and `exit` lanes. The *output* is
+   interoperable. Real readers report different evidence — movement only,
+   plate face only, both, or neither — and the rule covers all four:
+
+   | Evidence on the read | `faces` mount | `follows` mount | `laneTravelBasis` |
+   |---|---|---|---|
+   | `movement: approaching` | `withLane` | `againstLane` | `movement` |
+   | `movement: receding` | `againstLane` | `withLane` | `movement` |
+   | `movement` absent or `unknown`, `plateFace: front` | `withLane` | `againstLane` | `plateFace` |
+   | `movement` absent or `unknown`, `plateFace: rear` | `againstLane` | `withLane` | `plateFace` |
+   | `movement: stopped`, or neither reported | `unknown` | `unknown` | `unknown` (later `paired`) |
+
+   - **Movement decides.** When `movement` is `approaching` or
+     `receding`, it alone sets `laneTravel`; basis `movement`.
+   - **Plate face infers.** When `movement` is absent or `unknown` and
+     `plateFace` is `front` or `rear`, the server infers `laneTravel`
+     assuming the vehicle is driving forward; basis `plateFace`. This is
+     an inference, not an observation: a vehicle reversing through the
+     lane defeats it.
+   - **Both present.** `movement` decides and `plateFace` corroborates.
+     `front` + `receding` or `rear` + `approaching` is a vehicle moving
+     backwards or bad data, whatever the mount: the server keeps the
+     `movement` result and MAY flag the read (a run of such reads from
+     one camera suggests its mount is misconfigured).
+   - **Neither, or `stopped`.** `laneTravel` is `unknown` on the read,
+     never guessed. A server MAY later resolve it by pairing reads of the
+     same plate at the same place (the first read is the entry, the next
+     the exit) and then reports the result with basis `paired`.
+   - **One passage, one direction.** Reads sharing a
+     `detail.captureGroup` (item 6) are one passage and carry one
+     `laneTravel` and basis: those of the passage's earliest read the
+     rule decides. A vehicle passing a facing camera approaches before
+     it recedes, so the rear-plate read after it passes under keeps the
+     passage's `withLane`.
+   - **No direction to compare.** A `reversible` lane yields `unknown`
+     unless the server knows the lane's current direction, which it then
+     applies as `accessType`. A camera with no configured mount yields
+     `unknown`.
+
+   `laneTravelBasis: plateFace` is inferred and `paired` is after the
+   fact; a consumer SHOULD consider the basis before acting on
+   `againstLane` (a `wrongWayTravel` alert, billing, an enforcement
+   candidate).
 5. **Wrong-way handling.** `againstLane` on a gateless site is the
    "entered on the exit lane" signal. The server SHOULD raise the
    `wrongWayTravel` alert (registry `apx-alert-types`, Part 7) with the
    Observation as evidence, and MUST still open or match the Session for
    the plate — the driver is charged for parking, not for the lot's
    geometry; what happens next (signage, enforcement under Part 19) is
-   operator policy. The alert's `relatedEntity` is the **Session** (what
+   operator policy. An alert raised on `laneTravelBasis: plateFace`
+   SHOULD say so (e.g. in its `statusHistory` `detail`), so the operator
+   knows the direction was inferred. The alert's `relatedEntity` is the **Session** (what
    an operator acts on); the evidence Observation(s) ride the alert's
    `extensions` under `apds-ext:apx:alert-evidence@1.0` as
    `{ "observations": [Reference, …] }`. The same shape serves any alert

@@ -16266,7 +16266,18 @@
               "unknown"
             ],
             "readOnly": true,
-            "description": "SERVER-DERIVED (Part 13 §13.3a): whether the vehicle was travelling\nin the lane's configured direction. Derived from `detail.movement`,\n`detail.plateFace`, the camera's configured orientation, and the\nlane's APDS `VehicularAccess.accessType` (entry | exit | reversible).\n`againstLane` is the gateless \"entered on the exit lane\" signal."
+            "description": "SERVER-DERIVED (Part 13 §13.3a): whether the vehicle was travelling\nin the lane's configured direction. Derived from `detail.movement`\n(which decides when present), else `detail.plateFace` (inferred,\nassuming forward travel), the camera's configured mount (faces or\nfollows the lane's traffic), and the lane's APDS\n`VehicularAccess.accessType` (entry | exit | reversible). The\nevidence used is in `laneTravelBasis`. `againstLane` is the\ngateless \"entered on the exit lane\" signal."
+          },
+          "laneTravelBasis": {
+            "type": "string",
+            "enum": [
+              "movement",
+              "plateFace",
+              "paired",
+              "unknown"
+            ],
+            "readOnly": true,
+            "description": "SERVER-DERIVED (Part 13 §13.3a): the evidence `laneTravel` rests on.\n`movement` — the vehicle's reported motion against the camera mount;\n`plateFace` — inferred from the plate face read, assuming the\nvehicle drove forward (a reversing vehicle defeats it); `paired` —\nresolved later by pairing reads of the same plate at the place;\n`unknown` — no usable evidence. Consumers SHOULD consider it before\nacting on `againstLane`."
           },
           "observation": {
             "description": "The underlying APDS Observation.",
@@ -16351,6 +16362,7 @@
               "engine": "vendor-x/7.2"
             },
             "laneTravel": "againstLane",
+            "laneTravelBasis": "movement",
             "observation": {
               "id": "f2000000-0000-4000-8000-000000000741",
               "className": "Observation"

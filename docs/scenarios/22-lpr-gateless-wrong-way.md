@@ -92,6 +92,7 @@ GET /v1/lpr/reads?plate=RVR-8821 HTTP/1.1
         "engine": "vendor-x/7.2"
       },
       "laneTravel": "againstLane",
+      "laneTravelBasis": "movement",
       "observation": { "id": "f2000000-0000-4000-8000-000000000741", "className": "Observation" },
       "observationDateTime": "2026-09-21T07:41:08Z",
       "session": { "id": "f1000000-0000-4000-8000-000000000741", "className": "Session" },
@@ -179,6 +180,7 @@ GET /v1/lpr/reads?plate=KLM-4470 HTTP/1.1
         "engine": "vendor-x/7.2"
       },
       "laneTravel": "withLane",
+      "laneTravelBasis": "movement",
       "observation": { "id": "f2000000-0000-4000-8000-000000000912", "className": "Observation" },
       "observationDateTime": "2026-09-21T09:12:02Z",
       "session": { "id": "f1000000-0000-4000-8000-000000000655", "className": "Session" },
@@ -198,6 +200,7 @@ GET /v1/lpr/reads?plate=KLM-4470 HTTP/1.1
         "engine": "vendor-x/7.2"
       },
       "laneTravel": "withLane",
+      "laneTravelBasis": "movement",
       "observation": { "id": "f2000000-0000-4000-8000-000000000913", "className": "Observation" },
       "observationDateTime": "2026-09-21T09:12:04Z",
       "session": { "id": "f1000000-0000-4000-8000-000000000655", "className": "Session" },
@@ -210,7 +213,9 @@ GET /v1/lpr/reads?plate=KLM-4470 HTTP/1.1
 
 Two Observations, one `captureGroup`, both `withLane`: the front plate
 approaching, then the rear plate receding *after* it passed — which on
-an exit lane is exactly right, and is how `platesRead: 2` earns the
+an exit lane is exactly right (one passage, one direction: the
+approaching read decides, basis `movement`, Part 13 §13.3a(4)), and is
+how `platesRead: 2` earns the
 engine its confidence in `movement`. The model classification is the
 weakest attribute at 0.80, and the console can say so instead of
 presenting "Honda Accord" as fact. Had the plate been misread, the

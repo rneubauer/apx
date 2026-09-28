@@ -16,13 +16,13 @@
   },
   "normativeArtifacts": {
     "bundle": {
-      "spec/dist/apx-v1.yaml": "61284d6e3255962231034fdff2af3ca53be648861346797cf05e366ad45acbee",
-      "spec/dist/apx-v1.json": "e0e3119870f33b74f9bec82db33de18b6f88054061e4fd3136b2f2fc488373ee"
+      "spec/dist/apx-v1.yaml": "9945b2060a529b005c137d4a3c2c54ed76de7f418be504983b201da48ea49b53",
+      "spec/dist/apx-v1.json": "8d588f171e6e7b3d274a3abf53583ec6408f39b7f1fb13fea82d3e558f91ec08"
     },
     "overlays": {
       "spec/openapi/overlays/apx-data-overlay.yaml": "c5618da336dff5944a4739db452e6ef1ec2bfbe8062c8540a463d0b65bcceaa4",
       "spec/openapi/overlays/apx-docs-overlay.yaml": "4fae6d3db6600fbaafa6edac01ede9cc41755c43ed868e424088a8099cecfafe",
-      "spec/openapi/overlays/apx-examples-overlay.yaml": "4d5a1d8bd03befa91da8973ccd1a6c2935d19532f9b3c9ce8240093987955c5c"
+      "spec/openapi/overlays/apx-examples-overlay.yaml": "8b32496b2838c933c91f0d547e372533788c5b138ae63d94b8448d609b252f36"
     },
     "registries": {
       "apx-alert-types": {
