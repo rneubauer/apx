@@ -2,7 +2,7 @@
   "openapi": "3.1.0",
   "info": {
     "title": "APX — APDS Parking eXtensions",
-    "version": "0.11.0",
+    "version": "0.12.0",
     "summary": "An open companion standard to APDS 4.1",
     "license": {
       "name": "MIT",
@@ -12437,7 +12437,7 @@
           "LPR"
         ],
         "summary": "Bidirectional plate/ticket cross-lookup",
-        "description": "plate → ticket/session with accuracy + screenshot; ticket → plate.\nA pure profile over APDS Observations (ingest = native POST\n/observations). Where the ingested Observation carried the\n`apds-ext:apx:lpr-read@1.0` decoration, each read returns `detail`\n(per-attribute confidences for plate, state, make, model, color;\nalternate reads; plates read; plate face; movement) and the\nserver-derived `laneTravel` (Part 13 §13.3a).\n\nAt least one of `plate`, `ticket`, or `observation` is REQUIRED;\na call with none is 400 `invalid-request`, never a bulk export\n(Part 9 §9.6). Keys given together intersect. Results are bounded\nby the caller's `apx_places` grant (Part 13 §13.5); a value-keyed\nlookup under an empty grant is an empty 200 (Part 9 §9.3a).",
+        "description": "plate → ticket/session with accuracy + screenshot; ticket → plate;\nSession → the reads behind it. A pure profile over APDS\nObservations (ingest = native POST /observations). Where the\ningested Observation carried the `apds-ext:apx:lpr-read@1.0`\ndecoration, each read returns `detail` (per-attribute confidences\nfor plate, state, make, model, color, class; alternate reads;\npassage geometry; and `accessEvent` — entry or exit — as the LPR\nsystem reported it; Part 13 §13.3a).\n\nAt least one of `plate`, `ticket`, `observation`, or `session` is\nREQUIRED;\na call with none is 400 `invalid-request`, never a bulk export\n(Part 9 §9.6). Keys given together intersect. Results are bounded\nby the caller's `apx_places` grant (Part 13 §13.5); a value-keyed\nlookup under an empty grant is an empty 200 (Part 9 §9.3a).",
         "parameters": [
           {
             "name": "plate",
@@ -12457,6 +12457,15 @@
             "name": "observation",
             "in": "query",
             "description": "Lookup by the underlying APDS Observation id — the read-back\nroute for one ingested read (APDS 4.1 has no GET\n/observations/{id}).",
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "session",
+            "in": "query",
+            "description": "The reads behind one APDS Session — its entry and exit reads\nand every read of their passages (Part 13 §13.3a(6)). A Session\nat a place outside the caller's `apx_places` grant is 403\n`insufficient-grant` (Part 13 §13.5(4)).",
             "schema": {
               "type": "string",
               "format": "uuid"
@@ -12498,7 +12507,7 @@
             }
           },
           "400": {
-            "description": "None of `plate`, `ticket`, or `observation` given (problem type `invalid-request`).",
+            "description": "None of `plate`, `ticket`, `observation`, or `session` given (problem type `invalid-request`).",
             "content": {
               "application/problem+json": {
                 "schema": {
@@ -13943,6 +13952,83 @@
                     "properties": {
                       "type": {
                         "const": "apx.data.observation.created.v1"
+                      },
+                      "data": {
+                        "$ref": "#/components/schemas/ObservationElement"
+                      }
+                    }
+                  }
+                ]
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Acknowledged."
+          }
+        }
+      }
+    },
+    "apx.data.observation.updated.v1": {
+      "post": {
+        "operationId": "receive-apx-data-observation-updated",
+        "summary": "An ingested Observation was replaced",
+        "description": "Published whenever an ingested Observation is replaced through\nnative `PUT /observations/{id}` — for example the LPR system\nrevising `accessEvent` (Part 13 §13.3a(4), §13.4). `data` is the\nAPDS `ObservationElement` as it now stands; `subject` and the place\nbinding (`elementIds`) are as for `apx.data.observation.created.v1`.\nConsumers key on the Observation id and keep the highest `version`.\nPlate values are subject to Part 9 §9.6.",
+        "parameters": [
+          {
+            "name": "APX-Signature",
+            "in": "header",
+            "required": true,
+            "description": "`v1=` + hex HMAC-SHA256(secret, APX-Timestamp + \".\" + raw body), computed per attempt.",
+            "schema": {
+              "type": "string",
+              "pattern": "^v1=[0-9a-f]{64}$"
+            }
+          },
+          {
+            "name": "APX-Timestamp",
+            "in": "header",
+            "required": true,
+            "description": "RFC 3339 time of THIS attempt (not of the event or of the first attempt).",
+            "schema": {
+              "type": "string",
+              "format": "date-time"
+            }
+          },
+          {
+            "name": "APX-Delivery-Id",
+            "in": "header",
+            "required": true,
+            "description": "UUID unique per attempt; the envelope `id` is the dedup key.",
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "APX-Key-Id",
+            "in": "header",
+            "required": false,
+            "description": "The signing key's id — REQUIRED during a rotation overlap (Part 9 §9.4).",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "allOf": [
+                  {
+                    "$ref": "#/components/schemas/EventEnvelope"
+                  },
+                  {
+                    "type": "object",
+                    "properties": {
+                      "type": {
+                        "const": "apx.data.observation.updated.v1"
                       },
                       "data": {
                         "$ref": "#/components/schemas/ObservationElement"
@@ -16266,7 +16352,8 @@
               "unknown"
             ],
             "readOnly": true,
-            "description": "SERVER-DERIVED (Part 13 §13.3a): whether the vehicle was travelling\nin the lane's configured direction. Derived from `detail.movement`,\n`detail.plateFace`, the camera's configured orientation, and the\nlane's APDS `VehicularAccess.accessType` (entry | exit | reversible).\n`againstLane` is the gateless \"entered on the exit lane\" signal."
+            "deprecated": true,
+            "description": "DEPRECATED since 0.12.0, removed at 1.0. APX no longer derives\ndirection; use `detail.accessEvent` (entry | exit), which the LPR\nsystem reports (Part 13 §13.3a(4)). Servers SHOULD return `unknown`."
           },
           "observation": {
             "description": "The underlying APDS Observation.",
@@ -16286,7 +16373,7 @@
             "$ref": "#/components/schemas/Url"
           },
           "lane": {
-            "description": "The VehicularAccess (lane) the read was taken at, when the\nObservation's `elementIds` reference one — the lane `laneTravel`\nis derived from (Part 13 §13.3a). Lets a consumer tell an entry\nread from an exit read.",
+            "description": "The VehicularAccess (lane) the read was taken at, when the\nObservation's `elementIds` reference one. Whether the read was an\nentry or an exit is `detail.accessEvent` (Part 13 §13.3a(4)); the\nlane used does not decide it.",
             "$ref": "#/components/schemas/Reference"
           },
           "cameraId": {
@@ -16344,22 +16431,34 @@
                 "value": "pickup",
                 "confidence": 0.96
               },
-              "platesRead": 1,
-              "plateFace": "rear",
-              "movement": "receding",
-              "captureGroup": "cam-exit-1/20260921T074108/0417",
+              "frameReads": 4,
+              "platesRead": 2,
+              "plateFace": "front",
+              "plateBox": {
+                "top": 0.52,
+                "left": 0.29,
+                "bottom": 0.59,
+                "right": 0.36
+              },
+              "movement": "toward",
+              "accessEvent": "entry",
+              "captureGroup": "riverside/20261214T074108/0417",
               "engine": "vendor-x/7.2"
             },
-            "laneTravel": "againstLane",
             "observation": {
               "id": "f2000000-0000-4000-8000-000000000741",
               "className": "Observation"
             },
-            "observationDateTime": "2026-09-21T07:41:08Z",
+            "observationDateTime": "2026-12-14T07:41:08Z",
             "session": {
               "id": "f1000000-0000-4000-8000-000000000741",
               "className": "Session"
             },
+            "lane": {
+              "id": "b2000000-0000-4000-8000-000000000061",
+              "className": "VehicularAccess"
+            },
+            "cameraId": "riverside/cam-exit-1",
             "imageLink": "https://api.riverside-lot.example/lpr/f2000000-741-plate.jpg",
             "recentReservations": []
           }
@@ -16399,6 +16498,10 @@
             "description": "Plate issuing state/province (APDS VehicleAncillaryIdentification.stateProvince vocabulary).",
             "$ref": "#/components/schemas/AttributeRead"
           },
+          "plateCategory": {
+            "description": "The plate's category where the issuing country uses one (e.g. the prefix on some Gulf-state plates). Absent where the country has none.",
+            "$ref": "#/components/schemas/AttributeRead"
+          },
           "make": {
             "$ref": "#/components/schemas/AttributeRead"
           },
@@ -16409,7 +16512,7 @@
             "$ref": "#/components/schemas/AttributeRead"
           },
           "bodyType": {
-            "description": "Implementer vocabulary (sedan, suv, pickup, van, motorcycle…).",
+            "description": "The engine's own vehicle class label (SUV, sedan, pickup, bus, truck…), carried as the engine reports it and not mapped to a standard list.",
             "$ref": "#/components/schemas/AttributeRead"
           },
           "alternateReads": {
@@ -16435,10 +16538,15 @@
               }
             }
           },
+          "frameReads": {
+            "type": "integer",
+            "minimum": 0,
+            "description": "How many frames read this plate as the vehicle passed. Engines need\nat least two to call `movement`, so a camera that sees only one of\nthe vehicle's plates still reports it (Part 13 §13.3a(3))."
+          },
           "platesRead": {
             "type": "integer",
             "minimum": 0,
-            "description": "How many plates of the vehicle the camera read during this passage\n(1 = one plate; 2 = front and rear across frames). Two reads are\nwhat let the engine call `movement` with confidence."
+            "description": "How many distinct plates of the vehicle were read in the passage\n(1 = one plate; 2 = front and rear)."
           },
           "plateFace": {
             "type": "string",
@@ -16447,21 +16555,69 @@
               "rear",
               "unknown"
             ],
-            "description": "Which plate of the vehicle was read — the vehicle's orientation relative to the camera."
+            "description": "Which plate of the vehicle was read, for engines that can tell."
+          },
+          "plateBox": {
+            "type": "object",
+            "description": "The plate's position in the camera frame, as fractions 0–1 of the\nframe's height (`top`, `bottom`) and width (`left`, `right`), so it\nsurvives image resizing.",
+            "required": [
+              "top",
+              "left",
+              "bottom",
+              "right"
+            ],
+            "properties": {
+              "top": {
+                "type": "number",
+                "minimum": 0,
+                "maximum": 1
+              },
+              "left": {
+                "type": "number",
+                "minimum": 0,
+                "maximum": 1
+              },
+              "bottom": {
+                "type": "number",
+                "minimum": 0,
+                "maximum": 1
+              },
+              "right": {
+                "type": "number",
+                "minimum": 0,
+                "maximum": 1
+              }
+            }
           },
           "movement": {
             "type": "string",
             "enum": [
-              "approaching",
-              "receding",
+              "toward",
+              "away",
               "stopped",
+              "unknown",
+              "approaching",
+              "receding"
+            ],
+            "description": "The vehicle's motion relative to the camera: toward it, away from\nit, or stopped. A camera fact, not a statement about the facility.\n`approaching` and `receding` are deprecated synonyms of `toward`\nand `away` — accepted until 1.0; writers SHOULD send the new values\n(Part 13 §13.3a(3))."
+          },
+          "speed": {
+            "type": "number",
+            "minimum": 0,
+            "description": "Vehicle speed in km/h when the engine measures it; absent otherwise, never a sentinel such as -1."
+          },
+          "accessEvent": {
+            "type": "string",
+            "enum": [
+              "entry",
+              "exit",
               "unknown"
             ],
-            "description": "The vehicle's motion relative to the camera — coming toward it, going away from it, or stopped."
+            "description": "Whether this read was a vehicle entering or leaving the facility, as\nreported by the LPR system — not the lane's configured purpose (the\nlane's APDS `accessType`), and never inferred by the APX server.\nAbsent means `unknown`. The LPR system MAY revise it by replacing\nthe Observation (Part 13 §13.3a(4))."
           },
           "captureGroup": {
             "type": "string",
-            "description": "Opaque id linking the reads of one passage (front and rear, several frames) so consumers can treat them as one event."
+            "description": "Opaque id linking the reads of one vehicle's passage — several\nframes, and one camera or several (e.g. front plate and rear\nplate) — so consumers can treat them as one event. Reads of one\ngroup SHOULD carry the same `accessEvent` (Part 13 §13.3a(6))."
           },
           "engine": {
             "type": "string",
@@ -16494,11 +16650,68 @@
               "value": "pickup",
               "confidence": 0.96
             },
-            "platesRead": 1,
-            "plateFace": "rear",
-            "movement": "receding",
-            "captureGroup": "cam-exit-1/20260921T074108/0417",
+            "frameReads": 4,
+            "platesRead": 2,
+            "plateFace": "front",
+            "plateBox": {
+              "top": 0.52,
+              "left": 0.29,
+              "bottom": 0.59,
+              "right": 0.36
+            },
+            "movement": "toward",
+            "accessEvent": "entry",
+            "captureGroup": "riverside/20261214T074108/0417",
             "engine": "vendor-x/7.2"
+          }
+        ]
+      },
+      "LaneCameras": {
+        "title": "LaneCameras",
+        "description": "The LPR cameras on a lane and which way each one faces (Part 13\n§13.3a(5)). Carried on an APDS VehicularAccess as the Level B\ndecoration `apds-ext:apx:lane-cameras@1.0` in its `extensions`\ncontainer (Part 4 §4.3). Facing is relative to the facility, not to\nthe lane's mode, so it holds on `reversible` lanes. Describes the\nsetup only; APX derives nothing from it.",
+        "type": "object",
+        "required": [
+          "cameras"
+        ],
+        "properties": {
+          "cameras": {
+            "type": "array",
+            "minItems": 1,
+            "items": {
+              "type": "object",
+              "required": [
+                "cameraId",
+                "faces"
+              ],
+              "properties": {
+                "cameraId": {
+                  "type": "string",
+                  "description": "The camera, as `Image.cameraID` names it on its reads. MUST\nbe unique within the Place."
+                },
+                "faces": {
+                  "type": "string",
+                  "enum": [
+                    "inward",
+                    "outward"
+                  ],
+                  "description": "`inward` — looking into the facility, the way entering\ntraffic travels (reads the rear plates of entering\nvehicles); `outward` — looking out of it, the way exiting\ntraffic travels (reads the rear plates of exiting vehicles)."
+                }
+              }
+            }
+          }
+        },
+        "examples": [
+          {
+            "cameras": [
+              {
+                "cameraId": "harbor/cam-centre-in",
+                "faces": "inward"
+              },
+              {
+                "cameraId": "harbor/cam-centre-out",
+                "faces": "outward"
+              }
+            ]
           }
         ]
       },
@@ -21146,7 +21359,7 @@
             "type": "string",
             "description": "The APX edition implemented (Part 3 §3.4), as named in its `spec/edition.json`.",
             "examples": [
-              "0.11.0"
+              "0.12.0"
             ]
           },
           "apdsVersion": {
@@ -26663,7 +26876,7 @@
     },
     {
       "name": "LPR",
-      "description": "**Plates.** A camera read *is* an APDS `Observation`, so ingest is the\nstandard data route every integration already uses. No bespoke\ningestion API.\n\nThe genuinely new need is the **join**: which ticket goes with this\nplate, and which plate with this ticket. That is the one endpoint this\ndomain adds, answering with the session, the confidence score, and an\naccess-controlled image link.\n\nModern engines know more than a plate string, so a read may also carry\nper-attribute confidence for plate, state, make, model and colour, the\nrunner-up plate strings the engine rejected, how many plates it saw,\nwhich face of the vehicle it read, and whether the vehicle was\napproaching, receding, or stopped. From those the server derives\nwhether the vehicle travelled with or **against** the lane's\nconfigured direction, which is how a gateless site detects a car\nentering through the exit.\n\nWritten standard:\n[Part 13](https://github.com/rneubauer/apx/blob/main/docs/standard/13-accounts-payments-lpr.md)."
+      "description": "**Plates.** A camera read *is* an APDS `Observation`, so ingest is the\nstandard data route every integration already uses. No bespoke\ningestion API.\n\nThe genuinely new need is the **join**: which ticket goes with this\nplate, and which plate with this ticket. That is the one endpoint this\ndomain adds, answering with the session, the confidence score, and an\naccess-controlled image link.\n\nModern engines know more than a plate string, so a read may also carry\nper-attribute confidence for plate, state, make, model, colour and\nclass, the runner-up plate strings the engine rejected, how many\nframes and plates it read, which face of the vehicle it saw, and\nwhether the vehicle was moving toward the camera, away from it, or\nstopped. The LPR system then says what the read *was*: an **entry**\nor an **exit**. APX derives nothing — each lane's cameras, and which\nway each faces, are described on the lane, and a Session is simply\nthe entry and exit reads of one visit.\n\nWritten standard:\n[Part 13](https://github.com/rneubauer/apx/blob/main/docs/standard/13-accounts-payments-lpr.md)."
     },
     {
       "name": "Reservations",

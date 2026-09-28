@@ -2,7 +2,7 @@ openapi: 3.1.0
 
 info:
   title: APX — APDS Parking eXtensions
-  version: 0.11.0
+  version: 0.12.0
   summary: An open companion standard to APDS 4.1
   description: |-
     **APX (APDS Parking eXtensions)** is an additive companion standard to the
@@ -4748,15 +4748,17 @@ paths:
       tags: [LPR]
       summary: Bidirectional plate/ticket cross-lookup
       description: |-
-        plate → ticket/session with accuracy + screenshot; ticket → plate.
-        A pure profile over APDS Observations (ingest = native POST
-        /observations). Where the ingested Observation carried the
-        `apds-ext:apx:lpr-read@1.0` decoration, each read returns `detail`
-        (per-attribute confidences for plate, state, make, model, color;
-        alternate reads; plates read; plate face; movement) and the
-        server-derived `laneTravel` (Part 13 §13.3a).
+        plate → ticket/session with accuracy + screenshot; ticket → plate;
+        Session → the reads behind it. A pure profile over APDS
+        Observations (ingest = native POST /observations). Where the
+        ingested Observation carried the `apds-ext:apx:lpr-read@1.0`
+        decoration, each read returns `detail` (per-attribute confidences
+        for plate, state, make, model, color, class; alternate reads;
+        passage geometry; and `accessEvent` — entry or exit — as the LPR
+        system reported it; Part 13 §13.3a).
 
-        At least one of `plate`, `ticket`, or `observation` is REQUIRED;
+        At least one of `plate`, `ticket`, `observation`, or `session` is
+        REQUIRED;
         a call with none is 400 `invalid-request`, never a bulk export
         (Part 9 §9.6). Keys given together intersect. Results are bounded
         by the caller's `apx_places` grant (Part 13 §13.5); a value-keyed
@@ -4770,6 +4772,14 @@ paths:
             Lookup by the underlying APDS Observation id — the read-back
             route for one ingested read (APDS 4.1 has no GET
             /observations/{id}).
+          schema: { type: string, format: uuid }
+        - name: session
+          in: query
+          description: |-
+            The reads behind one APDS Session — its entry and exit reads
+            and every read of their passages (Part 13 §13.3a(6)). A Session
+            at a place outside the caller's `apx_places` grant is 403
+            `insufficient-grant` (Part 13 §13.5(4)).
           schema: { type: string, format: uuid }
         - name: place
           in: query
@@ -4794,7 +4804,7 @@ paths:
                     type: array
                     items: { $ref: "#/components/schemas/LprRead" }
         "400":
-          description: None of `plate`, `ticket`, or `observation` given (problem type `invalid-request`).
+          description: None of `plate`, `ticket`, `observation`, or `session` given (problem type `invalid-request`).
           content:
             application/problem+json:
               schema: { $ref: "#/components/schemas/Problem" }
@@ -5563,6 +5573,33 @@ webhooks:
       responses:
         "200":
           description: Acknowledged.
+  apx.data.observation.updated.v1:
+    post:
+      operationId: receive-apx-data-observation-updated
+      summary: An ingested Observation was replaced
+      description: |-
+        Published whenever an ingested Observation is replaced through
+        native `PUT /observations/{id}` — for example the LPR system
+        revising `accessEvent` (Part 13 §13.3a(4), §13.4). `data` is the
+        APDS `ObservationElement` as it now stands; `subject` and the place
+        binding (`elementIds`) are as for `apx.data.observation.created.v1`.
+        Consumers key on the Observation id and keep the highest `version`.
+        Plate values are subject to Part 9 §9.6.
+      parameters: *deliveryHeaders
+      requestBody:
+        content:
+          application/json:
+            schema:
+              allOf:
+                - $ref: "#/components/schemas/EventEnvelope"
+                - type: object
+                  properties:
+                    type: { const: apx.data.observation.updated.v1 }
+                    data:
+                      $ref: "../vendor/apds/4.1/apds-api-4.1.yaml#/components/schemas/ObservationElement"
+      responses:
+        "200":
+          description: Acknowledged.
   apx.reservation.noshow.v1:
     post:
       operationId: receive-apx-reservation-noshow
@@ -5758,6 +5795,8 @@ components:
       $ref: "./domains/lpr/schemas.yaml#/AttributeRead"
     LprReadDetail:
       $ref: "./domains/lpr/schemas.yaml#/LprReadDetail"
+    LaneCameras:
+      $ref: "./domains/lpr/schemas.yaml#/LaneCameras"
     ReservationExtension:
       $ref: "./domains/reservations/schemas.yaml#/ReservationExtension"
     ReservationSummary:

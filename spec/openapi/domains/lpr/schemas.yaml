@@ -27,12 +27,11 @@ LprRead:
       type: string
       enum: [withLane, againstLane, unknown]
       readOnly: true
+      deprecated: true
       description: |-
-        SERVER-DERIVED (Part 13 §13.3a): whether the vehicle was travelling
-        in the lane's configured direction. Derived from `detail.movement`,
-        `detail.plateFace`, the camera's configured orientation, and the
-        lane's APDS `VehicularAccess.accessType` (entry | exit | reversible).
-        `againstLane` is the gateless "entered on the exit lane" signal.
+        DEPRECATED since 0.12.0, removed at 1.0. APX no longer derives
+        direction; use `detail.accessEvent` (entry | exit), which the LPR
+        system reports (Part 13 §13.3a(4)). Servers SHOULD return `unknown`.
     observation:
       description: The underlying APDS Observation.
       $ref: "../../../vendor/apds/4.1/apds-api-4.1.yaml#/components/schemas/Reference"
@@ -49,9 +48,9 @@ LprRead:
     lane:
       description: |-
         The VehicularAccess (lane) the read was taken at, when the
-        Observation's `elementIds` reference one — the lane `laneTravel`
-        is derived from (Part 13 §13.3a). Lets a consumer tell an entry
-        read from an exit read.
+        Observation's `elementIds` reference one. Whether the read was an
+        entry or an exit is `detail.accessEvent` (Part 13 §13.3a(4)); the
+        lane used does not decide it.
       $ref: "../../../vendor/apds/4.1/apds-api-4.1.yaml#/components/schemas/Reference"
     cameraId:
       type: string
@@ -117,6 +116,9 @@ LprReadDetail:
     stateProvince:
       description: Plate issuing state/province (APDS VehicleAncillaryIdentification.stateProvince vocabulary).
       $ref: "#/AttributeRead"
+    plateCategory:
+      description: The plate's category where the issuing country uses one (e.g. the prefix on some Gulf-state plates). Absent where the country has none.
+      $ref: "#/AttributeRead"
     make:
       $ref: "#/AttributeRead"
     model:
@@ -124,7 +126,7 @@ LprReadDetail:
     color:
       $ref: "#/AttributeRead"
     bodyType:
-      description: Implementer vocabulary (sedan, suv, pickup, van, motorcycle…).
+      description: The engine's own vehicle class label (SUV, sedan, pickup, bus, truck…), carried as the engine reports it and not mapped to a standard list.
       $ref: "#/AttributeRead"
     alternateReads:
       type: array
@@ -141,24 +143,97 @@ LprReadDetail:
             type: number
             minimum: 0
             maximum: 1
+    frameReads:
+      type: integer
+      minimum: 0
+      description: |-
+        How many frames read this plate as the vehicle passed. Engines need
+        at least two to call `movement`, so a camera that sees only one of
+        the vehicle's plates still reports it (Part 13 §13.3a(3)).
     platesRead:
       type: integer
       minimum: 0
       description: |-
-        How many plates of the vehicle the camera read during this passage
-        (1 = one plate; 2 = front and rear across frames). Two reads are
-        what let the engine call `movement` with confidence.
+        How many distinct plates of the vehicle were read in the passage
+        (1 = one plate; 2 = front and rear).
     plateFace:
       type: string
       enum: [front, rear, unknown]
-      description: Which plate of the vehicle was read — the vehicle's orientation relative to the camera.
+      description: Which plate of the vehicle was read, for engines that can tell.
+    plateBox:
+      type: object
+      description: |-
+        The plate's position in the camera frame, as fractions 0–1 of the
+        frame's height (`top`, `bottom`) and width (`left`, `right`), so it
+        survives image resizing.
+      required: [top, left, bottom, right]
+      properties:
+        top: { type: number, minimum: 0, maximum: 1 }
+        left: { type: number, minimum: 0, maximum: 1 }
+        bottom: { type: number, minimum: 0, maximum: 1 }
+        right: { type: number, minimum: 0, maximum: 1 }
     movement:
       type: string
-      enum: [approaching, receding, stopped, unknown]
-      description: The vehicle's motion relative to the camera — coming toward it, going away from it, or stopped.
+      enum: [toward, away, stopped, unknown, approaching, receding]
+      description: |-
+        The vehicle's motion relative to the camera: toward it, away from
+        it, or stopped. A camera fact, not a statement about the facility.
+        `approaching` and `receding` are deprecated synonyms of `toward`
+        and `away` — accepted until 1.0; writers SHOULD send the new values
+        (Part 13 §13.3a(3)).
+    speed:
+      type: number
+      minimum: 0
+      description: Vehicle speed in km/h when the engine measures it; absent otherwise, never a sentinel such as -1.
+    accessEvent:
+      type: string
+      enum: [entry, exit, unknown]
+      description: |-
+        Whether this read was a vehicle entering or leaving the facility, as
+        reported by the LPR system — not the lane's configured purpose (the
+        lane's APDS `accessType`), and never inferred by the APX server.
+        Absent means `unknown`. The LPR system MAY revise it by replacing
+        the Observation (Part 13 §13.3a(4)).
     captureGroup:
       type: string
-      description: Opaque id linking the reads of one passage (front and rear, several frames) so consumers can treat them as one event.
+      description: |-
+        Opaque id linking the reads of one vehicle's passage — several
+        frames, and one camera or several (e.g. front plate and rear
+        plate) — so consumers can treat them as one event. Reads of one
+        group SHOULD carry the same `accessEvent` (Part 13 §13.3a(6)).
     engine:
       type: string
       description: Recognition engine/vendor identifier, opaque (for confidence calibration downstream).
+
+LaneCameras:
+  title: LaneCameras
+  description: |-
+    The LPR cameras on a lane and which way each one faces (Part 13
+    §13.3a(5)). Carried on an APDS VehicularAccess as the Level B
+    decoration `apds-ext:apx:lane-cameras@1.0` in its `extensions`
+    container (Part 4 §4.3). Facing is relative to the facility, not to
+    the lane's mode, so it holds on `reversible` lanes. Describes the
+    setup only; APX derives nothing from it.
+  type: object
+  required: [cameras]
+  properties:
+    cameras:
+      type: array
+      minItems: 1
+      items:
+        type: object
+        required: [cameraId, faces]
+        properties:
+          cameraId:
+            type: string
+            description: |-
+              The camera, as `Image.cameraID` names it on its reads. MUST
+              be unique within the Place.
+          faces:
+            type: string
+            enum: [inward, outward]
+            description: |-
+              `inward` — looking into the facility, the way entering
+              traffic travels (reads the rear plates of entering
+              vehicles); `outward` — looking out of it, the way exiting
+              traffic travels (reads the rear plates of exiting vehicles).

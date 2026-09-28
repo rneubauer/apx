@@ -20,7 +20,7 @@
 overlay: 1.0.0
 info:
   title: APX documentation overlay (orientation, domain narrative, nav grouping)
-  version: 0.11.0
+  version: 0.12.0
 
 actions:
   # ===== Orientation =======================================================
@@ -259,13 +259,14 @@ actions:
           access-controlled image link.
 
           Modern engines know more than a plate string, so a read may also carry
-          per-attribute confidence for plate, state, make, model and colour, the
-          runner-up plate strings the engine rejected, how many plates it saw,
-          which face of the vehicle it read, and whether the vehicle was
-          approaching, receding, or stopped. From those the server derives
-          whether the vehicle travelled with or **against** the lane's
-          configured direction, which is how a gateless site detects a car
-          entering through the exit.
+          per-attribute confidence for plate, state, make, model, colour and
+          class, the runner-up plate strings the engine rejected, how many
+          frames and plates it read, which face of the vehicle it saw, and
+          whether the vehicle was moving toward the camera, away from it, or
+          stopped. The LPR system then says what the read *was*: an **entry**
+          or an **exit**. APX derives nothing — each lane's cameras, and which
+          way each faces, are described on the lane, and a Session is simply
+          the entry and exit reads of one visit.
 
           Written standard:
           [Part 13](https://github.com/rneubauer/apx/blob/main/docs/standard/13-accounts-payments-lpr.md).

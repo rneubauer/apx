@@ -237,8 +237,10 @@ the revenue stream in real time instead of scraping reports.
 |---|---|
 | `POST /observations` | How camera reads enter the system (a standard data route — nothing special to build) |
 | `GET /v1/lpr/reads?plate=…` or `?ticket=…` | The cross-lookup: plate → ticket/session (with confidence score and the photo), or ticket → plate |
-| `detail` on a read | What the camera actually knew: plate, state, make, model, colour **each with its own confidence**, the runner-up plate strings, how many plates it read, which plate face it saw (front or rear), and whether the car was approaching, receding, or stopped |
-| `laneTravel` on a read | The server's call from all of that plus the lane's configured direction: with the lane, or **against** it — the gateless "they came in through the exit" signal, which raises a `wrongWayTravel` alert |
+| `detail` on a read | What the camera actually knew: plate, state, make, model, colour, class **each with its own confidence**, the runner-up plate strings, how many frames and plates it read, which plate face it saw (front or rear), and whether the car moved toward the camera, away from it, or stopped |
+| `accessEvent` on a read | What the read *was*: an **entry** or an **exit**, as the LPR system reports it. The lane used doesn't change it — on a shared driveway an entry on the exit lane is still an entry |
+| Lane cameras | Which cameras are on each lane and whether each faces **inward** or **outward** — described on the lane itself, so every system on the site knows how the cameras are set up |
+| `?session=` | Every read behind one visit: its entry, its exit, and the front- and rear-plate reads of each passage |
 
 **Why this way:** LPR vendors shouldn't need a bespoke ingestion API — a
 plate read *is* an observation, so ingest is the standard route every data

@@ -2,7 +2,7 @@
   "openapi": "3.1.0",
   "info": {
     "title": "APX — PARCS Starter Profile",
-    "version": "0.11.0",
+    "version": "0.12.0",
     "summary": "An open companion standard to APDS 4.1",
     "license": {
       "name": "MIT",
@@ -57,7 +57,7 @@
     },
     {
       "name": "LPR",
-      "description": "**Plates.** A camera read *is* an APDS `Observation`, so ingest is the\nstandard data route every integration already uses. No bespoke\ningestion API.\n\nThe genuinely new need is the **join**: which ticket goes with this\nplate, and which plate with this ticket. That is the one endpoint this\ndomain adds, answering with the session, the confidence score, and an\naccess-controlled image link.\n\nModern engines know more than a plate string, so a read may also carry\nper-attribute confidence for plate, state, make, model and colour, the\nrunner-up plate strings the engine rejected, how many plates it saw,\nwhich face of the vehicle it read, and whether the vehicle was\napproaching, receding, or stopped. From those the server derives\nwhether the vehicle travelled with or **against** the lane's\nconfigured direction, which is how a gateless site detects a car\nentering through the exit.\n\nWritten standard:\n[Part 13](https://github.com/rneubauer/apx/blob/main/docs/standard/13-accounts-payments-lpr.md)."
+      "description": "**Plates.** A camera read *is* an APDS `Observation`, so ingest is the\nstandard data route every integration already uses. No bespoke\ningestion API.\n\nThe genuinely new need is the **join**: which ticket goes with this\nplate, and which plate with this ticket. That is the one endpoint this\ndomain adds, answering with the session, the confidence score, and an\naccess-controlled image link.\n\nModern engines know more than a plate string, so a read may also carry\nper-attribute confidence for plate, state, make, model, colour and\nclass, the runner-up plate strings the engine rejected, how many\nframes and plates it read, which face of the vehicle it saw, and\nwhether the vehicle was moving toward the camera, away from it, or\nstopped. The LPR system then says what the read *was*: an **entry**\nor an **exit**. APX derives nothing — each lane's cameras, and which\nway each faces, are described on the lane, and a Session is simply\nthe entry and exit reads of one visit.\n\nWritten standard:\n[Part 13](https://github.com/rneubauer/apx/blob/main/docs/standard/13-accounts-payments-lpr.md)."
     },
     {
       "name": "Reservations",
@@ -5144,6 +5144,83 @@
         }
       }
     },
+    "apx.data.observation.updated.v1": {
+      "post": {
+        "operationId": "receive-apx-data-observation-updated",
+        "summary": "An ingested Observation was replaced",
+        "description": "Published whenever an ingested Observation is replaced through\nnative `PUT /observations/{id}` — for example the LPR system\nrevising `accessEvent` (Part 13 §13.3a(4), §13.4). `data` is the\nAPDS `ObservationElement` as it now stands; `subject` and the place\nbinding (`elementIds`) are as for `apx.data.observation.created.v1`.\nConsumers key on the Observation id and keep the highest `version`.\nPlate values are subject to Part 9 §9.6.",
+        "parameters": [
+          {
+            "name": "APX-Signature",
+            "in": "header",
+            "required": true,
+            "description": "`v1=` + hex HMAC-SHA256(secret, APX-Timestamp + \".\" + raw body), computed per attempt.",
+            "schema": {
+              "type": "string",
+              "pattern": "^v1=[0-9a-f]{64}$"
+            }
+          },
+          {
+            "name": "APX-Timestamp",
+            "in": "header",
+            "required": true,
+            "description": "RFC 3339 time of THIS attempt (not of the event or of the first attempt).",
+            "schema": {
+              "type": "string",
+              "format": "date-time"
+            }
+          },
+          {
+            "name": "APX-Delivery-Id",
+            "in": "header",
+            "required": true,
+            "description": "UUID unique per attempt; the envelope `id` is the dedup key.",
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "APX-Key-Id",
+            "in": "header",
+            "required": false,
+            "description": "The signing key's id — REQUIRED during a rotation overlap (Part 9 §9.4).",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "allOf": [
+                  {
+                    "$ref": "#/components/schemas/EventEnvelope"
+                  },
+                  {
+                    "type": "object",
+                    "properties": {
+                      "type": {
+                        "const": "apx.data.observation.updated.v1"
+                      },
+                      "data": {
+                        "$ref": "#/components/schemas/ObservationElement"
+                      }
+                    }
+                  }
+                ]
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Acknowledged."
+          }
+        }
+      }
+    },
     "apx.reservation.noshow.v1": {
       "post": {
         "operationId": "receive-apx-reservation-noshow",
@@ -5297,7 +5374,7 @@
             "type": "string",
             "description": "The APX edition implemented (Part 3 §3.4), as named in its `spec/edition.json`.",
             "examples": [
-              "0.11.0"
+              "0.12.0"
             ]
           },
           "apdsVersion": {

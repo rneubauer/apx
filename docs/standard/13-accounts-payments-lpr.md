@@ -130,24 +130,25 @@ creator and to callers who ask for holds.
 
 - Ingest is NATIVE: LPR vendors `POST /observations` (APDS route) with
   Confidence and Image — nothing new to implement.
-- `GET /v1/lpr/reads?plate=|ticket=|observation=` — the bidirectional
-  cross-lookup: plate → ticket/session (+ accuracy + screenshot),
-  ticket → plate, and Observation id → read (the read-back route for one
-  ingested Observation, which APDS 4.1 lacks). Scope `apx.lpr:read`.
-  **At least one of `plate`, `ticket`, or `observation` is REQUIRED**; a
-  call with none is 400 `invalid-request`, never a bulk export (Part 9
-  §9.6). Keys given together intersect; the optional `place` narrows
-  below the grant (§13.5(3)). Every read carries its (required) `place`
-  binding (§13.5) and, where the Observation references one, its `lane`
-  (the lane `laneTravel` is derived from) and `cameraId`, so an entry
-  read and an exit read for the same ticket can be told apart.
+- `GET /v1/lpr/reads?plate=|ticket=|observation=|session=` — the
+  bidirectional cross-lookup: plate → ticket/session (+ accuracy +
+  screenshot), ticket → plate, Observation id → read (the read-back route
+  for one ingested Observation, which APDS 4.1 lacks), and Session → the
+  reads behind it (§13.3a(6)). Scope `apx.lpr:read`. **At least one of
+  `plate`, `ticket`, `observation`, or `session` is REQUIRED**; a call
+  with none is 400 `invalid-request`, never a bulk export (Part 9 §9.6).
+  Keys given together intersect; the optional `place` narrows below the
+  grant (§13.5(3)). Every read carries its (required) `place` binding
+  (§13.5) and, where the Observation references one, its `lane` and
+  `cameraId`; its `detail.accessEvent` (§13.3a(4)) says whether it was an
+  entry or an exit.
 - **Extensions on the read.** `LprRead.extensions` and
   `PlateCandidate.extensions` project the underlying Observation's
   `extensions` container minus the `apds-ext:apx:lpr-read@1.0` block
   (which is `detail`), so a vendor key preserved on ingest is visible
   through the APX surface (Part 4 §4.3).
 
-### 13.3a Read detail: per-attribute confidence and passage geometry (normative)
+### 13.3a Read detail, access events, and lane cameras (normative)
 
 APDS's Observation carries the plate, the vehicle's `country`,
 `stateProvince`, `make`, `model`, and `color`, one overall `Confidence`,
@@ -160,56 +161,103 @@ still ingests through native `POST /observations` and a plain APDS
 consumer still sees a valid Observation.
 
 1. **Per-attribute reads.** `detail.plate`, `.country`, `.stateProvince`,
-   `.make`, `.model`, `.color`, `.bodyType` are each an `AttributeRead`
-   (`value` + `confidence` 0–1). The winning values MUST also appear in
-   the APDS-native fields (`observedCredentialId`,
+   `.plateCategory`, `.make`, `.model`, `.color`, `.bodyType` are each an
+   `AttributeRead` (`value` + `confidence` 0–1). The winning values MUST
+   also appear in the APDS-native fields (`observedCredentialId`,
    `vehicleAncillaryIdentification`) so APDS-only readers see them;
    `Confidence.overallConfidence` remains the overall score. Every
    attribute is optional — an engine that does not classify colour omits
-   `color` rather than guessing.
+   `color` rather than guessing. `plateCategory` is the plate's category
+   where the issuing country uses one (for example the prefix on some
+   Gulf-state plates). `bodyType` is the engine's own vehicle class label
+   (SUV, sedan, pickup, bus, truck…), carried as the engine reports it
+   and not mapped to a standard list.
 2. **Alternate reads.** `detail.alternateReads[]` keeps the candidate
    plate strings the engine rejected, best first, each with confidence.
    Part 17 §17.5 plate correction SHOULD offer them as `PlateCandidate`s.
-3. **Passage geometry.** `detail.platesRead` is how many plates of the
-   vehicle the camera captured during the passage (1, or 2 for front and
-   rear across frames — two reads are what let the engine call movement
-   with confidence). `detail.plateFace` (`front | rear | unknown`) is
-   which plate was read, i.e. the vehicle's orientation relative to the
-   camera. `detail.movement` (`approaching | receding | stopped |
-   unknown`) is the vehicle's motion relative to the camera. These are
-   camera facts; they say nothing about the lane by themselves.
-4. **Lane travel (server-derived).** The server MUST set
-   `LprRead.laneTravel` (`withLane | againstLane | unknown`) by combining
-   `plateFace` and `movement` with the camera's configured orientation
-   and the lane's APDS `VehicularAccess.accessType` (`entry | exit |
-   reversible`). The mapping from camera mount to lane direction is
-   implementation configuration (as Part 17 §17.1 treats the SIP-URI-to-
-   lane mapping); the *output* is interoperable. Informative canonical
-   case, camera facing the traffic it is meant to read: on an `exit`
-   lane, `front` + `approaching` = `withLane`, `rear` + `receding` =
-   `againstLane`; on an `entry` lane the same pairs are `withLane` and
-   `againstLane` respectively; a `reversible` lane yields `unknown`
-   unless the lane's current direction is known to the server. Without
-   `plateFace` or `movement`, `laneTravel` is `unknown`, never guessed.
-5. **Wrong-way handling.** `againstLane` on a gateless site is the
-   "entered on the exit lane" signal. The server SHOULD raise the
-   `wrongWayTravel` alert (registry `apx-alert-types`, Part 7) with the
-   Observation as evidence, and MUST still open or match the Session for
-   the plate — the driver is charged for parking, not for the lot's
-   geometry; what happens next (signage, enforcement under Part 19) is
-   operator policy. The alert's `relatedEntity` is the **Session** (what
-   an operator acts on); the evidence Observation(s) ride the alert's
-   `extensions` under `apds-ext:apx:alert-evidence@1.0` as
-   `{ "observations": [Reference, …] }`. The same shape serves any alert
-   whose subject and evidence are different entities.
-6. **Grouping.** `detail.captureGroup` links the reads of one passage
-   (front and rear, several frames) so a consumer counting vehicles
-   counts once. `LprRead` returns one row per Observation; the group id
-   is how a consumer collapses them.
+3. **Passage geometry.** These are camera facts; they say nothing about
+   the facility by themselves.
+   - `detail.movement` (`toward | away | stopped | unknown`) is the
+     vehicle's motion relative to the camera. `approaching` and
+     `receding` are deprecated synonyms of `toward` and `away`: servers
+     MUST accept them until 1.0, and writers SHOULD send the new values.
+   - `detail.frameReads` is how many frames read this plate as the
+     vehicle passed. Engines need at least two to call `movement`, so a
+     camera that sees only one of the vehicle's plates still reports it.
+   - `detail.platesRead` is how many distinct plates of the vehicle were
+     read in the passage (1, or 2 for front and rear).
+   - `detail.plateFace` (`front | rear | unknown`) is which plate was
+     read, for engines that can tell.
+   - `detail.plateBox` is the plate's position in the camera frame as
+     fractions 0–1 (`top`, `left`, `bottom`, `right`), so it survives
+     image resizing.
+   - `detail.speed` is the vehicle's speed in km/h when the engine
+     measures it, and absent otherwise — never a sentinel such as `-1`.
+4. **Access event.** `detail.accessEvent` (`entry | exit | unknown`) says
+   whether the read was a vehicle entering or leaving the facility. The
+   LPR system reports it; how it decides is implementation-defined, and
+   the APX server MUST NOT infer it from `movement` or `plateFace`.
+   Absent means `unknown`. The LPR system MAY revise it — for example
+   after pairing the reads of one `captureGroup`, or an entry read with
+   an exit read — by replacing the Observation through native APDS
+   `PUT /observations/{id}` with the next `version`; the server then
+   publishes `apx.data.observation.updated.v1` (§13.4).
+5. **Lane cameras.** A lane's LPR cameras are described on its APDS
+   `VehicularAccess` by the Level B decoration
+   `apds-ext:apx:lane-cameras@1.0` (`LaneCameras`). Per camera:
+   `cameraId`, which MUST be unique within the Place and MUST equal
+   `Image.cameraID` on that camera's reads; and `faces`: `inward`
+   (looking into the facility, the way entering traffic travels) or
+   `outward` (looking out of it, the way exiting traffic travels). Facing
+   is relative to the facility, not to the lane's mode, so it holds on
+   `reversible` lanes. Informative: a vehicle moving `away` from a camera
+   travels the way the camera faces, and `toward` it the opposite way.
+
+   | `faces` | `movement` | Vehicle is | Plate seen |
+   |---|---|---|---|
+   | `inward` | `away` | entering | rear |
+   | `inward` | `toward` | exiting | front |
+   | `outward` | `away` | exiting | rear |
+   | `outward` | `toward` | entering | front |
+
+   Most deployments read rear plates: entry-lane cameras face `inward`,
+   exit-lane cameras `outward`. A reversible lane typically carries one
+   camera each way, so a rear plate is read in either mode. The table
+   says what the fields mean; it is not a rule APX applies.
+6. **Reads, passages, and Sessions.** Each read is one event: a plate
+   seen by one camera, with its `accessEvent`. The lane a vehicle used
+   does not change the event — where entry and exit share an unseparated
+   driveway, an entry on the exit lane is still an entry. The reads of
+   one vehicle's passage, from one camera or several (for example one
+   reading the front plate and one the rear, or several frames), share a
+   `detail.captureGroup` and SHOULD carry the same `accessEvent`; which of
+   them the platform prefers is implementation-defined. `LprRead` returns
+   one row per Observation, and a consumer counting vehicles collapses
+   them by `captureGroup`. A Session (APDS) is one complete visit, opened
+   by an entry and closed by an exit, with its times taken from the
+   reads' capture times (item 8); `LprRead.session` links each read to it,
+   and `GET /v1/lpr/reads?session=` lists the reads behind a Session. How
+   reads are paired into Sessions is implementation-defined. APX defines
+   no notion of wrong-way travel: `VehicularAccess.accessType` says what
+   a lane is for, and APX does not judge reads against it.
 7. **Privacy.** `detail` is plate-bearing personal data under Part 9
    §9.6: it appears only under `apx.lpr:*` (and the Part 17 candidate
    route); make, model, and colour are carried as attributes of the
    read, not as a vehicle registry.
+8. **Ingest mapping.** Engines report in their own formats; the LPR
+   system maps them onto the Observation as follows.
+   - **Identity.** The Observation `id` SHOULD be the engine's own read
+     id when it is a UUID, so it is stable across re-sends; a re-send
+     then receives `409 id-collision` (Part 12) and creates no second
+     read, and the LPR system treats that as delivered.
+   - **Time.** `observationStartTime` is the moment of capture. Engines
+     buffer and re-send, so reads can arrive hours late; a Session's
+     start and end MUST follow capture time, never arrival time.
+   - **Location.** Without GPS, `location.observerLocation` is the
+     camera's or lane's configured position — never a placeholder such
+     as 0,0.
+   - **Confidence.** Every confidence is on the 0–1 scale; an engine
+     that reports 0–100 is scaled.
 
 ### 13.3b Retention and purge of reads (normative)
 
@@ -250,6 +298,13 @@ LPR analytics. APX closes both gaps (registry `apx-topics`):
   APDS Observation; `subject` references it. Implementations claiming
   `apx-lpr` MUST publish it; implementations serving `POST /observations`
   writes SHOULD publish it regardless.
+- `apx.data.observation.updated.v1` — published whenever an ingested
+  Observation is replaced through native `PUT /observations/{id}` (for
+  example the LPR system revising `accessEvent`, §13.3a(4)). Event `data`
+  is the APDS Observation as it now stands; `subject` and place binding
+  are those of `observation.created.v1`. Implementations claiming
+  `apx-lpr` MUST publish it; consumers key on the Observation id and keep
+  the highest `version`.
 
 **The full-fidelity export recipe (informative).** An analytics platform
 that wants *everything* about a location combines three mechanisms, all
@@ -296,8 +351,8 @@ per location when one endpoint fronts many places (Part 8 §8.5, Part 9
    the key's account: under an empty grant it is an empty 200, so the
    answer never confirms that a plate was seen somewhere the caller may
    not look. A lookup that names an entity outside the grant —
-   `place=` on the reads, `lane=` or `session=` on `/v1/lpr/candidates`
-   — is 403 `insufficient-grant`.
+   `place=` or `session=` on the reads, `lane=` or `session=` on
+   `/v1/lpr/candidates` — is 403 `insufficient-grant`.
 
 ## 13.6 PaymentRecord ↔ APDS Payment mapping (normative)
 
