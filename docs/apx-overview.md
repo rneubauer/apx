@@ -318,8 +318,8 @@ candidate, an officer with a handheld confirms on site).
 | `POST …/{id}/payment` | Attach the settling payment (taken through the Money section — nothing new to build) |
 | `POST …/{id}/appeals` · `…/appeals/resolve` | "That wasn't my car" — upheld, reduced, or dismissed, with audit |
 | `POST …/{id}/void` | Void; the record and its history stay readable |
-| `GET /v1/enforcement/policies/effective?place=` · `POST` / `PUT /v1/enforcement/policies` | **The law, machine-readable, per location:** which notice methods are lawful for which detections and by when, the penalty cap over the unpaid fee, the escalation schedule after 30/60 days with a ceiling, the appeal window. The server enforces it at issue and runs the escalation itself |
-| `GET /v1/enforcement/signage/effective?place=` · `POST` / `PUT /v1/enforcement/signage` | **What the sign said:** posted text (per language), a photo, where it stands, and when it was in force. Frozen onto every violation at issue, so the appeal sees the sign the officer saw |
+| `GET /v1/enforcement/policies/effective?place=` · `POST /v1/enforcement/policies` · `PUT …/policies/{id}` | **The law, machine-readable, per location:** which notice methods are lawful for which detections and by when, the penalty cap over the unpaid fee, the escalation schedule after 30/60 days with a ceiling, the appeal window. The server enforces it at issue and runs the escalation itself |
+| `GET /v1/enforcement/signage/effective?place=` · `POST /v1/enforcement/signage` · `PUT …/signage/{id}` | **What the sign said:** posted text (per language), a photo, where it stands, and when it was in force. Frozen onto every violation at issue, so the appeal sees the sign the officer saw |
 
 Every violation also carries where it happened and from where it was
 seen (GeoJSON, in the same shape APDS uses for camera observations).

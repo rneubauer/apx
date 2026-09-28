@@ -514,6 +514,12 @@ ViolationAppealResolution:
       $ref: "../../../vendor/apds/4.1/apds-api-4.1.yaml#/components/schemas/Reference"
     note:
       type: string
+  if:
+    required: [resolution]
+    properties:
+      resolution: { const: reduced }
+  then:
+    required: [adjustedAmount]
 
 ViolationVoid:
   title: ViolationVoid

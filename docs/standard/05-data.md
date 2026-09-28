@@ -30,20 +30,30 @@ MUST reject a change-mode write targeting a stale `version` with problem
 
 The native request schemas describe complete objects, so a change-mode
 body cannot validate against them. The data overlay therefore declares
-each native `PUT` body as `anyOf [<native schema>, ChangePayload]`:
+each native `PUT` body as `anyOf [<native schema>, <Class>ChangePayload]`,
+where `<Class>ChangePayload` (for example `RateTableChangePayload`) is
+derived from the class at build time:
 
 - With `APX-Update-Mode: full` (or no header) the body MUST validate
-  against the native schema. Validators that know the header SHOULD
-  apply that branch alone.
-- With `APX-Update-Mode: change` the body MUST validate against
-  `ChangePayload`: `id` present, `version` optional (the precondition
-  when present, Part 4 §4.2a), and any member MAY be `null`. The server
-  MUST also validate every member present against the class's native
-  property schema, treating `null` as "clear" and nested objects that
-  carry their own `id` (a Session segment) by the same change rule, and
-  MUST refuse a member the class does not define with 400.
-  `ChangePayload` is also the shape of every `ChangeFeedPage` item, so
-  what a writer sends and what a reader receives are the same thing.
+  against the native schema. A validator that knows the header MUST
+  apply that branch alone: a body that is a valid change payload but an
+  incomplete object (an `AssignedRight` without `rightSpecification`) is
+  valid only in change mode.
+- With `APX-Update-Mode: change` the body MUST validate against the
+  class's change payload: `id` present, `version` optional (the
+  precondition when present, Part 4 §4.2a), and every other member
+  optional and MAY be `null` ("clear"). Each scalar member present is
+  checked against the class's own property schema, `extensions` against
+  the APX `Extensions` container (Part 4 §4.3), and a member the class
+  does not define is refused with 400. Nested objects, and array items
+  that are objects, are left open in the schema because those that carry
+  their own `id` (a Session segment) follow the same change rule; the
+  server MUST validate them against the class's native property schema.
+  The generic `ChangePayload` is the shape of every `ChangeFeedPage` item,
+  so what a writer sends and what a reader receives are the same thing.
+  (Until 0.12.2 the native `PUT`s used the generic `ChangePayload`, which
+  requires only `id`, so a full-mode body carrying an `id` was never
+  checked.)
 
 Native routes keep their APDS error shape (`ResponseStatus`) by default.
 The overlay adds `application/problem+json` (`Problem`) as a second

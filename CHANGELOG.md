@@ -6,6 +6,34 @@ conformance/versioning rules in Part 3 of the written standard.
 The machine-readable spec (`spec/openapi/apx.yaml`, bundled as
 `spec/dist/apx-v1.*`) is normative; entries here are informative.
 
+## [0.12.2] — 2026-09-28
+
+A cross-module check of every refusal the private vetting scenarios
+claim, run against the schema directly, found that the six native `PUT`s
+accepted any body carrying an `id`. This release closes that and one
+smaller gap.
+
+**Fixed.**
+- Native `PUT` bodies are checked again. They are
+  `anyOf [<native schema>, ChangePayload]` because the `APX-Update-Mode`
+  header picks the shape; the generic `ChangePayload` requires only `id`,
+  so a full-mode body with wrong types, unknown members, or malformed
+  `extensions` validated through the change branch. Each route now uses a
+  typed change payload derived from its class at build time
+  (`HierarchyElementChangePayload`, `ContactPointChangePayload`,
+  `RightSpecificationChangePayload`, `RateTableChangePayload`,
+  `SessionChangePayload`, `AssignedRightChangePayload`;
+  `tools/change-payloads.mjs`): every member optional and nullable,
+  scalars typed as the class types them, `extensions` bound, unknown
+  members refused. Part 5 §5.1a now requires a validator that knows the
+  header to apply that branch alone. The generic `ChangePayload` remains
+  the shape of change-feed items.
+- `ViolationAppealResolution` enforces in the schema what Part 19 already
+  said: a `reduced` resolution requires `adjustedAmount`.
+- Part 1 §1.3 erratum 013 notes that devices (`SupplementalEquipment`)
+  are unmapped like lanes; the overview's enforcement routes name their
+  `PUT …/{id}` paths.
+
 ## [0.12.1] — 2026-09-28
 
 Re-vetting the LPR module against 0.12.0 found that the edition named a

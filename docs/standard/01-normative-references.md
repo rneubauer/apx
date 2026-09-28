@@ -116,6 +116,9 @@ of:
     its `accessType` is never checked. APX binds its own
     `apds-ext:apx:lane-cameras@1.0` decoration (Part 4 §4.3), so camera
     configuration is validated; the APDS lane fields are carried as sent.
+    Devices are affected the same way: a `SupplementalEquipment` (the
+    Part 6 control target) is also unmapped, so only its
+    `apds-ext:apx:devicestatus@1.0` decoration is checked.
     [Erratum 013](../errata/013-hierarchyelement-subtypes-unmapped.md).
     Filed upstream as [parkingdata/spec#46](https://github.com/parkingdata/spec/issues/46).
 

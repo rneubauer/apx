@@ -113,7 +113,7 @@ ApxConfiguration:
     edition:
       type: string
       description: The APX edition implemented (Part 3 §3.4), as named in its `spec/edition.json`.
-      examples: ["0.12.1"]
+      examples: ["0.12.2"]
     apdsVersion:
       type: string
       description: APDS version this implementation extends.
