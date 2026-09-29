@@ -45,7 +45,9 @@ TollTransaction:
     dispute:
       type: object
       properties:
-        reason: { type: string }
+        reason:
+          type: string
+          description: definedValue from `apx-toll-dispute-reasons` or an implementer code list (Part 11).
         openedTime:
           $ref: "../../../vendor/apds/4.1/apds-api-4.1.yaml#/components/schemas/DateTime"
         resolvedTime:
@@ -53,8 +55,9 @@ TollTransaction:
         resolution:
           type: string
           description: |-
-            Base values upheld | refunded | adjusted | withdrawn (Part 15
-            §15.1); implementers MAY add their own.
+            definedValue from `apx-toll-dispute-resolutions` (upheld |
+            refunded | adjusted | withdrawn, Part 15 §15.1) or an implementer
+            code list (Part 11).
         disputedBy:
           description: |-
             The party on whose behalf the dispute was raised (RightHolder,
@@ -105,9 +108,9 @@ TollDisputeOpen:
     reason:
       type: string
       description: |-
-        Dispute reason. Base values wrongVehicle | duplicateCharge |
-        wrongClass | notLiable | other (Part 15 §15.1); implementers MAY
-        add their own.
+        Dispute reason — definedValue from `apx-toll-dispute-reasons`
+        (wrongVehicle | duplicateCharge | wrongClass | notLiable | other,
+        Part 15 §15.1) or an implementer code list (Part 11).
       examples: [wrongVehicle, duplicateCharge]
     detail: { type: string }
     disputedBy:
@@ -126,8 +129,9 @@ TollDisputeResolution:
     resolution:
       type: string
       description: |-
-        Resolution. Base values upheld | refunded | adjusted | withdrawn
-        (Part 15 §15.1); implementers MAY add their own.
+        Resolution — definedValue from `apx-toll-dispute-resolutions`
+        (upheld | refunded | adjusted | withdrawn, Part 15 §15.1) or an
+        implementer code list (Part 11).
       examples: [refunded]
     adjustedPricing:
       description: |-

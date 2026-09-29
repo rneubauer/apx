@@ -15,6 +15,8 @@ APX open vocabularies are published as **APDS UserDefinedCodeList documents**
 | `apx-violation-types` | Enforcement violation classification (open; jurisdictional vocabularies extend it) | `Violation.violationType`, `EligibilityResult.suggestedViolationType` (Part 19) |
 | `apx-toll-dispute-reasons` | Toll dispute reasons (open) | `TollTransaction.dispute.reason` (Part 15) |
 | `apx-toll-dispute-resolutions` | Toll dispute resolutions (open) | `TollTransaction.dispute.resolution` (Part 15) |
+| `apx-access-denial-reasons` | Why a credential was refused at a lane (open) | `CredentialAccessEvent.denialReason`, `AccessEvent.denialReason` (Part 21), lane inquiry `monthlyCredential.denialReason` (Part 6) |
+| `apx-features` | Optional features of a conformance class | `features` in `/.well-known/apx-configuration` and discovery documents (Part 6 §6.5, Part 16) |
 
 ## 11.1 Rules
 
@@ -29,6 +31,28 @@ APX open vocabularies are published as **APDS UserDefinedCodeList documents**
    NOT modify APX registry files.
 5. Where severity/priority semantics matter (alerts), the closed enum in the
    schema governs; registries only carry open taxonomies.
+
+## 11.1a Choosing the form of a vocabulary (normative)
+
+Every coded value APX defines takes exactly one of four forms, chosen in
+this order:
+
+1. **APDS already defines it** → the APDS enum or code list, by `$ref`
+   (Part 0 §0.2, Part 4 §4.4). Example: `PaymentRecord.meansOfPayment` is
+   APDS `MeansOfPaymentEnum`.
+2. **A closed set APX fully owns**, changing only between editions → an
+   `enum` in the schema (an `other` value is the escape where one is
+   needed). Examples: `Alert.severity`, `PaymentRecord.channel`, validation
+   `method`.
+3. **An open set that more than one party must interpret** — implementers
+   or vendors add values, and clients, dashboards, or agents act on them →
+   a registry in this Part, extended per §11.1(4). Examples: alert types,
+   access denial reasons, features.
+4. **A value meaningful only inside one implementation** → a plain string,
+   with no values seeded by APX.
+
+A field in form 3 is typed `string` and names its registry in its
+description; the registry, not the schema, lists the values.
 
 ## 11.2 Publication
 

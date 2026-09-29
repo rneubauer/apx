@@ -5435,7 +5435,7 @@
           },
           "features": {
             "type": "array",
-            "description": "Optional features the implementation offers (Part 6 §6.5, Part 16 §16.1).",
+            "description": "Optional features the implementation offers — definedValues from `apx-features` or vendor features (Part 6 §6.5, Part 11, Part 16 §16.1).",
             "items": {
               "type": "string"
             },
@@ -8238,7 +8238,11 @@
                 "type": "boolean"
               },
               "denialReason": {
-                "type": "string"
+                "type": "string",
+                "description": "When access is denied — definedValue from `apx-access-denial-reasons` or an implementer code list (Part 11), the same vocabulary as Part 21 access events.",
+                "examples": [
+                  "accountBalance"
+                ]
               },
               "lastActivity": {
                 "$ref": "#/components/schemas/DateTime"

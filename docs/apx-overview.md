@@ -215,7 +215,7 @@ disagreeing.
 | Route | What it does |
 |---|---|
 | `GET /v1/accounts?name=\|phone=\|card=\|plate=` | Find a (monthly) parker's account and balance by whatever the caller knows |
-| `POST /v1/payments` | Take a payment (idempotent). `method: autoAttendant` = a PCI-compliant phone system captures the card out of band |
+| `POST /v1/payments` | Take a payment (idempotent). `channel: autoAttendant` = a PCI-compliant phone system captures the card out of band; `meansOfPayment` uses APDS's `MeansOfPaymentEnum` |
 | `POST /v1/payments/{id}/postings` | Write the payment back to the accounting system (e.g. PARIS) → confirmation number + new balance |
 | `GET /v1/payments?ticketLast4=…` | Payment history on a ticket |
 

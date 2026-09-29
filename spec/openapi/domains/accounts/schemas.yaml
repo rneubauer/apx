@@ -76,9 +76,21 @@ PaymentRecord:
       readOnly: true
     amount:
       $ref: "../../../vendor/apds/4.1/apds-api-4.1.yaml#/components/schemas/AmountInCurrency"
-    method:
+    meansOfPayment:
+      description: |-
+        How the customer paid, in APDS's own vocabulary (`MeansOfPaymentEnum`,
+        which APDS uses for the means a place accepts). A card whose credit or
+        debit type the payment layer does not report is `unknown`.
+      $ref: "../../../vendor/apds/4.1/apds-api-4.1.yaml#/components/schemas/MeansOfPaymentEnum"
+    channel:
       type: string
-      description: card | autoAttendant | cash | other (implementer code list). autoAttendant = PCI-compliant IVR captures the card out of band.
+      description: |-
+        Where the payment was captured. `lane` = a lane device; `payStation` =
+        a pay-on-foot or pay station; `agent` = a person on the implementer's
+        own PCI-scoped terminal; `autoAttendant` = a PCI-compliant IVR that
+        captures the card out of band; `online` = web or mobile app. APX
+        never carries PANs, whichever channel is used.
+      enum: [lane, payStation, agent, autoAttendant, online, other]
     paymentStatus:
       type: string
       description: |-
