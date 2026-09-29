@@ -20,7 +20,9 @@ locations. This is how a client with nothing but a hostname gets started.
   without a class it requires MUST treat the dependent class as not
   offered, and MUST ignore classes it does not recognise.
 - **Features.** `features` lists the optional features the implementation
-  offers (Part 6 §6.5: `negotiatedRates`, `ticketMatching`). An offered
+  offers, as definedValues of the `apx-features` registry (Part 11; Part 6
+  §6.5: `negotiatedRates`, `ticketMatching`) or vendor features, named
+  `<vendor-ns>-<feature>` like vendor classes (Part 3 §3.1). An offered
   feature MUST be listed; an unlisted one is not offered.
 - **Registries and edition.** `registries` is keyed by the registry `name`
   from Part 11 (vendor lists by their own name). `registryVersions`, keyed

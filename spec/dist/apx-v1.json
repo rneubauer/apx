@@ -2,7 +2,7 @@
   "openapi": "3.1.0",
   "info": {
     "title": "APX — APDS Parking eXtensions",
-    "version": "0.12.2",
+    "version": "0.13.0",
     "summary": "An open companion standard to APDS 4.1",
     "license": {
       "name": "MIT",
@@ -9644,6 +9644,7 @@
           {
             "name": "denialReason",
             "in": "query",
+            "description": "definedValue from `apx-access-denial-reasons` (or an implementer code list).",
             "schema": {
               "type": "string"
             }
@@ -11460,7 +11461,7 @@
           "Accounts"
         ],
         "summary": "Take a payment (idempotent)",
-        "description": "Takes a payment against an account or ticket. Idempotency-Key\nREQUIRED. autoAttendant method = PCI-compliant IVR captures the card\nout of band; APX never carries PANs. Declines are 422. With\n`captureLater: true` the payment is authorized only: a hold,\ncreated `paymentStatus: approved` with `captureStatus: authorized`,\nreturned to this caller but not published or listed by default\nuntil captured (Part 13 §13.1a).",
+        "description": "Takes a payment against an account or ticket. Idempotency-Key\nREQUIRED. `channel: autoAttendant` = a PCI-compliant IVR captures the\ncard out of band; APX never carries PANs. Declines are 422. With\n`captureLater: true` the payment is authorized only: a hold,\ncreated `paymentStatus: approved` with `captureStatus: authorized`,\nreturned to this caller but not published or listed by default\nuntil captured (Part 13 §13.1a).",
         "parameters": [
           {
             "name": "Idempotency-Key",
@@ -15844,7 +15845,11 @@
                 "type": "boolean"
               },
               "denialReason": {
-                "type": "string"
+                "type": "string",
+                "description": "When access is denied — definedValue from `apx-access-denial-reasons` or an implementer code list (Part 11), the same vocabulary as Part 21 access events.",
+                "examples": [
+                  "accountBalance"
+                ]
               },
               "lastActivity": {
                 "$ref": "#/components/schemas/DateTime"
@@ -16222,9 +16227,21 @@
           "amount": {
             "$ref": "#/components/schemas/AmountInCurrency"
           },
-          "method": {
+          "meansOfPayment": {
+            "description": "How the customer paid, in APDS's own vocabulary (`MeansOfPaymentEnum`,\nwhich APDS uses for the means a place accepts). A card whose credit or\ndebit type the payment layer does not report is `unknown`.",
+            "$ref": "#/components/schemas/MeansOfPaymentEnum"
+          },
+          "channel": {
             "type": "string",
-            "description": "card | autoAttendant | cash | other (implementer code list). autoAttendant = PCI-compliant IVR captures the card out of band."
+            "description": "Where the payment was captured. `lane` = a lane device; `payStation` =\na pay-on-foot or pay station; `agent` = a person on the implementer's\nown PCI-scoped terminal; `autoAttendant` = a PCI-compliant IVR that\ncaptures the card out of band; `online` = web or mobile app. APX\nnever carries PANs, whichever channel is used.",
+            "enum": [
+              "lane",
+              "payStation",
+              "agent",
+              "autoAttendant",
+              "online",
+              "other"
+            ]
           },
           "paymentStatus": {
             "type": "string",
@@ -16290,7 +16307,7 @@
               "currencyType": "USD",
               "currencyValue": 4.5
             },
-            "method": "card",
+            "meansOfPayment": "paymentCreditCard",
             "paymentStatus": "approved",
             "ticketNumber": "T-1001",
             "cardLast4": "0777",
@@ -17151,7 +17168,8 @@
             "type": "object",
             "properties": {
               "reason": {
-                "type": "string"
+                "type": "string",
+                "description": "definedValue from `apx-toll-dispute-reasons` or an implementer code list (Part 11)."
               },
               "openedTime": {
                 "$ref": "#/components/schemas/DateTime"
@@ -17161,7 +17179,7 @@
               },
               "resolution": {
                 "type": "string",
-                "description": "Base values upheld | refunded | adjusted | withdrawn (Part 15\n§15.1); implementers MAY add their own."
+                "description": "definedValue from `apx-toll-dispute-resolutions` (upheld |\nrefunded | adjusted | withdrawn, Part 15 §15.1) or an implementer\ncode list (Part 11)."
               },
               "disputedBy": {
                 "description": "The party on whose behalf the dispute was raised (RightHolder,\nOrganisation, or Contact); absent for an operator-initiated\ndispute (Part 15 §15.1).",
@@ -17294,7 +17312,7 @@
         "properties": {
           "reason": {
             "type": "string",
-            "description": "Dispute reason. Base values wrongVehicle | duplicateCharge |\nwrongClass | notLiable | other (Part 15 §15.1); implementers MAY\nadd their own.",
+            "description": "Dispute reason — definedValue from `apx-toll-dispute-reasons`\n(wrongVehicle | duplicateCharge | wrongClass | notLiable | other,\nPart 15 §15.1) or an implementer code list (Part 11).",
             "examples": [
               "wrongVehicle",
               "duplicateCharge"
@@ -17319,7 +17337,7 @@
         "properties": {
           "resolution": {
             "type": "string",
-            "description": "Resolution. Base values upheld | refunded | adjusted | withdrawn\n(Part 15 §15.1); implementers MAY add their own.",
+            "description": "Resolution — definedValue from `apx-toll-dispute-resolutions`\n(upheld | refunded | adjusted | withdrawn, Part 15 §15.1) or an\nimplementer code list (Part 11).",
             "examples": [
               "refunded"
             ]
@@ -19844,7 +19862,7 @@
           },
           "denialReason": {
             "type": "string",
-            "description": "When denied — credentialSuspended, credentialLost, credentialRevoked, credentialReplaced, credentialExpired, unknownCredential, passback, accountBalance, outsidePlace, outsideValidity (implementer code list seeded here; the credential* values mirror the non-active lifecycle states).",
+            "description": "When denied — definedValue from `apx-access-denial-reasons` or an implementer code list (Part 11). The `credential*` values mirror the non-active lifecycle states.",
             "examples": [
               "credentialReplaced"
             ]
@@ -20547,7 +20565,7 @@
           },
           "features": {
             "type": "array",
-            "description": "Optional features of claimed classes that this client may use\n(Part 6 §6.5: `negotiatedRates`, `ticketMatching`). Listed whenever\nthe host offers the feature and the client holds a read or execute\nscope of the class, so a read-only client can see it too.",
+            "description": "Optional features of claimed classes that this client may use\n(definedValues from `apx-features`, Part 11; Part 6 §6.5). Listed whenever\nthe host offers the feature and the client holds a read or execute\nscope of the class, so a read-only client can see it too.",
             "items": {
               "type": "string"
             },
@@ -21537,7 +21555,7 @@
             "type": "string",
             "description": "The APX edition implemented (Part 3 §3.4), as named in its `spec/edition.json`.",
             "examples": [
-              "0.12.2"
+              "0.13.0"
             ]
           },
           "apdsVersion": {
@@ -21578,7 +21596,7 @@
           },
           "features": {
             "type": "array",
-            "description": "Optional features the implementation offers (Part 6 §6.5, Part 16 §16.1).",
+            "description": "Optional features the implementation offers — definedValues from `apx-features` or vendor features (Part 6 §6.5, Part 11, Part 16 §16.1).",
             "items": {
               "type": "string"
             },
@@ -26826,7 +26844,7 @@
           },
           "denialReason": {
             "type": "string",
-            "description": "When denied — the seeded values of `CredentialAccessEvent.denialReason`.",
+            "description": "When denied — definedValue from `apx-access-denial-reasons` or an implementer code list (Part 11).",
             "examples": [
               "unknownCredential"
             ]

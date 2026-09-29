@@ -1,7 +1,7 @@
 openapi: 3.1.0
 info:
   title: APX — APDS Parking eXtensions
-  version: 0.12.2
+  version: 0.13.0
   summary: An open companion standard to APDS 4.1
   license:
     name: MIT
@@ -6382,6 +6382,7 @@ paths:
               - denied
         - name: denialReason
           in: query
+          description: definedValue from `apx-access-denial-reasons` (or an implementer code list).
           schema:
             type: string
         - name: direction
@@ -7669,8 +7670,8 @@ paths:
       summary: Take a payment (idempotent)
       description: |-
         Takes a payment against an account or ticket. Idempotency-Key
-        REQUIRED. autoAttendant method = PCI-compliant IVR captures the card
-        out of band; APX never carries PANs. Declines are 422. With
+        REQUIRED. `channel: autoAttendant` = a PCI-compliant IVR captures the
+        card out of band; APX never carries PANs. Declines are 422. With
         `captureLater: true` the payment is authorized only: a hold,
         created `paymentStatus: approved` with `captureStatus: authorized`,
         returned to this caller but not published or listed by default
@@ -11040,6 +11041,9 @@ components:
               type: boolean
             denialReason:
               type: string
+              description: When access is denied — definedValue from `apx-access-denial-reasons` or an implementer code list (Part 11), the same vocabulary as Part 21 access events.
+              examples:
+                - accountBalance
             lastActivity:
               $ref: '#/components/schemas/DateTime'
             recentEvents:
@@ -11355,9 +11359,27 @@ components:
           readOnly: true
         amount:
           $ref: '#/components/schemas/AmountInCurrency'
-        method:
+        meansOfPayment:
+          description: |-
+            How the customer paid, in APDS's own vocabulary (`MeansOfPaymentEnum`,
+            which APDS uses for the means a place accepts). A card whose credit or
+            debit type the payment layer does not report is `unknown`.
+          $ref: '#/components/schemas/MeansOfPaymentEnum'
+        channel:
           type: string
-          description: card | autoAttendant | cash | other (implementer code list). autoAttendant = PCI-compliant IVR captures the card out of band.
+          description: |-
+            Where the payment was captured. `lane` = a lane device; `payStation` =
+            a pay-on-foot or pay station; `agent` = a person on the implementer's
+            own PCI-scoped terminal; `autoAttendant` = a PCI-compliant IVR that
+            captures the card out of band; `online` = web or mobile app. APX
+            never carries PANs, whichever channel is used.
+          enum:
+            - lane
+            - payStation
+            - agent
+            - autoAttendant
+            - online
+            - other
         paymentStatus:
           type: string
           description: |-
@@ -11434,7 +11456,7 @@ components:
           amount:
             currencyType: USD
             currencyValue: 4.5
-          method: card
+          meansOfPayment: paymentCreditCard
           paymentStatus: approved
           ticketNumber: T-1001
           cardLast4: '0777'
@@ -12173,6 +12195,7 @@ components:
           properties:
             reason:
               type: string
+              description: definedValue from `apx-toll-dispute-reasons` or an implementer code list (Part 11).
             openedTime:
               $ref: '#/components/schemas/DateTime'
             resolvedTime:
@@ -12180,8 +12203,9 @@ components:
             resolution:
               type: string
               description: |-
-                Base values upheld | refunded | adjusted | withdrawn (Part 15
-                §15.1); implementers MAY add their own.
+                definedValue from `apx-toll-dispute-resolutions` (upheld |
+                refunded | adjusted | withdrawn, Part 15 §15.1) or an implementer
+                code list (Part 11).
             disputedBy:
               description: |-
                 The party on whose behalf the dispute was raised (RightHolder,
@@ -12278,9 +12302,9 @@ components:
         reason:
           type: string
           description: |-
-            Dispute reason. Base values wrongVehicle | duplicateCharge |
-            wrongClass | notLiable | other (Part 15 §15.1); implementers MAY
-            add their own.
+            Dispute reason — definedValue from `apx-toll-dispute-reasons`
+            (wrongVehicle | duplicateCharge | wrongClass | notLiable | other,
+            Part 15 §15.1) or an implementer code list (Part 11).
           examples:
             - wrongVehicle
             - duplicateCharge
@@ -12302,8 +12326,9 @@ components:
         resolution:
           type: string
           description: |-
-            Resolution. Base values upheld | refunded | adjusted | withdrawn
-            (Part 15 §15.1); implementers MAY add their own.
+            Resolution — definedValue from `apx-toll-dispute-resolutions`
+            (upheld | refunded | adjusted | withdrawn, Part 15 §15.1) or an
+            implementer code list (Part 11).
           examples:
             - refunded
         adjustedPricing:
@@ -14333,7 +14358,7 @@ components:
             - denied
         denialReason:
           type: string
-          description: When denied — credentialSuspended, credentialLost, credentialRevoked, credentialReplaced, credentialExpired, unknownCredential, passback, accountBalance, outsidePlace, outsideValidity (implementer code list seeded here; the credential* values mirror the non-active lifecycle states).
+          description: When denied — definedValue from `apx-access-denial-reasons` or an implementer code list (Part 11). The `credential*` values mirror the non-active lifecycle states.
           examples:
             - credentialReplaced
         session:
@@ -14883,7 +14908,7 @@ components:
           type: array
           description: |-
             Optional features of claimed classes that this client may use
-            (Part 6 §6.5: `negotiatedRates`, `ticketMatching`). Listed whenever
+            (definedValues from `apx-features`, Part 11; Part 6 §6.5). Listed whenever
             the host offers the feature and the client holds a read or execute
             scope of the class, so a read-only client can see it too.
           items:
@@ -15636,7 +15661,7 @@ components:
           type: string
           description: The APX edition implemented (Part 3 §3.4), as named in its `spec/edition.json`.
           examples:
-            - 0.12.2
+            - 0.13.0
         apdsVersion:
           type: string
           description: APDS version this implementation extends.
@@ -15673,7 +15698,7 @@ components:
               - apx-discovery
         features:
           type: array
-          description: Optional features the implementation offers (Part 6 §6.5, Part 16 §16.1).
+          description: Optional features the implementation offers — definedValues from `apx-features` or vendor features (Part 6 §6.5, Part 11, Part 16 §16.1).
           items:
             type: string
           examples:
@@ -19954,7 +19979,7 @@ components:
             - denied
         denialReason:
           type: string
-          description: When denied — the seeded values of `CredentialAccessEvent.denialReason`.
+          description: When denied — definedValue from `apx-access-denial-reasons` or an implementer code list (Part 11).
           examples:
             - unknownCredential
         session:

@@ -67,7 +67,7 @@ DiscoveryDocument:
       type: array
       description: |-
         Optional features of claimed classes that this client may use
-        (Part 6 §6.5: `negotiatedRates`, `ticketMatching`). Listed whenever
+        (definedValues from `apx-features`, Part 11; Part 6 §6.5). Listed whenever
         the host offers the feature and the client holds a read or execute
         scope of the class, so a read-only client can see it too.
       items: { type: string }
@@ -113,7 +113,7 @@ ApxConfiguration:
     edition:
       type: string
       description: The APX edition implemented (Part 3 §3.4), as named in its `spec/edition.json`.
-      examples: ["0.12.2"]
+      examples: ["0.13.0"]
     apdsVersion:
       type: string
       description: APDS version this implementation extends.
@@ -144,7 +144,7 @@ ApxConfiguration:
         - ["apx-data", "apx-events", "apx-control", "apx-alerts", "apx-discovery"]
     features:
       type: array
-      description: Optional features the implementation offers (Part 6 §6.5, Part 16 §16.1).
+      description: Optional features the implementation offers — definedValues from `apx-features` or vendor features (Part 6 §6.5, Part 11, Part 16 §16.1).
       items: { type: string }
       examples: [["negotiatedRates", "ticketMatching"]]
     registries:

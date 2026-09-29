@@ -61,7 +61,7 @@ Content-Type: application/json
       "place": { "id": "b1000000-0000-4000-8000-000000000001", "className": "Place" },
       "dateCollected": "2026-09-04T21:37:02Z",
       "amount": { "currencyType": "USD", "currencyValue": 18.00 },
-      "method": "card",
+      "meansOfPayment": "paymentCreditCard",
       "paymentStatus": "declined",
       "ticketNumber": "T-61077",
       "cardLast4": "4242"

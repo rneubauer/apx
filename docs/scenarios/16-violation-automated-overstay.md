@@ -276,7 +276,7 @@ Content-Type: application/json
 {
   "place": { "id": "b1000000-0000-4000-8000-000000000004", "className": "Place" },
   "amount": { "currencyType": "USD", "currencyValue": 15.0 },
-  "method": "card",
+  "meansOfPayment": "paymentCreditCard",
   "reference": "LG-2026-018301"
 }
 ```

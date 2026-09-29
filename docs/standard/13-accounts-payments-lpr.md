@@ -12,9 +12,9 @@ integration over live PARCS state.
 - `GET /v1/accounts/{id}` — full account info.
 - `POST /v1/payments` — take a payment. Body:
   account Reference (or `ticketNumber`), the (required) `place` binding,
-  `amount`, `method`
-  (`autoAttendant` = PCI-compliant IVR captures the card out of band; APX
-  never carries PANs). **Idempotency-Key REQUIRED.** Returns a
+  `amount`, `meansOfPayment` (APDS `MeansOfPaymentEnum`), and `channel`
+  (`channel: autoAttendant` = a PCI-compliant IVR captures the card out of
+  band; APX never carries PANs). **Idempotency-Key REQUIRED.** Returns a
   PaymentRecord with `transactionID`. A body naming neither `account` nor
   `ticketNumber` is `400 invalid-request`. Declines are `422
   payment-declined`; the declined attempt is still recorded (and
@@ -375,7 +375,8 @@ relate field-by-field:
 | `transactionID` | `transactionID` | identical meaning |
 | `dateCollected` | `dateCollected` | identical (`dateAuthorised` has no APX field; authorization time is the record's creation) |
 | `amount` | `paymentLines[].value` summed | APX carries the total; line itemization stays APDS-side |
-| `method` | — | APX-only (PCI-safe method label; APDS has no per-payment method) |
+| `meansOfPayment` | — | APDS vocabulary (`MeansOfPaymentEnum`, which APDS uses for the means a place accepts), APX-only member: APDS `Payment` has no per-payment means |
+| `channel` | — | APX-only (where the payment was captured; PCI-safe) |
 | `paymentStatus` | — | APX-only; APDS Payment records only collected payments — `approved` with `captureStatus` `captured` (or absent) is the only state that maps |
 | `captureStatus`, `captureLater` | — | APX-only (§13.1a); a hold (`captureStatus: authorized`) is not materialized until it is captured |
 | `refundedAmount` | — | APX-only lifecycle member (§13.1a); APDS `PaymentTypeEnum` has no refund value, so a partial refund is visible only on the APX surface |

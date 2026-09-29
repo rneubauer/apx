@@ -2,7 +2,7 @@ openapi: 3.1.0
 
 info:
   title: APX — APDS Parking eXtensions
-  version: 0.12.2
+  version: 0.13.0
   summary: An open companion standard to APDS 4.1
   description: |-
     **APX (APDS Parking eXtensions)** is an additive companion standard to the
@@ -3229,7 +3229,7 @@ paths:
         - name: outcome
           in: query
           schema: { type: string, enum: [granted, denied] }
-        - { name: denialReason, in: query, schema: { type: string } }
+        - { name: denialReason, in: query, description: "definedValue from `apx-access-denial-reasons` (or an implementer code list).", schema: { type: string } }
         - name: direction
           in: query
           schema: { type: string, enum: [entry, exit] }
@@ -4191,8 +4191,8 @@ paths:
       summary: Take a payment (idempotent)
       description: |-
         Takes a payment against an account or ticket. Idempotency-Key
-        REQUIRED. autoAttendant method = PCI-compliant IVR captures the card
-        out of band; APX never carries PANs. Declines are 422. With
+        REQUIRED. `channel: autoAttendant` = a PCI-compliant IVR captures the
+        card out of band; APX never carries PANs. Declines are 422. With
         `captureLater: true` the payment is authorized only: a hold,
         created `paymentStatus: approved` with `captureStatus: authorized`,
         returned to this caller but not published or listed by default

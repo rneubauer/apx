@@ -25,6 +25,10 @@ body:
         - apx-conformance-classes
         - apx-issue-types
         - apx-violation-types
+        - apx-toll-dispute-reasons
+        - apx-toll-dispute-resolutions
+        - apx-access-denial-reasons
+        - apx-features
     validations:
       required: true
   - type: input

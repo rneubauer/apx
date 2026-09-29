@@ -72,7 +72,7 @@ GET /v1/payments?cardLast4=0777&date=2026-08-06 HTTP/1.1
       "place": { "id": "b1000000-0000-4000-8000-000000000001", "className": "Place" },
       "dateCollected": "2026-08-06T12:44:09Z",
       "amount": { "currencyType": "USD", "currencyValue": 4.5 },
-      "method": "card",
+      "meansOfPayment": "paymentCreditCard",
       "paymentStatus": "approved",
       "ticketNumber": "T-1001",
       "cardLast4": "0777",
@@ -141,7 +141,7 @@ Content-Type: application/json
   "ticketNumber": "T-1001",
   "place": { "id": "b1000000-0000-4000-8000-000000000001", "className": "Place" },
   "amount": { "currencyType": "USD", "currencyValue": 4.5 },
-  "method": "card"
+  "meansOfPayment": "paymentCreditCard"
 }
 ```
 
@@ -154,7 +154,7 @@ Content-Type: application/json
   "place": { "id": "b1000000-0000-4000-8000-000000000001", "className": "Place" },
   "dateCollected": "2026-08-06T18:26:40Z",
   "amount": { "currencyType": "USD", "currencyValue": 4.5 },
-  "method": "card",
+  "meansOfPayment": "paymentCreditCard",
   "paymentStatus": "approved",
   "ticketNumber": "T-1001",
   "cardLast4": "0777",

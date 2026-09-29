@@ -291,7 +291,10 @@ LaneStatus:
           $ref: "../../../vendor/apds/4.1/apds-api-4.1.yaml#/components/schemas/Reference"
         cardNumber: { type: string }
         accessGranted: { type: boolean }
-        denialReason: { type: string }
+        denialReason:
+          type: string
+          description: When access is denied — definedValue from `apx-access-denial-reasons` or an implementer code list (Part 11), the same vocabulary as Part 21 access events.
+          examples: [accountBalance]
         lastActivity:
           $ref: "../../../vendor/apds/4.1/apds-api-4.1.yaml#/components/schemas/DateTime"
         recentEvents:

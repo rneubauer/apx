@@ -1,0 +1,19 @@
+{
+  "id": "0282484d-3cef-4546-b95c-67c3f65d6a02",
+  "version": 1,
+  "name": "apx-access-denial-reasons",
+  "creator": { "id": "a1000000-0000-4000-8000-000000000001", "className": "Organisation" },
+  "locator": "https://apx-standard.org/registries/apx-access-denial-reasons.json",
+  "userDefinedCodeListEntries": [
+    { "definedValue": "credentialSuspended", "entryDescription": "The presented credential matched a CredentialRecord that is suspended.", "entryIndex": 0 },
+    { "definedValue": "credentialLost", "entryDescription": "The presented credential matched a CredentialRecord reported lost.", "entryIndex": 1 },
+    { "definedValue": "credentialRevoked", "entryDescription": "The presented credential matched a CredentialRecord that is revoked.", "entryIndex": 2 },
+    { "definedValue": "credentialReplaced", "entryDescription": "The presented credential matched a CredentialRecord that has been replaced by another.", "entryIndex": 3 },
+    { "definedValue": "credentialExpired", "entryDescription": "The presented credential matched a CredentialRecord that has expired.", "entryIndex": 4 },
+    { "definedValue": "unknownCredential", "entryDescription": "The presented value matched no CredentialRecord; the event carries what the reader read.", "entryIndex": 5 },
+    { "definedValue": "passback", "entryDescription": "Denied by anti-passback state (the credential is already in, or already out); corrected through the Part 17 passback commands.", "entryIndex": 6 },
+    { "definedValue": "accountBalance", "entryDescription": "Denied because of the holder's outstanding balance or account status.", "entryIndex": 7 },
+    { "definedValue": "outsidePlace", "entryDescription": "The credential is valid, but not at this place.", "entryIndex": 8 },
+    { "definedValue": "outsideValidity", "entryDescription": "The credential is valid at this place, but not at this time.", "entryIndex": 9 }
+  ]
+}

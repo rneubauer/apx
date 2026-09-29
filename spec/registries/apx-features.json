@@ -1,0 +1,11 @@
+{
+  "id": "4557e360-c8ff-4ae6-b6ee-0e93f55b5cfb",
+  "version": 1,
+  "name": "apx-features",
+  "creator": { "id": "a1000000-0000-4000-8000-000000000001", "className": "Organisation" },
+  "locator": "https://apx-standard.org/registries/apx-features.json",
+  "userDefinedCodeListEntries": [
+    { "definedValue": "negotiatedRates", "entryDescription": "apx-control optional feature: agents may offer negotiated rate tables with pushNegotiatedRate (Part 6 §6.6; Annex A APX-CTL-09 and 10).", "entryIndex": 0 },
+    { "definedValue": "ticketMatching", "entryDescription": "apx-control optional feature: advisory match candidates at the lane and the matchTicket command (Part 6 §6.7; Annex A APX-CTL-11 and 12).", "entryIndex": 1 }
+  ]
+}

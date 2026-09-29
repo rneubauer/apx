@@ -37,7 +37,7 @@
 ## 1.3 Known APDS 4.1 errata
 
 APX vendors the APDS 4.1 OpenAPI document **verbatim** (checksum-guarded),
-including its errata. Filing-ready reports for all thirteen below, each
+including its errata. Filing-ready reports for all fourteen below, each
 with the offending snippet and a minimal suggested fix, are in
 [`docs/errata/`](../errata/README.md), which tracks their status upstream. Verified against `parkingdata/spec` at `master` on
 2026-09-23: the published document was byte-identical to the vendored copy,
@@ -121,6 +121,16 @@ of:
     `apds-ext:apx:devicestatus@1.0` decoration is checked.
     [Erratum 013](../errata/013-hierarchyelement-subtypes-unmapped.md).
     Filed upstream as [parkingdata/spec#46](https://github.com/parkingdata/spec/issues/46).
+14. **No identifiable `RightHolder`.** The APDS Information Model defines
+    the RightHolder as the entity an AssignedRight is issued to, but the
+    OpenAPI document carries it only as `AssignedRightHolder`, embedded in
+    each AssignedRight with no `id`, so nothing can reference a holder.
+    APX references one as `{"id", "className": "RightHolder"}`, using the
+    Information Model's class name, with the id local to the issuing
+    implementation (Part 14 §14.1a). APX defines no schema for the holder;
+    an APDS definition, once published, governs. Raised as a question,
+    not an error. [Erratum 014](../errata/014-rightholder-not-identifiable.md).
+    Filed upstream as [parkingdata/spec#47](https://github.com/parkingdata/spec/issues/47).
 
 Remove an entry, and its overlay action, in the same change that vendors a
 corrected APDS release.

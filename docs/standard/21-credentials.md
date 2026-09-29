@@ -119,7 +119,8 @@ change. Its `assignedRights[]` then records where it *was* materialized;
 ## 21.4 Access events
 
 Every presentation of a credential at a lane produces an access event —
-`direction`, `outcome`, and when denied a `denialReason` (seeded values:
+`direction`, `outcome`, and when denied a `denialReason` from the open
+`apx-access-denial-reasons` registry (Part 11; seeded values:
 `credentialSuspended`, `credentialLost`, `credentialRevoked`,
 `credentialReplaced`, `credentialExpired` — one per non-active lifecycle
 state — plus `unknownCredential`, `passback`, `accountBalance`,
