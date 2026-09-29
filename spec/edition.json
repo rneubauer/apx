@@ -26,10 +26,10 @@
     },
     "registries": {
       "apx-access-denial-reasons": {
-        "version": 1,
-        "entries": 10,
+        "version": 2,
+        "entries": 11,
         "locator": "https://apx-standard.org/registries/apx-access-denial-reasons.json",
-        "sha256": "de8cca8f46ec6bbc0e727cdd71d525f065408042f3d2899d922e2988d0b5809b"
+        "sha256": "73e735f93b7ab73531e28adc0ae5e9fc2e2f1204d9b14850a7e0537dc6a36fee"
       },
       "apx-alert-types": {
         "version": 3,

@@ -1,6 +1,6 @@
 {
   "id": "0282484d-3cef-4546-b95c-67c3f65d6a02",
-  "version": 1,
+  "version": 2,
   "name": "apx-access-denial-reasons",
   "creator": { "id": "a1000000-0000-4000-8000-000000000001", "className": "Organisation" },
   "locator": "https://apx-standard.org/registries/apx-access-denial-reasons.json",
@@ -14,6 +14,7 @@
     { "definedValue": "passback", "entryDescription": "Denied by anti-passback state (the credential is already in, or already out); corrected through the Part 17 passback commands.", "entryIndex": 6 },
     { "definedValue": "accountBalance", "entryDescription": "Denied because of the holder's outstanding balance or account status.", "entryIndex": 7 },
     { "definedValue": "outsidePlace", "entryDescription": "The credential is valid, but not at this place.", "entryIndex": 8 },
-    { "definedValue": "outsideValidity", "entryDescription": "The credential is valid at this place, but not at this time.", "entryIndex": 9 }
+    { "definedValue": "outsideValidity", "entryDescription": "The credential is valid at this place, but not at this time.", "entryIndex": 9 },
+    { "definedValue": "credentialNotYetActive", "entryDescription": "The presented credential matched a CredentialRecord that is issued but not yet active (its validity has not started, or it awaits activation). Distinct from outsideValidity, which is an active credential presented outside its permitted times.", "entryIndex": 10 }
   ]
 }

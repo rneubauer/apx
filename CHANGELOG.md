@@ -6,6 +6,14 @@ conformance/versioning rules in Part 3 of the written standard.
 The machine-readable spec (`spec/openapi/apx.yaml`, bundled as
 `spec/dist/apx-v1.*`) is normative; entries here are informative.
 
+## [Unreleased]
+
+**Added.**
+- `apx-access-denial-reasons` v2: `credentialNotYetActive`, for a
+  credential presented while still `issued`. Part 21 §21.4 promised one
+  denial reason per non-active lifecycle state and `issued` had none.
+  A registry addition, so no new edition is needed (Part 11 §11.3).
+
 ## [0.13.0] — 2026-09-29
 
 A mechanical audit of every Part against the bundle, Annex A, and the
