@@ -1,7 +1,7 @@
 openapi: 3.1.0
 info:
   title: APX — APDS Parking eXtensions
-  version: 0.12.2
+  version: 0.13.0
   summary: An open companion standard to APDS 4.1
   license:
     name: MIT
@@ -15661,7 +15661,7 @@ components:
           type: string
           description: The APX edition implemented (Part 3 §3.4), as named in its `spec/edition.json`.
           examples:
-            - 0.12.2
+            - 0.13.0
         apdsVersion:
           type: string
           description: APDS version this implementation extends.

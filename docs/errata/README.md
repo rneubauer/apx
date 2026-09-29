@@ -34,14 +34,14 @@ comment pointing at the erratum.
 | [011](011-geojsonobject-no-coordinates.md) | `GeoJsonObject` declares no `coordinates` | [#44](https://github.com/parkingdata/spec/issues/44), open |
 | [012](012-native-response-code-irregularities.md) | Response codes on `/rates`, `/rights/assigned/{id}`, `/contacts` differ from their siblings | [#45](https://github.com/parkingdata/spec/issues/45), open |
 | [013](013-hierarchyelement-subtypes-unmapped.md) | `HierarchyElement` discriminator maps only three of ten types; `VehicularAccess` unreachable | [#46](https://github.com/parkingdata/spec/issues/46), open |
-| [014](014-rightholder-not-identifiable.md) | Question: no identifiable `RightHolder`; `AssignedRightHolder` has no id | not yet filed |
+| [014](014-rightholder-not-identifiable.md) | Question: no identifiable `RightHolder`; `AssignedRightHolder` has no id | [#47](https://github.com/parkingdata/spec/issues/47), open |
 
 001–003 were filed on 2026-09-23; 004–012 were found on 2026-09-25 and
 filed on 2026-09-28 as #37–#45. 013 was found on 2026-09-28 while
 re-vetting LPR for 0.12.0 and filed the same day as #46. 014 was found on
 2026-09-29 by a mechanical audit of class names in the APX prose, and
 checked against the APDS Information Model 4.0 as well as the OpenAPI
-document. Update this table as they are triaged.
+document; filed on 2026-09-29 as #47. Update this table as they are triaged.
 Remove an entry only once a corrected APDS release is vendored, because the
 workaround in our tooling has to come out at the same moment.
 

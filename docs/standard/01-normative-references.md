@@ -130,7 +130,7 @@ of:
     implementation (Part 14 §14.1a). APX defines no schema for the holder;
     an APDS definition, once published, governs. Raised as a question,
     not an error. [Erratum 014](../errata/014-rightholder-not-identifiable.md).
-    Not yet filed upstream.
+    Filed upstream as [parkingdata/spec#47](https://github.com/parkingdata/spec/issues/47).
 
 Remove an entry, and its overlay action, in the same change that vendors a
 corrected APDS release.

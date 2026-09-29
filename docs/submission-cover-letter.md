@@ -59,7 +59,8 @@ checksum, so "adopt APX" names a fixed set of files rather than a branch.
    from the `HierarchyElement` discriminator), filed as
    [#46](https://github.com/parkingdata/spec/issues/46), and a
    mechanical audit of our own prose raised one question (014, how a
-   RightHolder is identified).
+   RightHolder is identified), filed as
+   [#47](https://github.com/parkingdata/spec/issues/47).
 5. **It answers the industry's next question.** Part 17 standardizes the
    customer-service surface — one aggregated resolution context and
    server-side, policy-decided allowed actions — with a rule we believe
@@ -69,10 +70,9 @@ checksum, so "adopt APX" names a fixed set of files rather than a branch.
 ## What we are candid about
 
 - **Fourteen known upstream errata** in `apds-api-4.1.yaml` (Part 1 §1.3).
-  Thirteen are filed with you, as issues #33–#35 and #37–#46, and still
-  open at the time of writing; the fourteenth (014) is a question rather
-  than an error, and is not yet filed. Each is written up in
-  `docs/errata/`. Where APX needs a working shape before APDS ships a fix, a
+  All fourteen are filed with you, as issues #33–#35 and #37–#47, and
+  still open at the time of writing; the fourteenth (014, #47) is a
+  question rather than an error. Each is written up in `docs/errata/`. Where APX needs a working shape before APDS ships a fix, a
   narrow overlay supplies it; `ReferenceToQuote` (erratum 008) has no
   additive workaround. None is a blocker for APX, and none originates
   here: our vendored copy is byte-identical to your published document.
@@ -96,7 +96,7 @@ checksum, so "adopt APX" names a fixed set of files rather than a branch.
 Technical review by the working group; a decision on adoption, adoption
 with changes, or chartering a joint task group; and — independent of that
 outcome — disposition of the errata filed (#33–#35, #37–#46) and an
-answer to question 014. The repository, its CI,
+answer to question 014 (#47). The repository, its CI,
 browsable reference documentation, and the scenario suite are public;
 every wire example is schema-validated against the specification in CI,
 and a schema-conformant mock server (`npm run mock`, Prism over the

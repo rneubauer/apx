@@ -6,7 +6,7 @@ conformance/versioning rules in Part 3 of the written standard.
 The machine-readable spec (`spec/openapi/apx.yaml`, bundled as
 `spec/dist/apx-v1.*`) is normative; entries here are informative.
 
-## [Unreleased]
+## [0.13.0] — 2026-09-29
 
 A mechanical audit of every Part against the bundle, Annex A, and the
 registries, run ahead of the APDS working-group review.
@@ -30,7 +30,8 @@ registries, run ahead of the APDS working-group review.
   `<vendor-ns>-<feature>` (Part 16 §16.1).
 - Annex A rows for normative text that had none: APX-CORE-13 to 16,
   APX-ALT-06, APX-ACC-07, APX-RES-09.
-- Erratum 014 (APDS has no identifiable RightHolder) and Part 1 §1.3
+- Erratum 014 (APDS has no identifiable RightHolder), filed as
+  parkingdata/spec#47, and Part 1 §1.3
   item 14 describing the `className: "RightHolder"` convention.
 
 **Fixed.**
