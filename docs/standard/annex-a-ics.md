@@ -25,6 +25,10 @@ implementation has the named capability).
 | APX-CORE-10 | Personal-data minimization, access-controlled imagery, published retention with purge | §9.6 |
 | APX-CORE-11 | Aggregated/imported HierarchyElements: source id preserved or aliased via `operatorDefinedReference` | §4.1a, §18.2 |
 | APX-CORE-12 | `/.well-known/apx-configuration` `conformanceClasses` are closed under the §3.1 dependency table and list only registry values or vendor classes | §3.1, §16.1 |
+| APX-CORE-13 | Vendor additions stay in the vendor's namespace: extension keys `apds-ext:<vendor-ns>:…`, endpoints under `/apx/x/<vendor-ns>/`, topics prefixed `<vendor-ns>.`; never the `apx` namespace or `apx.` prefix; no unregistered keys outside `extensions`; no APX-registered code-list value reused with different semantics | §3.3, §10.1–10.2 |
+| APX-CORE-14 | Every registry version the implementation validates against is served or linked and advertised in `/.well-known/apx-configuration` `registries`; every advertised URL resolves | §11.2 |
+| APX-CORE-15 **C** (receives a migrated place) | Onboarding at the receiving implementation: the grant names exactly the migrated subtree root(s), never `"*"`; imported historical entities keep their `recordInfo` provenance | §18.3 |
+| APX-CORE-16 **C** (hands over a migrated place) | After the agreed cutover the releasing implementation publishes no events bound to the moved place, and its change feeds emit tombstones for the entities it no longer hosts | §18.4 |
 
 ## A.2 `apx-data`
 
@@ -86,6 +90,7 @@ implementation has the named capability).
 | APX-ALT-03 | Alert types from `apx-alert-types` (open registry); subtree-inclusive place filtering; `device` and `relatedEntity` filters honoured | §7.1, §7.2 |
 | APX-ALT-04 | An alert still `raised` or `acknowledged` at its `expiryTime` becomes `expired` and publishes `apx.alert.status.v1`; an alert without one never expires | §7.3 |
 | APX-ALT-05 | An alert with no place binding is visible to every token of its organisation regardless of `apx_places`, never to other organisations, and excluded from `place`-filtered lists | §7.1 |
+| APX-ALT-06 | A `webhookDeliveryFailed` alert never generates webhook deliveries to the subscription whose failure it reports | §7.4 |
 
 ## A.7 `apx-discovery`
 
@@ -106,6 +111,7 @@ implementation has the named capability).
 | APX-ACC-04 | Payment links / refund / void / capture as domain operations with Idempotency-Key; refunds gated per policy; payment links readable and cancellable | §13.1a |
 | APX-ACC-05 | Payment state machine per the §13.1a table (a hold = `approved` + `captureStatus: authorized` via `captureLater`, capture/void, cumulative `refundedAmount`); every other action → 409 `payment-state-illegal`; holds excluded from `GET /v1/payments` unless `captureStatus=authorized`, never published or materialized until captured; the recorded event re-published on every status or amount change | §13.1a, §13.2, §13.4 |
 | APX-ACC-06 | More than four card digits in any body member or query parameter → 422 `personal-data-not-permitted`, refused before persisting or logging | §13.1, §13.2 |
+| APX-ACC-07 **C** (persists APDS Payment) | Every `approved`, captured PaymentRecord is materialized as, or bound to, a native APDS `Payment` with a `paymentLines` entry of `paymentType: payment` and `value` = `amount`; declined records and uncaptured holds are not | §13.6 |
 | APX-PHX-01 | Truncated-key lookups without `date` constrained to last 8 hours, not configurable wider; `ticketNumber` and `account` exempt; a query with no key → 400 | §13.2, §9.6 |
 
 ## A.10 `apx-lpr`
@@ -149,6 +155,7 @@ implementation has the named capability).
 | APX-RES-06 | Support interactions recorded (idempotent under `Idempotency-Key`), completable by versioned PUT, queryable by subject or `correlationId`; summaries not transcripts | §17.6 |
 | APX-RES-07 **C** (tracks passback) | Passback read + resetPassback/forceIn/forceOut commands; a known but untracked credential → 200 `state: unknown` | §17.4, §17.8 |
 | APX-RES-08 **C** (stores LPR) | Plate candidates read + `PUT /v1/sessions/{id}/plate` materializing into the APDS Session + SessionUpdated; stale `If-Match` → 409 `version-conflict`; closed session outside the dispute window → 422 `session-not-open` | §17.5 |
+| APX-RES-09 | `interactionId` treated as opaque (echoed on the context, recordable on support interactions, never interpreted); a caller's `correlationId` carried on the context, commands, payment links, events, and support interactions of the same episode (SHOULD) | §17.7 |
 
 ## A.15 `apx-violations`
 
