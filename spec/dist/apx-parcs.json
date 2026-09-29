@@ -2,7 +2,7 @@
   "openapi": "3.1.0",
   "info": {
     "title": "APX — PARCS Starter Profile",
-    "version": "0.12.1",
+    "version": "0.12.2",
     "summary": "An open companion standard to APDS 4.1",
     "license": {
       "name": "MIT",
@@ -451,7 +451,7 @@
                     "$ref": "#/components/schemas/HierarchyElement"
                   },
                   {
-                    "$ref": "#/components/schemas/ChangePayload"
+                    "$ref": "#/components/schemas/HierarchyElementChangePayload"
                   }
                 ]
               }
@@ -1238,7 +1238,7 @@
                     "$ref": "#/components/schemas/ContactPoint"
                   },
                   {
-                    "$ref": "#/components/schemas/ChangePayload"
+                    "$ref": "#/components/schemas/ContactPointChangePayload"
                   }
                 ]
               }
@@ -1683,7 +1683,7 @@
                     "$ref": "#/components/schemas/RightSpecification"
                   },
                   {
-                    "$ref": "#/components/schemas/ChangePayload"
+                    "$ref": "#/components/schemas/RightSpecificationChangePayload"
                   }
                 ]
               }
@@ -2203,7 +2203,7 @@
                     "$ref": "#/components/schemas/RateTable"
                   },
                   {
-                    "$ref": "#/components/schemas/ChangePayload"
+                    "$ref": "#/components/schemas/RateTableChangePayload"
                   }
                 ]
               }
@@ -2762,7 +2762,7 @@
                     "$ref": "#/components/schemas/Session"
                   },
                   {
-                    "$ref": "#/components/schemas/ChangePayload"
+                    "$ref": "#/components/schemas/SessionChangePayload"
                   }
                 ]
               }
@@ -3338,7 +3338,7 @@
                     "$ref": "#/components/schemas/AssignedRight"
                   },
                   {
-                    "$ref": "#/components/schemas/ChangePayload"
+                    "$ref": "#/components/schemas/AssignedRightChangePayload"
                   }
                 ]
               }
@@ -5394,7 +5394,7 @@
             "type": "string",
             "description": "The APX edition implemented (Part 3 §3.4), as named in its `spec/edition.json`.",
             "examples": [
-              "0.12.1"
+              "0.12.2"
             ]
           },
           "apdsVersion": {
@@ -5756,9 +5756,9 @@
           "status"
         ]
       },
-      "ChangePayload": {
-        "title": "ChangePayload",
-        "description": "A change-mode payload for any native APDS entity class (Part 5 §5.1):\nthe entity's identity plus only the members that changed. An absent\nmember is unchanged; an explicit `null` clears it. Nested objects that\ncarry their own `id` (a Session segment, say) follow the same rule.\n\nThis schema checks the envelope only (identity present, any member may\nbe null). Each member present is still validated by the server against\nthe class's native property schema, and a member the class does not\ndefine is refused with 400 (Part 5 §5.1a). It is the request schema of\na native `PUT` sent with `APX-Update-Mode: change`, and the shape of\nevery `ChangeFeedPage` item.",
+      "HierarchyElementChangePayload": {
+        "title": "HierarchyElementChangePayload",
+        "description": "A change-mode body for native `PUT /places/{id}` (Part 5 §5.1a): `id` plus only the HierarchyElement members that changed; an absent member is unchanged and an explicit `null` clears it. Every member present is checked against the class, and a member the class does not define is refused. Generated at build time (tools/change-payloads.mjs); the generic ChangePayload remains the shape of change-feed items.",
         "type": "object",
         "required": [
           "id"
@@ -5767,15 +5767,275 @@
           "id": {
             "type": "string",
             "minLength": 1,
-            "description": "The entity's identifier (APDS VersionedIdentity.id)."
+            "description": "The entity identifier (APDS VersionedIdentity.id)."
           },
           "version": {
-            "type": "integer",
-            "minimum": 1,
-            "description": "On a write, the version the client last read (the precondition,\nPart 4 §4.2a); on a feed item, the version after the change."
+            "anyOf": [
+              {
+                "type": "integer",
+                "description": "Positive integer representing the object version.",
+                "minimum": 1,
+                "examples": [
+                  1
+                ]
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "type": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/HierarchyElementTypeEnum"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "name": {
+            "type": [
+              "array",
+              "null"
+            ],
+            "minItems": 1,
+            "items": {
+              "type": "object"
+            }
+          },
+          "description": {
+            "type": [
+              "array",
+              "null"
+            ],
+            "minItems": 1,
+            "items": {
+              "type": "object"
+            }
+          },
+          "aliases": {
+            "type": [
+              "array",
+              "null"
+            ],
+            "items": {
+              "$ref": "#/components/schemas/MultilingualString"
+            }
+          },
+          "operatorDefinedReference": {
+            "type": [
+              "object",
+              "null"
+            ]
+          },
+          "parentId": {
+            "type": [
+              "object",
+              "null"
+            ]
+          },
+          "childIds": {
+            "type": [
+              "array",
+              "null"
+            ],
+            "items": {
+              "type": "object"
+            }
+          },
+          "layer": {
+            "anyOf": [
+              {
+                "type": "integer",
+                "minimum": 0,
+                "description": "Indicator of the position of this hierarchy element in the specific hierarchy, with the top of the hierarchy numbered layer 0."
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "rightSpecifications": {
+            "type": [
+              "array",
+              "null"
+            ],
+            "items": {
+              "type": "object"
+            }
+          },
+          "hierarchyElementRecord": {
+            "type": [
+              "object",
+              "null"
+            ]
+          },
+          "hierarchyElementReference": {
+            "type": [
+              "object",
+              "null"
+            ]
+          },
+          "occupancyLevel": {
+            "type": [
+              "object",
+              "null"
+            ]
+          },
+          "responsibilityRoleAssignments": {
+            "type": [
+              "array",
+              "null"
+            ],
+            "items": {
+              "type": "object"
+            }
+          },
+          "extensions": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/Extensions"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "characteristics": {
+            "type": [
+              "object",
+              "null"
+            ]
+          },
+          "contacts": {
+            "type": [
+              "array",
+              "null"
+            ],
+            "items": {
+              "type": "object"
+            }
+          },
+          "marketing": {
+            "type": [
+              "object",
+              "null"
+            ]
+          },
+          "operatingRestrictions": {
+            "type": [
+              "array",
+              "null"
+            ],
+            "items": {
+              "type": "object"
+            }
+          },
+          "rgbColours": {
+            "type": [
+              "array",
+              "null"
+            ],
+            "items": {
+              "type": "object"
+            }
+          },
+          "times": {
+            "type": [
+              "object",
+              "null"
+            ]
+          },
+          "paymentMethods": {
+            "type": [
+              "array",
+              "null"
+            ],
+            "items": {
+              "type": "object"
+            }
+          },
+          "safetyStandardClassifications": {
+            "type": [
+              "array",
+              "null"
+            ],
+            "items": {
+              "type": "object"
+            }
+          },
+          "timeZone": {
+            "anyOf": [
+              {
+                "type": "string",
+                "description": "IANA time-zone (see https://www.iana.org/time-zones)"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "placeStreetAddress": {
+            "type": [
+              "object",
+              "null"
+            ]
+          },
+          "placeBoundedZone": {
+            "type": [
+              "array",
+              "null"
+            ],
+            "items": {
+              "type": "object"
+            }
+          },
+          "indicativePointLocation": {
+            "type": [
+              "array",
+              "null"
+            ],
+            "items": {
+              "type": "object"
+            }
+          },
+          "spaceId": {
+            "type": [
+              "object",
+              "null"
+            ]
+          },
+          "detection": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/ParkingSpaceOccupancyDetectionEnum"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "spaceBoundedZone": {
+            "type": [
+              "object",
+              "null"
+            ]
+          },
+          "spaceDimension": {
+            "type": [
+              "object",
+              "null"
+            ]
+          },
+          "spaceMaximumDims": {
+            "type": [
+              "object",
+              "null"
+            ]
           }
         },
-        "additionalProperties": true
+        "additionalProperties": false
       },
       "PaginatedListMeta": {
         "title": "PaginatedListMeta",
@@ -6031,6 +6291,161 @@
           }
         ]
       },
+      "ContactPointChangePayload": {
+        "title": "ContactPointChangePayload",
+        "description": "A change-mode body for native `PUT /contacts/{contactId}` (Part 5 §5.1a): `id` plus only the ContactPoint members that changed; an absent member is unchanged and an explicit `null` clears it. Every member present is checked against the class, and a member the class does not define is refused. Generated at build time (tools/change-payloads.mjs); the generic ChangePayload remains the shape of change-feed items.",
+        "type": "object",
+        "required": [
+          "id"
+        ],
+        "properties": {
+          "contactType": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/ContactTypeEnum"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "contactNotDefined": {
+            "anyOf": [
+              {
+                "type": "boolean",
+                "description": "When true, there is currently no contact defined for the selected role and/or timeframe. Don't use the specialisations in this case."
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "contactUnknown": {
+            "anyOf": [
+              {
+                "type": "boolean",
+                "description": "When true, the contact for the selected role and/or timeframe is unknown. Don't use the specialisations in this case."
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "shareWithPublic": {
+            "anyOf": [
+              {
+                "type": "boolean",
+                "description": "When true, the details of this contact may be shared with the public. If false these contacts details are for internal purposes only."
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "validityOfContact": {
+            "type": [
+              "object",
+              "null"
+            ]
+          },
+          "id": {
+            "type": "string",
+            "minLength": 1,
+            "description": "The entity identifier (APDS VersionedIdentity.id)."
+          },
+          "version": {
+            "anyOf": [
+              {
+                "type": "integer",
+                "description": "Positive integer representing the object version.",
+                "minimum": 1,
+                "examples": [
+                  1
+                ]
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "organisationName": {
+            "type": [
+              "array",
+              "null"
+            ],
+            "minItems": 1,
+            "items": {
+              "type": "object"
+            }
+          },
+          "type": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/ContactPointTypeEnum"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "address": {
+            "type": [
+              "array",
+              "null"
+            ],
+            "items": {
+              "type": "object"
+            }
+          },
+          "contactDetails": {
+            "type": [
+              "array",
+              "null"
+            ],
+            "items": {
+              "type": "object"
+            }
+          },
+          "eMailCommonData": {
+            "type": [
+              "array",
+              "null"
+            ],
+            "items": {
+              "type": "object"
+            }
+          },
+          "telephoneContacts": {
+            "type": [
+              "array",
+              "null"
+            ],
+            "items": {
+              "type": "object"
+            }
+          },
+          "pointLocations": {
+            "type": [
+              "array",
+              "null"
+            ],
+            "items": {
+              "type": "object"
+            }
+          },
+          "extensions": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/Extensions"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          }
+        },
+        "additionalProperties": false
+      },
       "RightSpecificationList": {
         "title": "RightSpecificationList",
         "description": "Paginated list of RightSpecifications",
@@ -6140,6 +6555,165 @@
           }
         ]
       },
+      "RightSpecificationChangePayload": {
+        "title": "RightSpecificationChangePayload",
+        "description": "A change-mode body for native `PUT /rights/specs/{id}` (Part 5 §5.1a): `id` plus only the RightSpecification members that changed; an absent member is unchanged and an explicit `null` clears it. Every member present is checked against the class, and a member the class does not define is refused. Generated at build time (tools/change-payloads.mjs); the generic ChangePayload remains the shape of change-feed items.",
+        "type": "object",
+        "required": [
+          "id"
+        ],
+        "properties": {
+          "id": {
+            "type": "string",
+            "minLength": 1,
+            "description": "The entity identifier (APDS VersionedIdentity.id)."
+          },
+          "version": {
+            "anyOf": [
+              {
+                "type": "integer",
+                "description": "Positive integer representing the object version.",
+                "minimum": 1,
+                "examples": [
+                  1
+                ]
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "description": {
+            "type": [
+              "array",
+              "null"
+            ],
+            "minItems": 1,
+            "items": {
+              "type": "object"
+            }
+          },
+          "type": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/RightSpecificationTypeEnum"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "financialReference": {
+            "anyOf": [
+              {
+                "type": "string",
+                "description": "Creator defined free-text reference to financial transactions associated to the specific Right Specification."
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "transferable": {
+            "anyOf": [
+              {
+                "type": "boolean"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "transferableConditions": {
+            "anyOf": [
+              {
+                "type": "boolean"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "credentials": {
+            "type": [
+              "array",
+              "null"
+            ],
+            "items": {
+              "$ref": "#/components/schemas/CredentialTypeEnum"
+            }
+          },
+          "validity": {
+            "type": [
+              "object",
+              "null"
+            ]
+          },
+          "expiry": {
+            "anyOf": [
+              {
+                "type": "string",
+                "description": "Date/time showing the timestamp for when a RightSpecification ceases to be valid.",
+                "format": "date-time"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "rightPools": {
+            "type": [
+              "array",
+              "null"
+            ],
+            "items": {
+              "type": "object"
+            }
+          },
+          "issuer": {
+            "type": [
+              "object",
+              "null"
+            ]
+          },
+          "hierarchyElements": {
+            "type": [
+              "array",
+              "null"
+            ],
+            "minItems": 1,
+            "items": {
+              "type": "object"
+            }
+          },
+          "rateEligibility": {
+            "type": [
+              "array",
+              "null"
+            ],
+            "items": {
+              "type": "object"
+            }
+          },
+          "rateTransition": {
+            "type": [
+              "object",
+              "null"
+            ]
+          },
+          "extensions": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/Extensions"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          }
+        },
+        "additionalProperties": false
+      },
       "RateTableList": {
         "title": "RateList",
         "description": "Paginated list of Rates",
@@ -6225,6 +6799,136 @@
           }
         ]
       },
+      "RateTableChangePayload": {
+        "title": "RateTableChangePayload",
+        "description": "A change-mode body for native `PUT /rates/{id}` (Part 5 §5.1a): `id` plus only the RateTable members that changed; an absent member is unchanged and an explicit `null` clears it. Every member present is checked against the class, and a member the class does not define is refused. Generated at build time (tools/change-payloads.mjs); the generic ChangePayload remains the shape of change-feed items.",
+        "type": "object",
+        "required": [
+          "id"
+        ],
+        "properties": {
+          "id": {
+            "type": "string",
+            "minLength": 1,
+            "description": "The entity identifier (APDS VersionedIdentity.id)."
+          },
+          "version": {
+            "anyOf": [
+              {
+                "type": "integer",
+                "description": "Positive integer representing the object version.",
+                "minimum": 1,
+                "examples": [
+                  1
+                ]
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "rateTableName": {
+            "type": [
+              "array",
+              "null"
+            ],
+            "minItems": 1,
+            "items": {
+              "type": "object"
+            }
+          },
+          "rateTableID": {
+            "type": [
+              "array",
+              "null"
+            ],
+            "minItems": 1,
+            "items": {
+              "type": "object"
+            }
+          },
+          "availability": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/RateAvailabilityTypeEnum"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "rateResponsibleParty": {
+            "type": [
+              "object",
+              "null"
+            ]
+          },
+          "rateSupersedeLink": {
+            "type": [
+              "object",
+              "null"
+            ]
+          },
+          "validation": {
+            "anyOf": [
+              {
+                "type": "boolean",
+                "description": "Indicates if validations are accepted when using this RateTable."
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "rateType": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/RateTypeEnum"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "additionalInformation": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/Url"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "validity": {
+            "type": [
+              "object",
+              "null"
+            ]
+          },
+          "rateLineCollections": {
+            "type": [
+              "array",
+              "null"
+            ],
+            "minItems": 1,
+            "items": {
+              "type": "object"
+            }
+          },
+          "extensions": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/Extensions"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          }
+        },
+        "additionalProperties": false
+      },
       "SessionList": {
         "title": "SessionList",
         "description": "Paginated list of Sessions",
@@ -6307,6 +7011,109 @@
             ]
           }
         ]
+      },
+      "SessionChangePayload": {
+        "title": "SessionChangePayload",
+        "description": "A change-mode body for native `PUT /sessions/{id}` (Part 5 §5.1a): `id` plus only the Session members that changed; an absent member is unchanged and an explicit `null` clears it. Every member present is checked against the class, and a member the class does not define is refused. Generated at build time (tools/change-payloads.mjs); the generic ChangePayload remains the shape of change-feed items.",
+        "type": "object",
+        "required": [
+          "id"
+        ],
+        "properties": {
+          "id": {
+            "type": "string",
+            "minLength": 1,
+            "description": "The entity identifier (APDS VersionedIdentity.id)."
+          },
+          "version": {
+            "anyOf": [
+              {
+                "type": "integer",
+                "description": "Positive integer representing the object version.",
+                "minimum": 1,
+                "examples": [
+                  1
+                ]
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "actualStart": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date-time",
+                "description": "The date/time of the start of the session."
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "actualEnd": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date-time",
+                "description": "The date/time of the end of the session."
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "initiator": {
+            "type": [
+              "object",
+              "null"
+            ]
+          },
+          "hierarchyElement": {
+            "type": [
+              "object",
+              "null"
+            ]
+          },
+          "identifiedCredentials": {
+            "type": [
+              "array",
+              "null"
+            ],
+            "minItems": 1,
+            "items": {
+              "type": "object"
+            }
+          },
+          "segments": {
+            "type": [
+              "array",
+              "null"
+            ],
+            "minItems": 1,
+            "items": {
+              "type": "object"
+            }
+          },
+          "identifiedVehicle": {
+            "type": [
+              "object",
+              "null"
+            ]
+          },
+          "extensions": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/Extensions"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          }
+        },
+        "additionalProperties": false
       },
       "AssignedRightList": {
         "title": "AssignedRightList",
@@ -6441,6 +7248,204 @@
         ],
         "x-package": "Quotes",
         "x-tags": "Quotes"
+      },
+      "AssignedRightChangePayload": {
+        "title": "AssignedRightChangePayload",
+        "description": "A change-mode body for native `PUT /rights/assigned/{id}` (Part 5 §5.1a): `id` plus only the AssignedRight members that changed; an absent member is unchanged and an explicit `null` clears it. Every member present is checked against the class, and a member the class does not define is refused. Generated at build time (tools/change-payloads.mjs); the generic ChangePayload remains the shape of change-feed items.",
+        "type": "object",
+        "required": [
+          "id"
+        ],
+        "properties": {
+          "id": {
+            "type": "string",
+            "minLength": 1,
+            "description": "The entity identifier (APDS VersionedIdentity.id)."
+          },
+          "version": {
+            "anyOf": [
+              {
+                "type": "integer",
+                "description": "Positive integer representing the object version.",
+                "minimum": 1,
+                "examples": [
+                  1
+                ]
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "rightSpecification": {
+            "type": [
+              "object",
+              "null"
+            ]
+          },
+          "rightHolder": {
+            "type": [
+              "object",
+              "null"
+            ]
+          },
+          "assignedRightIssuer": {
+            "type": [
+              "object",
+              "null"
+            ]
+          },
+          "issueMethod": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/IssueMethodTypeEnum"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "issuanceTime": {
+            "anyOf": [
+              {
+                "type": "string",
+                "description": "The datetime this AssignedRight was issued.",
+                "format": "date-time"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "minutesAvailable": {
+            "anyOf": [
+              {
+                "type": "number",
+                "description": "Number of decimal minutes that are remaining for use under a specified AssignedRight.",
+                "format": "float"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "minutesUsed": {
+            "anyOf": [
+              {
+                "type": "number",
+                "description": "Number of decimal minutes that have been used under a specified AssignedRight.",
+                "format": "float"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "totalMinutes": {
+            "anyOf": [
+              {
+                "type": "number",
+                "description": "Number of decimal minutes that have been issued under a specified AssignedRight.",
+                "format": "float"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "remainingValue": {
+            "type": [
+              "object",
+              "null"
+            ]
+          },
+          "totalRightValue": {
+            "type": [
+              "object",
+              "null"
+            ]
+          },
+          "instancesUsed": {
+            "anyOf": [
+              {
+                "type": "integer",
+                "description": "The total number of instances that have been used under a specified RightSpecification."
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "instancesAvailable": {
+            "anyOf": [
+              {
+                "type": "integer",
+                "description": "The total number of instances that are available for use under a specified RightSpecification."
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "totalInstances": {
+            "anyOf": [
+              {
+                "type": "integer",
+                "description": "The total number of instances that have been issued under a specified AssignedRight."
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "expiry": {
+            "anyOf": [
+              {
+                "type": "string",
+                "description": "The datetime when the specific AssignedRight expires, and is not longer available for use.",
+                "format": "date-time"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "plannedUses": {
+            "type": [
+              "array",
+              "null"
+            ],
+            "items": {
+              "type": "object"
+            }
+          },
+          "payments": {
+            "type": [
+              "array",
+              "null"
+            ],
+            "items": {
+              "type": "object"
+            }
+          },
+          "monetaryValue": {
+            "type": [
+              "object",
+              "null"
+            ]
+          },
+          "extensions": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/Extensions"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          }
+        },
+        "additionalProperties": false
       },
       "QuoteRightRequest": {
         "title": "QuoteRightRequest",
@@ -7722,6 +8727,27 @@
           "className"
         ]
       },
+      "ChangePayload": {
+        "title": "ChangePayload",
+        "description": "A change-mode payload for any native APDS entity class (Part 5 §5.1):\nthe entity's identity plus only the members that changed. An absent\nmember is unchanged; an explicit `null` clears it. Nested objects that\ncarry their own `id` (a Session segment, say) follow the same rule.\n\nThis schema checks the envelope only (identity present, any member may\nbe null). Each member present is still validated by the server against\nthe class's native property schema, and a member the class does not\ndefine is refused with 400 (Part 5 §5.1a). It is the request schema of\na native `PUT` sent with `APX-Update-Mode: change`, and the shape of\nevery `ChangeFeedPage` item.",
+        "type": "object",
+        "required": [
+          "id"
+        ],
+        "properties": {
+          "id": {
+            "type": "string",
+            "minLength": 1,
+            "description": "The entity's identifier (APDS VersionedIdentity.id)."
+          },
+          "version": {
+            "type": "integer",
+            "minimum": 1,
+            "description": "On a write, the version the client last read (the precondition,\nPart 4 §4.2a); on a feed item, the version after the change."
+          }
+        },
+        "additionalProperties": true
+      },
       "DeletedReference": {
         "title": "DeletedReference",
         "description": "A reference to a deleted identifiable managed object where the identifier is unique. It is described by a string identifying the class of the referenced object (key name) with a unique string identifier as its value, and the deletion instant.",
@@ -8026,6 +9052,21 @@
         "enum": [
           "ok",
           "error"
+        ]
+      },
+      "ParkingSpaceOccupancyDetectionEnum": {
+        "title": "ParkingSpaceOccupancyDetectionEnum",
+        "description": "A list of supported methods for detection of occupancy by a vehicle in a parking space.\n* anpr : Automated License Plate Recognition information is tracked for inbound and outbound traffic. The difference between in and out counts enables an occupancy count.\n* imageAnalytics : Image analytics are used to evaluate a picture with known parking space geography and computer vision is used to determine occupancy at a point in time.\n* spaceSensor : A sensor in each space detects the presence of a vehicle.\n* userDeclaration : User self-declared, where the user enters a space identifier and/or vehicle registration number, typically at the start of a parking session.\n* videoAnalytics : Video analytics are used to evaluate a video stream to identify objects (vehicles) and direction of travel. The difference between the inbound objects and outbound objects determines occupancy.\n* videoSpace : Video analytics or ANPR technologies are used to evaluate a video stream with known space geometry to identify objects (vehicles or license plates) occupying specific spaces.\n* visual : Operator/owner makes periodic visual counts of the facility.",
+        "type": "string",
+        "x-package": "place.occupancy.enums",
+        "enum": [
+          "anpr",
+          "imageAnalytics",
+          "spaceSensor",
+          "userDeclaration",
+          "videoAnalytics",
+          "videoSpace",
+          "visual"
         ]
       },
       "ObservationTypeEnum": {
@@ -8392,6 +9433,16 @@
         "discriminator": {
           "propertyName": "type"
         }
+      },
+      "ContactTypeEnum": {
+        "title": "ContactTypeEnum",
+        "description": "Defined the type of contact object.\n* ContactPoint: Contact detailed information.\n* ContactByReference: Reference to an exiting contact.",
+        "type": "string",
+        "x-package": "contact.enums",
+        "enum": [
+          "contactPoint",
+          "contactByReference"
+        ]
       },
       "RightSpecificationTypeEnum": {
         "title": "RightTypeEnum",
@@ -9741,21 +10792,6 @@
           }
         }
       },
-      "ParkingSpaceOccupancyDetectionEnum": {
-        "title": "ParkingSpaceOccupancyDetectionEnum",
-        "description": "A list of supported methods for detection of occupancy by a vehicle in a parking space.\n* anpr : Automated License Plate Recognition information is tracked for inbound and outbound traffic. The difference between in and out counts enables an occupancy count.\n* imageAnalytics : Image analytics are used to evaluate a picture with known parking space geography and computer vision is used to determine occupancy at a point in time.\n* spaceSensor : A sensor in each space detects the presence of a vehicle.\n* userDeclaration : User self-declared, where the user enters a space identifier and/or vehicle registration number, typically at the start of a parking session.\n* videoAnalytics : Video analytics are used to evaluate a video stream to identify objects (vehicles) and direction of travel. The difference between the inbound objects and outbound objects determines occupancy.\n* videoSpace : Video analytics or ANPR technologies are used to evaluate a video stream with known space geometry to identify objects (vehicles or license plates) occupying specific spaces.\n* visual : Operator/owner makes periodic visual counts of the facility.",
-        "type": "string",
-        "x-package": "place.occupancy.enums",
-        "enum": [
-          "anpr",
-          "imageAnalytics",
-          "spaceSensor",
-          "userDeclaration",
-          "videoAnalytics",
-          "videoSpace",
-          "visual"
-        ]
-      },
       "SpaceDimension": {
         "title": "SpaceDimension",
         "description": "A component that provides dimension information. \nThe product of width and height must not be necessarily be the square footage (e.g. in multi-storey buildings or when some zones are not part of the square footage).",
@@ -9940,16 +10976,6 @@
               "contactReference"
             ]
           }
-        ]
-      },
-      "ContactTypeEnum": {
-        "title": "ContactTypeEnum",
-        "description": "Defined the type of contact object.\n* ContactPoint: Contact detailed information.\n* ContactByReference: Reference to an exiting contact.",
-        "type": "string",
-        "x-package": "contact.enums",
-        "enum": [
-          "contactPoint",
-          "contactByReference"
         ]
       },
       "OverallPeriod": {

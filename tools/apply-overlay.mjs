@@ -8,6 +8,8 @@
  *     4.1 path items are mounted verbatim and must not be edited, so the
  *     mode/cursor parameters and change-feed responses cannot live in the
  *     modular source (Part 3 §3.4, Part 5 §5.6).
+ *     After the overlays, change-payloads.mjs derives a typed change body
+ *     per native class for the six native PUTs (Part 5 §5.1a).
  *  2. apx-docs-overlay.yaml — the reading layer: the orientation in
  *     `info.description`, per-domain narrative on each tag, and the
  *     `x-tagGroups` nav grouping. Kept out of the modular source so the
@@ -23,6 +25,7 @@ import { readFileSync, writeFileSync } from 'node:fs';
 import { join, dirname } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import yaml from 'js-yaml';
+import { deriveChangePayloads } from './change-payloads.mjs';
 
 const root = join(dirname(fileURLToPath(import.meta.url)), '..');
 const OVERLAY_DIR = join(root, 'spec', 'openapi', 'overlays');
@@ -131,6 +134,14 @@ for (const { file, doc: overlay } of overlays) {
   applied += overlay.actions.length;
   console.log(`[spec:overlay]   ${file}: ${overlay.actions.length} action(s)`);
 }
+
+let derived;
+try {
+  derived = deriveChangePayloads(doc);
+} catch (err) {
+  fail(err.message);
+}
+console.log(`[spec:overlay]   typed change payloads: ${derived.join(', ')}`);
 
 writeFileSync(DIST_JSON, JSON.stringify(doc, null, 2) + '\n');
 writeFileSync(DIST_YAML, yaml.dump(doc, { lineWidth: -1, noRefs: true }));

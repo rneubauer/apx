@@ -28,7 +28,7 @@
 overlay: 1.0.0
 info:
   title: APX data-profile overlay (Part 5 data profile over the native APDS routes)
-  version: 0.12.1
+  version: 0.12.2
 
 actions:
   # ----- /places -----
@@ -187,7 +187,7 @@ actions:
   - target: $.paths['/places/{id}'].put.requestBody.content['application/json'].schema
     remove: true
   - target: $.paths['/places/{id}'].put.requestBody.content['application/json']
-    description: "Full mode validates against HierarchyElement; change mode against ChangePayload (Part 5 §5.1a)."
+    description: "Full mode validates against HierarchyElement; change mode against the typed <Class>ChangePayload derived at build time by tools/change-payloads.mjs (Part 5 §5.1a)."
     update:
       schema:
         anyOf:
@@ -200,7 +200,7 @@ actions:
   - target: $.paths['/contacts/{contactId}'].put.requestBody.content['application/json'].schema
     remove: true
   - target: $.paths['/contacts/{contactId}'].put.requestBody.content['application/json']
-    description: "Full mode validates against ContactPoint; change mode against ChangePayload (Part 5 §5.1a)."
+    description: "Full mode validates against ContactPoint; change mode against the typed <Class>ChangePayload derived at build time by tools/change-payloads.mjs (Part 5 §5.1a)."
     update:
       schema:
         anyOf:
@@ -213,7 +213,7 @@ actions:
   - target: $.paths['/rights/specs/{id}'].put.requestBody.content['application/json'].schema
     remove: true
   - target: $.paths['/rights/specs/{id}'].put.requestBody.content['application/json']
-    description: "Full mode validates against RightSpecification; change mode against ChangePayload (Part 5 §5.1a)."
+    description: "Full mode validates against RightSpecification; change mode against the typed <Class>ChangePayload derived at build time by tools/change-payloads.mjs (Part 5 §5.1a)."
     update:
       schema:
         anyOf:
@@ -226,7 +226,7 @@ actions:
   - target: $.paths['/rates/{id}'].put.requestBody.content['application/json'].schema
     remove: true
   - target: $.paths['/rates/{id}'].put.requestBody.content['application/json']
-    description: "Full mode validates against RateTable; change mode against ChangePayload (Part 5 §5.1a)."
+    description: "Full mode validates against RateTable; change mode against the typed <Class>ChangePayload derived at build time by tools/change-payloads.mjs (Part 5 §5.1a)."
     update:
       schema:
         anyOf:
@@ -239,7 +239,7 @@ actions:
   - target: $.paths['/sessions/{id}'].put.requestBody.content['application/json'].schema
     remove: true
   - target: $.paths['/sessions/{id}'].put.requestBody.content['application/json']
-    description: "Full mode validates against Session; change mode against ChangePayload (Part 5 §5.1a)."
+    description: "Full mode validates against Session; change mode against the typed <Class>ChangePayload derived at build time by tools/change-payloads.mjs (Part 5 §5.1a)."
     update:
       schema:
         anyOf:
@@ -252,7 +252,7 @@ actions:
   - target: $.paths['/rights/assigned/{id}'].put.requestBody.content['application/json'].schema
     remove: true
   - target: $.paths['/rights/assigned/{id}'].put.requestBody.content['application/json']
-    description: "Full mode validates against AssignedRight; change mode against ChangePayload (Part 5 §5.1a)."
+    description: "Full mode validates against AssignedRight; change mode against the typed <Class>ChangePayload derived at build time by tools/change-payloads.mjs (Part 5 §5.1a)."
     update:
       schema:
         anyOf:
