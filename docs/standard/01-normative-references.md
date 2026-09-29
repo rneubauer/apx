@@ -37,7 +37,7 @@
 ## 1.3 Known APDS 4.1 errata
 
 APX vendors the APDS 4.1 OpenAPI document **verbatim** (checksum-guarded),
-including its errata. Filing-ready reports for all twelve below, each
+including its errata. Filing-ready reports for all thirteen below, each
 with the offending snippet and a minimal suggested fix, are in
 [`docs/errata/`](../errata/README.md), which tracks their status upstream. Verified against `parkingdata/spec` at `master` on
 2026-09-23: the published document was byte-identical to the vendored copy,
@@ -102,15 +102,22 @@ of:
 10. **No entity schema declares `extensions`** (Use Case §C.2.5). The
     overlay declares it on the eight native entity schemas.
     [Erratum 010](../errata/010-entities-no-extensions.md).
-   Filed upstream as [parkingdata/spec#43](https://github.com/parkingdata/spec/issues/43).
+    Filed upstream as [parkingdata/spec#43](https://github.com/parkingdata/spec/issues/43).
 11. **`GeoJsonObject` declares no `coordinates`.** The overlay declares an
     optional array. [Erratum 011](../errata/011-geojsonobject-no-coordinates.md).
-   Filed upstream as [parkingdata/spec#44](https://github.com/parkingdata/spec/issues/44).
+    Filed upstream as [parkingdata/spec#44](https://github.com/parkingdata/spec/issues/44).
 12. **Response-code irregularities** on `POST /rates` (200, no 400/409),
     `PUT /rights/assigned/{id}` (201, no 404), and the contact reads
     (only 500s). The overlay adds the missing codes; Part 5 §5.7 records
     the rest. [Erratum 012](../errata/012-native-response-code-irregularities.md).
-   Filed upstream as [parkingdata/spec#45](https://github.com/parkingdata/spec/issues/45).
+    Filed upstream as [parkingdata/spec#45](https://github.com/parkingdata/spec/issues/45).
+13. **`HierarchyElement` maps only three of its ten types**, so
+    `VehicularAccess` (a lane) validates as a bare `HierarchyElement` and
+    its `accessType` is never checked. APX binds its own
+    `apds-ext:apx:lane-cameras@1.0` decoration (Part 4 §4.3), so camera
+    configuration is validated; the APDS lane fields are carried as sent.
+    [Erratum 013](../errata/013-hierarchyelement-subtypes-unmapped.md).
+    Filed upstream as [parkingdata/spec#46](https://github.com/parkingdata/spec/issues/46).
 
 Remove an entry, and its overlay action, in the same change that vendors a
 corrected APDS release.

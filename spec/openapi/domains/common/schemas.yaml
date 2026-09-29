@@ -30,10 +30,25 @@ Extensions:
     The official APDS extension container (Use Case Document §C.2.5).
     Keys MUST follow `apds-ext:<namespace>:<class>@<major>.<minor>`.
     Implementations MUST preserve unknown extension keys on round-trip
-    (tolerant reader, faithful writer).
+    (tolerant reader, faithful writer). An APX decoration key, wherever
+    the container appears, MUST carry a value valid against that
+    decoration's schema (Part 4 §4.3); other keys are any object.
   type: object
   propertyNames:
     pattern: "^apds-ext:[a-z0-9-]+:[a-z0-9-]+@[0-9]+\\.[0-9]+$"
+  properties:
+    "apds-ext:apx:devicestatus@1.0":
+      $ref: "../control/schemas.yaml#/DeviceStatus"
+    "apds-ext:apx:ratepolicy@1.0":
+      $ref: "../control/schemas.yaml#/RatePolicy"
+    "apds-ext:apx:lpr-read@1.0":
+      $ref: "../lpr/schemas.yaml#/LprReadDetail"
+    "apds-ext:apx:lane-cameras@1.0":
+      $ref: "../lpr/schemas.yaml#/LaneCameras"
+    "apds-ext:apx:reservation@1.0":
+      $ref: "../reservations/schemas.yaml#/ReservationExtension"
+    "apds-ext:apx:permit@1.0":
+      $ref: "../reservations/schemas.yaml#/PermitExtension"
   additionalProperties:
     type: object
 

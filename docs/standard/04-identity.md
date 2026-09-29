@@ -58,7 +58,10 @@ official APDS extension mechanism (Use Case §C.2.5):
 
 ```json
 "extensions": {
-  "apds-ext:apx:devicestatus@1.0": { "deviceState": "fault" },
+  "apds-ext:apx:devicestatus@1.0": {
+    "device": { "id": "c1000000-0000-4000-8000-000000000011", "className": "SupplementalEquipment" },
+    "deviceState": "fault"
+  },
   "apds-ext:acmecorp:loyalty@2.1": { "tier": "gold" }
 }
 ```
@@ -66,6 +69,12 @@ official APDS extension mechanism (Use Case §C.2.5):
 - Keys MUST match `^apds-ext:[a-z0-9-]+:[a-z0-9-]+@[0-9]+\.[0-9]+$`.
 - The version component is the extension class's own contract version.
 - Readers MUST ignore unknown keys; writers MUST preserve them (Part 3 §3.3).
+- An **APX decoration key** (`apds-ext:apx:…`) MUST carry a value valid
+  against that decoration's schema wherever the container appears — the
+  `Extensions` schema binds each one (`devicestatus`, `ratepolicy`,
+  `lpr-read`, `lane-cameras`, `reservation`, `permit`), so a validator
+  checks them on every payload. `alert-evidence` and `correlation` are
+  defined in prose only (Part 7 §7.1, Part 17) and are not yet bound.
 
 APX also uses this container in the **other direction**: attaching APX data
 to APDS entities (e.g. `apds-ext:apx:devicestatus@1.0` on a

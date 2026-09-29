@@ -6,6 +6,41 @@ conformance/versioning rules in Part 3 of the written standard.
 The machine-readable spec (`spec/openapi/apx.yaml`, bundled as
 `spec/dist/apx-v1.*`) is normative; entries here are informative.
 
+## [0.12.1] — 2026-09-28
+
+Re-vetting the LPR module against 0.12.0 found that the edition named a
+route that does not exist and that APX's own decorations were never
+checked on the wire. This release fixes both. Every change is additive
+for conforming payloads; payloads whose APX decoration values contradict
+their own schemas, which were never conformant, now fail validation.
+
+**Fixed.**
+- The `accessEvent` revision route. 0.12.0 told the LPR system to revise
+  a read through native `PUT /observations/{id}`, which APDS 4.1 does not
+  have (only `GET` and `POST /observations`), so
+  `apx.data.observation.updated.v1` could never fire. New
+  `PUT /v1/lpr/reads/{observation}/access-event` (`apx.data:write`,
+  `If-Match`, stale → 409 `version-conflict`, the current value → a
+  no-op) writes the value into the Observation's decoration, increments
+  its `version`, and publishes the updated event (Part 13 §13.3a(4),
+  §13.4, Part 8, Annex A APX-LPR-04). Scenario 27's correction step uses
+  it.
+- APX decorations are validated wherever they appear. The `Extensions`
+  container bound no key to a schema, so `lpr-read` with `speed: -1` or
+  `accessEvent: "sideways"`, and `lane-cameras` with `faces: "upward"`,
+  all passed. `Extensions` now binds `devicestatus`, `ratepolicy`,
+  `lpr-read`, `lane-cameras`, `reservation`, and `permit` to their schemas
+  (Part 4 §4.3). Part 4's own example, which omitted `device` from
+  `devicestatus`, is corrected.
+- A duplicate `cameraId` within a Place is refused with 422
+  `request-unprocessable`, now declared on native `POST /places` and
+  `PUT /places/{id}` (Part 13 §13.3a(5), Annex A APX-LPR-05).
+
+**Added.** Erratum 013: APDS 4.1's `HierarchyElement` discriminator maps
+only `campus`, `place`, and `space`, so `VehicularAccess` — the lane —
+validates as a bare `HierarchyElement` and its `accessType` is never
+checked. Filed upstream as parkingdata/spec#46.
+
 ## [0.12.0] — 2026-09-28
 
 LPR reads say what happened; APX no longer derives what it means. An
