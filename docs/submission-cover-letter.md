@@ -11,7 +11,7 @@ API surface APDS deliberately leaves out — real-time delivery, operational
 control, alerting, discovery, and the customer-service layer built on
 them — expressed entirely in APDS's own vocabulary. One machine-readable
 OpenAPI 3.1 document, a written standard of 23 parts plus a conformance
-annex, nine open registries, and twenty-five CI-validated end-to-end
+annex, nine open registries, and twenty-six CI-validated end-to-end
 scenarios. `spec/edition.json` pins the exact artifacts of this edition by
 checksum, so "adopt APX" names a fixed set of files rather than a branch.
 
@@ -55,6 +55,11 @@ checksum, so "adopt APX" names a fixed set of files rather than a branch.
    rather than errors), written up in `docs/errata/` (004–012) in the
    same form and filed as
    [#37](https://github.com/parkingdata/spec/issues/37)–[#45](https://github.com/parkingdata/spec/issues/45).
+   Re-vetting LPR found a thirteenth (013, lane and equipment types missing
+   from the `HierarchyElement` discriminator), filed as
+   [#46](https://github.com/parkingdata/spec/issues/46), and a
+   mechanical audit of our own prose raised one question (014, how a
+   RightHolder is identified).
 5. **It answers the industry's next question.** Part 17 standardizes the
    customer-service surface — one aggregated resolution context and
    server-side, policy-decided allowed actions — with a rule we believe
@@ -63,9 +68,10 @@ checksum, so "adopt APX" names a fixed set of files rather than a branch.
 
 ## What we are candid about
 
-- **Thirteen known upstream errata** in `apds-api-4.1.yaml` (Part 1 §1.3).
-  All thirteen are filed with you, as issues #33–#35 and #37–#46, and
-  still open at the time of writing; each is also written up in
+- **Fourteen known upstream errata** in `apds-api-4.1.yaml` (Part 1 §1.3).
+  Thirteen are filed with you, as issues #33–#35 and #37–#46, and still
+  open at the time of writing; the fourteenth (014) is a question rather
+  than an error, and is not yet filed. Each is written up in
   `docs/errata/`. Where APX needs a working shape before APDS ships a fix, a
   narrow overlay supplies it; `ReferenceToQuote` (erratum 008) has no
   additive workaround. None is a blocker for APX, and none originates
@@ -89,7 +95,8 @@ checksum, so "adopt APX" names a fixed set of files rather than a branch.
 
 Technical review by the working group; a decision on adoption, adoption
 with changes, or chartering a joint task group; and — independent of that
-outcome — disposition of the thirteen errata filed (#33–#35, #37–#46). The repository, its CI,
+outcome — disposition of the errata filed (#33–#35, #37–#46) and an
+answer to question 014. The repository, its CI,
 browsable reference documentation, and the scenario suite are public;
 every wire example is schema-validated against the specification in CI,
 and a schema-conformant mock server (`npm run mock`, Prism over the

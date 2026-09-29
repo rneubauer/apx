@@ -1,12 +1,13 @@
 # APDS 4.1 errata found while building APX
 
-Thirteen issues in the published APDS 4.1 OpenAPI document, found by
+Fourteen issues in the published APDS 4.1 OpenAPI document, found by
 building a companion standard on top of it and validating every example —
 and, since 2026-09-25, every request and response of a private scenario
 suite covering each conformance class — in CI.
-Nine are schema errors or omissions; three (010, 012, and the `GET /quotes`
-half of 007) are consistency suggestions that may well be intentional,
-and are filed as such. Each report says which kind it is.
+Eleven are schema errors, omissions, or gaps; 010, 012, and the
+`GET /quotes` half of 007 are consistency suggestions that may well be
+intentional, and are filed as such; 014 is a question about the model.
+Each report says which kind it is.
 
 They are **in APDS, not in APX**. The APX repository vendors
 `apds-api-4.1.yaml` byte-identical and checksum-guarded (Part 0 §0.2,
@@ -33,10 +34,14 @@ comment pointing at the erratum.
 | [011](011-geojsonobject-no-coordinates.md) | `GeoJsonObject` declares no `coordinates` | [#44](https://github.com/parkingdata/spec/issues/44), open |
 | [012](012-native-response-code-irregularities.md) | Response codes on `/rates`, `/rights/assigned/{id}`, `/contacts` differ from their siblings | [#45](https://github.com/parkingdata/spec/issues/45), open |
 | [013](013-hierarchyelement-subtypes-unmapped.md) | `HierarchyElement` discriminator maps only three of ten types; `VehicularAccess` unreachable | [#46](https://github.com/parkingdata/spec/issues/46), open |
+| [014](014-rightholder-not-identifiable.md) | Question: no identifiable `RightHolder`; `AssignedRightHolder` has no id | not yet filed |
 
 001–003 were filed on 2026-09-23; 004–012 were found on 2026-09-25 and
 filed on 2026-09-28 as #37–#45. 013 was found on 2026-09-28 while
-re-vetting LPR for 0.12.0 and filed the same day as #46. Update this table as they are triaged.
+re-vetting LPR for 0.12.0 and filed the same day as #46. 014 was found on
+2026-09-29 by a mechanical audit of class names in the APX prose, and
+checked against the APDS Information Model 4.0 as well as the OpenAPI
+document. Update this table as they are triaged.
 Remove an entry only once a corrected APDS release is vendored, because the
 workaround in our tooling has to come out at the same moment.
 

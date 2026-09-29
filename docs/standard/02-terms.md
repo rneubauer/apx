@@ -4,7 +4,10 @@ Terms defined by APDS 4.1 (Place, Campus, SubplaceElement, IdentifiedArea,
 Space, RightSpecification, AssignedRight, RightHolder, RightPool, PlannedUse,
 Session, Segment, Observation, Credential, RateTable, Quote, Supply, Demand,
 Distributing Party, Receiving Party) are used with their APDS meanings and
-are NOT redefined here.
+are NOT redefined here. RightHolder is defined by the APDS Information
+Model; the 4.1 OpenAPI document has no identifiable schema for it, so the
+`className: "RightHolder"` convention APX uses to reference one is
+described in Part 1 §1.3 item 14.
 
 ## 2.1 APX-defined terms
 
