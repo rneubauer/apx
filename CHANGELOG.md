@@ -9,6 +9,9 @@ The machine-readable spec (`spec/openapi/apx.yaml`, bundled as
 ## [Unreleased]
 
 **Added.**
+- `docs/apds-change-requests.md`: the change requests for the APDS working
+  group (errata 001–014, five optional additions, a suggested order),
+  linked from the landing page and the errata README.
 - The vetting suite is now public: 377 scenarios in
   `docs/scenarios/by-module/`, one folder per conformance class with its
   findings (221), linked from the worked scenarios. `npm run vetting`
