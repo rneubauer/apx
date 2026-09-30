@@ -17,6 +17,9 @@ around in APX's own tooling or in the data overlay
 (`spec/openapi/overlays/apx-data-overlay.yaml`) instead, narrowly, with a
 comment pointing at the erratum.
 
+The one-page summary for the APDS working group, with optional additions
+and a suggested order, is [Requested APDS changes](../apds-change-requests.md).
+
 ## Status
 
 | # | Issue | Filed upstream |
