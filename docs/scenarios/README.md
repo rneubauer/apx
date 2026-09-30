@@ -34,6 +34,31 @@ comment is machine-validated against the bundled spec by
 | [25](25-ticket-matching-exit-lane.md) | Ticket matching — no ticket at the exit: the camera's entry read is offered as a candidate, a permit holder is found by phone, the agent binds the open session, the exit prices from the real entry, and the lost-ticket fee is the fallback, not the default | `apx-control`, `apx-lpr`, `apx-accounts` |
 | [27](27-lpr-reversible-lane.md) | Reversible lane — one camera facing each way so a rear plate is read in either mode, an old front-plate camera on the entry lane, a read first reported `unknown` and corrected by the LPR system, and the `observation.updated.v1` event that carries the correction to billing | `apx-lpr`, `apx-events` |
 
+## By module — the vetting suite
+
+Under these stories sits the test bench the spec was vetted with:
+[**377 scenarios, one folder per conformance class**](by-module/README.md),
+each with its findings. Every request and response is checked against the
+bundle by `npm run vetting`.
+
+| Module | Scenarios | Findings |
+|---|---|---|
+| [`apx-accounts`](by-module/apx-accounts/scenarios.md) | 26 | [14](by-module/apx-accounts/findings.md) |
+| [`apx-alerts`](by-module/apx-alerts/scenarios.md) | 22 | [9](by-module/apx-alerts/findings.md) |
+| [`apx-control`](by-module/apx-control/scenarios.md) | 25 | [10](by-module/apx-control/findings.md) |
+| [`apx-credentials`](by-module/apx-credentials/scenarios.md) | 26 | [11](by-module/apx-credentials/findings.md) |
+| [`apx-data`](by-module/apx-data/scenarios.md) | 33 | [16](by-module/apx-data/findings.md) |
+| [`apx-discovery`](by-module/apx-discovery/scenarios.md) | 16 | [14](by-module/apx-discovery/findings.md) |
+| [`apx-events`](by-module/apx-events/scenarios.md) | 24 | [17](by-module/apx-events/findings.md) |
+| [`apx-lpr`](by-module/apx-lpr/scenarios.md) | 35 | [19](by-module/apx-lpr/findings.md) |
+| [`apx-permits`](by-module/apx-permits/scenarios.md) | 15 | [12](by-module/apx-permits/findings.md) |
+| [`apx-reservations`](by-module/apx-reservations/scenarios.md) | 24 | [16](by-module/apx-reservations/findings.md) |
+| [`apx-resolution`](by-module/apx-resolution/scenarios.md) | 28 | [13](by-module/apx-resolution/findings.md) |
+| [`apx-tolling`](by-module/apx-tolling/scenarios.md) | 24 | [14](by-module/apx-tolling/findings.md) |
+| [`apx-valet`](by-module/apx-valet/scenarios.md) | 25 | [16](by-module/apx-valet/findings.md) |
+| [`apx-validations`](by-module/apx-validations/scenarios.md) | 25 | [13](by-module/apx-validations/findings.md) |
+| [`apx-violations`](by-module/apx-violations/scenarios.md) | 29 | [17](by-module/apx-violations/findings.md) |
+
 ## Conventions
 
 - **Base URL** `https://api.lakeside-garage.example` — a synthetic operator,
