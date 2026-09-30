@@ -13,6 +13,9 @@ The machine-readable spec (`spec/openapi/apx.yaml`, bundled as
   `docs/scenarios/by-module/`, one folder per conformance class with its
   findings (221), linked from the worked scenarios. `npm run vetting`
   checks every request and response against the bundle.
+- The next round in the open: 150 proposed operational cases drafted by
+  ChatGPT, with the brief they came from, in `docs/scenarios/proposed/`
+  (unverified, awaiting triage).
 - `apx-access-denial-reasons` v2: `credentialNotYetActive`, for a
   credential presented while still `issued`. Part 21 §21.4 promised one
   denial reason per non-active lifecycle state and `issued` had none.

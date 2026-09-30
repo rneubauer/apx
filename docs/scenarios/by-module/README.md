@@ -33,7 +33,8 @@ findings table says how.
 *Operations* and *Responses* count the routes and declared status codes
 each module's scenarios exercise. The seven Annex A rows not yet cited
 (APX-CORE-13 to 16, APX-ALT-06, APX-ACC-07, APX-RES-09) were added in
-0.13.0 and get scenarios in the next round.
+0.13.0 and get scenarios in the next round, together with the
+[150 proposed operational cases](../proposed/README.md) under triage.
 [`findings.md`](findings.md) is the consolidated plan the 0.11.0 fixes
 were built from, grouped by fix; [`apx-scenarios.xlsx`](apx-scenarios.xlsx)
 is the same suite as a spreadsheet.

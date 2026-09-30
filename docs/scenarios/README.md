@@ -41,6 +41,10 @@ Under these stories sits the test bench the spec was vetted with:
 each with its findings. Every request and response is checked against the
 bundle by `npm run vetting`.
 
+And the next round in the open: [**150 proposed operational cases**](proposed/README.md)
+(ChatGPT-drafted, not yet verified) with the brief they were written from,
+awaiting triage.
+
 | Module | Scenarios | Findings |
 |---|---|---|
 | [`apx-accounts`](by-module/apx-accounts/scenarios.md) | 26 | [14](by-module/apx-accounts/findings.md) |
