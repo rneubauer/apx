@@ -9,6 +9,10 @@ The machine-readable spec (`spec/openapi/apx.yaml`, bundled as
 ## [Unreleased]
 
 **Added.**
+- The vetting suite is now public: 377 scenarios in
+  `docs/scenarios/by-module/`, one folder per conformance class with its
+  findings (221), linked from the worked scenarios. `npm run vetting`
+  checks every request and response against the bundle.
 - `apx-access-denial-reasons` v2: `credentialNotYetActive`, for a
   credential presented while still `issued`. Part 21 §21.4 promised one
   denial reason per non-active lifecycle state and `issued` had none.
