@@ -1,0 +1,14 @@
+{
+  "id": "0f1a2b3c-4d5e-4f6a-9b7c-8d9e0f1a2b3c",
+  "version": 1,
+  "name": "apx-read-review-reasons",
+  "creator": { "id": "a1000000-0000-4000-8000-000000000001", "className": "Organisation" },
+  "locator": "https://apx-standard.org/registries/apx-read-review-reasons.json",
+  "userDefinedCodeListEntries": [
+    { "definedValue": "lowConfidence", "entryDescription": "The read's overall or plate confidence is below the place's review threshold.", "entryIndex": 0 },
+    { "definedValue": "noConfidence", "entryDescription": "The engine reported no confidence for the read.", "entryIndex": 1 },
+    { "definedValue": "jurisdictionRequiresReview", "entryDescription": "The jurisdiction requires a human to confirm a plate before enforcement.", "entryIndex": 2 },
+    { "definedValue": "ambiguousCharacters", "entryDescription": "The engine's alternate reads differ only in characters it commonly confuses (0/O, 1/I, 5/S, 8/B).", "entryIndex": 3 },
+    { "definedValue": "enforcementHandoff", "entryDescription": "The read is about to be handed to an enforcement system that requires reviewed evidence.", "entryIndex": 4 }
+  ]
+}

@@ -40,7 +40,9 @@ Command:
         pushRate.rateTable VersionedReference, applyValidation.ticket +
         provider, displayMessage.message, setDeviceState.state,
         pushNegotiatedRate.rateTable VersionedReference to a RateTable
-        flagged negotiable, matchTicket.session + evidence,
+        flagged negotiable, or pushNegotiatedRate.amount AmountInCurrency
+        (any amount the agent states, where the host offers the
+        negotiatedAmounts feature), matchTicket.session + evidence,
         resetPassback/forceIn/forceOut.credential, courtesyExit.holder).
     requestedBy:
       description: The organisation requesting the action (defaults to the token's apx_org).
@@ -125,7 +127,8 @@ CommandResult:
     command reaches `succeeded` (Part 6 §6.1a) and absent before then. Members
     are normative per command type: `lostTicket` → `ticketNumber`, `session`,
     `amountDue`; `matchTicket` → `session`, `amountDue`;
-    `pushNegotiatedRate` → `rateTable`, `amountDue`. Other command types
+    `pushNegotiatedRate` → `amountDue`, and `rateTable` when a table was
+    selected (absent for a stated amount). Other command types
     leave it absent unless a registry entry says otherwise. It restates what
     the lane inquiry shows, so a console can continue (print, take payment)
     without parsing `statusHistory[].detail` or making a second call.
@@ -142,8 +145,29 @@ CommandResult:
       description: The amount due on the ticket immediately after the command.
       $ref: "../../../vendor/apds/4.1/apds-api-4.1.yaml#/components/schemas/AmountInCurrency"
     rateTable:
-      description: The RateTable at the exact version applied (pushNegotiatedRate).
+      description: The RateTable at the exact version applied (pushNegotiatedRate with a table; absent for a stated amount).
       $ref: "../../../vendor/apds/4.1/apds-api-4.1.yaml#/components/schemas/VersionedReference"
+    display:
+      type: object
+      description: |-
+        Proof of display for `displayMessage` (Part 6 §6.1a): what the
+        device confirmed it showed, when, and whether the player or an
+        operator acknowledged it.
+      properties:
+        shownTime:
+          $ref: "../../../vendor/apds/4.1/apds-api-4.1.yaml#/components/schemas/DateTime"
+        contentHash:
+          type: string
+          description: Hash of the rendered content, so a dispute can prove what was shown.
+        wordingVersion:
+          type: string
+          description: The wording version the template was rendered under.
+        screenshot:
+          description: Access-controlled link to a capture of the display (Part 9 §9.6).
+          $ref: "../../../vendor/apds/4.1/apds-api-4.1.yaml#/components/schemas/Url"
+        acknowledgedBy:
+          type: string
+          enum: [player, operator, none]
     extensions:
       $ref: "../common/schemas.yaml#/Extensions"
 
@@ -250,12 +274,20 @@ LaneStatus:
           description: |-
             The negotiated rate in effect on this ticket, if a
             pushNegotiatedRate command succeeded for it (Part 6 §6.6). Absent
-            when the ticket prices from the lane's normal rate deck.
-          required: [rateTable, command]
+            when the ticket prices from the lane's normal rate deck. Exactly
+            one of rateTable (a table selected from the deck) or amount (a
+            figure the agent stated) is present.
+          required: [command]
           properties:
             rateTable:
               description: The RateTable selected (VersionedReference — the exact version applied).
               $ref: "../../../vendor/apds/4.1/apds-api-4.1.yaml#/components/schemas/VersionedReference"
+            amount:
+              description: The amount the agent stated for this ticket (the negotiatedAmounts feature). It is what the ticket owes, not a discount.
+              $ref: "../../../vendor/apds/4.1/apds-api-4.1.yaml#/components/schemas/AmountInCurrency"
+            reason:
+              type: string
+              description: The command's reason, copied for the screen-pop. Always present with amount.
             command:
               description: The pushNegotiatedRate Command that applied it — carries `agent`, `reason`, and the audit trail.
               $ref: "../../../vendor/apds/4.1/apds-api-4.1.yaml#/components/schemas/Reference"

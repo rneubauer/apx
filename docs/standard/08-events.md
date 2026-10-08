@@ -168,6 +168,15 @@ event to be attributable to a location. The binding rule, per topic:
    `insufficient-grant` (§8.1); the filter can narrow the grant, never
    widen it.
 
+## 8.5a Alert-type filter (normative)
+
+`filters.alertTypes[]` applies to the alert topics (`apx.alert.raised.v1`,
+`apx.alert.status.v1`): only alerts whose `alertType` is listed are
+delivered. It combines with `severityFloor` (both must hold) and with
+`places`. Values are not validated against `apx-alert-types`, because
+`alertType` is open (Part 7 §7.1); a value no alert carries simply
+matches nothing. On other topics the filter is ignored.
+
 ## 8.6 Publishing obligations
 
 Implementations claiming `apx-events` MUST publish the APDS EventTypeEnum

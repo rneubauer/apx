@@ -142,8 +142,11 @@ PermitIssueRequest:
 PermitExtension:
   title: PermitExtension
   description: |-
-    The `apds-ext:apx:permit@1.0` extension object (Part 14 §14.2): links a
-    renewal permit to the one it renews, so a portal can follow the chain.
+    The `apds-ext:apx:permit@1.1` extension object (Part 14 §14.2; `@1.0`
+    remains valid and carries the first two members only): links a renewal
+    permit to the one it renews, so a portal can follow the chain, and
+    caps how many of a multi-vehicle permit's vehicles may be parked at
+    once (§14.2d).
   type: object
   properties:
     renews:
@@ -153,3 +156,21 @@ PermitExtension:
       description: Set by the server on the renewed permit when a renewal is issued.
       readOnly: true
       $ref: "../../../vendor/apds/4.1/apds-api-4.1.yaml#/components/schemas/Reference"
+    maxConcurrentVehicles:
+      type: integer
+      minimum: 1
+      description: |-
+        How many of the permit's registered vehicles may be parked at the
+        place at once (Part 14 §14.2d). Absent means every registered
+        vehicle may. A vehicle beyond the limit is an overage.
+    overageBilling:
+      type: object
+      description: What an overage costs (Part 14 §14.2d).
+      required: [mode]
+      properties:
+        mode:
+          type: string
+          enum: [rack, dayRate, none]
+          description: "`rack` — the place's transient rate deck; `dayRate` — the flat `dayRate`; `none` — recorded, not billed."
+        dayRate:
+          $ref: "../../../vendor/apds/4.1/apds-api-4.1.yaml#/components/schemas/AmountInCurrency"

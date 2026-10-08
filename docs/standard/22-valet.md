@@ -224,3 +224,7 @@ for the car to be charged — `requested`, `targetStateOfChargePercent`,
 settles on the stay's APDS Session by default. The customer read (§22.5)
 exposes `charging.requested` and `charging.session`; the charge itself is
 read under `apx.charging:status`.
+
+Where an external pairing engine matched the ticket to its Session, the
+ticket carries the decoration `apds-ext:apx:match-evidence@1.0` (Part 5
+§5.8), saying how the match was made.

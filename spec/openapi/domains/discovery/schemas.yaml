@@ -88,6 +88,32 @@ DiscoveryDocument:
         additions.
       additionalProperties: { type: integer }
       examples: [{ requestsPerMinute: 600, commandsPerMinute: 60 }]
+    replication:
+      type: array
+      description: |-
+        Part 18 §18.6 — for a place this implementation shares with a
+        replicated site or aggregator implementation, which side is
+        authoritative for each entity class. A write to a class from the
+        non-authoritative side is 409 `not-authoritative`. Absent when
+        the implementation replicates nothing.
+      items:
+        type: object
+        required: [place, class, authority]
+        properties:
+          place:
+            type: string
+            format: uuid
+            description: The HierarchyElement subtree root the row applies to.
+          class:
+            type: string
+            description: An APDS class (`Session`, `RateTable`…) or APX resource class (`Violation`, `Alert`…).
+          authority:
+            type: string
+            enum: [site, aggregator]
+          peer:
+            type: string
+            format: uri-reference
+            description: The other implementation's `EventEnvelope.source`.
     extensions:
       $ref: "../common/schemas.yaml#/Extensions"
 

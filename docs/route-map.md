@@ -109,3 +109,8 @@ response is `202` — poll `GET /v1/commands/{id}` or subscribe to
 | `POST /charging-sessions/start` · `/stop` | `POST /v1/charging/sessions` (authorization), then `POST …/{id}/events` — one `ChargingEvent` per OCPP TransactionEvent (pluggedIn, chargingStarted, meterValue, chargingEnded, unplugged); `idle` is server-side after grace |
 | `GET /my-charge` | `GET /v1/charging/sessions/{id}` on `apx.charging:status` — kWh, state of charge, grace and idle rate, cost so far; no plate or network ids |
 | `POST /chargers/{id}/unlock` | `POST /v1/commands` with `unlockConnector` (also `startCharging`, `stopCharging`) — Part 6, with `confirmationLevel` |
+| `GET /lists` · `POST /lists/{id}/plates` | `GET/POST /v1/plate-lists` and `…/{id}/entries` — watch, scofflaw, allow, enforcement-vehicle lists with per-place flags; `?mode=change&cursor=` keeps a copy current (Part 24) |
+| `POST /citations/import` | `POST /v1/violations/imports` — a citation another system issued, in its own state, keyed on the source record; `POST /v1/violations/{id}/session` links the stay later (Part 19 §19.13) |
+| `POST /plates/search` · `POST /observation-lookups` | `POST /v1/lpr/reads:search` (and `/v1/accounts:search`, `/v1/payments:search`, `/v1/violations:search`) — the lookups with the plate in a body, never a URL (Part 9 §9.6) |
+| `POST /plate-review/{id}/decision` | `PUT /v1/lpr/reads/{observation}/plate` — confirm, correct, or reject a read; `detail.review` shows the state (Part 13 §13.3a(4a)) |
+| `GET /occupancy/hourly` | `GET /v1/places/{id}/occupancy/history?interval=PT1H` (Part 5 §5.5a) |

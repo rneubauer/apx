@@ -111,6 +111,19 @@ Rules:
    subtrees before relying on the feed for them, selecting each with the
    native `place` filter (subtree-inclusive; the data overlay adds it to
    `/places`, which APDS 4.1 omits).
+8. **APX resources.** Every APX list route of a stateful resource —
+   `/v1/commands`, `/v1/alerts`, `/v1/violations`, `/v1/valet/tickets`,
+   `/v1/credentials`, `/v1/access-events`, `/v1/validations/programs`,
+   `/v1/validations/redemptions`, `/v1/payments`,
+   `/v1/tolling/transactions`, `/v1/charging/sessions`,
+   `/v1/plate-lists`, and `/v1/plate-lists/{id}/entries` — MUST accept
+   `mode=change&cursor=` with the same ordering, gaplessness, tombstone,
+   retention, scope, and grant-expansion rules as rules 1–7. Items are
+   the resource's own schema as change payloads (identity plus the
+   changed members). A route's other filters compose as in rule 6. The
+   obligation belongs to the class that owns the route. This is the
+   catch-up path for a separate client or an edge implementation after
+   an outage longer than the Part 8 delivery windows.
 
 **Rate deck mirroring (informative).** A third-party system that needs the
 operator's rate deck — a call platform, a reservation channel, a revenue
@@ -184,6 +197,23 @@ demand table. APX adds one convenience read:
   charging, blocked, inoperative — derived from `ChargingPointStatus`, so
   "is there a free charger" is the same read as "is there a free space".
 
+## 5.5a Occupancy history
+
+`GET /v1/places/{id}/occupancy/history?from=&to=&interval=` (scope
+`apx.data:read`; the grant must cover the element) returns an
+`OccupancyHistoryPage`: one bucket per `interval` (ISO 8601 duration,
+default `PT1H`) between `from` and `to`, each with `maxCount`, the
+time-weighted `avgCount`, the `supplyQuantity` in force, and how many
+demand records it is computed from.
+
+- Buckets align to interval boundaries in the place's time zone.
+- Like §5.5, the history is a read-model derived from the APDS
+  `DemandTable` records the implementation holds; it is never written
+  directly. A bucket with no record carries no counts — never a guess.
+- An element the implementation holds no occupancy for is 404
+  `target-not-found`. A server MAY refuse an interval shorter than its
+  sampling with 400 `invalid-request`.
+
 ## 5.6 Conformance
 
 `apx-data` requires: the eight native routes; §5.1 modes on updates and
@@ -194,7 +224,12 @@ exactly-once path Part 13 §13.4 relies on); the stock-APDS compatibility
 guarantee (a client sending no APX headers/params observes pure APDS 4.1
 behavior). Implementations that hold occupancy data for an element MUST
 serve §5.5 for it; implementations with no occupancy data MAY omit the
-endpoint entirely (discovery then does not list it).
+endpoint entirely (discovery then does not list it); the same holds for
+§5.5a. Every `apx-data` implementation accepts and preserves the §5.8
+decoration on Sessions (Part 4 §4.3); one that also claims `apx-lpr`
+enforces its `read-already-bound` rule and answers
+`GET /v1/lpr/reads?session=` from it. Rule 8 of §5.2 is an obligation of
+the class that owns each route.
 
 ## 5.7 Known APDS 4.1 behaviour on the native routes (informative)
 
@@ -216,3 +251,55 @@ way that breaks a stock client:
 - `POST /quotes` declares no request body in APDS; the overlay declares
   an optional `QuoteRightRequest | QuoteSessionExtensionRequest`.
   `GET /quotes` returns the single matching quote object, not a list.
+
+## 5.8 Session detail written by a pairing engine (normative)
+
+APDS describes a Session's money and rights but not how the visit was
+assembled: which reads it rests on, why it ended, how sure each match
+behind it is, and which visit an area stay belongs to. Where the system
+that pairs reads into Sessions is a separate client of the APX server,
+it has to write what it decided. It does so with the Level B decoration
+`apds-ext:apx:session-detail@1.0` (`SessionDetail`) on the APDS Session,
+through the native `POST /sessions` and `PUT /sessions/{id}` (§5.1). A
+plain APDS client ignores it.
+
+1. **Reads (`reads[]`).** Each entry binds one ObservationElement to the
+   Session with a `role`: `entry` and `exit` (the passages that opened
+   and closed the visit), `duplicate` (the same passage seen by another
+   camera or frame), `activity` (the vehicle seen inside). At most one
+   entry is `representative`. The server derives `LprRead.session` from
+   these bindings and answers `GET /v1/lpr/reads?session=` from them
+   (Part 13 §13.3a(6)).
+2. **One visit per read.** A read already bound as `entry` or `exit` to
+   another Session of the same place MUST be refused with 409
+   `read-already-bound`, unless the write names that Session in
+   `supersedes` — a re-pairing, which removes the binding from the
+   superseded Session in the same write.
+3. **Lifecycle and closure.** `lifecycle` is `open`, `ended`, `final`
+   (no further revision expected), or `disputed`. `closure.endReason` is
+   a definedValue of `apx-session-end-reasons` (Part 11) or an
+   implementer code; `closure.endInferred` is true when `actualEnd` was
+   set by a rule rather than observed, and `closure.rule` names the rule
+   that closed a `stale` Session.
+4. **Exit-only Sessions.** APDS requires `actualStart`. A Session closed
+   from an exit read with no observed entry carries a synthetic
+   `actualStart` and `closure.startObserved: false`. Consumers MUST
+   exclude such Sessions from dwell statistics, and SHOULD exclude them
+   from occupancy derived from Sessions.
+5. **Matches (`matches[]`).** Each `MatchEvidence` records how a link
+   was established: the `target` (an AssignedRight, a ValetTicket, a
+   Violation, a PlateListEntry), the `matchType`, how the plates agreed
+   (`plate.method` `exact | alias | fold | fuzzy | lenient | reviewer`,
+   the edit cost, whether the jurisdiction agreed), the vehicle evidence
+   as a `level` and a score, and whether it was `applied` or only a
+   shadow match. It carries no plate characters and no make, model, or
+   colour values (Part 9 §9.6). The same object is the decoration
+   `apds-ext:apx:match-evidence@1.0` on a Violation (for
+   `relatedSession`, Part 19 §19.13) and a ValetTicket (for `session`,
+   Part 22). A consumer that acts on a match — an enforcement system
+   deciding whether to cite — reads its method here.
+6. **Area Sessions.** A Session that is part of a larger visit (a gated
+   area inside a garage) names that visit as `parent` and MUST have a
+   `hierarchyElement` inside the parent's. An area stay shorter than the
+   area's minimum dwell is `passThrough` and is never scored or billed.
+   Consumers count visits by Sessions without `parent`.

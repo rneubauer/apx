@@ -29,6 +29,10 @@ implementation has the named capability).
 | APX-CORE-14 | Every registry version the implementation validates against is served or linked and advertised in `/.well-known/apx-configuration` `registries`; every advertised URL resolves | §11.2 |
 | APX-CORE-15 **C** (receives a migrated place) | Onboarding at the receiving implementation: the grant names exactly the migrated subtree root(s), never `"*"`; imported historical entities keep their `recordInfo` provenance | §18.3 |
 | APX-CORE-16 **C** (hands over a migrated place) | After the agreed cutover the releasing implementation publishes no events bound to the moved place, and its change feeds emit tombstones for the entities it no longer hosts | §18.4 |
+| APX-CORE-17 **C** (publishes credential digests) | `apds-ext:apx:credential-digest@1.0` computed as HMAC-SHA-256 under the normalization published with each key; keys served only by `GET /v1/digest-keys` under `apx.digest:use`; rotation by `keyId` with both keys served during the overlap | §9.6 r6 |
+| APX-CORE-18 | Every APX list route of a stateful resource of a claimed class accepts `mode=change&cursor=` with the §5.2 ordering, gaplessness, tombstone, retention, scope, and grant-expansion rules; a foreign or expired cursor is 404 `target-not-found` | §5.2 r8 |
+| APX-CORE-19 **C** (replicated site implementation) | Authority per place and entity class declared in discovery `replication[]`; a write against it is 409 `not-authoritative`; replicated writes keep origin `id`, `RecordInfo.origin`, `creationTime`, and the original `statusHistory[]` times under `apx.replication:write`; idempotency keys origin-scoped | §18.6, §16.2 |
+| APX-CORE-20 | Every plate-, card-, or phone-keyed lookup served is also served in its body form (`…:search`, `…:check`) with the same rules and answers | §9.6 r7 |
 
 ## A.2 `apx-data`
 
@@ -42,6 +46,8 @@ implementation has the named capability).
 | APX-DATA-06 | Grant expansion signaled via `grantAdditions` on the first page after the change | §5.2 r7 |
 | APX-DATA-07 | Client sending no APX headers/params observes pure APDS 4.1 behavior | §5.6 |
 | APX-DATA-08 **C** (holds occupancy) | `GET /v1/places/{id}/occupancy` served; snapshot derivable from the Place hierarchy | §5.5 |
+| APX-DATA-09 | `apds-ext:apx:session-detail@1.0` accepted on native Session writes and preserved; with `apx-lpr`, a read bound as `entry`/`exit` to another Session of the place is 409 `read-already-bound` unless `supersedes` names it, and `LprRead.session` follows the bindings | §5.8, §5.6 |
+| APX-DATA-10 **C** (holds occupancy) | `GET /v1/places/{id}/occupancy/history` buckets aligned in the place time zone, derived from held DemandTable records, never guessed | §5.5a |
 
 ## A.3 `apx-events`
 
@@ -54,6 +60,7 @@ implementation has the named capability).
 | APX-EVT-05 | Per-topic place binding populated; `filters.places` matches bound place; unbindable events never delivered beyond grant | §8.5 |
 | APX-EVT-06 | EventTypeEnum topics published for every entity class served for writes; APX topics of every claimed class published | §8.6 |
 | APX-EVT-07 | Secret ≥32 bytes entropy; `APX-Key-Id` on every delivery during rotation overlap; overlap ends on `retireKeyIds` or 24 h after rotation | §8.1, §9.4 |
+| APX-EVT-08 | `filters.alertTypes` delivers only listed alert types on alert topics, combined with `severityFloor` and `places` | §8.5a |
 
 ## A.4 `apx-events-sse`
 
@@ -80,6 +87,8 @@ implementation has the named capability).
 | APX-CTL-12 | *(conditional — ticket matching)* `matchTicket` with `agent` REQUIRED prices the exit from the matched session's true entry time, materializes the exit into the APDS Session on vend (`SessionUpdated`), refuses a closed/foreign session (422 `session-not-open`) and an empty lane (409 `lane-no-current-transaction`) | §6.7 |
 | APX-CTL-13 | `GET /v1/commands` returns only grant-scoped commands and honours `target`, `place` (subtree), `commandType`, `status`, `agent`, `since`, `until`; `GET /v1/devices` honours `place` (subtree) and `deviceState`; a `place` outside the grant → 403 `insufficient-grant` | §6.1b, §6.4 |
 | APX-CTL-14 | A `succeeded` `lostTicket`, `matchTicket`, or `pushNegotiatedRate` carries `result` with the §6.1a members, consistent with the lane inquiry | §6.1a |
+| APX-CTL-16 **C** (negotiated amounts) | `pushNegotiatedRate` with `parameters.amount` sets the current ticket's `amountDue` to that amount, with no floor or ceiling; exactly one of `rateTable`/`amount`, `agent` and `reason` REQUIRED, the ticket's currency, no negative value (400 `invalid-request`); `amount` without the `negotiatedAmounts` feature → 422 `rate-not-negotiable`; the lane's `currentTicket.negotiatedRate` carries `amount`, `reason`, the command and the agent | §6.6 |
+| APX-CTL-15 **C** (display reports what it showed) | A `succeeded` `displayMessage` carries `result.display` (shown time, content hash, wording version, screenshot link, acknowledgement); template parameters accepted | §6.1, §6.1a |
 
 ## A.6 `apx-alerts`
 
@@ -91,6 +100,7 @@ implementation has the named capability).
 | APX-ALT-04 | An alert still `raised` or `acknowledged` at its `expiryTime` becomes `expired` and publishes `apx.alert.status.v1`; an alert without one never expires | §7.3 |
 | APX-ALT-05 | An alert with no place binding is visible to every token of its organisation regardless of `apx_places`, never to other organisations, and excluded from `place`-filtered lists | §7.1 |
 | APX-ALT-06 | A `webhookDeliveryFailed` alert never generates webhook deliveries to the subscription whose failure it reports | §7.4 |
+| APX-ALT-07 **C** (claims `apx-plate-lists`) | List-arrival alerts (`watchListArrival`, `scofflawArrival`, `refusedServiceArrival`) carry the `PlateListEntry` as `relatedEntity` and the read as evidence | §7.6, §24.4 |
 
 ## A.7 `apx-discovery`
 
@@ -112,6 +122,8 @@ implementation has the named capability).
 | APX-ACC-05 | Payment state machine per the §13.1a table (a hold = `approved` + `captureStatus: authorized` via `captureLater`, capture/void, cumulative `refundedAmount`); every other action → 409 `payment-state-illegal`; holds excluded from `GET /v1/payments` unless `captureStatus=authorized`, never published or materialized until captured; the recorded event re-published on every status or amount change | §13.1a, §13.2, §13.4 |
 | APX-ACC-06 | More than four card digits in any body member or query parameter → 422 `personal-data-not-permitted`, refused before persisting or logging | §13.1, §13.2 |
 | APX-ACC-07 **C** (persists APDS Payment) | Every `approved`, captured PaymentRecord is materialized as, or bound to, a native APDS `Payment` with a `paymentLines` entry of `paymentType: payment` and `value` = `amount`; declined records and uncaptured holds are not | §13.6 |
+| APX-ACC-08 | `POST /v1/accounts:search` and `POST /v1/payments:search` answer as their `GET`s, with the same key, window, hold, and grant rules | §13.1, §13.2 |
+| APX-ACC-09 **C** (itemizes payments) | `apds-ext:apx:payment-detail@1.0` lines sum to `amount`; codes from `apx-payment-line-codes` or implementer codes; no invented lines | §13.6a |
 | APX-PHX-01 | Truncated-key lookups without `date` constrained to last 8 hours, not configurable wider; `ticketNumber` and `account` exempt; a query with no key → 400 | §13.2, §9.6 |
 
 ## A.10 `apx-lpr`
@@ -124,6 +136,11 @@ implementation has the named capability).
 | APX-LPR-04 | `accessEvent` accepted from the LPR system and projected on `detail`, never inferred by the server; revisions via `PUT /v1/lpr/reads/{observation}/access-event` (`If-Match`, stale → 409 `version-conflict`, same value → no-op) publish `apx.data.observation.updated.v1`; `movement` accepts `toward`/`away` and the deprecated `approaching`/`receding`; `laneTravel` deprecated | §13.3a(3–4), §13.4 |
 | APX-LPR-05 | **C** (lane has LPR cameras): `apds-ext:apx:lane-cameras@1.0` accepted and preserved on `VehicularAccess`, `cameraId` unique within the Place (duplicate → 422 `request-unprocessable`) and equal to `Image.cameraID` on its reads | §13.3a(5) |
 | APX-LPR-06 | Reads link their Session (`LprRead.session`); `GET /v1/lpr/reads?session=` lists a Session's reads, a Session outside the grant → 403; Session start and end follow reads' capture time, never arrival time | §13.3a(6, 8), §13.5(4) |
+| APX-LPR-07 | `GET /v1/lpr/reads/{observation}` and `POST /v1/lpr/reads:search` served with the lookup's grant and purge rules | §13.3 |
+| APX-LPR-08 **C** (reviews reads) | `detail.review` state and reasons; `PUT /v1/lpr/reads/{observation}/plate` writes the decision, keeps the engine's values in `review.original`, bumps the Observation version, publishes `apx.data.observation.updated.v1`, honours `If-Match` | §13.3a(4a) |
+| APX-LPR-09 | `LprRead.images[]` lists every unpurged image with its kind; `plateExtended`/`context` carried as strings | §13.3c |
+| APX-LPR-10 | Vehicle attributes of a read with no plate country kept in `detail` and `vehicleAncillaryIdentification` omitted, never dropped | §13.3a(1) |
+| APX-LPR-11 | Passage facts (`accessEvent`, `movement`, `plateFace`, `frameReads`, `platesRead`, `captureGroup`, `speed`, `engine`) served under `apx.data:read` and on the observation topics to subscribers without `apx.lpr:read`; plate-bearing members only under `apx.lpr:*` | §13.3a(7), §9.6 r1 |
 
 ## A.11 `apx-reservations` / A.12 `apx-permits`
 
@@ -134,6 +151,7 @@ implementation has the named capability).
 | APX-RSV-03 | `PUT /v1/sessions/{id}/assigned-right` materializes into the APDS Session (`segments[].assignedRight`) + SessionUpdated; unlinkable right, or a different right on a linked session → 409 `right-not-linkable`; unlink reverts the segment and the reservation state | §14.1b |
 | APX-PRM-01 | Pooled issuance over RightSpecification/RightPool; exhaustion → 409 `pool-exhausted`; refusals per §14.2a; Idempotency-Key replay consumes no second slot | §14.2, §14.2a |
 | APX-PRM-02 | Issued permit materialized onto the native AssignedRight per §14.2b (CustomerCredential holder, VehicleCredential per vehicle, PlannedUse + `expiry`); native `credential_id` filters resolve against the identification string; cancellation or expiry returns the slot | §14.2b, §14.2c |
+| APX-PRM-03 **C** (multi-vehicle permits with a limit) | `apds-ext:apx:permit@1.1` `maxConcurrentVehicles` honoured; an overage billed per `overageBilling` or cited as `permitMisuse`; no pool slot moves | §14.2d |
 
 ## A.13 `apx-tolling`
 
@@ -173,6 +191,10 @@ implementation has the named capability).
 | APX-VIO-10 | Policy in force resolved by nearest-ancestor-or-self at `detectedTime`; `…/policies/effective` returns exactly what `issue` applies; refusals per §19.10 rule 2 with the named problem types; `policy`, `signage[]`, `unpaidAmount`, `capAmount`, and the first `amountHistory` entry (`issued`, or `cap` with `requestedAmount`) frozen at issue | §19.10 |
 | APX-VIO-11 | Escalation server-applied per schedule, never before `paymentGraceDays`, never while `appealed` (days appealed do not count), clamped at `overallCeiling`; each step appended to `amountHistory` and published; clients never compute penalties | §19.10 |
 | APX-VIO-12 | Signage history immutable (text change on a referenced record → 422 `signage-referenced`); in-force signage frozen on the violation at issue; `signageRequired` enforced | §19.11 |
+| APX-VIO-13 | Partial payments appended to `payments[]` and summed in `amountPaid`; `paid` only when `amountPaid` ≥ `amount` | §19.6a |
+| APX-VIO-14 | `POST /v1/violations/imports` idempotent and keyed on `system`+`recordId`; higher `sourceRevision` updates, lower is 409 `version-conflict`; no eligibility check or cap applied; source times kept | §19.13 |
+| APX-VIO-15 | `POST /v1/violations/{id}/session` with `If-Match` sets `relatedSession` and the match-evidence decoration; terminal → 409 `violation-transition-illegal`; unknown or foreign Session → 422 `reference-unknown` | §19.13 |
+| APX-VIO-16 **C** (policy requires reviewed evidence) | An automated detection whose evidence read is `pending` or `rejected` review is not issuable (409 `violation-not-issuable`) | §19.4, §13.3a(4a) |
 
 ## A.16 `apx-validations`
 
@@ -236,7 +258,7 @@ Classes claimed: [ ] apx-data  [ ] apx-events  [ ] apx-events-sse
   [ ] apx-payment-history  [ ] apx-lpr  [ ] apx-reservations
   [ ] apx-permits  [ ] apx-tolling  [ ] apx-resolution  [ ] apx-violations
   [ ] apx-validations  [ ] apx-credentials  [ ] apx-valet  [ ] apx-mtls
-  [ ] apx-charging
+  [ ] apx-charging  [ ] apx-plate-lists
 
 For each requirement row of every claimed class (and A.1):
   <ID>: PASS | N/A (conditional not applicable) | DEVIATION (explain)
@@ -259,3 +281,14 @@ non-conforming (§3.1: no partial classes).
 | APX-EVC-08 | `OccupancySnapshot.evCharging` populated where point status is held | §23.7 |
 | APX-EVC-09 | Charger actions only via Part 6 commands; `confirmationLevel` discipline applies | §23.9 |
 | APX-EVC-10 | `apx.charging.session.status.v1` on every transition; `apx.charging.point.status.v1` on availability/presence change; place-bound on `.place` | §23.12 |
+
+## A.22 `apx-plate-lists` (Part 24)
+
+| ID | Requirement | Source |
+|---|---|---|
+| APX-PLL-01 | Lists with a registry or implementer `category`, an owning organisation, per-place flags, and `status`; every `places[].place` written inside the writer's grant (403 `insufficient-grant`) | §24.1 |
+| APX-PLL-02 | List visibility: a place in the grant, or the caller's `apx_org` owns it; versioned `PUT` (409 `version-conflict`) | §24.1, Part 9 §9.3a |
+| APX-PLL-03 | Entries with an APDS `CredentialTypeEnum` credential and validity; adding a credential already on the list with overlapping validity updates it (200) | §24.2 |
+| APX-PLL-04 | Plate values only under `apx.platelists:*`; digests MAY stand in (Part 9 §9.6 r6) | §24.2 |
+| APX-PLL-05 | Change feed on `/v1/plate-lists` and `/v1/plate-lists/{id}/entries`; entry removal tombstoned | §24.3, Part 5 §5.2 r8 |
+| APX-PLL-06 | `apx.platelists.changed.v1` on every list or entry change, carrying no plate values | §24.3 |

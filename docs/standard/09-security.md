@@ -102,7 +102,10 @@ payment history — are subject to this clause:
    never carried (Part 0 §0.4); plate values appear only under `apx.lpr:*`,
    `apx.tolling:*`, `apx.violations:*`, `apx.accounts:*`, or
    `apx.charging:read`/`:manage` (Part 23) scopes;
-   imagery is carried as links, never inline. `PUT /v1/sessions/{id}/plate`
+   imagery is carried as links, never inline. Passage facts of a read
+   (`accessEvent`, `movement`, `plateFace` and the others Part 13
+   §13.3a(7) lists) are not personal data and are served under
+   `apx.data:read`. `PUT /v1/sessions/{id}/plate`
    (scope `apx.data:write`) echoes only the plate values the caller
    supplied and discloses no other plate-bearing data (Part 17 §17.5).
 2. **Access-controlled imagery (normative).** `imageLink` and any other
@@ -125,6 +128,30 @@ payment history — are subject to this clause:
 5. **Truncated-key lookups.** The 8-hour window on `ticketLast4`/
    `cardLast4` lookups (Part 13 §13.2) is a privacy control, not a
    convenience limit; implementations MUST NOT widen it by configuration.
+6. **Credential digests (optional).** A server MAY publish, on an
+   Observation, Session, AssignedRight, Violation, or PlateListEntry, the
+   Level B decoration `apds-ext:apx:credential-digest@1.0`
+   (`CredentialDigest`): base64url(HMAC-SHA-256(key, normalized
+   identification)) under a key named by `keyId`, visible under
+   `apx.data:read`. A consumer that only needs "is this the same plate?"
+   — an arrival screen, a list matcher — then matches by digest without
+   receiving plates. Keys are distributed by `GET /v1/digest-keys` (scope
+   `apx.digest:use`) to clients the operator authorizes; each key states
+   the normalization applied before hashing; rotation is by `keyId`,
+   with both keys served during an overlap. Keys are scoped to the
+   operator organisation: a digest computed by one operator does not
+   match another's. A server that publishes digests MUST NOT publish the
+   key material under any other scope.
+7. **Keys in bodies, not URLs.** Query strings are kept by access logs,
+   proxies, gateways, and tracing, outside this clause's minimization.
+   Every plate-, card-, or phone-keyed lookup therefore has a form that
+   carries the keys in a request body: `POST /v1/lpr/reads:search`,
+   `POST /v1/accounts:search`, `POST /v1/payments:search`,
+   `POST /v1/violations:search`, and
+   `POST /v1/enforcement/eligibility:check`. They answer exactly as the
+   corresponding `GET`. Implementations MUST serve the body form of every
+   lookup they serve, and a deployment whose calls cross a network
+   boundary SHOULD use it.
 
 Regulatory compliance (lawful basis, data-subject rights, cross-border
 transfer) remains the Distributing Party's responsibility; this clause

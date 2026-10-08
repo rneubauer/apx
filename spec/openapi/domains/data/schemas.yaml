@@ -156,6 +156,200 @@ OccupancySnapshot:
     extensions:
       $ref: "../common/schemas.yaml#/Extensions"
 
+OccupancyHistoryPage:
+  title: OccupancyHistoryPage
+  description: |-
+    Occupancy per clock interval for one HierarchyElement (Part 5 §5.5a):
+    the history behind the §5.5 snapshot, derived from the APDS
+    DemandTable records the implementation holds. Buckets are aligned to
+    the interval boundary in the place's time zone; a bucket with no
+    demand record carries no counts, never a guess.
+  type: object
+  required: [place, interval, from, to, buckets]
+  properties:
+    place:
+      $ref: "../../../vendor/apds/4.1/apds-api-4.1.yaml#/components/schemas/Reference"
+    interval:
+      description: The bucket length as requested (ISO 8601 duration, e.g. `PT1H`).
+      $ref: "../../../vendor/apds/4.1/apds-api-4.1.yaml#/components/schemas/Duration"
+    from:
+      $ref: "../../../vendor/apds/4.1/apds-api-4.1.yaml#/components/schemas/DateTime"
+    to:
+      $ref: "../../../vendor/apds/4.1/apds-api-4.1.yaml#/components/schemas/DateTime"
+    buckets:
+      type: array
+      items:
+        type: object
+        required: [start]
+        properties:
+          start:
+            $ref: "../../../vendor/apds/4.1/apds-api-4.1.yaml#/components/schemas/DateTime"
+          maxCount:
+            type: integer
+            minimum: 0
+            description: The highest demand count recorded in the bucket.
+          avgCount:
+            type: number
+            minimum: 0
+            description: The time-weighted mean demand count over the bucket.
+          supplyQuantity:
+            type: integer
+            minimum: 0
+            description: The supply in force during the bucket (APDS Supply.supplyQuantity).
+          samples:
+            type: integer
+            minimum: 0
+            description: How many demand records the bucket is computed from.
+    extensions:
+      $ref: "../common/schemas.yaml#/Extensions"
+
+SessionReadBinding:
+  title: SessionReadBinding
+  description: |-
+    One LPR read attached to a Session by the pairing engine (Part 5
+    §5.8, member `reads[]` of `apds-ext:apx:session-detail@1.0`).
+  type: object
+  required: [observation, role]
+  properties:
+    observation:
+      description: The APDS ObservationElement (className `ObservationElement`).
+      $ref: "../../../vendor/apds/4.1/apds-api-4.1.yaml#/components/schemas/Reference"
+    role:
+      type: string
+      enum: [entry, exit, duplicate, activity]
+      description: |-
+        `entry` and `exit` are the passages that opened and closed the
+        visit; `duplicate` is the same passage seen by another camera or
+        frame; `activity` is the vehicle seen inside (a sweep, a bay camera).
+    representative:
+      type: boolean
+      description: The read that stands for the visit in lists and screen-pops (at most one per Session).
+
+SessionClosure:
+  title: SessionClosure
+  description: Why and how a Session ended (Part 5 §5.8).
+  type: object
+  properties:
+    endReason:
+      type: string
+      description: definedValue from `apx-session-end-reasons` (Part 11) or an implementer code list.
+      examples: [exitRead]
+    endInferred:
+      type: boolean
+      description: True when `actualEnd` was set by a rule rather than observed.
+    startObserved:
+      type: boolean
+      description: |-
+        False declares `actualStart` synthetic — an exit-only Session whose
+        entry was never observed. Consumers MUST exclude such Sessions from
+        dwell statistics (Part 5 §5.8).
+    rule:
+      type: [string, "null"]
+      description: The implementer rule that closed a `stale` Session (e.g. `transient-48h`); null when none applied.
+
+MatchEvidence:
+  title: MatchEvidence
+  description: |-
+    How a link to a Session was established and how sure it is (Part 5
+    §5.8; shared by the `matches[]` member of
+    `apds-ext:apx:session-detail@1.0` and the decoration
+    `apds-ext:apx:match-evidence@1.0` on a Violation or ValetTicket).
+    Carries no plate characters and no vehicle attribute values
+    (Part 9 §9.6).
+  type: object
+  required: [target, matchType]
+  properties:
+    target:
+      description: What the Session was matched to — an AssignedRight, a ValetTicket, a Violation, a PlateListEntry, an Observation.
+      $ref: "../../../vendor/apds/4.1/apds-api-4.1.yaml#/components/schemas/Reference"
+    matchType:
+      type: string
+      description: Open — `right`, `valet`, `violation`, `list`, `exitPairing`, `sweep`, or an implementer value.
+      examples: [right]
+    plate:
+      type: object
+      description: How the plate strings agreed.
+      properties:
+        method:
+          type: string
+          enum: [exact, alias, fold, fuzzy, lenient, reviewer]
+        editCost:
+          type: [number, "null"]
+          minimum: 0
+          description: The weighted edit cost of a `fuzzy` or `lenient` match; null otherwise.
+        jurisdiction:
+          type: string
+          enum: [agrees, differs, unknown]
+    vehicle:
+      type: object
+      description: The vehicle-attribute evidence (make, model, colour) behind the match, as a level and a score — never the values.
+      properties:
+        level:
+          type: string
+          enum: [unknown, mismatch, inconclusive, weak, good, strong]
+        llr:
+          type: number
+          description: Log-likelihood ratio of the vehicle evidence.
+        model:
+          type: string
+          description: The evidence model and version that scored it, opaque.
+    applied:
+      type: boolean
+      description: False is a shadow match — recorded, not acted on.
+    decidedBy:
+      type: string
+      description: "`system`, `reviewer`, or an opaque principal."
+    decidedTime:
+      $ref: "../../../vendor/apds/4.1/apds-api-4.1.yaml#/components/schemas/DateTime"
+
+SessionDetail:
+  title: SessionDetail
+  description: |-
+    The `apds-ext:apx:session-detail@1.0` decoration on an APDS Session
+    (Part 5 §5.8): what an external pairing engine decided and APDS has no
+    members for — the reads behind the visit, why and how it ended, the
+    matches it rests on, and the parent visit of an area Session. Written
+    with the native Session POST/PUT; a plain APDS client ignores it.
+  type: object
+  properties:
+    reads:
+      type: array
+      description: |-
+        The reads attached to this Session. A read already bound as
+        `entry` or `exit` to another Session of the same place is refused
+        with 409 `read-already-bound` unless `supersedes` names that Session.
+      items:
+        $ref: "#/SessionReadBinding"
+    supersedes:
+      description: The Session whose reads this write takes over (a re-pairing).
+      $ref: "../../../vendor/apds/4.1/apds-api-4.1.yaml#/components/schemas/Reference"
+    lifecycle:
+      type: string
+      enum: [open, ended, final, disputed]
+      description: |-
+        `open` — a vehicle is in the facility; `ended` — closed, may still
+        be revised; `final` — no further revision expected; `disputed` —
+        under review.
+    closure:
+      $ref: "#/SessionClosure"
+    flags:
+      type: array
+      description: Open flags — `entryUnknown`, `orphanExit`, `reentry`, `passThrough`, or implementer values.
+      items: { type: string }
+    matches:
+      type: array
+      items:
+        $ref: "#/MatchEvidence"
+    parent:
+      description: |-
+        The visit this area Session is part of (className `Session`). A
+        Session with `parent` MUST have a `hierarchyElement` inside the
+        parent's; consumers count visits by Sessions without `parent`.
+      $ref: "../../../vendor/apds/4.1/apds-api-4.1.yaml#/components/schemas/Reference"
+    passThrough:
+      type: boolean
+      description: An area stay shorter than the area's minimum dwell — never scored or billed.
+
 # --- Reusable additive parameters (applied by implementations to native list routes) ---
 
 ModeParam:

@@ -105,6 +105,8 @@ APX adds three additive mechanisms to the routes above:
 | **Change feed** | `GET /sessions?mode=change&cursor=…` | Only what changed since your cursor — ordered, gapless, exactly-once. Includes **tombstones** for deletions |
 | **Partial writes** | `PUT /rates/{id}` with header `APX-Update-Mode: change` | Send only the fields you're changing. Setting a field to `null` explicitly clears it; omitting it leaves it alone |
 | **Coarse catch-up** | `GET /places?modified_since=…` | Everything changed since a timestamp (for clients that lost their cursor) |
+| **Occupancy history** | `GET /v1/places/{id}/occupancy/history?from=&to=&interval=PT1H` | The same numbers per hour (or any interval), derived from the demand records — for dashboards that used to replay demand themselves |
+| **Session detail** | `apds-ext:apx:session-detail@1.0` on a native `PUT /sessions/{id}` | When the system that pairs reads into visits is a separate client, it writes what it decided: which reads, why the visit ended, how each match was made, and the parent visit of an area stay |
 | **Occupancy snapshot** | `GET /v1/places/{id}/occupancy` | "How full is it right now" for one garage/level/zone — supply, latest demand count, and a derived `available` — without pulling the whole Place hierarchy |
 
 **Why this way:** the cursor feed means a partner that goes offline for an
@@ -239,6 +241,8 @@ the revenue stream in real time instead of scraping reports.
 | `GET /v1/lpr/reads?plate=…` or `?ticket=…` | The cross-lookup: plate → ticket/session (with confidence score and the photo), or ticket → plate |
 | `detail` on a read | What the camera actually knew: plate, state, make, model, colour, class **each with its own confidence**, the runner-up plate strings, how many frames and plates it read, which plate face it saw (front or rear), and whether the car moved toward the camera, away from it, or stopped |
 | `accessEvent` on a read | What the read *was*: an **entry** or an **exit**, as the LPR system reports it. The lane used doesn't change it — on a shared driveway an entry on the exit lane is still an entry |
+| `GET /v1/lpr/reads/{observation}` · `POST /v1/lpr/reads:search` | One read by its id; and the lookup with the plate in a body, so it never lands in a proxy log |
+| `PUT /v1/lpr/reads/{observation}/plate` | A reviewer confirms, corrects, or rejects a doubtful read before any visit exists; the engine's original is kept, and enforcement waits for the decision |
 | `PUT /v1/lpr/reads/{observation}/access-event` | How the LPR system changes its mind — say, from `unknown` to `entry` once it has paired two reads. Billing hears about it as an event |
 | Lane cameras | Which cameras are on each lane and whether each faces **inward** or **outward** — described on the lane itself, so every system on the site knows how the cameras are set up |
 | `?session=` | Every read behind one visit: its entry, its exit, and the front- and rear-plate reads of each passage |
@@ -312,6 +316,7 @@ candidate, an officer with a handheld confirms on site).
 |---|---|
 | `GET /v1/enforcement/eligibility?credential=&place=` | **The handheld screen-pop:** is this vehicle entitled to be here right now, and by what — permit, reservation, pay-by-plate session — with why not (expired, wrong zone) and a suggested violation type |
 | `POST /v1/violations` | Record a detection (idempotent — cameras and handhelds retry). The server runs the eligibility check and keeps the answer on the record |
+| `POST /v1/violations/imports` · `POST …/{id}/session` | Citations another system already issued, imported in whatever state they are in (partial payments included), and the stay they belong to linked afterwards with the match evidence |
 | `GET /v1/violations?plate=&status=&place=` · `GET …/{id}` | Query and read, with evidence links and the full audit trail |
 | `POST …/{id}/review` | Guided enforcement: the officer confirms or dismisses the candidate |
 | `POST …/{id}/issue` | Issue the notice or citation — amount, due date, how it was delivered |
@@ -409,7 +414,6 @@ mileage settle the rest.
 
 ## 16. EV charging: the free charger, the car that isn't plugged in, and one bill at exit
 
-
 Chargers have their own protocols — OCPP between a charger and its
 network, OCPI between networks — and APX does not replace them. What the
 parking system needs is the *parking side*: which chargers are free,
@@ -433,7 +437,27 @@ in the EV bay" enforceable and "your car is done, move it" fair.
 
 ---
 
-## 17. Room to grow: the vendor space
+## 17. Plate lists: watch, scofflaw, allow, and the city's own vehicles
+
+A city keeps a scofflaw list; an operator keeps a watch list and a list
+of service vans that may park anywhere. None of these is a credential
+the driver holds or a right they bought — they are lists *about* a
+plate, and the systems that screen arrivals need them current.
+
+| Route | What it does |
+|---|---|
+| `GET/POST /v1/plate-lists` · `PUT …/{id}` | The list and its policy: category, owner, and per place whether a match counts, raises an alert, or refuses service |
+| `GET/POST /v1/plate-lists/{id}/entries` · `DELETE …/entries/{entryId}` | The plates on it, with validity and why they are listed |
+| `?mode=change&cursor=` on both | An edge server keeps its copy current and catches up after an outage |
+| `apx.platelists.changed.v1` | A wake-up when a list changes — no plates in the event |
+
+**Why this way:** screening is the operator's decision and stays theirs;
+APX carries the list, the arrival alert (`scofflawArrival`), and the proof
+of what the lane displayed when it refused service.
+
+---
+
+## 18. Room to grow: the vendor space
 
 Partner companies extend APX without asking permission and without breaking
 anyone:
@@ -454,7 +478,7 @@ systems unharmed, and the core API means the same thing everywhere.
 
 ---
 
-## 18. Not everything is mandatory: conformance classes
+## 19. Not everything is mandatory: conformance classes
 
 APX is sliced into named, independently claimable feature sets — `apx-data`
 and `apx-events` are the base; control, alerts, discovery, accounts,

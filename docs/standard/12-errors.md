@@ -64,7 +64,7 @@ table below.
 | `valet-verification-failed` | 403 | Handback claimant verification failed; the attempt is recorded in `statusHistory` (Part 22 §22.4) |
 <<<<<<< HEAD
 | `agent-required` | 400 | `pushNegotiatedRate` or `matchTicket` without `agent` — the selecting or matching principal is mandatory (Part 6 §6.6–6.7) |
-| `rate-not-negotiable` | 422 | `pushNegotiatedRate` names a RateTable not flagged negotiable for the target's place, or one that does not apply there (Part 6 §6.6) |
+| `rate-not-negotiable` | 422 | `pushNegotiatedRate` names a RateTable not flagged negotiable for the target's place, or one that does not apply there, or states an `amount` on a host that does not offer the `negotiatedAmounts` feature (Part 6 §6.6) |
 | `lane-no-current-transaction` | 409 | `pushNegotiatedRate` or `matchTicket` at a lane with no vehicle transaction in progress (Part 6 §6.6–6.7) |
 | `session-not-open` | 422 | `matchTicket` names a Session that is closed, already bound to an exit, or at a different place (Part 6 §6.7); or a plate correction or right unlink on a closed Session outside the operator's dispute window (Part 14 §14.1b, Part 17 §17.5) |
 | `unauthenticated` | 401 | Access token missing, malformed, expired, or revoked (Part 9 §9.1) |
@@ -81,6 +81,8 @@ table below.
 | `charging-transition-illegal` | 409 | A ChargingEvent illegal from the session's current state, or out of time order (Part 23 §23.2) |
 | `charging-point-unavailable` | 409 | Opening a session on a point/connector that is inoperative, out of order, reserved for another right, or already serving an active session (Part 23 §23.2) |
 | `charging-settlement-conflict` | 409 | `…/payment` on a `parkingSession`-settled session, on a `directPayment` session not yet `unplugged`, or on an already `closed` session (Part 23 §23.5) |
+| `read-already-bound` | 409 | A `session-detail` write binds a read as `entry` or `exit` that another Session of the same place already holds, and does not name that Session in `supersedes` (Part 5 §5.8) |
+| `not-authoritative` | 409 | A write to an entity class for which, at that place, the other replicated implementation is authoritative (Part 18 §18.6) |
 
 Problem responses SHOULD include `detail` and MAY carry additional members
 (RFC 9457 extension members), including an `extensions` container.

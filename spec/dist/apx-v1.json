@@ -4381,6 +4381,12 @@
         "description": "The commands the caller may see, newest first by the time the\ncommand was received, each with its full `statusHistory` (Part 6\n§6.1b). Only commands whose target lies inside the token's\n`apx_places` grant are returned; naming a `place` outside the grant\nis 403 `insufficient-grant`. All filters combine with AND.",
         "parameters": [
           {
+            "$ref": "#/components/parameters/ModeParam"
+          },
+          {
+            "$ref": "#/components/parameters/CursorParam"
+          },
+          {
             "name": "target",
             "in": "query",
             "schema": {
@@ -4465,18 +4471,25 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "type": "object",
-                  "properties": {
-                    "meta": {
-                      "$ref": "#/components/schemas/PaginatedListMeta"
+                  "oneOf": [
+                    {
+                      "$ref": "#/components/schemas/ChangeFeedPage"
                     },
-                    "data": {
-                      "type": "array",
-                      "items": {
-                        "$ref": "#/components/schemas/Command"
+                    {
+                      "type": "object",
+                      "properties": {
+                        "meta": {
+                          "$ref": "#/components/schemas/PaginatedListMeta"
+                        },
+                        "data": {
+                          "type": "array",
+                          "items": {
+                            "$ref": "#/components/schemas/Command"
+                          }
+                        }
                       }
                     }
-                  }
+                  ]
                 }
               }
             }
@@ -4486,6 +4499,16 @@
           },
           "403": {
             "$ref": "#/components/responses/Forbidden"
+          },
+          "404": {
+            "description": "mode=change only: the cursor is unknown, older than the retention window, or was issued for another (class, credential, filter set) — problem type `target-not-found`; re-sync with mode=full (Part 5 §5.2 rules 2, 5 and 8).",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
           },
           "429": {
             "$ref": "#/components/responses/TooManyRequests"
@@ -4999,6 +5022,12 @@
         "description": "Filter by plate or credential, status, toll point, place, and time\nwindow; all filters combine with AND (Part 15 §15.2). Results are\nconstrained to the caller's grant.",
         "parameters": [
           {
+            "$ref": "#/components/parameters/ModeParam"
+          },
+          {
+            "$ref": "#/components/parameters/CursorParam"
+          },
+          {
             "name": "plate",
             "in": "query",
             "description": "Convenience alias for `credentialType=licensePlate&credentialIdentification=<plate>`.",
@@ -5081,18 +5110,25 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "type": "object",
-                  "properties": {
-                    "meta": {
-                      "$ref": "#/components/schemas/PaginatedListMeta"
+                  "oneOf": [
+                    {
+                      "$ref": "#/components/schemas/ChangeFeedPage"
                     },
-                    "data": {
-                      "type": "array",
-                      "items": {
-                        "$ref": "#/components/schemas/TollTransaction"
+                    {
+                      "type": "object",
+                      "properties": {
+                        "meta": {
+                          "$ref": "#/components/schemas/PaginatedListMeta"
+                        },
+                        "data": {
+                          "type": "array",
+                          "items": {
+                            "$ref": "#/components/schemas/TollTransaction"
+                          }
+                        }
                       }
                     }
-                  }
+                  ]
                 }
               }
             }
@@ -5105,6 +5141,16 @@
           },
           "403": {
             "$ref": "#/components/responses/Forbidden"
+          },
+          "404": {
+            "description": "mode=change only: the cursor is unknown, older than the retention window, or was issued for another (class, credential, filter set) — problem type `target-not-found`; re-sync with mode=full (Part 5 §5.2 rules 2, 5 and 8).",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
           },
           "429": {
             "$ref": "#/components/responses/TooManyRequests"
@@ -5675,6 +5721,12 @@
         "description": "Filter by plate (credentialIdentification), notice number, status,\ntype, place (subtree-inclusive), detection mode, and the\n`since`..`until` window on detectedTime. Results are constrained\nto the caller's place grant; a lookup that names no place (by\nplate or notice number) returns only violations at granted places\n(Part 9 §9.3a). Plate values appear only under `apx.violations:*`\nscopes (Part 9 §9.6).",
         "parameters": [
           {
+            "$ref": "#/components/parameters/ModeParam"
+          },
+          {
+            "$ref": "#/components/parameters/CursorParam"
+          },
+          {
             "name": "plate",
             "in": "query",
             "schema": {
@@ -5762,18 +5814,25 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "type": "object",
-                  "properties": {
-                    "meta": {
-                      "$ref": "#/components/schemas/PaginatedListMeta"
+                  "oneOf": [
+                    {
+                      "$ref": "#/components/schemas/ChangeFeedPage"
                     },
-                    "data": {
-                      "type": "array",
-                      "items": {
-                        "$ref": "#/components/schemas/Violation"
+                    {
+                      "type": "object",
+                      "properties": {
+                        "meta": {
+                          "$ref": "#/components/schemas/PaginatedListMeta"
+                        },
+                        "data": {
+                          "type": "array",
+                          "items": {
+                            "$ref": "#/components/schemas/Violation"
+                          }
+                        }
                       }
                     }
-                  }
+                  ]
                 }
               }
             }
@@ -5783,6 +5842,16 @@
           },
           "403": {
             "$ref": "#/components/responses/Forbidden"
+          },
+          "404": {
+            "description": "mode=change only: the cursor is unknown, older than the retention window, or was issued for another (class, credential, filter set) — problem type `target-not-found`; re-sync with mode=full (Part 5 §5.2 rules 2, 5 and 8).",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
           },
           "429": {
             "$ref": "#/components/responses/TooManyRequests"
@@ -7327,6 +7396,12 @@
         "description": "Filter by place (subtree-inclusive), provider, and status. A\n`apx.validations:redeem` token sees only programs whose provider is\nits own `apx_org` (Part 20 §20.5).",
         "parameters": [
           {
+            "$ref": "#/components/parameters/ModeParam"
+          },
+          {
+            "$ref": "#/components/parameters/CursorParam"
+          },
+          {
             "name": "place",
             "in": "query",
             "schema": {
@@ -7364,18 +7439,25 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "type": "object",
-                  "properties": {
-                    "meta": {
-                      "$ref": "#/components/schemas/PaginatedListMeta"
+                  "oneOf": [
+                    {
+                      "$ref": "#/components/schemas/ChangeFeedPage"
                     },
-                    "data": {
-                      "type": "array",
-                      "items": {
-                        "$ref": "#/components/schemas/ValidationProgram"
+                    {
+                      "type": "object",
+                      "properties": {
+                        "meta": {
+                          "$ref": "#/components/schemas/PaginatedListMeta"
+                        },
+                        "data": {
+                          "type": "array",
+                          "items": {
+                            "$ref": "#/components/schemas/ValidationProgram"
+                          }
+                        }
                       }
                     }
-                  }
+                  ]
                 }
               }
             }
@@ -7385,6 +7467,16 @@
           },
           "403": {
             "$ref": "#/components/responses/Forbidden"
+          },
+          "404": {
+            "description": "mode=change only: the cursor is unknown, older than the retention window, or was issued for another (class, credential, filter set) — problem type `target-not-found`; re-sync with mode=full (Part 5 §5.2 rules 2, 5 and 8).",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
           },
           "429": {
             "$ref": "#/components/responses/TooManyRequests"
@@ -8089,6 +8181,12 @@
         "description": "Filter by program, place, ticket, session, the Part 6 command that\napplied it, channel, status, and `since` (appliedTime). A `redeem`\ntoken sees only its own provider's redemptions (§20.5).",
         "parameters": [
           {
+            "$ref": "#/components/parameters/ModeParam"
+          },
+          {
+            "$ref": "#/components/parameters/CursorParam"
+          },
+          {
             "name": "program",
             "in": "query",
             "schema": {
@@ -8172,18 +8270,25 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "type": "object",
-                  "properties": {
-                    "meta": {
-                      "$ref": "#/components/schemas/PaginatedListMeta"
+                  "oneOf": [
+                    {
+                      "$ref": "#/components/schemas/ChangeFeedPage"
                     },
-                    "data": {
-                      "type": "array",
-                      "items": {
-                        "$ref": "#/components/schemas/ValidationRedemption"
+                    {
+                      "type": "object",
+                      "properties": {
+                        "meta": {
+                          "$ref": "#/components/schemas/PaginatedListMeta"
+                        },
+                        "data": {
+                          "type": "array",
+                          "items": {
+                            "$ref": "#/components/schemas/ValidationRedemption"
+                          }
+                        }
                       }
                     }
-                  }
+                  ]
                 }
               }
             }
@@ -8193,6 +8298,16 @@
           },
           "403": {
             "$ref": "#/components/responses/Forbidden"
+          },
+          "404": {
+            "description": "mode=change only: the cursor is unknown, older than the retention window, or was issued for another (class, credential, filter set) — problem type `target-not-found`; re-sync with mode=full (Part 5 §5.2 rules 2, 5 and 8).",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
           },
           "429": {
             "$ref": "#/components/responses/TooManyRequests"
@@ -8784,6 +8899,12 @@
         "description": "Filter by holder, account, type, identification, status, and place\n(subtree-inclusive). Results are constrained to the caller's place\ngrant; identification values are personal data under Part 9 §9.6.\nA lookup by `identification` that matches only records outside the\ngrant returns an empty 200 (Part 9 §9.3a).",
         "parameters": [
           {
+            "$ref": "#/components/parameters/ModeParam"
+          },
+          {
+            "$ref": "#/components/parameters/CursorParam"
+          },
+          {
             "name": "holder",
             "in": "query",
             "schema": {
@@ -8847,18 +8968,25 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "type": "object",
-                  "properties": {
-                    "meta": {
-                      "$ref": "#/components/schemas/PaginatedListMeta"
+                  "oneOf": [
+                    {
+                      "$ref": "#/components/schemas/ChangeFeedPage"
                     },
-                    "data": {
-                      "type": "array",
-                      "items": {
-                        "$ref": "#/components/schemas/CredentialRecord"
+                    {
+                      "type": "object",
+                      "properties": {
+                        "meta": {
+                          "$ref": "#/components/schemas/PaginatedListMeta"
+                        },
+                        "data": {
+                          "type": "array",
+                          "items": {
+                            "$ref": "#/components/schemas/CredentialRecord"
+                          }
+                        }
                       }
                     }
-                  }
+                  ]
                 }
               }
             }
@@ -8868,6 +8996,16 @@
           },
           "403": {
             "$ref": "#/components/responses/Forbidden"
+          },
+          "404": {
+            "description": "mode=change only: the cursor is unknown, older than the retention window, or was issued for another (class, credential, filter set) — problem type `target-not-found`; re-sync with mode=full (Part 5 §5.2 rules 2, 5 and 8).",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
           },
           "429": {
             "$ref": "#/components/responses/TooManyRequests"
@@ -9590,6 +9728,12 @@
         "description": "Every access attempt at the caller's granted places, newest first —\nincluding presentations that matched no CredentialRecord\n(`denialReason: unknownCredential`, carrying `presented`). \"Every\ndenial at lane 1 tonight\" is `?lane=…&outcome=denied&since=…`.\nResults are constrained to the caller's place grant; naming a\nplace, lane, or device outside it is 403 `insufficient-grant`\n(Part 9 §9.3a). Retention per Part 9 §9.6. The same events are\npublished as `apx.credentials.access.v1` (Part 21 §21.4).",
         "parameters": [
           {
+            "$ref": "#/components/parameters/ModeParam"
+          },
+          {
+            "$ref": "#/components/parameters/CursorParam"
+          },
+          {
             "name": "place",
             "in": "query",
             "description": "HierarchyElement ids, comma-separated; subtree-inclusive.",
@@ -9688,18 +9832,25 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "type": "object",
-                  "properties": {
-                    "meta": {
-                      "$ref": "#/components/schemas/PaginatedListMeta"
+                  "oneOf": [
+                    {
+                      "$ref": "#/components/schemas/ChangeFeedPage"
                     },
-                    "data": {
-                      "type": "array",
-                      "items": {
-                        "$ref": "#/components/schemas/AccessEvent"
+                    {
+                      "type": "object",
+                      "properties": {
+                        "meta": {
+                          "$ref": "#/components/schemas/PaginatedListMeta"
+                        },
+                        "data": {
+                          "type": "array",
+                          "items": {
+                            "$ref": "#/components/schemas/AccessEvent"
+                          }
+                        }
                       }
                     }
-                  }
+                  ]
                 }
               }
             }
@@ -9712,6 +9863,16 @@
           },
           "403": {
             "$ref": "#/components/responses/Forbidden"
+          },
+          "404": {
+            "description": "mode=change only: the cursor is unknown, older than the retention window, or was issued for another (class, credential, filter set) — problem type `target-not-found`; re-sync with mode=full (Part 5 §5.2 rules 2, 5 and 8).",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
           },
           "429": {
             "$ref": "#/components/responses/TooManyRequests"
@@ -9832,6 +9993,12 @@
         "description": "Filter by place (subtree-inclusive), status, plate, ticket number, customer account, and `since` (dropOff.time).",
         "parameters": [
           {
+            "$ref": "#/components/parameters/ModeParam"
+          },
+          {
+            "$ref": "#/components/parameters/CursorParam"
+          },
+          {
             "name": "place",
             "in": "query",
             "schema": {
@@ -9896,18 +10063,25 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "type": "object",
-                  "properties": {
-                    "meta": {
-                      "$ref": "#/components/schemas/PaginatedListMeta"
+                  "oneOf": [
+                    {
+                      "$ref": "#/components/schemas/ChangeFeedPage"
                     },
-                    "data": {
-                      "type": "array",
-                      "items": {
-                        "$ref": "#/components/schemas/ValetTicket"
+                    {
+                      "type": "object",
+                      "properties": {
+                        "meta": {
+                          "$ref": "#/components/schemas/PaginatedListMeta"
+                        },
+                        "data": {
+                          "type": "array",
+                          "items": {
+                            "$ref": "#/components/schemas/ValetTicket"
+                          }
+                        }
                       }
                     }
-                  }
+                  ]
                 }
               }
             }
@@ -9917,6 +10091,16 @@
           },
           "403": {
             "$ref": "#/components/responses/Forbidden"
+          },
+          "404": {
+            "description": "mode=change only: the cursor is unknown, older than the retention window, or was issued for another (class, credential, filter set) — problem type `target-not-found`; re-sync with mode=full (Part 5 §5.2 rules 2, 5 and 8).",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
           },
           "429": {
             "$ref": "#/components/responses/TooManyRequests"
@@ -11167,6 +11351,12 @@
         "description": "Filter by place (subtree-inclusive), charging point, status, plate, parking session, account, and `since` (timeline.authorizedTime).",
         "parameters": [
           {
+            "$ref": "#/components/parameters/ModeParam"
+          },
+          {
+            "$ref": "#/components/parameters/CursorParam"
+          },
+          {
             "name": "place",
             "in": "query",
             "schema": {
@@ -11242,18 +11432,25 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "type": "object",
-                  "properties": {
-                    "meta": {
-                      "$ref": "#/components/schemas/PaginatedListMeta"
+                  "oneOf": [
+                    {
+                      "$ref": "#/components/schemas/ChangeFeedPage"
                     },
-                    "data": {
-                      "type": "array",
-                      "items": {
-                        "$ref": "#/components/schemas/ChargingSession"
+                    {
+                      "type": "object",
+                      "properties": {
+                        "meta": {
+                          "$ref": "#/components/schemas/PaginatedListMeta"
+                        },
+                        "data": {
+                          "type": "array",
+                          "items": {
+                            "$ref": "#/components/schemas/ChargingSession"
+                          }
+                        }
                       }
                     }
-                  }
+                  ]
                 }
               }
             }
@@ -11263,6 +11460,16 @@
           },
           "403": {
             "$ref": "#/components/responses/Forbidden"
+          },
+          "404": {
+            "description": "mode=change only: the cursor is unknown, older than the retention window, or was issued for another (class, credential, filter set) — problem type `target-not-found`; re-sync with mode=full (Part 5 §5.2 rules 2, 5 and 8).",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
           },
           "429": {
             "$ref": "#/components/responses/TooManyRequests"
@@ -11503,6 +11710,1556 @@
                 }
               }
             }
+          },
+          "429": {
+            "$ref": "#/components/responses/TooManyRequests"
+          }
+        }
+      }
+    },
+    "/v1/lpr/reads/{observation}": {
+      "get": {
+        "operationId": "get-apx-v1-lpr-reads-observation",
+        "security": [
+          {
+            "apxOAuth": [
+              "apx.lpr:read"
+            ]
+          }
+        ],
+        "tags": [
+          "LPR"
+        ],
+        "summary": "Read back one ingested LPR read by its Observation id",
+        "description": "One `LprRead` for the Observation (Part 13 §13.3). The same\nprojection as `GET /v1/lpr/reads?observation=`, addressed by path\nlike the revision routes. A read at a place outside the caller's\n`apx_places` grant is 403 `insufficient-grant`; an unknown or purged\nread is 404 `target-not-found` (§13.3b).",
+        "parameters": [
+          {
+            "name": "observation",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The read.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/LprRead"
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          },
+          "429": {
+            "$ref": "#/components/responses/TooManyRequests"
+          }
+        }
+      }
+    },
+    "/v1/lpr/reads/{observation}/plate": {
+      "put": {
+        "operationId": "put-apx-v1-lpr-reads-observation-plate",
+        "security": [
+          {
+            "apxOAuth": [
+              "apx.data:write"
+            ]
+          }
+        ],
+        "tags": [
+          "LPR"
+        ],
+        "summary": "A reviewer confirms, corrects, or rejects a read's plate",
+        "description": "Read-level plate review (Part 13 §13.3a(4a)), the counterpart of\nthe access-event revision: a reviewer's decision on one read,\nbefore any Session exists and however many Sessions the read\nfeeds. `corrected` writes the winning values into the\nObservation's `observedCredentialId` and\n`vehicleAncillaryIdentification` and into `detail.plate`,\n`.country`, `.stateProvince`, keeping the engine's values in\n`detail.review.original`; every decision sets `detail.review`,\nincrements the Observation `version`, and publishes\n`apx.data.observation.updated.v1`. `If-Match` carries the\nObservation `version` last read (409 `version-conflict` when\nstale). A `rejected` read is not issuable evidence (Part 19 §19.4).\nThe 200 is the read as it now stands (scope `apx.data:write`\nsuffices for the write; the plate-bearing 200 is returned only\nwhen the caller also holds `apx.lpr:read`, else the\naccess-event-style minimal echo).",
+        "parameters": [
+          {
+            "name": "observation",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "$ref": "#/components/parameters/IfMatch"
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/PlateCorrection"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "The read after the decision.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "oneOf": [
+                    {
+                      "$ref": "#/components/schemas/LprRead"
+                    },
+                    {
+                      "type": "object",
+                      "required": [
+                        "observation",
+                        "version",
+                        "review"
+                      ],
+                      "properties": {
+                        "observation": {
+                          "$ref": "#/components/schemas/Reference"
+                        },
+                        "version": {
+                          "type": "integer",
+                          "minimum": 1
+                        },
+                        "review": {
+                          "type": "object",
+                          "properties": {
+                            "state": {
+                              "type": "string",
+                              "enum": [
+                                "pending",
+                                "confirmed",
+                                "corrected",
+                                "rejected",
+                                "notRequired"
+                              ]
+                            }
+                          }
+                        }
+                      }
+                    }
+                  ]
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/BadRequest"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          },
+          "409": {
+            "description": "`If-Match` names a stale Observation version (`version-conflict`); nothing is written.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "`corrected` without a `plate` (`request-unprocessable`).",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "429": {
+            "$ref": "#/components/responses/TooManyRequests"
+          }
+        }
+      }
+    },
+    "/v1/lpr/reads:search": {
+      "post": {
+        "operationId": "post-apx-v1-lpr-reads-search",
+        "security": [
+          {
+            "apxOAuth": [
+              "apx.lpr:read"
+            ]
+          }
+        ],
+        "tags": [
+          "LPR"
+        ],
+        "summary": "The reads lookup with the plate in a body, never a URL",
+        "description": "The same lookup as `GET /v1/lpr/reads`, with the keys in the body\nso a plate never enters a URL that proxies, gateways, and access\nlogs keep (Part 9 §9.6; Part 13 §13.3). Same rules, grant\nbehaviour, and response. The `GET` keeps working; a deployment\nthat crosses a network boundary SHOULD use this form.",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/LprReadSearch"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Matching reads.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "meta": {
+                      "$ref": "#/components/schemas/PaginatedListMeta"
+                    },
+                    "data": {
+                      "type": "array",
+                      "items": {
+                        "$ref": "#/components/schemas/LprRead"
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "None of `plate`, `ticket`, `observation`, or `session` given (`invalid-request`).",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "429": {
+            "$ref": "#/components/responses/TooManyRequests"
+          }
+        }
+      }
+    },
+    "/v1/accounts:search": {
+      "post": {
+        "operationId": "post-apx-v1-accounts-search",
+        "security": [
+          {
+            "apxOAuth": [
+              "apx.accounts:read"
+            ]
+          }
+        ],
+        "tags": [
+          "Accounts"
+        ],
+        "summary": "The account lookup with personal data in a body, never a URL",
+        "description": "The same lookup as `GET /v1/accounts` (Part 13 §13.1) with the keys\nin the body (Part 9 §9.6). Same rules, grant behaviour, and\nresponse; a card number pasted into `card` is 422\n`personal-data-not-permitted`.",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/AccountSearch"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Matching accounts.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "meta": {
+                      "$ref": "#/components/schemas/PaginatedListMeta"
+                    },
+                    "data": {
+                      "type": "array",
+                      "items": {
+                        "$ref": "#/components/schemas/Account"
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/BadRequest"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "422": {
+            "description": "More than truncated card digits in `card` (`personal-data-not-permitted`).",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "429": {
+            "$ref": "#/components/responses/TooManyRequests"
+          }
+        }
+      }
+    },
+    "/v1/payments:search": {
+      "post": {
+        "operationId": "post-apx-v1-payments-search",
+        "security": [
+          {
+            "apxOAuth": [
+              "apx.accounts:read"
+            ]
+          }
+        ],
+        "tags": [
+          "Accounts"
+        ],
+        "summary": "The payment-history lookup with the keys in a body",
+        "description": "The same lookup as `GET /v1/payments` (Part 13 §13.2) with the keys\nin the body (Part 9 §9.6). Same keys rule (at least one), 8-hour\nwindow on truncated keys, hold rules, grant behaviour, and response.",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/PaymentSearch"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Matching payments.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "meta": {
+                      "$ref": "#/components/schemas/PaginatedListMeta"
+                    },
+                    "data": {
+                      "type": "array",
+                      "items": {
+                        "$ref": "#/components/schemas/PaymentRecord"
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "No key given (`invalid-request`).",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "422": {
+            "description": "More than four card digits in `cardLast4` (`personal-data-not-permitted`).",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "429": {
+            "$ref": "#/components/responses/TooManyRequests"
+          }
+        }
+      }
+    },
+    "/v1/violations:search": {
+      "post": {
+        "operationId": "post-apx-v1-violations-search",
+        "security": [
+          {
+            "apxOAuth": [
+              "apx.violations:read"
+            ]
+          }
+        ],
+        "tags": [
+          "Violations"
+        ],
+        "summary": "The violations lookup with the plate in a body",
+        "description": "The same lookup as `GET /v1/violations` (Part 19 §19.2) with the\nkeys in the body (Part 9 §9.6). Same rules and response.",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "plate": {
+                    "type": "string"
+                  },
+                  "noticeNumber": {
+                    "type": "string"
+                  },
+                  "status": {
+                    "type": "string",
+                    "enum": [
+                      "detected",
+                      "confirmed",
+                      "dismissed",
+                      "issued",
+                      "paid",
+                      "appealed",
+                      "closed",
+                      "voided"
+                    ]
+                  },
+                  "type": {
+                    "type": "string"
+                  },
+                  "place": {
+                    "type": "string",
+                    "format": "uuid"
+                  },
+                  "detectionMode": {
+                    "type": "string",
+                    "enum": [
+                      "automated",
+                      "guided",
+                      "manual"
+                    ]
+                  },
+                  "since": {
+                    "type": "string",
+                    "format": "date-time"
+                  },
+                  "until": {
+                    "type": "string",
+                    "format": "date-time"
+                  },
+                  "page": {
+                    "type": "integer",
+                    "minimum": 1
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Matching violations.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "meta": {
+                      "$ref": "#/components/schemas/PaginatedListMeta"
+                    },
+                    "data": {
+                      "type": "array",
+                      "items": {
+                        "$ref": "#/components/schemas/Violation"
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/BadRequest"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "429": {
+            "$ref": "#/components/responses/TooManyRequests"
+          }
+        }
+      }
+    },
+    "/v1/enforcement/eligibility:check": {
+      "post": {
+        "operationId": "post-apx-v1-enforcement-eligibility-check",
+        "security": [
+          {
+            "apxOAuth": [
+              "apx.violations:read"
+            ]
+          }
+        ],
+        "tags": [
+          "Violations"
+        ],
+        "summary": "The eligibility check with the credential in a body",
+        "description": "The same question as `GET /v1/enforcement/eligibility` (Part 19\n§19.3) with the credential in the body (Part 9 §9.6). Same answer.",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": [
+                  "credential",
+                  "place"
+                ],
+                "properties": {
+                  "credential": {
+                    "type": "string"
+                  },
+                  "credentialType": {
+                    "$ref": "#/components/schemas/CredentialTypeEnum"
+                  },
+                  "place": {
+                    "type": "string",
+                    "format": "uuid"
+                  },
+                  "at": {
+                    "type": "string",
+                    "format": "date-time"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "The eligibility result.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/EligibilityResult"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/BadRequest"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          },
+          "429": {
+            "$ref": "#/components/responses/TooManyRequests"
+          }
+        }
+      }
+    },
+    "/v1/violations/imports": {
+      "post": {
+        "operationId": "post-apx-v1-violations-imports",
+        "security": [
+          {
+            "apxOAuth": [
+              "apx.violations:manage"
+            ]
+          }
+        ],
+        "tags": [
+          "Violations"
+        ],
+        "summary": "Import a violation an external enforcement system issued (idempotent)",
+        "description": "Records a citation, warning, or notice that another system\ndetected and issued, in whatever state the source reports it,\nwith the `statusHistory[]` times the source recorded (Part 19\n§19.13). `Idempotency-Key` is REQUIRED and the record is also keyed\non the decoration's `system` + `recordId`: a later import with a\nhigher `sourceRevision` updates the record (200, version + 1,\n`apx.violations.status.v1`); the same revision is a no-op 200.\nThe server performs no eligibility check and applies no policy\nclamp to an imported amount: the source decided. Publishes\n`apx.violations.detected.v1` on first import, and `.issued.v1`\nwhen the imported state is at or beyond `issued`.",
+        "parameters": [
+          {
+            "name": "Idempotency-Key",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ViolationImport"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "An existing import updated, or an idempotent replay.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Violation"
+                }
+              }
+            }
+          },
+          "201": {
+            "description": "Imported.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Violation"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/BadRequest"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "409": {
+            "description": "`Idempotency-Key` replayed with a different body (`idempotency-conflict`), or a `sourceRevision` older than the one held (`version-conflict`).",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Unknown `place` or a `violationType` outside the served registries (`reference-unknown`).",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "429": {
+            "$ref": "#/components/responses/TooManyRequests"
+          }
+        }
+      }
+    },
+    "/v1/violations/{id}/session": {
+      "post": {
+        "operationId": "post-apx-v1-violations-id-session",
+        "security": [
+          {
+            "apxOAuth": [
+              "apx.violations:manage"
+            ]
+          }
+        ],
+        "tags": [
+          "Violations"
+        ],
+        "summary": "Set or correct the Session a violation relates to",
+        "description": "Sets `relatedSession` after creation, with the match evidence\n(Part 19 §19.13; `apds-ext:apx:match-evidence@1.0` is written onto\nthe violation). `If-Match` carries the Violation `version` last\nread (409 `version-conflict`). Allowed in every non-terminal state;\na terminal violation is 409 `violation-transition-illegal`. A\nSession that does not exist or is at another place is 422\n`reference-unknown`.",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "$ref": "#/components/parameters/IfMatch"
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ViolationSessionLink"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "The violation with `relatedSession` set.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Violation"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/BadRequest"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          },
+          "409": {
+            "description": "Stale `If-Match` (`version-conflict`) or a terminal violation (`violation-transition-illegal`).",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "The Session names nothing visible, or is at another place (`reference-unknown`).",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "429": {
+            "$ref": "#/components/responses/TooManyRequests"
+          }
+        }
+      }
+    },
+    "/v1/places/{id}/occupancy/history": {
+      "get": {
+        "operationId": "get-apx-v1-places-id-occupancy-history",
+        "security": [
+          {
+            "apxOAuth": [
+              "apx.data:read"
+            ]
+          }
+        ],
+        "tags": [
+          "Data"
+        ],
+        "summary": "Occupancy per clock interval for one element",
+        "description": "The history behind the §5.5 snapshot (Part 5 §5.5a), derived from\nthe APDS DemandTable records the implementation holds for the\nelement. Buckets align to `interval` boundaries in the place's time\nzone; an element the implementation holds no occupancy for is 404\n`target-not-found`; the `apx_places` grant must cover the element.",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "from",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "date-time"
+            }
+          },
+          {
+            "name": "to",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "date-time"
+            }
+          },
+          {
+            "name": "interval",
+            "in": "query",
+            "description": "Bucket length (ISO 8601 duration); default `PT1H`. Servers MAY refuse an interval shorter than their sampling with 400.",
+            "schema": {
+              "type": "string",
+              "default": "PT1H"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The buckets.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/OccupancyHistoryPage"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/BadRequest"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          },
+          "429": {
+            "$ref": "#/components/responses/TooManyRequests"
+          }
+        }
+      }
+    },
+    "/v1/plate-lists": {
+      "get": {
+        "operationId": "get-apx-v1-plate-lists",
+        "security": [
+          {
+            "apxOAuth": [
+              "apx.platelists:read"
+            ]
+          }
+        ],
+        "tags": [
+          "Plate lists"
+        ],
+        "summary": "List plate lists",
+        "description": "The lists visible to the caller: those with a `places[]` entry\ninside the grant, and those owned by the caller's `apx_org`.\n`mode=change&cursor=` serves the Part 5 §5.2 feed of lists\n(entries have their own feed).",
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/ModeParam"
+          },
+          {
+            "$ref": "#/components/parameters/CursorParam"
+          },
+          {
+            "name": "place",
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            },
+            "description": "Lists that apply at this element or its subtree."
+          },
+          {
+            "name": "category",
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "status",
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "enum": [
+                "active",
+                "suspended",
+                "retired"
+              ]
+            }
+          },
+          {
+            "$ref": "#/components/parameters/page"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Paginated lists, or a ChangeFeedPage.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "oneOf": [
+                    {
+                      "$ref": "#/components/schemas/ChangeFeedPage"
+                    },
+                    {
+                      "type": "object",
+                      "properties": {
+                        "meta": {
+                          "$ref": "#/components/schemas/PaginatedListMeta"
+                        },
+                        "data": {
+                          "type": "array",
+                          "items": {
+                            "$ref": "#/components/schemas/PlateList"
+                          }
+                        }
+                      }
+                    }
+                  ]
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "404": {
+            "description": "mode=change only: unknown, expired, or foreign cursor (`target-not-found`).",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "429": {
+            "$ref": "#/components/responses/TooManyRequests"
+          }
+        }
+      },
+      "post": {
+        "operationId": "post-apx-v1-plate-lists",
+        "security": [
+          {
+            "apxOAuth": [
+              "apx.platelists:manage"
+            ]
+          }
+        ],
+        "tags": [
+          "Plate lists"
+        ],
+        "summary": "Create a plate list",
+        "description": "Creates a list owned by the caller's `apx_org` (Part 24 §24.1).\nEvery `places[].place` must lie inside the grant (403\n`insufficient-grant`). `Idempotency-Key` optional (Part 4 §4.2a).\nPublishes `apx.platelists.changed.v1`.",
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/IdempotencyKeyOptional"
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/PlateList"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Idempotent replay.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PlateList"
+                }
+              }
+            }
+          },
+          "201": {
+            "description": "Created.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PlateList"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/BadRequest"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "409": {
+            "description": "`Idempotency-Key` replayed with a different body (`idempotency-conflict`).",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "A `category` outside the served registries, or a `places[].place` that does not exist (`reference-unknown`).",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "429": {
+            "$ref": "#/components/responses/TooManyRequests"
+          }
+        }
+      }
+    },
+    "/v1/plate-lists/{id}": {
+      "get": {
+        "operationId": "get-apx-v1-plate-lists-id",
+        "security": [
+          {
+            "apxOAuth": [
+              "apx.platelists:read"
+            ]
+          }
+        ],
+        "tags": [
+          "Plate lists"
+        ],
+        "summary": "Read a plate list",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The list.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PlateList"
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          },
+          "429": {
+            "$ref": "#/components/responses/TooManyRequests"
+          }
+        }
+      },
+      "put": {
+        "operationId": "put-apx-v1-plate-lists-id",
+        "security": [
+          {
+            "apxOAuth": [
+              "apx.platelists:manage"
+            ]
+          }
+        ],
+        "tags": [
+          "Plate lists"
+        ],
+        "summary": "Replace a plate list's policy (name, category, places, status)",
+        "description": "Full replacement with the version last read as `If-Match` or body\n`version` (409 `version-conflict`, Part 4 §4.2a). Entries are not\npart of this body. Publishes `apx.platelists.changed.v1`.",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "$ref": "#/components/parameters/IfMatch"
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/PlateList"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "The list as it now stands.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PlateList"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/BadRequest"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          },
+          "409": {
+            "description": "Stale version (`version-conflict`).",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "A `category` outside the served registries, or an unknown place (`reference-unknown`).",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "429": {
+            "$ref": "#/components/responses/TooManyRequests"
+          }
+        }
+      }
+    },
+    "/v1/plate-lists/{id}/entries": {
+      "get": {
+        "operationId": "get-apx-v1-plate-lists-id-entries",
+        "security": [
+          {
+            "apxOAuth": [
+              "apx.platelists:read"
+            ]
+          }
+        ],
+        "tags": [
+          "Plate lists"
+        ],
+        "summary": "List a plate list's entries",
+        "description": "Entries of one list, optionally by exact credential value;\n`mode=change&cursor=` serves the Part 5 §5.2 feed of entries so a\nscreening module keeps a local copy current. Plate values appear\nonly under `apx.platelists:*` (Part 9 §9.6); a consumer holding\nonly `apx.data:read` may subscribe to digests instead (§9.6 rule 6).",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "$ref": "#/components/parameters/ModeParam"
+          },
+          {
+            "$ref": "#/components/parameters/CursorParam"
+          },
+          {
+            "name": "credential",
+            "in": "query",
+            "schema": {
+              "type": "string"
+            },
+            "description": "Exact `credential.credentialIdentification` match."
+          },
+          {
+            "name": "activeAt",
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "format": "date-time"
+            },
+            "description": "Only entries whose validity contains this instant."
+          },
+          {
+            "$ref": "#/components/parameters/page"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Paginated entries, or a ChangeFeedPage.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "oneOf": [
+                    {
+                      "$ref": "#/components/schemas/ChangeFeedPage"
+                    },
+                    {
+                      "type": "object",
+                      "properties": {
+                        "meta": {
+                          "$ref": "#/components/schemas/PaginatedListMeta"
+                        },
+                        "data": {
+                          "type": "array",
+                          "items": {
+                            "$ref": "#/components/schemas/PlateListEntry"
+                          }
+                        }
+                      }
+                    }
+                  ]
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          },
+          "429": {
+            "$ref": "#/components/responses/TooManyRequests"
+          }
+        }
+      },
+      "post": {
+        "operationId": "post-apx-v1-plate-lists-id-entries",
+        "security": [
+          {
+            "apxOAuth": [
+              "apx.platelists:manage"
+            ]
+          }
+        ],
+        "tags": [
+          "Plate lists"
+        ],
+        "summary": "Add an entry to a plate list",
+        "description": "Adds a credential to the list (Part 24 §24.2). An entry whose\ncredential is already on the list with an overlapping validity is\nupdated in place (200) rather than duplicated. `Idempotency-Key`\noptional. Publishes `apx.platelists.changed.v1` with the list.",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "$ref": "#/components/parameters/IdempotencyKeyOptional"
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/PlateListEntry"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "An existing entry for the credential updated, or an idempotent replay.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PlateListEntry"
+                }
+              }
+            }
+          },
+          "201": {
+            "description": "Added.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PlateListEntry"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/BadRequest"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          },
+          "409": {
+            "description": "`Idempotency-Key` replayed with a different body (`idempotency-conflict`).",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "An inverted validity window (`request-unprocessable`), or a full card number where a plate is expected (`personal-data-not-permitted`).",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "429": {
+            "$ref": "#/components/responses/TooManyRequests"
+          }
+        }
+      }
+    },
+    "/v1/plate-lists/{id}/entries/{entryId}": {
+      "get": {
+        "operationId": "get-apx-v1-plate-lists-id-entries-entryid",
+        "security": [
+          {
+            "apxOAuth": [
+              "apx.platelists:read"
+            ]
+          }
+        ],
+        "tags": [
+          "Plate lists"
+        ],
+        "summary": "Read one entry",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "entryId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The entry.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PlateListEntry"
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          },
+          "429": {
+            "$ref": "#/components/responses/TooManyRequests"
+          }
+        }
+      },
+      "delete": {
+        "operationId": "delete-apx-v1-plate-lists-id-entries-entryid",
+        "security": [
+          {
+            "apxOAuth": [
+              "apx.platelists:manage"
+            ]
+          }
+        ],
+        "tags": [
+          "Plate lists"
+        ],
+        "summary": "Remove an entry",
+        "description": "Removes the credential from the list; the entry feed emits a tombstone. Publishes `apx.platelists.changed.v1`.",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "entryId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "Removed."
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          },
+          "429": {
+            "$ref": "#/components/responses/TooManyRequests"
+          }
+        }
+      }
+    },
+    "/v1/digest-keys": {
+      "get": {
+        "operationId": "get-apx-v1-digest-keys",
+        "security": [
+          {
+            "apxOAuth": [
+              "apx.digest:use"
+            ]
+          }
+        ],
+        "tags": [
+          "Discovery"
+        ],
+        "summary": "The keys behind `apds-ext:apx:credential-digest@1.0`",
+        "description": "The digest keys the implementation currently signs credential\ndigests with, so an authorised consumer can compute the digest of\na plate it holds and match it to decorated records without ever\nreceiving plates (Part 9 §9.6 rule 6). Rotation is by `keyId`;\nboth keys are served during an overlap. The normalization the\nimplementation applies before hashing is stated per key.",
+        "responses": {
+          "200": {
+            "description": "The keys.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": [
+                    "keys"
+                  ],
+                  "properties": {
+                    "keys": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "required": [
+                          "keyId",
+                          "alg",
+                          "key"
+                        ],
+                        "properties": {
+                          "keyId": {
+                            "type": "string"
+                          },
+                          "alg": {
+                            "type": "string",
+                            "enum": [
+                              "HS256"
+                            ]
+                          },
+                          "key": {
+                            "type": "string",
+                            "description": "base64url key material, at least 32 bytes."
+                          },
+                          "validFrom": {
+                            "$ref": "#/components/schemas/DateTime"
+                          },
+                          "validTo": {
+                            "$ref": "#/components/schemas/DateTime"
+                          },
+                          "normalization": {
+                            "type": "string",
+                            "description": "The normalization applied before hashing, e.g. `upper; strip non-alphanumerics; jurisdiction appended as `|<ISO 3166-2>``."
+                          }
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
           },
           "429": {
             "$ref": "#/components/responses/TooManyRequests"
@@ -12341,6 +14098,12 @@
         "description": "Payments made on a ticket or an account (Part 13 §13.2). At least\none key — `ticketLast4`, `cardLast4`, `ticketNumber`, or `account` —\nis REQUIRED; `date` and `place` only narrow, and a query with no key\nis 400 `invalid-request`. Privacy rule: a truncated-key lookup\nwithout a `date` is constrained to the last 8 hours; `ticketNumber`\nand `account` are exempt. Results are constrained to the caller's\ngrant (§13.5). Holds (`captureStatus: authorized`) are omitted\nunless `captureStatus=authorized` is asked for.",
         "parameters": [
           {
+            "$ref": "#/components/parameters/ModeParam"
+          },
+          {
+            "$ref": "#/components/parameters/CursorParam"
+          },
+          {
             "name": "ticketLast4",
             "in": "query",
             "schema": {
@@ -12416,18 +14179,25 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "type": "object",
-                  "properties": {
-                    "meta": {
-                      "$ref": "#/components/schemas/PaginatedListMeta"
+                  "oneOf": [
+                    {
+                      "$ref": "#/components/schemas/ChangeFeedPage"
                     },
-                    "data": {
-                      "type": "array",
-                      "items": {
-                        "$ref": "#/components/schemas/PaymentRecord"
+                    {
+                      "type": "object",
+                      "properties": {
+                        "meta": {
+                          "$ref": "#/components/schemas/PaginatedListMeta"
+                        },
+                        "data": {
+                          "type": "array",
+                          "items": {
+                            "$ref": "#/components/schemas/PaymentRecord"
+                          }
+                        }
                       }
                     }
-                  }
+                  ]
                 }
               }
             }
@@ -12440,6 +14210,16 @@
           },
           "403": {
             "$ref": "#/components/responses/Forbidden"
+          },
+          "404": {
+            "description": "mode=change only: the cursor is unknown, older than the retention window, or was issued for another (class, credential, filter set) — problem type `target-not-found`; re-sync with mode=full (Part 5 §5.2 rules 2, 5 and 8).",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
           },
           "422": {
             "description": "A query parameter carries more card digits than the truncated\nlast four (`personal-data-not-permitted`, Part 13 §13.2). The\nserver refuses before logging the request.",
@@ -13556,6 +15336,12 @@
         "description": "Filter by status, severityFloor, type, place (subtree-inclusive),\ndevice, relatedEntity, since. Alerts with no place binding (e.g.\n`webhookDeliveryFailed`) are visible to tokens of the owning\norganisation and are excluded whenever `place` is given (Part 7\n§7.1).",
         "parameters": [
           {
+            "$ref": "#/components/parameters/ModeParam"
+          },
+          {
+            "$ref": "#/components/parameters/CursorParam"
+          },
+          {
             "name": "status",
             "in": "query",
             "schema": {
@@ -13633,18 +15419,25 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "type": "object",
-                  "properties": {
-                    "meta": {
-                      "$ref": "#/components/schemas/PaginatedListMeta"
+                  "oneOf": [
+                    {
+                      "$ref": "#/components/schemas/ChangeFeedPage"
                     },
-                    "data": {
-                      "type": "array",
-                      "items": {
-                        "$ref": "#/components/schemas/Alert"
+                    {
+                      "type": "object",
+                      "properties": {
+                        "meta": {
+                          "$ref": "#/components/schemas/PaginatedListMeta"
+                        },
+                        "data": {
+                          "type": "array",
+                          "items": {
+                            "$ref": "#/components/schemas/Alert"
+                          }
+                        }
                       }
                     }
-                  }
+                  ]
                 }
               }
             }
@@ -13654,6 +15447,16 @@
           },
           "403": {
             "$ref": "#/components/responses/Forbidden"
+          },
+          "404": {
+            "description": "mode=change only: the cursor is unknown, older than the retention window, or was issued for another (class, credential, filter set) — problem type `target-not-found`; re-sync with mode=full (Part 5 §5.2 rules 2, 5 and 8).",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
           },
           "429": {
             "$ref": "#/components/responses/TooManyRequests"
@@ -15553,6 +17356,10 @@
               "apx.valet:read": "Read valet tickets and the retrieval queue",
               "apx.valet:manage": "Take custody, park, stage, hand back, and manage retrievals",
               "apx.valet:request": "Customer scope — request or cancel retrieval and read status/ETA for the caller's own ticket (text, app, web, voice bot)",
+              "apx.platelists:read": "Read plate lists and their entries, plate values included (Part 24)",
+              "apx.platelists:manage": "Create and maintain plate lists and entries (Part 24)",
+              "apx.digest:use": "Receive the credential digest keys (Part 9 §9.6 rule 6)",
+              "apx.replication:write": "Replay another implementation's records with their original provenance and lifecycle times (Part 18 §18.6)",
               "apx.charging:read": "read charging-point status (with bay presence) and charging sessions",
               "apx.charging:manage": "bridge scope; push point availability, bay observations, open sessions, report timeline events, attach settlement",
               "apx.charging:status": "customer scope; minimized read of the caller's own charging session and the place's charger availability (app, text, voice bot)"
@@ -15584,6 +17391,13 @@
           "lastUpdateUser": {
             "type": "string",
             "description": "Human or system principal that last updated the record."
+          },
+          "origin": {
+            "type": "string",
+            "description": "The implementation that first created the record, when it differs\nfrom the one serving it (Part 18 §18.6 replication): the origin's\n`EventEnvelope.source` value. Absent on records the serving\nimplementation created itself.",
+            "examples": [
+              "https://edge.lakeside-garage.example/v1"
+            ]
           }
         }
       },
@@ -15612,6 +17426,24 @@
           },
           "apds-ext:apx:permit@1.0": {
             "$ref": "#/components/schemas/PermitExtension"
+          },
+          "apds-ext:apx:permit@1.1": {
+            "$ref": "#/components/schemas/PermitExtension"
+          },
+          "apds-ext:apx:session-detail@1.0": {
+            "$ref": "#/components/schemas/SessionDetail"
+          },
+          "apds-ext:apx:match-evidence@1.0": {
+            "$ref": "#/components/schemas/MatchEvidence"
+          },
+          "apds-ext:apx:violation-source@1.0": {
+            "$ref": "#/components/schemas/ViolationSource"
+          },
+          "apds-ext:apx:payment-detail@1.0": {
+            "$ref": "#/components/schemas/PaymentDetail"
+          },
+          "apds-ext:apx:credential-digest@1.0": {
+            "$ref": "#/components/schemas/CredentialDigest"
           }
         },
         "additionalProperties": {
@@ -16308,7 +18140,7 @@
           },
           "parameters": {
             "type": "object",
-            "description": "Command-type-specific parameters. Normative parameter schemas per\ncommandType are given in Part 6 (e.g. lostTicket.method,\npushRate.rateTable VersionedReference, applyValidation.ticket +\nprovider, displayMessage.message, setDeviceState.state,\npushNegotiatedRate.rateTable VersionedReference to a RateTable\nflagged negotiable, matchTicket.session + evidence,\nresetPassback/forceIn/forceOut.credential, courtesyExit.holder)."
+            "description": "Command-type-specific parameters. Normative parameter schemas per\ncommandType are given in Part 6 (e.g. lostTicket.method,\npushRate.rateTable VersionedReference, applyValidation.ticket +\nprovider, displayMessage.message, setDeviceState.state,\npushNegotiatedRate.rateTable VersionedReference to a RateTable\nflagged negotiable, or pushNegotiatedRate.amount AmountInCurrency\n(any amount the agent states, where the host offers the\nnegotiatedAmounts feature), matchTicket.session + evidence,\nresetPassback/forceIn/forceOut.credential, courtesyExit.holder)."
           },
           "requestedBy": {
             "description": "The organisation requesting the action (defaults to the token's apx_org).",
@@ -16612,15 +18444,22 @@
               },
               "negotiatedRate": {
                 "type": "object",
-                "description": "The negotiated rate in effect on this ticket, if a\npushNegotiatedRate command succeeded for it (Part 6 §6.6). Absent\nwhen the ticket prices from the lane's normal rate deck.",
+                "description": "The negotiated rate in effect on this ticket, if a\npushNegotiatedRate command succeeded for it (Part 6 §6.6). Absent\nwhen the ticket prices from the lane's normal rate deck. Exactly\none of rateTable (a table selected from the deck) or amount (a\nfigure the agent stated) is present.",
                 "required": [
-                  "rateTable",
                   "command"
                 ],
                 "properties": {
                   "rateTable": {
                     "description": "The RateTable selected (VersionedReference — the exact version applied).",
                     "$ref": "#/components/schemas/VersionedReference"
+                  },
+                  "amount": {
+                    "description": "The amount the agent stated for this ticket (the negotiatedAmounts feature). It is what the ticket owes, not a discount.",
+                    "$ref": "#/components/schemas/AmountInCurrency"
+                  },
+                  "reason": {
+                    "type": "string",
+                    "description": "The command's reason, copied for the screen-pop. Always present with amount."
                   },
                   "command": {
                     "description": "The pushNegotiatedRate Command that applied it — carries `agent`, `reason`, and the audit trail.",
@@ -17367,8 +19206,37 @@
             "$ref": "#/components/schemas/Reference"
           },
           "imageLink": {
-            "description": "Screenshot/still of the read (APDS Image). Absent when no image was\ntaken or the imagery has been purged (see `purgedImagery`).",
+            "description": "Screenshot/still of the read (APDS Image). Absent when no image was\ntaken or the imagery has been purged (see `purgedImagery`). The\npreferred still; every unpurged image is in `images[]`.",
             "$ref": "#/components/schemas/Url"
+          },
+          "images": {
+            "type": "array",
+            "description": "Every unpurged image of the read (Part 13 §13.3c), by kind:\nthe APDS `ImageTypeEnum` values plus `plateExtended` (a wider crop\naround the plate) and `context` (the scene around the vehicle,\nwider than the overview), carried as `imageType` strings until\nAPDS adds them. Same access and purge rules as `imageLink`.",
+            "items": {
+              "type": "object",
+              "required": [
+                "id"
+              ],
+              "properties": {
+                "id": {
+                  "type": "string",
+                  "description": "The APDS Image id."
+                },
+                "imageType": {
+                  "type": "string",
+                  "description": "`overview`, `plate` (APDS ImageTypeEnum), `plateExtended`, `context`, or an implementer kind.",
+                  "examples": [
+                    "plateExtended"
+                  ]
+                },
+                "imageLink": {
+                  "$ref": "#/components/schemas/Url"
+                },
+                "cameraId": {
+                  "type": "string"
+                }
+              }
+            }
           },
           "lane": {
             "description": "The VehicularAccess (lane) the read was taken at, when the\nObservation's `elementIds` reference one. Whether the read was an\nentry or an exit is `detail.accessEvent` (Part 13 §13.3a(4)); the\nlane used does not decide it.",
@@ -17620,6 +19488,51 @@
           "engine": {
             "type": "string",
             "description": "Recognition engine/vendor identifier, opaque (for confidence calibration downstream)."
+          },
+          "review": {
+            "type": "object",
+            "description": "The human-review state of the read (Part 13 §13.3a(4a)): a\nlow-confidence read, or any read in a jurisdiction that requires\nreview, is `pending` until a reviewer confirms, corrects, or\nrejects it through `PUT /v1/lpr/reads/{observation}/plate`.\n`notRequired` is a read no rule sent to review. Absent means the\nimplementation does not review reads.",
+            "properties": {
+              "state": {
+                "type": "string",
+                "enum": [
+                  "pending",
+                  "confirmed",
+                  "corrected",
+                  "rejected",
+                  "notRequired"
+                ]
+              },
+              "reasons": {
+                "type": "array",
+                "description": "Why the read was sent to review — definedValues from `apx-read-review-reasons` (Part 11) or implementer values.",
+                "items": {
+                  "type": "string"
+                }
+              },
+              "decidedTime": {
+                "$ref": "#/components/schemas/DateTime"
+              },
+              "decidedBy": {
+                "type": "string",
+                "description": "Opaque reviewer principal."
+              },
+              "original": {
+                "type": "object",
+                "description": "The engine's values before a correction, kept so the correction is auditable.",
+                "properties": {
+                  "plate": {
+                    "type": "string"
+                  },
+                  "country": {
+                    "type": "string"
+                  },
+                  "stateProvince": {
+                    "type": "string"
+                  }
+                }
+              }
+            }
           }
         },
         "examples": [
@@ -18480,6 +20393,17 @@
             "description": "Reference to the settling APDS Payment or APX PaymentRecord (Part 13).",
             "$ref": "#/components/schemas/Reference"
           },
+          "payments": {
+            "type": "array",
+            "description": "Every payment received against the notice, in order (Part 19\n§19.6a). `payment` remains the settling one; a partial payment\nappears here, raises `amountPaid`, and leaves the state `issued`\nuntil `amountPaid` reaches `amount`.",
+            "items": {
+              "$ref": "#/components/schemas/Reference"
+            }
+          },
+          "amountPaid": {
+            "description": "The sum received so far against `amount` (Part 19 §19.6a). `paid`\nmeans `amountPaid` ≥ `amount`. Absent means nothing received.",
+            "$ref": "#/components/schemas/AmountInCurrency"
+          },
           "appeal": {
             "type": "object",
             "description": "The appeal on this violation, if one was opened. One appeal per violation.",
@@ -18870,7 +20794,7 @@
       },
       "ViolationPaymentAttachment": {
         "title": "ViolationPaymentAttachment",
-        "description": "Request body attaching the settling Payment to an issued violation.",
+        "description": "Request body attaching a Payment to an issued violation. The full\namount (or the remainder) settles it (`paid`); a smaller `amount` is\na partial payment (Part 19 §19.6a) that stays `issued`.",
         "type": "object",
         "required": [
           "payment"
@@ -18879,6 +20803,10 @@
           "payment": {
             "description": "Reference to the settling APDS Payment (or APX PaymentRecord taken via `POST /v1/payments`).",
             "$ref": "#/components/schemas/Reference"
+          },
+          "amount": {
+            "description": "The amount this payment contributes; absent means the full outstanding amount.",
+            "$ref": "#/components/schemas/AmountInCurrency"
           },
           "note": {
             "type": "string"
@@ -21990,6 +23918,783 @@
           }
         }
       },
+      "SessionDetail": {
+        "title": "SessionDetail",
+        "description": "The `apds-ext:apx:session-detail@1.0` decoration on an APDS Session\n(Part 5 §5.8): what an external pairing engine decided and APDS has no\nmembers for — the reads behind the visit, why and how it ended, the\nmatches it rests on, and the parent visit of an area Session. Written\nwith the native Session POST/PUT; a plain APDS client ignores it.",
+        "type": "object",
+        "properties": {
+          "reads": {
+            "type": "array",
+            "description": "The reads attached to this Session. A read already bound as\n`entry` or `exit` to another Session of the same place is refused\nwith 409 `read-already-bound` unless `supersedes` names that Session.",
+            "items": {
+              "$ref": "#/components/schemas/SessionReadBinding"
+            }
+          },
+          "supersedes": {
+            "description": "The Session whose reads this write takes over (a re-pairing).",
+            "$ref": "#/components/schemas/Reference"
+          },
+          "lifecycle": {
+            "type": "string",
+            "enum": [
+              "open",
+              "ended",
+              "final",
+              "disputed"
+            ],
+            "description": "`open` — a vehicle is in the facility; `ended` — closed, may still\nbe revised; `final` — no further revision expected; `disputed` —\nunder review."
+          },
+          "closure": {
+            "$ref": "#/components/schemas/SessionClosure"
+          },
+          "flags": {
+            "type": "array",
+            "description": "Open flags — `entryUnknown`, `orphanExit`, `reentry`, `passThrough`, or implementer values.",
+            "items": {
+              "type": "string"
+            }
+          },
+          "matches": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/MatchEvidence"
+            }
+          },
+          "parent": {
+            "description": "The visit this area Session is part of (className `Session`). A\nSession with `parent` MUST have a `hierarchyElement` inside the\nparent's; consumers count visits by Sessions without `parent`.",
+            "$ref": "#/components/schemas/Reference"
+          },
+          "passThrough": {
+            "type": "boolean",
+            "description": "An area stay shorter than the area's minimum dwell — never scored or billed."
+          }
+        }
+      },
+      "SessionReadBinding": {
+        "title": "SessionReadBinding",
+        "description": "One LPR read attached to a Session by the pairing engine (Part 5\n§5.8, member `reads[]` of `apds-ext:apx:session-detail@1.0`).",
+        "type": "object",
+        "required": [
+          "observation",
+          "role"
+        ],
+        "properties": {
+          "observation": {
+            "description": "The APDS ObservationElement (className `ObservationElement`).",
+            "$ref": "#/components/schemas/Reference"
+          },
+          "role": {
+            "type": "string",
+            "enum": [
+              "entry",
+              "exit",
+              "duplicate",
+              "activity"
+            ],
+            "description": "`entry` and `exit` are the passages that opened and closed the\nvisit; `duplicate` is the same passage seen by another camera or\nframe; `activity` is the vehicle seen inside (a sweep, a bay camera)."
+          },
+          "representative": {
+            "type": "boolean",
+            "description": "The read that stands for the visit in lists and screen-pops (at most one per Session)."
+          }
+        }
+      },
+      "SessionClosure": {
+        "title": "SessionClosure",
+        "description": "Why and how a Session ended (Part 5 §5.8).",
+        "type": "object",
+        "properties": {
+          "endReason": {
+            "type": "string",
+            "description": "definedValue from `apx-session-end-reasons` (Part 11) or an implementer code list.",
+            "examples": [
+              "exitRead"
+            ]
+          },
+          "endInferred": {
+            "type": "boolean",
+            "description": "True when `actualEnd` was set by a rule rather than observed."
+          },
+          "startObserved": {
+            "type": "boolean",
+            "description": "False declares `actualStart` synthetic — an exit-only Session whose\nentry was never observed. Consumers MUST exclude such Sessions from\ndwell statistics (Part 5 §5.8)."
+          },
+          "rule": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "The implementer rule that closed a `stale` Session (e.g. `transient-48h`); null when none applied."
+          }
+        }
+      },
+      "MatchEvidence": {
+        "title": "MatchEvidence",
+        "description": "How a link to a Session was established and how sure it is (Part 5\n§5.8; shared by the `matches[]` member of\n`apds-ext:apx:session-detail@1.0` and the decoration\n`apds-ext:apx:match-evidence@1.0` on a Violation or ValetTicket).\nCarries no plate characters and no vehicle attribute values\n(Part 9 §9.6).",
+        "type": "object",
+        "required": [
+          "target",
+          "matchType"
+        ],
+        "properties": {
+          "target": {
+            "description": "What the Session was matched to — an AssignedRight, a ValetTicket, a Violation, a PlateListEntry, an Observation.",
+            "$ref": "#/components/schemas/Reference"
+          },
+          "matchType": {
+            "type": "string",
+            "description": "Open — `right`, `valet`, `violation`, `list`, `exitPairing`, `sweep`, or an implementer value.",
+            "examples": [
+              "right"
+            ]
+          },
+          "plate": {
+            "type": "object",
+            "description": "How the plate strings agreed.",
+            "properties": {
+              "method": {
+                "type": "string",
+                "enum": [
+                  "exact",
+                  "alias",
+                  "fold",
+                  "fuzzy",
+                  "lenient",
+                  "reviewer"
+                ]
+              },
+              "editCost": {
+                "type": [
+                  "number",
+                  "null"
+                ],
+                "minimum": 0,
+                "description": "The weighted edit cost of a `fuzzy` or `lenient` match; null otherwise."
+              },
+              "jurisdiction": {
+                "type": "string",
+                "enum": [
+                  "agrees",
+                  "differs",
+                  "unknown"
+                ]
+              }
+            }
+          },
+          "vehicle": {
+            "type": "object",
+            "description": "The vehicle-attribute evidence (make, model, colour) behind the match, as a level and a score — never the values.",
+            "properties": {
+              "level": {
+                "type": "string",
+                "enum": [
+                  "unknown",
+                  "mismatch",
+                  "inconclusive",
+                  "weak",
+                  "good",
+                  "strong"
+                ]
+              },
+              "llr": {
+                "type": "number",
+                "description": "Log-likelihood ratio of the vehicle evidence."
+              },
+              "model": {
+                "type": "string",
+                "description": "The evidence model and version that scored it, opaque."
+              }
+            }
+          },
+          "applied": {
+            "type": "boolean",
+            "description": "False is a shadow match — recorded, not acted on."
+          },
+          "decidedBy": {
+            "type": "string",
+            "description": "`system`, `reviewer`, or an opaque principal."
+          },
+          "decidedTime": {
+            "$ref": "#/components/schemas/DateTime"
+          }
+        }
+      },
+      "OccupancyHistoryPage": {
+        "title": "OccupancyHistoryPage",
+        "description": "Occupancy per clock interval for one HierarchyElement (Part 5 §5.5a):\nthe history behind the §5.5 snapshot, derived from the APDS\nDemandTable records the implementation holds. Buckets are aligned to\nthe interval boundary in the place's time zone; a bucket with no\ndemand record carries no counts, never a guess.",
+        "type": "object",
+        "required": [
+          "place",
+          "interval",
+          "from",
+          "to",
+          "buckets"
+        ],
+        "properties": {
+          "place": {
+            "$ref": "#/components/schemas/Reference"
+          },
+          "interval": {
+            "description": "The bucket length as requested (ISO 8601 duration, e.g. `PT1H`).",
+            "$ref": "#/components/schemas/Duration"
+          },
+          "from": {
+            "$ref": "#/components/schemas/DateTime"
+          },
+          "to": {
+            "$ref": "#/components/schemas/DateTime"
+          },
+          "buckets": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "required": [
+                "start"
+              ],
+              "properties": {
+                "start": {
+                  "$ref": "#/components/schemas/DateTime"
+                },
+                "maxCount": {
+                  "type": "integer",
+                  "minimum": 0,
+                  "description": "The highest demand count recorded in the bucket."
+                },
+                "avgCount": {
+                  "type": "number",
+                  "minimum": 0,
+                  "description": "The time-weighted mean demand count over the bucket."
+                },
+                "supplyQuantity": {
+                  "type": "integer",
+                  "minimum": 0,
+                  "description": "The supply in force during the bucket (APDS Supply.supplyQuantity)."
+                },
+                "samples": {
+                  "type": "integer",
+                  "minimum": 0,
+                  "description": "How many demand records the bucket is computed from."
+                }
+              }
+            }
+          },
+          "extensions": {
+            "$ref": "#/components/schemas/Extensions"
+          }
+        }
+      },
+      "CredentialDigest": {
+        "title": "CredentialDigest",
+        "description": "The `apds-ext:apx:credential-digest@1.0` decoration (Part 9 §9.6 rule\n6): a keyed digest of a normalized credential identification (a plate),\nso a consumer that only needs \"same plate?\" can match without the\nplate itself. `value` is base64url(HMAC-SHA-256(key, normalized\nidentification)); the key is named by `keyId` and distributed through\n`GET /v1/digest-keys`. Visible under `apx.data:read`.",
+        "type": "object",
+        "required": [
+          "alg",
+          "keyId",
+          "value"
+        ],
+        "properties": {
+          "alg": {
+            "type": "string",
+            "enum": [
+              "HS256"
+            ]
+          },
+          "keyId": {
+            "type": "string",
+            "description": "The digest key the value was computed under (rotation by keyId)."
+          },
+          "value": {
+            "type": "string",
+            "description": "base64url, no padding."
+          },
+          "credentialType": {
+            "$ref": "#/components/schemas/CredentialTypeEnum"
+          }
+        }
+      },
+      "PlateCorrection": {
+        "title": "PlateCorrection",
+        "description": "Request body of `PUT /v1/lpr/reads/{observation}/plate` (Part 13\n§13.3a(4a)): a reviewer's decision on one read. `confirmed` keeps the\nengine's values; `corrected` replaces them with the ones given;\n`rejected` marks the read unusable for pairing and enforcement.",
+        "type": "object",
+        "required": [
+          "decision"
+        ],
+        "properties": {
+          "decision": {
+            "type": "string",
+            "enum": [
+              "confirmed",
+              "corrected",
+              "rejected"
+            ]
+          },
+          "plate": {
+            "type": "string",
+            "description": "Required when `decision` is `corrected`."
+          },
+          "country": {
+            "type": "string",
+            "description": "APDS VehicleAncillaryIdentification.country vocabulary."
+          },
+          "stateProvince": {
+            "type": "string"
+          },
+          "reason": {
+            "type": "string"
+          },
+          "reviewer": {
+            "type": "string",
+            "description": "Opaque reviewer principal (recorded as `review.decidedBy`)."
+          },
+          "extensions": {
+            "$ref": "#/components/schemas/Extensions"
+          }
+        }
+      },
+      "LprReadSearch": {
+        "title": "LprReadSearch",
+        "description": "Request body of `POST /v1/lpr/reads:search` (Part 13 §13.3): the same\nkeys as the `GET` lookup, carried in a body so a plate never enters a\nURL that proxies and access logs keep (Part 9 §9.6). At least one of\n`plate`, `ticket`, `observation`, or `session` is REQUIRED.",
+        "type": "object",
+        "properties": {
+          "plate": {
+            "type": "string"
+          },
+          "ticket": {
+            "type": "string"
+          },
+          "observation": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "session": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "place": {
+            "type": "string",
+            "format": "uuid",
+            "description": "Narrow results below the grant to one HierarchyElement and its subtree."
+          },
+          "page": {
+            "type": "integer",
+            "minimum": 1
+          }
+        }
+      },
+      "AccountSearch": {
+        "title": "AccountSearch",
+        "description": "Request body of `POST /v1/accounts:search` (Part 13 §13.1): the same\nkeys as the `GET` lookup, carried in a body so personal data never\nenters a URL (Part 9 §9.6).",
+        "type": "object",
+        "properties": {
+          "name": {
+            "type": "string"
+          },
+          "phone": {
+            "type": "string"
+          },
+          "email": {
+            "type": "string"
+          },
+          "card": {
+            "type": "string",
+            "description": "Truncated card digits only (two to four); more is 422 `personal-data-not-permitted`."
+          },
+          "plate": {
+            "type": "string"
+          },
+          "place": {
+            "type": "array",
+            "items": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          "page": {
+            "type": "integer",
+            "minimum": 1
+          }
+        }
+      },
+      "PaymentSearch": {
+        "title": "PaymentSearch",
+        "description": "Request body of `POST /v1/payments:search` (Part 13 §13.2): the same\nkeys and rules as the `GET` lookup, in a body (Part 9 §9.6).",
+        "type": "object",
+        "properties": {
+          "ticketLast4": {
+            "type": "string"
+          },
+          "cardLast4": {
+            "type": "string",
+            "pattern": "^[0-9]{2,4}$"
+          },
+          "ticketNumber": {
+            "type": "string"
+          },
+          "account": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "date": {
+            "type": "string",
+            "format": "date"
+          },
+          "place": {
+            "type": "array",
+            "items": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          "captureStatus": {
+            "type": "string",
+            "enum": [
+              "authorized",
+              "captured"
+            ]
+          },
+          "page": {
+            "type": "integer",
+            "minimum": 1
+          }
+        }
+      },
+      "PaymentDetail": {
+        "title": "PaymentDetail",
+        "description": "The `apds-ext:apx:payment-detail@1.0` decoration (Part 13 §13.6a) on a\n`PaymentRecord` or an APDS `Payment`: the rate sold and the lines that\nsum to the total, so revenue reports and the deck price check have\nthe base amount, the fee, and the product without a bilateral code.",
+        "type": "object",
+        "properties": {
+          "rateSold": {
+            "type": "object",
+            "description": "The rate the vendor sold, as the vendor names it.",
+            "properties": {
+              "id": {
+                "type": "string",
+                "description": "The vendor's rate id, or the APDS RateTable id when the deck is the source."
+              },
+              "name": {
+                "type": "string"
+              },
+              "rateTable": {
+                "description": "The APDS RateTable at the version applied, when known.",
+                "$ref": "#/components/schemas/VersionedReference"
+              },
+              "product": {
+                "type": "string",
+                "enum": [
+                  "standard",
+                  "pass",
+                  "other"
+                ]
+              },
+              "class": {
+                "type": "string",
+                "enum": [
+                  "standard",
+                  "validation",
+                  "discount",
+                  "zeroed",
+                  "other"
+                ]
+              }
+            }
+          },
+          "lines": {
+            "type": "array",
+            "description": "The lines; their `value`s sum to the payment's `amount`.",
+            "items": {
+              "type": "object",
+              "required": [
+                "code",
+                "value"
+              ],
+              "properties": {
+                "code": {
+                  "type": "string",
+                  "description": "definedValue from `apx-payment-line-codes` (Part 11) or an implementer code.",
+                  "examples": [
+                    "convenienceFee"
+                  ]
+                },
+                "value": {
+                  "$ref": "#/components/schemas/AmountInCurrency"
+                },
+                "description": {
+                  "type": "string"
+                }
+              }
+            }
+          }
+        }
+      },
+      "ViolationSource": {
+        "title": "ViolationSource",
+        "description": "The `apds-ext:apx:violation-source@1.0` decoration (Part 19 §19.13): a\nviolation issued by an external enforcement system and imported\nthrough `POST /v1/violations/imports`, keyed on `system` + `recordId`.",
+        "type": "object",
+        "required": [
+          "system",
+          "recordId"
+        ],
+        "properties": {
+          "system": {
+            "type": "string",
+            "description": "The issuing system, opaque (`passport`, `aims`…)."
+          },
+          "recordId": {
+            "type": "string",
+            "description": "The source's own citation or record id."
+          },
+          "sourceStatus": {
+            "type": "string",
+            "description": "The source's own status vocabulary, carried as reported (`issued`, `warned`, `voided`, `dismissed`, `partiallyPaid`…)."
+          },
+          "sourceRevision": {
+            "type": "integer",
+            "minimum": 0,
+            "description": "The source's revision counter; a re-import with a higher value updates the record."
+          },
+          "receivedTime": {
+            "$ref": "#/components/schemas/DateTime"
+          },
+          "officer": {
+            "type": "string",
+            "description": "The source's officer identifier, opaque."
+          },
+          "violationCode": {
+            "type": "string",
+            "description": "The source's own violation code, when it has no `apx-violation-types` equivalent."
+          }
+        }
+      },
+      "ViolationImport": {
+        "title": "ViolationImport",
+        "description": "Request body of `POST /v1/violations/imports` (Part 19 §19.13): a\nViolation as an external enforcement system reports it — in any\nstate, with the `statusHistory[]` times the source recorded, the\nnotice, the amounts, and the `apds-ext:apx:violation-source@1.0`\ndecoration that keys it. Members the schema marks readOnly are\naccepted here because the source, not this server, assigned them.",
+        "allOf": [
+          {
+            "$ref": "#/components/schemas/Violation"
+          },
+          {
+            "type": "object",
+            "required": [
+              "extensions"
+            ],
+            "properties": {
+              "extensions": {
+                "type": "object",
+                "required": [
+                  "apds-ext:apx:violation-source@1.0"
+                ]
+              }
+            }
+          }
+        ]
+      },
+      "ViolationSessionLink": {
+        "title": "ViolationSessionLink",
+        "description": "Request body of `POST /v1/violations/{id}/session` (Part 19 §19.13):\nsets or corrects `relatedSession` after creation, carrying the match\nevidence. `If-Match` carries the Violation version last read.",
+        "type": "object",
+        "required": [
+          "session"
+        ],
+        "properties": {
+          "session": {
+            "description": "The APDS Session (className `Session`), or null to clear the link.",
+            "$ref": "#/components/schemas/Reference"
+          },
+          "evidence": {
+            "$ref": "#/components/schemas/MatchEvidence"
+          },
+          "reason": {
+            "type": "string"
+          }
+        }
+      },
+      "PlateList": {
+        "title": "PlateList",
+        "description": "A list of credentials with a category and per-place behaviour\n(Part 24). Entries are kept separately (`PlateListEntry`); the list\ncarries the policy.",
+        "type": "object",
+        "required": [
+          "id",
+          "version",
+          "name",
+          "category",
+          "status"
+        ],
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid",
+            "readOnly": true
+          },
+          "version": {
+            "type": "integer",
+            "minimum": 1,
+            "readOnly": true
+          },
+          "name": {
+            "type": "string"
+          },
+          "category": {
+            "type": "string",
+            "description": "definedValue from `apx-plate-list-categories` (Part 11) — `allow`, `watch`, `scofflaw`, `enforcementVehicle` — or an implementer category.",
+            "examples": [
+              "scofflaw"
+            ]
+          },
+          "owner": {
+            "description": "The Organisation that maintains the list (a city, an operator).",
+            "$ref": "#/components/schemas/Reference"
+          },
+          "places": {
+            "type": "array",
+            "description": "Where the list applies, with per-place flags; a list with no `places` applies nowhere.",
+            "items": {
+              "$ref": "#/components/schemas/PlateListPlaceFlags"
+            }
+          },
+          "status": {
+            "type": "string",
+            "enum": [
+              "active",
+              "suspended",
+              "retired"
+            ]
+          },
+          "description": {
+            "type": "string"
+          },
+          "entryCount": {
+            "type": "integer",
+            "minimum": 0,
+            "readOnly": true
+          },
+          "recordInfo": {
+            "$ref": "#/components/schemas/RecordInfo"
+          },
+          "extensions": {
+            "$ref": "#/components/schemas/Extensions"
+          }
+        }
+      },
+      "PlateListEntry": {
+        "title": "PlateListEntry",
+        "description": "One credential on a list (Part 24 §24.2). The plate value appears\nonly under `apx.platelists:read`/`:manage`; a consumer that only\nscreens may hold the `apds-ext:apx:credential-digest@1.0` decoration\ninstead (Part 9 §9.6 rule 6).",
+        "type": "object",
+        "required": [
+          "id",
+          "version",
+          "credential"
+        ],
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid",
+            "readOnly": true
+          },
+          "version": {
+            "type": "integer",
+            "minimum": 1,
+            "readOnly": true
+          },
+          "list": {
+            "description": "The PlateList this entry belongs to.",
+            "readOnly": true,
+            "$ref": "#/components/schemas/Reference"
+          },
+          "credential": {
+            "type": "object",
+            "required": [
+              "credentialType",
+              "credentialIdentification"
+            ],
+            "properties": {
+              "credentialType": {
+                "$ref": "#/components/schemas/CredentialTypeEnum"
+              },
+              "credentialIdentification": {
+                "type": "string",
+                "description": "The plate or credential value."
+              },
+              "jurisdiction": {
+                "type": "string",
+                "description": "Issuing jurisdiction of the plate (state, province, country code)."
+              }
+            }
+          },
+          "validity": {
+            "type": "object",
+            "description": "When the entry is in force; absent bounds are open.",
+            "properties": {
+              "start": {
+                "$ref": "#/components/schemas/DateTime"
+              },
+              "end": {
+                "$ref": "#/components/schemas/DateTime"
+              }
+            }
+          },
+          "details": {
+            "type": "object",
+            "description": "Why the credential is on the list, as the list owner records it.",
+            "properties": {
+              "amountOwed": {
+                "$ref": "#/components/schemas/AmountInCurrency"
+              },
+              "noticeCount": {
+                "type": "integer",
+                "minimum": 0
+              },
+              "reference": {
+                "type": "string",
+                "description": "The owner's case or file reference, opaque."
+              },
+              "note": {
+                "type": "string"
+              }
+            }
+          },
+          "vehicle": {
+            "type": "object",
+            "description": "A description that helps an officer confirm the match; never a registry.",
+            "properties": {
+              "description": {
+                "type": "string"
+              }
+            }
+          },
+          "recordInfo": {
+            "$ref": "#/components/schemas/RecordInfo"
+          },
+          "extensions": {
+            "$ref": "#/components/schemas/Extensions"
+          }
+        }
+      },
+      "PlateListPlaceFlags": {
+        "title": "PlateListPlaceFlags",
+        "description": "What the list does at one place (Part 24 §24.1).",
+        "type": "object",
+        "required": [
+          "place"
+        ],
+        "properties": {
+          "place": {
+            "description": "The HierarchyElement subtree the flags apply to.",
+            "$ref": "#/components/schemas/Reference"
+          },
+          "enforced": {
+            "type": "boolean",
+            "description": "A match counts for compliance (`allow`) or enforcement (`scofflaw`, `watch`) at this place."
+          },
+          "alertOnArrival": {
+            "type": "boolean",
+            "description": "A match raises the Part 7 arrival alert of the list's category."
+          },
+          "refuseService": {
+            "type": "boolean",
+            "description": "A match refuses service at the lane (the refused-service sign, Part 6 `displayMessage`)."
+          }
+        }
+      },
       "DiscoveryDocument": {
         "title": "DiscoveryDocument",
         "description": "What THIS credential can do: exactly the endpoints, commands, topics,\nand places reachable with the presented token's scopes and grants.\nTwo clients with different grants receive different documents; a client\ncan call everything its document lists and nothing more.",
@@ -22098,6 +24803,41 @@
                 "commandsPerMinute": 60
               }
             ]
+          },
+          "replication": {
+            "type": "array",
+            "description": "Part 18 §18.6 — for a place this implementation shares with a\nreplicated site or aggregator implementation, which side is\nauthoritative for each entity class. A write to a class from the\nnon-authoritative side is 409 `not-authoritative`. Absent when\nthe implementation replicates nothing.",
+            "items": {
+              "type": "object",
+              "required": [
+                "place",
+                "class",
+                "authority"
+              ],
+              "properties": {
+                "place": {
+                  "type": "string",
+                  "format": "uuid",
+                  "description": "The HierarchyElement subtree root the row applies to."
+                },
+                "class": {
+                  "type": "string",
+                  "description": "An APDS class (`Session`, `RateTable`…) or APX resource class (`Violation`, `Alert`…)."
+                },
+                "authority": {
+                  "type": "string",
+                  "enum": [
+                    "site",
+                    "aggregator"
+                  ]
+                },
+                "peer": {
+                  "type": "string",
+                  "format": "uri-reference",
+                  "description": "The other implementation's `EventEnvelope.source`."
+                }
+              }
+            }
           },
           "extensions": {
             "$ref": "#/components/schemas/Extensions"
@@ -27963,7 +30703,7 @@
       },
       "PermitExtension": {
         "title": "PermitExtension",
-        "description": "The `apds-ext:apx:permit@1.0` extension object (Part 14 §14.2): links a\nrenewal permit to the one it renews, so a portal can follow the chain.",
+        "description": "The `apds-ext:apx:permit@1.1` extension object (Part 14 §14.2; `@1.0`\nremains valid and carries the first two members only): links a renewal\npermit to the one it renews, so a portal can follow the chain, and\ncaps how many of a multi-vehicle permit's vehicles may be parked at\nonce (§14.2d).",
         "type": "object",
         "properties": {
           "renews": {
@@ -27974,6 +30714,32 @@
             "description": "Set by the server on the renewed permit when a renewal is issued.",
             "readOnly": true,
             "$ref": "#/components/schemas/Reference"
+          },
+          "maxConcurrentVehicles": {
+            "type": "integer",
+            "minimum": 1,
+            "description": "How many of the permit's registered vehicles may be parked at the\nplace at once (Part 14 §14.2d). Absent means every registered\nvehicle may. A vehicle beyond the limit is an overage."
+          },
+          "overageBilling": {
+            "type": "object",
+            "description": "What an overage costs (Part 14 §14.2d).",
+            "required": [
+              "mode"
+            ],
+            "properties": {
+              "mode": {
+                "type": "string",
+                "enum": [
+                  "rack",
+                  "dayRate",
+                  "none"
+                ],
+                "description": "`rack` — the place's transient rate deck; `dayRate` — the flat `dayRate`; `none` — recorded, not billed."
+              },
+              "dayRate": {
+                "$ref": "#/components/schemas/AmountInCurrency"
+              }
+            }
           }
         }
       },
@@ -27999,6 +30765,19 @@
               "minor",
               "major",
               "critical"
+            ]
+          },
+          "alertTypes": {
+            "type": "array",
+            "description": "For alert topics — only alerts whose `alertType` is listed are\ndelivered (Part 8 §8.5a). Values are `apx-alert-types` entries or\nimplementer types; combines with `severityFloor` (both must hold).",
+            "items": {
+              "type": "string"
+            },
+            "examples": [
+              [
+                "scofflawArrival",
+                "refusedServiceArrival"
+              ]
             ]
           }
         }
@@ -28092,9 +30871,30 @@
           }
         }
       },
+      "ChangePayload": {
+        "title": "ChangePayload",
+        "description": "A change-mode payload for any native APDS entity class (Part 5 §5.1):\nthe entity's identity plus only the members that changed. An absent\nmember is unchanged; an explicit `null` clears it. Nested objects that\ncarry their own `id` (a Session segment, say) follow the same rule.\n\nThis schema checks the envelope only (identity present, any member may\nbe null). Each member present is still validated by the server against\nthe class's native property schema, and a member the class does not\ndefine is refused with 400 (Part 5 §5.1a). It is the request schema of\na native `PUT` sent with `APX-Update-Mode: change`, and the shape of\nevery `ChangeFeedPage` item.",
+        "type": "object",
+        "required": [
+          "id"
+        ],
+        "properties": {
+          "id": {
+            "type": "string",
+            "minLength": 1,
+            "description": "The entity's identifier (APDS VersionedIdentity.id)."
+          },
+          "version": {
+            "type": "integer",
+            "minimum": 1,
+            "description": "On a write, the version the client last read (the precondition,\nPart 4 §4.2a); on a feed item, the version after the change."
+          }
+        },
+        "additionalProperties": true
+      },
       "CommandResult": {
         "title": "CommandResult",
-        "description": "The structured outcome of a command, populated by the server when the\ncommand reaches `succeeded` (Part 6 §6.1a) and absent before then. Members\nare normative per command type: `lostTicket` → `ticketNumber`, `session`,\n`amountDue`; `matchTicket` → `session`, `amountDue`;\n`pushNegotiatedRate` → `rateTable`, `amountDue`. Other command types\nleave it absent unless a registry entry says otherwise. It restates what\nthe lane inquiry shows, so a console can continue (print, take payment)\nwithout parsing `statusHistory[].detail` or making a second call.",
+        "description": "The structured outcome of a command, populated by the server when the\ncommand reaches `succeeded` (Part 6 §6.1a) and absent before then. Members\nare normative per command type: `lostTicket` → `ticketNumber`, `session`,\n`amountDue`; `matchTicket` → `session`, `amountDue`;\n`pushNegotiatedRate` → `amountDue`, and `rateTable` when a table was\nselected (absent for a stated amount). Other command types\nleave it absent unless a registry entry says otherwise. It restates what\nthe lane inquiry shows, so a console can continue (print, take payment)\nwithout parsing `statusHistory[].detail` or making a second call.",
         "type": "object",
         "readOnly": true,
         "properties": {
@@ -28111,8 +30911,37 @@
             "$ref": "#/components/schemas/AmountInCurrency"
           },
           "rateTable": {
-            "description": "The RateTable at the exact version applied (pushNegotiatedRate).",
+            "description": "The RateTable at the exact version applied (pushNegotiatedRate with a table; absent for a stated amount).",
             "$ref": "#/components/schemas/VersionedReference"
+          },
+          "display": {
+            "type": "object",
+            "description": "Proof of display for `displayMessage` (Part 6 §6.1a): what the\ndevice confirmed it showed, when, and whether the player or an\noperator acknowledged it.",
+            "properties": {
+              "shownTime": {
+                "$ref": "#/components/schemas/DateTime"
+              },
+              "contentHash": {
+                "type": "string",
+                "description": "Hash of the rendered content, so a dispute can prove what was shown."
+              },
+              "wordingVersion": {
+                "type": "string",
+                "description": "The wording version the template was rendered under."
+              },
+              "screenshot": {
+                "description": "Access-controlled link to a capture of the display (Part 9 §9.6).",
+                "$ref": "#/components/schemas/Url"
+              },
+              "acknowledgedBy": {
+                "type": "string",
+                "enum": [
+                  "player",
+                  "operator",
+                  "none"
+                ]
+              }
+            }
           },
           "extensions": {
             "$ref": "#/components/schemas/Extensions"
@@ -28596,27 +31425,6 @@
             "description": "The last HTTP status code received (0 = network error)."
           }
         }
-      },
-      "ChangePayload": {
-        "title": "ChangePayload",
-        "description": "A change-mode payload for any native APDS entity class (Part 5 §5.1):\nthe entity's identity plus only the members that changed. An absent\nmember is unchanged; an explicit `null` clears it. Nested objects that\ncarry their own `id` (a Session segment, say) follow the same rule.\n\nThis schema checks the envelope only (identity present, any member may\nbe null). Each member present is still validated by the server against\nthe class's native property schema, and a member the class does not\ndefine is refused with 400 (Part 5 §5.1a). It is the request schema of\na native `PUT` sent with `APX-Update-Mode: change`, and the shape of\nevery `ChangeFeedPage` item.",
-        "type": "object",
-        "required": [
-          "id"
-        ],
-        "properties": {
-          "id": {
-            "type": "string",
-            "minLength": 1,
-            "description": "The entity's identifier (APDS VersionedIdentity.id)."
-          },
-          "version": {
-            "type": "integer",
-            "minimum": 1,
-            "description": "On a write, the version the client last read (the precondition,\nPart 4 §4.2a); on a feed item, the version after the change."
-          }
-        },
-        "additionalProperties": true
       },
       "HierarchyElementChangePayload": {
         "title": "HierarchyElementChangePayload",
@@ -29750,6 +32558,7 @@
       "name": "Enforcement and service",
       "tags": [
         "Violations",
+        "Plate lists",
         "Resolution",
         "Support"
       ]

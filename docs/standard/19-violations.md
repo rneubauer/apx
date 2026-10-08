@@ -123,6 +123,12 @@ caller's place grant (Part 9 §9.3).
   `reduced` (+ `adjustedAmount`) | `dismissed`, with `refund` on a
   pay-then-appeal.
 - `POST …/{id}/void` — void with reason (and `refund` when `paid`).
+- `POST /v1/violations:search` and `POST /v1/enforcement/eligibility:check`
+  — the list lookup and the eligibility check with the plate in a body,
+  never a URL; same rules and answers as the `GET`s (Part 9 §9.6 rule 7).
+- `POST /v1/violations/imports` and `POST …/{id}/session` — violations
+  issued by another system, and the Session link set after creation
+  (§19.13).
 - The versioned `PUT`s on policies and signage take the version last
   read as `If-Match` or body `version` (Part 4 §4.2a).
 - `GET /v1/enforcement/eligibility?credential=&credentialType=&place=&at=`
@@ -182,6 +188,10 @@ counterpart of Part 6's lane inquiry. It returns an `EligibilityResult`:
    Where the policy is silent, the rule MUST be published in operator
    documentation and enforced the same way. Publishing it on the policy
    lets pipelines read it from `…/policies/effective` in advance.
+   Where the policy requires reviewed evidence, an automated detection
+   whose evidence read carries `detail.review.state` `pending` or
+   `rejected` (Part 13 §13.3a(4a)) is not issuable: 409
+   `violation-not-issuable`, naming the read.
 2. **Guided.** A `guided` detection MUST be reviewed by a human before
    issuance. Implementations SHOULD publish `apx.violations.detected.v1`
    so handhelds can queue candidates; the eligibility check result at
@@ -228,6 +238,22 @@ the link.
 Appeal reasons and resolutions are implementer code lists (jurisdictional
 vocabulary varies too widely to close); `apx-violation-types` is the only
 APX registry this Part defines.
+
+### 19.6a Partial payment (normative)
+
+1. A payment attached with `POST …/{id}/payment` contributes its
+   `amount`, or the whole outstanding amount when `amount` is absent.
+   Every attached payment is appended to `payments[]` and added to
+   `amountPaid`.
+2. `paid` means `amountPaid` ≥ `amount`. A payment that leaves an
+   outstanding balance keeps the violation `issued`, appends a
+   `statusHistory[]` entry noting it, and publishes
+   `apx.violations.status.v1`; the escalation clock keeps running on the
+   outstanding balance.
+3. `payment` is the payment that settled the violation; it is set when
+   the violation becomes `paid`.
+4. Refunds on a pay-then-appeal (§19.6) and on void reduce `amountPaid`
+   by the refunded amount.
 
 ## 19.7 Eventing
 
@@ -389,3 +415,42 @@ candidate is raised by a consumer of `apx.charging.idle.started.v1` when
 `idlePolicy.maxIdleMinutes` elapses (Part 23 §23.10). Whether idle is a
 fee, a violation, or both is the place's enforcement policy (§19.10) and
 signage (§19.11).
+
+## 19.13 Violations issued by an external enforcement system (normative)
+
+Enforcement vendors issue citations on their own systems and report them
+afterwards. The lifecycle of §19.1 assumes this server detected and
+issued the violation through its own API calls, stamped with its own
+time; an already-issued citation from elsewhere arrives in whatever
+state its source has reached, with the source's times.
+
+1. **Import.** `POST /v1/violations/imports` (scope
+   `apx.violations:manage`, `Idempotency-Key` REQUIRED) records a
+   `ViolationImport`: a Violation in any state, with the `statusHistory[]`
+   times and actors the source recorded, its notice and amounts, and the
+   decoration `apds-ext:apx:violation-source@1.0` (`ViolationSource`:
+   `system`, `recordId`, `sourceStatus`, `sourceRevision`,
+   `receivedTime`). The server MAY keep the source's `id` or mint its own.
+2. **Keyed on the source.** The pair `system` + `recordId` identifies the
+   record. A later import with a higher `sourceRevision` updates it
+   (200, version + 1, `apx.violations.status.v1`); the same revision is a
+   no-op 200; a lower one is 409 `version-conflict`.
+3. **The source decided.** The server performs no eligibility check
+   (§19.3) and applies no policy clamp (§19.10) to an import; the
+   source's status vocabulary is kept in `sourceStatus` and mapped onto
+   `violationStatus` (a partial payment is `issued` with `amountPaid`,
+   §19.6a). The first import publishes `apx.violations.detected.v1`,
+   and `apx.violations.issued.v1` when the imported state is at or
+   beyond `issued`.
+4. **Thereafter.** An imported violation follows §19.1 like any other:
+   later transitions are API calls stamped by this server.
+5. **Linking a Session after creation.** `POST /v1/violations/{id}/session`
+   (`ViolationSessionLink`, `If-Match` with the Violation version last
+   read) sets or corrects `relatedSession` and writes the match evidence
+   as the decoration `apds-ext:apx:match-evidence@1.0` (Part 5 §5.8).
+   It is valid in every non-terminal state (409
+   `violation-transition-illegal` otherwise); a Session that does not
+   exist, is not visible, or is at another place is 422
+   `reference-unknown`. A match whose evidence is `lenient` SHOULD NOT be
+   the basis of a new citation (Part 5 §5.8); recording it on an
+   existing one is allowed.

@@ -2643,6 +2643,11 @@ Idempotency-Key: cc-8120-cancel
 
 The same key reused to cancel a different link:
 
+```http
+POST /v1/payment-links/e6000000-0000-4000-8000-000000000304/cancel
+Idempotency-Key: cc-8120-cancel
+```
+
 <!-- apx:request POST /v1/payment-links/e6000000-0000-4000-8000-000000000304/cancel -->
 ```json
 { "reason": "wrongRecipient" }

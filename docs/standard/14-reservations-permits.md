@@ -236,3 +236,25 @@ finds the permit.
   native AssignedRight events.
 
 Permit consumption (entry/exit) is ordinary APDS Session/Observation data.
+
+### 14.2d Concurrent-vehicle limit (normative)
+
+A multi-vehicle permit (one right, many vehicles, §14.2b) may let its
+holder register several vehicles but park only some of them at once.
+`apds-ext:apx:permit@1.1` adds two members to the permit decoration;
+`@1.0` remains valid and carries `renews`/`renewedBy` only.
+
+1. `maxConcurrentVehicles` — how many of the permit's registered
+   vehicles may be parked at the place at once. Absent means all of them.
+2. A vehicle that arrives while the limit is already reached is an
+   **overage**. The pool is not involved: the slot is still the right
+   (§14.2c).
+3. `overageBilling.mode` says what an overage costs: `rack` (the place's
+   transient deck prices the overage stay), `dayRate` (the flat
+   `overageBilling.dayRate`), or `none` (recorded, not billed). An
+   operator that cites an overage instead uses the existing
+   `permitMisuse` violation type (Part 19).
+4. How an overage is detected (which vehicle is the extra one) is
+   implementation-defined; the overage stay is an ordinary Session, and
+   where an external pairing engine decided it, its `MatchEvidence`
+   carries `matchType: right` with the permit as `target` (Part 5 §5.8).

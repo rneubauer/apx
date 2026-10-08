@@ -4395,6 +4395,12 @@
         "description": "The commands the caller may see, newest first by the time the\ncommand was received, each with its full `statusHistory` (Part 6\n§6.1b). Only commands whose target lies inside the token's\n`apx_places` grant are returned; naming a `place` outside the grant\nis 403 `insufficient-grant`. All filters combine with AND.",
         "parameters": [
           {
+            "$ref": "#/components/parameters/ModeParam"
+          },
+          {
+            "$ref": "#/components/parameters/CursorParam"
+          },
+          {
             "name": "target",
             "in": "query",
             "schema": {
@@ -4479,18 +4485,25 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "type": "object",
-                  "properties": {
-                    "meta": {
-                      "$ref": "#/components/schemas/PaginatedListMeta"
+                  "oneOf": [
+                    {
+                      "$ref": "#/components/schemas/ChangeFeedPage"
                     },
-                    "data": {
-                      "type": "array",
-                      "items": {
-                        "$ref": "#/components/schemas/Command"
+                    {
+                      "type": "object",
+                      "properties": {
+                        "meta": {
+                          "$ref": "#/components/schemas/PaginatedListMeta"
+                        },
+                        "data": {
+                          "type": "array",
+                          "items": {
+                            "$ref": "#/components/schemas/Command"
+                          }
+                        }
                       }
                     }
-                  }
+                  ]
                 }
               }
             }
@@ -4500,6 +4513,16 @@
           },
           "403": {
             "$ref": "#/components/responses/Forbidden"
+          },
+          "404": {
+            "description": "mode=change only: the cursor is unknown, older than the retention window, or was issued for another (class, credential, filter set) — problem type `target-not-found`; re-sync with mode=full (Part 5 §5.2 rules 2, 5 and 8).",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
           },
           "429": {
             "$ref": "#/components/responses/TooManyRequests"
@@ -5367,6 +5390,10 @@
               "apx.valet:read": "Read valet tickets and the retrieval queue",
               "apx.valet:manage": "Take custody, park, stage, hand back, and manage retrievals",
               "apx.valet:request": "Customer scope — request or cancel retrieval and read status/ETA for the caller's own ticket (text, app, web, voice bot)",
+              "apx.platelists:read": "Read plate lists and their entries, plate values included (Part 24)",
+              "apx.platelists:manage": "Create and maintain plate lists and entries (Part 24)",
+              "apx.digest:use": "Receive the credential digest keys (Part 9 §9.6 rule 6)",
+              "apx.replication:write": "Replay another implementation's records with their original provenance and lifecycle times (Part 18 §18.6)",
               "apx.charging:read": "read charging-point status (with bay presence) and charging sessions",
               "apx.charging:manage": "bridge scope; push point availability, bay observations, open sessions, report timeline events, attach settlement",
               "apx.charging:status": "customer scope; minimized read of the caller's own charging session and the place's charger availability (app, text, voice bot)"
@@ -7981,7 +8008,7 @@
           },
           "parameters": {
             "type": "object",
-            "description": "Command-type-specific parameters. Normative parameter schemas per\ncommandType are given in Part 6 (e.g. lostTicket.method,\npushRate.rateTable VersionedReference, applyValidation.ticket +\nprovider, displayMessage.message, setDeviceState.state,\npushNegotiatedRate.rateTable VersionedReference to a RateTable\nflagged negotiable, matchTicket.session + evidence,\nresetPassback/forceIn/forceOut.credential, courtesyExit.holder)."
+            "description": "Command-type-specific parameters. Normative parameter schemas per\ncommandType are given in Part 6 (e.g. lostTicket.method,\npushRate.rateTable VersionedReference, applyValidation.ticket +\nprovider, displayMessage.message, setDeviceState.state,\npushNegotiatedRate.rateTable VersionedReference to a RateTable\nflagged negotiable, or pushNegotiatedRate.amount AmountInCurrency\n(any amount the agent states, where the host offers the\nnegotiatedAmounts feature), matchTicket.session + evidence,\nresetPassback/forceIn/forceOut.credential, courtesyExit.holder)."
           },
           "requestedBy": {
             "description": "The organisation requesting the action (defaults to the token's apx_org).",
@@ -8224,15 +8251,22 @@
               },
               "negotiatedRate": {
                 "type": "object",
-                "description": "The negotiated rate in effect on this ticket, if a\npushNegotiatedRate command succeeded for it (Part 6 §6.6). Absent\nwhen the ticket prices from the lane's normal rate deck.",
+                "description": "The negotiated rate in effect on this ticket, if a\npushNegotiatedRate command succeeded for it (Part 6 §6.6). Absent\nwhen the ticket prices from the lane's normal rate deck. Exactly\none of rateTable (a table selected from the deck) or amount (a\nfigure the agent stated) is present.",
                 "required": [
-                  "rateTable",
                   "command"
                 ],
                 "properties": {
                   "rateTable": {
                     "description": "The RateTable selected (VersionedReference — the exact version applied).",
                     "$ref": "#/components/schemas/VersionedReference"
+                  },
+                  "amount": {
+                    "description": "The amount the agent stated for this ticket (the negotiatedAmounts feature). It is what the ticket owes, not a discount.",
+                    "$ref": "#/components/schemas/AmountInCurrency"
+                  },
+                  "reason": {
+                    "type": "string",
+                    "description": "The command's reason, copied for the screen-pop. Always present with amount."
                   },
                   "command": {
                     "description": "The pushNegotiatedRate Command that applied it — carries `agent`, `reason`, and the audit trail.",
@@ -8702,6 +8736,24 @@
           },
           "apds-ext:apx:permit@1.0": {
             "$ref": "#/components/schemas/PermitExtension"
+          },
+          "apds-ext:apx:permit@1.1": {
+            "$ref": "#/components/schemas/PermitExtension"
+          },
+          "apds-ext:apx:session-detail@1.0": {
+            "$ref": "#/components/schemas/SessionDetail"
+          },
+          "apds-ext:apx:match-evidence@1.0": {
+            "$ref": "#/components/schemas/MatchEvidence"
+          },
+          "apds-ext:apx:violation-source@1.0": {
+            "$ref": "#/components/schemas/ViolationSource"
+          },
+          "apds-ext:apx:payment-detail@1.0": {
+            "$ref": "#/components/schemas/PaymentDetail"
+          },
+          "apds-ext:apx:credential-digest@1.0": {
+            "$ref": "#/components/schemas/CredentialDigest"
           }
         },
         "additionalProperties": {
@@ -10248,6 +10300,19 @@
               "major",
               "critical"
             ]
+          },
+          "alertTypes": {
+            "type": "array",
+            "description": "For alert topics — only alerts whose `alertType` is listed are\ndelivered (Part 8 §8.5a). Values are `apx-alert-types` entries or\nimplementer types; combines with `severityFloor` (both must hold).",
+            "items": {
+              "type": "string"
+            },
+            "examples": [
+              [
+                "scofflawArrival",
+                "refusedServiceArrival"
+              ]
+            ]
           }
         }
       },
@@ -10273,6 +10338,13 @@
           "lastUpdateUser": {
             "type": "string",
             "description": "Human or system principal that last updated the record."
+          },
+          "origin": {
+            "type": "string",
+            "description": "The implementation that first created the record, when it differs\nfrom the one serving it (Part 18 §18.6 replication): the origin's\n`EventEnvelope.source` value. Absent on records the serving\nimplementation created itself.",
+            "examples": [
+              "https://edge.lakeside-garage.example/v1"
+            ]
           }
         }
       },
@@ -10323,7 +10395,7 @@
       },
       "CommandResult": {
         "title": "CommandResult",
-        "description": "The structured outcome of a command, populated by the server when the\ncommand reaches `succeeded` (Part 6 §6.1a) and absent before then. Members\nare normative per command type: `lostTicket` → `ticketNumber`, `session`,\n`amountDue`; `matchTicket` → `session`, `amountDue`;\n`pushNegotiatedRate` → `rateTable`, `amountDue`. Other command types\nleave it absent unless a registry entry says otherwise. It restates what\nthe lane inquiry shows, so a console can continue (print, take payment)\nwithout parsing `statusHistory[].detail` or making a second call.",
+        "description": "The structured outcome of a command, populated by the server when the\ncommand reaches `succeeded` (Part 6 §6.1a) and absent before then. Members\nare normative per command type: `lostTicket` → `ticketNumber`, `session`,\n`amountDue`; `matchTicket` → `session`, `amountDue`;\n`pushNegotiatedRate` → `amountDue`, and `rateTable` when a table was\nselected (absent for a stated amount). Other command types\nleave it absent unless a registry entry says otherwise. It restates what\nthe lane inquiry shows, so a console can continue (print, take payment)\nwithout parsing `statusHistory[].detail` or making a second call.",
         "type": "object",
         "readOnly": true,
         "properties": {
@@ -10340,8 +10412,37 @@
             "$ref": "#/components/schemas/AmountInCurrency"
           },
           "rateTable": {
-            "description": "The RateTable at the exact version applied (pushNegotiatedRate).",
+            "description": "The RateTable at the exact version applied (pushNegotiatedRate with a table; absent for a stated amount).",
             "$ref": "#/components/schemas/VersionedReference"
+          },
+          "display": {
+            "type": "object",
+            "description": "Proof of display for `displayMessage` (Part 6 §6.1a): what the\ndevice confirmed it showed, when, and whether the player or an\noperator acknowledged it.",
+            "properties": {
+              "shownTime": {
+                "$ref": "#/components/schemas/DateTime"
+              },
+              "contentHash": {
+                "type": "string",
+                "description": "Hash of the rendered content, so a dispute can prove what was shown."
+              },
+              "wordingVersion": {
+                "type": "string",
+                "description": "The wording version the template was rendered under."
+              },
+              "screenshot": {
+                "description": "Access-controlled link to a capture of the display (Part 9 §9.6).",
+                "$ref": "#/components/schemas/Url"
+              },
+              "acknowledgedBy": {
+                "type": "string",
+                "enum": [
+                  "player",
+                  "operator",
+                  "none"
+                ]
+              }
+            }
           },
           "extensions": {
             "$ref": "#/components/schemas/Extensions"
@@ -10624,6 +10725,51 @@
           "engine": {
             "type": "string",
             "description": "Recognition engine/vendor identifier, opaque (for confidence calibration downstream)."
+          },
+          "review": {
+            "type": "object",
+            "description": "The human-review state of the read (Part 13 §13.3a(4a)): a\nlow-confidence read, or any read in a jurisdiction that requires\nreview, is `pending` until a reviewer confirms, corrects, or\nrejects it through `PUT /v1/lpr/reads/{observation}/plate`.\n`notRequired` is a read no rule sent to review. Absent means the\nimplementation does not review reads.",
+            "properties": {
+              "state": {
+                "type": "string",
+                "enum": [
+                  "pending",
+                  "confirmed",
+                  "corrected",
+                  "rejected",
+                  "notRequired"
+                ]
+              },
+              "reasons": {
+                "type": "array",
+                "description": "Why the read was sent to review — definedValues from `apx-read-review-reasons` (Part 11) or implementer values.",
+                "items": {
+                  "type": "string"
+                }
+              },
+              "decidedTime": {
+                "$ref": "#/components/schemas/DateTime"
+              },
+              "decidedBy": {
+                "type": "string",
+                "description": "Opaque reviewer principal."
+              },
+              "original": {
+                "type": "object",
+                "description": "The engine's values before a correction, kept so the correction is auditable.",
+                "properties": {
+                  "plate": {
+                    "type": "string"
+                  },
+                  "country": {
+                    "type": "string"
+                  },
+                  "stateProvince": {
+                    "type": "string"
+                  }
+                }
+              }
+            }
           }
         },
         "examples": [
@@ -10767,7 +10913,7 @@
       },
       "PermitExtension": {
         "title": "PermitExtension",
-        "description": "The `apds-ext:apx:permit@1.0` extension object (Part 14 §14.2): links a\nrenewal permit to the one it renews, so a portal can follow the chain.",
+        "description": "The `apds-ext:apx:permit@1.1` extension object (Part 14 §14.2; `@1.0`\nremains valid and carries the first two members only): links a renewal\npermit to the one it renews, so a portal can follow the chain, and\ncaps how many of a multi-vehicle permit's vehicles may be parked at\nonce (§14.2d).",
         "type": "object",
         "properties": {
           "renews": {
@@ -10778,6 +10924,311 @@
             "description": "Set by the server on the renewed permit when a renewal is issued.",
             "readOnly": true,
             "$ref": "#/components/schemas/Reference"
+          },
+          "maxConcurrentVehicles": {
+            "type": "integer",
+            "minimum": 1,
+            "description": "How many of the permit's registered vehicles may be parked at the\nplace at once (Part 14 §14.2d). Absent means every registered\nvehicle may. A vehicle beyond the limit is an overage."
+          },
+          "overageBilling": {
+            "type": "object",
+            "description": "What an overage costs (Part 14 §14.2d).",
+            "required": [
+              "mode"
+            ],
+            "properties": {
+              "mode": {
+                "type": "string",
+                "enum": [
+                  "rack",
+                  "dayRate",
+                  "none"
+                ],
+                "description": "`rack` — the place's transient rate deck; `dayRate` — the flat `dayRate`; `none` — recorded, not billed."
+              },
+              "dayRate": {
+                "$ref": "#/components/schemas/AmountInCurrency"
+              }
+            }
+          }
+        }
+      },
+      "SessionDetail": {
+        "title": "SessionDetail",
+        "description": "The `apds-ext:apx:session-detail@1.0` decoration on an APDS Session\n(Part 5 §5.8): what an external pairing engine decided and APDS has no\nmembers for — the reads behind the visit, why and how it ended, the\nmatches it rests on, and the parent visit of an area Session. Written\nwith the native Session POST/PUT; a plain APDS client ignores it.",
+        "type": "object",
+        "properties": {
+          "reads": {
+            "type": "array",
+            "description": "The reads attached to this Session. A read already bound as\n`entry` or `exit` to another Session of the same place is refused\nwith 409 `read-already-bound` unless `supersedes` names that Session.",
+            "items": {
+              "$ref": "#/components/schemas/SessionReadBinding"
+            }
+          },
+          "supersedes": {
+            "description": "The Session whose reads this write takes over (a re-pairing).",
+            "$ref": "#/components/schemas/Reference"
+          },
+          "lifecycle": {
+            "type": "string",
+            "enum": [
+              "open",
+              "ended",
+              "final",
+              "disputed"
+            ],
+            "description": "`open` — a vehicle is in the facility; `ended` — closed, may still\nbe revised; `final` — no further revision expected; `disputed` —\nunder review."
+          },
+          "closure": {
+            "$ref": "#/components/schemas/SessionClosure"
+          },
+          "flags": {
+            "type": "array",
+            "description": "Open flags — `entryUnknown`, `orphanExit`, `reentry`, `passThrough`, or implementer values.",
+            "items": {
+              "type": "string"
+            }
+          },
+          "matches": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/MatchEvidence"
+            }
+          },
+          "parent": {
+            "description": "The visit this area Session is part of (className `Session`). A\nSession with `parent` MUST have a `hierarchyElement` inside the\nparent's; consumers count visits by Sessions without `parent`.",
+            "$ref": "#/components/schemas/Reference"
+          },
+          "passThrough": {
+            "type": "boolean",
+            "description": "An area stay shorter than the area's minimum dwell — never scored or billed."
+          }
+        }
+      },
+      "MatchEvidence": {
+        "title": "MatchEvidence",
+        "description": "How a link to a Session was established and how sure it is (Part 5\n§5.8; shared by the `matches[]` member of\n`apds-ext:apx:session-detail@1.0` and the decoration\n`apds-ext:apx:match-evidence@1.0` on a Violation or ValetTicket).\nCarries no plate characters and no vehicle attribute values\n(Part 9 §9.6).",
+        "type": "object",
+        "required": [
+          "target",
+          "matchType"
+        ],
+        "properties": {
+          "target": {
+            "description": "What the Session was matched to — an AssignedRight, a ValetTicket, a Violation, a PlateListEntry, an Observation.",
+            "$ref": "#/components/schemas/Reference"
+          },
+          "matchType": {
+            "type": "string",
+            "description": "Open — `right`, `valet`, `violation`, `list`, `exitPairing`, `sweep`, or an implementer value.",
+            "examples": [
+              "right"
+            ]
+          },
+          "plate": {
+            "type": "object",
+            "description": "How the plate strings agreed.",
+            "properties": {
+              "method": {
+                "type": "string",
+                "enum": [
+                  "exact",
+                  "alias",
+                  "fold",
+                  "fuzzy",
+                  "lenient",
+                  "reviewer"
+                ]
+              },
+              "editCost": {
+                "type": [
+                  "number",
+                  "null"
+                ],
+                "minimum": 0,
+                "description": "The weighted edit cost of a `fuzzy` or `lenient` match; null otherwise."
+              },
+              "jurisdiction": {
+                "type": "string",
+                "enum": [
+                  "agrees",
+                  "differs",
+                  "unknown"
+                ]
+              }
+            }
+          },
+          "vehicle": {
+            "type": "object",
+            "description": "The vehicle-attribute evidence (make, model, colour) behind the match, as a level and a score — never the values.",
+            "properties": {
+              "level": {
+                "type": "string",
+                "enum": [
+                  "unknown",
+                  "mismatch",
+                  "inconclusive",
+                  "weak",
+                  "good",
+                  "strong"
+                ]
+              },
+              "llr": {
+                "type": "number",
+                "description": "Log-likelihood ratio of the vehicle evidence."
+              },
+              "model": {
+                "type": "string",
+                "description": "The evidence model and version that scored it, opaque."
+              }
+            }
+          },
+          "applied": {
+            "type": "boolean",
+            "description": "False is a shadow match — recorded, not acted on."
+          },
+          "decidedBy": {
+            "type": "string",
+            "description": "`system`, `reviewer`, or an opaque principal."
+          },
+          "decidedTime": {
+            "$ref": "#/components/schemas/DateTime"
+          }
+        }
+      },
+      "ViolationSource": {
+        "title": "ViolationSource",
+        "description": "The `apds-ext:apx:violation-source@1.0` decoration (Part 19 §19.13): a\nviolation issued by an external enforcement system and imported\nthrough `POST /v1/violations/imports`, keyed on `system` + `recordId`.",
+        "type": "object",
+        "required": [
+          "system",
+          "recordId"
+        ],
+        "properties": {
+          "system": {
+            "type": "string",
+            "description": "The issuing system, opaque (`passport`, `aims`…)."
+          },
+          "recordId": {
+            "type": "string",
+            "description": "The source's own citation or record id."
+          },
+          "sourceStatus": {
+            "type": "string",
+            "description": "The source's own status vocabulary, carried as reported (`issued`, `warned`, `voided`, `dismissed`, `partiallyPaid`…)."
+          },
+          "sourceRevision": {
+            "type": "integer",
+            "minimum": 0,
+            "description": "The source's revision counter; a re-import with a higher value updates the record."
+          },
+          "receivedTime": {
+            "$ref": "#/components/schemas/DateTime"
+          },
+          "officer": {
+            "type": "string",
+            "description": "The source's officer identifier, opaque."
+          },
+          "violationCode": {
+            "type": "string",
+            "description": "The source's own violation code, when it has no `apx-violation-types` equivalent."
+          }
+        }
+      },
+      "PaymentDetail": {
+        "title": "PaymentDetail",
+        "description": "The `apds-ext:apx:payment-detail@1.0` decoration (Part 13 §13.6a) on a\n`PaymentRecord` or an APDS `Payment`: the rate sold and the lines that\nsum to the total, so revenue reports and the deck price check have\nthe base amount, the fee, and the product without a bilateral code.",
+        "type": "object",
+        "properties": {
+          "rateSold": {
+            "type": "object",
+            "description": "The rate the vendor sold, as the vendor names it.",
+            "properties": {
+              "id": {
+                "type": "string",
+                "description": "The vendor's rate id, or the APDS RateTable id when the deck is the source."
+              },
+              "name": {
+                "type": "string"
+              },
+              "rateTable": {
+                "description": "The APDS RateTable at the version applied, when known.",
+                "$ref": "#/components/schemas/VersionedReference"
+              },
+              "product": {
+                "type": "string",
+                "enum": [
+                  "standard",
+                  "pass",
+                  "other"
+                ]
+              },
+              "class": {
+                "type": "string",
+                "enum": [
+                  "standard",
+                  "validation",
+                  "discount",
+                  "zeroed",
+                  "other"
+                ]
+              }
+            }
+          },
+          "lines": {
+            "type": "array",
+            "description": "The lines; their `value`s sum to the payment's `amount`.",
+            "items": {
+              "type": "object",
+              "required": [
+                "code",
+                "value"
+              ],
+              "properties": {
+                "code": {
+                  "type": "string",
+                  "description": "definedValue from `apx-payment-line-codes` (Part 11) or an implementer code.",
+                  "examples": [
+                    "convenienceFee"
+                  ]
+                },
+                "value": {
+                  "$ref": "#/components/schemas/AmountInCurrency"
+                },
+                "description": {
+                  "type": "string"
+                }
+              }
+            }
+          }
+        }
+      },
+      "CredentialDigest": {
+        "title": "CredentialDigest",
+        "description": "The `apds-ext:apx:credential-digest@1.0` decoration (Part 9 §9.6 rule\n6): a keyed digest of a normalized credential identification (a plate),\nso a consumer that only needs \"same plate?\" can match without the\nplate itself. `value` is base64url(HMAC-SHA-256(key, normalized\nidentification)); the key is named by `keyId` and distributed through\n`GET /v1/digest-keys`. Visible under `apx.data:read`.",
+        "type": "object",
+        "required": [
+          "alg",
+          "keyId",
+          "value"
+        ],
+        "properties": {
+          "alg": {
+            "type": "string",
+            "enum": [
+              "HS256"
+            ]
+          },
+          "keyId": {
+            "type": "string",
+            "description": "The digest key the value was computed under (rotation by keyId)."
+          },
+          "value": {
+            "type": "string",
+            "description": "base64url, no padding."
+          },
+          "credentialType": {
+            "$ref": "#/components/schemas/CredentialTypeEnum"
           }
         }
       },
@@ -11556,6 +12007,64 @@
             "type": "number",
             "minimum": 0,
             "maximum": 1
+          }
+        }
+      },
+      "SessionReadBinding": {
+        "title": "SessionReadBinding",
+        "description": "One LPR read attached to a Session by the pairing engine (Part 5\n§5.8, member `reads[]` of `apds-ext:apx:session-detail@1.0`).",
+        "type": "object",
+        "required": [
+          "observation",
+          "role"
+        ],
+        "properties": {
+          "observation": {
+            "description": "The APDS ObservationElement (className `ObservationElement`).",
+            "$ref": "#/components/schemas/Reference"
+          },
+          "role": {
+            "type": "string",
+            "enum": [
+              "entry",
+              "exit",
+              "duplicate",
+              "activity"
+            ],
+            "description": "`entry` and `exit` are the passages that opened and closed the\nvisit; `duplicate` is the same passage seen by another camera or\nframe; `activity` is the vehicle seen inside (a sweep, a bay camera)."
+          },
+          "representative": {
+            "type": "boolean",
+            "description": "The read that stands for the visit in lists and screen-pops (at most one per Session)."
+          }
+        }
+      },
+      "SessionClosure": {
+        "title": "SessionClosure",
+        "description": "Why and how a Session ended (Part 5 §5.8).",
+        "type": "object",
+        "properties": {
+          "endReason": {
+            "type": "string",
+            "description": "definedValue from `apx-session-end-reasons` (Part 11) or an implementer code list.",
+            "examples": [
+              "exitRead"
+            ]
+          },
+          "endInferred": {
+            "type": "boolean",
+            "description": "True when `actualEnd` was set by a rule rather than observed."
+          },
+          "startObserved": {
+            "type": "boolean",
+            "description": "False declares `actualStart` synthetic — an exit-only Session whose\nentry was never observed. Consumers MUST exclude such Sessions from\ndwell statistics (Part 5 §5.8)."
+          },
+          "rule": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "The implementer rule that closed a `stale` Session (e.g. `transient-48h`); null when none applied."
           }
         }
       },

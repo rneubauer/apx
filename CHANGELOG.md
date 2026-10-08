@@ -46,6 +46,77 @@ The machine-readable spec (`spec/openapi/apx.yaml`, bundled as
   (`chargingBayIdle`), and Part 12 problem types
   `charging-transition-illegal`, `charging-point-unavailable`,
   `charging-settlement-conflict`; Annex A.21 rows are claimable.
+- **What an external pairing engine needs to write back.** Twenty-one gaps
+  found splitting an edge pairing engine from a cloud core
+  (`docs/apx-additional-functions/APX-gaps-2026-10-08.md`, G1–G21),
+  adopted as follows. All additive.
+  - Session detail (G1–G4, Part 5 §5.8): decoration
+    `apds-ext:apx:session-detail@1.0` (`SessionDetail`) on the APDS
+    Session — the reads behind the visit with roles, `lifecycle`,
+    `closure` (end reason from new registry `apx-session-end-reasons` v1,
+    inferred end, `startObserved: false` for exit-only Sessions, which
+    consumers exclude from dwell), `matches[]` (`MatchEvidence`: plate
+    method, edit cost, vehicle evidence level, shadow matches, no plate
+    characters), and `parent`/`passThrough` for area Sessions. The same
+    `MatchEvidence` is `apds-ext:apx:match-evidence@1.0` on Violation and
+    ValetTicket. New problem type `read-already-bound` (409).
+  - Read review (G5, Part 13 §13.3a(4a)): `PUT /v1/lpr/reads/{observation}/plate`
+    (`PlateCorrection`: confirmed, corrected, rejected) and
+    `LprReadDetail.review` with reasons from new registry
+    `apx-read-review-reasons` v1; Part 19 §19.4 refuses to issue on a
+    pending or rejected evidence read where policy requires review.
+  - Violations issued elsewhere (G6, Part 19 §19.6a, §19.13):
+    `POST /v1/violations/imports` (keyed on `system` + `recordId`,
+    `sourceRevision` ordering, decoration
+    `apds-ext:apx:violation-source@1.0`), `POST /v1/violations/{id}/session`
+    to set the Session link later with evidence, and partial payment
+    (`payments[]`, `amountPaid`, the attachment's `amount`).
+  - Change feed on APX lists (G7, Part 5 §5.2 rule 8): `mode=change&cursor=`
+    on the eleven APX list routes of stateful resources, with the cursor
+    404 declared.
+  - Payment detail (G8, Part 13 §13.6a): decoration
+    `apds-ext:apx:payment-detail@1.0` with `rateSold` and lines summing
+    to the total; new registry `apx-payment-line-codes` v1.
+  - Permit concurrency (G9, Part 14 §14.2d): `apds-ext:apx:permit@1.1`
+    adds `maxConcurrentVehicles` and `overageBilling`.
+  - Plate lists (G10, new Part 24, class `apx-plate-lists`): six
+    operations under `/v1/plate-lists`, change feed on lists and entries,
+    topic `apx.platelists.changed.v1`, registry
+    `apx-plate-list-categories` v1, scopes `apx.platelists:read`/`:manage`,
+    Annex A.22.
+  - Credential digests (G11, Part 9 §9.6 rule 6, optional): decoration
+    `apds-ext:apx:credential-digest@1.0` and `GET /v1/digest-keys` under
+    new scope `apx.digest:use`. Specified as MAY, pending the operator
+    decision the brief names.
+  - Replication (G12, Part 18 §18.6): authority per place and class in
+    `DiscoveryDocument.replication[]`, `RecordInfo.origin`, scope
+    `apx.replication:write`, origin-scoped idempotency keys, new problem
+    type `not-authoritative` (409).
+  - Display proof (G13, Part 6 §6.1, §6.1a): `displayMessage` template
+    parameters and `CommandResult.display`.
+  - List-arrival alerts (G14, Part 7 §7.6, Part 8 §8.5a): `watchListArrival`,
+    `scofflawArrival`, `refusedServiceArrival` (`apx-alert-types` v5) and
+    `SubscriptionFilters.alertTypes`.
+  - Occupancy history (G15, Part 5 §5.5a):
+    `GET /v1/places/{id}/occupancy/history` (`OccupancyHistoryPage`).
+  - Keys in bodies (G16, Part 9 §9.6 rule 7): `POST /v1/lpr/reads:search`,
+    `/v1/accounts:search`, `/v1/payments:search`, `/v1/violations:search`,
+    `/v1/enforcement/eligibility:check`. The Spectral path rule now
+    accepts a trailing `:verb` segment.
+  - Read-back by path (G17): `GET /v1/lpr/reads/{observation}`.
+  - Images (G19, Part 13 §13.3c): `LprRead.images[]` with kinds
+    `plateExtended` and `context`.
+  - G18–G20 and a Session end reason are also new suggestions in Part B of
+    `docs/apds-change-requests.md`. Registries bumped:
+    `apx-conformance-classes` v8, `apx-topics` v12, `apx-alert-types` v5.
+    Annex A rows APX-CORE-17 to 20, APX-DATA-09/10, APX-EVT-08,
+    APX-CTL-15, APX-ALT-07, APX-ACC-08/09, APX-LPR-07 to 11, APX-PRM-03,
+    APX-VIO-13 to 16, APX-PLL-01 to 06.
+- `packages/simulator`: a stateful simulator of every APX and APDS-native
+  route in the bundle, with a simulated clock, the Part 8 event fabric,
+  and one behaviour module per conformance class. It replays the
+  by-module vetting suite (`node bin/apx-sim.mjs replay`) and runs
+  scripted scenarios; see its README.
 - `docs/apds-change-requests.md`: the change requests for the APDS working
   group (errata 001–014, five optional additions, a suggested order),
   linked from the landing page and the errata README.
@@ -60,6 +131,34 @@ The machine-readable spec (`spec/openapi/apx.yaml`, bundled as
   credential presented while still `issued`. Part 21 §21.4 promised one
   denial reason per non-active lifecycle state and `issued` had none.
   A registry addition, so no new edition is needed (Part 11 §11.3).
+
+**Changed.**
+- Part 13 §13.3a(1) (G20): a read whose plate country is unknown keeps
+  make, model, and colour in `detail` and omits
+  `vehicleAncillaryIdentification`, instead of dropping them.
+- Part 13 §13.3a(7) and Part 9 §9.6 rule 1 (G21): the passage facts of a
+  read (`accessEvent`, `movement`, `plateFace`, `frameReads`,
+  `platesRead`, `captureGroup`, `speed`, `engine`) are served under
+  `apx.data:read`, including on the observation topics; plate-bearing
+  members stay under `apx.lpr:*`.
+- Scenario headers: three vetting exchanges gained the http block the
+  prose already described (accounts ACC-25, valet VLT-15, reservations
+  RSV-06), found by replaying the suite against the simulator.
+- Negotiated rates can push any amount (Part 6 §6.3, §6.6). A new
+  optional feature, `negotiatedAmounts` (registry `apx-features` v2,
+  offered only with `negotiatedRates`), lets `pushNegotiatedRate` carry
+  `parameters.amount` instead of a table: the amount the current ticket
+  owes, with no floor or ceiling, zero included. `agent` and `reason`
+  are REQUIRED with an amount; both or neither member, a negative value,
+  or another currency is `400 invalid-request`; an amount on a host
+  without the feature is `422 rate-not-negotiable`. The lane's
+  `currentTicket.negotiatedRate` now carries `amount` and `reason`
+  (its `rateTable` is no longer required, since one of the two is
+  present), and `result.amountDue` restates it. §6.3's design rule now
+  names this as the one single-ticket price change outside validations,
+  attributable to an agent with a reason. `apx-command-types` v5
+  (description only), Annex A APX-CTL-16, vetting scenario CTL-26. This
+  reverses the 0.10.0 "selection, not invention" rule, deliberately.
 
 ## [0.13.0] — 2026-09-29
 

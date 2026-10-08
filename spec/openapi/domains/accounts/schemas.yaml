@@ -152,6 +152,99 @@ PaymentRecord:
     extensions:
       $ref: "../common/schemas.yaml#/Extensions"
 
+PaymentDetail:
+  title: PaymentDetail
+  description: |-
+    The `apds-ext:apx:payment-detail@1.0` decoration (Part 13 §13.6a) on a
+    `PaymentRecord` or an APDS `Payment`: the rate sold and the lines that
+    sum to the total, so revenue reports and the deck price check have
+    the base amount, the fee, and the product without a bilateral code.
+  type: object
+  properties:
+    rateSold:
+      type: object
+      description: The rate the vendor sold, as the vendor names it.
+      properties:
+        id:
+          type: string
+          description: The vendor's rate id, or the APDS RateTable id when the deck is the source.
+        name:
+          type: string
+        rateTable:
+          description: The APDS RateTable at the version applied, when known.
+          $ref: "../../../vendor/apds/4.1/apds-api-4.1.yaml#/components/schemas/VersionedReference"
+        product:
+          type: string
+          enum: [standard, pass, other]
+        class:
+          type: string
+          enum: [standard, validation, discount, zeroed, other]
+    lines:
+      type: array
+      description: The lines; their `value`s sum to the payment's `amount`.
+      items:
+        type: object
+        required: [code, value]
+        properties:
+          code:
+            type: string
+            description: definedValue from `apx-payment-line-codes` (Part 11) or an implementer code.
+            examples: [convenienceFee]
+          value:
+            $ref: "../../../vendor/apds/4.1/apds-api-4.1.yaml#/components/schemas/AmountInCurrency"
+          description:
+            type: string
+
+AccountSearch:
+  title: AccountSearch
+  description: |-
+    Request body of `POST /v1/accounts:search` (Part 13 §13.1): the same
+    keys as the `GET` lookup, carried in a body so personal data never
+    enters a URL (Part 9 §9.6).
+  type: object
+  properties:
+    name: { type: string }
+    phone: { type: string }
+    email: { type: string }
+    card:
+      type: string
+      description: Truncated card digits only (two to four); more is 422 `personal-data-not-permitted`.
+    plate: { type: string }
+    place:
+      type: array
+      items: { type: string, format: uuid }
+    page:
+      type: integer
+      minimum: 1
+
+PaymentSearch:
+  title: PaymentSearch
+  description: |-
+    Request body of `POST /v1/payments:search` (Part 13 §13.2): the same
+    keys and rules as the `GET` lookup, in a body (Part 9 §9.6).
+  type: object
+  properties:
+    ticketLast4: { type: string }
+    cardLast4:
+      type: string
+      pattern: "^[0-9]{2,4}$"
+    ticketNumber: { type: string }
+    account:
+      type: string
+      format: uuid
+    date:
+      type: string
+      format: date
+    place:
+      type: array
+      items: { type: string, format: uuid }
+    captureStatus:
+      type: string
+      enum: [authorized, captured]
+    page:
+      type: integer
+      minimum: 1
+
 PaymentLink:
   title: PaymentLink
   description: |-

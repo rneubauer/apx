@@ -38,6 +38,13 @@ described in Part 1 §1.3 item 14.
 - **Charging session** (Part 23) — an APX resource recording
   one charge of one vehicle at one charging point as it relates to the
   parking `Session` it happened inside (`ChargingSession`).
+- **Plate list** (Part 24) — a list of vehicle credentials kept by an
+  operator or a city, with a category (`allow`, `watch`, `scofflaw`,
+  `enforcementVehicle`) and per-place flags saying what a match does.
+- **Pairing engine** — the system that turns reads into Sessions and
+  matches Sessions to rights, tickets, and lists; when it is a separate
+  client of the APX server it writes what it decided with the Part 5
+  §5.8 decoration.
 
 ## 2.2 Notation
 

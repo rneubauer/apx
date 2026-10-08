@@ -177,6 +177,14 @@ decoration, `PlateCandidate.detail` returns it, and the engine's
 `alternateReads` SHOULD be offered as additional candidates — the plate the
 engine ranked second is usually the one the agent is looking for.
 
+**Read-level review.** This route corrects the plate of a *Session*. A
+plate wrong on a *read* — before any Session exists, or on a read that
+feeds several Sessions (a visit and an area stay) or an enforcement
+handoff — is corrected on the read itself through
+`PUT /v1/lpr/reads/{observation}/plate` (Part 13 §13.3a(4a)); the
+Sessions it feeds then see the corrected value. Both are façades over
+APDS-modeled state and neither creates a parallel plate store.
+
 **Concurrency (normative).** Two agents can hold the same session open.
 `PUT /v1/sessions/{id}/plate` and `PUT /v1/sessions/{id}/assigned-right`
 take `If-Match` with the APDS Session `version` the client read; a stale

@@ -262,6 +262,20 @@ Violation:
     payment:
       description: Reference to the settling APDS Payment or APX PaymentRecord (Part 13).
       $ref: "../../../vendor/apds/4.1/apds-api-4.1.yaml#/components/schemas/Reference"
+    payments:
+      type: array
+      description: |-
+        Every payment received against the notice, in order (Part 19
+        §19.6a). `payment` remains the settling one; a partial payment
+        appears here, raises `amountPaid`, and leaves the state `issued`
+        until `amountPaid` reaches `amount`.
+      items:
+        $ref: "../../../vendor/apds/4.1/apds-api-4.1.yaml#/components/schemas/Reference"
+    amountPaid:
+      description: |-
+        The sum received so far against `amount` (Part 19 §19.6a). `paid`
+        means `amountPaid` ≥ `amount`. Absent means nothing received.
+      $ref: "../../../vendor/apds/4.1/apds-api-4.1.yaml#/components/schemas/AmountInCurrency"
     appeal:
       type: object
       description: The appeal on this violation, if one was opened. One appeal per violation.
@@ -455,14 +469,86 @@ ViolationIssue:
 
 ViolationPaymentAttachment:
   title: ViolationPaymentAttachment
-  description: Request body attaching the settling Payment to an issued violation.
+  description: |-
+    Request body attaching a Payment to an issued violation. The full
+    amount (or the remainder) settles it (`paid`); a smaller `amount` is
+    a partial payment (Part 19 §19.6a) that stays `issued`.
   type: object
   required: [payment]
   properties:
     payment:
       description: Reference to the settling APDS Payment (or APX PaymentRecord taken via `POST /v1/payments`).
       $ref: "../../../vendor/apds/4.1/apds-api-4.1.yaml#/components/schemas/Reference"
+    amount:
+      description: The amount this payment contributes; absent means the full outstanding amount.
+      $ref: "../../../vendor/apds/4.1/apds-api-4.1.yaml#/components/schemas/AmountInCurrency"
     note:
+      type: string
+
+ViolationSource:
+  title: ViolationSource
+  description: |-
+    The `apds-ext:apx:violation-source@1.0` decoration (Part 19 §19.13): a
+    violation issued by an external enforcement system and imported
+    through `POST /v1/violations/imports`, keyed on `system` + `recordId`.
+  type: object
+  required: [system, recordId]
+  properties:
+    system:
+      type: string
+      description: The issuing system, opaque (`passport`, `aims`…).
+    recordId:
+      type: string
+      description: The source's own citation or record id.
+    sourceStatus:
+      type: string
+      description: The source's own status vocabulary, carried as reported (`issued`, `warned`, `voided`, `dismissed`, `partiallyPaid`…).
+    sourceRevision:
+      type: integer
+      minimum: 0
+      description: The source's revision counter; a re-import with a higher value updates the record.
+    receivedTime:
+      $ref: "../../../vendor/apds/4.1/apds-api-4.1.yaml#/components/schemas/DateTime"
+    officer:
+      type: string
+      description: The source's officer identifier, opaque.
+    violationCode:
+      type: string
+      description: The source's own violation code, when it has no `apx-violation-types` equivalent.
+
+ViolationImport:
+  title: ViolationImport
+  description: |-
+    Request body of `POST /v1/violations/imports` (Part 19 §19.13): a
+    Violation as an external enforcement system reports it — in any
+    state, with the `statusHistory[]` times the source recorded, the
+    notice, the amounts, and the `apds-ext:apx:violation-source@1.0`
+    decoration that keys it. Members the schema marks readOnly are
+    accepted here because the source, not this server, assigned them.
+  allOf:
+    - $ref: "#/Violation"
+    - type: object
+      required: [extensions]
+      properties:
+        extensions:
+          type: object
+          required: ["apds-ext:apx:violation-source@1.0"]
+
+ViolationSessionLink:
+  title: ViolationSessionLink
+  description: |-
+    Request body of `POST /v1/violations/{id}/session` (Part 19 §19.13):
+    sets or corrects `relatedSession` after creation, carrying the match
+    evidence. `If-Match` carries the Violation version last read.
+  type: object
+  required: [session]
+  properties:
+    session:
+      description: The APDS Session (className `Session`), or null to clear the link.
+      $ref: "../../../vendor/apds/4.1/apds-api-4.1.yaml#/components/schemas/Reference"
+    evidence:
+      $ref: "../data/schemas.yaml#/MatchEvidence"
+    reason:
       type: string
 
 ViolationAppealOpen:
