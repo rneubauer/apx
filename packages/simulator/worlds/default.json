@@ -1,0 +1,5 @@
+{
+  "extends": "apx-control",
+  "name": "default",
+  "description": "Lakeside Garage, ready for ad-hoc play: the control world with every conformance class claimed."
+}

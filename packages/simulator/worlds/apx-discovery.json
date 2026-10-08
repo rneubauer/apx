@@ -1,0 +1,267 @@
+{
+  "extends": "base-lakeside",
+  "name": "apx-discovery",
+  "description": "The cast of docs/scenarios/by-module/apx-discovery: the Lakeside host claiming eight classes and both control features; Lakeside Garage with its exit level b1…0003; Harbor Deck; the Harbor Deck PARCS starter host and the CityPark aggregator reached by Host header; the console, BI, operations, IVR and wallboard credentials.",
+  "discovery": {
+    "conformanceClasses": [
+      "apx-data",
+      "apx-events",
+      "apx-events-sse",
+      "apx-control",
+      "apx-alerts",
+      "apx-discovery",
+      "apx-resolution",
+      "apx-lpr"
+    ],
+    "features": [
+      "negotiatedRates",
+      "ticketMatching"
+    ]
+  },
+  "registryBase": "https://api.lakeside-garage.example/registries",
+  "rateLimits": {
+    "requestsPerMinute": 600,
+    "commandsPerMinute": 60,
+    "burst": 20,
+    "subscriptionsMax": 10,
+    "streamConnectionsMax": 2
+  },
+  "hosts": {
+    "parcs.harbor-deck.example": {
+      "tokenEndpoint": "https://parcs.harbor-deck.example/oauth2/token",
+      "conformanceClasses": [
+        "apx-data",
+        "apx-events",
+        "apx-control"
+      ],
+      "features": [],
+      "registries": null
+    },
+    "api.citypark.example": {
+      "tokenEndpoint": "https://id.citypark.example/oauth2/token",
+      "apiBase": "https://api.citypark.example/parking",
+      "conformanceClasses": [
+        "apx-data",
+        "apx-events",
+        "apx-events-sse",
+        "apx-control",
+        "apx-alerts",
+        "apx-discovery"
+      ],
+      "features": [],
+      "registries": {
+        "apx-command-types": "https://api.citypark.example/parking/registries/apx-command-types.json",
+        "apx-alert-types": "https://api.citypark.example/parking/registries/apx-alert-types.json",
+        "apx-device-states": "https://api.citypark.example/parking/registries/apx-device-states.json",
+        "apx-topics": "https://api.citypark.example/parking/registries/apx-topics.json",
+        "apx-conformance-classes": "https://api.citypark.example/parking/registries/apx-conformance-classes.json"
+      },
+      "rateLimits": {
+        "requestsPerMinute": 300,
+        "commandsPerMinute": 30
+      }
+    }
+  },
+  "vendorClasses": [
+    {
+      "name": "acmecorp-loyalty",
+      "scopes": [
+        "acmecorp.loyalty:read"
+      ],
+      "endpoints": [
+        {
+          "path": "/apx/x/acmecorp/loyalty/balances",
+          "methods": [
+            "GET"
+          ]
+        },
+        {
+          "path": "/apx/x/acmecorp/loyalty/members/{id}",
+          "methods": [
+            "GET"
+          ]
+        }
+      ],
+      "topics": [
+        "acmecorp.loyalty.tier.changed.v1"
+      ],
+      "registries": {
+        "acmecorp-loyalty-tiers": "https://loyalty.acmecorp.example/registries/acmecorp-loyalty-tiers.json"
+      },
+      "extensions": {
+        "apds-ext:acmecorp:loyalty@1.0": {
+          "programId": "f7…0001",
+          "tierRegistry": "acmecorp-loyalty-tiers"
+        }
+      }
+    }
+  ],
+  "places": [
+    {
+      "id": "b1…0003",
+      "name": "Lakeside Garage exit level",
+      "type": "Level",
+      "parentId": "b1…0001",
+      "version": 1
+    }
+  ],
+  "lanes": [
+    {
+      "id": "b2…0001",
+      "placeId": "b1…0001",
+      "name": "entry lane 1",
+      "accessType": "entry",
+      "gate": "c1…0001"
+    },
+    {
+      "id": "b2…0002",
+      "placeId": "b1…0003",
+      "name": "exit lane 2",
+      "accessType": "exit",
+      "gate": "c1…0002"
+    },
+    {
+      "id": "b2…0003",
+      "placeId": "b1…0002",
+      "name": "Harbor Deck exit lane",
+      "accessType": "exit",
+      "gate": "c1…0031"
+    }
+  ],
+  "devices": [
+    {
+      "id": "c1…0001",
+      "placeId": "b1…0001",
+      "laneId": "b2…0001",
+      "name": "entry gate",
+      "equipmentType": "barrier",
+      "state": "available"
+    },
+    {
+      "id": "c1…0002",
+      "placeId": "b1…0003",
+      "laneId": "b2…0002",
+      "name": "exit gate",
+      "equipmentType": "barrier",
+      "state": "available"
+    },
+    {
+      "id": "c1…0031",
+      "placeId": "b1…0002",
+      "laneId": "b2…0003",
+      "name": "Harbor Deck exit gate",
+      "equipmentType": "barrier",
+      "state": "available"
+    }
+  ],
+  "credentials": {
+    "default": {
+      "scopes": [
+        "apx.data:read",
+        "apx.control:read",
+        "apx.control:execute",
+        "apx.resolution:read",
+        "apx.subscriptions:manage"
+      ],
+      "apx_org": {
+        "id": "a1…0001",
+        "className": "Organisation"
+      },
+      "apx_places": [
+        "b1…0001"
+      ],
+      "user": "console-lakeside"
+    },
+    "console-lakeside": {
+      "scopes": [
+        "apx.data:read",
+        "apx.control:read",
+        "apx.control:execute",
+        "apx.resolution:read",
+        "apx.subscriptions:manage"
+      ],
+      "apx_org": {
+        "id": "a1…0001",
+        "className": "Organisation"
+      },
+      "apx_places": [
+        "b1…0001"
+      ]
+    },
+    "bi-citypark": {
+      "scopes": [
+        "apx.data:read",
+        "apx.subscriptions:manage"
+      ],
+      "apx_org": {
+        "id": "a1…0003",
+        "className": "Organisation"
+      },
+      "apx_places": [
+        "b1…0001",
+        "b1…0002"
+      ],
+      "rateLimits": {
+        "requestsPerMinute": 1200
+      }
+    },
+    "ops-lakeside": {
+      "scopes": [
+        "apx.data:read",
+        "apx.data:write",
+        "apx.alerts:read",
+        "apx.alerts:write",
+        "apx.subscriptions:manage"
+      ],
+      "apx_org": {
+        "id": "a1…0001",
+        "className": "Organisation"
+      },
+      "apx_places": [
+        "*"
+      ]
+    },
+    "ivr-trial": {
+      "scopes": [
+        "apx.data:read",
+        "apx.control:read"
+      ],
+      "apx_org": {
+        "id": "a1…0001",
+        "className": "Organisation"
+      }
+    },
+    "wall-lakeside": {
+      "scopes": [
+        "apx.control:read"
+      ],
+      "apx_org": {
+        "id": "a1…0001",
+        "className": "Organisation"
+      },
+      "apx_places": [
+        "b1…0001"
+      ],
+      "rateLimits": {
+        "requestsPerMinute": 300,
+        "burst": 10
+      }
+    },
+    "console-lakeside@citypark": {
+      "clientId": "console-lakeside",
+      "scopes": [
+        "apx.data:read",
+        "apx.control:read",
+        "apx.control:execute",
+        "apx.subscriptions:manage"
+      ],
+      "apx_org": {
+        "id": "a1…0001",
+        "className": "Organisation"
+      },
+      "apx_places": [
+        "b1…0001"
+      ]
+    }
+  }
+}

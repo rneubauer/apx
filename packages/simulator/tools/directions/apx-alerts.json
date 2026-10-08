@@ -1,0 +1,130 @@
+{
+  "_comment": "Stage directions for the replay of apx-alerts: the server-raised alerts the prose shows as events (device faults and silences through Control's deviceState injector, the guidance and rules engines through raiseAlert, the delivery monitor through a receiver that fails for a day), each at the instant the scenario gives. nextAlertId plays the role X-Sim-Assign-Id plays for a client raise. `at` is the 0-based exchange index the step runs before ('start' = before the scenario).",
+  "ALT-05": [
+    { "at": 0, "clock": { "now": "2026-09-24T18:17:41Z" } },
+    { "at": 0, "inject": { "kind": "nextAlertId", "id": "e7000000-0000-4000-8000-000000000702" } },
+    { "at": 0, "inject": { "kind": "deviceState", "device": "c1000000-0000-4000-8000-000000000003", "state": "fault", "actor": "barrier arm sensor" } }
+  ],
+  "ALT-10": [
+    { "at": 0, "clock": { "now": "2026-09-24T18:52:04Z" } },
+    { "at": 0, "inject": { "kind": "nextAlertId", "id": "e7000000-0000-4000-8000-000000000706" } },
+    { "at": 0, "inject": { "kind": "deviceState", "device": "c1000000-0000-4000-8000-000000000002", "state": "fault", "actor": "arm sensor" } },
+    { "at": 0, "clock": { "now": "2026-09-24T18:58:35Z" } },
+    {
+      "at": 0,
+      "inject": {
+        "kind": "raiseAlert",
+        "actor": "lane-b2000000-0001",
+        "alert": {
+          "id": "e7000000-0000-4000-8000-000000000707",
+          "alertType": "laneBlocked",
+          "severity": "critical",
+          "source": { "place": "b2000000-0000-4000-8000-000000000001" },
+          "occurrenceTime": "2026-09-24T18:58:20Z",
+          "detectionTime": "2026-09-24T18:58:35Z",
+          "description": [{ "language": "en", "string": "Barrier obstruction at entry lane 1" }]
+        }
+      }
+    }
+  ],
+  "ALT-11": [
+    { "at": 0, "clock": { "now": "2026-09-24T07:41:09Z" } },
+    {
+      "at": 0,
+      "inject": {
+        "kind": "raiseAlert",
+        "actor": "riverside-ops-rules",
+        "detail": "rule R-7: accessEvent=entry on exit lane; session f1000000-0000-4000-8000-000000000741 opened anyway",
+        "alert": {
+          "id": "e7000000-0000-4000-8000-000000000741",
+          "alertType": "wrongWayTravel",
+          "severity": "warning",
+          "source": { "place": "b2000000-0000-4000-8000-000000000061" },
+          "relatedEntity": { "id": "f2000000-0000-4000-8000-000000000741", "className": "Observation" },
+          "occurrenceTime": "2026-09-24T07:41:08Z",
+          "detectionTime": "2026-09-24T07:41:09Z",
+          "description": [{ "language": "en", "string": "RVR-8821 read as an entry on the exit lane (operator rule R-7)" }]
+        }
+      }
+    }
+  ],
+  "ALT-12": [
+    {
+      "at": 1,
+      "inject": {
+        "kind": "raiseAlert",
+        "actor": "guidance-l2",
+        "alert": {
+          "id": "e7000000-0000-4000-8000-000000000722",
+          "alertType": "occupiedWithoutCheckIn",
+          "severity": "warning",
+          "source": { "place": "b3000000-0000-4000-8000-000000000022" },
+          "detectionTime": "2026-09-24T19:05:00Z",
+          "description": [{ "language": "en", "string": "Bay L2-22 occupied; no session or reservation matches" }]
+        }
+      }
+    },
+    {
+      "at": 1,
+      "inject": {
+        "kind": "raiseAlert",
+        "actor": "guidance-l2",
+        "alert": {
+          "id": "e7000000-0000-4000-8000-000000000723",
+          "alertType": "wrongSpace",
+          "severity": "info",
+          "source": { "place": "b3000000-0000-4000-8000-000000000023" },
+          "relatedEntity": { "id": "e2000000-0000-4000-8000-000000000023", "className": "AssignedRight" },
+          "detectionTime": "2026-09-24T19:05:00Z",
+          "description": [{ "language": "en", "string": "Reservation holder parked in L2-23; reserved L2-30" }]
+        }
+      }
+    },
+    {
+      "at": 1,
+      "inject": {
+        "kind": "raiseAlert",
+        "actor": "guidance-l2",
+        "alert": {
+          "id": "e7000000-0000-4000-8000-000000000724",
+          "alertType": "noCheckOut",
+          "severity": "info",
+          "source": { "place": "b3000000-0000-4000-8000-000000000024" },
+          "relatedEntity": { "id": "f1000000-0000-4000-8000-000000000324", "className": "Session" },
+          "detectionTime": "2026-09-24T19:05:00Z",
+          "description": [{ "language": "en", "string": "Bay L2-24 empty; session f1…0324 still open" }]
+        }
+      }
+    },
+    {
+      "at": 1,
+      "inject": {
+        "kind": "raiseAlert",
+        "actor": "guidance-l2",
+        "alert": {
+          "id": "e7000000-0000-4000-8000-000000000725",
+          "alertType": "overstay",
+          "severity": "info",
+          "source": { "place": "b1000000-0000-4000-8000-000000000001" },
+          "relatedEntity": { "id": "f1000000-0000-4000-8000-000000000325", "className": "Session" },
+          "detectionTime": "2026-09-24T19:05:00Z",
+          "description": [{ "language": "en", "string": "Session f1…0325 exceeded the 12 h maximum stay by 40 min" }]
+        }
+      }
+    }
+  ],
+  "ALT-13": [
+    { "at": 0, "clock": { "now": "2026-09-24T21:05:00Z" } },
+    { "at": 0, "inject": { "kind": "nextAlertId", "id": "e7000000-0000-4000-8000-000000000708" } },
+    { "at": 0, "inject": { "kind": "deviceState", "device": "c1000000-0000-4000-8000-000000000004", "state": "unknown", "actor": "heartbeat-monitor" } },
+    { "at": 0, "clock": { "now": "2026-09-24T21:25:12Z" } },
+    { "at": 0, "inject": { "kind": "deviceState", "device": "c1000000-0000-4000-8000-000000000004", "state": "available", "actor": "heartbeat-monitor" } }
+  ],
+  "ALT-14": [
+    { "at": 0, "receiver": { "endpoint": "https://hooks.callcenter.example/apx", "default": 503 } },
+    { "at": 0, "clock": { "now": "2026-09-23T22:00:02Z" } },
+    { "at": 0, "inject": { "kind": "nextAlertId", "id": "e7000000-0000-4000-8000-000000000709" } },
+    { "at": 0, "inject": { "kind": "deviceState", "device": "c1000000-0000-4000-8000-000000000001", "state": "occupied", "actor": "loop detector" } },
+    { "at": 0, "clock": { "advance": "P1D" } }
+  ]
+}

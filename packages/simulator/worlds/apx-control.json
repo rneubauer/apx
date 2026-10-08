@@ -1,0 +1,180 @@
+{
+  "extends": "base-lakeside",
+  "name": "apx-control",
+  "description": "The cast of docs/scenarios/by-module/apx-control: Lakeside Garage with its lanes, gate, pay station and display; Harbor Deck as the other operator's garage; the rate deck with a lostTicketFee line and a negotiable flat table; validation providers; the monthly card at lane 2.",
+  "control": { "hourlyRate": 3, "clearLaneOnVend": false, "timing": { "dispatch": 1000, "execute": 0, "succeed": 2000, "byType": { "holdGateOpen": { "dispatch": 60000 } } } },
+  "lanes": [
+    { "id": "b2…0001", "placeId": "b1…0001", "name": "entry lane 1", "accessType": "entry", "gate": "c1…0001" },
+    {
+      "id": "b2…0002",
+      "placeId": "b1…0001",
+      "name": "exit lane 2",
+      "accessType": "exit",
+      "gate": "c1…0002",
+      "current": {
+        "ticketNumber": "T-1001",
+        "session": { "id": "c4…0001", "className": "Session" },
+        "issuedTime": "2026-09-24T08:02:11Z",
+        "amountDue": { "currencyType": "USD", "currencyValue": 9.0 },
+        "paidInFull": false,
+        "validations": [],
+        "lpr": {
+          "plate": "SYN-1234",
+          "confidence": 0.97,
+          "observation": { "id": "f2…0901", "className": "Observation" },
+          "imageLink": "https://api.lakeside-garage.example/lpr/f2000000-0901.jpg"
+        }
+      },
+      "credential": {
+        "credential": { "id": "e3…0001", "className": "Credential" },
+        "cardNumber": "MC-0777",
+        "accessGranted": false,
+        "denialReason": "account past due",
+        "lastActivity": "2026-09-23T18:22:00Z",
+        "recentEvents": [
+          { "time": "2026-09-23T18:22:00Z", "event": "exit", "lane": { "id": "b2…0002", "className": "VehicularAccess" } },
+          { "time": "2026-09-23T08:04:31Z", "event": "entry", "lane": { "id": "b2…0001", "className": "VehicularAccess" } }
+        ]
+      }
+    },
+    { "id": "b2…0003", "placeId": "b1…0002", "name": "Harbor Deck exit lane", "accessType": "exit", "gate": "c1…0031" }
+  ],
+  "devices": [
+    { "id": "c1…0001", "placeId": "b1…0001", "laneId": "b2…0001", "name": "entry gate", "equipmentType": "barrier", "state": "available", "lastCommunication": "2026-09-24T17:59:58Z", "stateChangedTime": "2026-09-24T05:00:10Z" },
+    { "id": "c1…0002", "placeId": "b1…0001", "laneId": "b2…0002", "name": "exit gate", "equipmentType": "barrier", "state": "available", "lastCommunication": "2026-09-24T17:59:58Z", "stateChangedTime": "2026-09-24T05:00:11Z" },
+    { "id": "c1…0003", "placeId": "b1…0001", "name": "pay station 3", "equipmentType": "payStation", "state": "fault", "lastCommunication": "2026-09-24T17:16:55Z", "stateChangedTime": "2026-09-24T17:17:40Z" },
+    { "id": "c1…0004", "placeId": "b1…0001", "laneId": "b2…0002", "name": "lane display", "equipmentType": "display", "state": "available", "lastCommunication": "2026-09-24T17:59:59Z", "stateChangedTime": "2026-09-24T05:00:12Z" },
+    { "id": "c1…0005", "placeId": "b1…0001", "laneId": "b2…0002", "name": "exit-lane intercom", "equipmentType": "intercom", "state": "available", "lastCommunication": "2026-09-24T17:59:59Z", "stateChangedTime": "2026-09-24T05:00:13Z" },
+    { "id": "c1…0031", "placeId": "b1…0002", "laneId": "b2…0003", "name": "Harbor Deck exit gate", "equipmentType": "barrier", "state": "available" }
+  ],
+  "placeRates": { "b1…0001": ["d5…0001", "d5…0002", "d5…0003"], "b1…0002": ["d5…0011"] },
+  "rateTables": [
+    {
+      "id": "d5…0001",
+      "version": 7,
+      "rateTableName": [{ "language": "en", "string": "Standard deck" }],
+      "availability": "public",
+      "rateLineCollections": [
+        {
+          "id": "d5…0101",
+          "version": 1,
+          "collectionSequence": 1,
+          "applicableCurrency": "USD",
+          "resetTime": "00:00:00",
+          "validStart": "2026-01-01T00:00:00Z",
+          "relativeTimes": true,
+          "taxIncluded": true,
+          "rateLines": [
+            { "id": "d5…0111", "version": 1, "sequence": 1, "rateLineType": "incrementingRate", "description": [{ "language": "en", "string": "per hour" }], "incrementPeriod": "PT1H", "value": 3.0 },
+            { "id": "d5…0112", "version": 1, "sequence": 2, "rateLineType": "flatRate", "description": [{ "language": "en", "string": "lostTicketFee" }], "value": 32.0 }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "d5…0002",
+      "version": 3,
+      "rateTableName": [{ "language": "en", "string": "Customer-service flat $20" }],
+      "availability": "private",
+      "rateLineCollections": [
+        {
+          "id": "d5…0201",
+          "version": 1,
+          "collectionSequence": 1,
+          "applicableCurrency": "USD",
+          "resetTime": "00:00:00",
+          "validStart": "2026-01-01T00:00:00Z",
+          "relativeTimes": true,
+          "taxIncluded": true,
+          "rateLines": [{ "id": "d5…0211", "version": 1, "sequence": 1, "rateLineType": "flatRate", "description": [{ "language": "en", "string": "flat" }], "value": 20.0 }]
+        }
+      ],
+      "extensions": { "apds-ext:apx:ratepolicy@1.0": { "negotiable": true, "displayName": "Customer-service flat $20", "note": "Use for service failures only" } }
+    },
+    {
+      "id": "d5…0003",
+      "version": 1,
+      "rateTableName": [{ "language": "en", "string": "Event rate" }],
+      "availability": "public",
+      "rateLineCollections": [
+        {
+          "id": "d5…0301",
+          "version": 1,
+          "collectionSequence": 1,
+          "applicableCurrency": "USD",
+          "resetTime": "00:00:00",
+          "validStart": "2026-01-01T00:00:00Z",
+          "relativeTimes": true,
+          "taxIncluded": true,
+          "rateLines": [{ "id": "d5…0311", "version": 1, "sequence": 1, "rateLineType": "flatRate", "description": [{ "language": "en", "string": "event flat" }], "value": 40.0 }]
+        }
+      ]
+    }
+  ],
+  "validationProviders": [
+    { "placeId": "b1…0001", "provider": { "id": "a2…0011", "className": "Organisation" }, "name": "Lakeside Cinema", "validationType": "twoHoursComped", "benefit": { "description": "First two hours comped", "duration": "PT2H" } },
+    { "placeId": "b1…0001", "provider": { "id": "a2…0012", "className": "Organisation" }, "name": "Harbor Restaurant", "validationType": "flatDiscount", "benefit": { "description": "$3.00 off", "amount": { "currencyType": "USD", "currencyValue": 3.0 } } },
+    { "placeId": "b1…0002", "provider": { "id": "a2…0013", "className": "Organisation" }, "name": "Harbor Deck Hotel", "validationType": "hotelGuest", "benefit": { "description": "Overnight comped" } }
+  ],
+  "accessCredentials": [
+    { "id": "e3…0001", "cardNumber": "MC-0777", "holder": "a2…0078", "placeId": "b1…0001", "status": "active" },
+    { "id": "e3…0002", "cardNumber": "MC-0778", "holder": "a2…0079", "placeId": "b1…0001", "status": "active" },
+    { "id": "e3…0003", "cardNumber": "MC-0779", "holder": "a2…0080", "placeId": "b1…0001", "status": "active" }
+  ],
+  "sessions": [
+    {
+      "id": "c4…0001", "version": 1, "actualStart": "2026-09-24T08:02:11Z",
+      "initiator": { "id": "a1…0001", "version": 1, "className": "Organisation" },
+      "hierarchyElement": { "id": "b1…0001", "version": 7, "className": "Place" },
+      "identifiedCredentials": [], "segments": [],
+      "_place": "b1…0001", "_ticketNumber": "T-1001", "_entryLane": "b2…0001", "_plate": "SYN-1234", "_entryObservation": "f2…0901",
+      "_amountDue": { "currencyType": "USD", "currencyValue": 9.0 }
+    },
+    {
+      "id": "c4…0044", "version": 1, "actualStart": "2026-09-24T09:15:00Z",
+      "initiator": { "id": "a1…0001", "version": 1, "className": "Organisation" },
+      "hierarchyElement": { "id": "b1…0001", "version": 7, "className": "Place" },
+      "identifiedCredentials": [], "segments": [],
+      "_place": "b1…0001", "_ticketNumber": "T-1044", "_entryLane": "b2…0001", "_plate": "KLM-9900",
+      "_amountDue": { "currencyType": "USD", "currencyValue": 27.0 }
+    },
+    {
+      "id": "c4…0052", "version": 1, "actualStart": "2026-09-24T07:30:48Z",
+      "initiator": { "id": "a1…0001", "version": 1, "className": "Organisation" },
+      "hierarchyElement": { "id": "b1…0001", "version": 7, "className": "Place" },
+      "identifiedCredentials": [], "segments": [],
+      "_place": "b1…0001", "_entryLane": "b2…0001", "_credential": "e3…0001", "_holder": "a2…0078", "_phone": "+15550104567",
+      "_amountDue": { "currencyType": "USD", "currencyValue": 0.0 }
+    },
+    {
+      "id": "c4…0049", "version": 2, "actualStart": "2026-09-24T12:10:00Z", "actualEnd": "2026-09-24T19:40:05Z",
+      "initiator": { "id": "a1…0001", "version": 1, "className": "Organisation" },
+      "hierarchyElement": { "id": "b1…0001", "version": 7, "className": "Place" },
+      "identifiedCredentials": [], "segments": [],
+      "_place": "b1…0001", "_ticketNumber": "T-1049", "_entryLane": "b2…0001"
+    }
+  ],
+  "resolutionPolicies": {
+    "d7…0001": {
+      "vendGate": { "allowed": true, "requiresApproval": "supervisor" },
+      "courtesyExit": { "allowed": false, "reason": "courtesy limit (2 per 30 days) reached on 2026-09-19" },
+      "pushRate": { "allowed": true, "requiresApproval": "supervisor" }
+    }
+  },
+  "commands": [
+    {
+      "id": "d1…0199", "version": 3, "commandType": "vendGate",
+      "target": { "id": "b2…0003", "className": "VehicularAccess" },
+      "requestedBy": { "id": "a1…0002", "className": "Organisation" },
+      "status": "succeeded", "confirmationLevel": "physicallyConfirmed",
+      "statusHistory": [
+        { "state": "received", "time": "2026-09-24T17:00:00Z", "actor": "apx-operator" },
+        { "state": "accepted", "time": "2026-09-24T17:00:00Z", "actor": "harbor-parcs" },
+        { "state": "succeeded", "time": "2026-09-24T17:00:03Z", "actor": "gate-c1000000-0031" }
+      ]
+    }
+  ],
+  "credentials": {
+    "default": { "scopes": ["apx.control:read", "apx.control:execute"], "apx_org": { "id": "a1…0001", "className": "Organisation" }, "apx_places": ["b1…0001"], "user": "console-lakeside" }
+  }
+}

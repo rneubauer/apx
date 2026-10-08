@@ -1,0 +1,26 @@
+{
+  "name": "apx-simulator",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Stateful simulator of the APX standard: every APX and APDS-native route in the bundle, a simulated clock, the event fabric (webhooks + SSE), world fixtures, scenario replay and scripted scenarios.",
+  "type": "module",
+  "license": "MIT",
+  "engines": {
+    "node": ">=20"
+  },
+  "bin": {
+    "apx-sim": "./bin/apx-sim.mjs"
+  },
+  "exports": {
+    ".": "./src/index.mjs"
+  },
+  "scripts": {
+    "serve": "node bin/apx-sim.mjs serve",
+    "replay": "node bin/apx-sim.mjs replay",
+    "test": "node bin/apx-sim.mjs replay --summary && node --test \"test/**/*.test.mjs\""
+  },
+  "dependencies": {
+    "ajv": "^8.17.0",
+    "ajv-formats": "^3.0.0"
+  }
+}

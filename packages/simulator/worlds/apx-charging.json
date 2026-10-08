@@ -1,0 +1,69 @@
+{
+  "extends": "base-lakeside",
+  "name": "apx-charging",
+  "description": "The cast of docs/scenarios/26-ev-charging-one-bill-idle-unlock: Lakeside Garage level P1 with two free-vend chargers E1/E2 over bays 301/302, the overhead bay camera, the charging-network bridge, the agent console, SYN-7734's parking stay f1…0777, and the driver's PWA token bound to ChargingSession e2…0042. Monday 2026-09-21, 07:50.",
+  "clock": { "start": "2026-09-21T07:50:00Z" },
+  "actors": { "received": "agent-0219", "parcs": "bridge-lsg-01" },
+  "conformanceClasses": ["apx-data", "apx-events", "apx-events-sse", "apx-control", "apx-alerts", "apx-discovery", "apx-accounts", "apx-payment-history", "apx-lpr", "apx-reservations", "apx-permits", "apx-tolling", "apx-resolution", "apx-violations", "apx-validations", "apx-credentials", "apx-valet", "apx-charging"],
+  "places": [
+    { "id": "b1…0005", "name": "Lakeside Garage level P1", "type": "Level", "parentId": "b1…0001", "version": 1 },
+    { "id": "b3…0301", "name": "P1-301 (EV charging bay, E1)", "type": "Space", "parentId": "b1…0005", "version": 1 },
+    { "id": "b3…0302", "name": "P1-302 (EV charging bay, E2)", "type": "Space", "parentId": "b1…0005", "version": 1 }
+  ],
+  "devices": [
+    { "id": "c1…0051", "placeId": "b1…0005", "name": "P1 overhead bay camera (E1/E2)", "equipmentType": "camera", "state": "available", "lastCommunication": "2026-09-21T07:49:58Z", "stateChangedTime": "2026-09-21T05:00:00Z" }
+  ],
+  "chargingPoints": [
+    {
+      "id": "b6…0001",
+      "name": "E1",
+      "placeId": "b1…0005",
+      "spaceId": "b3…0301",
+      "refillPointIndex": 1,
+      "evseId": "US*LSG*E20419*1",
+      "connectors": [{ "connectorIndex": 1, "connectorType": "iec62196T1", "availability": "available" }],
+      "bay": { "presence": "empty", "source": "overheadCamera", "observedTime": "2026-09-21T07:49:50Z", "sinceTime": "2026-09-21T06:12:00Z", "confidence": 0.98 },
+      "lastCommunication": "2026-09-21T07:49:58Z",
+      "stateChangedTime": "2026-09-21T06:12:00Z"
+    },
+    {
+      "id": "b6…0002",
+      "name": "E2",
+      "placeId": "b1…0005",
+      "spaceId": "b3…0302",
+      "refillPointIndex": 2,
+      "evseId": "US*LSG*E20419*2",
+      "connectors": [{ "connectorIndex": 1, "connectorType": "iec62196T1", "availability": "available" }],
+      "bay": { "presence": "empty", "source": "overheadCamera", "observedTime": "2026-09-21T07:49:50Z", "sinceTime": "2026-09-21T06:12:00Z", "confidence": 0.98 },
+      "lastCommunication": "2026-09-21T07:49:58Z",
+      "stateChangedTime": "2026-09-21T06:12:00Z"
+    }
+  ],
+  "charging": {
+    "bayGraceMinutes": 10,
+    "actors": { "bridge": "bridge-lsg-01", "server": "server" },
+    "tariffs": { "b1…0001": { "energyPerKwh": 0.35, "currency": "USD", "tariffReference": "lsg-l2-std-2026" } },
+    "idlePolicies": { "b1…0005": { "graceMinutes": 10, "idleRate": { "currencyType": "USD", "currencyValue": 0.4 }, "idleRatePer": "minute", "maxIdleMinutes": 60, "appliesToSettlement": true } }
+  },
+  "sessions": [
+    {
+      "id": "f1…0777",
+      "version": 1,
+      "actualStart": "2026-09-21T08:09:00Z",
+      "initiator": { "id": "a1…0001", "version": 1, "className": "Organisation" },
+      "hierarchyElement": { "id": "b1…0001", "version": 7, "className": "Place" },
+      "identifiedCredentials": [{ "type": "licensePlate", "credentialAssignedType": "vehicle", "identifier": { "id": "SYN-7734", "className": "VehicleCredential" } }],
+      "segments": [],
+      "_place": "b1…0001",
+      "_plate": "SYN-7734"
+    }
+  ],
+  "credentials": {
+    "default": { "scopes": ["apx.charging:read", "apx.control:read", "apx.control:execute", "apx.alerts:read", "apx.data:read"], "apx_org": { "id": "a1…0001", "className": "Organisation" }, "apx_places": ["b1…0001"], "user": "agent-0219" },
+    "agent-console": { "scopes": ["apx.charging:read", "apx.control:read", "apx.control:execute", "apx.alerts:read", "apx.data:read"], "apx_org": { "id": "a1…0001", "className": "Organisation" }, "apx_places": ["b1…0001"], "user": "agent-0219" },
+    "bridge-lsg-01": { "scopes": ["apx.charging:manage", "apx.charging:read"], "apx_org": { "id": "a1…0001", "className": "Organisation" }, "apx_places": ["b1…0001"], "user": "bridge-lsg-01" },
+    "camera-p1": { "scopes": ["apx.charging:manage"], "apx_org": { "id": "a1…0001", "className": "Organisation" }, "apx_places": ["b1…0005"], "user": "camera-p1" },
+    "driver-pwa": { "scopes": ["apx.charging:status"], "apx_org": { "id": "a1…0001", "className": "Organisation" }, "bound": { "id": "e2…0042", "className": "ChargingSession" } },
+    "harbor-bridge": { "scopes": ["apx.charging:manage", "apx.charging:read"], "apx_org": { "id": "a1…0002", "className": "Organisation" }, "apx_places": ["b1…0002"] }
+  }
+}

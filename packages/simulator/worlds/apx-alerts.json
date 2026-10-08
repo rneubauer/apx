@@ -1,0 +1,65 @@
+{
+  "extends": "base-lakeside",
+  "name": "apx-alerts",
+  "description": "The cast of docs/scenarios/by-module/apx-alerts: Lakeside Garage with its lanes, exit gate, pay station, lane display and intercom, and level 2 spaces b3…0021–b3…0024; Riverside Lot (b1…0006) with exit lane b2…0061; Harbor Deck outside the grant with one alert of its own; the operator's call-center subscription f5…0031 and a second subscriber.",
+  "actors": { "parcs": "lakeside-parcs", "deliveryMonitor": "delivery-monitor" },
+  "alertPolicy": { "expiry": { "occupancyThresholdExceeded": "PT1H" } },
+  "places": [
+    { "id": "b1…0006", "name": "Riverside Lot", "type": "Place", "operator": "a1…0001", "timeZone": "America/Chicago", "supplyQuantity": 80, "version": 1 },
+    { "id": "b3…0020", "name": "Lakeside Garage level 2", "type": "Level", "parentId": "b1…0001", "version": 1 },
+    { "id": "b3…0021", "name": "L2-21 (EV charging bay)", "type": "Space", "parentId": "b3…0020", "version": 1 },
+    { "id": "b3…0022", "name": "L2-22", "type": "Space", "parentId": "b3…0020", "version": 1 },
+    { "id": "b3…0023", "name": "L2-23", "type": "Space", "parentId": "b3…0020", "version": 1 },
+    { "id": "b3…0024", "name": "L2-24", "type": "Space", "parentId": "b3…0020", "version": 1 }
+  ],
+  "lanes": [
+    { "id": "b2…0001", "placeId": "b1…0001", "name": "entry lane 1", "accessType": "entry", "gate": "c1…0001" },
+    { "id": "b2…0002", "placeId": "b1…0001", "name": "exit lane 2", "accessType": "exit", "gate": "c1…0002" },
+    { "id": "b2…0003", "placeId": "b1…0002", "name": "Harbor Deck exit lane", "accessType": "exit", "gate": "c1…0031" },
+    { "id": "b2…0061", "placeId": "b1…0006", "name": "Riverside exit lane", "accessType": "exit" }
+  ],
+  "devices": [
+    { "id": "c1…0001", "placeId": "b1…0001", "laneId": "b2…0001", "name": "Entry gate", "equipmentType": "barrier", "state": "available" },
+    { "id": "c1…0002", "placeId": "b1…0001", "laneId": "b2…0002", "name": "Exit gate", "equipmentType": "barrier", "state": "available" },
+    { "id": "c1…0003", "placeId": "b1…0001", "name": "Pay station 3", "equipmentType": "payStation", "state": "available" },
+    { "id": "c1…0004", "placeId": "b1…0001", "laneId": "b2…0002", "name": "Lane display", "equipmentType": "display", "state": "available" },
+    { "id": "c1…0005", "placeId": "b1…0001", "laneId": "b2…0002", "name": "Exit-lane intercom", "equipmentType": "intercom", "state": "available" },
+    { "id": "c1…0031", "placeId": "b1…0002", "laneId": "b2…0003", "name": "Harbor Deck exit gate", "equipmentType": "barrier", "state": "available" }
+  ],
+  "alerts": [
+    {
+      "id": "e7…0799",
+      "version": 1,
+      "alertType": "laneBlocked",
+      "severity": "major",
+      "status": "raised",
+      "source": { "place": "b2…0003" },
+      "detectionTime": "2026-09-24T17:40:00Z",
+      "description": [{ "language": "en", "string": "Vehicle stalled in Harbor Deck exit lane" }],
+      "statusHistory": [{ "state": "raised", "time": "2026-09-24T17:40:00Z", "actor": "harbor-parcs" }]
+    }
+  ],
+  "subscriptions": [
+    {
+      "id": "f5…0031",
+      "credential": "callcenter-lakeside",
+      "endpoint": "https://hooks.callcenter.example/apx",
+      "topics": ["apx.alert.raised.v1", "apx.alert.status.v1", "apx.control.device.state.v1"]
+    },
+    {
+      "id": "f5…0032",
+      "credential": "ops-board-lakeside",
+      "endpoint": "https://ops-board.lakeside-parking.example/apx",
+      "topics": ["apx.alert.raised.v1", "apx.alert.status.v1", "apx.subscription.failed.v1"]
+    }
+  ],
+  "receivers": {
+    "https://hooks.callcenter.example/apx": { "default": 200 },
+    "https://ops-board.lakeside-parking.example/apx": { "default": 200 }
+  },
+  "credentials": {
+    "default": { "scopes": ["apx.alerts:read", "apx.alerts:write"], "apx_org": { "id": "a1…0001", "className": "Organisation" }, "apx_places": ["b1…0001", "b1…0006"], "user": "ops-console" },
+    "callcenter-lakeside": { "scopes": ["apx.alerts:read", "apx.control:read", "apx.subscriptions:manage"], "apx_org": { "id": "a1…0001", "className": "Organisation" }, "apx_places": ["b1…0001", "b1…0006"] },
+    "ops-board-lakeside": { "scopes": ["apx.alerts:read", "apx.subscriptions:manage"], "apx_org": { "id": "a1…0001", "className": "Organisation" }, "apx_places": ["*"] }
+  }
+}

@@ -1,0 +1,233 @@
+{
+  "_comment": "Stage directions for the replay of apx-tolling: world events the prose describes but no request performs. Keys are scenario ids; `at` is the 0-based exchange index the step runs before ('start' = before the scenario).",
+  "TOL-08": [
+    {
+      "at": 1,
+      "clock": {
+        "now": "2026-09-23T02:11:41Z"
+      }
+    },
+    {
+      "at": 1,
+      "inject": {
+        "kind": "billingBatch",
+        "settlements": [
+          {
+            "transaction": "e9000000-0000-4000-8000-000000000802",
+            "payment": "9c0d1e2f-3a4b-4c5d-8e6f-7a8b9c0d1902"
+          }
+        ]
+      }
+    }
+  ],
+  "TOL-12": [
+    {
+      "at": 0,
+      "_comment": "Given: the first dispute is still open (the world before TOL-09).",
+      "state": {
+        "collection": "tollTransactions",
+        "id": "e9000000-0000-4000-8000-000000000802",
+        "record": {
+          "id": "e9000000-0000-4000-8000-000000000802",
+          "tollPoint": {
+            "id": "b4000000-0000-4000-8000-000000000001",
+            "className": "SupplementalEquipment"
+          },
+          "observations": [
+            {
+              "id": "f2000000-0000-4000-8000-000000000811",
+              "className": "Observation"
+            }
+          ],
+          "credential": {
+            "credentialType": "licensePlate",
+            "credentialIdentification": "SYN-9930"
+          },
+          "pricing": {
+            "currencyType": "USD",
+            "currencyValue": 2.75
+          },
+          "payment": {
+            "id": "9c0d1e2f-3a4b-4c5d-8e6f-7a8b9c0d1902",
+            "className": "PaymentRecord"
+          },
+          "_place": "b1000000-0000-4000-8000-000000000001",
+          "_org": "a1000000-0000-4000-8000-000000000001",
+          "version": 4,
+          "transactionStatus": "disputed",
+          "dispute": {
+            "reason": "wrongVehicle",
+            "openedTime": "2026-10-02T15:20:11Z",
+            "disputedBy": {
+              "id": "c1000000-0000-4000-8000-000000000221",
+              "className": "RightHolder"
+            }
+          },
+          "statusHistory": [
+            {
+              "state": "created",
+              "time": "2026-09-22T07:52:31Z",
+              "actor": "gantry-hc-01",
+              "detail": "plate fallback, confidence 0.71"
+            },
+            {
+              "state": "priced",
+              "time": "2026-09-22T07:52:31Z",
+              "actor": "toll-pricing",
+              "detail": "peak weekday rate, 2-axle"
+            },
+            {
+              "state": "paid",
+              "time": "2026-09-23T02:11:41Z",
+              "actor": "billing-batch"
+            },
+            {
+              "state": "disputed",
+              "time": "2026-10-02T15:20:11Z",
+              "actor": "agent-0219",
+              "detail": "wrongVehicle; holder out of state, image mismatch"
+            }
+          ],
+          "recordInfo": {
+            "creationTime": "2026-09-22T07:52:31Z",
+            "creator": {
+              "id": "a1000000-0000-4000-8000-000000000001",
+              "className": "Organisation"
+            },
+            "creationUser": "gantry-hc-01",
+            "lastUpdate": "2026-10-02T15:20:11Z",
+            "lastUpdateUser": "agent-0219"
+          }
+        }
+      }
+    },
+    {
+      "at": 1,
+      "_comment": "Back to the world the file produced: resolved by TOL-09.",
+      "state": {
+        "collection": "tollTransactions",
+        "id": "e9000000-0000-4000-8000-000000000802",
+        "record": {
+          "id": "e9000000-0000-4000-8000-000000000802",
+          "tollPoint": {
+            "id": "b4000000-0000-4000-8000-000000000001",
+            "className": "SupplementalEquipment"
+          },
+          "observations": [
+            {
+              "id": "f2000000-0000-4000-8000-000000000811",
+              "className": "Observation"
+            }
+          ],
+          "credential": {
+            "credentialType": "licensePlate",
+            "credentialIdentification": "SYN-9930"
+          },
+          "pricing": {
+            "currencyType": "USD",
+            "currencyValue": 2.75
+          },
+          "payment": {
+            "id": "9c0d1e2f-3a4b-4c5d-8e6f-7a8b9c0d1902",
+            "className": "PaymentRecord"
+          },
+          "_place": "b1000000-0000-4000-8000-000000000001",
+          "_org": "a1000000-0000-4000-8000-000000000001",
+          "version": 5,
+          "transactionStatus": "resolved",
+          "dispute": {
+            "reason": "wrongVehicle",
+            "openedTime": "2026-10-02T15:20:11Z",
+            "disputedBy": {
+              "id": "c1000000-0000-4000-8000-000000000221",
+              "className": "RightHolder"
+            },
+            "resolvedTime": "2026-10-03T09:41:02Z",
+            "resolution": "refunded"
+          },
+          "statusHistory": [
+            {
+              "state": "created",
+              "time": "2026-09-22T07:52:31Z",
+              "actor": "gantry-hc-01",
+              "detail": "plate fallback, confidence 0.71"
+            },
+            {
+              "state": "priced",
+              "time": "2026-09-22T07:52:31Z",
+              "actor": "toll-pricing",
+              "detail": "peak weekday rate, 2-axle"
+            },
+            {
+              "state": "paid",
+              "time": "2026-09-23T02:11:41Z",
+              "actor": "billing-batch"
+            },
+            {
+              "state": "disputed",
+              "time": "2026-10-02T15:20:11Z",
+              "actor": "agent-0219",
+              "detail": "wrongVehicle; holder out of state, image mismatch"
+            },
+            {
+              "state": "resolved",
+              "time": "2026-10-03T09:41:02Z",
+              "actor": "backoffice-jlee",
+              "detail": "refunded; gantry hc-01 flagged for recalibration"
+            }
+          ],
+          "recordInfo": {
+            "creationTime": "2026-09-22T07:52:31Z",
+            "creator": {
+              "id": "a1000000-0000-4000-8000-000000000001",
+              "className": "Organisation"
+            },
+            "creationUser": "gantry-hc-01",
+            "lastUpdate": "2026-10-03T09:41:02Z",
+            "lastUpdateUser": "backoffice-jlee"
+          }
+        }
+      }
+    }
+  ],
+  "TOL-13": [
+    {
+      "at": 2,
+      "clock": {
+        "now": "2026-09-23T08:30:00Z"
+      }
+    },
+    {
+      "at": 3,
+      "clock": {
+        "now": "2026-09-23T11:05:19Z"
+      }
+    },
+    {
+      "at": 4,
+      "clock": {
+        "now": "2026-09-24T02:10:12Z"
+      }
+    }
+  ],
+  "TOL-22": [
+    {
+      "at": "start",
+      "clock": {
+        "now": "2026-09-22T18:55:03Z"
+      }
+    },
+    {
+      "at": "start",
+      "inject": {
+        "kind": "gantryRead",
+        "gantry": "b4000000-0000-4000-8000-000000000001",
+        "transponder": "TAG-70220",
+        "time": "2026-09-22T18:55:02Z",
+        "confidence": 0.99,
+        "observation": "f2000000-0000-4000-8000-000000000832",
+        "transaction": "e9000000-0000-4000-8000-000000000810"
+      }
+    }
+  ]
+}

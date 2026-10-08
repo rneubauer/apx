@@ -1,0 +1,214 @@
+{
+  "extends": "base-lakeside",
+  "name": "apx-validations",
+  "description": "The cast of docs/scenarios/by-module/apx-validations: Lakeside Garage with exit lane 2 and pay station 3; merchants Harbor Bistro, Lakeside Cinema, Lakeside Fitness (program e5…0004) and Harbor Deck's hotel (program e5…0003 at Harbor Deck); the standard deck and the concert-night event rate; the tickets the scenarios validate; earlier bistro stock (last week's expired sheet, the stolen sheet, Saturday's sheet) and Harbor Deck's own records. Programs e5…0001/e5…0002 are enrolled by VAL-01 itself.",
+  "actors": { "apx": "lakeside-apx" },
+  "control": { "hourlyRate": 3, "clearLaneOnVend": false, "timing": { "dispatch": 1000, "execute": 0, "succeed": 0 } },
+  "validations": {
+    "hourlyRate": 3,
+    "presetCodes": {
+      "e6…0003": ["HB-7Q2M-K9X4-3TPD", "HB-A1C8-ZR5N-W6LJ", "HB-P0V3-E7HS-M2QY", "HB-L3AK-ED01-QR7Z"]
+    }
+  },
+  "organisations": [
+    { "id": "a2…0077", "name": "Harbor Bistro" },
+    { "id": "a2…0011", "name": "Lakeside Cinema" },
+    { "id": "a2…0014", "name": "Lakeside Fitness" },
+    { "id": "a2…0013", "name": "Harbor Deck Hotel" }
+  ],
+  "lanes": [
+    { "id": "b2…0001", "placeId": "b1…0001", "name": "entry lane 1", "accessType": "entry", "gate": "c1…0001" },
+    {
+      "id": "b2…0002",
+      "placeId": "b1…0001",
+      "name": "exit lane 2",
+      "accessType": "exit",
+      "gate": "c1…0002",
+      "current": {
+        "ticketNumber": "T-1001",
+        "session": { "id": "c4…0001", "className": "Session" },
+        "issuedTime": "2026-09-24T08:02:11Z",
+        "amountDue": { "currencyType": "USD", "currencyValue": 9.0 },
+        "paidInFull": false,
+        "validations": []
+      }
+    }
+  ],
+  "devices": [
+    { "id": "c1…0001", "placeId": "b1…0001", "laneId": "b2…0001", "name": "entry gate", "equipmentType": "barrier", "state": "available" },
+    { "id": "c1…0002", "placeId": "b1…0001", "laneId": "b2…0002", "name": "exit gate", "equipmentType": "barrier", "state": "available" },
+    { "id": "c1…0003", "placeId": "b1…0001", "name": "pay station 3", "equipmentType": "payStation", "state": "available" }
+  ],
+  "placeRates": { "b1…0001": ["d5…0001", "d5…0003"] },
+  "rateTables": [
+    {
+      "id": "d5…0001",
+      "version": 7,
+      "rateTableName": [{ "language": "en", "string": "Standard deck" }],
+      "availability": "public",
+      "validation": true,
+      "rateLineCollections": [
+        {
+          "id": "d5…0101", "version": 1, "collectionSequence": 1, "applicableCurrency": "USD", "resetTime": "00:00:00",
+          "validStart": "2026-01-01T00:00:00Z", "relativeTimes": true, "taxIncluded": true,
+          "rateLines": [
+            { "id": "d5…0111", "version": 1, "sequence": 1, "rateLineType": "incrementingRate", "description": [{ "language": "en", "string": "per hour" }], "incrementPeriod": "PT1H", "value": 3.0 }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "d5…0003",
+      "version": 1,
+      "rateTableName": [{ "language": "en", "string": "event rate" }],
+      "availability": "public",
+      "validation": true,
+      "rateLineCollections": [
+        {
+          "id": "d5…0301", "version": 1, "collectionSequence": 1, "applicableCurrency": "USD", "resetTime": "00:00:00",
+          "validStart": "2026-01-01T00:00:00Z", "relativeTimes": true, "taxIncluded": true,
+          "rateLines": [{ "id": "d5…0311", "version": 1, "sequence": 1, "rateLineType": "flatRate", "description": [{ "language": "en", "string": "concert-night flat" }], "value": 40.0 }]
+        }
+      ]
+    }
+  ],
+  "sessions": [
+    {
+      "id": "c4…0001", "version": 1, "actualStart": "2026-09-24T08:02:11Z",
+      "initiator": { "id": "a1…0001", "version": 1, "className": "Organisation" },
+      "hierarchyElement": { "id": "b1…0001", "version": 7, "className": "Place" },
+      "identifiedCredentials": [], "segments": [],
+      "_place": "b1…0001", "_ticketNumber": "T-1001", "_entryLane": "b2…0001", "_amountDue": { "currencyType": "USD", "currencyValue": 9.0 }
+    },
+    {
+      "id": "f1…0210", "version": 1, "actualStart": "2026-09-12T18:31:00Z", "actualEnd": "2026-09-12T21:36:40Z",
+      "initiator": { "id": "a1…0001", "version": 1, "className": "Organisation" },
+      "hierarchyElement": { "id": "b1…0001", "version": 7, "className": "Place" },
+      "identifiedCredentials": [], "segments": [],
+      "_place": "b1…0001", "_ticketNumber": "T-2210", "_amountDue": { "currencyType": "USD", "currencyValue": 9.0 }
+    },
+    {
+      "id": "f1…0211", "version": 1, "actualStart": "2026-09-19T18:20:00Z",
+      "initiator": { "id": "a1…0001", "version": 1, "className": "Organisation" },
+      "hierarchyElement": { "id": "b1…0001", "version": 7, "className": "Place" },
+      "identifiedCredentials": [], "segments": [],
+      "_place": "b1…0001", "_ticketNumber": "T-2211", "_amountDue": { "currencyType": "USD", "currencyValue": 5.0 }
+    },
+    {
+      "id": "f1…0212", "version": 1, "actualStart": "2026-09-26T18:45:00Z",
+      "initiator": { "id": "a1…0001", "version": 1, "className": "Organisation" },
+      "hierarchyElement": { "id": "b1…0001", "version": 7, "className": "Place" },
+      "identifiedCredentials": [], "segments": [],
+      "_place": "b1…0001", "_ticketNumber": "T-2212", "_rateTable": "d5…0003", "_amountDue": { "currencyType": "USD", "currencyValue": 40.0 }
+    },
+    {
+      "id": "f1…0213", "version": 1, "actualStart": "2026-09-12T23:05:00Z",
+      "initiator": { "id": "a1…0001", "version": 1, "className": "Organisation" },
+      "hierarchyElement": { "id": "b1…0001", "version": 7, "className": "Place" },
+      "identifiedCredentials": [], "segments": [],
+      "_place": "b1…0001", "_ticketNumber": "T-2213", "_amountDue": { "currencyType": "USD", "currencyValue": 9.0 }
+    },
+    {
+      "id": "f1…0214", "version": 1, "actualStart": "2026-09-12T18:40:00Z",
+      "initiator": { "id": "a1…0001", "version": 1, "className": "Organisation" },
+      "hierarchyElement": { "id": "b1…0001", "version": 7, "className": "Place" },
+      "identifiedCredentials": [], "segments": [],
+      "_place": "b1…0001", "_ticketNumber": "T-2214", "_amountDue": { "currencyType": "USD", "currencyValue": 9.0 }
+    },
+    {
+      "id": "f1…0220", "version": 1, "actualStart": "2026-09-19T18:40:00Z",
+      "initiator": { "id": "a1…0001", "version": 1, "className": "Organisation" },
+      "hierarchyElement": { "id": "b1…0001", "version": 7, "className": "Place" },
+      "identifiedCredentials": [], "segments": [],
+      "_place": "b1…0001", "_ticketNumber": "T-2220", "_amountDue": { "currencyType": "USD", "currencyValue": 12.0 }
+    }
+  ],
+  "validationPrograms": [
+    {
+      "id": "e5…0003",
+      "version": 1,
+      "place": { "id": "b1…0002", "className": "Place" },
+      "provider": { "id": "a2…0013", "className": "Organisation" },
+      "name": "Harbor Deck Hotel",
+      "validationType": "hotelGuest",
+      "programStatus": "active",
+      "benefit": { "description": "Overnight guests park free", "amount": { "currencyType": "USD", "currencyValue": 28.0 } },
+      "rules": { "maxPerTicket": 1, "validityWindow": "P2D", "stackable": false },
+      "billing": { "model": "merchantPays", "billingCycle": "monthly" },
+      "issuanceMethods": ["code"],
+      "statusHistory": [{ "state": "active", "time": "2026-08-01T12:00:00Z", "actor": "harbor-backoffice", "detail": "enrolled" }]
+    },
+    {
+      "id": "e5…0004",
+      "version": 1,
+      "place": { "id": "b1…0001", "className": "Place" },
+      "provider": { "id": "a2…0014", "className": "Organisation" },
+      "name": "Lakeside Fitness",
+      "validationType": "percentOff",
+      "programStatus": "active",
+      "benefit": { "description": "25% off", "percentage": 25 },
+      "billing": { "model": "operatorAbsorbs" },
+      "issuanceMethods": ["digital"],
+      "statusHistory": [{ "state": "active", "time": "2026-09-02T10:00:00Z", "actor": "backoffice-jlee", "detail": "enrolled" }]
+    }
+  ],
+  "validationIssuances": [
+    {
+      "id": "e6…0002", "version": 1, "program": { "id": "e5…0001", "className": "ValidationProgram" }, "placeId": "b1…0001",
+      "quantity": 50, "method": "qrCode", "validFrom": "2026-09-05T17:00:00Z", "validTo": "2026-09-06T17:00:00Z", "issuedTo": "front-of-house", "issuanceStatus": "issued",
+      "benefit": { "description": "First two hours comped", "duration": "PT2H" },
+      "codes": ["HB-E1X9-P4RD-0OLD"]
+    },
+    {
+      "id": "e6…0005", "version": 2, "program": { "id": "e5…0001", "className": "ValidationProgram" }, "placeId": "b1…0001",
+      "quantity": 50, "method": "qrCode", "validFrom": "2026-09-12T17:00:00Z", "validTo": "2026-09-13T17:00:00Z", "issuedTo": "front-of-house", "issuanceStatus": "void",
+      "voidDetail": { "reason": "stolen", "note": "Sheet 2 taken from the host stand around 19:15.", "time": "2026-09-12T19:40:00Z", "actor": "hb-ipad-foh", "voidedCount": 48 },
+      "benefit": { "description": "First two hours comped", "duration": "PT2H" },
+      "codes": ["HB-S7K2-QW4N-8HGV", "HB-R2D5-WQ8M-1KTA", "HB-R7X3-PL0N-6CVE"],
+      "redeemed": { "HB-R2D5-WQ8M-1KTA": "e7…0031", "HB-R7X3-PL0N-6CVE": "e7…0032" }
+    },
+    {
+      "id": "e6…0006", "version": 1, "program": { "id": "e5…0001", "className": "ValidationProgram" }, "placeId": "b1…0001",
+      "quantity": 50, "method": "qrCode", "validFrom": "2026-09-27T17:00:00Z", "validTo": "2026-09-28T17:00:00Z", "issuedTo": "front-of-house", "issuanceStatus": "issued",
+      "benefit": { "description": "First two hours comped", "duration": "PT2H" },
+      "codes": ["HB-M3N8-C2VT-5RKQ"]
+    },
+    {
+      "id": "e6…0091", "version": 1, "program": { "id": "e5…0003", "className": "ValidationProgram" },
+      "quantity": 20, "method": "code", "validFrom": "2026-09-14T15:00:00Z", "validTo": "2026-09-16T15:00:00Z", "issuedTo": "hotel front desk", "issuanceStatus": "issued",
+      "codes": ["HD-4RT7-NM2Q-9XCB"]
+    }
+  ],
+  "validationRedemptions": [
+    {
+      "id": "e7…0031", "version": 1, "program": { "id": "e5…0001", "className": "ValidationProgram" }, "place": { "id": "b1…0001", "className": "Place" },
+      "instrumentCode": "HB-R2D5-WQ8M-1KTA", "ticketNumber": "T-2201", "appliedTime": "2026-09-12T18:52:10Z", "channel": "payStation", "appliedBy": "paystation-c1000000-0003",
+      "validationId": "VAL-20260912-000301", "amountReduced": { "currencyType": "USD", "currencyValue": 6.0 }, "durationComped": "PT2H", "redemptionStatus": "applied",
+      "statusHistory": [{ "state": "applied", "time": "2026-09-12T18:52:10Z", "actor": "paystation-c1000000-0003" }]
+    },
+    {
+      "id": "e7…0032", "version": 1, "program": { "id": "e5…0001", "className": "ValidationProgram" }, "place": { "id": "b1…0001", "className": "Place" },
+      "instrumentCode": "HB-R7X3-PL0N-6CVE", "ticketNumber": "T-2202", "appliedTime": "2026-09-12T19:05:41Z", "channel": "payStation", "appliedBy": "paystation-c1000000-0003",
+      "validationId": "VAL-20260912-000304", "amountReduced": { "currencyType": "USD", "currencyValue": 6.0 }, "durationComped": "PT2H", "redemptionStatus": "applied",
+      "statusHistory": [{ "state": "applied", "time": "2026-09-12T19:05:41Z", "actor": "paystation-c1000000-0003" }]
+    },
+    {
+      "id": "e7…0090", "version": 1, "program": { "id": "e5…0003", "className": "ValidationProgram" }, "place": { "id": "b1…0002", "className": "Place" },
+      "instrumentCode": "HD-2PQ8-VV3N-7RTA", "ticketNumber": "HD-5390", "appliedTime": "2026-09-15T08:10:00Z", "channel": "payStation", "appliedBy": "harbor-paystation-1",
+      "validationId": "VAL-20260915-HD0090", "amountReduced": { "currencyType": "USD", "currencyValue": 28.0 }, "redemptionStatus": "applied",
+      "statusHistory": [{ "state": "applied", "time": "2026-09-15T08:10:00Z", "actor": "harbor-paystation-1" }]
+    }
+  ],
+  "validationStatements": [
+    {
+      "id": "e8…0090", "version": 1, "program": { "id": "e5…0003", "className": "ValidationProgram" }, "place": { "id": "b1…0002", "className": "Place" },
+      "periodStart": "2026-08-01T00:00:00Z", "periodEnd": "2026-09-01T00:00:00Z", "statementStatus": "closed", "billingModel": "merchantPays",
+      "redemptionCount": 0, "reversedCount": 0, "totalReduced": { "currencyType": "USD", "currencyValue": 0 }, "billableAmount": { "currencyType": "USD", "currencyValue": 0 },
+      "lines": [], "closedTime": "2026-09-01T08:00:00Z", "closedBy": "harbor-backoffice"
+    }
+  ],
+  "credentials": {
+    "default": { "scopes": ["apx.validations:read", "apx.validations:manage"], "apx_org": { "id": "a1…0001", "className": "Organisation" }, "apx_places": ["b1…0001"], "user": "backoffice-jlee" },
+    "harbor-bistro-ipad": { "scopes": ["apx.validations:redeem"], "apx_org": { "id": "a2…0077", "className": "Organisation" }, "apx_places": ["b1…0001"], "user": "hb-ipad-foh" }
+  }
+}

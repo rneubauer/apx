@@ -1,0 +1,113 @@
+{
+  "_comment": "Stage directions for the replay of apx-permits. PRM-02: two more permits went out after PRM-01 and the pool reads zero (a verbatim write, so the specification keeps version 3). PRM-03: the desk is serving a cancellation slot, so the pool has room again (the file orders PRM-02 before it).",
+  "PRM-02": [
+    {
+      "at": "start",
+      "state": {
+        "collection": "rightSpecs",
+        "id": "e1000000-0000-4000-8000-000000000010",
+        "record": {
+          "id": "e1000000-0000-4000-8000-000000000010",
+          "version": 3,
+          "type": "permitParking",
+          "_place": "b1000000-0000-4000-8000-000000000001",
+          "description": [
+            {
+              "language": "en",
+              "string": "Lakeside monthly permit"
+            }
+          ],
+          "issuer": {
+            "id": "a1000000-0000-4000-8000-000000000001",
+            "version": 1,
+            "className": "Organisation"
+          },
+          "transferable": false,
+          "credentials": [
+            "licensePlate"
+          ],
+          "hierarchyElements": [
+            {
+              "id": "b1000000-0000-4000-8000-000000000001",
+              "version": 4,
+              "className": "Place"
+            }
+          ],
+          "validity": {
+            "validityTimeSpecification": {
+              "overallStartTime": "2026-01-01T00:00:00Z"
+            }
+          },
+          "rightPools": [
+            {
+              "id": "e4000000-0000-4000-8000-000000000101",
+              "version": 1,
+              "assignedRightsIssuer": {
+                "id": "a1000000-0000-4000-8000-000000000001",
+                "version": 1,
+                "className": "Organisation"
+              },
+              "distributedAssignedRights": 120,
+              "availableAssignedRights": 0
+            }
+          ]
+        }
+      }
+    }
+  ],
+  "PRM-03": [
+    {
+      "at": "start",
+      "state": {
+        "collection": "rightSpecs",
+        "id": "e1000000-0000-4000-8000-000000000010",
+        "record": {
+          "id": "e1000000-0000-4000-8000-000000000010",
+          "version": 3,
+          "type": "permitParking",
+          "_place": "b1000000-0000-4000-8000-000000000001",
+          "description": [
+            {
+              "language": "en",
+              "string": "Lakeside monthly permit"
+            }
+          ],
+          "issuer": {
+            "id": "a1000000-0000-4000-8000-000000000001",
+            "version": 1,
+            "className": "Organisation"
+          },
+          "transferable": false,
+          "credentials": [
+            "licensePlate"
+          ],
+          "hierarchyElements": [
+            {
+              "id": "b1000000-0000-4000-8000-000000000001",
+              "version": 4,
+              "className": "Place"
+            }
+          ],
+          "validity": {
+            "validityTimeSpecification": {
+              "overallStartTime": "2026-01-01T00:00:00Z"
+            }
+          },
+          "rightPools": [
+            {
+              "id": "e4000000-0000-4000-8000-000000000101",
+              "version": 1,
+              "assignedRightsIssuer": {
+                "id": "a1000000-0000-4000-8000-000000000001",
+                "version": 1,
+                "className": "Organisation"
+              },
+              "distributedAssignedRights": 118,
+              "availableAssignedRights": 2
+            }
+          ]
+        }
+      }
+    }
+  ]
+}

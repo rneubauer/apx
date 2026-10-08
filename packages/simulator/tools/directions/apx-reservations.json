@@ -1,0 +1,50 @@
+{
+  "_comment": "Stage directions for the replay of apx-reservations. RSV-17 is set on the concert evening before Dev's no-show deadline, but earlier scenarios have already moved the clock past it, so the barcode reservation is put back to `confirmed`. RSV-24's closed-session refusal needs session f1…0201 to have ended.",
+  "RSV-17": [
+    {
+      "at": "start",
+      "state": {
+        "collection": "assignedRights",
+        "id": "e2000000-0000-4000-8000-000000000104",
+        "record": {
+          "id": "e2000000-0000-4000-8000-000000000104",
+          "version": 1,
+          "_holder": "a3000000-0000-4000-8000-000000000304",
+          "_preCheckIn": "confirmed",
+          "_place": "b1000000-0000-4000-8000-000000000001",
+          "rightSpecification": { "id": "e1000000-0000-4000-8000-000000000002", "version": 1, "className": "RightSpecification" },
+          "rightHolder": { "credentials": [ { "type": "barcode", "credentialAssignedType": "other", "identifier": { "id": "LKG-88301", "className": "Barcode" } } ] },
+          "assignedRightIssuer": { "id": "a1000000-0000-4000-8000-000000000001", "version": 1, "className": "Organisation" },
+          "issueMethod": "electronic",
+          "issuanceTime": "2026-09-21T15:00:00Z",
+          "plannedUses": [ { "startTime": "2026-09-25T18:00:00Z", "endTime": "2026-09-25T23:30:00Z" } ],
+          "extensions": { "apds-ext:apx:reservation@1.0": { "reservationState": "confirmed", "plannedStart": "2026-09-25T18:00:00Z", "plannedEnd": "2026-09-25T23:30:00Z" } }
+        }
+      }
+    }
+  ],
+  "RSV-24": [
+    {
+      "at": "start",
+      "state": {
+        "collection": "assignedRights",
+        "id": "e2000000-0000-4000-8000-000000000112",
+        "record": {
+          "id": "e2000000-0000-4000-8000-000000000112",
+          "version": 1,
+          "_holder": "a3000000-0000-4000-8000-000000000304",
+          "_preCheckIn": "confirmed",
+          "_place": "b1000000-0000-4000-8000-000000000001",
+          "rightSpecification": { "id": "e1000000-0000-4000-8000-000000000002", "version": 1, "className": "RightSpecification" },
+          "rightHolder": { "credentials": [ { "type": "barcode", "credentialAssignedType": "other", "identifier": { "id": "LKG-88302", "className": "Barcode" } } ] },
+          "assignedRightIssuer": { "id": "a1000000-0000-4000-8000-000000000001", "version": 1, "className": "Organisation" },
+          "issueMethod": "electronic",
+          "issuanceTime": "2026-09-22T16:40:00Z",
+          "plannedUses": [ { "startTime": "2026-09-25T18:00:00Z", "endTime": "2026-09-25T23:30:00Z" } ],
+          "extensions": { "apds-ext:apx:reservation@1.0": { "reservationState": "confirmed", "plannedStart": "2026-09-25T18:00:00Z", "plannedEnd": "2026-09-25T23:30:00Z" } }
+        }
+      }
+    },
+    { "at": 8, "inject": { "kind": "dataWrite", "collection": "sessions", "op": "change", "id": "f1000000-0000-4000-8000-000000000201", "record": { "id": "f1000000-0000-4000-8000-000000000201", "actualEnd": "2026-09-25T23:05:00Z" } } }
+  ]
+}

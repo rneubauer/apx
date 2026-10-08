@@ -1,0 +1,301 @@
+{
+  "extends": "base-lakeside",
+  "name": "apx-data",
+  "description": "The apx-data cast (docs/scenarios/by-module/apx-data): Lakeside Garage v7 with Level 2 and space L2-017, Marina Lot (later added to the city's grant), lanes 1-2, the standard / customer-service rate decks, the monthly and transient right specifications, assigned rights, sessions, plate reads, the operator contact, and the change-feed history behind the scenario cursors.",
+  "_credentials_note": "default is the city platform (cursor identity `client: city-platform`) with apx.data:write added because the file's unmarked write requests run under it. Three entries are named after the descriptive tokens the replay sends, so they mean what the prose says: the aggregator of DATA-16 (wildcard grant), the grant-pinned PARCS token of DATA-30 (the kernel's parser drops the scopes of a named token that mentions none), and the stand-in insufficient-scope token of DATA-32 (a token carrying only apx.alerts:read).",
+  "credentials": {
+    "default": { "scopes": ["apx.data:read", "apx.data:write", "apx.subscriptions:manage"], "apx_org": { "id": "a1…0003", "className": "Organisation" }, "apx_places": ["b1…0001"], "client": "city-platform", "user": "city-platform" },
+    "city-platform": { "scopes": ["apx.data:read", "apx.subscriptions:manage"], "apx_org": { "id": "a1…0003", "className": "Organisation" }, "apx_places": ["b1…0001"] },
+    "lakeside-parcs": { "scopes": ["apx.data:read", "apx.data:write", "apx.control:read", "apx.control:execute", "apx.alerts:write", "apx.alerts:read", "apx.lpr:read"], "apx_org": { "id": "a1…0001", "className": "Organisation" }, "apx_places": ["b1…0001"] },
+    "owner-bi": { "scopes": ["apx.data:read"], "apx_org": { "id": "a1…0001", "className": "Organisation" }, "apx_places": ["b1…0001"] },
+    "aggregator, apx.data:write": { "scopes": ["apx.data:read", "apx.data:write"], "apx_org": { "id": "a1…0009", "className": "Organisation" }, "apx_places": ["*"], "client": "aggregator" },
+    "lakeside-parcs: apx_places [\"b1000000-0000-4000-8000-000000000001\"]": { "scopes": ["apx.data:read", "apx.data:write"], "apx_org": { "id": "a1…0001", "className": "Organisation" }, "apx_places": ["b1…0001"], "client": "lakeside-parcs" },
+    "APDS role ep; no apx.* scopes": { "scopes": ["apx.alerts:read"], "apx_org": { "id": "a1…0003", "className": "Organisation" }, "apx_places": ["b1…0001"], "client": "warehouse-loader" }
+  },
+  "organisations": [{ "id": "a1…0009", "name": "Regional Parking Aggregator" }],
+  "places": [
+    { "id": "b1…0011", "name": "Level 2", "type": "identifiedArea", "parentId": "b1…0001", "version": 2 },
+    { "id": "b1…0117", "name": "L2-017", "type": "space", "parentId": "b1…0011", "version": 1 },
+    { "id": "b1…0003", "name": "Marina Lot", "type": "Place", "operator": "a1…0001", "timeZone": "America/Chicago", "supplyQuantity": 80, "version": 2 }
+  ],
+  "lanes": [
+    { "id": "b2…0001", "placeId": "b1…0001", "name": "Entry lane 1", "accessType": "entry" },
+    { "id": "b2…0002", "placeId": "b1…0001", "name": "Exit lane 2", "accessType": "exit" }
+  ],
+  "apdsPlaces": {
+    "b1…0001": {
+      "version": 7,
+      "type": "place",
+      "name": [{ "language": "en", "string": "Lakeside Garage" }],
+      "layer": 0,
+      "hierarchyElementRecord": { "creationTime": "2024-03-01T00:00:00Z", "creator": { "id": "a1…0001", "version": 1, "className": "Organisation" } },
+      "timeZone": "America/Chicago",
+      "hierarchyElementReference": {
+        "elementId": { "id": "b1…0001", "version": 7, "className": "Place" },
+        "supply": [{ "supplyViewType": "spaceView", "supplyQuantity": 420 }],
+        "demandTable": [
+          { "timestamp": "2026-09-24T17:44:30Z", "frequency": "PT1M", "demandType": [{ "count": 361, "percentage": 85.9, "occupancyCalculation": "counted", "recordDateTime": "2026-09-24T17:44:30Z" }] }
+        ]
+      },
+      "_contacts": ["a1…0001"],
+      "_modified": "2026-09-24T17:44:30Z",
+      "_versions": [
+        {
+          "version": 6,
+          "type": "place",
+          "name": [{ "language": "en", "string": "Lakeside Parking Garage" }],
+          "layer": 0,
+          "hierarchyElementRecord": { "creationTime": "2024-03-01T00:00:00Z", "creator": { "id": "a1…0001", "version": 1, "className": "Organisation" } },
+          "timeZone": "America/Chicago"
+        }
+      ]
+    },
+    "b1…0011": {
+      "version": 2,
+      "type": "identifiedArea",
+      "name": [{ "language": "en", "string": "Level 2" }],
+      "layer": 1,
+      "parentId": { "id": "b1…0001", "version": 7, "className": "Place" },
+      "hierarchyElementRecord": { "creationTime": "2024-03-01T00:00:00Z", "creator": { "id": "a1…0001", "version": 1, "className": "Organisation" } },
+      "hierarchyElementReference": { "elementId": { "id": "b1…0011", "version": 2, "className": "IdentifiedArea" }, "supply": [{ "supplyViewType": "spaceView", "supplyQuantity": 140 }] },
+      "_contacts": ["a1…0001"]
+    },
+    "b1…0117": {
+      "version": 1,
+      "type": "space",
+      "name": [{ "language": "en", "string": "L2-017" }],
+      "layer": 2,
+      "parentId": { "id": "b1…0011", "version": 2, "className": "IdentifiedArea" },
+      "hierarchyElementRecord": { "creationTime": "2024-03-01T00:00:00Z", "creator": { "id": "a1…0001", "version": 1, "className": "Organisation" } }
+    },
+    "b1…0003": {
+      "version": 2,
+      "type": "place",
+      "name": [{ "language": "en", "string": "Marina Lot" }],
+      "layer": 0,
+      "hierarchyElementRecord": { "creationTime": "2025-11-12T00:00:00Z", "creator": { "id": "a1…0001", "version": 1, "className": "Organisation" } },
+      "timeZone": "America/Chicago",
+      "hierarchyElementReference": { "elementId": { "id": "b1…0003", "version": 2, "className": "Place" }, "supply": [{ "supplyViewType": "spaceView", "supplyQuantity": 80 }] },
+      "_contacts": ["a1…0001"]
+    }
+  },
+  "rateTables": [
+    {
+      "id": "d5…0001",
+      "version": 7,
+      "rateTableName": [{ "language": "en", "string": "Standard deck" }],
+      "availability": "public",
+      "rateType": "hourly",
+      "rateResponsibleParty": { "id": "a1…0001", "version": 1, "className": "Organisation" },
+      "rateLineCollections": [
+        {
+          "id": "d6…0001",
+          "version": 7,
+          "collectionSequence": 1,
+          "applicableCurrency": "USD",
+          "resetTime": "00:00",
+          "validStart": "2026-01-01T00:00:00Z",
+          "relativeTimes": true,
+          "taxIncluded": true,
+          "rateLines": [
+            { "id": "d7…0001", "version": 7, "sequence": 1, "rateLineType": "incrementingRate", "incrementPeriod": "PT1H", "value": 3.0, "description": [{ "language": "en", "string": "per hour" }] },
+            { "id": "d7…0002", "version": 7, "sequence": 2, "rateLineType": "flatRate", "value": 24.0, "description": [{ "language": "en", "string": "daily maximum" }] },
+            { "id": "d7…0003", "version": 7, "sequence": 3, "rateLineType": "flatRate", "value": 32.0, "description": [{ "language": "en", "string": "lostTicketFee" }] }
+          ]
+        }
+      ],
+      "_place": "b1…0001"
+    },
+    {
+      "id": "d5…0002",
+      "version": 3,
+      "rateTableName": [{ "language": "en", "string": "Customer-service flat $20" }],
+      "availability": "restricted",
+      "rateType": "daily",
+      "rateResponsibleParty": { "id": "a1…0001", "version": 1, "className": "Organisation" },
+      "rateLineCollections": [
+        {
+          "id": "d6…0002",
+          "version": 3,
+          "collectionSequence": 1,
+          "applicableCurrency": "USD",
+          "resetTime": "00:00",
+          "validStart": "2026-01-01T00:00:00Z",
+          "relativeTimes": true,
+          "taxIncluded": true,
+          "rateLines": [{ "id": "d7…0021", "version": 3, "sequence": 1, "rateLineType": "flatRate", "value": 20.0 }]
+        }
+      ],
+      "extensions": { "apds-ext:apx:ratepolicy@1.0": { "negotiable": true, "displayName": "Customer-service flat $20", "note": "Use for service failures only" } },
+      "_place": "b1…0001"
+    }
+  ],
+  "rightSpecs": [
+    {
+      "id": "e1…0001",
+      "version": 4,
+      "type": "permitParking",
+      "description": [{ "language": "en", "string": "Monthly permit" }],
+      "transferable": false,
+      "validity": { "validityStatus": "active", "validityTimeSpecification": { "overallStartTime": "2024-03-01T00:00:00Z" } },
+      "issuer": { "id": "a1…0001", "version": 1, "className": "Organisation" },
+      "hierarchyElements": [{ "id": "b1…0001", "version": 7, "className": "Place" }]
+    },
+    {
+      "id": "e1…0003",
+      "version": 2,
+      "type": "oneTimeUseParking",
+      "description": [{ "language": "en", "string": "Transient parking" }],
+      "transferable": false,
+      "validity": { "validityStatus": "active", "validityTimeSpecification": { "overallStartTime": "2024-03-01T00:00:00Z" } },
+      "issuer": { "id": "a1…0001", "version": 1, "className": "Organisation" },
+      "hierarchyElements": [{ "id": "b1…0001", "version": 7, "className": "Place" }],
+      "rateEligibility": [{ "id": "e4…0001", "version": 2, "priority": 1, "rateTable": { "id": "d5…0001", "version": 7, "className": "RateTable" } }]
+    }
+  ],
+  "assignedRights": [
+    {
+      "id": "e2…0001",
+      "version": 13,
+      "rightSpecification": { "id": "e1…0001", "version": 4, "className": "RightSpecification" },
+      "rightHolder": { "credentials": [{ "type": "rfid", "credentialAssignedType": "customer", "identifier": { "id": "MC-0777", "className": "Credential" } }] },
+      "assignedRightIssuer": { "id": "a1…0001", "version": 1, "className": "Organisation" },
+      "issueMethod": "permit",
+      "expiry": "2026-10-31T23:59:59Z",
+      "_modified": "2026-09-24T12:00:00Z",
+      "_versions": [
+        {
+          "version": 12,
+          "rightSpecification": { "id": "e1…0001", "version": 4, "className": "RightSpecification" },
+          "rightHolder": { "credentials": [{ "type": "rfid", "credentialAssignedType": "customer", "identifier": { "id": "MC-0777", "className": "Credential" } }] },
+          "assignedRightIssuer": { "id": "a1…0001", "version": 1, "className": "Organisation" },
+          "issueMethod": "permit",
+          "expiry": "2026-09-30T23:59:59Z"
+        }
+      ]
+    },
+    {
+      "id": "e2…0099",
+      "version": 1,
+      "rightSpecification": { "id": "e1…0003", "version": 2, "className": "RightSpecification" },
+      "rightHolder": { "credentials": [{ "type": "ticket", "credentialAssignedType": "other", "identifier": { "id": "T-1044", "className": "Credential" } }] },
+      "assignedRightIssuer": { "id": "a1…0001", "version": 1, "className": "Organisation" },
+      "issueMethod": "ticket",
+      "issuanceTime": "2026-09-24T09:15:00Z",
+      "_modified": "2026-09-24T09:15:00Z"
+    }
+  ],
+  "sessions": [
+    {
+      "id": "c4…0001",
+      "version": 4,
+      "actualStart": "2026-09-24T15:02:11Z",
+      "actualEnd": "2026-09-24T18:14:34Z",
+      "initiator": { "id": "a1…0001", "version": 1, "className": "Organisation" },
+      "hierarchyElement": { "id": "b1…0001", "version": 7, "className": "Place" },
+      "identifiedCredentials": [{ "type": "ticket", "credentialAssignedType": "other", "identifier": { "id": "T-1001", "className": "Credential" } }],
+      "segments": [
+        { "id": "c5…0001", "version": 2, "actualStart": "2026-09-24T15:02:11Z", "actualEnd": "2026-09-24T18:14:34Z", "assignedRight": { "id": "e2…0098", "version": 1, "className": "AssignedRight" }, "validationType": ["ticket"] }
+      ],
+      "_place": "b1…0001",
+      "_ticketNumber": "T-1001",
+      "_modified": "2026-09-24T18:14:34Z",
+      "_versions": [
+        {
+          "version": 3,
+          "actualStart": "2026-09-24T15:02:11Z",
+          "initiator": { "id": "a1…0001", "version": 1, "className": "Organisation" },
+          "hierarchyElement": { "id": "b1…0001", "version": 7, "className": "Place" },
+          "identifiedCredentials": [{ "type": "ticket", "credentialAssignedType": "other", "identifier": { "id": "T-1001", "className": "Credential" } }],
+          "segments": [{ "id": "c5…0001", "version": 1, "actualStart": "2026-09-24T15:02:11Z", "assignedRight": { "id": "e2…0098", "version": 1, "className": "AssignedRight" }, "validationType": ["ticket"] }]
+        }
+      ]
+    },
+    {
+      "id": "c4…0044",
+      "version": 1,
+      "actualStart": "2026-09-24T09:15:00Z",
+      "initiator": { "id": "a1…0001", "version": 1, "className": "Organisation" },
+      "hierarchyElement": { "id": "b1…0001", "version": 7, "className": "Place" },
+      "identifiedCredentials": [{ "type": "ticket", "credentialAssignedType": "other", "identifier": { "id": "T-1044", "className": "Credential" } }],
+      "segments": [
+        { "id": "c5…0044", "version": 1, "actualStart": "2026-09-24T09:15:00Z", "assignedRight": { "id": "e2…0099", "version": 1, "className": "AssignedRight" }, "validationType": ["ticket"] }
+      ],
+      "_place": "b1…0001",
+      "_ticketNumber": "T-1044",
+      "_modified": "2026-09-24T09:15:00Z"
+    },
+    {
+      "id": "c4…0052",
+      "version": 1,
+      "actualStart": "2026-09-24T08:02:00Z",
+      "initiator": { "id": "a1…0001", "version": 1, "className": "Organisation" },
+      "hierarchyElement": { "id": "b1…0001", "version": 7, "className": "Place" },
+      "identifiedCredentials": [{ "type": "rfid", "credentialAssignedType": "customer", "identifier": { "id": "MC-0777", "className": "Credential" } }],
+      "segments": [
+        { "id": "c5…0052", "version": 1, "actualStart": "2026-09-24T08:02:00Z", "assignedRight": { "id": "e2…0001", "version": 13, "className": "AssignedRight" }, "validationType": ["rfid"] }
+      ],
+      "_place": "b1…0001",
+      "_modified": "2026-09-24T08:02:00Z"
+    }
+  ],
+  "observations": [
+    {
+      "id": "f2…0901",
+      "version": 1,
+      "method": "anpr",
+      "type": "licensePlate",
+      "observedCredentialId": "SYN-1234",
+      "observationStartTime": "2026-09-24T18:13:58Z",
+      "creationDateTime": "2026-09-24T18:13:59Z",
+      "location": { "observerLocation": { "type": "Point", "coordinates": [-87.6244, 41.8812] } },
+      "elementIds": { "id": "b2…0002", "version": 3, "className": "VehicularAccess" },
+      "observerOrganisation": { "id": "a1…0001", "version": 1, "className": "Organisation" },
+      "confidence": { "overallConfidence": 0.91 },
+      "_modified": "2026-09-24T18:13:59Z"
+    }
+  ],
+  "contacts": [
+    {
+      "contactType": "contactPoint",
+      "id": "a1…0001",
+      "version": 2,
+      "type": "operator",
+      "organisationName": [{ "language": "en", "string": "Lakeside Parking LLC" }],
+      "eMailCommonData": [{ "primaryFlag": true, "emailAddress": "ops@lakeside-garage.example" }]
+    }
+  ],
+  "occupancy": { "thresholds": [85, 90, 95, 100], "delta": 25 },
+  "dataFeed": {
+    "pageSize": 2,
+    "history": {
+      "sessions": [
+        { "cursor": "c:00007", "credential": "city-platform", "issuedAt": "2026-09-08T06:00:00Z" },
+        { "id": "c4…0097", "deleted": true, "time": "2026-09-20T03:10:00Z", "className": "Session", "places": ["b1…0001"] },
+        { "cursor": "c:00041", "credential": "city-platform", "issuedAt": "2026-09-24T06:00:00Z" },
+        { "id": "c4…0001", "version": 4, "time": "2026-09-24T18:14:34Z" },
+        { "id": "c4…0099", "deleted": true, "time": "2026-09-24T17:58:12Z", "className": "Session", "places": ["b1…0001"] },
+        { "id": "c4…0044", "version": 1, "time": "2026-09-24T09:15:00Z" }
+      ],
+      "places": [
+        { "cursor": "p:00007", "credential": "city-platform", "issuedAt": "2026-09-08T06:00:00Z" },
+        { "cursor": "p:00120", "credential": "city-platform", "issuedAt": "2026-09-24T06:00:00Z" },
+        { "id": "b1…0001", "version": 7, "time": "2026-09-24T17:44:30Z" }
+      ],
+      "rateTables": [
+        { "cursor": "r:00002", "credential": "city-platform", "issuedAt": "2026-09-08T06:00:00Z" },
+        { "cursor": "r:00031", "credential": "city-platform", "filter": { "place": ["b1…0001"] }, "issuedAt": "2026-09-24T06:00:00Z" }
+      ],
+      "assignedRights": [
+        { "cursor": "a:00004", "credential": "city-platform", "issuedAt": "2026-09-08T06:00:00Z" },
+        { "cursor": "a:00058", "credential": "city-platform", "filter": { "place": ["b1…0001"] }, "issuedAt": "2026-09-24T06:00:00Z" },
+        { "id": "e2…0001", "version": 13, "time": "2026-09-24T12:00:00Z" },
+        { "id": "e2…0050", "deleted": true, "time": "2026-09-24T16:40:00Z", "className": "AssignedRight", "places": ["b1…0001"] }
+      ],
+      "observations": [
+        { "cursor": "o:00011", "credential": "city-platform", "issuedAt": "2026-09-08T06:00:00Z" },
+        { "cursor": "o:00344", "credential": "city-platform", "issuedAt": "2026-09-24T06:00:00Z" }
+      ]
+    }
+  }
+}

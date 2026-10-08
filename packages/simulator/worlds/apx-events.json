@@ -1,0 +1,90 @@
+{
+  "extends": "base-lakeside",
+  "name": "apx-events",
+  "description": "The cast of docs/scenarios/by-module/apx-events: Lakeside Garage with level 2, its lanes, exit gate and pay station; Harbor Deck as the other operator's garage; the subscribers (the city's curb platform granted Lakeside only, Lakeside's ops-monitor, the NOC kiosk on SSE, city finance with a vaulted secret, the regional auditor with the explicit \"*\" grant) and their simulated endpoints.",
+  "organisations": [{ "id": "a1…0004", "name": "Regional Parking Audit" }],
+  "places": [{ "id": "b3…0002", "parentId": "b1…0001", "name": "Lakeside Garage level 2", "type": "Level", "className": "Level", "supplyQuantity": 420 }],
+  "lanes": [
+    { "id": "b2…0001", "placeId": "b1…0001", "name": "entry lane 1", "accessType": "entry", "gate": "c1…0001" },
+    { "id": "b2…0002", "placeId": "b1…0001", "name": "exit lane 2", "accessType": "exit", "gate": "c1…0002" }
+  ],
+  "devices": [
+    { "id": "c1…0001", "placeId": "b1…0001", "laneId": "b2…0001", "name": "entry gate", "equipmentType": "barrier", "state": "available" },
+    { "id": "c1…0002", "placeId": "b1…0001", "laneId": "b2…0002", "name": "exit gate", "equipmentType": "barrier", "state": "available" },
+    { "id": "c1…0003", "placeId": "b1…0001", "name": "pay station 3", "equipmentType": "payStation", "state": "available" }
+  ],
+  "credentials": {
+    "default": {
+      "scopes": ["apx.subscriptions:manage", "apx.data:read", "apx.control:read", "apx.alerts:read", "apx.accounts:read", "apx.lpr:read", "apx.violations:read", "apx.validations:read", "apx.credentials:read", "apx.valet:read", "apx.reservations:manage", "apx.tolling:manage", "apx.resolution:read", "apx.support:manage", "apx.permits:manage"],
+      "apx_org": { "id": "a1…0001", "className": "Organisation" },
+      "apx_places": ["b1…0001"],
+      "user": "city-platform"
+    },
+    "city-platform": {
+      "scopes": ["apx.subscriptions:manage", "apx.data:read", "apx.control:read", "apx.alerts:read", "apx.violations:read", "apx.tolling:manage"],
+      "apx_org": { "id": "a1…0001", "className": "Organisation" },
+      "apx_places": ["b1…0001"],
+      "user": "city-platform"
+    },
+    "ops-monitor": {
+      "scopes": ["apx.subscriptions:manage", "apx.data:read", "apx.control:read", "apx.alerts:read", "apx.accounts:read", "apx.lpr:read", "apx.violations:read", "apx.validations:read", "apx.credentials:read", "apx.valet:read", "apx.reservations:manage", "apx.tolling:manage", "apx.resolution:read", "apx.support:manage", "apx.permits:manage"],
+      "apx_org": { "id": "a1…0001", "className": "Organisation" },
+      "apx_places": ["b1…0001"],
+      "user": "ops-monitor"
+    },
+    "noc-kiosk": {
+      "scopes": ["apx.subscriptions:manage", "apx.alerts:read", "apx.control:read"],
+      "apx_org": { "id": "a1…0001", "className": "Organisation" },
+      "apx_places": ["b1…0001"],
+      "user": "noc-kiosk"
+    },
+    "city-finance": {
+      "scopes": ["apx.subscriptions:manage", "apx.accounts:read"],
+      "apx_org": { "id": "a1…0001", "className": "Organisation" },
+      "apx_places": ["b1…0001"],
+      "user": "city-finance"
+    },
+    "regional-auditor": {
+      "scopes": ["apx.subscriptions:manage", "apx.data:read", "apx.accounts:read", "apx.validations:read", "apx.violations:read", "apx.tolling:manage"],
+      "apx_org": { "id": "a1…0004", "className": "Organisation" },
+      "apx_places": ["*"],
+      "user": "regional-auditor"
+    }
+  },
+  "events": {
+    "approval": "auto",
+    "idPrefix": "e8",
+    "vault": { "vault://city/apx/lakeside/2026q3": "city-finance-vaulted-key-material-2026q3-0123456789abcdef" },
+    "vendorTopics": []
+  },
+  "subscriptions": [
+    {
+      "id": "e8…0004",
+      "credential": "ops-monitor",
+      "endpoint": "https://noc.lakeside-garage.example/apx",
+      "topics": ["apx.*"],
+      "transport": "webhook",
+      "keys": [{ "keyId": "k-ops-monitor-1", "secret": "ops-monitor-signing-secret-0123456789abcdef0123" }]
+    },
+    {
+      "id": "e8…0007",
+      "credential": "regional-auditor",
+      "endpoint": "https://audit.region.example/apx/inbox",
+      "topics": ["apx.validations.statement.closed.v1", "apx.accounts.payment.recorded.v1", "apx.violations.issued.v1", "apx.tolling.transaction.created.v1"],
+      "transport": "webhook",
+      "keys": [{ "keyId": "k-auditor-1", "secret": "regional-auditor-signing-secret-0123456789abcdef" }]
+    }
+  ],
+  "receivers": {
+    "https://curb.city.example/apds/events": { "default": 200 },
+    "https://curb.city.example/apds/places": { "default": 200 },
+    "https://curb.city.example/apx/events": { "default": 200 },
+    "https://curb.city.example/apx/sessions": { "default": 200 },
+    "https://curb.city.example/apx/violations": { "default": 200 },
+    "https://finance.city.example/apx/payments": { "default": 200 },
+    "https://noc.lakeside-garage.example/apx": { "default": 200 },
+    "https://audit.region.example/apx/inbox": { "default": 200 },
+    "https://jobs.city.example/apx": { "default": 200 },
+    "https://bi.city.example/apx": { "default": 200 }
+  }
+}

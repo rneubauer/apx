@@ -1,0 +1,391 @@
+{
+  "_comment": "Stage directions for the replay of apx-resolution: world events the prose describes but no request performs — which vehicle is at exit lane 2, the preloaded context, the terminal fault, the slow account service, the link paid off-stage, the clock. Keys are scenario ids; `at` is the 0-based exchange index the step runs before ('start' = before the scenario).",
+  "RES-02": [
+    {
+      "at": "start",
+      "clock": {
+        "now": "2026-09-24T07:52:11Z"
+      }
+    },
+    {
+      "at": "start",
+      "inject": {
+        "kind": "openContextFor",
+        "id": "e5000000-0000-4000-8000-000000000002",
+        "lane": "b2000000-0000-4000-8000-000000000001",
+        "credential": "c3000000-0000-4000-8000-000000000002",
+        "correlationId": "ca000000-0000-4000-8000-000000000002",
+        "channel": "intercom"
+      }
+    }
+  ],
+  "RES-04": [
+    {
+      "at": "start",
+      "inject": {
+        "kind": "vehicleLeaves",
+        "lane": "b2000000-0000-4000-8000-000000000002"
+      }
+    },
+    {
+      "at": "start",
+      "inject": {
+        "kind": "vehicleArrives",
+        "lane": "b2000000-0000-4000-8000-000000000002",
+        "ticketNumber": "T-58201",
+        "session": "c4000000-0000-4000-8000-000000000021",
+        "amountDue": {
+          "currencyType": "USD",
+          "currencyValue": 0
+        },
+        "issuedTime": "2026-09-24T17:02:44Z",
+        "credential": null
+      }
+    }
+  ],
+  "RES-05": [
+    {
+      "at": "start",
+      "inject": {
+        "kind": "vehicleLeaves",
+        "lane": "b2000000-0000-4000-8000-000000000002"
+      }
+    },
+    {
+      "at": "start",
+      "inject": {
+        "kind": "vehicleArrives",
+        "lane": "b2000000-0000-4000-8000-000000000002",
+        "ticketNumber": "T-61077",
+        "session": "c4000000-0000-4000-8000-000000000022",
+        "amountDue": {
+          "currencyType": "USD",
+          "currencyValue": 18
+        },
+        "issuedTime": "2026-09-24T13:11:03Z",
+        "credential": null
+      }
+    }
+  ],
+  "RES-06": [
+    {
+      "at": "start",
+      "inject": {
+        "kind": "vehicleLeaves",
+        "lane": "b2000000-0000-4000-8000-000000000002"
+      }
+    },
+    {
+      "at": "start",
+      "inject": {
+        "kind": "vehicleArrives",
+        "lane": "b2000000-0000-4000-8000-000000000002",
+        "ticketNumber": "T-70443",
+        "session": "c4000000-0000-4000-8000-000000000023",
+        "amountDue": {
+          "currencyType": "USD",
+          "currencyValue": 14
+        },
+        "issuedTime": "2026-09-24T17:48:19Z",
+        "credential": null
+      }
+    }
+  ],
+  "RES-07": [
+    {
+      "at": "start",
+      "inject": {
+        "kind": "vehicleLeaves",
+        "lane": "b2000000-0000-4000-8000-000000000002"
+      }
+    },
+    {
+      "at": "start",
+      "inject": {
+        "kind": "vehicleArrives",
+        "lane": "b2000000-0000-4000-8000-000000000002",
+        "ticketNumber": "T-81290",
+        "session": "c4000000-0000-4000-8000-000000000024",
+        "amountDue": {
+          "currencyType": "USD",
+          "currencyValue": 45
+        },
+        "issuedTime": "2026-09-24T11:05:37Z",
+        "credential": null
+      }
+    }
+  ],
+  "RES-10": [
+    {
+      "at": "start",
+      "inject": {
+        "kind": "vehicleLeaves",
+        "lane": "b2000000-0000-4000-8000-000000000002"
+      }
+    },
+    {
+      "at": "start",
+      "inject": {
+        "kind": "vehicleArrives",
+        "lane": "b2000000-0000-4000-8000-000000000002",
+        "session": "c4000000-0000-4000-8000-000000000031",
+        "plate": "5VN-4B21",
+        "confidence": 0.41,
+        "observation": "f2000000-0000-4000-8000-000000000013",
+        "amountDue": {
+          "currencyType": "USD",
+          "currencyValue": 38
+        },
+        "issuedTime": "2026-09-24T17:41:22Z",
+        "credential": null
+      }
+    }
+  ],
+  "RES-12": [
+    {
+      "at": "start",
+      "inject": {
+        "kind": "vehicleLeaves",
+        "lane": "b2000000-0000-4000-8000-000000000002"
+      }
+    },
+    {
+      "at": "start",
+      "inject": {
+        "kind": "vehicleArrives",
+        "lane": "b2000000-0000-4000-8000-000000000002",
+        "session": "c4000000-0000-4000-8000-000000000032",
+        "amountDue": {
+          "currencyType": "USD",
+          "currencyValue": 42
+        },
+        "issuedTime": "2026-09-24T18:12:30Z",
+        "credential": null
+      }
+    }
+  ],
+  "RES-14": [
+    {
+      "at": "start",
+      "clock": {
+        "now": "2026-09-24T19:18:31Z"
+      }
+    },
+    {
+      "at": "start",
+      "inject": {
+        "kind": "deviceState",
+        "device": "c1000000-0000-4000-8000-000000000003",
+        "state": "fault",
+        "actor": "card reader"
+      }
+    },
+    {
+      "at": "start",
+      "inject": {
+        "kind": "vehicleLeaves",
+        "lane": "b2000000-0000-4000-8000-000000000002"
+      }
+    },
+    {
+      "at": "start",
+      "inject": {
+        "kind": "vehicleArrives",
+        "lane": "b2000000-0000-4000-8000-000000000002",
+        "ticketNumber": "T-71902",
+        "session": "c4000000-0000-4000-8000-000000000042",
+        "amountDue": {
+          "currencyType": "USD",
+          "currencyValue": 12
+        },
+        "issuedTime": "2026-09-24T16:40:00Z",
+        "credential": null
+      }
+    }
+  ],
+  "RES-15": [
+    {
+      "at": "start",
+      "inject": {
+        "kind": "deviceState",
+        "device": "c1000000-0000-4000-8000-000000000003",
+        "state": "available",
+        "actor": "technician"
+      }
+    },
+    {
+      "at": "start",
+      "inject": {
+        "kind": "vehicleLeaves",
+        "lane": "b2000000-0000-4000-8000-000000000002"
+      }
+    },
+    {
+      "at": "start",
+      "inject": {
+        "kind": "laneCredential",
+        "lane": "b2000000-0000-4000-8000-000000000002",
+        "credential": {
+          "credential": {
+            "id": "c3000000-0000-4000-8000-000000000001",
+            "className": "Credential"
+          },
+          "cardNumber": "MC-0777",
+          "accessGranted": false,
+          "denialReason": "account past due",
+          "lastActivity": "2026-09-24T23:39:52Z"
+        }
+      }
+    },
+    {
+      "at": "start",
+      "inject": {
+        "kind": "sourceDelay",
+        "sources": [
+          "account-service",
+          "payment-history"
+        ],
+        "ms": 8000
+      }
+    }
+  ],
+  "RES-16": [
+    {
+      "at": 0,
+      "clock": {
+        "now": "2026-09-24T21:17:30Z"
+      }
+    },
+    {
+      "at": 0,
+      "inject": {
+        "kind": "paymentLinkPaid",
+        "link": "e6000000-0000-4000-8000-000000000001",
+        "cardLast4": "1881"
+      }
+    },
+    {
+      "at": 1,
+      "clock": {
+        "now": "2026-09-24T22:47:30Z"
+      }
+    }
+  ],
+  "RES-18": [
+    {
+      "at": "start",
+      "inject": {
+        "kind": "accountBalance",
+        "account": "a4000000-0000-4000-8000-000000000001",
+        "balance": 185
+      }
+    },
+    {
+      "at": "start",
+      "inject": {
+        "kind": "vehicleLeaves",
+        "lane": "b2000000-0000-4000-8000-000000000002"
+      }
+    },
+    {
+      "at": "start",
+      "inject": {
+        "kind": "laneCredential",
+        "lane": "b2000000-0000-4000-8000-000000000002",
+        "credential": {
+          "credential": {
+            "id": "c3000000-0000-4000-8000-000000000001",
+            "className": "Credential"
+          },
+          "cardNumber": "MC-0777",
+          "accessGranted": false,
+          "denialReason": "account past due",
+          "lastActivity": "2026-09-24T21:13:58Z"
+        }
+      }
+    },
+    {
+      "at": 6,
+      "clock": {
+        "now": "2026-09-24T21:30:10Z"
+      }
+    },
+    {
+      "at": 6,
+      "inject": {
+        "kind": "openContextFor",
+        "id": "e5000000-0000-4000-8000-000000000043",
+        "session": "c4000000-0000-4000-8000-000000000043",
+        "correlationId": "ca000000-0000-4000-8000-000000000043",
+        "channel": "voice"
+      }
+    }
+  ],
+  "RES-20": [
+    {
+      "at": 2,
+      "inject": {
+        "kind": "laneCredential",
+        "lane": "b2000000-0000-4000-8000-000000000002",
+        "credential": {
+          "credential": {
+            "id": "c3000000-0000-4000-8000-000000000001",
+            "className": "Credential"
+          },
+          "cardNumber": "MC-0777",
+          "accessGranted": false,
+          "denialReason": "account past due",
+          "lastActivity": "2026-09-25T21:02:20Z"
+        }
+      }
+    }
+  ],
+  "RES-21": [
+    {
+      "at": 5,
+      "headers": {
+        "Idempotency-Key": "rec-chat-77310"
+      }
+    }
+  ],
+  "RES-22": [
+    {
+      "at": "start",
+      "inject": {
+        "kind": "vehicleLeaves",
+        "lane": "b2000000-0000-4000-8000-000000000002"
+      }
+    },
+    {
+      "at": "start",
+      "inject": {
+        "kind": "laneCredential",
+        "lane": "b2000000-0000-4000-8000-000000000002",
+        "credential": {
+          "credential": {
+            "id": "c3000000-0000-4000-8000-000000000003",
+            "className": "Credential"
+          },
+          "cardNumber": "MC-0933",
+          "accessGranted": false,
+          "denialReason": "account past due",
+          "lastActivity": "2026-09-24T22:05:02Z"
+        }
+      }
+    }
+  ],
+  "RES-27": [
+    {
+      "at": 2,
+      "clock": {
+        "now": "2026-09-24T21:20:00Z"
+      }
+    },
+    {
+      "at": 3,
+      "clock": {
+        "now": "2026-09-24T22:10:00Z"
+      }
+    }
+  ]
+}

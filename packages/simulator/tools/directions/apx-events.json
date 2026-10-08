@@ -1,0 +1,900 @@
+{
+  "_comment": "Stage directions for the replay of apx-events: world events the prose describes but no request performs (publishers in other domains, the subscriber endpoints' answers, the passing night). Keys are scenario ids; `at` is the 0-based exchange index the step runs before ('start' = before the scenario). Webhook deliveries land in the simulated receivers: GET /sim/receivers?endpoint=… and GET /sim/deliveries show them.",
+  "EVT-01": [
+    {
+      "at": 0,
+      "inject": {
+        "kind": "subscriptionPolicy",
+        "approval": "operator"
+      }
+    },
+    {
+      "at": 1,
+      "inject": {
+        "kind": "subscriptionPolicy",
+        "approval": "auto"
+      }
+    }
+  ],
+  "EVT-04": [
+    {
+      "at": 0,
+      "clock": {
+        "now": "2026-09-24T22:15:02Z"
+      }
+    },
+    {
+      "at": 0,
+      "inject": {
+        "kind": "publishEvent",
+        "id": "e9000000-0000-4000-8000-000000000001",
+        "type": "SessionCreated",
+        "subject": {
+          "id": "c4000000-0000-4000-8000-000000000061",
+          "className": "Session"
+        },
+        "data": {
+          "id": "c4000000-0000-4000-8000-000000000061",
+          "version": 1,
+          "actualStart": "2026-09-24T22:15:01Z",
+          "initiator": {
+            "id": "a1000000-0000-4000-8000-000000000001",
+            "version": 1,
+            "className": "Organisation"
+          },
+          "hierarchyElement": {
+            "id": "b1000000-0000-4000-8000-000000000001",
+            "version": 12,
+            "className": "Place"
+          },
+          "identifiedCredentials": [
+            {
+              "type": "ticket",
+              "credentialAssignedType": "other",
+              "identifier": {
+                "id": "T-1061",
+                "className": "Ticket"
+              }
+            }
+          ],
+          "segments": [
+            {
+              "id": "c5000000-0000-4000-8000-000000000061",
+              "version": 1,
+              "actualStart": "2026-09-24T22:15:01Z",
+              "assignedRight": {
+                "id": "e2000000-0000-4000-8000-000000000061",
+                "version": 1,
+                "className": "AssignedRight"
+              },
+              "validationType": [
+                "ticket"
+              ]
+            }
+          ]
+        }
+      }
+    }
+  ],
+  "EVT-05": [
+    {
+      "at": 0,
+      "receiver": {
+        "endpoint": "https://curb.city.example/apx/events",
+        "default": 503
+      }
+    },
+    {
+      "at": 0,
+      "clock": {
+        "now": "2026-09-25T02:00:00Z"
+      }
+    },
+    {
+      "at": 0,
+      "inject": {
+        "kind": "publishEvent",
+        "id": "e9000000-0000-4000-8000-000000000002",
+        "type": "apx.control.device.state.v1",
+        "subject": {
+          "id": "c1000000-0000-4000-8000-000000000002",
+          "className": "SupplementalEquipment"
+        },
+        "data": {
+          "device": {
+            "id": "c1000000-0000-4000-8000-000000000002",
+            "className": "SupplementalEquipment"
+          },
+          "deviceState": "fault",
+          "lastCommunication": "2026-09-25T01:59:58Z",
+          "stateChangedTime": "2026-09-25T02:00:00Z"
+        }
+      }
+    }
+  ],
+  "EVT-07": [
+    {
+      "at": "start",
+      "receiver": {
+        "endpoint": "https://curb.city.example/apx/events",
+        "default": 200
+      }
+    }
+  ],
+  "EVT-08": [
+    {
+      "at": 1,
+      "clock": {
+        "now": "2026-09-26T09:14:20Z"
+      }
+    },
+    {
+      "at": 1,
+      "inject": {
+        "kind": "publishEvent",
+        "id": "e9000000-0000-4000-8000-000000000005",
+        "type": "apx.control.device.state.v1",
+        "subject": {
+          "id": "c1000000-0000-4000-8000-000000000002",
+          "className": "SupplementalEquipment"
+        },
+        "data": {
+          "device": {
+            "id": "c1000000-0000-4000-8000-000000000002",
+            "className": "SupplementalEquipment"
+          },
+          "deviceState": "available",
+          "lastCommunication": "2026-09-26T09:14:19Z",
+          "stateChangedTime": "2026-09-26T09:14:20Z"
+        }
+      }
+    }
+  ],
+  "EVT-10": [
+    {
+      "at": "start",
+      "clock": {
+        "now": "2026-09-25T01:42:09Z"
+      }
+    },
+    {
+      "at": "start",
+      "inject": {
+        "kind": "publishEvent",
+        "id": "e9000000-0000-4000-8000-000000000006",
+        "type": "apx.accounts.payment.recorded.v1",
+        "subject": {
+          "id": "d9000000-0000-4000-8000-000000000001",
+          "className": "PaymentRecord"
+        },
+        "data": {
+          "id": "d9000000-0000-4000-8000-000000000001",
+          "transactionID": "PS3-20260925-0142",
+          "place": {
+            "id": "b1000000-0000-4000-8000-000000000001",
+            "className": "Place"
+          },
+          "dateCollected": "2026-09-25T01:42:08Z",
+          "amount": {
+            "currencyType": "USD",
+            "currencyValue": 9
+          },
+          "meansOfPayment": "paymentCreditCard",
+          "paymentStatus": "approved",
+          "ticketNumber": "T-1061",
+          "cardLast4": "4242"
+        }
+      }
+    },
+    {
+      "at": "start",
+      "clock": {
+        "now": "2026-09-25T02:05:00Z"
+      }
+    },
+    {
+      "at": "start",
+      "inject": {
+        "kind": "publishEvent",
+        "id": "e9000000-0000-4000-8000-000000000007",
+        "type": "apx.data.occupancy.v1",
+        "subject": {
+          "id": "b3000000-0000-4000-8000-000000000002",
+          "className": "Level"
+        },
+        "data": {
+          "place": {
+            "id": "b3000000-0000-4000-8000-000000000002",
+            "className": "Level"
+          },
+          "computedAt": "2026-09-25T02:05:00Z",
+          "supply": {
+            "supplyViewType": "spaceView",
+            "supplyQuantity": 420
+          },
+          "demand": {
+            "count": 402,
+            "occupancyCalculation": "counted",
+            "percentage": 95.7,
+            "recordDateTime": "2026-09-25T02:05:00Z"
+          },
+          "available": 18
+        }
+      }
+    },
+    {
+      "at": "start",
+      "clock": {
+        "now": "2026-09-25T02:10:15Z"
+      }
+    },
+    {
+      "at": "start",
+      "inject": {
+        "kind": "publishEvent",
+        "id": "e9000000-0000-4000-8000-000000000012",
+        "type": "apx.alert.raised.v1",
+        "subject": {
+          "id": "d3000000-0000-4000-8000-000000000001",
+          "className": "Alert"
+        },
+        "data": {
+          "id": "d3000000-0000-4000-8000-000000000001",
+          "version": 1,
+          "alertType": "deviceFault",
+          "severity": "major",
+          "status": "raised",
+          "detectionTime": "2026-09-25T02:10:15Z",
+          "source": {
+            "device": {
+              "id": "c1000000-0000-4000-8000-000000000003",
+              "className": "SupplementalEquipment"
+            },
+            "place": "b1000000-0000-4000-8000-000000000001"
+          }
+        }
+      }
+    },
+    {
+      "at": "start",
+      "clock": {
+        "now": "2026-09-25T02:10:16Z"
+      }
+    },
+    {
+      "at": "start",
+      "inject": {
+        "kind": "publishEvent",
+        "id": "e9000000-0000-4000-8000-000000000008",
+        "type": "apx.control.device.state.v1",
+        "subject": {
+          "id": "c1000000-0000-4000-8000-000000000003",
+          "className": "SupplementalEquipment"
+        },
+        "data": {
+          "device": {
+            "id": "c1000000-0000-4000-8000-000000000003",
+            "className": "SupplementalEquipment"
+          },
+          "deviceState": "fault",
+          "lastCommunication": "2026-09-25T02:10:14Z",
+          "stateChangedTime": "2026-09-25T02:10:15Z"
+        }
+      }
+    },
+    {
+      "at": "start",
+      "inject": {
+        "kind": "publishEvent",
+        "id": "e9000000-0000-4000-8000-000000000018",
+        "type": "apx.alert.raised.v1",
+        "subject": {
+          "id": "d3000000-0000-4000-8000-000000000004",
+          "className": "Alert"
+        },
+        "data": {
+          "id": "d3000000-0000-4000-8000-000000000004",
+          "version": 1,
+          "alertType": "deviceFault",
+          "severity": "info",
+          "status": "raised",
+          "detectionTime": "2026-09-25T02:10:16Z",
+          "description": [
+            {
+              "language": "en",
+              "string": "receipt paper low"
+            }
+          ],
+          "source": {
+            "device": {
+              "id": "c1000000-0000-4000-8000-000000000003",
+              "className": "SupplementalEquipment"
+            },
+            "place": "b1000000-0000-4000-8000-000000000001"
+          }
+        }
+      }
+    },
+    {
+      "at": "start",
+      "inject": {
+        "kind": "publishEvent",
+        "id": "e9000000-0000-4000-8000-000000000019",
+        "type": "apx.alert.raised.v1",
+        "subject": {
+          "id": "d3000000-0000-4000-8000-000000000005",
+          "className": "Alert"
+        },
+        "data": {
+          "id": "d3000000-0000-4000-8000-000000000005",
+          "version": 1,
+          "alertType": "deviceFault",
+          "severity": "major",
+          "status": "raised",
+          "detectionTime": "2026-09-25T02:10:16Z",
+          "source": {
+            "place": "b1000000-0000-4000-8000-000000000002"
+          }
+        }
+      }
+    }
+  ],
+  "EVT-11": [
+    {
+      "at": 1,
+      "inject": {
+        "kind": "publishEvent",
+        "id": "e9000000-0000-4000-8000-000000000009",
+        "type": "apx.data.occupancy.v1",
+        "time": "2026-09-25T02:20:00Z",
+        "subject": {
+          "id": "b1000000-0000-4000-8000-000000000002",
+          "className": "Place"
+        },
+        "data": {
+          "place": {
+            "id": "b1000000-0000-4000-8000-000000000002",
+            "className": "Place"
+          },
+          "computedAt": "2026-09-25T02:20:00Z",
+          "supply": {
+            "supplyViewType": "spaceView",
+            "supplyQuantity": 260
+          },
+          "demand": {
+            "count": 251,
+            "occupancyCalculation": "counted",
+            "recordDateTime": "2026-09-25T02:20:00Z"
+          },
+          "available": 9
+        }
+      }
+    },
+    {
+      "at": 1,
+      "inject": {
+        "kind": "publishEvent",
+        "id": "e9000000-0000-4000-8000-000000000010",
+        "type": "apx.validations.statement.closed.v1",
+        "time": "2026-10-01T00:05:01Z",
+        "place": null,
+        "subject": {
+          "id": "f7000000-0000-4000-8000-000000000009",
+          "className": "ValidationStatement"
+        },
+        "data": {
+          "id": "f7000000-0000-4000-8000-000000000009",
+          "version": 1,
+          "program": {
+            "id": "f5000000-0000-4000-8000-000000000011",
+            "className": "ValidationProgram"
+          },
+          "periodStart": "2026-09-01T00:00:00Z",
+          "periodEnd": "2026-10-01T00:00:00Z",
+          "statementStatus": "closed",
+          "billingModel": "merchantPays",
+          "redemptionCount": 412,
+          "reversedCount": 3,
+          "totalReduced": {
+            "currencyType": "USD",
+            "currencyValue": 2454
+          },
+          "billableAmount": {
+            "currencyType": "USD",
+            "currencyValue": 2454
+          },
+          "closedTime": "2026-10-01T00:05:00Z",
+          "closedBy": "billing-job"
+        }
+      }
+    }
+  ],
+  "EVT-13": [
+    {
+      "at": 1,
+      "inject": {
+        "kind": "sseCursor",
+        "subscription": "e8000000-0000-4000-8000-000000000005",
+        "seq": 1040
+      }
+    },
+    {
+      "at": 1,
+      "inject": {
+        "kind": "publishEvent",
+        "type": "apx.alert.raised.v1",
+        "time": "2026-09-25T02:10:15Z",
+        "subject": {
+          "id": "d3000000-0000-4000-8000-000000000001",
+          "className": "Alert"
+        },
+        "data": {
+          "id": "d3000000-0000-4000-8000-000000000001",
+          "version": 1,
+          "alertType": "deviceFault",
+          "severity": "major",
+          "status": "raised",
+          "detectionTime": "2026-09-25T02:10:15Z",
+          "source": {
+            "device": {
+              "id": "c1000000-0000-4000-8000-000000000003",
+              "className": "SupplementalEquipment"
+            },
+            "place": "b1000000-0000-4000-8000-000000000001"
+          }
+        }
+      }
+    },
+    {
+      "at": 1,
+      "clock": {
+        "now": "2026-09-25T02:31:05Z"
+      }
+    },
+    {
+      "at": 1,
+      "inject": {
+        "kind": "publishEvent",
+        "id": "e9000000-0000-4000-8000-000000000013",
+        "type": "apx.control.command.status.v1",
+        "subject": {
+          "id": "d1000000-0000-4000-8000-000000000101",
+          "className": "Command"
+        },
+        "place": "b2000000-0000-4000-8000-000000000002",
+        "data": {
+          "id": "d1000000-0000-4000-8000-000000000101",
+          "version": 5,
+          "commandType": "vendGate",
+          "target": {
+            "id": "b2000000-0000-4000-8000-000000000002",
+            "className": "VehicularAccess"
+          },
+          "status": "succeeded",
+          "confirmationLevel": "physicallyConfirmed"
+        }
+      }
+    }
+  ],
+  "EVT-14": [
+    {
+      "at": 0,
+      "clock": {
+        "now": "2026-09-25T02:33:40Z"
+      }
+    },
+    {
+      "at": 0,
+      "inject": {
+        "kind": "publishEvent",
+        "id": "e9000000-0000-4000-8000-000000000014",
+        "type": "apx.alert.status.v1",
+        "subject": {
+          "id": "d3000000-0000-4000-8000-000000000001",
+          "className": "Alert"
+        },
+        "data": {
+          "id": "d3000000-0000-4000-8000-000000000001",
+          "version": 2,
+          "alertType": "deviceFault",
+          "severity": "major",
+          "status": "acknowledged",
+          "detectionTime": "2026-09-25T02:10:15Z",
+          "source": {
+            "place": "b1000000-0000-4000-8000-000000000001"
+          }
+        }
+      }
+    },
+    {
+      "at": 1,
+      "clock": {
+        "advance": "PT3H"
+      }
+    },
+    {
+      "at": 1,
+      "inject": {
+        "kind": "publishEvent",
+        "count": 1001,
+        "type": "apx.control.command.status.v1",
+        "subject": {
+          "id": "d1000000-0000-4000-8000-000000000102",
+          "className": "Command"
+        },
+        "place": "b2000000-0000-4000-8000-000000000001",
+        "data": {
+          "id": "d1000000-0000-4000-8000-000000000102",
+          "version": 4,
+          "commandType": "vendGate",
+          "target": {
+            "id": "b2000000-0000-4000-8000-000000000001",
+            "className": "VehicularAccess"
+          },
+          "status": "succeeded",
+          "confirmationLevel": "deviceAcknowledged"
+        }
+      }
+    },
+    {
+      "at": 2,
+      "clock": {
+        "now": "2026-09-25T05:40:02Z"
+      }
+    },
+    {
+      "at": 2,
+      "inject": {
+        "kind": "publishEvent",
+        "id": "e9000000-0000-4000-8000-000000000015",
+        "type": "apx.alert.raised.v1",
+        "subject": {
+          "id": "d3000000-0000-4000-8000-000000000002",
+          "className": "Alert"
+        },
+        "data": {
+          "id": "d3000000-0000-4000-8000-000000000002",
+          "version": 1,
+          "alertType": "occupancyThresholdExceeded",
+          "severity": "warning",
+          "status": "raised",
+          "detectionTime": "2026-09-25T05:40:02Z",
+          "source": {
+            "place": "b1000000-0000-4000-8000-000000000001"
+          }
+        }
+      }
+    }
+  ],
+  "EVT-16": [
+    {
+      "at": 1,
+      "inject": {
+        "kind": "publishEvent",
+        "type": "apx.data.occupancy.v1",
+        "subject": {
+          "id": "b3000000-0000-4000-8000-000000000002",
+          "className": "Level"
+        },
+        "data": {
+          "place": {
+            "id": "b3000000-0000-4000-8000-000000000002",
+            "className": "Level"
+          },
+          "computedAt": "2026-09-25T05:45:00Z",
+          "supply": {
+            "supplyViewType": "spaceView",
+            "supplyQuantity": 420
+          },
+          "demand": {
+            "count": 380,
+            "occupancyCalculation": "counted",
+            "recordDateTime": "2026-09-25T05:45:00Z"
+          },
+          "available": 40
+        }
+      }
+    }
+  ],
+  "EVT-19": [
+    {
+      "at": "start",
+      "inject": {
+        "kind": "publishEvent",
+        "type": "apx.alert.status.v1",
+        "time": "2026-09-25T02:33:40Z",
+        "subject": {
+          "id": "d3000000-0000-4000-8000-000000000001",
+          "className": "Alert"
+        },
+        "data": {
+          "id": "d3000000-0000-4000-8000-000000000001",
+          "version": 2,
+          "alertType": "deviceFault",
+          "severity": "major",
+          "status": "acknowledged",
+          "detectionTime": "2026-09-25T02:10:15Z",
+          "source": {
+            "place": "b1000000-0000-4000-8000-000000000001"
+          },
+          "statusHistory": [
+            {
+              "state": "raised",
+              "time": "2026-09-25T02:10:15Z",
+              "actor": "lakeside-parcs"
+            },
+            {
+              "state": "acknowledged",
+              "time": "2026-09-25T02:33:40Z",
+              "actor": "agent:j.okafor",
+              "detail": "tech paged"
+            }
+          ]
+        }
+      }
+    },
+    {
+      "at": "start",
+      "inject": {
+        "kind": "publishEvent",
+        "id": "e9000000-0000-4000-8000-000000000016",
+        "type": "apx.resolution.context.created.v1",
+        "time": "2026-09-25T02:30:10Z",
+        "subject": {
+          "id": "d7000000-0000-4000-8000-000000000001",
+          "className": "ResolutionContext"
+        },
+        "data": {
+          "id": "d7000000-0000-4000-8000-000000000001",
+          "version": 1,
+          "computedAt": "2026-09-25T02:30:10Z",
+          "status": "full",
+          "place": {
+            "id": "b1000000-0000-4000-8000-000000000001",
+            "className": "Place"
+          },
+          "lane": {
+            "id": "b2000000-0000-4000-8000-000000000002",
+            "className": "VehicularAccess"
+          },
+          "issue": {
+            "code": "payStationFault",
+            "display": "Pay station 3 in fault; driver cannot pay at exit"
+          },
+          "allowedActions": [
+            {
+              "action": "vendGate",
+              "allowed": true
+            },
+            {
+              "action": "courtesyExit",
+              "allowed": false,
+              "reason": {
+                "code": "notMonthly"
+              }
+            }
+          ]
+        }
+      }
+    },
+    {
+      "at": "start",
+      "inject": {
+        "kind": "publishEvent",
+        "id": "e9000000-0000-4000-8000-000000000017",
+        "type": "apx.support.interaction.recorded.v1",
+        "time": "2026-09-25T02:35:02Z",
+        "subject": {
+          "id": "d8000000-0000-4000-8000-000000000001",
+          "className": "SupportInteraction"
+        },
+        "data": {
+          "id": "d8000000-0000-4000-8000-000000000001",
+          "version": 1,
+          "channel": "voice",
+          "agentType": "human",
+          "agent": "agent:j.okafor",
+          "startedAt": "2026-09-25T02:29:50Z",
+          "endedAt": "2026-09-25T02:35:00Z",
+          "place": {
+            "id": "b1000000-0000-4000-8000-000000000001",
+            "className": "Place"
+          },
+          "issue": {
+            "code": "payStationFault"
+          },
+          "summary": "Pay station 3 faulted; gate vended for driver at exit lane 2.",
+          "actions": [
+            {
+              "id": "d1000000-0000-4000-8000-000000000101",
+              "className": "Command"
+            }
+          ],
+          "resolution": {
+            "code": "vended"
+          }
+        }
+      }
+    }
+  ],
+  "EVT-20": [
+    {
+      "at": "start",
+      "inject": {
+        "kind": "publishEvent",
+        "id": "e9000000-0000-4000-8000-000000000020",
+        "type": "apx.tolling.transaction.created.v1",
+        "time": "2026-09-25T07:02:11Z",
+        "place": "b1000000-0000-4000-8000-000000000001",
+        "subject": {
+          "id": "f3000000-0000-4000-8000-000000000001",
+          "className": "TollTransaction"
+        },
+        "data": {
+          "id": "f3000000-0000-4000-8000-000000000001",
+          "version": 1,
+          "tollPoint": {
+            "id": "c1000000-0000-4000-8000-000000000021",
+            "className": "SupplementalEquipment"
+          },
+          "observations": [
+            {
+              "id": "f2000000-0000-4000-8000-000000000901",
+              "className": "ObservationElement"
+            }
+          ],
+          "credential": {
+            "credentialType": "licensePlate",
+            "credentialIdentification": "SYN-1234"
+          },
+          "pricing": {
+            "currencyType": "USD",
+            "currencyValue": 4.5
+          },
+          "transactionStatus": "priced"
+        }
+      }
+    },
+    {
+      "at": "start",
+      "inject": {
+        "kind": "publishEvent",
+        "id": "e9000000-0000-4000-8000-000000000023",
+        "type": "apx.violations.issued.v1",
+        "time": "2026-09-25T11:20:30Z",
+        "subject": {
+          "id": "f4000000-0000-4000-8000-000000000001",
+          "className": "Violation"
+        },
+        "data": {
+          "id": "f4000000-0000-4000-8000-000000000001",
+          "version": 3,
+          "violationType": "overstay",
+          "violationStatus": "issued",
+          "place": {
+            "id": "b1000000-0000-4000-8000-000000000001",
+            "className": "Place"
+          },
+          "detection": {
+            "mode": "automated",
+            "detectedTime": "2026-09-25T11:00:00Z"
+          },
+          "amount": {
+            "currencyType": "USD",
+            "currencyValue": 45
+          },
+          "dueTime": "2026-10-25T11:20:30Z",
+          "notice": {
+            "noticeKind": "citation",
+            "noticeNumber": "LG-2026-004411",
+            "issuedTime": "2026-09-25T11:20:30Z",
+            "deliveryMethod": "windshield"
+          }
+        }
+      }
+    }
+  ],
+  "EVT-21": [
+    {
+      "at": "start",
+      "inject": {
+        "kind": "publishEvent",
+        "id": "e9000000-0000-4000-8000-000000000034",
+        "type": "apx.reservation.noshow.v1",
+        "time": "2026-09-25T19:30:00Z",
+        "place": "b1000000-0000-4000-8000-000000000001",
+        "subject": {
+          "id": "e2000000-0000-4000-8000-000000000003",
+          "className": "AssignedRight"
+        },
+        "data": {
+          "reservation": {
+            "id": "e2000000-0000-4000-8000-000000000003",
+            "className": "AssignedRight"
+          },
+          "reservationState": "noShow",
+          "plannedStart": "2026-09-25T18:00:00Z",
+          "plannedEnd": "2026-09-26T01:00:00Z"
+        }
+      }
+    }
+  ],
+  "EVT-22": [
+    {
+      "at": "start",
+      "inject": {
+        "kind": "publishEvent",
+        "id": "e9000000-0000-4000-8000-000000000042",
+        "type": "apx.data.observation.created.v1",
+        "time": "2026-09-25T22:15:01Z",
+        "place": "b2000000-0000-4000-8000-000000000001",
+        "subject": {
+          "id": "f2000000-0000-4000-8000-000000000902",
+          "className": "ObservationElement"
+        },
+        "data": {
+          "id": "f2000000-0000-4000-8000-000000000902",
+          "version": 1,
+          "method": "anpr",
+          "type": "licensePlate",
+          "observedCredentialId": "SYN-1234",
+          "observationStartTime": "2026-09-25T22:15:00Z",
+          "creationDateTime": "2026-09-25T22:15:01Z",
+          "elementIds": {
+            "id": "b2000000-0000-4000-8000-000000000001",
+            "version": 3,
+            "className": "VehicularAccess"
+          },
+          "vehicleAncillaryIdentification": {
+            "country": "US"
+          }
+        }
+      }
+    }
+  ],
+  "EVT-23": [
+    {
+      "at": 0,
+      "receiver": {
+        "endpoint": "https://curb.city.example/apx/events",
+        "codes": [
+          503,
+          503,
+          503,
+          503,
+          503,
+          400,
+          200
+        ],
+        "default": 200
+      }
+    },
+    {
+      "at": 0,
+      "clock": {
+        "now": "2026-09-25T02:00:00Z"
+      }
+    },
+    {
+      "at": 0,
+      "inject": {
+        "kind": "publishEvent",
+        "id": "e9000000-0000-4000-8000-000000000052",
+        "type": "apx.control.device.state.v1",
+        "subject": {
+          "id": "c1000000-0000-4000-8000-000000000002",
+          "className": "SupplementalEquipment"
+        },
+        "data": {
+          "device": {
+            "id": "c1000000-0000-4000-8000-000000000002",
+            "className": "SupplementalEquipment"
+          },
+          "deviceState": "fault",
+          "lastCommunication": "2026-09-25T01:59:58Z",
+          "stateChangedTime": "2026-09-25T02:00:00Z"
+        }
+      }
+    }
+  ]
+}
