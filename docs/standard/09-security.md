@@ -100,7 +100,8 @@ payment history — are subject to this clause:
 1. **Minimization (normative).** Responses and event payloads MUST NOT
    carry more personal data than the requesting scope needs: full PANs are
    never carried (Part 0 §0.4); plate values appear only under `apx.lpr:*`,
-   `apx.tolling:*`, `apx.violations:*`, or `apx.accounts:*` scopes;
+   `apx.tolling:*`, `apx.violations:*`, `apx.accounts:*`, or
+   `apx.charging:read`/`:manage` (Part 23) scopes;
    imagery is carried as links, never inline. `PUT /v1/sessions/{id}/plate`
    (scope `apx.data:write`) echoes only the plate values the caller
    supplied and discloses no other plate-bearing data (Part 17 §17.5).

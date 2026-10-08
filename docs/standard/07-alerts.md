@@ -77,3 +77,12 @@ expires. Terminal states (`resolved`, `expired`) never transition again.
 - Subscription `filters.severityFloor` applies to alert topics (Part 8).
 - Self-referential rule: a `webhookDeliveryFailed` alert MUST NOT itself
   generate webhook deliveries to the failed subscription.
+
+## 7.5 Charging-bay alert types (Part 23)
+
+Registered in `apx-alert-types` v4: `evBayNotCharging` (a vehicle has occupied a
+charging bay without connecting beyond the place's grace — the EV
+counterpart of the seeded `iceInEvSpace`) and `evBayBlocked` (the bay is
+obstructed by something other than a parked vehicle). Both are derived
+from the Part 23 §23.3 bay-presence fusion and carry the camera
+Observation as evidence.

@@ -1,6 +1,6 @@
 # APX Scenarios — the API at work
 
-Twenty-six end-to-end stories showing real wire exchanges against an APX
+Twenty-seven end-to-end stories showing real wire exchanges against an APX
 implementation. Every JSON payload marked with an `<!-- apx:validate … -->`
 comment is machine-validated against the bundled spec by
 `npm run scenarios:check` — the samples cannot drift from the standard.
@@ -32,6 +32,7 @@ comment is machine-validated against the bundled spec by
 | [23](23-tolling-gantry-dispute.md) | Tolling — a gantry retry that must not double-bill, settlement against an account, a misread plate disputed and refunded, and a resolved dispute that cannot be reopened | `apx-tolling`, `apx-accounts`, `apx-events` |
 | [24](24-negotiated-rate-exit-lane.md) | Negotiated rate — the mirrored deck says which tables are negotiable, the agent picks one for the car in the lane, the deck is untouched, and the audit names who chose it | `apx-control`, `apx-data`, `apx-resolution` |
 | [25](25-ticket-matching-exit-lane.md) | Ticket matching — no ticket at the exit: the camera's entry read is offered as a candidate, a permit holder is found by phone, the agent binds the open session, the exit prices from the real entry, and the lost-ticket fee is the fallback, not the default | `apx-control`, `apx-lpr`, `apx-accounts` |
+| [26](26-ev-charging-one-bill-idle-unlock.md) | EV charging — the camera catches an ICE in the bay, a free-vend charge attributed to the parking stay by bay LPR, idle after complete, `unlockConnector`, one bill at exit | `apx-charging`, `apx-control`, `apx-events` |
 | [27](27-lpr-reversible-lane.md) | Reversible lane — one camera facing each way so a rear plate is read in either mode, an old front-plate camera on the entry lane, a read first reported `unknown` and corrected by the LPR system, and the `observation.updated.v1` event that carries the correction to billing | `apx-lpr`, `apx-events` |
 
 ## By module — the vetting suite
