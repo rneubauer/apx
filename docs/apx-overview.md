@@ -316,7 +316,7 @@ candidate, an officer with a handheld confirms on site).
 |---|---|
 | `GET /v1/enforcement/eligibility?credential=&place=` | **The handheld screen-pop:** is this vehicle entitled to be here right now, and by what — permit, reservation, pay-by-plate session — with why not (expired, wrong zone) and a suggested violation type |
 | `POST /v1/violations` | Record a detection (idempotent — cameras and handhelds retry). The server runs the eligibility check and keeps the answer on the record |
-| `POST /v1/violations/imports` · `POST …/{id}/session` | Citations another system already issued, imported in whatever state they are in (partial payments included), and the stay they belong to linked afterwards with the match evidence |
+| `POST /v1/enforcement/violation-imports` · `POST …/{id}/session` | Citations another system already issued, imported in whatever state they are in (partial payments included), and the stay they belong to linked afterwards with the match evidence |
 | `GET /v1/violations?plate=&status=&place=` · `GET …/{id}` | Query and read, with evidence links and the full audit trail |
 | `POST …/{id}/review` | Guided enforcement: the officer confirms or dismisses the candidate |
 | `POST …/{id}/issue` | Issue the notice or citation — amount, due date, how it was delivered |

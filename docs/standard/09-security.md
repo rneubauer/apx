@@ -105,9 +105,12 @@ payment history — are subject to this clause:
    imagery is carried as links, never inline. Passage facts of a read
    (`accessEvent`, `movement`, `plateFace` and the others Part 13
    §13.3a(7) lists) are not personal data and are served under
-   `apx.data:read`. `PUT /v1/sessions/{id}/plate`
-   (scope `apx.data:write`) echoes only the plate values the caller
-   supplied and discloses no other plate-bearing data (Part 17 §17.5).
+   `apx.data:read`. `PUT /v1/sessions/{id}/plate` and
+   `PUT /v1/lpr/reads/{observation}/plate` (scope `apx.data:write`) echo
+   only the plate values the caller supplied and disclose no other
+   plate-bearing data (Part 17 §17.5, Part 13 §13.3a(4a)); the read route
+   returns the whole read only to a caller that also holds
+   `apx.lpr:read`.
 2. **Access-controlled imagery (normative).** `imageLink` and any other
    media URL MUST require the same authentication and place grant as the
    API call that produced it. Unauthenticated, long-lived image URLs do

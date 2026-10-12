@@ -276,7 +276,10 @@ SessionReadBinding:
         frame; `activity` is the vehicle seen inside (a sweep, a bay camera).
     representative:
       type: boolean
-      description: The read that stands for the visit in lists and screen-pops (at most one per Session).
+      description: |-
+        The read that stands for the visit in lists and screen-pops. At
+        most one per Session; two are 422 `request-unprocessable` (Part 5
+        §5.8 rule 1).
 
 SessionClosure:
   title: SessionClosure
@@ -294,8 +297,10 @@ SessionClosure:
       type: boolean
       description: |-
         False declares `actualStart` synthetic — an exit-only Session whose
-        entry was never observed. Consumers MUST exclude such Sessions from
-        dwell statistics (Part 5 §5.8).
+        entry was never observed; the writer SHOULD then set `actualStart`
+        equal to `actualEnd`. Consumers MUST exclude such Sessions from
+        dwell statistics and from occupancy (Part 5 §5.8 rule 4). Absent
+        means true.
     rule:
       type: [string, "null"]
       description: The implementer rule that closed a `stale` Session (e.g. `transient-48h`); null when none applied.
@@ -308,24 +313,49 @@ MatchEvidence:
     `apds-ext:apx:session-detail@1.0` and the decoration
     `apds-ext:apx:match-evidence@1.0` on a Violation or ValetTicket).
     Carries no plate characters and no vehicle attribute values
-    (Part 9 §9.6).
+    (Part 9 §9.6). Where both ends of one link carry evidence (the
+    Session's `matches[]` entry and the decoration on the Violation or
+    ValetTicket), the two MUST agree. Evidence with `plate.method:
+    lenient` or `applied: false` may excuse a stay but never accuse one:
+    `issue` on a Violation resting on it is 409 `violation-not-issuable`
+    (Part 19 §19.4 rule 5).
   type: object
-  required: [target, matchType]
+  required: [target, matchType, applied]
   properties:
     target:
-      description: What the Session was matched to — an AssignedRight, a ValetTicket, a Violation, a PlateListEntry, an Observation.
+      description: |-
+        The record at the other end of the link. In `matches[]`: an
+        AssignedRight, a ValetTicket, a Violation, a PlateListEntry, or an
+        Observation. In the decoration on a Violation or ValetTicket: the
+        Session.
       $ref: "../../../vendor/apds/4.1/apds-api-4.1.yaml#/components/schemas/Reference"
     matchType:
       type: string
-      description: Open — `right`, `valet`, `violation`, `list`, `exitPairing`, `sweep`, or an implementer value.
+      enum: [right, valet, violation, list, exitPairing, sweep, other]
+      description: |-
+        The kind of link: `right` — an AssignedRight covers the stay;
+        `valet` — a ValetTicket's stay; `violation` — a Violation's stay;
+        `list` — a plate-list entry matched the vehicle (Part 24);
+        `exitPairing` — an exit read paired to the Session's entry;
+        `sweep` — the vehicle seen during an inventory or patrol sweep tied
+        to the Session; `other` — anything else.
       examples: [right]
     plate:
       type: object
-      description: How the plate strings agreed.
+      description: How the plate strings agreed, when the link rests on a plate.
+      required: [method]
       properties:
         method:
           type: string
           enum: [exact, alias, fold, fuzzy, lenient, reviewer]
+          description: |-
+            `exact` — the same characters; `alias` — a plate the right or
+            account lists for the same vehicle; `fold` — equal after
+            folding look-alike characters (O/0, I/1, B/8); `fuzzy` — within
+            the implementation's edit-cost threshold; `lenient` — accepted
+            under a relaxed rule that may excuse a stay but never accuse
+            one; `reviewer` — a person judged the plates to match where no
+            automatic method did.
         editCost:
           type: [number, "null"]
           minimum: 0
@@ -336,10 +366,15 @@ MatchEvidence:
     vehicle:
       type: object
       description: The vehicle-attribute evidence (make, model, colour) behind the match, as a level and a score — never the values.
+      required: [level]
       properties:
         level:
           type: string
           enum: [unknown, mismatch, inconclusive, weak, good, strong]
+          description: |-
+            `unknown` — not compared; `mismatch` — the attributes contradict
+            the match; `inconclusive` — compared, no signal; `weak`, `good`,
+            `strong` — increasing support.
         llr:
           type: number
           description: Log-likelihood ratio of the vehicle evidence.
@@ -348,21 +383,32 @@ MatchEvidence:
           description: The evidence model and version that scored it, opaque.
     applied:
       type: boolean
-      description: False is a shadow match — recorded, not acted on.
+      description: |-
+        False is a shadow match — recorded for evaluation, not acted on. A
+        link the record actually carries has `applied: true`.
     decidedBy:
       type: string
-      description: "`system`, `reviewer`, or an opaque principal."
+      enum: [system, person]
+      description: |-
+        Whether software or a person made the link. A `matchTicket` that
+        binds a lane-inquiry candidate SHOULD be recorded as `person`
+        (Part 5 §5.8 rule 5).
     decidedTime:
+      description: When the link was made.
       $ref: "../../../vendor/apds/4.1/apds-api-4.1.yaml#/components/schemas/DateTime"
 
 SessionDetail:
   title: SessionDetail
   description: |-
     The `apds-ext:apx:session-detail@1.0` decoration on an APDS Session
-    (Part 5 §5.8): what an external pairing engine decided and APDS has no
+    (Part 5 §5.8): what the pairing of reads decided and APDS has no
     members for — the reads behind the visit, why and how it ended, the
     matches it rests on, and the parent visit of an area Session. Written
-    with the native Session POST/PUT; a plain APDS client ignores it.
+    with the native Session POST/PUT by an external pairing engine; a
+    server that pairs reads itself SHOULD write the same block on its own
+    Sessions. A plain APDS client ignores it. It adds no event topic and
+    carries no plate characters. A write that breaks a consistency rule
+    of §5.8 is 422 and nothing is written.
   type: object
   properties:
     reads:
@@ -371,6 +417,8 @@ SessionDetail:
         The reads attached to this Session. A read already bound as
         `entry` or `exit` to another Session of the same place is refused
         with 409 `read-already-bound` unless `supersedes` names that Session.
+        A read naming no Observation visible to the caller is 422
+        `reference-unknown`.
       items:
         $ref: "#/SessionReadBinding"
     supersedes:
@@ -380,9 +428,12 @@ SessionDetail:
       type: string
       enum: [open, ended, final, disputed]
       description: |-
-        `open` — a vehicle is in the facility; `ended` — closed, may still
-        be revised; `final` — no further revision expected; `disputed` —
-        under review.
+        `open` — a vehicle is in the facility, no `actualEnd` yet; `ended` —
+        closed, may still be revised; `final` — no further revision
+        expected; `disputed` — under review. Every state but `open` requires
+        `actualEnd`, and `open` forbids it (422 `request-unprocessable`
+        otherwise). `final` is the writer's statement, never a lock: a
+        server MUST NOT refuse a later revision on that ground.
     closure:
       $ref: "#/SessionClosure"
     flags:
@@ -395,9 +446,12 @@ SessionDetail:
         $ref: "#/MatchEvidence"
     parent:
       description: |-
-        The visit this area Session is part of (className `Session`). A
-        Session with `parent` MUST have a `hierarchyElement` inside the
-        parent's; consumers count visits by Sessions without `parent`.
+        The visit this area Session is part of (className `Session`). The
+        parent's `hierarchyElement` MUST be an ancestor of this Session's
+        (422 `request-unprocessable` otherwise). Consumers count visits by
+        Sessions without `parent`; children still open when the parent
+        ends SHOULD be closed no later than its `actualEnd` with `endReason`
+        `parentExit`.
       $ref: "../../../vendor/apds/4.1/apds-api-4.1.yaml#/components/schemas/Reference"
     passThrough:
       type: boolean

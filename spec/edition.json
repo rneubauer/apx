@@ -16,11 +16,11 @@
   },
   "normativeArtifacts": {
     "bundle": {
-      "spec/dist/apx-v1.yaml": "4d19da1a0b02076e6ef582d5f7ee5d27288b1be459e9fb0128108e1d62cbc6f8",
-      "spec/dist/apx-v1.json": "57b29397b60de6048d1e816fbe839e07b4eca1a4df71636b9549f594cba5c16e"
+      "spec/dist/apx-v1.yaml": "2ca31066b78f74ac62ddef359fc4a7f6060452b9dfe051423e67ce4192f94a59",
+      "spec/dist/apx-v1.json": "3056ffbcb8adb26774516325aa39ae119563bb60d07899730b80bd9da3c62c42"
     },
     "overlays": {
-      "spec/openapi/overlays/apx-data-overlay.yaml": "7f2688a317ffa4cb427f1707882724ea2d7c0cff72e57c9ff8aa1b2f492cac51",
+      "spec/openapi/overlays/apx-data-overlay.yaml": "e8dcdf3961bcc24c4354a5f0f6c10080d223afbe4db7c082e824e91a3b3fdb52",
       "spec/openapi/overlays/apx-docs-overlay.yaml": "26ed0f31e49cca89d46dbb4a7f178c3bea381a71866fa93787da017790e0f60b",
       "spec/openapi/overlays/apx-examples-overlay.yaml": "eba9a810147c95091a6c8efef69ecaa7280e6513a09f46fc0a5736998cd239b6"
     },
@@ -80,10 +80,10 @@
         "sha256": "64f7e7a21bb6b84bd863adb46bbc1710f4ea169b2581efef708865b7746263bb"
       },
       "apx-read-review-reasons": {
-        "version": 1,
-        "entries": 5,
+        "version": 2,
+        "entries": 6,
         "locator": "https://apx-standard.org/registries/apx-read-review-reasons.json",
-        "sha256": "32c28f938d667b78dd69c52d8ecec19aa9dd7d13a1adb8f59e412e975c6ffdd1"
+        "sha256": "37dfb642488417bfd242fbf2b9f066dd699904c42583b3b343e1a159c59f987c"
       },
       "apx-session-end-reasons": {
         "version": 1,
@@ -225,7 +225,7 @@
   },
   "surface": {
     "paths": 135,
-    "schemas": 319,
+    "schemas": 324,
     "conformanceClasses": [
       "apx-data",
       "apx-events",

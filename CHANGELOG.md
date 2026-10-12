@@ -55,22 +55,47 @@ The machine-readable spec (`spec/openapi/apx.yaml`, bundled as
     Session — the reads behind the visit with roles, `lifecycle`,
     `closure` (end reason from new registry `apx-session-end-reasons` v1,
     inferred end, `startObserved: false` for exit-only Sessions, which
-    consumers exclude from dwell), `matches[]` (`MatchEvidence`: plate
-    method, edit cost, vehicle evidence level, shadow matches, no plate
-    characters), and `parent`/`passThrough` for area Sessions. The same
-    `MatchEvidence` is `apds-ext:apx:match-evidence@1.0` on Violation and
-    ValetTicket. New problem type `read-already-bound` (409).
+    consumers exclude from dwell and occupancy), `matches[]`
+    (`MatchEvidence`: `matchType` from a closed set — `right`, `valet`,
+    `violation`, `list`, `exitPairing`, `sweep`, `other` — plate method,
+    edit cost, vehicle evidence level, shadow matches, `decidedBy`
+    `system | person`, no plate characters), and `parent`/`passThrough`
+    for area Sessions. The same `MatchEvidence` is
+    `apds-ext:apx:match-evidence@1.0` on Violation and ValetTicket, and
+    both ends of one link MUST agree. New problem type
+    `read-already-bound` (409). A write is 422 `request-unprocessable`
+    for two `representative` reads, a `lifecycle` that disagrees with
+    `actualEnd`, or a `parent` whose element is not an ancestor, and 422
+    `reference-unknown` for a read naming no visible Observation; the
+    data overlay declares the 422 and the `read-already-bound` 409 on
+    `POST /sessions` and `PUT /sessions/{id}`. `final` is never a lock;
+    a server that pairs reads itself SHOULD write the same block; exit-only
+    Sessions SHOULD set `actualStart` equal to `actualEnd`; children SHOULD
+    close with `parentExit` by the parent's end. A Violation whose Session
+    link rests on `lenient` or unapplied evidence is not issuable (Part 19
+    §19.4 rule 5, a MUST for every server).
   - Read review (G5, Part 13 §13.3a(4a)): `PUT /v1/lpr/reads/{observation}/plate`
-    (`PlateCorrection`: confirmed, corrected, rejected) and
-    `LprReadDetail.review` with reasons from new registry
-    `apx-read-review-reasons` v1; Part 19 §19.4 refuses to issue on a
-    pending or rejected evidence read where policy requires review.
+    (`PlateCorrection`: confirmed, corrected, rejected; plate values only
+    with `corrected`, else 422; the same decision and values a no-op)
+    and `LprReadDetail.review` with reasons from new registry
+    `apx-read-review-reasons` v2 (v1 plus `conflictingReads`); the
+    engine's values kept once, with confidences, in `review.original`.
+    Part 19 §19.4 rule 6 refuses to issue, for every detection mode,
+    while an evidence read is pending or rejected.
   - Violations issued elsewhere (G6, Part 19 §19.6a, §19.13):
-    `POST /v1/violations/imports` (keyed on `system` + `recordId`,
-    `sourceRevision` ordering, decoration
-    `apds-ext:apx:violation-source@1.0`), `POST /v1/violations/{id}/session`
-    to set the Session link later with evidence, and partial payment
-    (`payments[]`, `amountPaid`, the attachment's `amount`).
+    `POST /v1/enforcement/violation-imports` (outside `/v1/violations/`
+    so no literal segment sits beside `{id}`; its own `ViolationImport`
+    body; keyed on `system` + `recordId`, `sourceRevision` or else
+    `sourceUpdatedTime` ordering, decoration
+    `apds-ext:apx:violation-source@1.0`; `notice` and `amount` required
+    at or past `issued`, `paid` below `amount` refused, history
+    append-only), `sourceSystem`/`sourceRecordId` filters on
+    `GET /v1/violations`, `POST /v1/violations/{id}/session` to set,
+    correct, or clear the Session link later with evidence in any state,
+    and partial payment (`payments[]` of `ViolationAppliedPayment`,
+    `amountPaid`, the attachment's `amount`). The `Violation`
+    sub-objects `detection`, `vehicle`, `evidence`, and `location` are
+    now named schemas; the wire shape is unchanged.
   - Change feed on APX lists (G7, Part 5 §5.2 rule 8): `mode=change&cursor=`
     on eighteen `/v1` list routes of stateful resources (commands, alerts,
     accounts, payments, toll transactions, violations, enforcement
@@ -125,9 +150,9 @@ The machine-readable spec (`spec/openapi/apx.yaml`, bundled as
   - G18–G20 and a Session end reason are also new suggestions in Part B of
     `docs/apds-change-requests.md`. Registries bumped:
     `apx-conformance-classes` v8, `apx-topics` v12, `apx-alert-types` v5.
-    Annex A rows APX-CORE-17 to 20, APX-DATA-09/10, APX-EVT-08,
+    Annex A rows APX-CORE-17 to 20, APX-DATA-09 to 11, APX-EVT-08,
     APX-CTL-15, APX-ALT-07, APX-ACC-08/09, APX-LPR-07 to 11, APX-PRM-03,
-    APX-VIO-13 to 16, APX-PLL-01 to 06.
+    APX-VIO-13 to 17, APX-PLL-01 to 06.
 - `packages/simulator`: a stateful simulator of every APX and APDS-native
   route in the bundle, with a simulated clock, the Part 8 event fabric,
   and one behaviour module per conformance class. It replays the

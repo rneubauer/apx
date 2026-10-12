@@ -312,7 +312,8 @@ behavior). Implementations that hold occupancy data for an element MUST
 serve §5.5 for it; implementations with no occupancy data MAY omit the
 endpoint entirely (discovery then does not list it); the same holds for
 §5.5a. Every `apx-data` implementation accepts and preserves the §5.8
-decoration on Sessions (Part 4 §4.3); one that also claims `apx-lpr`
+decoration on Sessions (Part 4 §4.3) and refuses a write that breaks
+its rules 1, 3, or 6 with the 422 they name; one that also claims `apx-lpr`
 enforces its `read-already-bound` rule and answers
 `GET /v1/lpr/reads?session=` from it. Rule 8 of §5.2 is an obligation of
 the class that owns each route.
@@ -347,45 +348,114 @@ that pairs reads into Sessions is a separate client of the APX server,
 it has to write what it decided. It does so with the Level B decoration
 `apds-ext:apx:session-detail@1.0` (`SessionDetail`) on the APDS Session,
 through the native `POST /sessions` and `PUT /sessions/{id}` (§5.1). A
-plain APDS client ignores it.
+plain APDS client ignores it. A server that pairs reads itself SHOULD
+write the same block on its own Sessions, so consumers see one shape
+whoever paired. A write that breaks a rule below is refused with the
+problem type the rule names, and nothing is written.
 
 1. **Reads (`reads[]`).** Each entry binds one ObservationElement to the
    Session with a `role`: `entry` and `exit` (the passages that opened
    and closed the visit), `duplicate` (the same passage seen by another
    camera or frame), `activity` (the vehicle seen inside). At most one
-   entry is `representative`. The server derives `LprRead.session` from
-   these bindings and answers `GET /v1/lpr/reads?session=` from them
+   entry is `representative`; two are 422 `request-unprocessable`. A
+   reference naming no Observation visible to the caller is 422
+   `reference-unknown`. The server derives `LprRead.session` from these
+   bindings — naming the Session without a `parent` (the visit) that
+   holds the read — and answers `GET /v1/lpr/reads?session=` from them
    (Part 13 §13.3a(6)).
 2. **One visit per read.** A read already bound as `entry` or `exit` to
    another Session of the same place MUST be refused with 409
    `read-already-bound`, unless the write names that Session in
    `supersedes` — a re-pairing, which removes the binding from the
    superseded Session in the same write.
-3. **Lifecycle and closure.** `lifecycle` is `open`, `ended`, `final`
-   (no further revision expected), or `disputed`. `closure.endReason` is
-   a definedValue of `apx-session-end-reasons` (Part 11) or an
-   implementer code; `closure.endInferred` is true when `actualEnd` was
-   set by a rule rather than observed, and `closure.rule` names the rule
-   that closed a `stale` Session.
+3. **Lifecycle and closure.** `lifecycle` is `open` (no `actualEnd`
+   yet), `ended` (`actualEnd` set; the pairing may still revise it),
+   `final` (no further revision expected), or `disputed`. `lifecycle`
+   and `actualEnd` MUST agree: `open` with an `actualEnd`, or any other
+   state without one, is 422 `request-unprocessable`. `final` is the
+   writer's statement, never a lock: a server MUST NOT refuse a later
+   revision on that ground. `closure.endReason` is a definedValue of
+   `apx-session-end-reasons` (Part 11) or an implementer code;
+   `closure.endInferred` is true when `actualEnd` was set by a rule
+   rather than observed, and `closure.rule` names the rule that closed a
+   `stale` Session.
 4. **Exit-only Sessions.** APDS requires `actualStart`. A Session closed
    from an exit read with no observed entry carries a synthetic
-   `actualStart` and `closure.startObserved: false`. Consumers MUST
-   exclude such Sessions from dwell statistics, and SHOULD exclude them
-   from occupancy derived from Sessions.
+   `actualStart`, which the writer SHOULD set equal to `actualEnd`, and
+   `closure.startObserved: false`. Consumers MUST exclude such Sessions
+   from dwell statistics and from occupancy derived from Sessions.
 5. **Matches (`matches[]`).** Each `MatchEvidence` records how a link
    was established: the `target` (an AssignedRight, a ValetTicket, a
-   Violation, a PlateListEntry), the `matchType`, how the plates agreed
-   (`plate.method` `exact | alias | fold | fuzzy | lenient | reviewer`,
-   the edit cost, whether the jurisdiction agreed), the vehicle evidence
-   as a `level` and a score, and whether it was `applied` or only a
-   shadow match. It carries no plate characters and no make, model, or
-   colour values (Part 9 §9.6). The same object is the decoration
-   `apds-ext:apx:match-evidence@1.0` on a Violation (for
-   `relatedSession`, Part 19 §19.13) and a ValetTicket (for `session`,
-   Part 22). A consumer that acts on a match — an enforcement system
-   deciding whether to cite — reads its method here.
+   Violation, a PlateListEntry, an Observation), the `matchType`
+   (`right | valet | violation | list | exitPairing | sweep | other`),
+   how the plates agreed (`plate.method` `exact | alias | fold | fuzzy |
+   lenient | reviewer`, the edit cost, whether the jurisdiction agreed),
+   the vehicle evidence as a `level` and a score, whether it was
+   `applied` or only a shadow match, and whether a `system` or a
+   `person` decided it (`decidedBy`). `target`, `matchType` and
+   `applied` are required, and so are `plate.method` and
+   `vehicle.level` when those blocks are present. It carries no plate
+   characters and no make, model, or colour values (Part 9 §9.6). The
+   same object is the decoration `apds-ext:apx:match-evidence@1.0` on a
+   Violation (for `relatedSession`, Part 19 §19.13) and a ValetTicket
+   (for `session`, Part 22), with the Session as `target`; where both
+   ends carry evidence for the same link, the two MUST agree. Evidence
+   with `plate.method: lenient` or `applied: false` may excuse a stay
+   but never accuse one: a Violation resting on it is not issuable (Part
+   19 §19.4 rule 5). `MatchCandidate.matchedBy` (Part 6 §6.7) says how a
+   lane inquiry found a candidate; a `matchTicket` that binds one SHOULD
+   be recorded with `decidedBy: person`.
 6. **Area Sessions.** A Session that is part of a larger visit (a gated
-   area inside a garage) names that visit as `parent` and MUST have a
-   `hierarchyElement` inside the parent's. An area stay shorter than the
-   area's minimum dwell is `passThrough` and is never scored or billed.
-   Consumers count visits by Sessions without `parent`.
+   area inside a garage, a valet stay) names that visit as `parent`. The
+   parent's `hierarchyElement` MUST be an ancestor of the child's; a
+   `parent` that is not is 422 `request-unprocessable`. An area stay
+   shorter than the area's minimum dwell is `passThrough` and is never
+   scored or billed. When a visit ends, its children still open SHOULD
+   be closed no later than the parent's `actualEnd`, with `endReason`
+   `parentExit`. Consumers count visits by Sessions without `parent`.
+7. **Events and privacy.** Writes publish the native `SessionCreated` /
+   `SessionUpdated` as any Session write does; the decoration adds no
+   event topic. It carries references and codes only, never plate
+   characters, so it is visible wherever the Session is; the reads it
+   names stay behind `apx.lpr:*` (Part 9 §9.6).
+
+```json
+"extensions": {
+  "apds-ext:apx:session-detail@1.0": {
+    "reads": [
+      { "observation": { "id": "f3000000-0000-4000-8000-000000000101", "className": "ObservationElement" }, "role": "entry", "representative": true },
+      { "observation": { "id": "f3000000-0000-4000-8000-000000000102", "className": "ObservationElement" }, "role": "duplicate" },
+      { "observation": { "id": "f3000000-0000-4000-8000-000000000140", "className": "ObservationElement" }, "role": "exit" }
+    ],
+    "lifecycle": "ended",
+    "closure": { "endReason": "exitRead" },
+    "matches": [
+      {
+        "target": { "id": "4b1c0000-0000-4000-8000-000000000042", "className": "AssignedRight" },
+        "matchType": "right",
+        "plate": { "method": "fold", "editCost": null, "jurisdiction": "agrees" },
+        "vehicle": { "level": "good", "llr": 2.31, "model": "evidence-weights@2026-10-01" },
+        "applied": true,
+        "decidedBy": "system",
+        "decidedTime": "2026-10-08T14:02:11Z"
+      }
+    ]
+  }
+}
+```
+
+The same evidence on a Violation that cites this stay, as the decoration
+`apds-ext:apx:match-evidence@1.0`, names the Session as its `target`:
+
+```json
+"extensions": {
+  "apds-ext:apx:match-evidence@1.0": {
+    "target": { "id": "c4000000-0000-4000-8000-000000000077", "className": "Session" },
+    "matchType": "violation",
+    "plate": { "method": "exact", "jurisdiction": "agrees" },
+    "vehicle": { "level": "strong" },
+    "applied": true,
+    "decidedBy": "person"
+  }
+}
+```

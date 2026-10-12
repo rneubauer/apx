@@ -252,11 +252,18 @@ LprReadDetail:
           description: Opaque reviewer principal.
         original:
           type: object
-          description: The engine's values before a correction, kept so the correction is auditable.
+          description: |-
+            The engine's values before the first correction, with their
+            confidences, kept so the correction is auditable. Set by the
+            server on the first `corrected` decision and never changed
+            afterwards (Part 13 §13.3a(4a)).
           properties:
-            plate: { type: string }
-            country: { type: string }
-            stateProvince: { type: string }
+            plate:
+              $ref: "#/AttributeRead"
+            country:
+              $ref: "#/AttributeRead"
+            stateProvince:
+              $ref: "#/AttributeRead"
 
 PlateCorrection:
   title: PlateCorrection
@@ -265,6 +272,8 @@ PlateCorrection:
     §13.3a(4a)): a reviewer's decision on one read. `confirmed` keeps the
     engine's values; `corrected` replaces them with the ones given;
     `rejected` marks the read unusable for pairing and enforcement.
+    `plate`, `country`, and `stateProvince` belong to `corrected` only:
+    sent with another decision they are 422 `request-unprocessable`.
   type: object
   required: [decision]
   properties:
@@ -273,12 +282,13 @@ PlateCorrection:
       enum: [confirmed, corrected, rejected]
     plate:
       type: string
-      description: Required when `decision` is `corrected`.
+      description: The corrected plate. Required when `decision` is `corrected`; not allowed otherwise.
     country:
       type: string
-      description: APDS VehicleAncillaryIdentification.country vocabulary.
+      description: APDS VehicleAncillaryIdentification.country vocabulary. Only with `corrected`.
     stateProvince:
       type: string
+      description: APDS VehicleAncillaryIdentification.stateProvince vocabulary. Only with `corrected`.
     reason:
       type: string
     reviewer:

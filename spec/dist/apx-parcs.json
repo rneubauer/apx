@@ -2626,7 +2626,7 @@
             "$ref": "#/components/responses/Forbidden"
           },
           "409": {
-            "description": "Conflict. APX (Part 5 §5.1a, Part 12 §12.1): a client sending `Accept: application/problem+json` receives problem type `id-collision` (client-supplied id already exists) instead of ResponseStatus.",
+            "description": "Conflict. APX (Part 5 §5.1a, Part 12 §12.1): a client sending `Accept: application/problem+json` receives problem type `id-collision` (client-supplied id already exists), or `read-already-bound` (a read in `apds-ext:apx:session-detail@1.0` is bound as `entry` or `exit` to another Session of the same place that the write does not name in `supersedes`, Part 5 §5.8 rule 2), instead of ResponseStatus; nothing is written.",
             "content": {
               "application/json": {
                 "schema": {
@@ -2642,6 +2642,16 @@
                   }
                 }
               },
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "The Session's `apds-ext:apx:session-detail@1.0` breaks a consistency rule of Part 5 §5.8 — more than one `representative` read, `lifecycle` `open` with an `actualEnd` or any other `lifecycle` without one, or a `parent` whose `hierarchyElement` is not an ancestor of this Session's (problem type `request-unprocessable`); or a read naming no Observation visible to the caller (`reference-unknown`). Nothing is written.",
+            "content": {
               "application/problem+json": {
                 "schema": {
                   "$ref": "#/components/schemas/Problem"
@@ -2844,7 +2854,7 @@
             }
           },
           "409": {
-            "description": "Conflict. APX (Part 5 §5.1a, Part 12 §12.1): a client sending `Accept: application/problem+json` receives problem type `version-conflict` (stale `version`) instead of ResponseStatus.",
+            "description": "Conflict. APX (Part 5 §5.1a, Part 12 §12.1): a client sending `Accept: application/problem+json` receives problem type `version-conflict` (stale `version`), or `read-already-bound` (a read in `apds-ext:apx:session-detail@1.0` is bound as `entry` or `exit` to another Session of the same place that the write does not name in `supersedes`, Part 5 §5.8 rule 2), instead of ResponseStatus; nothing is written.",
             "content": {
               "application/json": {
                 "schema": {
@@ -2860,6 +2870,16 @@
                   }
                 }
               },
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "The Session's `apds-ext:apx:session-detail@1.0` breaks a consistency rule of Part 5 §5.8 — more than one `representative` read, `lifecycle` `open` with an `actualEnd` or any other `lifecycle` without one, or a `parent` whose `hierarchyElement` is not an ancestor of this Session's (problem type `request-unprocessable`); or a read naming no Observation visible to the caller (`reference-unknown`). Nothing is written.",
+            "content": {
               "application/problem+json": {
                 "schema": {
                   "$ref": "#/components/schemas/Problem"
@@ -5192,7 +5212,7 @@
       "post": {
         "operationId": "receive-apx-data-observation-updated",
         "summary": "An ingested Observation was replaced",
-        "description": "Published whenever an ingested Observation changes — for example\nthe LPR system revising `accessEvent` through\n`PUT /v1/lpr/reads/{observation}/access-event` (Part 13 §13.3a(4),\n§13.4). `data` is the\nAPDS `ObservationElement` as it now stands; `subject` and the place\nbinding (`elementIds`) are as for `apx.data.observation.created.v1`.\nConsumers key on the Observation id and keep the highest `version`.\nPlate values are subject to Part 9 §9.6.",
+        "description": "Published whenever an ingested Observation changes — for example\nthe LPR system revising `accessEvent` through\n`PUT /v1/lpr/reads/{observation}/access-event` (Part 13 §13.3a(4),\n§13.4), or a reviewer's plate decision through\n`PUT /v1/lpr/reads/{observation}/plate` (§13.3a(4a)). `data` is the\nAPDS `ObservationElement` as it now stands; `subject` and the place\nbinding (`elementIds`) are as for `apx.data.observation.created.v1`.\nConsumers key on the Observation id and keep the highest `version`.\nPlate values are subject to Part 9 §9.6.",
         "parameters": [
           {
             "name": "APX-Signature",
@@ -10817,16 +10837,16 @@
               },
               "original": {
                 "type": "object",
-                "description": "The engine's values before a correction, kept so the correction is auditable.",
+                "description": "The engine's values before the first correction, with their\nconfidences, kept so the correction is auditable. Set by the\nserver on the first `corrected` decision and never changed\nafterwards (Part 13 §13.3a(4a)).",
                 "properties": {
                   "plate": {
-                    "type": "string"
+                    "$ref": "#/components/schemas/AttributeRead"
                   },
                   "country": {
-                    "type": "string"
+                    "$ref": "#/components/schemas/AttributeRead"
                   },
                   "stateProvince": {
-                    "type": "string"
+                    "$ref": "#/components/schemas/AttributeRead"
                   }
                 }
               }
@@ -11016,12 +11036,12 @@
       },
       "SessionDetail": {
         "title": "SessionDetail",
-        "description": "The `apds-ext:apx:session-detail@1.0` decoration on an APDS Session\n(Part 5 §5.8): what an external pairing engine decided and APDS has no\nmembers for — the reads behind the visit, why and how it ended, the\nmatches it rests on, and the parent visit of an area Session. Written\nwith the native Session POST/PUT; a plain APDS client ignores it.",
+        "description": "The `apds-ext:apx:session-detail@1.0` decoration on an APDS Session\n(Part 5 §5.8): what the pairing of reads decided and APDS has no\nmembers for — the reads behind the visit, why and how it ended, the\nmatches it rests on, and the parent visit of an area Session. Written\nwith the native Session POST/PUT by an external pairing engine; a\nserver that pairs reads itself SHOULD write the same block on its own\nSessions. A plain APDS client ignores it. It adds no event topic and\ncarries no plate characters. A write that breaks a consistency rule\nof §5.8 is 422 and nothing is written.",
         "type": "object",
         "properties": {
           "reads": {
             "type": "array",
-            "description": "The reads attached to this Session. A read already bound as\n`entry` or `exit` to another Session of the same place is refused\nwith 409 `read-already-bound` unless `supersedes` names that Session.",
+            "description": "The reads attached to this Session. A read already bound as\n`entry` or `exit` to another Session of the same place is refused\nwith 409 `read-already-bound` unless `supersedes` names that Session.\nA read naming no Observation visible to the caller is 422\n`reference-unknown`.",
             "items": {
               "$ref": "#/components/schemas/SessionReadBinding"
             }
@@ -11038,7 +11058,7 @@
               "final",
               "disputed"
             ],
-            "description": "`open` — a vehicle is in the facility; `ended` — closed, may still\nbe revised; `final` — no further revision expected; `disputed` —\nunder review."
+            "description": "`open` — a vehicle is in the facility, no `actualEnd` yet; `ended` —\nclosed, may still be revised; `final` — no further revision\nexpected; `disputed` — under review. Every state but `open` requires\n`actualEnd`, and `open` forbids it (422 `request-unprocessable`\notherwise). `final` is the writer's statement, never a lock: a\nserver MUST NOT refuse a later revision on that ground."
           },
           "closure": {
             "$ref": "#/components/schemas/SessionClosure"
@@ -11057,7 +11077,7 @@
             }
           },
           "parent": {
-            "description": "The visit this area Session is part of (className `Session`). A\nSession with `parent` MUST have a `hierarchyElement` inside the\nparent's; consumers count visits by Sessions without `parent`.",
+            "description": "The visit this area Session is part of (className `Session`). The\nparent's `hierarchyElement` MUST be an ancestor of this Session's\n(422 `request-unprocessable` otherwise). Consumers count visits by\nSessions without `parent`; children still open when the parent\nends SHOULD be closed no later than its `actualEnd` with `endReason`\n`parentExit`.",
             "$ref": "#/components/schemas/Reference"
           },
           "passThrough": {
@@ -11068,27 +11088,40 @@
       },
       "MatchEvidence": {
         "title": "MatchEvidence",
-        "description": "How a link to a Session was established and how sure it is (Part 5\n§5.8; shared by the `matches[]` member of\n`apds-ext:apx:session-detail@1.0` and the decoration\n`apds-ext:apx:match-evidence@1.0` on a Violation or ValetTicket).\nCarries no plate characters and no vehicle attribute values\n(Part 9 §9.6).",
+        "description": "How a link to a Session was established and how sure it is (Part 5\n§5.8; shared by the `matches[]` member of\n`apds-ext:apx:session-detail@1.0` and the decoration\n`apds-ext:apx:match-evidence@1.0` on a Violation or ValetTicket).\nCarries no plate characters and no vehicle attribute values\n(Part 9 §9.6). Where both ends of one link carry evidence (the\nSession's `matches[]` entry and the decoration on the Violation or\nValetTicket), the two MUST agree. Evidence with `plate.method:\nlenient` or `applied: false` may excuse a stay but never accuse one:\n`issue` on a Violation resting on it is 409 `violation-not-issuable`\n(Part 19 §19.4 rule 5).",
         "type": "object",
         "required": [
           "target",
-          "matchType"
+          "matchType",
+          "applied"
         ],
         "properties": {
           "target": {
-            "description": "What the Session was matched to — an AssignedRight, a ValetTicket, a Violation, a PlateListEntry, an Observation.",
+            "description": "The record at the other end of the link. In `matches[]`: an\nAssignedRight, a ValetTicket, a Violation, a PlateListEntry, or an\nObservation. In the decoration on a Violation or ValetTicket: the\nSession.",
             "$ref": "#/components/schemas/Reference"
           },
           "matchType": {
             "type": "string",
-            "description": "Open — `right`, `valet`, `violation`, `list`, `exitPairing`, `sweep`, or an implementer value.",
+            "enum": [
+              "right",
+              "valet",
+              "violation",
+              "list",
+              "exitPairing",
+              "sweep",
+              "other"
+            ],
+            "description": "The kind of link: `right` — an AssignedRight covers the stay;\n`valet` — a ValetTicket's stay; `violation` — a Violation's stay;\n`list` — a plate-list entry matched the vehicle (Part 24);\n`exitPairing` — an exit read paired to the Session's entry;\n`sweep` — the vehicle seen during an inventory or patrol sweep tied\nto the Session; `other` — anything else.",
             "examples": [
               "right"
             ]
           },
           "plate": {
             "type": "object",
-            "description": "How the plate strings agreed.",
+            "description": "How the plate strings agreed, when the link rests on a plate.",
+            "required": [
+              "method"
+            ],
             "properties": {
               "method": {
                 "type": "string",
@@ -11099,7 +11132,8 @@
                   "fuzzy",
                   "lenient",
                   "reviewer"
-                ]
+                ],
+                "description": "`exact` — the same characters; `alias` — a plate the right or\naccount lists for the same vehicle; `fold` — equal after\nfolding look-alike characters (O/0, I/1, B/8); `fuzzy` — within\nthe implementation's edit-cost threshold; `lenient` — accepted\nunder a relaxed rule that may excuse a stay but never accuse\none; `reviewer` — a person judged the plates to match where no\nautomatic method did."
               },
               "editCost": {
                 "type": [
@@ -11122,6 +11156,9 @@
           "vehicle": {
             "type": "object",
             "description": "The vehicle-attribute evidence (make, model, colour) behind the match, as a level and a score — never the values.",
+            "required": [
+              "level"
+            ],
             "properties": {
               "level": {
                 "type": "string",
@@ -11132,7 +11169,8 @@
                   "weak",
                   "good",
                   "strong"
-                ]
+                ],
+                "description": "`unknown` — not compared; `mismatch` — the attributes contradict\nthe match; `inconclusive` — compared, no signal; `weak`, `good`,\n`strong` — increasing support."
               },
               "llr": {
                 "type": "number",
@@ -11146,20 +11184,25 @@
           },
           "applied": {
             "type": "boolean",
-            "description": "False is a shadow match — recorded, not acted on."
+            "description": "False is a shadow match — recorded for evaluation, not acted on. A\nlink the record actually carries has `applied: true`."
           },
           "decidedBy": {
             "type": "string",
-            "description": "`system`, `reviewer`, or an opaque principal."
+            "enum": [
+              "system",
+              "person"
+            ],
+            "description": "Whether software or a person made the link. A `matchTicket` that\nbinds a lane-inquiry candidate SHOULD be recorded as `person`\n(Part 5 §5.8 rule 5)."
           },
           "decidedTime": {
+            "description": "When the link was made.",
             "$ref": "#/components/schemas/DateTime"
           }
         }
       },
       "ViolationSource": {
         "title": "ViolationSource",
-        "description": "The `apds-ext:apx:violation-source@1.0` decoration (Part 19 §19.13): a\nviolation issued by an external enforcement system and imported\nthrough `POST /v1/violations/imports`, keyed on `system` + `recordId`.",
+        "description": "The `apds-ext:apx:violation-source@1.0` decoration (Part 19 §19.13): a\nviolation issued by an external enforcement system and imported\nthrough `POST /v1/enforcement/violation-imports`, keyed on `system` +\n`recordId`. `sourceRevision`, or without one `sourceUpdatedTime`,\norders the source's revisions.",
         "type": "object",
         "required": [
           "system",
@@ -11183,7 +11226,13 @@
             "minimum": 0,
             "description": "The source's revision counter; a re-import with a higher value updates the record."
           },
+          "sourceUpdatedTime": {
+            "description": "When the source last changed the record. Orders revisions when the source keeps no `sourceRevision`.",
+            "$ref": "#/components/schemas/DateTime"
+          },
           "receivedTime": {
+            "description": "When this server applied the revision it now holds. Server-set.",
+            "readOnly": true,
             "$ref": "#/components/schemas/DateTime"
           },
           "officer": {
@@ -12096,7 +12145,7 @@
           },
           "representative": {
             "type": "boolean",
-            "description": "The read that stands for the visit in lists and screen-pops (at most one per Session)."
+            "description": "The read that stands for the visit in lists and screen-pops. At\nmost one per Session; two are 422 `request-unprocessable` (Part 5\n§5.8 rule 1)."
           }
         }
       },
@@ -12118,7 +12167,7 @@
           },
           "startObserved": {
             "type": "boolean",
-            "description": "False declares `actualStart` synthetic — an exit-only Session whose\nentry was never observed. Consumers MUST exclude such Sessions from\ndwell statistics (Part 5 §5.8)."
+            "description": "False declares `actualStart` synthetic — an exit-only Session whose\nentry was never observed; the writer SHOULD then set `actualStart`\nequal to `actualEnd`. Consumers MUST exclude such Sessions from\ndwell statistics and from occupancy (Part 5 §5.8 rule 4). Absent\nmeans true."
           },
           "rule": {
             "type": [
