@@ -242,7 +242,11 @@ consumer still sees a valid Observation.
    by an entry and closed by an exit, with its times taken from the
    reads' capture times (item 8); `LprRead.session` links each read to it,
    and `GET /v1/lpr/reads?session=` lists the reads behind a Session. How
-   reads are paired into Sessions is implementation-defined. APX defines
+   reads are paired into Sessions is implementation-defined; the outcome
+   is carried on the Session in the decoration
+   `apds-ext:apx:session-detail@1.0` (Part 5 §5.8), which a separate
+   pairing client writes and from which the server derives
+   `LprRead.session`. APX defines
    no notion of wrong-way travel: `VehicularAccess.accessType` says what
    a lane is for, and APX does not judge reads against it.
 7. **Privacy.** `detail` is plate-bearing personal data under Part 9

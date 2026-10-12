@@ -42,6 +42,8 @@ implementation has the named capability).
 | APX-DATA-06 | Grant expansion signaled via `grantAdditions` on the first page after the change | §5.2 r7 |
 | APX-DATA-07 | Client sending no APX headers/params observes pure APDS 4.1 behavior | §5.6 |
 | APX-DATA-08 **C** (holds occupancy) | `GET /v1/places/{id}/occupancy` served; snapshot derivable from the Place hierarchy | §5.5 |
+| APX-DATA-09 **C** (accepts `apds-ext:apx:session-detail@1.0` on Session writes) | Decoration validated and preserved; binding a read already bound to a Session outside the writer's `parent` chain → 409 `read-already-bound`, nothing written; two `representative` reads, `lifecycle` disagreeing with `actualEnd`, or a `parent` whose element is not an ancestor → 422 `request-unprocessable`; a read reference naming no visible Observation → 422 `reference-unknown`; a `final` Session never refused a later revision on that ground | §5.8 r1–4 |
+| APX-DATA-10 **C** (also claims `apx-lpr`) | `LprRead.session` names the Session without `parent` that holds the read, and `GET /v1/lpr/reads?session=` lists a Session's bound reads, both derived from `session-detail.reads[]` | §5.8 r1, §13.3a(6) |
 
 ## A.3 `apx-events`
 
@@ -173,6 +175,7 @@ implementation has the named capability).
 | APX-VIO-10 | Policy in force resolved by nearest-ancestor-or-self at `detectedTime`; `…/policies/effective` returns exactly what `issue` applies; refusals per §19.10 rule 2 with the named problem types; `policy`, `signage[]`, `unpaidAmount`, `capAmount`, and the first `amountHistory` entry (`issued`, or `cap` with `requestedAmount`) frozen at issue | §19.10 |
 | APX-VIO-11 | Escalation server-applied per schedule, never before `paymentGraceDays`, never while `appealed` (days appealed do not count), clamped at `overallCeiling`; each step appended to `amountHistory` and published; clients never compute penalties | §19.10 |
 | APX-VIO-12 | Signage history immutable (text change on a referenced record → 422 `signage-referenced`); in-force signage frozen on the violation at issue; `signageRequired` enforced | §19.11 |
+| APX-VIO-13 **C** (holds match evidence for the link) | `issue` refused with 409 `violation-not-issuable` when the `relatedSession` link's evidence (`apds-ext:apx:match-evidence@1.0` on the Violation, or the related Session's `session-detail.matches[]` entry for it) has `plate.method: lenient` or `applied: false` | §19.4 r5, §5.9 r3 |
 
 ## A.16 `apx-validations`
 

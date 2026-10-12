@@ -49,6 +49,10 @@ Extensions:
       $ref: "../reservations/schemas.yaml#/ReservationExtension"
     "apds-ext:apx:permit@1.0":
       $ref: "../reservations/schemas.yaml#/PermitExtension"
+    "apds-ext:apx:session-detail@1.0":
+      $ref: "../data/schemas.yaml#/SessionDetail"
+    "apds-ext:apx:match-evidence@1.0":
+      $ref: "../data/schemas.yaml#/MatchEvidence"
   additionalProperties:
     type: object
 

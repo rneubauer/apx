@@ -193,6 +193,13 @@ counterpart of Part 6's lane inquiry. It returns an `EligibilityResult`:
 4. `detection.principal` (badge id, pipeline name) and
    `statusHistory[].actor` are opaque strings — no personnel directory is
    implied by this standard.
+5. **Match evidence.** How `relatedSession` was linked MAY be recorded
+   in the decoration `apds-ext:apx:match-evidence@1.0` (Part 5 §5.9).
+   Where that evidence, or the related Session's
+   `apds-ext:apx:session-detail@1.0` entry for this Violation, has
+   `plate.method: lenient` or `applied: false`, the server MUST refuse
+   `issue` (409 `violation-not-issuable`): a lenient match may excuse a
+   stay but never accuse one.
 
 ## 19.5 Evidence and privacy
 

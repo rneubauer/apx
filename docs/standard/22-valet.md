@@ -22,7 +22,12 @@ See schema. One ticket per custody: `vehicle`, `customer` (minimized),
 condition report), `storage` (space or zone, key location), `retrieval`
 (channel, requested/scheduled time, ETA, promised time, staging),
 `handback` (verification, condition report), status, and the immutable
-`statusHistory[]`.
+`statusHistory[]`. Where the ticket was linked to its `session` by
+matching rather than at drop-off, the link MAY carry the decoration
+`apds-ext:apx:match-evidence@1.0` (Part 5 §5.9). A valet stay is usually
+a nested area of the facility: its Session then names the visit as
+`parent` in `apds-ext:apx:session-detail@1.0`, and closes with
+`endReason: valetHandback` (Part 5 §5.8).
 
 **Lifecycle (normative).**
 

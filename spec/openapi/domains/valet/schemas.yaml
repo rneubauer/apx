@@ -98,7 +98,10 @@ ValetTicket:
       description: The HierarchyElement (the facility or valet stand).
       $ref: "../../../vendor/apds/4.1/apds-api-4.1.yaml#/components/schemas/Reference"
     session:
-      description: The APDS Session for the stay (opened at drop-off).
+      description: |-
+        The APDS Session for the stay (opened at drop-off). How the link
+        was made MAY be recorded in the decoration
+        `apds-ext:apx:match-evidence@1.0` (Part 5 §5.9).
       $ref: "../../../vendor/apds/4.1/apds-api-4.1.yaml#/components/schemas/Reference"
     assignedRight:
       description: The APDS AssignedRight (the valet ticket as a right), when the operator issues one.

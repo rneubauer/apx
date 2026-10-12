@@ -5107,3 +5107,64 @@ before (F-VIO-13 fixed) and the `paid → voided` transition (F-VIO-10).
 ```
 
 ---
+
+## VIO-30 — A lenient match may excuse a stay but never accuse one
+
+<!-- apx:scenario VIO-30 kind=refusal ics=APX-VIO-13,APX-VIO-03 -->
+
+**Given** `d3…0030`, an automated Lot C detection of `SYN-5528`. The
+pairing service tied it to the pay-by-plate stay `f1…0071` only through
+a lenient one-character match, so the Violation carries
+`apds-ext:apx:match-evidence@1.0` with `plate.method: lenient` (Part 5
+§5.9). The Lot C policy permits unreviewed automated issuance. **When**
+the pipeline issues it by mail. **Then** 409 `violation-not-issuable`:
+the evidence could excuse the stay, but it cannot be the basis of a
+notice (Part 19 §19.4 rule 5).
+
+<!-- apx:request GET /v1/violations/d3000000-0000-4000-8000-000000000030 -->
+<!-- apx:response 200 -->
+```json
+{
+  "id": "d3000000-0000-4000-8000-000000000030",
+  "version": 1,
+  "violationType": "expiredRight",
+  "violationStatus": "detected",
+  "place": { "id": "b1000000-0000-4000-8000-000000000004", "className": "Place" },
+  "detection": { "mode": "automated", "detectedTime": "2026-09-25T11:02:40Z", "principal": "lpr-pipeline-lot-c", "confidence": 0.96 },
+  "vehicle": { "credentialType": "licensePlate", "credentialIdentification": "SYN-5528", "jurisdiction": "US-IL" },
+  "observations": [ { "id": "f2000000-0000-4000-8000-000000000071", "className": "Observation" } ],
+  "relatedSession": { "id": "f1000000-0000-4000-8000-000000000071", "className": "Session" },
+  "statusHistory": [
+    { "state": "detected", "time": "2026-09-25T11:02:41Z", "actor": "lpr-pipeline-lot-c" }
+  ],
+  "extensions": {
+    "apds-ext:apx:match-evidence@1.0": {
+      "target": { "id": "f1000000-0000-4000-8000-000000000071", "className": "Session" },
+      "matchType": "violation",
+      "plate": { "method": "lenient", "editCost": 1.0, "jurisdiction": "agrees" },
+      "vehicle": { "level": "inconclusive" },
+      "applied": true,
+      "decidedBy": "system",
+      "decidedTime": "2026-09-25T11:02:41Z"
+    }
+  }
+}
+```
+
+<!-- apx:request POST /v1/violations/d3000000-0000-4000-8000-000000000030/issue -->
+```json
+{ "noticeKind": "notice", "amount": { "currencyType": "USD", "currencyValue": 35.0 }, "deliveryMethod": "mail" }
+```
+
+<!-- apx:response 409 -->
+```json
+{
+  "type": "https://apx-standard.org/problems/violation-not-issuable",
+  "title": "Violation not issuable",
+  "status": 409,
+  "detail": "The link to session f1000000-0000-4000-8000-000000000071 rests on a lenient plate match; lenient evidence may excuse a stay but never accuse one.",
+  "instance": "/v1/violations/d3000000-0000-4000-8000-000000000030/issue"
+}
+```
+
+---

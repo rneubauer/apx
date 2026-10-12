@@ -1,0 +1,19 @@
+{
+  "id": "7d1e5c2a-4b8f-4e3a-9c6d-2f0a8b1e7c54",
+  "version": 1,
+  "name": "apx-session-end-reasons",
+  "creator": { "id": "a1000000-0000-4000-8000-000000000001", "className": "Organisation" },
+  "locator": "https://apx-standard.org/registries/apx-session-end-reasons.json",
+  "userDefinedCodeListEntries": [
+    { "definedValue": "exitRead", "entryDescription": "An exit read of the vehicle closed the Session.", "entryIndex": 0 },
+    { "definedValue": "reentry", "entryDescription": "The same vehicle was read entering again with no exit seen; the earlier Session was closed at the new entry.", "entryIndex": 1 },
+    { "definedValue": "stale", "entryDescription": "No exit was seen within the implementation's limit and a rule closed the Session (SessionClosure.rule names it).", "entryIndex": 2 },
+    { "definedValue": "parentExit", "entryDescription": "A nested-area Session closed because the visit it is part of (SessionDetail.parent) ended.", "entryIndex": 3 },
+    { "definedValue": "areaLeft", "entryDescription": "The vehicle was read leaving a nested area while staying in the facility.", "entryIndex": 4 },
+    { "definedValue": "inventorySweep", "entryDescription": "An inventory or patrol sweep found the vehicle gone.", "entryIndex": 5 },
+    { "definedValue": "valetHandback", "entryDescription": "The vehicle was handed back to its owner by valet (Part 22).", "entryIndex": 6 },
+    { "definedValue": "exitOnly", "entryDescription": "An exit with no observed entry; the Session exists only to account for the exit (SessionClosure.startObserved is false).", "entryIndex": 7 },
+    { "definedValue": "operator", "entryDescription": "A person closed the Session by hand.", "entryIndex": 8 },
+    { "definedValue": "review", "entryDescription": "A reviewer paired the exit to the Session.", "entryIndex": 9 }
+  ]
+}

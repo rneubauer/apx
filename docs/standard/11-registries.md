@@ -17,6 +17,7 @@ APX open vocabularies are published as **APDS UserDefinedCodeList documents**
 | `apx-toll-dispute-resolutions` | Toll dispute resolutions (open) | `TollTransaction.dispute.resolution` (Part 15) |
 | `apx-access-denial-reasons` | Why a credential was refused at a lane (open) | `CredentialAccessEvent.denialReason`, `AccessEvent.denialReason` (Part 21), lane inquiry `monthlyCredential.denialReason` (Part 6) |
 | `apx-features` | Optional features of a conformance class | `features` in `/.well-known/apx-configuration` and discovery documents (Part 6 §6.5, Part 16) |
+| `apx-session-end-reasons` | Why a Session ended (open) | `SessionClosure.endReason` in `apds-ext:apx:session-detail@1.0` (Part 5 §5.8) |
 
 ## 11.1 Rules
 

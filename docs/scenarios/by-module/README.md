@@ -1,7 +1,7 @@
 # APX vetting scenarios, by module
 
-The worked scenarios one folder up tell 26 end-to-end stories. This
-folder is the test bench underneath them: **377 scenarios**, one set per
+The worked scenarios one folder up tell 27 end-to-end stories. This
+folder is the test bench underneath them: **380 scenarios**, one set per
 conformance class, written to find the places the spec could not say what
 a real deployment needs. Every request and response in them is checked
 against the bundled spec (`spec/dist/apx-v1.json`), and what the spec
@@ -17,7 +17,7 @@ findings table says how.
 | [`apx-alerts`](apx-alerts/scenarios.md) | 22 | 5/5 | 30/30 | 5/6 | [9](apx-alerts/findings.md) |
 | [`apx-control`](apx-control/scenarios.md) | 25 | 8/8 | 41/41 | 14/14 | [10](apx-control/findings.md) |
 | [`apx-credentials`](apx-credentials/scenarios.md) | 26 | 11/11 | 71/71 | 6/6 | [11](apx-credentials/findings.md) |
-| [`apx-data`](apx-data/scenarios.md) | 33 | 35/35 | 202/204 | 8/8 | [16](apx-data/findings.md) |
+| [`apx-data`](apx-data/scenarios.md) | 35 | 35/35 | 204/206 | 10/10 | [16](apx-data/findings.md) |
 | [`apx-discovery`](apx-discovery/scenarios.md) (incl. `apx-mtls`) | 16 | 2/2 | 6/6 | 7/7 | [14](apx-discovery/findings.md) |
 | [`apx-events`](apx-events/scenarios.md) (incl. `apx-events-sse`) | 24 | 7/7 | 41/41 | 9/9 | [17](apx-events/findings.md) |
 | [`apx-lpr`](apx-lpr/scenarios.md) | 35 | 4/4 | 25/25 | 6/6 | [19](apx-lpr/findings.md) |
@@ -27,8 +27,8 @@ findings table says how.
 | [`apx-tolling`](apx-tolling/scenarios.md) | 24 | 8/8 | 52/52 | 3/3 | [14](apx-tolling/findings.md) |
 | [`apx-valet`](apx-valet/scenarios.md) | 25 | 12/12 | 78/78 | 8/8 | [16](apx-valet/findings.md) |
 | [`apx-validations`](apx-validations/scenarios.md) | 25 | 17/17 | 105/105 | 8/8 | [13](apx-validations/findings.md) |
-| [`apx-violations`](apx-violations/scenarios.md) | 29 | 20/20 | 125/125 | 12/12 | [17](apx-violations/findings.md) |
-| **total** | **377** | | | **118/125** | **221** |
+| [`apx-violations`](apx-violations/scenarios.md) | 30 | 20/20 | 125/125 | 13/13 | [17](apx-violations/findings.md) |
+| **total** | **380** | | | **121/128** | **221** |
 
 *Operations* and *Responses* count the routes and declared status codes
 each module's scenarios exercise. The seven Annex A rows not yet cited

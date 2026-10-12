@@ -1625,7 +1625,7 @@ paths:
         '403':
           $ref: '#/components/responses/Forbidden'
         '409':
-          description: 'Conflict. APX (Part 5 §5.1a, Part 12 §12.1): a client sending `Accept: application/problem+json` receives problem type `id-collision` (client-supplied id already exists) instead of ResponseStatus.'
+          description: 'Conflict. APX (Part 5 §5.1a, Part 12 §12.1): a client sending `Accept: application/problem+json` receives problem type `id-collision` (client-supplied id already exists), or `read-already-bound` (a read in `apds-ext:apx:session-detail@1.0` is already bound to another Session of the same element, Part 5 §5.8), instead of ResponseStatus.'
           content:
             application/json:
               schema:
@@ -1636,6 +1636,12 @@ paths:
                     status: error
                     code: 409
                     message: Session can not be created due to conflicting data.
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+        '422':
+          description: The Session's `apds-ext:apx:session-detail@1.0` breaks a rule of Part 5 §5.8 — a `lifecycle` other than `open` without `actualEnd`, `open` with it, a `parent` whose element is not an ancestor of this Session's, or more than one `representative` read (problem type `request-unprocessable`), or a read reference naming no visible Observation (`reference-unknown`); nothing is written.
+          content:
             application/problem+json:
               schema:
                 $ref: '#/components/schemas/Problem'
@@ -1757,7 +1763,7 @@ paths:
               schema:
                 $ref: '#/components/schemas/Problem'
         '409':
-          description: 'Conflict. APX (Part 5 §5.1a, Part 12 §12.1): a client sending `Accept: application/problem+json` receives problem type `version-conflict` (stale `version`) instead of ResponseStatus.'
+          description: 'Conflict. APX (Part 5 §5.1a, Part 12 §12.1): a client sending `Accept: application/problem+json` receives problem type `version-conflict` (stale `version`), or `read-already-bound` (a read in `apds-ext:apx:session-detail@1.0` is already bound to another Session of the same element, Part 5 §5.8), instead of ResponseStatus.'
           content:
             application/json:
               schema:
@@ -1768,6 +1774,12 @@ paths:
                     status: error
                     code: 409
                     message: Session can not be updated due to conflicting data.
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+        '422':
+          description: The Session's `apds-ext:apx:session-detail@1.0` breaks a rule of Part 5 §5.8 — a `lifecycle` other than `open` without `actualEnd`, `open` with it, a `parent` whose element is not an ancestor of this Session's, or more than one `representative` read (problem type `request-unprocessable`), or a read reference naming no visible Observation (`reference-unknown`); nothing is written.
+          content:
             application/problem+json:
               schema:
                 $ref: '#/components/schemas/Problem'
@@ -10172,6 +10184,10 @@ components:
           $ref: '#/components/schemas/ReservationExtension'
         apds-ext:apx:permit@1.0:
           $ref: '#/components/schemas/PermitExtension'
+        apds-ext:apx:session-detail@1.0:
+          $ref: '#/components/schemas/SessionDetail'
+        apds-ext:apx:match-evidence@1.0:
+          $ref: '#/components/schemas/MatchEvidence'
       additionalProperties:
         type: object
     ApxResourceCore:
@@ -10442,6 +10458,179 @@ components:
             occupancyCalculation: counted
             recordDateTime: '2026-08-25T17:44:30Z'
           available: 59
+    SessionDetail:
+      title: SessionDetail
+      description: |-
+        What the pairing of reads into a stay decided, carried on the APDS
+        Session as the Level B decoration `apds-ext:apx:session-detail@1.0`
+        (Part 5 §5.8). APDS Session has no member for the reads behind it, why
+        or how it ended, how its links were made, or the visit it is part of;
+        this block adds them, written with the native Session `POST`/`PUT`
+        (Part 5 §5.3) by whoever pairs the reads — the server itself or a
+        separate client. Every member is optional; a plain APDS consumer
+        ignores the block.
+      type: object
+      properties:
+        reads:
+          type: array
+          description: |-
+            The reads (Observations) behind this Session, each with its role
+            (Part 5 §5.8 rule 1). A read appears at most once. Where the server
+            claims `apx-lpr`, `LprRead.session` and `GET /v1/lpr/reads?session=`
+            are derived from this list (Part 13 §13.3a(6)).
+          items:
+            $ref: '#/components/schemas/SessionReadBinding'
+        lifecycle:
+          type: string
+          enum:
+            - open
+            - ended
+            - final
+            - disputed
+          description: |-
+            Where the Session is in its life (Part 5 §5.8 rule 2): `open` — no
+            `actualEnd` yet; `ended` — `actualEnd` set, the pairing may still
+            revise it; `final` — no further revision is expected; `disputed` —
+            the stay or its charge is contested and may change. Every state
+            but `open` requires `actualEnd`.
+        closure:
+          $ref: '#/components/schemas/SessionClosure'
+        matches:
+          type: array
+          description: |-
+            How each link from this Session to another record was established
+            and how sure it is (Part 5 §5.9): the AssignedRight that covers
+            it, a ValetTicket, a Violation, the exit read paired to it.
+          items:
+            $ref: '#/components/schemas/MatchEvidence'
+        parent:
+          description: |-
+            For a stay in a nested area (Part 5 §5.8 rule 4): the Session of
+            the visit it is part of. The parent's `hierarchyElement` MUST be
+            an ancestor of this Session's. A Session with `parent` is not a
+            visit and is never counted as one.
+          $ref: '#/components/schemas/Reference'
+        passThrough:
+          type: boolean
+          description: |-
+            True for an area stay shorter than the area's minimum dwell — the
+            vehicle passed through the area rather than parked in it. Only
+            meaningful with `parent`. Consumers MUST NOT score such a stay for
+            compliance or occupancy.
+    MatchEvidence:
+      title: MatchEvidence
+      description: |-
+        How one link between a Session and another record was established, and
+        how sure it is (Part 5 §5.9). An item of `SessionDetail.matches[]`, and
+        the Level B decoration `apds-ext:apx:match-evidence@1.0` on a Violation
+        (for `relatedSession`) and on a ValetTicket (for `session`). Carries no
+        plate characters and no make, model, or colour values (Part 9 §9.6):
+        the evidence is about the comparison, not the vehicle.
+      type: object
+      required:
+        - target
+        - matchType
+        - applied
+      properties:
+        target:
+          description: |-
+            The record at the other end of the link: in `SessionDetail.matches[]`
+            the AssignedRight, ValetTicket, Violation, or Observation; in the
+            decoration on a Violation or ValetTicket, the Session.
+          $ref: '#/components/schemas/Reference'
+        matchType:
+          type: string
+          enum:
+            - right
+            - valet
+            - violation
+            - exitRead
+            - sweep
+            - other
+          description: |-
+            The kind of link: `right` — an AssignedRight covers the stay;
+            `valet` — a ValetTicket's stay; `violation` — a Violation's stay;
+            `exitRead` — an exit read paired to the Session's entry; `sweep` —
+            a vehicle seen during an inventory sweep tied to the Session;
+            `other` — anything else.
+        plate:
+          type: object
+          description: How the plates agreed, when the link rests on a plate.
+          required:
+            - method
+          properties:
+            method:
+              type: string
+              enum:
+                - exact
+                - alias
+                - fold
+                - fuzzy
+                - lenient
+                - reviewer
+              description: |-
+                `exact` — the same characters; `alias` — a plate the right or
+                account lists as an alternate for the same vehicle; `fold` —
+                the same after folding look-alike characters (O/0, I/1, B/8);
+                `fuzzy` — within the implementation's edit-cost threshold;
+                `lenient` — accepted under a relaxed rule that may excuse a
+                stay but never accuse one (Part 5 §5.9 rule 2); `reviewer` — a
+                person judged the plates to match where no automatic method
+                did.
+            editCost:
+              type:
+                - number
+                - 'null'
+              minimum: 0
+              description: The weighted edit cost between the two plates, for `fuzzy` and `lenient`; null or absent otherwise.
+            jurisdiction:
+              type: string
+              enum:
+                - agrees
+                - differs
+                - unknown
+              description: Whether the plates' issuing state or province agreed.
+        vehicle:
+          type: object
+          description: |-
+            What the vehicle's other attributes (make, model, colour, body)
+            said about the match, when compared.
+          required:
+            - level
+          properties:
+            level:
+              type: string
+              enum:
+                - unknown
+                - mismatch
+                - inconclusive
+                - weak
+                - good
+                - strong
+              description: |-
+                `unknown` — not compared; `mismatch` — the attributes
+                contradict the match; `inconclusive` — compared, no signal;
+                `weak`, `good`, `strong` — increasing support.
+            llr:
+              type: number
+              description: The log-likelihood ratio behind `level`, when the implementation computes one.
+            model:
+              type: string
+              description: The implementation's identifier for the scoring model and version. Opaque to APX.
+        applied:
+          type: boolean
+          description: |-
+            False for a shadow match — recorded for evaluation, not acted on.
+            A link the record actually carries has `applied: true`.
+        decidedBy:
+          type: string
+          enum:
+            - system
+            - person
+          description: Whether software or a person made the link.
+        decidedTime:
+          description: When the link was made.
+          $ref: '#/components/schemas/DateTime'
     ApxEventSubscription:
       title: ApxEventSubscription
       description: |-
@@ -12492,7 +12681,10 @@ components:
           description: The entitlement check performed at detection time (the same shape `GET /v1/enforcement/eligibility` returns).
           $ref: '#/components/schemas/EligibilityResult'
         relatedSession:
-          description: The APDS Session the vehicle was in, when one exists.
+          description: |-
+            The APDS Session the vehicle was in, when one exists. How the link
+            was made MAY be recorded in the decoration
+            `apds-ext:apx:match-evidence@1.0` (Part 5 §5.9).
           $ref: '#/components/schemas/Reference'
         relatedRight:
           description: The AssignedRight that was closest to covering the stay (expired permit, wrong-zone reservation…).
@@ -14498,7 +14690,10 @@ components:
           description: The HierarchyElement (the facility or valet stand).
           $ref: '#/components/schemas/Reference'
         session:
-          description: The APDS Session for the stay (opened at drop-off).
+          description: |-
+            The APDS Session for the stay (opened at drop-off). How the link
+            was made MAY be recorded in the decoration
+            `apds-ext:apx:match-evidence@1.0` (Part 5 §5.9).
           $ref: '#/components/schemas/Reference'
         assignedRight:
           description: The APDS AssignedRight (the valet ticket as a right), when the operator issues one.
@@ -19664,6 +19859,70 @@ components:
           description: Set by the server on the renewed permit when a renewal is issued.
           readOnly: true
           $ref: '#/components/schemas/Reference'
+    SessionReadBinding:
+      title: SessionReadBinding
+      description: One read bound to a Session, with the part it plays in the stay (Part 5 §5.8 rule 1).
+      type: object
+      required:
+        - observation
+        - role
+      properties:
+        observation:
+          description: The read — an APDS ObservationElement.
+          $ref: '#/components/schemas/Reference'
+        role:
+          type: string
+          enum:
+            - entry
+            - exit
+            - duplicate
+            - activity
+          description: |-
+            `entry` — the read that opened the stay; `exit` — the read that
+            closed it; `duplicate` — the same passage seen again (another
+            camera, another frame, another plate of the vehicle); `activity` —
+            the vehicle seen inside during the stay (a patrol or inventory
+            sweep).
+        representative:
+          type: boolean
+          description: |-
+            True on the one read a consumer should show for the Session (the
+            clearest plate image). At most one read per Session carries it.
+    SessionClosure:
+      title: SessionClosure
+      description: |-
+        Why and how a Session ended, and which of its times were observed
+        (Part 5 §5.8 rule 3).
+      type: object
+      properties:
+        endReason:
+          type: string
+          description: |-
+            Why the Session ended — definedValue from `apx-session-end-reasons`
+            (exitRead | reentry | stale | parentExit | areaLeft |
+            inventorySweep | valetHandback | exitOnly | operator | review).
+          examples:
+            - exitOnly
+        startObserved:
+          type: boolean
+          description: |-
+            False when no entry was seen and `actualStart` is a placeholder the
+            APDS schema requires (an exit-only Session SHOULD set it equal to
+            `actualEnd`). Absent means true.
+        endObserved:
+          type: boolean
+          description: |-
+            False when `actualEnd` was set by rule or inference (a stale
+            closure, a sweep that found the space empty) rather than taken
+            from a read. Absent means true.
+        rule:
+          type: string
+          description: |-
+            The implementation's own name for the rule that closed the
+            Session, when `endReason` is `stale` (for example a
+            48-hour transient limit). Opaque to APX.
+          examples:
+            - transient-48h
     SubscriptionFilters:
       title: SubscriptionFilters
       type: object

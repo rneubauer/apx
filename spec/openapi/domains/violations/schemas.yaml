@@ -139,7 +139,10 @@ Violation:
       description: The entitlement check performed at detection time (the same shape `GET /v1/enforcement/eligibility` returns).
       $ref: "#/EligibilityResult"
     relatedSession:
-      description: The APDS Session the vehicle was in, when one exists.
+      description: |-
+        The APDS Session the vehicle was in, when one exists. How the link
+        was made MAY be recorded in the decoration
+        `apds-ext:apx:match-evidence@1.0` (Part 5 §5.9).
       $ref: "../../../vendor/apds/4.1/apds-api-4.1.yaml#/components/schemas/Reference"
     relatedRight:
       description: The AssignedRight that was closest to covering the stay (expired permit, wrong-zone reservation…).

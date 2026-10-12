@@ -4331,3 +4331,272 @@ APX-Update-Mode: change
 ```json
 {"status":"error","code":404,"message":"AssignedRight can not be updated as it has not been found.","ids":["e2000000-0000-4000-8000-0000000000fe"]}
 ```
+
+---
+
+## DATA-34 — A separate pairing client writes the visit, the stay on a level, and the reads behind them
+
+<!-- apx:scenario DATA-34 kind=happy ics=APX-DATA-09,APX-DATA-10,APX-DATA-01 -->
+
+**Given** the operator's pairing service runs apart from the APX server
+and holds `lakeside-parcs`. Plate reads `f2…0901` (rear plate) and
+`f2…0902` (front plate) are one passage at lane 2. **When** the service
+creates the visit with `apds-ext:apx:session-detail@1.0` (Part 5 §5.8),
+and the city platform then asks for the reads behind it. **Then** 201,
+and `GET /v1/lpr/reads?session=` lists both reads, each naming the
+visit: the server derived `LprRead.session` from `reads[]`.
+
+```http
+POST /sessions
+Authorization: Bearer <lakeside-parcs>
+```
+
+<!-- apx:request POST /sessions -->
+<!-- apx:validate SessionDetail at /extensions/apds-ext:apx:session-detail@1.0 -->
+```json
+{
+  "id": "c4000000-0000-4000-8000-000000000201",
+  "version": 1,
+  "actualStart": "2026-09-24T18:14:01Z",
+  "hierarchyElement": { "id": "b1000000-0000-4000-8000-000000000001", "version": 7, "className": "Place" },
+  "identifiedCredentials": [
+    { "type": "licensePlate", "credentialAssignedType": "vehicle", "identifier": { "id": "SYN-1234", "className": "USNumberPlate" } }
+  ],
+  "segments": [
+    {
+      "id": "c5000000-0000-4000-8000-000000000201",
+      "version": 1,
+      "actualStart": "2026-09-24T18:14:01Z",
+      "assignedRight": { "id": "e2000000-0000-4000-8000-000000000001", "version": 1, "className": "AssignedRight" },
+      "validationType": ["licensePlate"]
+    }
+  ],
+  "extensions": {
+    "apds-ext:apx:session-detail@1.0": {
+      "reads": [
+        { "observation": { "id": "f2000000-0000-4000-8000-000000000901", "className": "ObservationElement" }, "role": "entry", "representative": true },
+        { "observation": { "id": "f2000000-0000-4000-8000-000000000902", "className": "ObservationElement" }, "role": "duplicate" }
+      ],
+      "lifecycle": "open",
+      "matches": [
+        {
+          "target": { "id": "e2000000-0000-4000-8000-000000000001", "className": "AssignedRight" },
+          "matchType": "right",
+          "plate": { "method": "exact", "jurisdiction": "agrees" },
+          "vehicle": { "level": "strong" },
+          "applied": true,
+          "decidedBy": "system"
+        }
+      ]
+    }
+  }
+}
+```
+
+<!-- apx:response 201 -->
+```json
+{ "status": "ok", "code": 201, "message": "Session created successfully." }
+```
+
+<!-- apx:request GET /v1/lpr/reads?session=c4000000-0000-4000-8000-000000000201 -->
+<!-- apx:response 200 -->
+```json
+{
+  "meta": { "referenceInstant": 1790273700, "offset": 0, "pageSize": 100, "total": 2 },
+  "data": [
+    {
+      "plate": "SYN-1234",
+      "place": { "id": "b1000000-0000-4000-8000-000000000001", "className": "Place" },
+      "lane": { "id": "b2000000-0000-4000-8000-000000000002", "className": "VehicularAccess" },
+      "confidence": 0.97,
+      "observation": { "id": "f2000000-0000-4000-8000-000000000901", "className": "Observation" },
+      "observationDateTime": "2026-09-24T18:14:01Z",
+      "session": { "id": "c4000000-0000-4000-8000-000000000201", "className": "Session" }
+    },
+    {
+      "plate": "SYN-1234",
+      "place": { "id": "b1000000-0000-4000-8000-000000000001", "className": "Place" },
+      "lane": { "id": "b2000000-0000-4000-8000-000000000002", "className": "VehicularAccess" },
+      "confidence": 0.97,
+      "observation": { "id": "f2000000-0000-4000-8000-000000000902", "className": "Observation" },
+      "observationDateTime": "2026-09-24T18:14:01Z",
+      "session": { "id": "c4000000-0000-4000-8000-000000000201", "className": "Session" }
+    }
+  ]
+}
+```
+
+The service then opens the car's stay on Level 2 as a child of the visit:
+`parent` names `c4…0201`, and the Place is an ancestor of Level 2. A
+visit count still counts one car.
+
+<!-- apx:request POST /sessions -->
+<!-- apx:validate SessionDetail at /extensions/apds-ext:apx:session-detail@1.0 -->
+```json
+{
+  "id": "c4000000-0000-4000-8000-000000000202",
+  "version": 1,
+  "actualStart": "2026-09-24T18:16:40Z",
+  "hierarchyElement": { "id": "b1000000-0000-4000-8000-000000000011", "version": 3, "className": "Level" },
+  "identifiedCredentials": [
+    { "type": "licensePlate", "credentialAssignedType": "vehicle", "identifier": { "id": "SYN-1234", "className": "USNumberPlate" } }
+  ],
+  "segments": [
+    {
+      "id": "c5000000-0000-4000-8000-000000000202",
+      "version": 1,
+      "actualStart": "2026-09-24T18:16:40Z",
+      "assignedRight": { "id": "e2000000-0000-4000-8000-000000000001", "version": 1, "className": "AssignedRight" },
+      "validationType": ["licensePlate"]
+    }
+  ],
+  "extensions": {
+    "apds-ext:apx:session-detail@1.0": {
+      "lifecycle": "open",
+      "parent": { "id": "c4000000-0000-4000-8000-000000000201", "className": "Session" }
+    }
+  }
+}
+```
+
+<!-- apx:response 201 -->
+```json
+{ "status": "ok", "code": 201, "message": "Session created successfully." }
+```
+
+---
+
+## DATA-35 — A read claimed twice, a child outside its parent, an open stay with an end
+
+<!-- apx:scenario DATA-35 kind=refusal ics=APX-DATA-09,APX-CORE-05 -->
+
+**Given** the visit `c4…0201` from DATA-34 holds read `f2…0901`.
+**When** a retry from an older build of the pairing service binds the
+same read to a new Session; then creates a child of the Level 2 Session
+`c4…0202` that sits on the Place itself; then updates the visit to
+`lifecycle: open` while sending an `actualEnd`. **Then** 409
+`read-already-bound`, 422 `request-unprocessable` twice, and nothing is
+written (Part 5 §5.8 rules 1, 2, 4).
+
+<!-- apx:request POST /sessions -->
+```json
+{
+  "id": "c4000000-0000-4000-8000-000000000203",
+  "version": 1,
+  "actualStart": "2026-09-24T18:14:01Z",
+  "hierarchyElement": { "id": "b1000000-0000-4000-8000-000000000001", "version": 7, "className": "Place" },
+  "identifiedCredentials": [
+    { "type": "licensePlate", "credentialAssignedType": "vehicle", "identifier": { "id": "SYN-1234", "className": "USNumberPlate" } }
+  ],
+  "segments": [
+    {
+      "id": "c5000000-0000-4000-8000-000000000203",
+      "version": 1,
+      "actualStart": "2026-09-24T18:14:01Z",
+      "assignedRight": { "id": "e2000000-0000-4000-8000-000000000001", "version": 1, "className": "AssignedRight" },
+      "validationType": ["licensePlate"]
+    }
+  ],
+  "extensions": {
+    "apds-ext:apx:session-detail@1.0": {
+      "reads": [
+        { "observation": { "id": "f2000000-0000-4000-8000-000000000901", "className": "ObservationElement" }, "role": "entry" }
+      ],
+      "lifecycle": "open"
+    }
+  }
+}
+```
+
+<!-- apx:response 409 -->
+```json
+{ "status": "error", "code": 409, "message": "Session can not be created due to conflict: observation f2000000-0000-4000-8000-000000000901 is bound to another session.", "ids": ["c4000000-0000-4000-8000-000000000201"] }
+```
+
+With `Accept: application/problem+json` the same refusal is the
+registered problem:
+
+<!-- apx:validate Problem -->
+```json
+{
+  "type": "https://apx-standard.org/problems/read-already-bound",
+  "title": "Read already bound to another Session",
+  "status": 409,
+  "detail": "Observation f2000000-0000-4000-8000-000000000901 is bound to Session c4000000-0000-4000-8000-000000000201; remove it there first.",
+  "instance": "/sessions"
+}
+```
+
+<!-- apx:request POST /sessions -->
+```json
+{
+  "id": "c4000000-0000-4000-8000-000000000204",
+  "version": 1,
+  "actualStart": "2026-09-24T18:20:00Z",
+  "hierarchyElement": { "id": "b1000000-0000-4000-8000-000000000001", "version": 7, "className": "Place" },
+  "identifiedCredentials": [
+    { "type": "licensePlate", "credentialAssignedType": "vehicle", "identifier": { "id": "SYN-1234", "className": "USNumberPlate" } }
+  ],
+  "segments": [
+    {
+      "id": "c5000000-0000-4000-8000-000000000204",
+      "version": 1,
+      "actualStart": "2026-09-24T18:20:00Z",
+      "assignedRight": { "id": "e2000000-0000-4000-8000-000000000001", "version": 1, "className": "AssignedRight" },
+      "validationType": ["licensePlate"]
+    }
+  ],
+  "extensions": {
+    "apds-ext:apx:session-detail@1.0": {
+      "lifecycle": "open",
+      "parent": { "id": "c4000000-0000-4000-8000-000000000202", "className": "Session" }
+    }
+  }
+}
+```
+
+<!-- apx:response 422 -->
+```json
+{
+  "type": "https://apx-standard.org/problems/request-unprocessable",
+  "title": "Request cannot be processed",
+  "status": 422,
+  "detail": "parent c4000000-0000-4000-8000-000000000202 is on Level b1000000-0000-4000-8000-000000000011, which is not an ancestor of this Session's element b1000000-0000-4000-8000-000000000001.",
+  "instance": "/sessions"
+}
+```
+
+```http
+PUT /sessions/c4000000-0000-4000-8000-000000000201
+Authorization: Bearer <lakeside-parcs>
+APX-Update-Mode: change
+```
+
+<!-- apx:request PUT /sessions/c4000000-0000-4000-8000-000000000201 -->
+```json
+{
+  "id": "c4000000-0000-4000-8000-000000000201",
+  "version": 1,
+  "actualEnd": "2026-09-24T22:05:10Z",
+  "extensions": {
+    "apds-ext:apx:session-detail@1.0": {
+      "reads": [
+        { "observation": { "id": "f2000000-0000-4000-8000-000000000901", "className": "ObservationElement" }, "role": "entry", "representative": true },
+        { "observation": { "id": "f2000000-0000-4000-8000-000000000902", "className": "ObservationElement" }, "role": "duplicate" }
+      ],
+      "lifecycle": "open"
+    }
+  }
+}
+```
+
+<!-- apx:response 422 -->
+```json
+{
+  "type": "https://apx-standard.org/problems/request-unprocessable",
+  "title": "Request cannot be processed",
+  "status": 422,
+  "detail": "lifecycle open with actualEnd set; send lifecycle ended (or final) with the end time.",
+  "instance": "/sessions/c4000000-0000-4000-8000-000000000201"
+}
+```

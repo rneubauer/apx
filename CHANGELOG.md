@@ -23,6 +23,32 @@ The machine-readable spec (`spec/openapi/apx.yaml`, bundled as
   credential presented while still `issued`. Part 21 §21.4 promised one
   denial reason per non-active lifecycle state and `issued` had none.
   A registry addition, so no new edition is needed (Part 11 §11.3).
+- Session detail, for a pairing engine that runs apart from the server:
+  the Level B decoration `apds-ext:apx:session-detail@1.0` on the APDS
+  Session (Part 5 §5.8). It records the reads behind a stay and their
+  roles (`entry | exit | duplicate | activity`), from which an `apx-lpr`
+  server derives `LprRead.session`. It also records the stay's
+  `lifecycle`, why it ended (`closure.endReason`), and whether its start
+  and end were observed, so an exit-only stay's required `actualStart`
+  is marked as a placeholder and kept out of dwell statistics. A stay in
+  a nested area names the visit it belongs to as `parent`, so visits are
+  not double-counted. New problem type `read-already-bound` (409); the
+  data overlay declares it and a 422 for the decoration's consistency
+  rules on `POST /sessions` and `PUT /sessions/{id}`.
+- Match evidence (Part 5 §5.9): `MatchEvidence` records how a link to a
+  Session was made (`plate.method` `exact | alias | fold | fuzzy |
+  lenient | reviewer`, issuing-state agreement, vehicle evidence level,
+  shadow or applied, system or person), without plate characters. It is
+  an item of `session-detail.matches[]`, and the decoration
+  `apds-ext:apx:match-evidence@1.0` on a Violation and a ValetTicket.
+  Part 19 §19.4 rule 5: a link resting on `lenient` or unapplied
+  evidence may excuse a stay but never accuse one; `issue` is 409
+  `violation-not-issuable`.
+- Registry `apx-session-end-reasons` v1 (ten seeded values). Annex A
+  rows APX-DATA-09, APX-DATA-10, APX-VIO-13. Worked scenario 28 (a
+  separate pairing service) and vetting scenarios DATA-34, DATA-35,
+  VIO-30. A sixth Part B addition in `docs/apds-change-requests.md`: an
+  end reason and an observed-start flag on the APDS Session.
 
 ## [0.13.0] — 2026-09-29
 

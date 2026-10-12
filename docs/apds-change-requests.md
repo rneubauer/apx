@@ -50,7 +50,7 @@ Full reports: [APX errata folder](errata/README.md).
 
 ## Part B — Additions APDS could consider
 
-Five suggestions, not filed as errata, where APX currently fills a gap in
+Six suggestions, not filed as errata, where APX currently fills a gap in
 its own namespace. If APDS covered any of them natively, APX would move to
 the APDS form and retire its own.
 
@@ -61,6 +61,7 @@ the APDS form and retire its own.
 | **Event types for access and corrections** in `EventTypeEnum` (a credential presented or refused at a lane; an observation updated) | Subscribers cannot hear a lane denial or a corrected read through APDS events | APX topics `apx.credentials.access.v1`, `apx.data.observation.updated.v1` (Parts 8, 21) |
 | **`application/problem+json` (RFC 9457) as an error option** on native routes | Clients get one machine-readable error shape across APDS and APX; today native 409s carry only `ResponseStatus` | Offered when the client sends `Accept: application/problem+json` (Part 5 §5.1a, Part 12) |
 | **An identifiable holder** (see Part A, 014) | Rights, permits, accounts, and payments for one customer can be grouped | `className: "RightHolder"`, local id (Part 1 §1.3 item 14) |
+| **Why a Session ended, and whether its start was seen**: an end reason on `Session`, and a way to say `actualStart` is not observed | `actualStart` is required, so a stay known only from its exit must carry an invented start, and nothing tells a consumer to leave it out of dwell statistics | `closure.endReason` (registry `apx-session-end-reasons`) and `closure.startObserved` in the decoration `apds-ext:apx:session-detail@1.0` (Part 5 §5.8) |
 
 APX also defines surfaces APDS does not yet cover — alerts, lane control,
 tolling, valet, enforcement signage. Those are offered for adoption as a

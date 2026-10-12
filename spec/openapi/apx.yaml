@@ -5831,6 +5831,10 @@ components:
       $ref: "./domains/data/schemas.yaml#/ChangeFeedPage"
     OccupancySnapshot:
       $ref: "./domains/data/schemas.yaml#/OccupancySnapshot"
+    SessionDetail:
+      $ref: "./domains/data/schemas.yaml#/SessionDetail"
+    MatchEvidence:
+      $ref: "./domains/data/schemas.yaml#/MatchEvidence"
     ApxEventSubscription:
       $ref: "./domains/events/schemas.yaml#/ApxEventSubscription"
     DeliveryRecord:
