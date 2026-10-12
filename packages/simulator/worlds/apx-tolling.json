@@ -1,0 +1,186 @@
+{
+  "extends": "base-lakeside",
+  "name": "apx-tolling",
+  "description": "The cast of docs/scenarios/by-module/apx-tolling: Lakeside Harbor Crossing's gantry hc-01 (b4…0001) under Lakeside Garage, Harbor Deck's bridge gantry (b4…0002) outside the grant, the crossing's rate deck, accounts on file by plate and transponder (the monthly holder c1…0221 among them), the reads behind the transactions as APDS Observations, and the transactions and settling payments that exist before the file starts.",
+  "clock": { "start": "2026-09-22T07:00:00Z" },
+  "credentials": {
+    "default": { "scopes": ["apx.tolling:manage", "apx.data:read", "apx.data:write"], "apx_org": { "id": "a1…0001", "className": "Organisation" }, "apx_places": ["b1…0001"], "user": "gantry-bridge" }
+  },
+  "organisations": [{ "id": "a2…0031", "name": "Northshore Haulage" }],
+  "devices": [
+    { "id": "b4…0001", "placeId": "b1…0001", "name": "hc-01", "equipmentType": "tollGantry", "actor": "gantry-hc-01", "state": "available", "location": { "type": "Point", "coordinates": [-87.6125, 41.8853] } },
+    { "id": "b4…0002", "placeId": "b1…0002", "name": "hd-02", "equipmentType": "tollGantry", "actor": "gantry-hd-02", "state": "available", "location": { "type": "Point", "coordinates": [-87.6052, 41.8911] } }
+  ],
+  "tolling": {
+    "actors": { "pricing": "toll-pricing", "payment": "billing-batch", "dispute": "agent-0219", "operatorDispute": "reconciliation-job", "resolve": "backoffice-jlee", "void": "backoffice-jlee" },
+    "keyActors": { "recon-": "reconciliation-job", "backoffice-": "backoffice-jlee", "autopay-": "billing-batch", "classifier-": "toll-pricing" },
+    "peakHours": [[6, 10], [16, 19]],
+    "pairWindowMs": 2000,
+    "reads": [
+      { "id": "f2…0801", "gantry": "b4…0001", "transponder": "TAG-44192", "time": "2026-09-22T07:14:08Z", "confidence": 0.99 },
+      { "id": "f2…0802", "gantry": "b4…0001", "plate": "LKS-4419", "time": "2026-09-22T07:14:08Z", "confidence": 0.93 },
+      { "id": "f2…0811", "gantry": "b4…0001", "plate": "SYN-9930", "time": "2026-09-22T07:52:30Z", "confidence": 0.71 },
+      { "id": "f2…0812", "gantry": "b4…0001", "transponder": "TAG-51007", "time": "2026-09-22T08:01:00Z", "confidence": 0.98 },
+      { "id": "f2…0813", "gantry": "b4…0001", "transponder": "TAG-51008", "time": "2026-09-22T08:01:02Z", "confidence": 0.98 },
+      { "id": "f2…0814", "gantry": "b4…0001", "transponder": "TAG-51009", "time": "2026-09-22T08:01:04Z", "confidence": 0.98 },
+      { "id": "f2…0821", "gantry": "b4…0001", "transponder": "TAG-60311", "time": "2026-09-22T08:15:30Z", "confidence": 0.97 },
+      { "id": "f2…0831", "gantry": "b4…0001", "transponder": "TAG-70220", "time": "2026-09-22T17:40:11Z", "confidence": 0.99 },
+      { "id": "f2…0833", "gantry": "b4…0001", "transponder": "TAG-70220", "time": "2026-09-22T18:55:02Z", "confidence": 0.99 },
+      { "id": "f2…0834", "gantry": "b4…0001", "transponder": "TAG-70221", "time": "2026-09-22T18:55:04Z", "confidence": 0.99 },
+      { "id": "f2…0835", "gantry": "b4…0001", "transponder": "TAG-70222", "time": "2026-09-22T18:56:10Z", "confidence": 0.99 },
+      { "id": "f2…0836", "gantry": "b4…0001", "transponder": "TAG-70223", "time": "2026-09-22T18:57:30Z", "confidence": 0.99 },
+      { "id": "f2…0841", "gantry": "b4…0001", "transponder": "TAG-80031", "time": "2026-09-22T09:03:49Z", "confidence": 0.99 },
+      { "id": "f2…0851", "gantry": "b4…0001", "plate": "LKS-SVC1", "time": "2026-09-22T11:02:16Z", "confidence": 0.96 },
+      { "id": "f2…0861", "gantry": "b4…0001", "transponder": "TAG-44192", "time": "2026-09-22T09:00:10Z", "confidence": 0.99 },
+      { "id": "f2…0871", "gantry": "b4…0002", "transponder": "TAG-90001", "time": "2026-09-22T07:15:00Z", "confidence": 0.99 },
+      { "id": "f2…0881", "gantry": "b4…0001", "transponder": "TAG-44192", "time": "2026-09-25T00:02:09Z", "confidence": 0.99 },
+      { "id": "f2…0891", "gantry": "b4…0001", "transponder": "TAG-44192", "time": "2026-09-24T06:30:12Z", "confidence": 0.99 }
+    ]
+  },
+  "placeRates": { "b1…0001": ["d5…0801"], "b1…0002": ["d5…0802"] },
+  "rateTables": [
+    {
+      "id": "d5…0801",
+      "version": 4,
+      "rateTableName": [{ "language": "en", "string": "Lakeside Harbor Crossing tolls" }],
+      "availability": "public",
+      "rateLineCollections": [
+        {
+          "id": "d5…0811",
+          "version": 1,
+          "collectionSequence": 1,
+          "applicableCurrency": "USD",
+          "resetTime": "00:00:00",
+          "validStart": "2026-01-01T00:00:00Z",
+          "relativeTimes": true,
+          "taxIncluded": true,
+          "rateLines": [
+            { "id": "d5…0821", "version": 1, "sequence": 1, "rateLineType": "flatRate", "description": [{ "language": "en", "string": "peak weekday rate, 2-axle" }], "value": 2.75 },
+            { "id": "d5…0822", "version": 1, "sequence": 2, "rateLineType": "flatRate", "description": [{ "language": "en", "string": "peak weekday rate, 3-axle" }], "value": 4.25 },
+            { "id": "d5…0823", "version": 1, "sequence": 3, "rateLineType": "flatRate", "description": [{ "language": "en", "string": "off-peak rate, 2-axle" }], "value": 1.75 },
+            { "id": "d5…0824", "version": 1, "sequence": 4, "rateLineType": "flatRate", "description": [{ "language": "en", "string": "off-peak rate, 3-axle" }], "value": 3.25 }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "d5…0802",
+      "version": 1,
+      "rateTableName": [{ "language": "en", "string": "Harbor Deck bridge toll" }],
+      "availability": "public",
+      "rateLineCollections": [
+        {
+          "id": "d5…0812",
+          "version": 1,
+          "collectionSequence": 1,
+          "applicableCurrency": "USD",
+          "resetTime": "00:00:00",
+          "validStart": "2026-01-01T00:00:00Z",
+          "relativeTimes": true,
+          "taxIncluded": true,
+          "rateLines": [{ "id": "d5…0831", "version": 1, "sequence": 1, "rateLineType": "flatRate", "description": [{ "language": "en", "string": "bridge toll, 2-axle" }], "value": 3.5 }]
+        }
+      ]
+    }
+  ],
+  "accounts": [
+    { "id": "ac…0220", "version": 3, "holder": { "id": "c1…0220", "className": "RightHolder" }, "name": "Holder 0220 (autopay)", "plates": ["LKS-4419"], "balance": { "currencyType": "USD", "currencyValue": 0 }, "accountStatus": "enabled", "places": [{ "id": "b1…0001", "className": "Place" }], "_transponders": ["TAG-44192"], "_meansOfPayment": "tollTag" },
+    { "id": "ac…0221", "version": 5, "holder": { "id": "c1…0221", "className": "RightHolder" }, "name": "Monthly holder 0221", "plates": ["SYN-9930"], "balance": { "currencyType": "USD", "currencyValue": 0 }, "accountStatus": "enabled", "places": [{ "id": "b1…0001", "className": "Place" }], "_transponders": [], "_meansOfPayment": "mobileAccount" },
+    { "id": "ac…0222", "version": 2, "holder": { "id": "c1…0222", "className": "RightHolder" }, "name": "Holder 0222 (autopay)", "plates": ["LKS-7022"], "balance": { "currencyType": "USD", "currencyValue": 0 }, "accountStatus": "enabled", "places": [{ "id": "b1…0001", "className": "Place" }], "_transponders": ["TAG-70220"], "_meansOfPayment": "tollTag" },
+    { "id": "ac…0231", "version": 7, "holder": { "id": "a2…0031", "className": "Organisation" }, "name": "Northshore Haulage fleet", "plates": [], "balance": { "currencyType": "USD", "currencyValue": 0 }, "accountStatus": "enabled", "places": [{ "id": "b1…0001", "className": "Place" }], "_transponders": ["TAG-80031"], "_meansOfPayment": "tollTag" }
+  ],
+  "payments": [
+    {
+      "id": "9c0d1e2f-3a4b-4c5d-8e6f-7a8b9c0d1905",
+      "transactionID": "TOLL-20260923-040002",
+      "place": { "id": "b1…0001", "className": "Place" },
+      "dateCollected": "2026-09-23T02:11:44Z",
+      "amount": { "currencyType": "USD", "currencyValue": 2.75 },
+      "meansOfPayment": "tollTag",
+      "channel": "other",
+      "paymentStatus": "approved",
+      "captureStatus": "captured",
+      "account": { "id": "ac…0222", "className": "Account" },
+      "postings": [],
+      "_tollTransaction": "e9…0804"
+    }
+  ],
+  "tollTransactions": [
+    {
+      "id": "e9…0804",
+      "version": 3,
+      "tollPoint": { "id": "b4…0001", "className": "SupplementalEquipment" },
+      "observations": [{ "id": "f2…0831", "className": "Observation" }],
+      "credential": { "credentialType": "rfid", "credentialIdentification": "TAG-70220" },
+      "pricing": { "currencyType": "USD", "currencyValue": 2.75 },
+      "payment": { "id": "9c0d1e2f-3a4b-4c5d-8e6f-7a8b9c0d1905", "className": "PaymentRecord" },
+      "transactionStatus": "paid",
+      "statusHistory": [
+        { "state": "created", "time": "2026-09-22T17:40:12Z", "actor": "gantry-hc-01" },
+        { "state": "priced", "time": "2026-09-22T17:40:12Z", "actor": "toll-pricing", "detail": "peak weekday rate, 2-axle" },
+        { "state": "paid", "time": "2026-09-23T02:11:44Z", "actor": "billing-batch", "detail": "account autopay, batch 2026-09-22" }
+      ]
+    },
+    {
+      "id": "e9…0805",
+      "version": 2,
+      "tollPoint": { "id": "b4…0001", "className": "SupplementalEquipment" },
+      "observations": [{ "id": "f2…0841", "className": "Observation" }],
+      "credential": { "credentialType": "rfid", "credentialIdentification": "TAG-80031" },
+      "pricing": { "currencyType": "USD", "currencyValue": 4.25 },
+      "transactionStatus": "priced",
+      "statusHistory": [
+        { "state": "created", "time": "2026-09-22T09:03:50Z", "actor": "gantry-hc-01" },
+        { "state": "priced", "time": "2026-09-22T09:03:54Z", "actor": "toll-pricing", "detail": "3-axle (classifier confidence 0.62)" }
+      ]
+    },
+    {
+      "id": "e9…0806",
+      "version": 2,
+      "tollPoint": { "id": "b4…0001", "className": "SupplementalEquipment" },
+      "observations": [{ "id": "f2…0851", "className": "Observation" }],
+      "credential": { "credentialType": "licensePlate", "credentialIdentification": "LKS-SVC1" },
+      "pricing": { "currencyType": "USD", "currencyValue": 2.75 },
+      "transactionStatus": "priced",
+      "statusHistory": [
+        { "state": "created", "time": "2026-09-22T11:02:17Z", "actor": "gantry-hc-01" },
+        { "state": "priced", "time": "2026-09-22T11:02:17Z", "actor": "toll-pricing" }
+      ]
+    },
+    {
+      "id": "e9…0811",
+      "version": 2,
+      "tollPoint": { "id": "b4…0001", "className": "SupplementalEquipment" },
+      "observations": [{ "id": "f2…0834", "className": "Observation" }],
+      "credential": { "credentialType": "rfid", "credentialIdentification": "TAG-70221" },
+      "pricing": { "currencyType": "USD", "currencyValue": 2.75 },
+      "transactionStatus": "priced",
+      "statusHistory": [
+        { "state": "created", "time": "2026-09-22T19:03:41Z", "actor": "gantry-hc-01", "detail": "buffered read, gantry reboot 18:58" },
+        { "state": "priced", "time": "2026-09-22T19:03:41Z", "actor": "toll-pricing" }
+      ]
+    },
+    {
+      "id": "e9…0812",
+      "version": 2,
+      "tollPoint": { "id": "b4…0001", "className": "SupplementalEquipment" },
+      "observations": [{ "id": "f2…0835", "className": "Observation" }],
+      "credential": { "credentialType": "rfid", "credentialIdentification": "TAG-70222" },
+      "pricing": { "currencyType": "USD", "currencyValue": 2.75 },
+      "transactionStatus": "priced",
+      "statusHistory": [
+        { "state": "created", "time": "2026-09-22T19:03:42Z", "actor": "gantry-hc-01", "detail": "buffered read, gantry reboot 18:58" },
+        { "state": "priced", "time": "2026-09-22T19:03:42Z", "actor": "toll-pricing" }
+      ]
+    },
+    {
+      "id": "e9…0813",
+      "version": 1,
+      "tollPoint": { "id": "b4…0001", "className": "SupplementalEquipment" },
+      "observations": [{ "id": "f2…0836", "className": "Observation" }],
+      "credential": { "credentialType": "rfid", "credentialIdentification": "TAG-70223" },
+      "transactionStatus": "created",
+      "statusHistory": [{ "state": "created", "time": "2026-09-22T19:03:43Z", "actor": "gantry-hc-01", "detail": "buffered read, gantry reboot 18:58" }]
+    }
+  ]
+}

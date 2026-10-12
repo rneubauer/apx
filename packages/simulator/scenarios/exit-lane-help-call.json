@@ -1,0 +1,186 @@
+{
+  "name": "Exit lane help call: a remote gate vend, then a barrier fault",
+  "description": "A driver at Lakeside's exit lane 2 presses the intercom. The remote agent looks at the lane, opens the gate over APX, and watches the command finish. Then the barrier faults, and the next vend is rejected by the PARCS with its reason, and a read-only credential cannot vend at all.",
+  "world": "apx-control",
+  "token": "default",
+  "steps": [
+    {
+      "name": "Lakeside Garage, 18:14 on a Thursday",
+      "narration": "One operator, one cloud call-center. The agent's console speaks APX to the garage's PARCS. Nothing in this demo is mocked by hand: every answer comes from the simulator, checked against the APX bundle.",
+      "clock": {
+        "now": "2026-09-24T18:14:00Z"
+      }
+    },
+    {
+      "name": "A car pulls up to exit lane 2",
+      "narration": "The world acts first. The lane camera reads SYN-1234 and the ticket T-1001 is in the reader.",
+      "inject": {
+        "kind": "vehicleArrives",
+        "lane": "b2…0002",
+        "ticketNumber": "T-1001",
+        "plate": "SYN-1234",
+        "confidence": 0.97
+      }
+    },
+    {
+      "name": "The agent sees who is at the lane",
+      "narration": "One call gives the agent the ticket, the amount due, and the plate read, before they say hello.",
+      "request": {
+        "method": "GET",
+        "path": "/v1/lanes/b2…0002/current"
+      },
+      "expect": {
+        "status": 200,
+        "body": {
+          "currentTicket": {
+            "ticketNumber": "T-1001",
+            "paidInFull": false
+          }
+        }
+      }
+    },
+    {
+      "name": "Payment taken by phone; the agent opens the gate",
+      "narration": "A vend is a command, not a fire-and-forget. The server answers 202 with a command record the agent can follow. The Idempotency-Key means a double-click cannot raise the barrier twice.",
+      "request": {
+        "method": "POST",
+        "path": "/v1/commands",
+        "headers": {
+          "Idempotency-Key": "agent-7-vend-T-1001"
+        },
+        "body": {
+          "commandType": "vendGate",
+          "target": {
+            "id": "b2…0002",
+            "className": "VehicularAccess"
+          },
+          "reason": "customer assistance — payment taken by phone",
+          "expiryTime": "2026-09-24T18:16:00Z"
+        }
+      },
+      "expect": {
+        "status": 202,
+        "body": {
+          "status": "accepted"
+        }
+      },
+      "save": {
+        "cmd": "$.id"
+      }
+    },
+    {
+      "name": "Five seconds later",
+      "narration": "The simulated clock moves on; the PARCS dispatches the command and the barrier rises.",
+      "clock": {
+        "advance": "PT5S"
+      }
+    },
+    {
+      "name": "The agent sees the gate went up",
+      "narration": "The command finished, physically confirmed, with every state change and who made it.",
+      "request": {
+        "method": "GET",
+        "path": "/v1/commands/{cmd}"
+      },
+      "expect": {
+        "status": 200,
+        "body": {
+          "status": "succeeded"
+        }
+      }
+    },
+    {
+      "name": "Subscribers were told at every step",
+      "narration": "Anyone subscribed to command status (the call-center, an ops dashboard) received each transition as a signed webhook.",
+      "events": {
+        "type": "apx.control.command.status.v1",
+        "min": 3
+      }
+    },
+    {
+      "name": "Later: the exit barrier faults",
+      "narration": "The arm sensor reports a fault. The device changes state and a device event goes out.",
+      "inject": {
+        "kind": "deviceState",
+        "device": "c1…0002",
+        "state": "fault",
+        "actor": "barrier arm sensor"
+      }
+    },
+    {
+      "name": "Operations is told the gate is down",
+      "events": {
+        "type": "apx.control.device.state.v1",
+        "min": 1
+      }
+    },
+    {
+      "name": "A second vend on the faulted lane",
+      "narration": "The request itself is well formed, so the server takes it (202). Whether a gate can open is the PARCS’s call, and it will say so on the command.",
+      "request": {
+        "method": "POST",
+        "path": "/v1/commands",
+        "headers": {
+          "Idempotency-Key": "agent-7-vend-2"
+        },
+        "body": {
+          "commandType": "vendGate",
+          "target": {
+            "id": "b2…0002",
+            "className": "VehicularAccess"
+          },
+          "reason": "second vend after the fault"
+        }
+      },
+      "expect": {
+        "status": 202
+      },
+      "save": {
+        "cmd2": "$.id"
+      }
+    },
+    {
+      "name": "A moment later",
+      "clock": {
+        "advance": "PT2S"
+      }
+    },
+    {
+      "name": "The PARCS refuses: the barrier is in fault",
+      "narration": "The command ends rejected, with the reason in its history. The agent knows not to promise the driver an open gate and sends a technician instead.",
+      "request": {
+        "method": "GET",
+        "path": "/v1/commands/{cmd2}"
+      },
+      "expect": {
+        "status": 200,
+        "body": {
+          "status": "rejected"
+        }
+      }
+    },
+    {
+      "name": "A wallboard cannot open gates",
+      "narration": "Scopes matter. A read-only display credential asking for a vend is refused before anything reaches the lane.",
+      "request": {
+        "method": "POST",
+        "path": "/v1/commands",
+        "token": "<apx.control:read only>",
+        "headers": {
+          "Idempotency-Key": "wallboard-1"
+        },
+        "body": {
+          "commandType": "vendGate",
+          "target": {
+            "id": "b2…0002",
+            "className": "VehicularAccess"
+          }
+        }
+      },
+      "expect": {
+        "status": 403,
+        "problem": "insufficient-scope"
+      }
+    }
+  ]
+}

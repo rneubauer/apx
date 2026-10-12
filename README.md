@@ -35,6 +35,7 @@ an APX implementation without changes. APX adds only what APDS lacks:
 | Credentials | Keycard/fob/RFID/mobile lifecycle — issue, suspend, lost, revoke, replace — with media and deposits, access-event history; active records materialized onto the assigned right | `CredentialAssigned`, `CredentialTypeEnum`, `AssignedRight`, `RightHolder` |
 | Valet | Custody with condition evidence (notes, damage entries, photos, acknowledgement), parked position and keys, retrieval queue with ETA from text/app/web/voice bot, staging, verified handback, customer scope (net-new) | `Session` (the stay), `AssignedRight`, `Space`, `Contact`, `Payment` |
 | EV charging | The parking-side view: live charging-point status with camera bay-presence fusion (vehicle not plugged in, bay blocked), ChargingSession on the parking stay with OCPP-aligned state, idle after complete, cost and three settlement modes (one bill at exit), customer status scope; charger control via the command plane; OCPP/OCPI ids carried opaquely | `ElectricChargingEquipment`, `ElectricChargingPoint`, `Connector`, `AuthenticationAndIdentificationEnum`, `Session`, `Space`, `Observation`, `Payment` |
+| Plate lists | Watch, scofflaw, allow, and enforcement-vehicle lists with per-place flags (alert on arrival, refuse service), their entries, and the change feed that keeps an edge copy current (Part 24) |
 
 Extension identity follows the official APDS convention (Use Case §C.2.5):
 `apds-ext:apx:<class>@<version>`.

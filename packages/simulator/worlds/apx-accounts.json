@@ -1,0 +1,171 @@
+{
+  "extends": "base-lakeside",
+  "name": "apx-accounts",
+  "description": "The cast of docs/scenarios/by-module/apx-accounts: J. Smith's accounts at Lakeside (c2…0004) and Harbor Deck (c2…0006), Smithfield Couriers (c2…0005, disabled), tickets T-61077 (declined at exit lane 2, session c4…0022, resolution context e5…0012) and T-1001 (the lost ticket, session c4…0001), the payment ledger e8…02NN, and a Harbor Deck payment and link the Lakeside token cannot see.",
+  "accountsPolicy": {
+    "linkChannels": ["sms", "email"],
+    "linkTtl": "PT1H",
+    "refundApprovalRole": "supervisor",
+    "arSystem": "paris",
+    "authorizationLifecycle": true,
+    "transactionPrefix": "TXN",
+    "transactionStart": 90150,
+    "confirmationStart": 88214,
+    "ivrCardLast4": "8812"
+  },
+  "accounts": [
+    {
+      "id": "c2…0004",
+      "version": 7,
+      "holder": { "id": "c1…0003", "className": "RightHolder" },
+      "name": "J. Smith",
+      "phone": "+15550104567",
+      "email": "j.smith@example.com",
+      "cardNumber": "MP-00417",
+      "plates": ["SYN-1234"],
+      "balance": { "currencyType": "USD", "currencyValue": 185.0 },
+      "accountStatus": "enabled",
+      "places": [{ "id": "b1…0001", "className": "Place" }],
+      "recordInfo": { "creationTime": "2024-02-01T09:00:00Z", "lastUpdate": "2026-09-01T00:05:00Z", "lastUpdateUser": "paris-nightly" }
+    },
+    {
+      "id": "c2…0005",
+      "version": 12,
+      "holder": { "id": "c1…0005", "className": "RightHolder" },
+      "name": "Smithfield Couriers LLC",
+      "phone": "+15550109900",
+      "email": "dispatch@smithfield-couriers.example",
+      "cardNumber": "MP-00522",
+      "plates": ["SYN-7788", "SYN-7789"],
+      "balance": { "currencyType": "USD", "currencyValue": 240.0 },
+      "accountStatus": "disabled",
+      "places": [{ "id": "b1…0001", "className": "Place" }],
+      "recordInfo": { "creationTime": "2025-03-11T14:20:00Z", "lastUpdate": "2026-09-20T00:05:00Z", "lastUpdateUser": "paris-nightly" }
+    },
+    {
+      "id": "c2…0006",
+      "version": 3,
+      "holder": { "id": "c1…0003", "className": "RightHolder" },
+      "name": "J. Smith",
+      "phone": "+15550104567",
+      "email": "j.smith@example.com",
+      "cardNumber": "HD-00091",
+      "plates": ["SYN-1234"],
+      "balance": { "currencyType": "USD", "currencyValue": 0.0 },
+      "accountStatus": "enabled",
+      "places": [{ "id": "b1…0002", "className": "Place" }],
+      "recordInfo": { "creationTime": "2025-06-02T10:00:00Z", "lastUpdate": "2026-09-01T00:05:00Z", "lastUpdateUser": "harbor-ar" }
+    }
+  ],
+  "tickets": [
+    { "ticketNumber": "T-61077", "placeId": "b1…0001", "session": "c4…0022", "amountDue": { "currencyType": "USD", "currencyValue": 18.0 }, "phone": "+15550108812" },
+    { "ticketNumber": "T-1001", "placeId": "b1…0001", "session": "c4…0001", "amountDue": { "currencyType": "USD", "currencyValue": 4.5 } },
+    { "ticketNumber": "T-61303", "placeId": "b1…0001", "amountDue": { "currencyType": "USD", "currencyValue": 11.0 }, "phone": "+15550102210" }
+  ],
+  "sessions": [
+    {
+      "id": "c4…0022", "version": 1, "actualStart": "2026-09-24T17:58:40Z",
+      "initiator": { "id": "a1…0001", "version": 1, "className": "Organisation" },
+      "hierarchyElement": { "id": "b1…0001", "version": 7, "className": "Place" },
+      "identifiedCredentials": [], "segments": [],
+      "_place": "b1…0001", "_ticketNumber": "T-61077", "_phone": "+15550108812",
+      "_amountDue": { "currencyType": "USD", "currencyValue": 18.0 }
+    },
+    {
+      "id": "c4…0001", "version": 1, "actualStart": "2026-09-24T08:02:11Z",
+      "initiator": { "id": "a1…0001", "version": 1, "className": "Organisation" },
+      "hierarchyElement": { "id": "b1…0001", "version": 7, "className": "Place" },
+      "identifiedCredentials": [], "segments": [],
+      "_place": "b1…0001", "_ticketNumber": "T-1001", "_plate": "SYN-1234",
+      "_amountDue": { "currencyType": "USD", "currencyValue": 4.5 }
+    }
+  ],
+  "resolutionContexts": [
+    {
+      "id": "e5…0012",
+      "version": 1,
+      "computedAt": "2026-09-24T21:42:05Z",
+      "status": "full",
+      "correlationId": "8d2b3c4e-5f6a-4b70-9c1d-2e3f4a5b6c80",
+      "place": { "id": "b1…0001", "className": "Place" },
+      "placeDisplay": "Lakeside Garage",
+      "session": { "id": "c4…0022", "className": "Session" },
+      "allowedActions": [
+        { "action": "post-apx-v1-payment-links", "display": "Send payment link", "allowed": true, "execution": { "type": "domain", "operationId": "post-apx-v1-payment-links" } },
+        { "action": "vendGate", "display": "Vend gate", "allowed": false, "reason": { "code": "paymentDeclined", "display": "The card was declined twice at the lane; collect payment first." }, "execution": { "type": "control", "command": "vendGate" } }
+      ]
+    }
+  ],
+  "payments": [
+    {
+      "id": "e8…0206", "transactionID": "TXN-2026-090141",
+      "place": { "id": "b1…0001", "className": "Place" },
+      "dateCollected": "2026-09-24T15:12:48Z",
+      "amount": { "currencyType": "USD", "currencyValue": 50.0 },
+      "meansOfPayment": "paymentCreditCard", "channel": "lane",
+      "paymentStatus": "approved", "captureStatus": "authorized", "captureLater": true,
+      "ticketNumber": "T-61201", "cardLast4": "9034"
+    },
+    {
+      "id": "e8…0207", "transactionID": "PARIS-20260924-01177",
+      "place": { "id": "b1…0001", "className": "Place" },
+      "dateCollected": "2026-09-24T18:24:12Z",
+      "amount": { "currencyType": "USD", "currencyValue": 32.0 },
+      "meansOfPayment": "paymentCreditCard", "channel": "agent",
+      "paymentStatus": "approved", "ticketNumber": "LT-0007", "cardLast4": "0777"
+    },
+    {
+      "id": "e8…0208", "transactionID": "PARIS-20260924-01183",
+      "place": { "id": "b1…0001", "className": "Place" },
+      "dateCollected": "2026-09-24T19:21:55Z",
+      "amount": { "currencyType": "USD", "currencyValue": 24.0 },
+      "meansOfPayment": "paymentCreditCard", "channel": "payStation",
+      "paymentStatus": "approved", "ticketNumber": "T-61040", "cardLast4": "5510"
+    },
+    {
+      "id": "e8…0211", "transactionID": "PS3-20260924-00622",
+      "place": { "id": "b1…0001", "className": "Place" },
+      "dateCollected": "2026-09-24T19:02:17Z",
+      "amount": { "currencyType": "USD", "currencyValue": 14.0 },
+      "meansOfPayment": "paymentCreditCard", "channel": "payStation",
+      "paymentStatus": "approved", "ticketNumber": "T-58214", "cardLast4": "3310"
+    },
+    {
+      "id": "e8…0212", "transactionID": "PS3-20260923-00588",
+      "place": { "id": "b1…0001", "className": "Place" },
+      "dateCollected": "2026-09-23T20:15:40Z",
+      "amount": { "currencyType": "USD", "currencyValue": 9.0 },
+      "meansOfPayment": "paymentCreditCard", "channel": "payStation",
+      "paymentStatus": "approved", "ticketNumber": "T-48214", "cardLast4": "6120"
+    },
+    {
+      "id": "e8…0214", "transactionID": "PS3-20260924-00301",
+      "place": { "id": "b1…0001", "className": "Place" },
+      "dateCollected": "2026-09-24T09:15:03Z",
+      "amount": { "currencyType": "USD", "currencyValue": 6.0 },
+      "meansOfPayment": "paymentCreditCard", "channel": "payStation",
+      "paymentStatus": "approved", "ticketNumber": "T-60932", "cardLast4": "1881"
+    },
+    {
+      "id": "e8…0301", "transactionID": "HD-20260924-00077",
+      "place": { "id": "b1…0002", "className": "Place" },
+      "dateCollected": "2026-09-24T17:40:00Z",
+      "amount": { "currencyType": "USD", "currencyValue": 60.0 },
+      "meansOfPayment": "paymentCreditCard", "channel": "agent",
+      "paymentStatus": "approved", "account": { "id": "c2…0006", "className": "Account" }, "cardLast4": "4410"
+    }
+  ],
+  "paymentLinks": [
+    {
+      "id": "e6…0390", "version": 1,
+      "place": { "id": "b1…0002", "className": "Place" },
+      "account": { "id": "c2…0006", "className": "Account" },
+      "amount": { "currencyType": "USD", "currencyValue": 60.0 },
+      "channel": "sms", "sentTo": "+1•••••••4567", "status": "sent",
+      "expiresAt": "2026-09-25T18:00:00Z"
+    }
+  ],
+  "credentials": {
+    "default": { "scopes": ["apx.accounts:read", "apx.payments:write"], "apx_org": { "id": "a1…0001", "className": "Organisation" }, "apx_places": ["b1…0001"], "user": "agent-console" }
+  }
+}

@@ -574,7 +574,7 @@ actions:
             $ref: "#/components/schemas/Problem"
   - target: $.paths['/sessions'].post.responses['409']
     update:
-      description: "Conflict. APX (Part 5 §5.1a, Part 12 §12.1): a client sending `Accept: application/problem+json` receives problem type `id-collision` (client-supplied id already exists) instead of ResponseStatus."
+      description: "Conflict. APX (Part 5 §5.1a, Part 12 §12.1): a client sending `Accept: application/problem+json` receives problem type `id-collision` (client-supplied id already exists), or `read-already-bound` (a read in `apds-ext:apx:session-detail@1.0` is bound as `entry` or `exit` to another Session of the same place that the write does not name in `supersedes`, Part 5 §5.8 rule 2), instead of ResponseStatus; nothing is written."
       content:
         application/problem+json:
           schema:
@@ -602,7 +602,7 @@ actions:
             $ref: "#/components/schemas/Problem"
   - target: $.paths['/sessions/{id}'].put.responses['409']
     update:
-      description: "Conflict. APX (Part 5 §5.1a, Part 12 §12.1): a client sending `Accept: application/problem+json` receives problem type `version-conflict` (stale `version`) instead of ResponseStatus."
+      description: "Conflict. APX (Part 5 §5.1a, Part 12 §12.1): a client sending `Accept: application/problem+json` receives problem type `version-conflict` (stale `version`), or `read-already-bound` (a read in `apds-ext:apx:session-detail@1.0` is bound as `entry` or `exit` to another Session of the same place that the write does not name in `supersedes`, Part 5 §5.8 rule 2), instead of ResponseStatus; nothing is written."
       content:
         application/problem+json:
           schema:
@@ -1013,6 +1013,11 @@ actions:
       extensions:
         description: "The APDS extension container (Use Case Document §C.2.5; Part 4 §4.3). Undeclared on APDS 4.1 entities (APX erratum 010)."
         $ref: "#/components/schemas/Extensions"
+  - target: $.components.schemas.Payment.allOf['1'].properties
+    update:
+      extensions:
+        description: "The APDS extension container (Use Case Document §C.2.5; Part 4 §4.3). Undeclared on APDS 4.1 entities (APX erratum 010). Carries apds-ext:apx:payment-detail@1.0 with rateSold only; the Payment's own paymentLines are the itemization (Part 13 §13.6a)."
+        $ref: "#/components/schemas/Extensions"
   - target: $.components.schemas.GeoJsonObject.properties
     description: "Erratum 011: GeoJsonObject declares no coordinates member."
     update:
@@ -1021,6 +1026,25 @@ actions:
         items:
           description: "A position member (number) or a nested position array, by geometry type."
         description: "RFC 7946 §3.1 coordinates of a geometry object — for a Point, [longitude, latitude] or [longitude, latitude, elevation] in WGS 84 decimal degrees. Undeclared in APDS 4.1 (APX erratum 011)."
+  # ----- Session detail (Part 5 §5.8): the decoration's consistency rules -----
+  - target: $.paths['/sessions'].post.responses
+    description: "Declare the refusals of Part 5 §5.8: a session-detail decoration that breaks a consistency rule."
+    update:
+      '422':
+        description: "The Session's `apds-ext:apx:session-detail@1.0` breaks a consistency rule of Part 5 §5.8 — more than one `representative` read, `lifecycle` `open` with an `actualEnd` or any other `lifecycle` without one, or a `parent` whose `hierarchyElement` is not an ancestor of this Session's (problem type `request-unprocessable`); or a read naming no Observation visible to the caller (`reference-unknown`). Nothing is written."
+        content:
+          application/problem+json:
+            schema:
+              $ref: "#/components/schemas/Problem"
+  - target: $.paths['/sessions/{id}'].put.responses
+    description: "Declare the refusals of Part 5 §5.8: a session-detail decoration that breaks a consistency rule."
+    update:
+      '422':
+        description: "The Session's `apds-ext:apx:session-detail@1.0` breaks a consistency rule of Part 5 §5.8 — more than one `representative` read, `lifecycle` `open` with an `actualEnd` or any other `lifecycle` without one, or a `parent` whose `hierarchyElement` is not an ancestor of this Session's (problem type `request-unprocessable`); or a read naming no Observation visible to the caller (`reference-unknown`). Nothing is written."
+        content:
+          application/problem+json:
+            schema:
+              $ref: "#/components/schemas/Problem"
   # ----- Lane cameras (F-LPR-18): a duplicate cameraId within a Place -----
   - target: $.paths['/places'].post.responses
     description: "Declare the refusal of Part 13 §13.3a(5): a write that would give two lanes of one Place the same cameraId."

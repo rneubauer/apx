@@ -1,0 +1,13 @@
+{
+  "id": "8d9e0f1a-2b3c-4d4e-9f5a-6b7c8d9e0f1a",
+  "version": 1,
+  "name": "apx-plate-list-categories",
+  "creator": { "id": "a1000000-0000-4000-8000-000000000001", "className": "Organisation" },
+  "locator": "https://apx-standard.org/registries/apx-plate-list-categories.json",
+  "userDefinedCodeListEntries": [
+    { "definedValue": "allow", "entryDescription": "Credentials entitled at the listed places without a right of their own (service vehicles, exempt plates); a match counts as compliant where enforced.", "entryIndex": 0 },
+    { "definedValue": "watch", "entryDescription": "Credentials whose arrival the operator wants to know about; a match raises watchListArrival where alertOnArrival.", "entryIndex": 1 },
+    { "definedValue": "scofflaw", "entryDescription": "Credentials with unpaid notices or a standing refusal from the list owner; a match raises scofflawArrival and, where refuseService, refuses service at the lane.", "entryIndex": 2 },
+    { "definedValue": "enforcementVehicle", "entryDescription": "The list owner's own enforcement and service vehicles, whose visits are recorded but never enforced or screened.", "entryIndex": 3 }
+  ]
+}

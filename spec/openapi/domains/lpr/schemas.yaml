@@ -43,8 +43,32 @@ LprRead:
     imageLink:
       description: |-
         Screenshot/still of the read (APDS Image). Absent when no image was
-        taken or the imagery has been purged (see `purgedImagery`).
+        taken or the imagery has been purged (see `purgedImagery`). The
+        preferred still; every unpurged image is in `images[]`.
       $ref: "../../../vendor/apds/4.1/apds-api-4.1.yaml#/components/schemas/Url"
+    images:
+      type: array
+      description: |-
+        Every unpurged image of the read (Part 13 §13.3c), by kind:
+        the APDS `ImageTypeEnum` values plus `plateExtended` (a wider crop
+        around the plate) and `context` (the scene around the vehicle,
+        wider than the overview), carried as `imageType` strings until
+        APDS adds them. Same access and purge rules as `imageLink`.
+      items:
+        type: object
+        required: [id]
+        properties:
+          id:
+            type: string
+            description: The APDS Image id.
+          imageType:
+            type: string
+            description: "`overview`, `plate` (APDS ImageTypeEnum), `plateExtended`, `context`, or an implementer kind."
+            examples: [plateExtended]
+          imageLink:
+            $ref: "../../../vendor/apds/4.1/apds-api-4.1.yaml#/components/schemas/Url"
+          cameraId:
+            type: string
     lane:
       description: |-
         The VehicularAccess (lane) the read was taken at, when the
@@ -204,6 +228,99 @@ LprReadDetail:
     engine:
       type: string
       description: Recognition engine/vendor identifier, opaque (for confidence calibration downstream).
+    review:
+      type: object
+      description: |-
+        The human-review state of the read (Part 13 §13.3a(4a)): a
+        low-confidence read, or any read in a jurisdiction that requires
+        review, is `pending` until a reviewer confirms, corrects, or
+        rejects it through `PUT /v1/lpr/reads/{observation}/plate`.
+        `notRequired` is a read no rule sent to review. Absent means the
+        implementation does not review reads.
+      properties:
+        state:
+          type: string
+          enum: [pending, confirmed, corrected, rejected, notRequired]
+        reasons:
+          type: array
+          description: Why the read was sent to review — definedValues from `apx-read-review-reasons` (Part 11) or implementer values.
+          items: { type: string }
+        decidedTime:
+          $ref: "../../../vendor/apds/4.1/apds-api-4.1.yaml#/components/schemas/DateTime"
+        decidedBy:
+          type: string
+          description: Opaque reviewer principal.
+        original:
+          type: object
+          description: |-
+            The engine's values before the first correction, with their
+            confidences, kept so the correction is auditable. Set by the
+            server on the first `corrected` decision and never changed
+            afterwards (Part 13 §13.3a(4a)).
+          properties:
+            plate:
+              $ref: "#/AttributeRead"
+            country:
+              $ref: "#/AttributeRead"
+            stateProvince:
+              $ref: "#/AttributeRead"
+
+PlateCorrection:
+  title: PlateCorrection
+  description: |-
+    Request body of `PUT /v1/lpr/reads/{observation}/plate` (Part 13
+    §13.3a(4a)): a reviewer's decision on one read. `confirmed` keeps the
+    engine's values; `corrected` replaces them with the ones given;
+    `rejected` marks the read unusable for pairing and enforcement.
+    `plate`, `country`, and `stateProvince` belong to `corrected` only:
+    sent with another decision they are 422 `request-unprocessable`.
+  type: object
+  required: [decision]
+  properties:
+    decision:
+      type: string
+      enum: [confirmed, corrected, rejected]
+    plate:
+      type: string
+      description: The corrected plate. Required when `decision` is `corrected`; not allowed otherwise.
+    country:
+      type: string
+      description: APDS VehicleAncillaryIdentification.country vocabulary. Only with `corrected`.
+    stateProvince:
+      type: string
+      description: APDS VehicleAncillaryIdentification.stateProvince vocabulary. Only with `corrected`.
+    reason:
+      type: string
+    reviewer:
+      type: string
+      description: Opaque reviewer principal (recorded as `review.decidedBy`).
+    extensions:
+      $ref: "../common/schemas.yaml#/Extensions"
+
+LprReadSearch:
+  title: LprReadSearch
+  description: |-
+    Request body of `POST /v1/lpr/reads:search` (Part 13 §13.3): the same
+    keys as the `GET` lookup, carried in a body so a plate never enters a
+    URL that proxies and access logs keep (Part 9 §9.6). At least one of
+    `plate`, `ticket`, `observation`, or `session` is REQUIRED.
+  type: object
+  properties:
+    plate: { type: string }
+    ticket: { type: string }
+    observation:
+      type: string
+      format: uuid
+    session:
+      type: string
+      format: uuid
+    place:
+      type: string
+      format: uuid
+      description: Narrow results below the grant to one HierarchyElement and its subtree.
+    page:
+      type: integer
+      minimum: 1
 
 LaneCameras:
   title: LaneCameras

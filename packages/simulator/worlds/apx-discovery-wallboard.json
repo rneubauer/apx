@@ -1,0 +1,24 @@
+{
+  "extends": "apx-discovery",
+  "name": "apx-discovery-wallboard",
+  "description": "apx-discovery with the Lakeside wall dashboard (apx.control:read only) as the default credential, for DSC-16.",
+  "credentials": {
+    "default": {
+      "scopes": [
+        "apx.control:read"
+      ],
+      "apx_org": {
+        "id": "a1…0001",
+        "className": "Organisation"
+      },
+      "apx_places": [
+        "b1…0001"
+      ],
+      "user": "wall-lakeside",
+      "rateLimits": {
+        "requestsPerMinute": 300,
+        "burst": 10
+      }
+    }
+  }
+}

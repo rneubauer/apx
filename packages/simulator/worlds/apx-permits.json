@@ -1,0 +1,100 @@
+{
+  "extends": "base-lakeside",
+  "name": "apx-permits",
+  "description": "The cast of docs/scenarios/by-module/apx-permits: Lakeside's pooled monthly permit (120 slots, 117 issued), an unpooled event reservation spec, a Q4 spec with October and November pools, Harbor Deck's pooled monthly outside the grant, three holders, and the bakery's two-van fleet permit.",
+  "clock": { "start": "2026-09-24T14:00:00Z" },
+  "permits": { "defaultTermMonths": 12 },
+  "rightHolders": [
+    { "id": "c1…0201", "name": "Priya Natarajan" },
+    { "id": "c1…0202", "name": "Marcus Bell" },
+    { "id": "c1…0203", "name": "Lakeside Bakery (fleet)" }
+  ],
+  "rightSpecs": [
+    {
+      "id": "e1…0010", "version": 3, "type": "permitParking",
+      "description": [{ "language": "en", "string": "Lakeside monthly permit" }],
+      "issuer": { "id": "a1…0001", "version": 1, "className": "Organisation" },
+      "transferable": false,
+      "credentials": ["licensePlate"],
+      "hierarchyElements": [{ "id": "b1…0001", "version": 4, "className": "Place" }],
+      "validity": { "validityTimeSpecification": { "overallStartTime": "2026-01-01T00:00:00Z" } },
+      "rightPools": [
+        {
+          "id": "e4…0101", "version": 1,
+          "assignedRightsIssuer": { "id": "a1…0001", "version": 1, "className": "Organisation" },
+          "distributedAssignedRights": 117,
+          "availableAssignedRights": 3
+        }
+      ]
+    },
+    {
+      "id": "e1…0011", "version": 1, "type": "oneTimeUseParking",
+      "description": [{ "language": "en", "string": "Lakeside event reservation" }],
+      "issuer": { "id": "a1…0001", "version": 1, "className": "Organisation" },
+      "transferable": false,
+      "credentials": ["licensePlate", "qrCode"],
+      "hierarchyElements": [{ "id": "b1…0001", "version": 4, "className": "Place" }],
+      "validity": { "validityTimeSpecification": { "overallStartTime": "2026-01-01T00:00:00Z" } }
+    },
+    {
+      "id": "e1…0012", "version": 2, "type": "permitParking",
+      "description": [{ "language": "en", "string": "Lakeside monthly permit — Q4 2026" }],
+      "issuer": { "id": "a1…0001", "version": 1, "className": "Organisation" },
+      "transferable": false,
+      "credentials": ["licensePlate"],
+      "hierarchyElements": [{ "id": "b1…0001", "version": 4, "className": "Place" }],
+      "validity": { "validityTimeSpecification": { "overallStartTime": "2026-10-01T00:00:00Z", "overallEndTime": "2026-11-30T23:59:59Z" } },
+      "rightPools": [
+        {
+          "id": "e4…0121", "version": 1,
+          "assignedRightsIssuer": { "id": "a1…0001", "version": 1, "className": "Organisation" },
+          "distributedAssignedRights": 80, "availableAssignedRights": 20,
+          "validity": { "validityTimeSpecification": { "overallStartTime": "2026-10-01T00:00:00Z", "overallEndTime": "2026-10-31T23:59:59Z" } }
+        },
+        {
+          "id": "e4…0122", "version": 1,
+          "assignedRightsIssuer": { "id": "a1…0001", "version": 1, "className": "Organisation" },
+          "distributedAssignedRights": 12, "availableAssignedRights": 88,
+          "validity": { "validityTimeSpecification": { "overallStartTime": "2026-11-01T00:00:00Z", "overallEndTime": "2026-11-30T23:59:59Z" } }
+        }
+      ]
+    },
+    {
+      "id": "e1…0020", "version": 1, "type": "permitParking",
+      "description": [{ "language": "en", "string": "Harbor Deck monthly permit" }],
+      "issuer": { "id": "a1…0002", "version": 1, "className": "Organisation" },
+      "transferable": false,
+      "credentials": ["licensePlate"],
+      "hierarchyElements": [{ "id": "b1…0002", "version": 2, "className": "Place" }],
+      "validity": { "validityTimeSpecification": { "overallStartTime": "2026-01-01T00:00:00Z" } },
+      "rightPools": [
+        {
+          "id": "e4…0201", "version": 1,
+          "assignedRightsIssuer": { "id": "a1…0002", "version": 1, "className": "Organisation" },
+          "distributedAssignedRights": 40, "availableAssignedRights": 10
+        }
+      ]
+    }
+  ],
+  "assignedRights": [
+    {
+      "id": "e2…0103", "version": 2, "_holder": "c1…0203", "_pool": "e4…0101",
+      "rightSpecification": { "id": "e1…0010", "version": 3, "className": "RightSpecification" },
+      "assignedRightIssuer": { "id": "a1…0001", "version": 1, "className": "Organisation" },
+      "rightHolder": {
+        "credentials": [
+          { "credentialAssignedType": "customer", "type": "permit", "identifier": { "id": "c1…0203", "className": "RightHolder" } },
+          { "credentialAssignedType": "vehicle", "type": "licensePlate", "identifier": { "id": "BKR-0001", "className": "licensePlate" } },
+          { "credentialAssignedType": "vehicle", "type": "licensePlate", "identifier": { "id": "BKR-0002", "className": "licensePlate" } }
+        ]
+      },
+      "issueMethod": "permit",
+      "issuanceTime": "2026-09-24T09:30:00Z",
+      "plannedUses": [{ "startTime": "2026-09-24T00:00:00Z", "endTime": "2027-09-23T23:59:59Z" }],
+      "expiry": "2027-09-23T23:59:59Z"
+    }
+  ],
+  "credentials": {
+    "default": { "scopes": ["apx.permits:manage", "apx.data:read", "apx.data:write", "apx.credentials:read", "apx.credentials:manage", "apx.subscriptions:manage"], "apx_org": { "id": "a1…0001", "className": "Organisation" }, "apx_places": ["b1…0001"], "user": "desk-lakeside" }
+  }
+}

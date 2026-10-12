@@ -1,0 +1,30 @@
+{
+  "name": "base-lakeside",
+  "description": "The shared cast every module world extends: Lakeside Parking (a1…0001) running Lakeside Garage (b1…0001), Harbor Parking (a1…0002) running Harbor Deck (b1…0002), the named credentials, and the clock on the evening of 2026-09-24.",
+  "host": "https://api.lakeside-garage.example",
+  "apdsVersion": "4.1",
+  "tokenEndpoint": "https://auth.lakeside-garage.example/oauth2/token",
+  "clock": { "start": "2026-09-24T18:00:00Z" },
+  "actors": { "received": "apx-operator", "parcs": "lakeside-parcs" },
+  "organisation": { "id": "a1…0001", "className": "Organisation" },
+  "organisations": [
+    { "id": "a1…0001", "name": "Lakeside Parking" },
+    { "id": "a1…0002", "name": "Harbor Parking" },
+    { "id": "a1…0003", "name": "CityPark Analytics" }
+  ],
+  "places": [
+    { "id": "b1…0001", "name": "Lakeside Garage", "type": "Place", "operator": "a1…0001", "timeZone": "America/Chicago", "supplyQuantity": 420, "version": 7 },
+    { "id": "b1…0002", "name": "Harbor Deck", "type": "Place", "operator": "a1…0002", "timeZone": "America/Chicago", "supplyQuantity": 300, "version": 2 }
+  ],
+  "credentials": {
+    "default": { "scopes": ["apx.data:read", "apx.data:write", "apx.control:read", "apx.control:execute", "apx.alerts:read", "apx.alerts:write", "apx.subscriptions:manage", "apx.accounts:read", "apx.payments:write", "apx.lpr:read", "apx.reservations:manage", "apx.permits:manage", "apx.tolling:manage", "apx.resolution:read", "apx.support:manage", "apx.violations:read", "apx.violations:manage", "apx.validations:read", "apx.validations:manage", "apx.validations:redeem", "apx.credentials:read", "apx.credentials:manage", "apx.valet:read", "apx.valet:manage", "apx.valet:request"], "apx_org": { "id": "a1…0001", "className": "Organisation" }, "apx_places": ["b1…0001"], "user": "console-lakeside" },
+    "console-lakeside": { "scopes": ["apx.data:read", "apx.control:read", "apx.control:execute", "apx.resolution:read", "apx.subscriptions:manage"], "apx_org": { "id": "a1…0001", "className": "Organisation" }, "apx_places": ["b1…0001"] },
+    "lakeside-parcs": { "scopes": ["apx.data:read", "apx.data:write", "apx.control:read", "apx.control:execute", "apx.alerts:write", "apx.alerts:read", "apx.lpr:read"], "apx_org": { "id": "a1…0001", "className": "Organisation" }, "apx_places": ["b1…0001"] },
+    "ops-lakeside": { "scopes": ["apx.data:read", "apx.data:write", "apx.control:read", "apx.control:execute", "apx.alerts:read", "apx.alerts:write", "apx.subscriptions:manage", "apx.accounts:read", "apx.payments:write", "apx.lpr:read", "apx.reservations:manage", "apx.permits:manage", "apx.tolling:manage", "apx.resolution:read", "apx.support:manage", "apx.violations:read", "apx.violations:manage", "apx.validations:read", "apx.validations:manage", "apx.credentials:read", "apx.credentials:manage", "apx.valet:read", "apx.valet:manage"], "apx_org": { "id": "a1…0001", "className": "Organisation" }, "apx_places": ["*"] },
+    "city-platform": { "scopes": ["apx.data:read", "apx.subscriptions:manage"], "apx_org": { "id": "a1…0003", "className": "Organisation" }, "apx_places": ["b1…0001"] },
+    "bi-citypark": { "scopes": ["apx.data:read", "apx.subscriptions:manage"], "apx_org": { "id": "a1…0003", "className": "Organisation" }, "apx_places": ["b1…0001", "b1…0002"] },
+    "owner-bi": { "scopes": ["apx.data:read"], "apx_org": { "id": "a1…0001", "className": "Organisation" }, "apx_places": ["b1…0001"] },
+    "ivr-trial": { "scopes": ["apx.control:read", "apx.resolution:read"], "apx_org": { "id": "a1…0001", "className": "Organisation" } },
+    "harbor-ops": { "scopes": ["apx.data:read", "apx.data:write", "apx.control:read", "apx.control:execute", "apx.alerts:read", "apx.alerts:write"], "apx_org": { "id": "a1…0002", "className": "Organisation" }, "apx_places": ["b1…0002"] }
+  }
+}

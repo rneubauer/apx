@@ -100,7 +100,9 @@ of:
    [Erratum 009](../errata/009-identifiers-ratetableid-spelling.md).
    Filed upstream as [parkingdata/spec#42](https://github.com/parkingdata/spec/issues/42).
 10. **No entity schema declares `extensions`** (Use Case §C.2.5). The
-    overlay declares it on the eight native entity schemas.
+    overlay declares it on the eight native entity schemas, and on
+    `Payment` for the `apds-ext:apx:payment-detail@1.0` decoration
+    (Part 13 §13.6a).
     [Erratum 010](../errata/010-entities-no-extensions.md).
     Filed upstream as [parkingdata/spec#43](https://github.com/parkingdata/spec/issues/43).
 11. **`GeoJsonObject` declares no `coordinates`.** The overlay declares an

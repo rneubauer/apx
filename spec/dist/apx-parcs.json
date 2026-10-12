@@ -2626,7 +2626,7 @@
             "$ref": "#/components/responses/Forbidden"
           },
           "409": {
-            "description": "Conflict. APX (Part 5 §5.1a, Part 12 §12.1): a client sending `Accept: application/problem+json` receives problem type `id-collision` (client-supplied id already exists) instead of ResponseStatus.",
+            "description": "Conflict. APX (Part 5 §5.1a, Part 12 §12.1): a client sending `Accept: application/problem+json` receives problem type `id-collision` (client-supplied id already exists), or `read-already-bound` (a read in `apds-ext:apx:session-detail@1.0` is bound as `entry` or `exit` to another Session of the same place that the write does not name in `supersedes`, Part 5 §5.8 rule 2), instead of ResponseStatus; nothing is written.",
             "content": {
               "application/json": {
                 "schema": {
@@ -2642,6 +2642,16 @@
                   }
                 }
               },
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "The Session's `apds-ext:apx:session-detail@1.0` breaks a consistency rule of Part 5 §5.8 — more than one `representative` read, `lifecycle` `open` with an `actualEnd` or any other `lifecycle` without one, or a `parent` whose `hierarchyElement` is not an ancestor of this Session's (problem type `request-unprocessable`); or a read naming no Observation visible to the caller (`reference-unknown`). Nothing is written.",
+            "content": {
               "application/problem+json": {
                 "schema": {
                   "$ref": "#/components/schemas/Problem"
@@ -2844,7 +2854,7 @@
             }
           },
           "409": {
-            "description": "Conflict. APX (Part 5 §5.1a, Part 12 §12.1): a client sending `Accept: application/problem+json` receives problem type `version-conflict` (stale `version`) instead of ResponseStatus.",
+            "description": "Conflict. APX (Part 5 §5.1a, Part 12 §12.1): a client sending `Accept: application/problem+json` receives problem type `version-conflict` (stale `version`), or `read-already-bound` (a read in `apds-ext:apx:session-detail@1.0` is bound as `entry` or `exit` to another Session of the same place that the write does not name in `supersedes`, Part 5 §5.8 rule 2), instead of ResponseStatus; nothing is written.",
             "content": {
               "application/json": {
                 "schema": {
@@ -2860,6 +2870,16 @@
                   }
                 }
               },
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "The Session's `apds-ext:apx:session-detail@1.0` breaks a consistency rule of Part 5 §5.8 — more than one `representative` read, `lifecycle` `open` with an `actualEnd` or any other `lifecycle` without one, or a `parent` whose `hierarchyElement` is not an ancestor of this Session's (problem type `request-unprocessable`); or a read naming no Observation visible to the caller (`reference-unknown`). Nothing is written.",
+            "content": {
               "application/problem+json": {
                 "schema": {
                   "$ref": "#/components/schemas/Problem"
@@ -4395,6 +4415,12 @@
         "description": "The commands the caller may see, newest first by the time the\ncommand was received, each with its full `statusHistory` (Part 6\n§6.1b). Only commands whose target lies inside the token's\n`apx_places` grant are returned; naming a `place` outside the grant\nis 403 `insufficient-grant`. All filters combine with AND.",
         "parameters": [
           {
+            "$ref": "#/components/parameters/ModeParam"
+          },
+          {
+            "$ref": "#/components/parameters/CursorParam"
+          },
+          {
             "name": "target",
             "in": "query",
             "schema": {
@@ -4475,7 +4501,7 @@
         ],
         "responses": {
           "200": {
-            "description": "Paginated commands (APDS PaginatedList shape).",
+            "description": "Paginated commands (APDS PaginatedList shape); with `mode=change`, the changes after `cursor` in the same envelope (Part 5 §5.2 rule 8).",
             "content": {
               "application/json": {
                 "schema": {
@@ -4489,6 +4515,21 @@
                       "items": {
                         "$ref": "#/components/schemas/Command"
                       }
+                    },
+                    "updateMode": {
+                      "$ref": "#/components/schemas/ChangeFeedUpdateMode"
+                    },
+                    "cursor": {
+                      "$ref": "#/components/schemas/ChangeFeedCursor"
+                    },
+                    "deleted": {
+                      "$ref": "#/components/schemas/ChangeFeedTombstones"
+                    },
+                    "grantAdditions": {
+                      "$ref": "#/components/schemas/ChangeFeedGrantAdditions"
+                    },
+                    "next": {
+                      "$ref": "#/components/schemas/ChangeFeedNext"
                     }
                   }
                 }
@@ -4500,6 +4541,9 @@
           },
           "403": {
             "$ref": "#/components/responses/Forbidden"
+          },
+          "404": {
+            "$ref": "#/components/responses/CursorRefused"
           },
           "429": {
             "$ref": "#/components/responses/TooManyRequests"
@@ -5168,7 +5212,7 @@
       "post": {
         "operationId": "receive-apx-data-observation-updated",
         "summary": "An ingested Observation was replaced",
-        "description": "Published whenever an ingested Observation changes — for example\nthe LPR system revising `accessEvent` through\n`PUT /v1/lpr/reads/{observation}/access-event` (Part 13 §13.3a(4),\n§13.4). `data` is the\nAPDS `ObservationElement` as it now stands; `subject` and the place\nbinding (`elementIds`) are as for `apx.data.observation.created.v1`.\nConsumers key on the Observation id and keep the highest `version`.\nPlate values are subject to Part 9 §9.6.",
+        "description": "Published whenever an ingested Observation changes — for example\nthe LPR system revising `accessEvent` through\n`PUT /v1/lpr/reads/{observation}/access-event` (Part 13 §13.3a(4),\n§13.4), or a reviewer's plate decision through\n`PUT /v1/lpr/reads/{observation}/plate` (§13.3a(4a)). `data` is the\nAPDS `ObservationElement` as it now stands; `subject` and the place\nbinding (`elementIds`) are as for `apx.data.observation.created.v1`.\nConsumers key on the Observation id and keep the highest `version`.\nPlate values are subject to Part 9 §9.6.",
         "parameters": [
           {
             "name": "APX-Signature",
@@ -5367,6 +5411,10 @@
               "apx.valet:read": "Read valet tickets and the retrieval queue",
               "apx.valet:manage": "Take custody, park, stage, hand back, and manage retrievals",
               "apx.valet:request": "Customer scope — request or cancel retrieval and read status/ETA for the caller's own ticket (text, app, web, voice bot)",
+              "apx.platelists:read": "Read plate lists and their entries, plate values included (Part 24)",
+              "apx.platelists:manage": "Create and maintain plate lists and entries (Part 24)",
+              "apx.digest:use": "Receive the credential digest keys (Part 9 §9.6 rule 6)",
+              "apx.replication:write": "Replay another implementation's records with their original provenance and lifecycle times (Part 18 §18.6)",
               "apx.charging:read": "read charging-point status (with bay presence) and charging sessions",
               "apx.charging:manage": "bridge scope; push point availability, bay observations, open sessions, report timeline events, attach settlement",
               "apx.charging:status": "customer scope; minimized read of the caller's own charging session and the place's charger availability (app, text, voice bot)"
@@ -7981,7 +8029,7 @@
           },
           "parameters": {
             "type": "object",
-            "description": "Command-type-specific parameters. Normative parameter schemas per\ncommandType are given in Part 6 (e.g. lostTicket.method,\npushRate.rateTable VersionedReference, applyValidation.ticket +\nprovider, displayMessage.message, setDeviceState.state,\npushNegotiatedRate.rateTable VersionedReference to a RateTable\nflagged negotiable, matchTicket.session + evidence,\nresetPassback/forceIn/forceOut.credential, courtesyExit.holder)."
+            "description": "Command-type-specific parameters. Normative parameter schemas per\ncommandType are given in Part 6 (e.g. lostTicket.method,\npushRate.rateTable VersionedReference, applyValidation.ticket +\nprovider, displayMessage.message, setDeviceState.state,\npushNegotiatedRate.rateTable VersionedReference to a RateTable\nflagged negotiable, or pushNegotiatedRate.amount AmountInCurrency\n(any amount the agent states, where the host offers the\nnegotiatedAmounts feature), matchTicket.session + evidence,\nresetPassback/forceIn/forceOut.credential, courtesyExit.holder)."
           },
           "requestedBy": {
             "description": "The organisation requesting the action (defaults to the token's apx_org).",
@@ -8144,6 +8192,43 @@
           }
         ]
       },
+      "ChangeFeedUpdateMode": {
+        "title": "ChangeFeedUpdateMode",
+        "type": "string",
+        "const": "change",
+        "description": "Present, with the value `change`, exactly when the page answers\n`mode=change` (Part 5 §5.2 rule 8); absent on an ordinary list page."
+      },
+      "ChangeFeedCursor": {
+        "title": "ChangeFeedCursor",
+        "type": "string",
+        "description": "`mode=change` only. Opaque cursor resuming strictly after the last\nchange in this page (Part 5 §5.2 rules 1, 2, 5)."
+      },
+      "ChangeFeedTombstones": {
+        "title": "ChangeFeedTombstones",
+        "type": "array",
+        "description": "`mode=change` only. Resources removed since the cursor (retention\npurge, Part 9 §9.6; release of a moved place, Part 18 §18.4), as APDS\nDeletedReferences carrying the APX resource's schema name as\n`className`. Retained for the cursor window (Part 5 §5.2 rule 4).",
+        "items": {
+          "$ref": "#/components/schemas/DeletedReference"
+        }
+      },
+      "ChangeFeedGrantAdditions": {
+        "title": "ChangeFeedGrantAdditions",
+        "type": "array",
+        "description": "`mode=change` only. Present on the first page served after the\ncredential's `apx_places` grant gained subtrees: the new subtree roots,\nwhich the client full-syncs with the route's `place` filter before\nrelying on the feed for them (Part 5 §5.2 rule 7).",
+        "items": {
+          "type": "string",
+          "format": "uuid"
+        }
+      },
+      "ChangeFeedNext": {
+        "title": "ChangeFeedNext",
+        "type": [
+          "string",
+          "null"
+        ],
+        "format": "uri-reference",
+        "description": "`mode=change` only. Link to the next page when more changes are\nimmediately available (the same request with this page's `cursor`);\nnull otherwise."
+      },
       "LaneStatus": {
         "title": "LaneStatus",
         "description": "The transaction context at a lane right now (the call-center\nscreen-pop). Composes APDS references and data; adds no\nparallel entities.",
@@ -8224,7 +8309,7 @@
               },
               "negotiatedRate": {
                 "type": "object",
-                "description": "The negotiated rate in effect on this ticket, if a\npushNegotiatedRate command succeeded for it (Part 6 §6.6). Absent\nwhen the ticket prices from the lane's normal rate deck.",
+                "description": "The negotiated rate in effect on this ticket, if a\npushNegotiatedRate command that selected a RateTable succeeded\nfor it (Part 6 §6.6). Absent when the ticket prices from the\nlane's normal rate deck, and absent when the agent stated an\namount instead (see `negotiatedAmount`). At most one of\n`negotiatedRate` and `negotiatedAmount` is present: the latest\nsucceeded pushNegotiatedRate for the ticket decides which.",
                 "required": [
                   "rateTable",
                   "command"
@@ -8245,6 +8330,36 @@
                   "policy": {
                     "description": "The table's `apds-ext:apx:ratepolicy@1.0` decoration as it stood when applied (its displayName is what the agent saw).",
                     "$ref": "#/components/schemas/RatePolicy"
+                  }
+                }
+              },
+              "negotiatedAmount": {
+                "type": "object",
+                "description": "The amount an agent stated for this ticket, if a\npushNegotiatedRate command carrying `parameters.amount` succeeded\nfor it (the negotiatedAmounts feature, Part 6 §6.3, §6.6). Absent\notherwise. It is what the ticket owes, not a discount. At most one\nof `negotiatedRate` and `negotiatedAmount` is present: the latest\nsucceeded pushNegotiatedRate for the ticket decides which.",
+                "required": [
+                  "amount",
+                  "reason",
+                  "agent",
+                  "command"
+                ],
+                "properties": {
+                  "amount": {
+                    "description": "The amount stated, as the command's `parameters.amount`.",
+                    "$ref": "#/components/schemas/AmountInCurrency"
+                  },
+                  "reason": {
+                    "type": "string",
+                    "minLength": 1,
+                    "description": "The command's `reason`, copied for the screen-pop."
+                  },
+                  "agent": {
+                    "type": "string",
+                    "minLength": 1,
+                    "description": "The principal who stated the amount (the command's `agent`), copied for the screen-pop."
+                  },
+                  "command": {
+                    "description": "The pushNegotiatedRate Command that applied it — the audit trail.",
+                    "$ref": "#/components/schemas/Reference"
                   }
                 }
               },
@@ -8702,6 +8817,24 @@
           },
           "apds-ext:apx:permit@1.0": {
             "$ref": "#/components/schemas/PermitExtension"
+          },
+          "apds-ext:apx:permit@1.1": {
+            "$ref": "#/components/schemas/PermitExtension"
+          },
+          "apds-ext:apx:session-detail@1.0": {
+            "$ref": "#/components/schemas/SessionDetail"
+          },
+          "apds-ext:apx:match-evidence@1.0": {
+            "$ref": "#/components/schemas/MatchEvidence"
+          },
+          "apds-ext:apx:violation-source@1.0": {
+            "$ref": "#/components/schemas/ViolationSource"
+          },
+          "apds-ext:apx:payment-detail@1.0": {
+            "$ref": "#/components/schemas/PaymentDetail"
+          },
+          "apds-ext:apx:credential-digest@1.0": {
+            "$ref": "#/components/schemas/CredentialDigest"
           }
         },
         "additionalProperties": {
@@ -9975,6 +10108,10 @@
                 "items": {
                   "$ref": "#/components/schemas/PaymentLine"
                 }
+              },
+              "extensions": {
+                "description": "The APDS extension container (Use Case Document §C.2.5; Part 4 §4.3). Undeclared on APDS 4.1 entities (APX erratum 010). Carries apds-ext:apx:payment-detail@1.0 with rateSold only; the Payment's own paymentLines are the itemization (Part 13 §13.6a).",
+                "$ref": "#/components/schemas/Extensions"
               }
             },
             "required": [
@@ -10248,6 +10385,19 @@
               "major",
               "critical"
             ]
+          },
+          "alertTypes": {
+            "type": "array",
+            "description": "For alert topics — only alerts whose `alertType` is listed are\ndelivered (Part 8 §8.5a). Values are `apx-alert-types` entries or\nimplementer types; combines with `severityFloor` (both must hold).",
+            "items": {
+              "type": "string"
+            },
+            "examples": [
+              [
+                "scofflawArrival",
+                "refusedServiceArrival"
+              ]
+            ]
           }
         }
       },
@@ -10273,6 +10423,13 @@
           "lastUpdateUser": {
             "type": "string",
             "description": "Human or system principal that last updated the record."
+          },
+          "origin": {
+            "type": "string",
+            "description": "The implementation that first created the record, when it differs\nfrom the one serving it (Part 18 §18.6 replication): the origin's\n`EventEnvelope.source` value. Absent on records the serving\nimplementation created itself.",
+            "examples": [
+              "https://edge.lakeside-garage.example/v1"
+            ]
           }
         }
       },
@@ -10323,7 +10480,7 @@
       },
       "CommandResult": {
         "title": "CommandResult",
-        "description": "The structured outcome of a command, populated by the server when the\ncommand reaches `succeeded` (Part 6 §6.1a) and absent before then. Members\nare normative per command type: `lostTicket` → `ticketNumber`, `session`,\n`amountDue`; `matchTicket` → `session`, `amountDue`;\n`pushNegotiatedRate` → `rateTable`, `amountDue`. Other command types\nleave it absent unless a registry entry says otherwise. It restates what\nthe lane inquiry shows, so a console can continue (print, take payment)\nwithout parsing `statusHistory[].detail` or making a second call.",
+        "description": "The structured outcome of a command, populated by the server when the\ncommand reaches `succeeded` (Part 6 §6.1a) and absent before then. Members\nare normative per command type: `lostTicket` → `ticketNumber`, `session`,\n`amountDue`; `matchTicket` → `session`, `amountDue`;\n`pushNegotiatedRate` → `amountDue`, and `rateTable` when a table was\nselected (absent for a stated amount, which the lane inquiry reports\nas `currentTicket.negotiatedAmount`). Other command types\nleave it absent unless a registry entry says otherwise. It restates what\nthe lane inquiry shows, so a console can continue (print, take payment)\nwithout parsing `statusHistory[].detail` or making a second call.",
         "type": "object",
         "readOnly": true,
         "properties": {
@@ -10340,8 +10497,37 @@
             "$ref": "#/components/schemas/AmountInCurrency"
           },
           "rateTable": {
-            "description": "The RateTable at the exact version applied (pushNegotiatedRate).",
+            "description": "The RateTable at the exact version applied (pushNegotiatedRate with a table; absent for a stated amount).",
             "$ref": "#/components/schemas/VersionedReference"
+          },
+          "display": {
+            "type": "object",
+            "description": "Proof of display for `displayMessage` (Part 6 §6.1a): what the\ndevice confirmed it showed, when, and whether the player or an\noperator acknowledged it.",
+            "properties": {
+              "shownTime": {
+                "$ref": "#/components/schemas/DateTime"
+              },
+              "contentHash": {
+                "type": "string",
+                "description": "Hash of the rendered content, so a dispute can prove what was shown."
+              },
+              "wordingVersion": {
+                "type": "string",
+                "description": "The wording version the template was rendered under."
+              },
+              "screenshot": {
+                "description": "Access-controlled link to a capture of the display (Part 9 §9.6).",
+                "$ref": "#/components/schemas/Url"
+              },
+              "acknowledgedBy": {
+                "type": "string",
+                "enum": [
+                  "player",
+                  "operator",
+                  "none"
+                ]
+              }
+            }
           },
           "extensions": {
             "$ref": "#/components/schemas/Extensions"
@@ -10624,6 +10810,51 @@
           "engine": {
             "type": "string",
             "description": "Recognition engine/vendor identifier, opaque (for confidence calibration downstream)."
+          },
+          "review": {
+            "type": "object",
+            "description": "The human-review state of the read (Part 13 §13.3a(4a)): a\nlow-confidence read, or any read in a jurisdiction that requires\nreview, is `pending` until a reviewer confirms, corrects, or\nrejects it through `PUT /v1/lpr/reads/{observation}/plate`.\n`notRequired` is a read no rule sent to review. Absent means the\nimplementation does not review reads.",
+            "properties": {
+              "state": {
+                "type": "string",
+                "enum": [
+                  "pending",
+                  "confirmed",
+                  "corrected",
+                  "rejected",
+                  "notRequired"
+                ]
+              },
+              "reasons": {
+                "type": "array",
+                "description": "Why the read was sent to review — definedValues from `apx-read-review-reasons` (Part 11) or implementer values.",
+                "items": {
+                  "type": "string"
+                }
+              },
+              "decidedTime": {
+                "$ref": "#/components/schemas/DateTime"
+              },
+              "decidedBy": {
+                "type": "string",
+                "description": "Opaque reviewer principal."
+              },
+              "original": {
+                "type": "object",
+                "description": "The engine's values before the first correction, with their\nconfidences, kept so the correction is auditable. Set by the\nserver on the first `corrected` decision and never changed\nafterwards (Part 13 §13.3a(4a)).",
+                "properties": {
+                  "plate": {
+                    "$ref": "#/components/schemas/AttributeRead"
+                  },
+                  "country": {
+                    "$ref": "#/components/schemas/AttributeRead"
+                  },
+                  "stateProvince": {
+                    "$ref": "#/components/schemas/AttributeRead"
+                  }
+                }
+              }
+            }
           }
         },
         "examples": [
@@ -10767,7 +10998,7 @@
       },
       "PermitExtension": {
         "title": "PermitExtension",
-        "description": "The `apds-ext:apx:permit@1.0` extension object (Part 14 §14.2): links a\nrenewal permit to the one it renews, so a portal can follow the chain.",
+        "description": "The `apds-ext:apx:permit@1.1` extension object (Part 14 §14.2; `@1.0`\nremains valid and carries the first two members only): links a renewal\npermit to the one it renews, so a portal can follow the chain, and\ncaps how many of a multi-vehicle permit's vehicles may be parked at\nonce (§14.2d).",
         "type": "object",
         "properties": {
           "renews": {
@@ -10778,6 +11009,323 @@
             "description": "Set by the server on the renewed permit when a renewal is issued.",
             "readOnly": true,
             "$ref": "#/components/schemas/Reference"
+          },
+          "maxConcurrentVehicles": {
+            "type": "integer",
+            "minimum": 1,
+            "description": "How many of the permit's registered vehicles may be parked at the\nplace at once (Part 14 §14.2d). Absent means every registered\nvehicle may. A vehicle beyond the limit is an overage."
+          },
+          "overageBilling": {
+            "type": "object",
+            "description": "What an overage costs (Part 14 §14.2d).",
+            "required": [
+              "mode"
+            ],
+            "properties": {
+              "mode": {
+                "type": "string",
+                "enum": [
+                  "rack",
+                  "dayRate",
+                  "none"
+                ],
+                "description": "`rack` — the place's transient rate deck; `dayRate` — the flat `dayRate`; `none` — recorded, not billed."
+              },
+              "dayRate": {
+                "$ref": "#/components/schemas/AmountInCurrency"
+              }
+            }
+          }
+        }
+      },
+      "SessionDetail": {
+        "title": "SessionDetail",
+        "description": "The `apds-ext:apx:session-detail@1.0` decoration on an APDS Session\n(Part 5 §5.8): what the pairing of reads decided and APDS has no\nmembers for — the reads behind the visit, why and how it ended, the\nmatches it rests on, and the parent visit of an area Session. Written\nwith the native Session POST/PUT by an external pairing engine; a\nserver that pairs reads itself SHOULD write the same block on its own\nSessions. A plain APDS client ignores it. It adds no event topic and\ncarries no plate characters. A write that breaks a consistency rule\nof §5.8 is 422 and nothing is written.",
+        "type": "object",
+        "properties": {
+          "reads": {
+            "type": "array",
+            "description": "The reads attached to this Session. A read already bound as\n`entry` or `exit` to another Session of the same place is refused\nwith 409 `read-already-bound` unless `supersedes` names that Session.\nA read naming no Observation visible to the caller is 422\n`reference-unknown`.",
+            "items": {
+              "$ref": "#/components/schemas/SessionReadBinding"
+            }
+          },
+          "supersedes": {
+            "description": "The Session whose reads this write takes over (a re-pairing).",
+            "$ref": "#/components/schemas/Reference"
+          },
+          "lifecycle": {
+            "type": "string",
+            "enum": [
+              "open",
+              "ended",
+              "final",
+              "disputed"
+            ],
+            "description": "`open` — a vehicle is in the facility, no `actualEnd` yet; `ended` —\nclosed, may still be revised; `final` — no further revision\nexpected; `disputed` — under review. Every state but `open` requires\n`actualEnd`, and `open` forbids it (422 `request-unprocessable`\notherwise). `final` is the writer's statement, never a lock: a\nserver MUST NOT refuse a later revision on that ground."
+          },
+          "closure": {
+            "$ref": "#/components/schemas/SessionClosure"
+          },
+          "flags": {
+            "type": "array",
+            "description": "Open flags — `entryUnknown`, `orphanExit`, `reentry`, `passThrough`, or implementer values.",
+            "items": {
+              "type": "string"
+            }
+          },
+          "matches": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/MatchEvidence"
+            }
+          },
+          "parent": {
+            "description": "The visit this area Session is part of (className `Session`). The\nparent's `hierarchyElement` MUST be an ancestor of this Session's\n(422 `request-unprocessable` otherwise). Consumers count visits by\nSessions without `parent`; children still open when the parent\nends SHOULD be closed no later than its `actualEnd` with `endReason`\n`parentExit`.",
+            "$ref": "#/components/schemas/Reference"
+          },
+          "passThrough": {
+            "type": "boolean",
+            "description": "An area stay shorter than the area's minimum dwell — never scored or billed."
+          }
+        }
+      },
+      "MatchEvidence": {
+        "title": "MatchEvidence",
+        "description": "How a link to a Session was established and how sure it is (Part 5\n§5.8; shared by the `matches[]` member of\n`apds-ext:apx:session-detail@1.0` and the decoration\n`apds-ext:apx:match-evidence@1.0` on a Violation or ValetTicket).\nCarries no plate characters and no vehicle attribute values\n(Part 9 §9.6). Where both ends of one link carry evidence (the\nSession's `matches[]` entry and the decoration on the Violation or\nValetTicket), the two MUST agree. Evidence with `plate.method:\nlenient` or `applied: false` may excuse a stay but never accuse one:\n`issue` on a Violation resting on it is 409 `violation-not-issuable`\n(Part 19 §19.4 rule 5).",
+        "type": "object",
+        "required": [
+          "target",
+          "matchType",
+          "applied"
+        ],
+        "properties": {
+          "target": {
+            "description": "The record at the other end of the link. In `matches[]`: an\nAssignedRight, a ValetTicket, a Violation, a PlateListEntry, or an\nObservation. In the decoration on a Violation or ValetTicket: the\nSession.",
+            "$ref": "#/components/schemas/Reference"
+          },
+          "matchType": {
+            "type": "string",
+            "enum": [
+              "right",
+              "valet",
+              "violation",
+              "list",
+              "exitPairing",
+              "sweep",
+              "other"
+            ],
+            "description": "The kind of link: `right` — an AssignedRight covers the stay;\n`valet` — a ValetTicket's stay; `violation` — a Violation's stay;\n`list` — a plate-list entry matched the vehicle (Part 24);\n`exitPairing` — an exit read paired to the Session's entry;\n`sweep` — the vehicle seen during an inventory or patrol sweep tied\nto the Session; `other` — anything else.",
+            "examples": [
+              "right"
+            ]
+          },
+          "plate": {
+            "type": "object",
+            "description": "How the plate strings agreed, when the link rests on a plate.",
+            "required": [
+              "method"
+            ],
+            "properties": {
+              "method": {
+                "type": "string",
+                "enum": [
+                  "exact",
+                  "alias",
+                  "fold",
+                  "fuzzy",
+                  "lenient",
+                  "reviewer"
+                ],
+                "description": "`exact` — the same characters; `alias` — a plate the right or\naccount lists for the same vehicle; `fold` — equal after\nfolding look-alike characters (O/0, I/1, B/8); `fuzzy` — within\nthe implementation's edit-cost threshold; `lenient` — accepted\nunder a relaxed rule that may excuse a stay but never accuse\none; `reviewer` — a person judged the plates to match where no\nautomatic method did."
+              },
+              "editCost": {
+                "type": [
+                  "number",
+                  "null"
+                ],
+                "minimum": 0,
+                "description": "The weighted edit cost of a `fuzzy` or `lenient` match; null otherwise."
+              },
+              "jurisdiction": {
+                "type": "string",
+                "enum": [
+                  "agrees",
+                  "differs",
+                  "unknown"
+                ]
+              }
+            }
+          },
+          "vehicle": {
+            "type": "object",
+            "description": "The vehicle-attribute evidence (make, model, colour) behind the match, as a level and a score — never the values.",
+            "required": [
+              "level"
+            ],
+            "properties": {
+              "level": {
+                "type": "string",
+                "enum": [
+                  "unknown",
+                  "mismatch",
+                  "inconclusive",
+                  "weak",
+                  "good",
+                  "strong"
+                ],
+                "description": "`unknown` — not compared; `mismatch` — the attributes contradict\nthe match; `inconclusive` — compared, no signal; `weak`, `good`,\n`strong` — increasing support."
+              },
+              "llr": {
+                "type": "number",
+                "description": "Log-likelihood ratio of the vehicle evidence."
+              },
+              "model": {
+                "type": "string",
+                "description": "The evidence model and version that scored it, opaque."
+              }
+            }
+          },
+          "applied": {
+            "type": "boolean",
+            "description": "False is a shadow match — recorded for evaluation, not acted on. A\nlink the record actually carries has `applied: true`."
+          },
+          "decidedBy": {
+            "type": "string",
+            "enum": [
+              "system",
+              "person"
+            ],
+            "description": "Whether software or a person made the link. A `matchTicket` that\nbinds a lane-inquiry candidate SHOULD be recorded as `person`\n(Part 5 §5.8 rule 5)."
+          },
+          "decidedTime": {
+            "description": "When the link was made.",
+            "$ref": "#/components/schemas/DateTime"
+          }
+        }
+      },
+      "ViolationSource": {
+        "title": "ViolationSource",
+        "description": "The `apds-ext:apx:violation-source@1.0` decoration (Part 19 §19.13): a\nviolation issued by an external enforcement system and imported\nthrough `POST /v1/enforcement/violation-imports`, keyed on `system` +\n`recordId`. `sourceRevision`, or without one `sourceUpdatedTime`,\norders the source's revisions.",
+        "type": "object",
+        "required": [
+          "system",
+          "recordId"
+        ],
+        "properties": {
+          "system": {
+            "type": "string",
+            "description": "The issuing system, opaque (`passport`, `aims`…)."
+          },
+          "recordId": {
+            "type": "string",
+            "description": "The source's own citation or record id."
+          },
+          "sourceStatus": {
+            "type": "string",
+            "description": "The source's own status vocabulary, carried as reported (`issued`, `warned`, `voided`, `dismissed`, `partiallyPaid`…)."
+          },
+          "sourceRevision": {
+            "type": "integer",
+            "minimum": 0,
+            "description": "The source's revision counter; a re-import with a higher value updates the record."
+          },
+          "sourceUpdatedTime": {
+            "description": "When the source last changed the record. Orders revisions when the source keeps no `sourceRevision`.",
+            "$ref": "#/components/schemas/DateTime"
+          },
+          "receivedTime": {
+            "description": "When this server applied the revision it now holds. Server-set.",
+            "readOnly": true,
+            "$ref": "#/components/schemas/DateTime"
+          },
+          "officer": {
+            "type": "string",
+            "description": "The source's officer identifier, opaque."
+          },
+          "violationCode": {
+            "type": "string",
+            "description": "The source's own violation code, when it has no `apx-violation-types` equivalent."
+          }
+        }
+      },
+      "PaymentDetail": {
+        "title": "PaymentDetail",
+        "description": "The `apds-ext:apx:payment-detail@1.0` decoration (Part 13 §13.6a) on a\n`PaymentRecord` or an APDS `Payment`: the rate sold and the lines that\nsum to the total, so revenue reports and the deck price check have\nthe base amount, the fee, and the product without a bilateral code.\nOn a `PaymentRecord` it carries `rateSold` and `lines`; on a native\nAPDS `Payment` it carries `rateSold` only, because the Payment's own\n`paymentLines` are the itemization there.",
+        "type": "object",
+        "minProperties": 1,
+        "properties": {
+          "rateSold": {
+            "type": "object",
+            "description": "The rate the vendor sold, as the vendor names it.",
+            "properties": {
+              "id": {
+                "type": "string",
+                "description": "The vendor's rate id, or the APDS RateTable id when the deck is the source."
+              },
+              "name": {
+                "type": "string"
+              },
+              "rateTable": {
+                "description": "The APDS RateTable at the version applied, when known.",
+                "$ref": "#/components/schemas/VersionedReference"
+              },
+              "product": {
+                "type": "string",
+                "enum": [
+                  "standard",
+                  "pass",
+                  "other"
+                ]
+              },
+              "class": {
+                "type": "string",
+                "enum": [
+                  "standard",
+                  "validation",
+                  "discount",
+                  "zeroed",
+                  "other"
+                ]
+              }
+            }
+          },
+          "lines": {
+            "type": "array",
+            "minItems": 1,
+            "description": "The itemization, as APDS `PaymentLine`s (by `$ref`, never\nre-shaped). Each line's code is its `idCode`: a definedValue of\n`apx-payment-line-codes` (Part 11) or an implementer code. A line\ncoded `validation` has `paymentType: validation` and its `value` is\nthe value the validation offset (not money collected); every other\nline has `paymentType: payment`, and a reduction (`discount`) is a\nnegative `value`. The `currencyValue`s of the `paymentType:\npayment` lines MUST sum to the record's `amount`, in its\n`currencyType`; otherwise 422 `request-unprocessable` and nothing\nis charged. Only on a `PaymentRecord`: on a native APDS `Payment`\nthe itemization is that Payment's own `paymentLines` and this\nmember is absent (one store, Part 13 §13.6a).",
+            "items": {
+              "$ref": "#/components/schemas/PaymentLine"
+            }
+          }
+        }
+      },
+      "CredentialDigest": {
+        "title": "CredentialDigest",
+        "description": "The `apds-ext:apx:credential-digest@1.0` decoration (Part 9 §9.6 rule\n6): a keyed digest of a normalized credential identification (a plate),\nso a consumer that only needs \"same plate?\" can match without the\nplate itself. `value` is base64url(HMAC-SHA-256(key, normalized\nidentification)); the key is named by `keyId` and distributed through\n`GET /v1/digest-keys`. Visible under `apx.data:read`.",
+        "type": "object",
+        "required": [
+          "alg",
+          "keyId",
+          "value"
+        ],
+        "properties": {
+          "alg": {
+            "type": "string",
+            "enum": [
+              "HS256"
+            ]
+          },
+          "keyId": {
+            "type": "string",
+            "description": "The digest key the value was computed under (rotation by keyId)."
+          },
+          "value": {
+            "type": "string",
+            "description": "base64url, no padding."
+          },
+          "credentialType": {
+            "$ref": "#/components/schemas/CredentialTypeEnum"
           }
         }
       },
@@ -11556,6 +12104,64 @@
             "type": "number",
             "minimum": 0,
             "maximum": 1
+          }
+        }
+      },
+      "SessionReadBinding": {
+        "title": "SessionReadBinding",
+        "description": "One LPR read attached to a Session by the pairing engine (Part 5\n§5.8, member `reads[]` of `apds-ext:apx:session-detail@1.0`).",
+        "type": "object",
+        "required": [
+          "observation",
+          "role"
+        ],
+        "properties": {
+          "observation": {
+            "description": "The APDS ObservationElement (className `ObservationElement`).",
+            "$ref": "#/components/schemas/Reference"
+          },
+          "role": {
+            "type": "string",
+            "enum": [
+              "entry",
+              "exit",
+              "duplicate",
+              "activity"
+            ],
+            "description": "`entry` and `exit` are the passages that opened and closed the\nvisit; `duplicate` is the same passage seen by another camera or\nframe; `activity` is the vehicle seen inside (a sweep, a bay camera)."
+          },
+          "representative": {
+            "type": "boolean",
+            "description": "The read that stands for the visit in lists and screen-pops. At\nmost one per Session; two are 422 `request-unprocessable` (Part 5\n§5.8 rule 1)."
+          }
+        }
+      },
+      "SessionClosure": {
+        "title": "SessionClosure",
+        "description": "Why and how a Session ended (Part 5 §5.8).",
+        "type": "object",
+        "properties": {
+          "endReason": {
+            "type": "string",
+            "description": "definedValue from `apx-session-end-reasons` (Part 11) or an implementer code list.",
+            "examples": [
+              "exitRead"
+            ]
+          },
+          "endInferred": {
+            "type": "boolean",
+            "description": "True when `actualEnd` was set by a rule rather than observed."
+          },
+          "startObserved": {
+            "type": "boolean",
+            "description": "False declares `actualStart` synthetic — an exit-only Session whose\nentry was never observed; the writer SHOULD then set `actualStart`\nequal to `actualEnd`. Consumers MUST exclude such Sessions from\ndwell statistics and from occupancy (Part 5 §5.8 rule 4). Absent\nmeans true."
+          },
+          "rule": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "The implementer rule that closed a `stale` Session (e.g. `transient-48h`); null when none applied."
           }
         }
       },
@@ -13154,6 +13760,16 @@
             }
           }
         }
+      },
+      "CursorRefused": {
+        "description": "`mode=change` only (Part 5 §5.2): the cursor is unknown, older\nthan the retention window, or was issued for another (class,\ncredential, filter set). Problem type `target-not-found`; re-sync\nwith `mode=full`. The cursor is an APX parameter, so this refusal\nis always a Problem (Part 5 §5.2 rules 2 and 5).",
+        "content": {
+          "application/problem+json": {
+            "schema": {
+              "$ref": "#/components/schemas/Problem"
+            }
+          }
+        }
       }
     },
     "parameters": {
@@ -13309,7 +13925,7 @@
         "name": "mode",
         "in": "query",
         "required": false,
-        "description": "APX data profile: `full` (default — behaves exactly like stock APDS 4.1)\nor `change` (return a ChangeFeedPage of deltas since `cursor`/`since`).",
+        "description": "APX change feed (Part 5 §5.2): `full` (default — the route's ordinary\nlist; on a native APDS route, exactly stock APDS 4.1) or `change` (the\nchanges after `cursor`: a ChangeFeedPage on a native route, the route's\nown list envelope with the change-page members on an APX list route,\nrule 8; on an APX list route without a cursor, an empty page holding the\ncurrent head cursor).",
         "schema": {
           "type": "string",
           "enum": [
@@ -13323,7 +13939,7 @@
         "name": "cursor",
         "in": "query",
         "required": false,
-        "description": "Opaque change-feed cursor from a previous ChangeFeedPage. Only meaningful with `mode=change`.",
+        "description": "Opaque change-feed cursor from a previous change page. Only meaningful with `mode=change`; a refused cursor is 404 `target-not-found` (Part 5 §5.2 rules 2 and 5).",
         "schema": {
           "type": "string"
         }

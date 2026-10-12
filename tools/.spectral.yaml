@@ -27,14 +27,14 @@ rules:
         match: "^(apx\\.[a-z0-9-]+(\\.[a-z0-9-]+)+\\.v\\d+|[A-Z][A-Za-z]+|apx-[a-z0-9-]+)$"
 
   apx-path-casing:
-    description: APX paths are lowercase kebab-case (APDS-native paths inherited verbatim are already compliant).
+    description: APX paths are lowercase kebab-case (APDS-native paths inherited verbatim are already compliant); a trailing `:verb` custom-method segment (`/v1/lpr/reads:search`, Part 9 §9.6) is allowed.
     severity: error
     given: $.paths
     then:
       field: "@key"
       function: pattern
       functionOptions:
-        match: "^\\/((\\.well-known|[a-z0-9\\-._]+|\\{[a-zA-Z][a-zA-Z0-9]*\\})\\/?)*$"
+        match: "^\\/((\\.well-known|[a-z0-9\\-._]+|\\{[a-zA-Z][a-zA-Z0-9]*\\})\\/?)*(:[a-z]+)?$"
 
   # Part 12 §12.3: every secured APX operation declares the shared auth and
   # throttling responses. Scoped to APX-owned paths (/v1/…, /webhooks…);

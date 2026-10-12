@@ -1,6 +1,6 @@
 # APX Scenarios — the API at work
 
-Twenty-seven end-to-end stories showing real wire exchanges against an APX
+Thirty-two end-to-end stories showing real wire exchanges against an APX
 implementation. Every JSON payload marked with an `<!-- apx:validate … -->`
 comment is machine-validated against the bundled spec by
 `npm run scenarios:check` — the samples cannot drift from the standard.
@@ -34,11 +34,16 @@ comment is machine-validated against the bundled spec by
 | [25](25-ticket-matching-exit-lane.md) | Ticket matching — no ticket at the exit: the camera's entry read is offered as a candidate, a permit holder is found by phone, the agent binds the open session, the exit prices from the real entry, and the lost-ticket fee is the fallback, not the default | `apx-control`, `apx-lpr`, `apx-accounts` |
 | [26](26-ev-charging-one-bill-idle-unlock.md) | EV charging — the camera catches an ICE in the bay, a free-vend charge attributed to the parking stay by bay LPR, idle after complete, `unlockConnector`, one bill at exit | `apx-charging`, `apx-control`, `apx-events` |
 | [27](27-lpr-reversible-lane.md) | Reversible lane — one camera facing each way so a rear plate is read in either mode, an old front-plate camera on the entry lane, a read first reported `unknown` and corrected by the LPR system, and the `observation.updated.v1` event that carries the correction to billing | `apx-lpr`, `apx-events` |
+| [28](28-session-detail-pairing-client.md) | A separate pairing service writes what it decided — the reads behind a visit, a permit matched by folding a look-alike character, the valet section as a child of the visit, a car seen only leaving, and a read claimed twice | `apx-data`, `apx-lpr` |
+| [29](29-lpr-plate-review.md) | Plate review — a low-confidence read held back from enforcement, an issue refused while its review is pending, a person corrects the plate from the image (the engine's values kept in `review.original`), the replacement reaches the pipeline as an event and the overstay is dismissed, and a reflector read rejected outright | `apx-lpr`, `apx-violations`, `apx-events` |
+| [30](30-violation-imported-citation.md) | A citation written on another system — imported with the issuer's times and status, a part payment as a newer revision, the stay linked that night through the session route with its match evidence, and reporting finding it by the issuer's record id | `apx-violations`, `apx-events` |
+| [31](31-change-feed-after-link-loss.md) | Three days offline — an enforcement back office on its own server catches up by cursor: the head cursor before the first full list, whole violations and a retention tombstone after the outage, a filtered feed that still sees a paid notice leave it, the payment ledger feed that refuses a card-fragment search, and a cursor too old to honour | `apx-violations`, `apx-accounts`, `apx-payment-history` |
+| [32](32-payment-detail-revenue.md) | Payment detail — an online booking itemized into price and convenience fee as APDS `PaymentLine`s with the rate it sold, lines that don't add up refused before any charge, a fee refund that leaves the lines alone, a validated stay materialized as a native APDS Payment, and the revenue report that splits parking from fees | `apx-accounts`, `apx-payment-history`, `apx-data` |
 
 ## By module — the vetting suite
 
 Under these stories sits the test bench the spec was vetted with:
-[**377 scenarios, one folder per conformance class**](by-module/README.md),
+[**379 scenarios, one folder per conformance class**](by-module/README.md),
 each with its findings. Every request and response is checked against the
 bundle by `npm run vetting`.
 
@@ -50,9 +55,9 @@ awaiting triage.
 |---|---|---|
 | [`apx-accounts`](by-module/apx-accounts/scenarios.md) | 26 | [14](by-module/apx-accounts/findings.md) |
 | [`apx-alerts`](by-module/apx-alerts/scenarios.md) | 22 | [9](by-module/apx-alerts/findings.md) |
-| [`apx-control`](by-module/apx-control/scenarios.md) | 25 | [10](by-module/apx-control/findings.md) |
+| [`apx-control`](by-module/apx-control/scenarios.md) | 26 | [10](by-module/apx-control/findings.md) |
 | [`apx-credentials`](by-module/apx-credentials/scenarios.md) | 26 | [11](by-module/apx-credentials/findings.md) |
-| [`apx-data`](by-module/apx-data/scenarios.md) | 33 | [16](by-module/apx-data/findings.md) |
+| [`apx-data`](by-module/apx-data/scenarios.md) | 34 | [16](by-module/apx-data/findings.md) |
 | [`apx-discovery`](by-module/apx-discovery/scenarios.md) | 16 | [14](by-module/apx-discovery/findings.md) |
 | [`apx-events`](by-module/apx-events/scenarios.md) | 24 | [17](by-module/apx-events/findings.md) |
 | [`apx-lpr`](by-module/apx-lpr/scenarios.md) | 35 | [19](by-module/apx-lpr/findings.md) |

@@ -224,3 +224,10 @@ for the car to be charged — `requested`, `targetStateOfChargePercent`,
 settles on the stay's APDS Session by default. The customer read (§22.5)
 exposes `charging.requested` and `charging.session`; the charge itself is
 read under `apx.charging:status`.
+
+Where an external pairing engine matched the ticket to its Session, the
+ticket carries the decoration `apds-ext:apx:match-evidence@1.0` (Part 5
+§5.8), saying how the match was made. A valet stay inside a facility is
+an area Session: its `apds-ext:apx:session-detail@1.0` names the visit as
+`parent` and closes with `endReason: valetHandback` (Part 5 §5.8 rules 3
+and 6).

@@ -23,9 +23,15 @@ actuation. This Part adds it, referencing APDS entities throughout.
 - Normative parameters per type: `lostTicket.method` (string, operator code
   list); `pushRate.rateTable` (VersionedReference to RateTable);
   `applyValidation.ticket` + `applyValidation.provider` (Reference);
-  `displayMessage.message` (MultilingualString); `setDeviceState.state`
+  `displayMessage.message` (MultilingualString), and optionally
+  `displayMessage.template` (a Reference or implementer code),
+  `displayMessage.data` (the template's fields), `holdSeconds`, and
+  `wordingVersion` for per-vehicle content rendered from a template;
+  `setDeviceState.state`
   (apx-device-states value); `pushNegotiatedRate.rateTable`
-  (VersionedReference to a RateTable flagged negotiable, §6.6);
+  (VersionedReference to a RateTable flagged negotiable, §6.6) or
+  `pushNegotiatedRate.amount` (AmountInCurrency, the negotiatedAmounts
+  feature, §6.6), exactly one of the two;
   `matchTicket.session` (Reference to an open Session) and
   `matchTicket.evidence` (Reference, §6.7); `resetPassback.credential`,
   `forceIn.credential`, and `forceOut.credential` (Reference to a
@@ -108,6 +114,7 @@ members are normative per command type:
 | `lostTicket` | `ticketNumber`, `session` (Reference), `amountDue` (the fee) |
 | `matchTicket` | `session` (the matched Session), `amountDue` (priced from its true entry) |
 | `pushNegotiatedRate` | `rateTable` (VersionedReference, the version applied), `amountDue` |
+| `displayMessage` | `display` — what the device confirmed it showed: `shownTime`, `contentHash`, `wordingVersion`, an access-controlled `screenshot` link, and `acknowledgedBy` (`player`, `operator`, `none`); written when the device confirms, and the proof of display for a refused-service sign (Part 24 §24.4). OPTIONAL: present where the display reports it |
 
 Other command types leave `result` absent. `result` is server-assigned and
 absent before `succeeded`; it restates, and never contradicts, what the
@@ -148,11 +155,14 @@ screenshot link — an APDS Observation), and monthly-credential context
   advisory.
 - **Per-ticket price adjustment (design rule):** validations and discounts
   ARE the sanctioned mechanism for adjusting one ticket's amount due —
-  auditable, provider-bound, and policy-gated. APX deliberately defines NO
-  raw single-ticket price override: the rate deck stays authoritative
-  (corrected, when wrong, via `pushRate`), and every reduction on a
-  specific ticket is attributable to a named validation provider or
-  discount on the audit record. Revenue integrity by construction, not by
+  auditable, provider-bound, and policy-gated. Outside them, APX defines
+  exactly one single-ticket price change: a negotiated rate (§6.6), either
+  a table selected from the deck or, where the host offers the
+  `negotiatedAmounts` feature, an amount the agent states. Both are
+  commands with a REQUIRED `agent`. The rate deck stays authoritative
+  (corrected, when wrong, via `pushRate`), and every change on a specific
+  ticket is attributable on the audit record to a named validation
+  provider, discount, deck table, or agent with a reason. Revenue integrity by construction, not by
   operator discipline.
 - **APDS alignment (informative):** APDS 4.1 records that a validation
   *happened* (`PaymentTypeEnum: validation`, `Segment.validationType/
@@ -191,12 +201,14 @@ pushRate, applyValidation; §6.2 lane inquiry; §6.3 provider query; §6.4
 device status; the grant rule; and command/device event publication.
 
 Negotiated rates (§6.6) and ticket matching (§6.7) are **optional
-features** of the class, named `negotiatedRates` and `ticketMatching`. An
+features** of the class, named `negotiatedRates` and `ticketMatching`.
+Negotiated amounts (§6.6) are a further optional feature,
+`negotiatedAmounts`, offered only together with `negotiatedRates`. An
 implementation that offers either MUST list it in the `features` member of
 `/.well-known/apx-configuration` (Part 16 §16.1) and of every discovery
 document whose client holds an `apx.control` scope (Part 16 §16.2), and MUST
 meet the corresponding section in full (Annex A rows APX-CTL-09 through
-12). `commandTypes` in a discovery document remains the permission list:
+12, and APX-CTL-16 for negotiated amounts). `commandTypes` in a discovery document remains the permission list:
 `pushNegotiatedRate` or `matchTicket` appears there only for a client that
 may execute it, and never for a host that does not offer the feature.
 
@@ -231,21 +243,47 @@ exactly that.
   version applied, the command, and the agent — so a later context at
   the lane, a dispute, or a revenue report sees who chose what, from the
   same audit record every other command has.
-- **Selection, not invention (design rule).** The agent selects a table
-  from the deck; APX defines no free-form negotiated amount. This keeps
-  §6.3's rule intact — every reduction on a ticket is attributable to a
-  named deck table, validation, or discount — and keeps revenue integrity
-  by construction. A deck that wants a range publishes tables for it.
+- **Any amount (the `negotiatedAmounts` feature).** Instead of a table,
+  `parameters.amount` (AmountInCurrency) states the amount the current
+  ticket owes. It replaces the ticket's `amountDue`; it is not a
+  discount. APX sets no floor and no ceiling: zero, less than the deck
+  price, and more than it are all valid. Exactly one of `rateTable` and
+  `amount` MUST be given. With `amount`, `reason` is REQUIRED as
+  well as `agent`, because there is no deck table to explain the
+  figure. Servers MUST refuse:
+  - both members, neither, a negative `currencyValue`, a missing
+    `reason`, or a `currencyType` other than the ticket's, with
+    `400 invalid-request`;
+  - `amount` on a host that does not offer `negotiatedAmounts`, with
+    `422 rate-not-negotiable`;
+  - an empty lane with `409 lane-no-current-transaction`, as for a table.
+
+  The lane inquiry then shows `currentTicket.negotiatedAmount` with the
+  `amount`, `reason`, `agent`, and the command, and the command's
+  `result.amountDue` restates it (`result.rateTable` is absent). A stated
+  amount is never reported through `currentTicket.negotiatedRate`, whose
+  `rateTable` stays required: a ticket shows at most one of the two
+  members, the one the latest succeeded `pushNegotiatedRate` for it set.
+  The next car prices from the deck as usual.
+- **Attribution, not restriction (design rule).** Every negotiated rate
+  names who set it and, for a stated amount, why. That keeps §6.3's rule
+  intact: every change on a ticket is attributable on the audit record.
+  A host that wants agents limited to the deck simply does not offer
+  `negotiatedAmounts`. One that wants approval above or below some
+  figure gates the command with Part 17 §17.3's policy layer
+  (`requiresApproval`), which APX already defines.
 - **No selection rules, deliberately.** APX does not say when a negotiable
-  table may be chosen: no length-of-stay bands, no time windows, no caller
+  table may be chosen, or what amount may be stated: no length-of-stay bands, no time windows, no caller
   categories. Such rules multiply fast and differ by operator; the system
   presenting the deck to an agent or a third party applies its own
   guardrails, and Part 17 §17.3's policy layer can gate the action per
-  context. The server enforces only the flag.
+  context. The server enforces only the flag and the rules above.
 - **APDS alignment (informative).** The negotiated table is an ordinary
   APDS RateTable, so the resulting Session segment references it exactly
   as any other rate; a stock APDS consumer sees a session priced by a
-  named table, which is the truth.
+  named table, which is the truth. A stated amount has no table: the
+  stock consumer sees the Session's amount, and the command, found by
+  the Session's lane and time, says who set it and why.
 
 ## 6.7 Ticket matching (optional feature)
 

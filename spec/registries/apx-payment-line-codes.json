@@ -1,0 +1,17 @@
+{
+  "id": "9e0f1a2b-3c4d-4e5f-8a6b-7c8d9e0f1a2b",
+  "version": 1,
+  "name": "apx-payment-line-codes",
+  "creator": { "id": "a1000000-0000-4000-8000-000000000001", "className": "Organisation" },
+  "locator": "https://apx-standard.org/registries/apx-payment-line-codes.json",
+  "userDefinedCodeListEntries": [
+    { "definedValue": "base", "entryDescription": "The parking charge before fees, taxes, and discounts; when a validation covers part of it, the part paid in money (the validation line carries the rest). A paymentType payment line (Part 13 §13.6a).", "entryIndex": 0 },
+    { "definedValue": "convenienceFee", "entryDescription": "A per-transaction fee the payment channel adds (an app, a text-to-pay vendor). A paymentType payment line.", "entryIndex": 1 },
+    { "definedValue": "serviceFee", "entryDescription": "A service fee the operator adds (valet, reservation). A paymentType payment line.", "entryIndex": 2 },
+    { "definedValue": "tax", "entryDescription": "Tax on the charge, when itemized. A paymentType payment line.", "entryIndex": 3 },
+    { "definedValue": "discount", "entryDescription": "A reduction other than a validation (a promotion, a negotiated rate): a paymentType payment line with a negative value.", "entryIndex": 4 },
+    { "definedValue": "validation", "entryDescription": "A validation applied to the ticket (Part 20): a paymentType validation line whose value is the amount the validation offset, outside the money collected (Part 13 §13.6a).", "entryIndex": 5 },
+    { "definedValue": "idle", "entryDescription": "An EV charging idle charge (Part 23 §23.5). A paymentType payment line.", "entryIndex": 6 },
+    { "definedValue": "energy", "entryDescription": "An EV charging energy charge (Part 23 §23.5). A paymentType payment line.", "entryIndex": 7 }
+  ]
+}

@@ -1,0 +1,180 @@
+{
+  "_comment": "Stage directions for the replay of apx-violations: world events the prose describes but no request performs. Keys are scenario ids; `at` is the 0-based exchange index the step runs before ('start' = before the scenario).",
+  "VIO-15": [
+    {
+      "at": "start",
+      "state": {
+        "collection": "payments",
+        "id": "d9000000-0000-4000-8000-000000000001",
+        "record": {
+          "id": "d9000000-0000-4000-8000-000000000001",
+          "version": 1,
+          "transactionID": "PORTAL-20260927-190208",
+          "place": {
+            "id": "b1000000-0000-4000-8000-000000000004",
+            "className": "Place"
+          },
+          "dateCollected": "2026-09-27T19:02:08Z",
+          "amount": {
+            "currencyType": "USD",
+            "currencyValue": 35
+          },
+          "channel": "online",
+          "paymentStatus": "approved",
+          "ticketNumber": "LG-2026-018301",
+          "_place": "b1000000-0000-4000-8000-000000000004"
+        }
+      }
+    },
+    {
+      "at": 2,
+      "clock": {
+        "now": "2026-10-19T10:00:00Z"
+      }
+    }
+  ],
+  "VIO-16": [
+    {
+      "at": "start",
+      "state": {
+        "collection": "violations",
+        "id": "d3000000-0000-4000-8000-000000000009",
+        "record": {
+          "id": "d3000000-0000-4000-8000-000000000009",
+          "version": 2,
+          "violationType": "notYetValidRight",
+          "violationStatus": "issued",
+          "place": {
+            "id": "b1000000-0000-4000-8000-000000000004",
+            "className": "Place"
+          },
+          "detection": {
+            "mode": "automated",
+            "detectedTime": "2026-09-24T11:40:12Z",
+            "detector": {
+              "id": "b2000000-0000-4000-8000-000000000031",
+              "className": "SupplementalEquipment"
+            },
+            "principal": "lpr-pipeline-lot-c",
+            "confidence": 0.93,
+            "rule": "reservation-not-started"
+          },
+          "vehicle": {
+            "credentialType": "licensePlate",
+            "credentialIdentification": "SYN-7007",
+            "jurisdiction": "US-IL"
+          },
+          "observations": [
+            {
+              "id": "f2000000-0000-4000-8000-000000000091",
+              "className": "Observation"
+            }
+          ],
+          "evidence": [
+            {
+              "imageLink": "https://api.lakeside-garage.example/lpr/f2000000-0091.jpg",
+              "imageType": "plate",
+              "capturedTime": "2026-09-24T11:40:12Z"
+            }
+          ],
+          "location": {
+            "observedLocation": {
+              "type": "Point",
+              "coordinates": [
+                -87.6208,
+                41.883
+              ]
+            }
+          },
+          "policy": {
+            "id": "d4000000-0000-4000-8000-000000000001",
+            "version": 1,
+            "className": "EnforcementPolicy"
+          },
+          "signage": [
+            {
+              "id": "d5000000-0000-4000-8000-000000000001",
+              "version": 1,
+              "className": "Signage"
+            }
+          ],
+          "notice": {
+            "noticeKind": "notice",
+            "noticeNumber": "LG-2026-018520",
+            "issuedTime": "2026-09-24T11:40:20Z",
+            "issuedBy": {
+              "id": "a1000000-0000-4000-8000-000000000001",
+              "className": "Organisation"
+            },
+            "deliveryMethod": "mail"
+          },
+          "amount": {
+            "currencyType": "USD",
+            "currencyValue": 35
+          },
+          "dueTime": "2026-10-24T23:59:59Z",
+          "unpaidAmount": {
+            "currencyType": "USD",
+            "currencyValue": 18
+          },
+          "capAmount": {
+            "currencyType": "USD",
+            "currencyValue": 36
+          },
+          "amountHistory": [
+            {
+              "amount": {
+                "currencyType": "USD",
+                "currencyValue": 35
+              },
+              "time": "2026-09-24T11:40:20Z",
+              "reason": "issued"
+            }
+          ],
+          "statusHistory": [
+            {
+              "state": "detected",
+              "time": "2026-09-24T11:40:13Z",
+              "actor": "lpr-pipeline-lot-c"
+            },
+            {
+              "state": "issued",
+              "time": "2026-09-24T11:40:20Z",
+              "actor": "lpr-pipeline-lot-c",
+              "detail": "unreviewed automated issuance (confidence 0.93 ≥ 0.9); policy d4000000-0000-4000-8000-000000000001 v1"
+            }
+          ],
+          "recordInfo": {
+            "creationTime": "2026-09-24T11:40:13Z",
+            "creator": {
+              "id": "a1000000-0000-4000-8000-000000000001",
+              "className": "Organisation"
+            },
+            "creationUser": "lpr-pipeline-lot-c",
+            "lastUpdate": "2026-09-24T11:40:20Z"
+          },
+          "_place": "b1000000-0000-4000-8000-000000000004",
+          "_esc": {
+            "activeMs": 0,
+            "since": "2026-09-24T11:40:20Z",
+            "fired": []
+          }
+        }
+      }
+    },
+    {
+      "at": 1,
+      "clock": {
+        "now": "2026-10-25T12:00:00Z"
+      }
+    }
+  ],
+  "VIO-19": [
+    {
+      "at": 0,
+      "clock": {
+        "now": "2026-11-08T12:00:00Z"
+      }
+    }
+  ]
+}

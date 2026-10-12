@@ -1,6 +1,6 @@
 {
   "id": "3e4f5a6b-7c8d-4e9f-0a1b-2c3d4e5f6a7b",
-  "version": 11,
+  "version": 12,
   "name": "apx-topics",
   "creator": { "id": "a1000000-0000-4000-8000-000000000001", "className": "Organisation" },
   "locator": "https://apx-standard.org/registries/apx-topics.json",
@@ -32,6 +32,7 @@
     { "definedValue": "apx.data.observation.updated.v1", "entryDescription": "An ingested Observation was replaced through native PUT /observations/{id} — e.g. the LPR system revised accessEvent (data: the APDS ObservationElement as it now stands; subject and elementIds place binding as for apx.data.observation.created.v1; consumers keep the highest version). Required for apx-lpr (Part 13 §13.4).", "entryIndex": 24 },
     { "definedValue": "apx.charging.session.status.v1", "entryDescription": "A ChargingSession transitioned lifecycle state — authorized, pluggedIn, charging, suspended, complete, idle, unplugged, closed, cancelled, faulted (data: ChargingSession; place-bound on ChargingSession.place). Required for apx-charging (Part 23 §23.12).", "entryIndex": 25 },
     { "definedValue": "apx.charging.idle.started.v1", "entryDescription": "A ChargingSession entered idle after its idlePolicy grace elapsed with the cable still connected; carries the idle policy and the minimized vehicle summary (data: ChargingSession) — drives the customer's move-your-car notification and the Part 19 enforcement hook. Required for apx-charging (Part 23 §23.2, §23.10).", "entryIndex": 26 },
-    { "definedValue": "apx.charging.point.status.v1", "entryDescription": "A charging point's availability or bay presence changed (data: ChargingPointStatus; place-bound on ChargingPointStatus.place). Required for apx-charging (Part 23 §23.1, §23.3).", "entryIndex": 27 }
+    { "definedValue": "apx.charging.point.status.v1", "entryDescription": "A charging point's availability or bay presence changed (data: ChargingPointStatus; place-bound on ChargingPointStatus.place). Required for apx-charging (Part 23 §23.1, §23.3).", "entryIndex": 27 },
+    { "definedValue": "apx.platelists.changed.v1", "entryDescription": "A plate list or one of its entries was created, changed, or removed (data: PlateList with entryCount; subject: the list). Consumers resync entries through the Part 5 feed on /v1/plate-lists/{id}/entries. Required for apx-plate-lists (Part 24 §24.3).", "entryIndex": 28 }
   ]
 }

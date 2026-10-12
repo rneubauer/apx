@@ -55,6 +55,59 @@ ChangeFeedPage:
       format: uri-reference
       description: Link to the next page when more changes are immediately available; null otherwise.
 
+# --- Change-page members of the APX list routes (Part 5 §5.2 rule 8) ---
+# An APX list route answers `mode=change` in its own list envelope, so these
+# members are added, optional, to that envelope instead of swapping the
+# response for a ChangeFeedPage (which would re-type an existing response,
+# Part 3 §3.2). Each mirrors the ChangeFeedPage member of the same name.
+
+ChangeFeedUpdateMode:
+  title: ChangeFeedUpdateMode
+  type: string
+  const: change
+  description: |-
+    Present, with the value `change`, exactly when the page answers
+    `mode=change` (Part 5 §5.2 rule 8); absent on an ordinary list page.
+
+ChangeFeedCursor:
+  title: ChangeFeedCursor
+  type: string
+  description: |-
+    `mode=change` only. Opaque cursor resuming strictly after the last
+    change in this page (Part 5 §5.2 rules 1, 2, 5).
+
+ChangeFeedTombstones:
+  title: ChangeFeedTombstones
+  type: array
+  description: |-
+    `mode=change` only. Resources removed since the cursor (retention
+    purge, Part 9 §9.6; release of a moved place, Part 18 §18.4), as APDS
+    DeletedReferences carrying the APX resource's schema name as
+    `className`. Retained for the cursor window (Part 5 §5.2 rule 4).
+  items:
+    $ref: "../../../vendor/apds/4.1/apds-api-4.1.yaml#/components/schemas/DeletedReference"
+
+ChangeFeedGrantAdditions:
+  title: ChangeFeedGrantAdditions
+  type: array
+  description: |-
+    `mode=change` only. Present on the first page served after the
+    credential's `apx_places` grant gained subtrees: the new subtree roots,
+    which the client full-syncs with the route's `place` filter before
+    relying on the feed for them (Part 5 §5.2 rule 7).
+  items:
+    type: string
+    format: uuid
+
+ChangeFeedNext:
+  title: ChangeFeedNext
+  type: [string, "null"]
+  format: uri-reference
+  description: |-
+    `mode=change` only. Link to the next page when more changes are
+    immediately available (the same request with this page's `cursor`);
+    null otherwise.
+
 ChangePayload:
   title: ChangePayload
   description: |-
@@ -156,6 +209,254 @@ OccupancySnapshot:
     extensions:
       $ref: "../common/schemas.yaml#/Extensions"
 
+OccupancyHistoryPage:
+  title: OccupancyHistoryPage
+  description: |-
+    Occupancy per clock interval for one HierarchyElement (Part 5 §5.5a):
+    the history behind the §5.5 snapshot, derived from the APDS
+    DemandTable records the implementation holds. Buckets are aligned to
+    the interval boundary in the place's time zone; a bucket with no
+    demand record carries no counts, never a guess.
+  type: object
+  required: [place, interval, from, to, buckets]
+  properties:
+    place:
+      $ref: "../../../vendor/apds/4.1/apds-api-4.1.yaml#/components/schemas/Reference"
+    interval:
+      description: The bucket length as requested (ISO 8601 duration, e.g. `PT1H`).
+      $ref: "../../../vendor/apds/4.1/apds-api-4.1.yaml#/components/schemas/Duration"
+    from:
+      $ref: "../../../vendor/apds/4.1/apds-api-4.1.yaml#/components/schemas/DateTime"
+    to:
+      $ref: "../../../vendor/apds/4.1/apds-api-4.1.yaml#/components/schemas/DateTime"
+    buckets:
+      type: array
+      items:
+        type: object
+        required: [start]
+        properties:
+          start:
+            $ref: "../../../vendor/apds/4.1/apds-api-4.1.yaml#/components/schemas/DateTime"
+          maxCount:
+            type: integer
+            minimum: 0
+            description: The highest demand count recorded in the bucket.
+          avgCount:
+            type: number
+            minimum: 0
+            description: The time-weighted mean demand count over the bucket.
+          supplyQuantity:
+            type: integer
+            minimum: 0
+            description: The supply in force during the bucket (APDS Supply.supplyQuantity).
+          samples:
+            type: integer
+            minimum: 0
+            description: How many demand records the bucket is computed from.
+    extensions:
+      $ref: "../common/schemas.yaml#/Extensions"
+
+SessionReadBinding:
+  title: SessionReadBinding
+  description: |-
+    One LPR read attached to a Session by the pairing engine (Part 5
+    §5.8, member `reads[]` of `apds-ext:apx:session-detail@1.0`).
+  type: object
+  required: [observation, role]
+  properties:
+    observation:
+      description: The APDS ObservationElement (className `ObservationElement`).
+      $ref: "../../../vendor/apds/4.1/apds-api-4.1.yaml#/components/schemas/Reference"
+    role:
+      type: string
+      enum: [entry, exit, duplicate, activity]
+      description: |-
+        `entry` and `exit` are the passages that opened and closed the
+        visit; `duplicate` is the same passage seen by another camera or
+        frame; `activity` is the vehicle seen inside (a sweep, a bay camera).
+    representative:
+      type: boolean
+      description: |-
+        The read that stands for the visit in lists and screen-pops. At
+        most one per Session; two are 422 `request-unprocessable` (Part 5
+        §5.8 rule 1).
+
+SessionClosure:
+  title: SessionClosure
+  description: Why and how a Session ended (Part 5 §5.8).
+  type: object
+  properties:
+    endReason:
+      type: string
+      description: definedValue from `apx-session-end-reasons` (Part 11) or an implementer code list.
+      examples: [exitRead]
+    endInferred:
+      type: boolean
+      description: True when `actualEnd` was set by a rule rather than observed.
+    startObserved:
+      type: boolean
+      description: |-
+        False declares `actualStart` synthetic — an exit-only Session whose
+        entry was never observed; the writer SHOULD then set `actualStart`
+        equal to `actualEnd`. Consumers MUST exclude such Sessions from
+        dwell statistics and from occupancy (Part 5 §5.8 rule 4). Absent
+        means true.
+    rule:
+      type: [string, "null"]
+      description: The implementer rule that closed a `stale` Session (e.g. `transient-48h`); null when none applied.
+
+MatchEvidence:
+  title: MatchEvidence
+  description: |-
+    How a link to a Session was established and how sure it is (Part 5
+    §5.8; shared by the `matches[]` member of
+    `apds-ext:apx:session-detail@1.0` and the decoration
+    `apds-ext:apx:match-evidence@1.0` on a Violation or ValetTicket).
+    Carries no plate characters and no vehicle attribute values
+    (Part 9 §9.6). Where both ends of one link carry evidence (the
+    Session's `matches[]` entry and the decoration on the Violation or
+    ValetTicket), the two MUST agree. Evidence with `plate.method:
+    lenient` or `applied: false` may excuse a stay but never accuse one:
+    `issue` on a Violation resting on it is 409 `violation-not-issuable`
+    (Part 19 §19.4 rule 5).
+  type: object
+  required: [target, matchType, applied]
+  properties:
+    target:
+      description: |-
+        The record at the other end of the link. In `matches[]`: an
+        AssignedRight, a ValetTicket, a Violation, a PlateListEntry, or an
+        Observation. In the decoration on a Violation or ValetTicket: the
+        Session.
+      $ref: "../../../vendor/apds/4.1/apds-api-4.1.yaml#/components/schemas/Reference"
+    matchType:
+      type: string
+      enum: [right, valet, violation, list, exitPairing, sweep, other]
+      description: |-
+        The kind of link: `right` — an AssignedRight covers the stay;
+        `valet` — a ValetTicket's stay; `violation` — a Violation's stay;
+        `list` — a plate-list entry matched the vehicle (Part 24);
+        `exitPairing` — an exit read paired to the Session's entry;
+        `sweep` — the vehicle seen during an inventory or patrol sweep tied
+        to the Session; `other` — anything else.
+      examples: [right]
+    plate:
+      type: object
+      description: How the plate strings agreed, when the link rests on a plate.
+      required: [method]
+      properties:
+        method:
+          type: string
+          enum: [exact, alias, fold, fuzzy, lenient, reviewer]
+          description: |-
+            `exact` — the same characters; `alias` — a plate the right or
+            account lists for the same vehicle; `fold` — equal after
+            folding look-alike characters (O/0, I/1, B/8); `fuzzy` — within
+            the implementation's edit-cost threshold; `lenient` — accepted
+            under a relaxed rule that may excuse a stay but never accuse
+            one; `reviewer` — a person judged the plates to match where no
+            automatic method did.
+        editCost:
+          type: [number, "null"]
+          minimum: 0
+          description: The weighted edit cost of a `fuzzy` or `lenient` match; null otherwise.
+        jurisdiction:
+          type: string
+          enum: [agrees, differs, unknown]
+    vehicle:
+      type: object
+      description: The vehicle-attribute evidence (make, model, colour) behind the match, as a level and a score — never the values.
+      required: [level]
+      properties:
+        level:
+          type: string
+          enum: [unknown, mismatch, inconclusive, weak, good, strong]
+          description: |-
+            `unknown` — not compared; `mismatch` — the attributes contradict
+            the match; `inconclusive` — compared, no signal; `weak`, `good`,
+            `strong` — increasing support.
+        llr:
+          type: number
+          description: Log-likelihood ratio of the vehicle evidence.
+        model:
+          type: string
+          description: The evidence model and version that scored it, opaque.
+    applied:
+      type: boolean
+      description: |-
+        False is a shadow match — recorded for evaluation, not acted on. A
+        link the record actually carries has `applied: true`.
+    decidedBy:
+      type: string
+      enum: [system, person]
+      description: |-
+        Whether software or a person made the link. A `matchTicket` that
+        binds a lane-inquiry candidate SHOULD be recorded as `person`
+        (Part 5 §5.8 rule 5).
+    decidedTime:
+      description: When the link was made.
+      $ref: "../../../vendor/apds/4.1/apds-api-4.1.yaml#/components/schemas/DateTime"
+
+SessionDetail:
+  title: SessionDetail
+  description: |-
+    The `apds-ext:apx:session-detail@1.0` decoration on an APDS Session
+    (Part 5 §5.8): what the pairing of reads decided and APDS has no
+    members for — the reads behind the visit, why and how it ended, the
+    matches it rests on, and the parent visit of an area Session. Written
+    with the native Session POST/PUT by an external pairing engine; a
+    server that pairs reads itself SHOULD write the same block on its own
+    Sessions. A plain APDS client ignores it. It adds no event topic and
+    carries no plate characters. A write that breaks a consistency rule
+    of §5.8 is 422 and nothing is written.
+  type: object
+  properties:
+    reads:
+      type: array
+      description: |-
+        The reads attached to this Session. A read already bound as
+        `entry` or `exit` to another Session of the same place is refused
+        with 409 `read-already-bound` unless `supersedes` names that Session.
+        A read naming no Observation visible to the caller is 422
+        `reference-unknown`.
+      items:
+        $ref: "#/SessionReadBinding"
+    supersedes:
+      description: The Session whose reads this write takes over (a re-pairing).
+      $ref: "../../../vendor/apds/4.1/apds-api-4.1.yaml#/components/schemas/Reference"
+    lifecycle:
+      type: string
+      enum: [open, ended, final, disputed]
+      description: |-
+        `open` — a vehicle is in the facility, no `actualEnd` yet; `ended` —
+        closed, may still be revised; `final` — no further revision
+        expected; `disputed` — under review. Every state but `open` requires
+        `actualEnd`, and `open` forbids it (422 `request-unprocessable`
+        otherwise). `final` is the writer's statement, never a lock: a
+        server MUST NOT refuse a later revision on that ground.
+    closure:
+      $ref: "#/SessionClosure"
+    flags:
+      type: array
+      description: Open flags — `entryUnknown`, `orphanExit`, `reentry`, `passThrough`, or implementer values.
+      items: { type: string }
+    matches:
+      type: array
+      items:
+        $ref: "#/MatchEvidence"
+    parent:
+      description: |-
+        The visit this area Session is part of (className `Session`). The
+        parent's `hierarchyElement` MUST be an ancestor of this Session's
+        (422 `request-unprocessable` otherwise). Consumers count visits by
+        Sessions without `parent`; children still open when the parent
+        ends SHOULD be closed no later than its `actualEnd` with `endReason`
+        `parentExit`.
+      $ref: "../../../vendor/apds/4.1/apds-api-4.1.yaml#/components/schemas/Reference"
+    passThrough:
+      type: boolean
+      description: An area stay shorter than the area's minimum dwell — never scored or billed.
+
 # --- Reusable additive parameters (applied by implementations to native list routes) ---
 
 ModeParam:
@@ -163,8 +464,12 @@ ModeParam:
   in: query
   required: false
   description: |-
-    APX data profile: `full` (default — behaves exactly like stock APDS 4.1)
-    or `change` (return a ChangeFeedPage of deltas since `cursor`/`since`).
+    APX change feed (Part 5 §5.2): `full` (default — the route's ordinary
+    list; on a native APDS route, exactly stock APDS 4.1) or `change` (the
+    changes after `cursor`: a ChangeFeedPage on a native route, the route's
+    own list envelope with the change-page members on an APX list route,
+    rule 8; on an APX list route without a cursor, an empty page holding the
+    current head cursor).
   schema:
     type: string
     enum: [full, change]
@@ -174,7 +479,7 @@ CursorParam:
   name: cursor
   in: query
   required: false
-  description: Opaque change-feed cursor from a previous ChangeFeedPage. Only meaningful with `mode=change`.
+  description: Opaque change-feed cursor from a previous change page. Only meaningful with `mode=change`; a refused cursor is 404 `target-not-found` (Part 5 §5.2 rules 2 and 5).
   schema:
     type: string
 

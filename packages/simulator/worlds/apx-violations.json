@@ -1,0 +1,323 @@
+{
+  "extends": "base-lakeside",
+  "name": "apx-violations",
+  "description": "The cast of docs/scenarios/by-module/apx-violations: Lakeside Garage with Level 2 (bay 218), Level 3, Lot C and Level 4; Lot D under its own root; the LPR van and officer Okafor's handheld; the Lot C and garage enforcement policies; the Lot C and Level 2 signs; the permits, reservation, pay-by-plate sessions and plate reads the eligibility checks consult; and the violations the prose finds already on file.",
+  "enforcement": {
+    "graceMinutes": 15,
+    "refundWindowDays": 30,
+    "noticePrefix": "LG-2026-",
+    "noticeStart": 18301,
+    "actor": "lakeside-apx",
+    "scheduler": "apx-scheduler",
+    "serviceArea": { "minLon": -88.5, "maxLon": -87.0, "minLat": 41.4, "maxLat": 42.4 }
+  },
+  "places": [
+    { "id": "b1…0003", "parentId": "b1…0001", "name": "Level 2 (permit-only reserved)", "type": "Place", "version": 1 },
+    { "id": "b1…0004", "parentId": "b1…0001", "name": "Lot C (pay-by-plate surface lot)", "type": "Place", "version": 1 },
+    { "id": "b1…0005", "name": "Lot D (leased overflow lot)", "type": "Place", "operator": "a1…0001", "timeZone": "America/Chicago", "version": 1 },
+    { "id": "b1…0006", "parentId": "b1…0001", "name": "Level 4 (opened 2026-09-22)", "type": "Place", "version": 1 },
+    { "id": "b1…0007", "parentId": "b1…0001", "name": "Level 3", "type": "Place", "version": 1 },
+    { "id": "b3…0218", "parentId": "b1…0003", "name": "Level 2 bay 218 (accessible)", "type": "Space", "version": 1 }
+  ],
+  "devices": [
+    { "id": "b2…0031", "placeId": "b1…0004", "name": "mobile LPR van 07", "equipmentType": "lprCamera", "state": "available" },
+    { "id": "b2…0417", "placeId": "b1…0001", "name": "officer Okafor's handheld", "equipmentType": "handheld", "state": "available" }
+  ],
+  "contacts": [
+    { "id": "c1…0417", "version": 1, "name": "Officer Okafor", "responsibilities": ["enforcementSystemProvider"], "_place": "b1…0001" },
+    { "id": "c1…0044", "version": 1, "name": "Appellant 44", "_place": "b1…0001" },
+    { "id": "c1…0045", "version": 1, "name": "Appellant 45", "_place": "b1…0001" }
+  ],
+  "placeRates": { "b1…0004": ["d6…0004"] },
+  "rateTables": [
+    {
+      "id": "d6…0004",
+      "version": 2,
+      "rateTableName": [{ "language": "en", "string": "Lot C pay-by-plate" }],
+      "availability": "public",
+      "rateLineCollections": [
+        {
+          "id": "d6…0041",
+          "version": 1,
+          "collectionSequence": 1,
+          "applicableCurrency": "USD",
+          "resetTime": "00:00:00",
+          "validStart": "2026-01-01T00:00:00Z",
+          "relativeTimes": true,
+          "taxIncluded": true,
+          "rateLines": [
+            { "id": "d6…0411", "version": 1, "sequence": 1, "rateLineType": "incrementingRate", "description": [{ "language": "en", "string": "per hour" }], "incrementPeriod": "PT1H", "value": 3.0 },
+            { "id": "d6…0412", "version": 1, "sequence": 2, "rateLineType": "flatRate", "description": [{ "language": "en", "string": "unpaidStayFee (daily maximum for a stay with no valid payment)" }], "value": 18.0 }
+          ]
+        }
+      ]
+    }
+  ],
+  "assignedRights": [
+    {
+      "id": "e1…0012", "version": 1,
+      "rightSpecification": { "id": "e2…0001", "version": 1, "className": "RightSpecification" },
+      "rightHolder": { "credentials": [{ "type": "licensePlate", "credentialAssignedType": "vehicle", "identifier": { "id": "SYN-1234", "className": "VehicleCredential" } }] },
+      "issuanceTime": "2026-08-28T10:00:00Z", "expiry": "2026-09-30T23:59:59Z",
+      "_place": "b1…0001", "_rightType": "monthlyPermit", "_validFrom": "2026-09-01T00:00:00Z", "_validTo": "2026-09-30T23:59:59Z", "_scopeNote": "garage-wide"
+    },
+    {
+      "id": "e1…0013", "version": 1,
+      "rightSpecification": { "id": "e2…0001", "version": 1, "className": "RightSpecification" },
+      "rightHolder": { "credentials": [{ "type": "hangtag", "credentialAssignedType": "other", "identifier": { "id": "HT-0093", "className": "Hangtag" } }] },
+      "issuanceTime": "2026-08-28T10:00:00Z", "expiry": "2026-09-30T23:59:59Z",
+      "_place": "b1…0003", "_rightType": "monthlyPermit", "_validFrom": "2026-09-01T00:00:00Z", "_validTo": "2026-09-30T23:59:59Z"
+    },
+    {
+      "id": "e1…0027", "version": 1,
+      "rightSpecification": { "id": "e2…0003", "version": 1, "className": "RightSpecification" },
+      "rightHolder": { "credentials": [{ "type": "licensePlate", "credentialAssignedType": "vehicle", "identifier": { "id": "SYN-8820", "className": "VehicleCredential" } }] },
+      "issuanceTime": "2026-08-29T09:00:00Z", "expiry": "2026-09-30T23:59:59Z",
+      "_place": "b1…0007", "_rightType": "monthlyPermit", "_validFrom": "2026-09-01T00:00:00Z", "_validTo": "2026-09-30T23:59:59Z"
+    },
+    {
+      "id": "e1…0029", "version": 1,
+      "rightSpecification": { "id": "e2…0002", "version": 1, "className": "RightSpecification" },
+      "rightHolder": { "credentials": [{ "type": "licensePlate", "credentialAssignedType": "vehicle", "identifier": { "id": "SYN-2271", "className": "VehicleCredential" } }] },
+      "issuanceTime": "2026-08-29T09:00:00Z", "expiry": "2026-09-30T23:59:59Z",
+      "_place": "b1…0003", "_rightType": "monthlyPermit", "_validFrom": "2026-09-01T00:00:00Z", "_validTo": "2026-09-30T23:59:59Z"
+    },
+    {
+      "id": "e1…0031", "version": 1,
+      "rightSpecification": { "id": "e2…0010", "version": 1, "className": "RightSpecification" },
+      "rightHolder": { "credentials": [{ "type": "licensePlate", "credentialAssignedType": "vehicle", "identifier": { "id": "SYN-7007", "className": "VehicleCredential" } }] },
+      "issuanceTime": "2026-09-20T15:22:00Z", "expiry": "2026-09-24T18:00:00Z",
+      "_place": "b1…0003", "_rightType": "reservation", "_validFrom": "2026-09-24T12:00:00Z", "_validTo": "2026-09-24T18:00:00Z"
+    },
+    {
+      "id": "e1…0044", "version": 2,
+      "rightSpecification": { "id": "e2…0002", "version": 1, "className": "RightSpecification" },
+      "rightHolder": { "credentials": [{ "type": "permit", "credentialAssignedType": "other", "identifier": { "id": "PM-4410", "className": "Permit" } }] },
+      "issuanceTime": "2026-08-15T09:00:00Z",
+      "_place": "b1…0003", "_rightType": "monthlyPermit", "_status": "suspended", "_note": "reported cloned 2026-09-20"
+    }
+  ],
+  "sessions": [
+    {
+      "id": "f1…0044", "version": 2, "actualStart": "2026-09-24T07:05:00Z", "actualEnd": "2026-09-24T09:05:00Z",
+      "initiator": { "id": "a1…0001", "version": 1, "className": "Organisation" },
+      "hierarchyElement": { "id": "b1…0004", "version": 1, "className": "Place" },
+      "identifiedCredentials": [{ "type": "licensePlate", "credentialAssignedType": "vehicle", "identifier": { "id": "SYN-4471", "className": "VehicleCredential" } }],
+      "segments": [{ "id": "f1…1044", "version": 1 }],
+      "_place": "b1…0004", "_plate": "SYN-4471", "_rightType": "payByPlate"
+    },
+    {
+      "id": "f1…0061", "version": 2, "actualStart": "2026-09-24T08:00:00Z", "actualEnd": "2026-09-24T10:00:00Z",
+      "initiator": { "id": "a1…0001", "version": 1, "className": "Organisation" },
+      "hierarchyElement": { "id": "b1…0004", "version": 1, "className": "Place" },
+      "identifiedCredentials": [{ "type": "licensePlate", "credentialAssignedType": "vehicle", "identifier": { "id": "SYN-6102", "className": "VehicleCredential" } }],
+      "segments": [{ "id": "f1…1061", "version": 1 }],
+      "_place": "b1…0004", "_plate": "SYN-6102", "_rightType": "payByPlate"
+    }
+  ],
+  "observations": [
+    { "id": "f2…0019", "version": 1, "_place": "b1…0004", "_plate": "SYN-1180", "_time": "2026-09-08T14:02:00Z", "_confidence": 0.95, "_imageLink": "https://api.lakeside-garage.example/lpr/f2000000-0019.jpg", "_device": "b2…0031" },
+    { "id": "f2…0041", "version": 1, "_place": "b1…0004", "_plate": "SYN-4471", "_time": "2026-09-24T09:31:04Z", "_confidence": 0.94, "_imageLink": "https://api.lakeside-garage.example/lpr/f2000000-0041.jpg", "_device": "b2…0031" },
+    { "id": "f2…0042", "version": 1, "_place": "b1…0004", "_plate": "SYN-5150", "_time": "2026-09-24T09:33:10Z", "_confidence": 0.91, "_imageLink": "https://api.lakeside-garage.example/lpr/f2000000-0042.jpg", "_device": "b2…0031" },
+    { "id": "f2…0043", "version": 1, "_place": "b1…0004", "_plate": "SYN-1234", "_time": "2026-09-24T09:32:50Z", "_confidence": 0.97, "_imageLink": "https://api.lakeside-garage.example/lpr/f2000000-0043.jpg", "_device": "b2…0031" },
+    { "id": "f2…0051", "version": 1, "_place": "b1…0001", "_plate": "SYN-1234", "_time": "2026-09-24T07:58:12Z", "_confidence": 0.98, "_imageLink": "https://api.lakeside-garage.example/lpr/f2000000-0051.jpg" },
+    { "id": "f2…0052", "version": 1, "_place": "b1…0001", "_plate": "SYN-8820", "_time": "2026-09-24T08:31:47Z", "_confidence": 0.96, "_imageLink": "https://api.lakeside-garage.example/lpr/f2000000-0052.jpg" },
+    { "id": "f2…0061", "version": 1, "_place": "b1…0003", "_plate": "PM-4410", "_credentialType": "permit", "_time": "2026-09-24T10:30:05Z", "_confidence": 0.92, "_imageLink": "https://api.lakeside-garage.example/lpr/f2000000-0061.jpg" },
+    { "id": "f2…0070", "version": 1, "_place": "b1…0004", "_plate": "SYN-9031", "_time": "2026-09-23T06:15:40Z", "_confidence": 0.9, "_imageLink": "https://api.lakeside-garage.example/lpr/f2000000-0070.jpg", "_device": "b2…0031" },
+    { "id": "f2…0080", "version": 1, "_place": "b1…0004", "_plate": "SYN-5150", "_time": "2026-09-24T14:00:00Z", "_confidence": 0.9, "_imageLink": "https://api.lakeside-garage.example/lpr/f2000000-0080.jpg", "_device": "b2…0031" }
+  ],
+  "payments": [
+    { "id": "d9…0004", "version": 1, "transactionID": "PORTAL-20260926-120040", "place": { "id": "b1…0004", "className": "Place" }, "dateCollected": "2026-09-26T12:00:40Z", "amount": { "currencyType": "USD", "currencyValue": 35.0 }, "channel": "online", "paymentStatus": "approved", "ticketNumber": "LG-2026-018530", "_place": "b1…0004" },
+    { "id": "d9…0007", "version": 1, "transactionID": "PORTAL-20260926-131000", "place": { "id": "b1…0004", "className": "Place" }, "dateCollected": "2026-09-26T13:10:00Z", "amount": { "currencyType": "USD", "currencyValue": 35.0 }, "channel": "online", "paymentStatus": "approved", "ticketNumber": "LG-2026-018531", "_place": "b1…0004" }
+  ],
+  "enforcementPolicies": [
+    {
+      "id": "d4…0001",
+      "version": 1,
+      "place": { "id": "b1…0004", "className": "Place" },
+      "name": "State private-lot notice rules — Lot C",
+      "policyStatus": "active",
+      "effectiveFrom": "2026-07-01T00:00:00Z",
+      "authority": { "jurisdiction": "US-IL", "citation": "Synthetic Stat. §12-405 (private lot notices)" },
+      "deliveryRules": [
+        { "detectionModes": ["automated"], "deliveryMethods": ["mail", "electronic"], "noticeDeadline": "P14D", "minimumEvidence": { "observations": 1, "images": 1, "locationRequired": true } },
+        { "detectionModes": ["guided", "manual"], "deliveryMethods": ["windshield", "handed"], "noticeDeadline": "PT1H" }
+      ],
+      "unreviewedIssuance": { "permitted": true, "minimumConfidence": 0.9 },
+      "penaltyCap": { "maximumMultipleOfUnpaid": 2, "onExceed": "refuse" },
+      "escalation": [
+        { "step": "late-30", "afterDays": 30, "addPercent": 25 },
+        { "step": "late-60", "afterDays": 60, "addAmount": { "currencyType": "USD", "currencyValue": 15.0 } }
+      ],
+      "overallCeiling": { "maximumMultipleOfIssued": 3 },
+      "appealWindowDays": 21,
+      "paymentGraceDays": 14,
+      "signageRequired": true,
+      "statusHistory": [{ "state": "active", "time": "2026-06-20T14:00:00Z", "actor": "backoffice-jlee", "detail": "loaded from counsel's summary of §12-405" }],
+      "recordInfo": { "creationTime": "2026-06-20T14:00:00Z", "creator": { "id": "a1…0001", "className": "Organisation" }, "creationUser": "backoffice-jlee", "lastUpdate": "2026-06-20T14:00:00Z" },
+      "extensions": { "apds-ext:lakeside:enforcement-ops@1.0": { "handheldProfile": "lot-c-surface", "reviewQueue": "lot-c" } }
+    },
+    {
+      "id": "d4…0002",
+      "version": 3,
+      "place": { "id": "b1…0001", "className": "Place" },
+      "name": "Lakeside Garage structure rules",
+      "policyStatus": "active",
+      "effectiveFrom": "2026-01-01T00:00:00Z",
+      "deliveryRules": [
+        { "detectionModes": ["automated", "guided", "manual"], "deliveryMethods": ["windshield", "handed", "mail"], "noticeDeadline": "P7D" }
+      ],
+      "unreviewedIssuance": { "permitted": false },
+      "penaltyCap": { "maximumAmount": { "currencyType": "USD", "currencyValue": 50.0 }, "onExceed": "clamp" },
+      "escalation": [{ "step": "late-30", "afterDays": 30, "addAmount": { "currencyType": "USD", "currencyValue": 10.0 } }],
+      "overallCeiling": { "maximumAmount": { "currencyType": "USD", "currencyValue": 100.0 } },
+      "appealWindowDays": 30,
+      "signageRequired": true,
+      "statusHistory": [
+        { "state": "active", "time": "2025-12-15T10:00:00Z", "actor": "backoffice-jlee" },
+        { "state": "active", "time": "2026-03-01T09:00:00Z", "actor": "backoffice-jlee", "detail": "v2: Level 2 signage programme" },
+        { "state": "active", "time": "2026-06-02T09:00:00Z", "actor": "backoffice-jlee", "detail": "v3: cap $50 clamp" }
+      ],
+      "recordInfo": { "creationTime": "2025-12-15T10:00:00Z", "creator": { "id": "a1…0001", "className": "Organisation" }, "creationUser": "backoffice-jlee", "lastUpdate": "2026-06-02T09:00:00Z" }
+    }
+  ],
+  "signage": [
+    {
+      "id": "d5…0001",
+      "version": 1,
+      "place": { "id": "b1…0004", "className": "Place" },
+      "text": [
+        { "language": "en", "string": "PAY BY PLATE. Unpaid or expired parking is subject to a $35 notice; unpaid notices increase 25% after 30 days. Appeals within 21 days." },
+        { "language": "es", "string": "PAGUE POR PLACA. El estacionamiento sin pagar o vencido está sujeto a un aviso de $35; los avisos impagos aumentan 25% después de 30 días. Apelaciones dentro de 21 días." }
+      ],
+      "signageStatus": "active",
+      "effectiveFrom": "2026-07-01T00:00:00Z",
+      "location": { "type": "Point", "coordinates": [-87.6214, 41.8827] },
+      "imageLink": "https://api.lakeside-garage.example/signage/lot-c-entrance-2026-07.jpg",
+      "signType": "entrance",
+      "policy": { "id": "d4…0001", "className": "EnforcementPolicy" },
+      "statusHistory": [{ "state": "active", "time": "2026-06-28T10:12:00Z", "actor": "backoffice-jlee" }],
+      "recordInfo": { "creationTime": "2026-06-28T10:12:00Z", "creator": { "id": "a1…0001", "className": "Organisation" }, "creationUser": "backoffice-jlee", "lastUpdate": "2026-06-28T10:12:00Z" }
+    },
+    {
+      "id": "d5…0002",
+      "version": 1,
+      "place": { "id": "b1…0003", "className": "Place" },
+      "text": [{ "language": "en", "string": "LEVEL 2 RESERVED. Permit holders only. Accessible bays require a valid placard. Violations $50." }],
+      "signageStatus": "active",
+      "effectiveFrom": "2026-03-01T00:00:00Z",
+      "imageLink": "https://api.lakeside-garage.example/signage/l2-entry-2026-03.jpg",
+      "signType": "entrance",
+      "policy": { "id": "d4…0002", "className": "EnforcementPolicy" },
+      "statusHistory": [{ "state": "active", "time": "2026-02-27T15:00:00Z", "actor": "backoffice-jlee" }],
+      "recordInfo": { "creationTime": "2026-02-27T15:00:00Z", "creator": { "id": "a1…0001", "className": "Organisation" }, "creationUser": "backoffice-jlee", "lastUpdate": "2026-02-27T15:00:00Z" }
+    }
+  ],
+  "violations": [
+    {
+      "id": "d3…0007", "version": 1, "violationType": "maximumStayExceeded", "violationStatus": "detected",
+      "place": { "id": "b1…0004", "className": "Place" },
+      "detection": { "mode": "automated", "detectedTime": "2026-09-08T14:02:00Z", "detector": { "id": "b2…0031", "className": "SupplementalEquipment" }, "principal": "lpr-pipeline-lot-c", "confidence": 0.95, "rule": "max-stay-4h" },
+      "vehicle": { "credentialType": "licensePlate", "credentialIdentification": "SYN-1180", "jurisdiction": "US-IL" },
+      "observations": [{ "id": "f2…0019", "className": "Observation" }],
+      "evidence": [{ "imageLink": "https://api.lakeside-garage.example/lpr/f2000000-0019.jpg", "imageType": "plate", "capturedTime": "2026-09-08T14:02:00Z" }],
+      "location": { "observedLocation": { "type": "Point", "coordinates": [-87.6207, 41.8832] } },
+      "statusHistory": [{ "state": "detected", "time": "2026-09-08T14:02:01Z", "actor": "lpr-pipeline-lot-c" }],
+      "recordInfo": { "creationTime": "2026-09-08T14:02:01Z", "creator": { "id": "a1…0001", "className": "Organisation" }, "creationUser": "lpr-pipeline-lot-c", "lastUpdate": "2026-09-08T14:02:01Z" }
+    },
+    {
+      "id": "d3…0008", "version": 1, "violationType": "noParkingPeriod", "violationStatus": "detected",
+      "place": { "id": "b1…0004", "className": "Place" },
+      "detection": { "mode": "automated", "detectedTime": "2026-09-23T06:15:40Z", "detector": { "id": "b2…0031", "className": "SupplementalEquipment" }, "principal": "lpr-pipeline-lot-c", "confidence": 0.9, "rule": "street-cleaning-tue-0600" },
+      "vehicle": { "credentialType": "licensePlate", "credentialIdentification": "SYN-9031", "jurisdiction": "US-IN" },
+      "observations": [{ "id": "f2…0070", "className": "Observation" }],
+      "evidence": [{ "imageLink": "https://api.lakeside-garage.example/lpr/f2000000-0070.jpg", "imageType": "plate", "capturedTime": "2026-09-23T06:15:40Z" }],
+      "statusHistory": [{ "state": "detected", "time": "2026-09-23T06:15:41Z", "actor": "lpr-pipeline-lot-c" }],
+      "recordInfo": { "creationTime": "2026-09-23T06:15:41Z", "creator": { "id": "a1…0001", "className": "Organisation" }, "creationUser": "lpr-pipeline-lot-c", "lastUpdate": "2026-09-23T06:15:41Z" }
+    },
+    {
+      "id": "d3…0009", "version": 2, "violationType": "notYetValidRight", "violationStatus": "issued",
+      "place": { "id": "b1…0004", "className": "Place" },
+      "detection": { "mode": "automated", "detectedTime": "2026-09-24T11:40:12Z", "detector": { "id": "b2…0031", "className": "SupplementalEquipment" }, "principal": "lpr-pipeline-lot-c", "confidence": 0.93, "rule": "reservation-not-started" },
+      "vehicle": { "credentialType": "licensePlate", "credentialIdentification": "SYN-7007", "jurisdiction": "US-IL" },
+      "observations": [{ "id": "f2…0091", "className": "Observation" }],
+      "evidence": [{ "imageLink": "https://api.lakeside-garage.example/lpr/f2000000-0091.jpg", "imageType": "plate", "capturedTime": "2026-09-24T11:40:12Z" }],
+      "location": { "observedLocation": { "type": "Point", "coordinates": [-87.6208, 41.8830] } },
+      "policy": { "id": "d4…0001", "version": 1, "className": "EnforcementPolicy" },
+      "signage": [{ "id": "d5…0001", "version": 1, "className": "Signage" }],
+      "notice": { "noticeKind": "notice", "noticeNumber": "LG-2026-018520", "issuedTime": "2026-09-24T11:40:20Z", "issuedBy": { "id": "a1…0001", "className": "Organisation" }, "deliveryMethod": "mail" },
+      "amount": { "currencyType": "USD", "currencyValue": 35.0 },
+      "dueTime": "2026-10-24T23:59:59Z",
+      "unpaidAmount": { "currencyType": "USD", "currencyValue": 18.0 },
+      "capAmount": { "currencyType": "USD", "currencyValue": 36.0 },
+      "amountHistory": [{ "amount": { "currencyType": "USD", "currencyValue": 35.0 }, "time": "2026-09-24T11:40:20Z", "reason": "issued" }],
+      "statusHistory": [
+        { "state": "detected", "time": "2026-09-24T11:40:13Z", "actor": "lpr-pipeline-lot-c" },
+        { "state": "issued", "time": "2026-09-24T11:40:20Z", "actor": "lpr-pipeline-lot-c", "detail": "unreviewed automated issuance (confidence 0.93 ≥ 0.9); policy d4…0001 v1" }
+      ],
+      "recordInfo": { "creationTime": "2026-09-24T11:40:13Z", "creator": { "id": "a1…0001", "className": "Organisation" }, "creationUser": "lpr-pipeline-lot-c", "lastUpdate": "2026-09-24T11:40:20Z" }
+    },
+    {
+      "id": "d3…0021", "version": 3, "violationType": "expiredRight", "violationStatus": "paid",
+      "place": { "id": "b1…0004", "className": "Place" },
+      "detection": { "mode": "automated", "detectedTime": "2026-09-24T09:52:00Z", "principal": "lpr-pipeline-lot-c", "confidence": 0.95, "rule": "paybyplate-expiry-15m" },
+      "vehicle": { "credentialType": "licensePlate", "credentialIdentification": "SYN-4490", "jurisdiction": "US-IL" },
+      "observations": [{ "id": "f2…0092", "className": "Observation" }],
+      "evidence": [{ "imageLink": "https://api.lakeside-garage.example/lpr/f2000000-0092.jpg", "imageType": "plate", "capturedTime": "2026-09-24T09:52:00Z" }],
+      "location": { "observedLocation": { "type": "Point", "coordinates": [-87.6210, 41.8831] } },
+      "policy": { "id": "d4…0001", "version": 1, "className": "EnforcementPolicy" },
+      "signage": [{ "id": "d5…0001", "version": 1, "className": "Signage" }],
+      "notice": { "noticeKind": "notice", "noticeNumber": "LG-2026-018530", "issuedTime": "2026-09-24T09:52:06Z", "issuedBy": { "id": "a1…0001", "className": "Organisation" }, "deliveryMethod": "mail" },
+      "amount": { "currencyType": "USD", "currencyValue": 35.0 },
+      "dueTime": "2026-10-24T23:59:59Z",
+      "unpaidAmount": { "currencyType": "USD", "currencyValue": 18.0 },
+      "capAmount": { "currencyType": "USD", "currencyValue": 36.0 },
+      "payment": { "id": "d9…0004", "className": "PaymentRecord" },
+      "amountHistory": [{ "amount": { "currencyType": "USD", "currencyValue": 35.0 }, "time": "2026-09-24T09:52:06Z", "reason": "issued" }],
+      "statusHistory": [
+        { "state": "detected", "time": "2026-09-24T09:52:01Z", "actor": "lpr-pipeline-lot-c" },
+        { "state": "issued", "time": "2026-09-24T09:52:06Z", "actor": "lpr-pipeline-lot-c" },
+        { "state": "paid", "time": "2026-09-26T12:00:40Z", "actor": "appeals-portal", "detail": "PaymentRecord d9…0004" }
+      ],
+      "recordInfo": { "creationTime": "2026-09-24T09:52:01Z", "creator": { "id": "a1…0001", "className": "Organisation" }, "creationUser": "lpr-pipeline-lot-c", "lastUpdate": "2026-09-26T12:00:40Z" }
+    },
+    {
+      "id": "d3…0022", "version": 3, "violationType": "expiredRight", "violationStatus": "paid",
+      "place": { "id": "b1…0004", "className": "Place" },
+      "detection": { "mode": "automated", "detectedTime": "2026-09-24T10:05:00Z", "principal": "lpr-pipeline-lot-c", "confidence": 0.91, "rule": "paybyplate-expiry-15m" },
+      "vehicle": { "credentialType": "licensePlate", "credentialIdentification": "SYN-3318", "jurisdiction": "US-IL" },
+      "observations": [{ "id": "f2…0093", "className": "Observation" }],
+      "evidence": [{ "imageLink": "https://api.lakeside-garage.example/lpr/f2000000-0093.jpg", "imageType": "plate", "capturedTime": "2026-09-24T10:05:00Z" }],
+      "location": { "observedLocation": { "type": "Point", "coordinates": [-87.6211, 41.8830] } },
+      "policy": { "id": "d4…0001", "version": 1, "className": "EnforcementPolicy" },
+      "signage": [{ "id": "d5…0001", "version": 1, "className": "Signage" }],
+      "notice": { "noticeKind": "notice", "noticeNumber": "LG-2026-018531", "issuedTime": "2026-09-24T10:05:06Z", "issuedBy": { "id": "a1…0001", "className": "Organisation" }, "deliveryMethod": "mail" },
+      "amount": { "currencyType": "USD", "currencyValue": 35.0 },
+      "dueTime": "2026-10-24T23:59:59Z",
+      "payment": { "id": "d9…0007", "className": "PaymentRecord" },
+      "amountHistory": [{ "amount": { "currencyType": "USD", "currencyValue": 35.0 }, "time": "2026-09-24T10:05:06Z", "reason": "issued" }],
+      "statusHistory": [
+        { "state": "detected", "time": "2026-09-24T10:05:01Z", "actor": "lpr-pipeline-lot-c" },
+        { "state": "issued", "time": "2026-09-24T10:05:06Z", "actor": "lpr-pipeline-lot-c" },
+        { "state": "paid", "time": "2026-09-26T13:10:00Z", "actor": "appeals-portal", "detail": "PaymentRecord d9…0007" }
+      ],
+      "recordInfo": { "creationTime": "2026-09-24T10:05:01Z", "creator": { "id": "a1…0001", "className": "Organisation" }, "creationUser": "lpr-pipeline-lot-c", "lastUpdate": "2026-09-26T13:10:00Z" }
+    },
+    {
+      "id": "d3…0201", "version": 1, "violationType": "expiredRight", "violationStatus": "detected",
+      "place": { "id": "b1…0002", "className": "Place" },
+      "detection": { "mode": "automated", "detectedTime": "2026-09-24T08:10:00Z", "principal": "harbor-lpr" },
+      "vehicle": { "credentialType": "licensePlate", "credentialIdentification": "SYN-5501", "jurisdiction": "US-IL" },
+      "statusHistory": [{ "state": "detected", "time": "2026-09-24T08:10:01Z", "actor": "harbor-lpr" }],
+      "recordInfo": { "creationTime": "2026-09-24T08:10:01Z", "creator": { "id": "a1…0002", "className": "Organisation" }, "lastUpdate": "2026-09-24T08:10:01Z" }
+    }
+  ],
+  "credentials": {
+    "default": {
+      "scopes": ["apx.violations:read", "apx.violations:manage"],
+      "apx_org": { "id": "a1…0001", "className": "Organisation" },
+      "apx_places": ["b1…0001", "b1…0005"],
+      "user": "enforcement-console"
+    }
+  }
+}

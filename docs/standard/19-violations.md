@@ -106,16 +106,19 @@ caller's place grant (Part 9 §9.3).
   records it. Publishes `apx.violations.detected.v1`. An unknown `place`
   or a `violationType` outside the served registries is 422
   `reference-unknown`; a malformed body is 400 `invalid-request`.
-- `GET /v1/violations?plate=&noticeNumber=&status=&type=&place=&detectionMode=&since=&until=`
+- `GET /v1/violations?plate=&noticeNumber=&status=&type=&place=&detectionMode=&since=&until=&sourceSystem=&sourceRecordId=`
   / `GET …/{id}`. `noticeNumber` is the lookup a driver can make with
   what they hold; like `plate`, it names no place, so it returns only
-  violations at granted places (Part 9 §9.3a rule 3).
+  violations at granted places (Part 9 §9.3a rule 3). `sourceSystem` and
+  `sourceRecordId` find a violation imported from another system by its
+  source record (§19.13); `sourceRecordId`, too, names no place.
 - `POST …/{id}/review` — `confirm` | `dismiss` (guided enforcement). A
   `violationType` in the body corrects the detector's classification.
 - `POST …/{id}/issue` — issue the warning/notice/citation: `noticeKind`,
   `amount`, `dueTime`, `deliveryMethod`. Publishes
   `apx.violations.issued.v1`.
-- `POST …/{id}/payment` — attach the settling Payment reference → `paid`.
+- `POST …/{id}/payment` — attach the settling Payment reference → `paid`,
+  or a partial payment that leaves it `issued` (§19.6a).
   The payment itself is taken through Part 13 (`POST /v1/payments`, a
   payment link, or an APDS Payment ingested from a pay station).
 - `POST …/{id}/appeals` — open the appeal (from `issued`, or from `paid`
@@ -123,6 +126,14 @@ caller's place grant (Part 9 §9.3).
   `reduced` (+ `adjustedAmount`) | `dismissed`, with `refund` on a
   pay-then-appeal.
 - `POST …/{id}/void` — void with reason (and `refund` when `paid`).
+- `POST /v1/violations:search` and `POST /v1/enforcement/eligibility:check`
+  — the list lookup and the eligibility check with the plate in a body,
+  never a URL; same rules and answers as the `GET`s (Part 9 §9.6 rule 7).
+- `POST /v1/enforcement/violation-imports` and `POST …/{id}/session` —
+  violations issued by another system, and the Session link set after
+  creation (§19.13). The import lives under `/v1/enforcement`, not
+  `/v1/violations/…`, for the reason the eligibility check does: no
+  literal segment sits beside `/v1/violations/{id}`.
 - The versioned `PUT`s on policies and signage take the version last
   read as `If-Match` or body `version` (Part 4 §4.2a).
 - `GET /v1/enforcement/eligibility?credential=&credentialType=&place=&at=`
@@ -193,6 +204,22 @@ counterpart of Part 6's lane inquiry. It returns an `EligibilityResult`:
 4. `detection.principal` (badge id, pipeline name) and
    `statusHistory[].actor` are opaque strings — no personnel directory is
    implied by this standard.
+5. **Match evidence: excuse, never accuse.** How `relatedSession` was
+   linked MAY be recorded as the decoration
+   `apds-ext:apx:match-evidence@1.0` (Part 5 §5.8 rule 5). Where that
+   evidence, or the related Session's `session-detail` `matches[]` entry
+   whose `target` is this Violation, has `plate.method: lenient` or
+   `applied: false`, the server MUST refuse `issue` with 409
+   `violation-not-issuable`: a lenient or shadow match may excuse a stay
+   but never accuse one. This holds for every server and every detection
+   mode.
+6. **Reviewed reads.** Whatever the detection mode, the server MUST
+   refuse `issue` (409 `violation-not-issuable`, `detail` naming the
+   read) while any LPR read in the Violation's `observations[]` has
+   `detail.review.state` `pending` (its plate review is not done) or
+   `rejected` (a reviewer found it unusable as plate evidence) — Part 13
+   §13.3a(4a). A read with no `review`, or one `notRequired`,
+   `confirmed`, or `corrected`, does not block issuance.
 
 ## 19.5 Evidence and privacy
 
@@ -229,12 +256,33 @@ Appeal reasons and resolutions are implementer code lists (jurisdictional
 vocabulary varies too widely to close); `apx-violation-types` is the only
 APX registry this Part defines.
 
+### 19.6a Partial payment (normative)
+
+1. A payment attached with `POST …/{id}/payment` contributes its
+   `amount`, or the whole outstanding amount when `amount` is absent.
+   Every attached payment is appended to `payments[]` as a
+   `ViolationAppliedPayment` (`amount`, `paidTime`, and the Part 13
+   `payment` reference) and added to `amountPaid`. A payment an import
+   source took itself (§19.13), with no Part 13 record here, carries the
+   source's own `reference` instead of `payment`.
+2. `paid` means `amountPaid` ≥ `amount`. A payment that leaves an
+   outstanding balance keeps the violation `issued`, appends a
+   `statusHistory[]` entry noting it, and publishes
+   `apx.violations.status.v1`; the escalation clock keeps running on the
+   outstanding balance.
+3. `payment` is the payment that settled the violation; it is set when
+   the violation becomes `paid`.
+4. Refunds on a pay-then-appeal (§19.6) and on void reduce `amountPaid`
+   by the refunded amount.
+
 ## 19.7 Eventing
 
 - `apx.violations.detected.v1` on creation (data: `Violation`).
 - `apx.violations.issued.v1` on issuance (data: `Violation`).
-- `apx.violations.status.v1` on every other transition — review, payment,
-  appeal open/resolve, void (data: `Violation`).
+- `apx.violations.status.v1` on every other transition — review, payment
+  (partial payments included), appeal open/resolve, void — and on a
+  change of the Session link or an applied import revision (§19.13)
+  (data: `Violation`).
 
 Place binding (Part 8 §8.5) uses `Violation.place`. Subscriptions to these
 topics require `apx.violations:read` (Part 9 §9.6 rule 4).
@@ -389,3 +437,74 @@ candidate is raised by a consumer of `apx.charging.idle.started.v1` when
 `idlePolicy.maxIdleMinutes` elapses (Part 23 §23.10). Whether idle is a
 fee, a violation, or both is the place's enforcement policy (§19.10) and
 signage (§19.11).
+
+## 19.13 Violations issued by an external enforcement system (normative)
+
+Enforcement vendors issue citations on their own systems and report them
+afterwards. The lifecycle of §19.1 assumes this server detected and
+issued the violation through its own API calls, stamped with its own
+time; an already-issued citation from elsewhere arrives in whatever
+state its source has reached, with the source's times.
+
+1. **Import.** `POST /v1/enforcement/violation-imports` (scope
+   `apx.violations:manage`, `Idempotency-Key` REQUIRED) records a
+   `ViolationImport`: a violation in any state, with the
+   `statusHistory[]` times and actors the source recorded, its notice,
+   amounts and payments, and the decoration
+   `apds-ext:apx:violation-source@1.0` (`ViolationSource`: `system`,
+   `recordId`, `sourceStatus`, `sourceRevision`, `sourceUpdatedTime`,
+   and the server-set `receivedTime`). `ViolationImport` is its own
+   request body, not a `Violation`: the members a `Violation` marks
+   read-only (`violationStatus`, `notice`, `amountPaid`, `payments`) are
+   ordinary members here, because the source, not this server, decided
+   them. The server MAY keep the source's `id` or mint its own.
+2. **Keyed on the source.** The pair `system` + `recordId` identifies the
+   record. A later import with a higher `sourceRevision` — or, when the
+   source keeps no counter, a later `sourceUpdatedTime` — updates it
+   (200, version + 1, `apx.violations.status.v1`); the same revision is
+   a no-op 200; an older one is 409 `version-conflict`. With neither
+   ordering member, every import applies.
+3. **What an import must say.** A state at or past issuance (`issued`,
+   `paid`, `appealed`, `closed`) MUST carry `notice` (with
+   `noticeNumber` and `issuedTime`) and `amount`, else 400
+   `invalid-request`. `paid` MUST have `amountPaid` at least `amount`; a
+   part-paid citation is `issued` with its `payments[]` (§19.6a), and
+   `paid` below `amount` is 422 `request-unprocessable`. Payments the
+   source took itself carry its own `reference` (§19.6a rule 1).
+   A warning with no fine (a source status such as `warned`) is
+   `issued` with `notice.noticeKind` `warning` and an `amount` of zero
+   in the place's currency, as `POST …/{id}/issue` records one natively;
+   `sourceStatus` keeps the source's word, and a warning the source
+   treats as finished MAY be imported as `closed`.
+   `statusHistory[]` is append-only: the server keeps the entries it
+   already holds and appends only the source's entries later than its
+   last one, never rewriting history (Part 4 §4.2).
+4. **The source decided.** The server performs no eligibility check
+   (§19.3) and applies no policy clamp (§19.10) to an import; the
+   source's status vocabulary is kept in `sourceStatus` and mapped onto
+   `violationStatus` (a partial payment is `issued` with `amountPaid`,
+   §19.6a). The first import publishes `apx.violations.detected.v1`,
+   and `apx.violations.issued.v1` when the imported state is at or
+   beyond `issued`. `sourceRecordId`, like `noticeNumber`, is a lookup
+   that names no place (Part 9 §9.3a rule 3).
+5. **Thereafter.** An imported violation follows §19.1 like any other:
+   later transitions are API calls stamped by this server.
+6. **Linking a Session after creation.** `POST /v1/violations/{id}/session`
+   (`ViolationSessionLink`) sets, corrects, or clears (`session: null`)
+   `relatedSession`, and writes the match evidence as the decoration
+   `apds-ext:apx:match-evidence@1.0` (Part 5 §5.8), with the Session as
+   `target`.
+   - The link is not a lifecycle transition: it is valid in every
+     state, terminal ones included, and appends nothing to
+     `statusHistory[]`.
+   - `If-Match` carries the Violation `version` last read (Part 4
+     §4.2a); a stale one is 409 `version-conflict` and nothing is
+     written. A change increments `version` and publishes
+     `apx.violations.status.v1`; resending what the violation already
+     holds is a no-op (200, no new version, no event).
+   - A Session that does not exist or is not visible to the caller is
+     422 `reference-unknown`; one at a place outside the hierarchy of
+     the violation's `place` — neither the same element, an ancestor,
+     nor a descendant — is 422 `request-unprocessable`.
+   - Recording lenient or unapplied evidence on a violation is allowed;
+     it then blocks `issue` (§19.4 rule 5).

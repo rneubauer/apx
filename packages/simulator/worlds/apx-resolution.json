@@ -1,0 +1,1061 @@
+{
+  "extends": "base-lakeside",
+  "name": "apx-resolution",
+  "description": "The cast of docs/scenarios/by-module/apx-resolution: Lakeside Garage with entry lane 1, exit lane 2 (gate, pay-in-lane terminal, intercom); J. Smith (monthly, $185 balance hold, two courtesy exits in 48 h), M. Rivera (monthly, passback violation), R. Chen (monthly, balance hold, no courtesy yet); the prepaid reservation LKG-88214 with its misread plate, the barcode reservation LKG-90031; the tickets and sessions each scenario's lane shows; the operator's resolution policy.",
+  "credentials": {
+    "default": {
+      "scopes": [
+        "apx.resolution:read",
+        "apx.control:read",
+        "apx.control:execute",
+        "apx.lpr:read",
+        "apx.data:write",
+        "apx.payments:write",
+        "apx.reservations:manage",
+        "apx.support:manage",
+        "apx.accounts:read"
+      ],
+      "apx_org": {
+        "id": "a1…0001",
+        "className": "Organisation"
+      },
+      "apx_places": [
+        "b1…0001"
+      ],
+      "user": "callcenter-platform"
+    }
+  },
+  "control": {
+    "hourlyRate": 3,
+    "clearLaneOnVend": false,
+    "timing": {
+      "dispatch": 1000,
+      "execute": 0,
+      "succeed": 2000
+    }
+  },
+  "resolutionPolicy": {
+    "contextTtl": "PT1H",
+    "plateThreshold": 0.8,
+    "supportHistoryHours": 36,
+    "plateRegion": {
+      "country": "US",
+      "stateProvince": "FL"
+    },
+    "balanceHold": {
+      "threshold": 0,
+      "approvalRole": "supervisor",
+      "policy": "balance-hold-vend-supervisor"
+    },
+    "courtesy": {
+      "max": 2,
+      "windowHours": 48,
+      "nightFrom": "22:00",
+      "nightUntil": "06:00",
+      "approvalRole": "supervisor",
+      "policy": "max-two-courtesy-exits-48h"
+    },
+    "rateApprovalRole": "supervisor",
+    "restartApprovalRole": "maintenance",
+    "paymentDeviceTypes": [
+      "payStation",
+      "payTerminal"
+    ],
+    "plateApprovalRole": "supervisor",
+    "denialReasons": {
+      "account past due": {
+        "reasonCode": "outstandingBalance",
+        "reasonDisplay": "Monthly account has an outstanding balance.",
+        "issue": "accountBalanceDenied"
+      },
+      "passback": {
+        "reasonCode": "passbackViolation",
+        "reasonDisplay": "Credential is recorded as already inside.",
+        "issue": "passbackViolation"
+      }
+    }
+  },
+  "lanes": [
+    {
+      "id": "b2…0001",
+      "placeId": "b1…0001",
+      "name": "entry lane 1",
+      "accessType": "entry",
+      "gate": "c1…0001"
+    },
+    {
+      "id": "b2…0002",
+      "placeId": "b1…0001",
+      "name": "exit lane 2",
+      "accessType": "exit",
+      "gate": "c1…0002",
+      "lastRead": {
+        "plate": "SYN-1234",
+        "confidence": 0.98,
+        "observation": "f2…0001",
+        "time": "2026-09-24T21:13:57Z"
+      },
+      "credential": {
+        "credential": {
+          "id": "c3…0001",
+          "className": "Credential"
+        },
+        "cardNumber": "MC-0777",
+        "accessGranted": false,
+        "denialReason": "account past due",
+        "lastActivity": "2026-09-24T21:13:58Z"
+      }
+    },
+    {
+      "id": "b2…0003",
+      "placeId": "b1…0002",
+      "name": "Harbor Deck exit lane",
+      "accessType": "exit",
+      "gate": "c1…0031"
+    }
+  ],
+  "devices": [
+    {
+      "id": "c1…0001",
+      "placeId": "b1…0001",
+      "laneId": "b2…0001",
+      "name": "entry gate",
+      "equipmentType": "barrier",
+      "state": "available",
+      "lastCommunication": "2026-09-24T17:59:58Z",
+      "stateChangedTime": "2026-09-24T06:00:10Z"
+    },
+    {
+      "id": "c1…0002",
+      "placeId": "b1…0001",
+      "laneId": "b2…0002",
+      "name": "exit gate",
+      "equipmentType": "barrier",
+      "state": "available",
+      "lastCommunication": "2026-09-24T17:59:58Z",
+      "stateChangedTime": "2026-09-24T06:00:12Z"
+    },
+    {
+      "id": "c1…0003",
+      "placeId": "b1…0001",
+      "laneId": "b2…0002",
+      "name": "payment terminal",
+      "equipmentType": "payTerminal",
+      "state": "available",
+      "lastCommunication": "2026-09-24T17:59:58Z",
+      "stateChangedTime": "2026-09-24T06:00:13Z"
+    },
+    {
+      "id": "c1…0005",
+      "placeId": "b1…0001",
+      "laneId": "b2…0002",
+      "name": "exit-lane intercom",
+      "equipmentType": "intercom",
+      "state": "available",
+      "lastCommunication": "2026-09-24T17:59:59Z",
+      "stateChangedTime": "2026-09-24T06:00:14Z"
+    },
+    {
+      "id": "c1…0031",
+      "placeId": "b1…0002",
+      "laneId": "b2…0003",
+      "name": "Harbor Deck exit gate",
+      "equipmentType": "barrier",
+      "state": "available"
+    }
+  ],
+  "placeRates": {
+    "b1…0001": [
+      "d5…0001",
+      "d5…0002",
+      "d5…0003"
+    ]
+  },
+  "validationProviders": [
+    {
+      "placeId": "b1…0001",
+      "provider": {
+        "id": "a2…0012",
+        "className": "Organisation"
+      },
+      "name": "Harbor Restaurant",
+      "validationType": "flatDiscount",
+      "benefit": {
+        "description": "$3.00 off",
+        "amount": {
+          "currencyType": "USD",
+          "currencyValue": 3
+        }
+      }
+    }
+  ],
+  "rightHolders": [
+    {
+      "id": "a3…0001",
+      "name": "J. Smith"
+    },
+    {
+      "id": "a3…0002",
+      "name": "M. Rivera"
+    },
+    {
+      "id": "a3…0003",
+      "name": "R. Chen"
+    },
+    {
+      "id": "a3…0077",
+      "name": "K. Osei"
+    }
+  ],
+  "accounts": [
+    {
+      "id": "a4…0001",
+      "version": 7,
+      "holder": {
+        "id": "a3…0001",
+        "className": "RightHolder"
+      },
+      "name": "J. Smith",
+      "phone": "+15550104567",
+      "email": "j.smith@example.com",
+      "cardNumber": "MC-0777",
+      "plates": [
+        "SYN-1234"
+      ],
+      "credentials": [
+        {
+          "id": "c3…0001",
+          "className": "CredentialRecord"
+        }
+      ],
+      "balance": {
+        "currencyType": "USD",
+        "currencyValue": 185
+      },
+      "accountStatus": "enabled",
+      "places": [
+        {
+          "id": "b1…0001",
+          "className": "Place"
+        }
+      ]
+    },
+    {
+      "id": "a4…0002",
+      "version": 3,
+      "holder": {
+        "id": "a3…0002",
+        "className": "RightHolder"
+      },
+      "name": "M. Rivera",
+      "phone": "+15550109920",
+      "cardNumber": "MC-0812",
+      "plates": [
+        "RIV-2290"
+      ],
+      "balance": {
+        "currencyType": "USD",
+        "currencyValue": 0
+      },
+      "accountStatus": "enabled",
+      "places": [
+        {
+          "id": "b1…0001",
+          "className": "Place"
+        }
+      ]
+    },
+    {
+      "id": "a4…0003",
+      "version": 4,
+      "holder": {
+        "id": "a3…0003",
+        "className": "RightHolder"
+      },
+      "name": "R. Chen",
+      "phone": "+15550107731",
+      "cardNumber": "MC-0933",
+      "plates": [
+        "CHN-4410"
+      ],
+      "balance": {
+        "currencyType": "USD",
+        "currencyValue": 64
+      },
+      "accountStatus": "enabled",
+      "places": [
+        {
+          "id": "b1…0001",
+          "className": "Place"
+        }
+      ]
+    }
+  ],
+  "credentialRecords": [
+    {
+      "id": "c3…0001",
+      "version": 2,
+      "credentialType": "rfid",
+      "credentialIdentification": "MC-0777",
+      "credentialAssignedType": "customer",
+      "holder": {
+        "id": "a3…0001",
+        "className": "RightHolder"
+      },
+      "account": {
+        "id": "a4…0001",
+        "className": "Account"
+      },
+      "places": [
+        {
+          "id": "b1…0001",
+          "className": "Place"
+        }
+      ],
+      "credentialStatus": "active",
+      "statusHistory": [
+        {
+          "state": "active",
+          "time": "2024-02-01T09:00:00Z",
+          "actor": "frontdesk"
+        }
+      ],
+      "_passback": {
+        "presence": "inside",
+        "lastAccess": {
+          "direction": "entry",
+          "occurredAt": "2026-09-23T08:15:02Z",
+          "place": "b1…0001",
+          "lane": "b2…0001"
+        }
+      }
+    },
+    {
+      "id": "c3…0002",
+      "version": 2,
+      "credentialType": "rfid",
+      "credentialIdentification": "MC-0812",
+      "credentialAssignedType": "customer",
+      "holder": {
+        "id": "a3…0002",
+        "className": "RightHolder"
+      },
+      "account": {
+        "id": "a4…0002",
+        "className": "Account"
+      },
+      "places": [
+        {
+          "id": "b1…0001",
+          "className": "Place"
+        }
+      ],
+      "credentialStatus": "active",
+      "statusHistory": [
+        {
+          "state": "active",
+          "time": "2025-03-01T09:00:00Z",
+          "actor": "frontdesk"
+        }
+      ],
+      "_passback": {
+        "presence": "inside",
+        "violation": true,
+        "lastAccess": {
+          "direction": "entry",
+          "occurredAt": "2026-09-23T08:03:47Z",
+          "place": "b1…0001",
+          "lane": "b2…0001"
+        }
+      }
+    },
+    {
+      "id": "c3…0003",
+      "version": 1,
+      "credentialType": "rfid",
+      "credentialIdentification": "MC-0933",
+      "credentialAssignedType": "customer",
+      "holder": {
+        "id": "a3…0003",
+        "className": "RightHolder"
+      },
+      "account": {
+        "id": "a4…0003",
+        "className": "Account"
+      },
+      "places": [
+        {
+          "id": "b1…0001",
+          "className": "Place"
+        }
+      ],
+      "credentialStatus": "active",
+      "statusHistory": [
+        {
+          "state": "active",
+          "time": "2026-01-10T09:00:00Z",
+          "actor": "frontdesk"
+        }
+      ],
+      "_passback": {
+        "presence": "inside",
+        "lastAccess": {
+          "direction": "entry",
+          "occurredAt": "2026-09-24T08:02:11Z",
+          "place": "b1…0001",
+          "lane": "b2…0001"
+        }
+      }
+    },
+    {
+      "id": "c3…0077",
+      "version": 1,
+      "credentialType": "rfid",
+      "credentialIdentification": "HD-0077",
+      "credentialAssignedType": "customer",
+      "holder": {
+        "id": "a3…0077",
+        "className": "RightHolder"
+      },
+      "places": [
+        {
+          "id": "b1…0002",
+          "className": "Place"
+        }
+      ],
+      "credentialStatus": "active",
+      "statusHistory": [
+        {
+          "state": "active",
+          "time": "2026-05-01T09:00:00Z",
+          "actor": "harbor-desk"
+        }
+      ],
+      "_passback": {
+        "presence": "inside",
+        "lastAccess": {
+          "direction": "entry",
+          "occurredAt": "2026-09-24T07:30:00Z",
+          "place": "b1…0002",
+          "lane": "b2…0003"
+        }
+      }
+    }
+  ],
+  "accessCredentials": [
+    {
+      "id": "c3…00fe",
+      "cardNumber": "T-TRANSIENT-0254",
+      "placeId": "b1…0001",
+      "status": "active"
+    }
+  ],
+  "accessEvents": [
+    {
+      "id": "d7…0201",
+      "credential": {
+        "id": "c3…0002",
+        "className": "CredentialRecord"
+      },
+      "occurredAt": "2026-09-24T07:51:40Z",
+      "place": {
+        "id": "b1…0001",
+        "className": "Place"
+      },
+      "lane": {
+        "id": "b2…0001",
+        "className": "VehicularAccess"
+      },
+      "direction": "entry",
+      "outcome": "denied",
+      "denialReason": "passback"
+    },
+    {
+      "id": "d7…0202",
+      "credential": {
+        "id": "c3…0002",
+        "className": "CredentialRecord"
+      },
+      "occurredAt": "2026-09-24T07:51:58Z",
+      "place": {
+        "id": "b1…0001",
+        "className": "Place"
+      },
+      "lane": {
+        "id": "b2…0001",
+        "className": "VehicularAccess"
+      },
+      "direction": "entry",
+      "outcome": "denied",
+      "denialReason": "passback"
+    }
+  ],
+  "commands": [
+    {
+      "id": "d1…0201",
+      "version": 5,
+      "commandType": "courtesyExit",
+      "target": {
+        "id": "b2…0002",
+        "className": "VehicularAccess"
+      },
+      "parameters": {
+        "holder": {
+          "id": "a3…0001",
+          "className": "RightHolder"
+        }
+      },
+      "requestedBy": {
+        "id": "a1…0001",
+        "className": "Organisation"
+      },
+      "agent": "agent:t.vance",
+      "agentType": "human",
+      "reason": "card reader fault at exit lane 2",
+      "status": "succeeded",
+      "confirmationLevel": "physicallyConfirmed",
+      "statusHistory": [
+        {
+          "state": "received",
+          "time": "2026-09-23T20:41:57Z",
+          "actor": "apx-operator"
+        },
+        {
+          "state": "accepted",
+          "time": "2026-09-23T20:41:57Z",
+          "actor": "lakeside-parcs"
+        },
+        {
+          "state": "dispatched",
+          "time": "2026-09-23T20:41:58Z",
+          "actor": "lakeside-parcs"
+        },
+        {
+          "state": "succeeded",
+          "time": "2026-09-23T20:42:00Z",
+          "actor": "gate-c1000000-0002"
+        }
+      ]
+    },
+    {
+      "id": "d1…0202",
+      "version": 5,
+      "commandType": "courtesyExit",
+      "target": {
+        "id": "b2…0002",
+        "className": "VehicularAccess"
+      },
+      "parameters": {
+        "holder": {
+          "id": "a3…0001",
+          "className": "RightHolder"
+        }
+      },
+      "requestedBy": {
+        "id": "a1…0001",
+        "className": "Organisation"
+      },
+      "agent": "ai:lakeside-voicebot-02",
+      "agentType": "ai",
+      "reason": "balance hold; payment link undeliverable",
+      "status": "succeeded",
+      "confirmationLevel": "physicallyConfirmed",
+      "statusHistory": [
+        {
+          "state": "received",
+          "time": "2026-09-24T12:13:57Z",
+          "actor": "apx-operator"
+        },
+        {
+          "state": "accepted",
+          "time": "2026-09-24T12:13:57Z",
+          "actor": "lakeside-parcs"
+        },
+        {
+          "state": "dispatched",
+          "time": "2026-09-24T12:13:58Z",
+          "actor": "lakeside-parcs"
+        },
+        {
+          "state": "succeeded",
+          "time": "2026-09-24T12:14:00Z",
+          "actor": "gate-c1000000-0002"
+        }
+      ]
+    }
+  ],
+  "sessions": [
+    {
+      "id": "c4…0021",
+      "version": 2,
+      "actualStart": "2026-09-24T17:02:44Z",
+      "initiator": {
+        "id": "a1…0001",
+        "version": 1,
+        "className": "Organisation"
+      },
+      "hierarchyElement": {
+        "id": "b1…0001",
+        "version": 7,
+        "className": "Place"
+      },
+      "identifiedCredentials": [],
+      "segments": [],
+      "_place": "b1…0001",
+      "_ticketNumber": "T-58201",
+      "_entryLane": "b2…0001",
+      "_amountDue": {
+        "currencyType": "USD",
+        "currencyValue": 0
+      },
+      "_paid": true
+    },
+    {
+      "id": "c4…0022",
+      "version": 1,
+      "actualStart": "2026-09-24T13:11:03Z",
+      "initiator": {
+        "id": "a1…0001",
+        "version": 1,
+        "className": "Organisation"
+      },
+      "hierarchyElement": {
+        "id": "b1…0001",
+        "version": 7,
+        "className": "Place"
+      },
+      "identifiedCredentials": [],
+      "segments": [],
+      "_place": "b1…0001",
+      "_ticketNumber": "T-61077",
+      "_entryLane": "b2…0001",
+      "_phone": "+15550108812",
+      "_amountDue": {
+        "currencyType": "USD",
+        "currencyValue": 18
+      }
+    },
+    {
+      "id": "c4…0023",
+      "version": 1,
+      "actualStart": "2026-09-24T17:48:19Z",
+      "initiator": {
+        "id": "a1…0001",
+        "version": 1,
+        "className": "Organisation"
+      },
+      "hierarchyElement": {
+        "id": "b1…0001",
+        "version": 7,
+        "className": "Place"
+      },
+      "identifiedCredentials": [],
+      "segments": [],
+      "_place": "b1…0001",
+      "_ticketNumber": "T-70443",
+      "_entryLane": "b2…0001",
+      "_amountDue": {
+        "currencyType": "USD",
+        "currencyValue": 14
+      }
+    },
+    {
+      "id": "c4…0024",
+      "version": 1,
+      "actualStart": "2026-09-24T11:05:37Z",
+      "initiator": {
+        "id": "a1…0001",
+        "version": 1,
+        "className": "Organisation"
+      },
+      "hierarchyElement": {
+        "id": "b1…0001",
+        "version": 7,
+        "className": "Place"
+      },
+      "identifiedCredentials": [],
+      "segments": [],
+      "_place": "b1…0001",
+      "_ticketNumber": "T-81290",
+      "_entryLane": "b2…0001",
+      "_amountDue": {
+        "currencyType": "USD",
+        "currencyValue": 45
+      },
+      "_rateTable": "d5…0003"
+    },
+    {
+      "id": "c4…0031",
+      "version": 1,
+      "actualStart": "2026-09-24T17:41:22Z",
+      "initiator": {
+        "id": "a1…0001",
+        "version": 1,
+        "className": "Organisation"
+      },
+      "hierarchyElement": {
+        "id": "b1…0001",
+        "version": 7,
+        "className": "Place"
+      },
+      "identifiedCredentials": [],
+      "segments": [],
+      "_place": "b1…0001",
+      "_entryLane": "b2…0001",
+      "_entryObservation": "f2…0013",
+      "_plate": "5VN-4B21",
+      "_plateConfidence": 0.41,
+      "_country": "US",
+      "_stateProvince": "FL",
+      "_amountDue": {
+        "currencyType": "USD",
+        "currencyValue": 38
+      }
+    },
+    {
+      "id": "c4…0032",
+      "version": 1,
+      "actualStart": "2026-09-24T18:12:30Z",
+      "initiator": {
+        "id": "a1…0001",
+        "version": 1,
+        "className": "Organisation"
+      },
+      "hierarchyElement": {
+        "id": "b1…0001",
+        "version": 7,
+        "className": "Place"
+      },
+      "identifiedCredentials": [],
+      "segments": [],
+      "_place": "b1…0001",
+      "_entryLane": "b2…0001",
+      "_amountDue": {
+        "currencyType": "USD",
+        "currencyValue": 42
+      }
+    },
+    {
+      "id": "c4…0033",
+      "version": 1,
+      "actualStart": "2026-09-24T19:40:00Z",
+      "initiator": {
+        "id": "a1…0001",
+        "version": 1,
+        "className": "Organisation"
+      },
+      "hierarchyElement": {
+        "id": "b1…0001",
+        "version": 7,
+        "className": "Place"
+      },
+      "identifiedCredentials": [],
+      "segments": [],
+      "_place": "b1…0001",
+      "_entryLane": "b2…0001",
+      "_amountDue": {
+        "currencyType": "USD",
+        "currencyValue": 30
+      }
+    },
+    {
+      "id": "c4…0034",
+      "version": 1,
+      "actualStart": "2026-09-24T13:41:00Z",
+      "initiator": {
+        "id": "a1…0001",
+        "version": 1,
+        "className": "Organisation"
+      },
+      "hierarchyElement": {
+        "id": "b1…0001",
+        "version": 7,
+        "className": "Place"
+      },
+      "identifiedCredentials": [],
+      "segments": [],
+      "_place": "b1…0001",
+      "_entryLane": "b2…0001",
+      "_entryObservation": "f2…0031",
+      "_plate": "SYN-7781",
+      "_plateConfidence": 0.95,
+      "_country": "US",
+      "_stateProvince": "FL",
+      "_plateImage": "https://api.lakeside-garage.example/v1/media/f2000000-0031/plate.jpg",
+      "_amountDue": {
+        "currencyType": "USD",
+        "currencyValue": 21
+      }
+    },
+    {
+      "id": "c4…0041",
+      "version": 3,
+      "actualStart": "2026-09-24T14:12:08Z",
+      "initiator": {
+        "id": "a1…0001",
+        "version": 1,
+        "className": "Organisation"
+      },
+      "hierarchyElement": {
+        "id": "b1…0001",
+        "version": 7,
+        "className": "Place"
+      },
+      "identifiedCredentials": [],
+      "segments": [],
+      "_place": "b1…0001",
+      "_entryLane": "b2…0001",
+      "_entryObservation": "f2…0041",
+      "_plate": "RVR-8821",
+      "_plateConfidence": 0.58,
+      "_country": "US",
+      "_stateProvince": "IL",
+      "_amountDue": {
+        "currencyType": "USD",
+        "currencyValue": 9
+      }
+    },
+    {
+      "id": "c4…0042",
+      "version": 1,
+      "actualStart": "2026-09-24T16:40:00Z",
+      "initiator": {
+        "id": "a1…0001",
+        "version": 1,
+        "className": "Organisation"
+      },
+      "hierarchyElement": {
+        "id": "b1…0001",
+        "version": 7,
+        "className": "Place"
+      },
+      "identifiedCredentials": [],
+      "segments": [],
+      "_place": "b1…0001",
+      "_ticketNumber": "T-71902",
+      "_entryLane": "b2…0001",
+      "_amountDue": {
+        "currencyType": "USD",
+        "currencyValue": 12
+      }
+    },
+    {
+      "id": "c4…0043",
+      "version": 4,
+      "actualStart": "2026-09-24T19:05:00Z",
+      "initiator": {
+        "id": "a1…0001",
+        "version": 1,
+        "className": "Organisation"
+      },
+      "hierarchyElement": {
+        "id": "b1…0001",
+        "version": 7,
+        "className": "Place"
+      },
+      "identifiedCredentials": [],
+      "segments": [],
+      "_place": "b1…0001",
+      "_entryLane": "b2…0001",
+      "_amountDue": {
+        "currencyType": "USD",
+        "currencyValue": 0
+      },
+      "_paid": true
+    },
+    {
+      "id": "c4…0051",
+      "version": 5,
+      "actualStart": "2026-09-24T18:31:00Z",
+      "actualEnd": "2026-09-24T21:02:00Z",
+      "initiator": {
+        "id": "a1…0001",
+        "version": 1,
+        "className": "Organisation"
+      },
+      "hierarchyElement": {
+        "id": "b1…0001",
+        "version": 7,
+        "className": "Place"
+      },
+      "identifiedCredentials": [],
+      "segments": [],
+      "_place": "b1…0001",
+      "_plate": "MNO-3301",
+      "_plateConfidence": 0.93,
+      "_amountDue": {
+        "currencyType": "USD",
+        "currencyValue": 0
+      },
+      "_paid": true
+    }
+  ],
+  "tickets": [
+    {
+      "ticketNumber": "T-61077",
+      "placeId": "b1…0001",
+      "session": "c4…0022",
+      "amountDue": {
+        "currencyType": "USD",
+        "currencyValue": 18
+      },
+      "phone": "+15550108812"
+    },
+    {
+      "ticketNumber": "T-61081",
+      "placeId": "b1…0001",
+      "amountDue": {
+        "currencyType": "USD",
+        "currencyValue": 16
+      },
+      "phone": "+15550108840"
+    }
+  ],
+  "payments": [
+    {
+      "id": "e8…0051",
+      "transactionID": "TXN-2026-090144",
+      "place": {
+        "id": "b1…0001",
+        "className": "Place"
+      },
+      "dateCollected": "2026-09-24T21:37:02Z",
+      "amount": {
+        "currencyType": "USD",
+        "currencyValue": 18
+      },
+      "meansOfPayment": "paymentCreditCard",
+      "channel": "lane",
+      "paymentStatus": "declined",
+      "ticketNumber": "T-61077",
+      "cardLast4": "4242",
+      "_session": "c4…0022"
+    }
+  ],
+  "paymentLinks": [
+    {
+      "id": "e6…0001",
+      "version": 1,
+      "place": {
+        "id": "b1…0001",
+        "className": "Place"
+      },
+      "account": {
+        "id": "a4…0001",
+        "className": "Account"
+      },
+      "amount": {
+        "currencyType": "USD",
+        "currencyValue": 185
+      },
+      "channel": "sms",
+      "sentTo": "+1•••••••4567",
+      "status": "sent",
+      "expiresAt": "2026-09-25T00:30:00Z",
+      "resolutionContext": {
+        "id": "e5…0001",
+        "className": "ResolutionContext"
+      },
+      "correlationId": "ca000000-0000-4000-8000-000000000001"
+    }
+  ],
+  "reservations": [
+    {
+      "id": "e2…0014",
+      "placeId": "b1…0001",
+      "_reservationCode": "LKG-88214",
+      "_plate": "SVN-4821",
+      "_reservationState": "confirmed",
+      "plannedStart": "2026-09-24T17:30:00Z",
+      "plannedEnd": "2026-09-24T23:30:00Z"
+    },
+    {
+      "id": "e2…0015",
+      "placeId": "b1…0001",
+      "_reservationCode": "LKG-90031",
+      "_reservationState": "confirmed",
+      "plannedStart": "2026-09-24T18:00:00Z",
+      "plannedEnd": "2026-09-25T01:00:00Z"
+    },
+    {
+      "id": "e2…0016",
+      "placeId": "b1…0001",
+      "_reservationCode": "LKG-90044",
+      "_reservationState": "confirmed",
+      "plannedStart": "2026-09-24T19:00:00Z",
+      "plannedEnd": "2026-09-25T02:00:00Z"
+    }
+  ],
+  "supportInteractions": [
+    {
+      "id": "e7…0000",
+      "version": 1,
+      "channel": "voice",
+      "agentType": "ai",
+      "agent": "ai:lakeside-voicebot-02",
+      "startedAt": "2026-09-23T20:40:11Z",
+      "endedAt": "2026-09-23T20:43:02Z",
+      "place": {
+        "id": "b1…0001",
+        "className": "Place"
+      },
+      "issue": {
+        "code": "accountBalanceDenied"
+      },
+      "summary": "Balance hold; courtesy exit granted (second of two in 48 h).",
+      "subjects": {
+        "holder": {
+          "id": "a3…0001",
+          "className": "RightHolder"
+        }
+      },
+      "actions": [
+        {
+          "id": "d1…0201",
+          "className": "Command"
+        }
+      ],
+      "resolution": {
+        "code": "resolved"
+      }
+    },
+    {
+      "id": "e7…0031",
+      "version": 1,
+      "channel": "chat",
+      "agentType": "ai",
+      "agent": "ai:lakeside-chatbot-01",
+      "startedAt": "2026-09-24T18:02:30Z",
+      "endedAt": "2026-09-24T18:06:12Z",
+      "place": {
+        "id": "b1…0001",
+        "className": "Place"
+      },
+      "issue": {
+        "code": "lostTicket"
+      },
+      "summary": "Lost ticket; session found by plate; payment link sent.",
+      "subjects": {
+        "plate": "SYN-7781",
+        "session": {
+          "id": "c4…0031",
+          "className": "Session"
+        }
+      },
+      "interactionId": "chat-77310",
+      "correlationId": "ca000000-0000-4000-8000-000000000003",
+      "recordInfo": {
+        "creationTime": "2026-09-24T18:06:14Z",
+        "creator": {
+          "id": "a1…0001",
+          "className": "Organisation"
+        },
+        "creationUser": "ai:lakeside-chatbot-01"
+      },
+      "_idempotencyKey": "rec-chat-77310"
+    }
+  ],
+  "lpr": {
+    "disputeWindow": "PT30M"
+  }
+}

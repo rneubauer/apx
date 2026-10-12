@@ -1,0 +1,217 @@
+{
+  "extends": "base-lakeside",
+  "name": "apx-valet",
+  "description": "The cast of docs/scenarios/by-module/apx-valet: the Lakeside Hotel valet stand b1…0005 under Lakeside Garage with its drop-off lane b2…0050 and staging lane b2…0051, space-mapped level P3 with row D hook 17 (Space c3…0117), the staff principals, the guests' tickets the file pre-supposes (V-20420 – V-20429), and Harbor Deck's stand b1…0006 with ticket d8…0902 outside the grant.",
+  "valet": {
+    "baseEtaMinutes": 8,
+    "perQueuedMinutes": 1,
+    "horizonMinutes": 60,
+    "settleAfter": "PT9M17S",
+    "settledBy": "paid at pay station 3",
+    "stagingLane": "b2…0051",
+    "rightSpecification": "e1…0050",
+    "claimCodes": { "d8…0419": "7Q2M", "d8…0430": "5RW8" }
+  },
+  "places": [
+    { "id": "b1…0005", "parentId": "b1…0001", "name": "Lakeside Hotel valet stand", "type": "Place", "version": 1 },
+    { "id": "b3…0002", "parentId": "b1…0001", "name": "Level P2", "type": "Level", "version": 1 },
+    { "id": "b3…0003", "parentId": "b1…0001", "name": "Level P3", "type": "Level", "version": 1 },
+    { "id": "c3…0117", "parentId": "b3…0003", "name": "P3-D-17", "type": "Space", "version": 1 },
+    { "id": "b1…0006", "parentId": "b1…0002", "name": "Harbor Deck valet stand", "type": "Place", "version": 1 }
+  ],
+  "lanes": [
+    { "id": "b2…0050", "placeId": "b1…0005", "name": "valet drop-off lane", "accessType": "entry" },
+    { "id": "b2…0051", "placeId": "b1…0005", "name": "front-entrance staging lane", "accessType": "exit" },
+    { "id": "b2…0060", "placeId": "b1…0006", "name": "Harbor Deck valet lane", "accessType": "entry" }
+  ],
+  "credentials": {
+    "default": { "scopes": ["apx.valet:read", "apx.valet:manage"], "apx_org": { "id": "a1…0001", "className": "Organisation" }, "apx_places": ["b1…0001"], "user": "valet-console" },
+    "attendant-0031": { "scopes": ["apx.valet:read", "apx.valet:manage"], "apx_org": { "id": "a1…0001", "className": "Organisation" }, "apx_places": ["b1…0005"], "user": "attendant-0031" },
+    "scanner-0031": { "scopes": ["apx.valet:read", "apx.valet:manage"], "apx_org": { "id": "a1…0001", "className": "Organisation" }, "apx_places": ["b1…0005"], "user": "scanner-0031" },
+    "runner-0107": { "scopes": ["apx.valet:read", "apx.valet:manage"], "apx_org": { "id": "a1…0001", "className": "Organisation" }, "apx_places": ["b1…0005"], "user": "runner-0107" },
+    "runner-0112": { "scopes": ["apx.valet:read", "apx.valet:manage"], "apx_org": { "id": "a1…0001", "className": "Organisation" }, "apx_places": ["b1…0005"], "user": "runner-0112" },
+    "agent-4412": { "scopes": ["apx.valet:read", "apx.valet:manage"], "apx_org": { "id": "a1…0001", "className": "Organisation" }, "apx_places": ["b1…0001"], "user": "agent-4412" },
+    "kiosk-lobby-2": { "scopes": ["apx.valet:manage"], "apx_org": { "id": "a1…0001", "className": "Organisation" }, "apx_places": ["b1…0005"], "user": "kiosk-lobby-2" },
+    "bot-valet-01": { "scopes": ["apx.valet:request"], "apx_org": { "id": "a1…0001", "className": "Organisation" }, "apx_places": ["b1…0005"], "user": "bot-valet-01" }
+  },
+  "assignedRights": [
+    {
+      "id": "e2…0420",
+      "version": 1,
+      "rightSpecification": { "id": "e1…0050", "version": 1, "className": "RightSpecification" },
+      "rightHolder": { "credentials": [{ "type": "ticket", "credentialAssignedType": "other", "identifier": { "id": "d8…0420", "className": "ValetTicket" } }] },
+      "issueMethod": "ticket",
+      "issuanceTime": "2026-09-24T17:05:20Z",
+      "_place": "b1…0005",
+      "_valetTicket": "d8…0420"
+    }
+  ],
+  "valetTickets": [
+    {
+      "id": "d8…0420",
+      "version": 2,
+      "place": { "id": "b1…0005", "className": "Place" },
+      "session": { "id": "f1…0420", "className": "Session" },
+      "assignedRight": { "id": "e2…0420", "className": "AssignedRight" },
+      "ticketNumber": "V-20420",
+      "vehicle": { "make": "Lexus", "model": "RX", "colour": "white" },
+      "customer": { "account": { "id": "e7…0042", "className": "Account" }, "displayName": "M. Adeyemi", "contactChannel": { "type": "app", "handle": "push:9f1c…e2" } },
+      "dropOff": { "time": "2026-09-24T17:05:20Z", "attendant": "attendant-0031", "keyTag": "K-110" },
+      "storage": { "zone": "P2 row A", "keyLocation": "board-1 hook 03", "parkedTime": "2026-09-24T17:12:40Z", "parkedBy": "runner-0107" },
+      "valetStatus": "parked",
+      "statusHistory": [
+        { "state": "dropped", "time": "2026-09-24T17:05:20Z", "actor": "attendant-0031" },
+        { "state": "parked", "time": "2026-09-24T17:12:40Z", "actor": "runner-0107", "detail": "P2 row A; keys board-1 hook 03" }
+      ],
+      "_claimCode": "3KTD"
+    },
+    {
+      "id": "d8…0421",
+      "version": 1,
+      "place": { "id": "b1…0005", "className": "Place" },
+      "session": { "id": "f1…0421", "className": "Session" },
+      "ticketNumber": "V-20421",
+      "vehicle": { "credentialType": "licensePlate", "credentialIdentification": "PLM-3391", "make": "Kia", "colour": "orange" },
+      "dropOff": {
+        "time": "2026-09-24T19:44:05Z",
+        "lane": { "id": "b2…0050", "className": "VehicularAccess" },
+        "attendant": "attendant-0031",
+        "keyTag": "K-127",
+        "conditionReport": { "notes": "No damage noted.", "imageLinks": ["https://api.lakeside-garage.example/valet/v-20421/in-front.jpg"], "recordedTime": "2026-09-24T19:43:50Z", "recordedBy": "scanner-0031", "customerAcknowledged": true }
+      },
+      "valetStatus": "dropped"
+    },
+    {
+      "id": "d8…0422",
+      "version": 1,
+      "place": { "id": "b1…0005", "className": "Place" },
+      "session": { "id": "f1…0422", "className": "Session" },
+      "ticketNumber": "V-20422",
+      "vehicle": { "credentialType": "licensePlate", "credentialIdentification": "GHT-1180" },
+      "dropOff": { "time": "2026-09-24T19:50:12Z", "attendant": "attendant-0031" },
+      "valetStatus": "dropped"
+    },
+    {
+      "id": "d8…0423",
+      "version": 1,
+      "place": { "id": "b1…0005", "className": "Place" },
+      "session": { "id": "f1…0423", "className": "Session" },
+      "ticketNumber": "V-20423",
+      "vehicle": { "credentialType": "licensePlate", "credentialIdentification": "KLM-2210", "make": "Toyota", "colour": "white" },
+      "customer": { "contactChannel": { "type": "sms", "handle": "***-***-2210" } },
+      "dropOff": { "time": "2026-09-24T18:31:40Z", "attendant": "attendant-0031", "keyTag": "K-119" },
+      "valetStatus": "dropped"
+    },
+    {
+      "id": "d8…0424",
+      "version": 2,
+      "place": { "id": "b1…0005", "className": "Place" },
+      "session": { "id": "f1…0424", "className": "Session" },
+      "ticketNumber": "V-20424",
+      "vehicle": { "make": "Tesla", "model": "Model 3", "colour": "blue" },
+      "customer": { "contactChannel": { "type": "app", "handle": "push:41aa…07" } },
+      "dropOff": { "time": "2026-09-24T19:02:33Z", "attendant": "attendant-0031", "keyTag": "K-121" },
+      "storage": { "zone": "P3 row E", "keyLocation": "board-2 hook 19", "parkedTime": "2026-09-24T19:09:10Z", "parkedBy": "runner-0107" },
+      "valetStatus": "parked",
+      "statusHistory": [
+        { "state": "dropped", "time": "2026-09-24T19:02:33Z", "actor": "attendant-0031" },
+        { "state": "parked", "time": "2026-09-24T19:09:10Z", "actor": "runner-0107" }
+      ]
+    },
+    {
+      "id": "d8…0425",
+      "version": 2,
+      "place": { "id": "b1…0005", "className": "Place" },
+      "session": { "id": "f1…0425", "className": "Session" },
+      "ticketNumber": "V-20425",
+      "vehicle": { "make": "Honda", "model": "CR-V", "colour": "black" },
+      "customer": { "contactChannel": { "type": "web", "handle": "claim-link:7c2e…19" } },
+      "dropOff": { "time": "2026-09-24T19:10:05Z", "attendant": "attendant-0031", "keyTag": "K-122" },
+      "storage": { "zone": "P3 row E", "keyLocation": "board-2 hook 20", "parkedTime": "2026-09-24T19:16:30Z", "parkedBy": "runner-0112" },
+      "valetStatus": "parked",
+      "statusHistory": [
+        { "state": "dropped", "time": "2026-09-24T19:10:05Z", "actor": "attendant-0031" },
+        { "state": "parked", "time": "2026-09-24T19:16:30Z", "actor": "runner-0112" }
+      ]
+    },
+    {
+      "id": "d8…0426",
+      "version": 2,
+      "place": { "id": "b1…0005", "className": "Place" },
+      "session": { "id": "f1…0426", "className": "Session" },
+      "ticketNumber": "V-20426",
+      "vehicle": { "credentialType": "licensePlate", "credentialIdentification": "RTQ-0921" },
+      "customer": { "contactChannel": { "type": "voice", "handle": "***-***-0921" } },
+      "dropOff": { "time": "2026-09-24T19:15:52Z", "attendant": "attendant-0031", "keyTag": "K-123" },
+      "storage": { "zone": "P3 row E", "keyLocation": "board-2 hook 21", "parkedTime": "2026-09-24T19:22:05Z", "parkedBy": "runner-0107" },
+      "valetStatus": "parked",
+      "statusHistory": [
+        { "state": "dropped", "time": "2026-09-24T19:15:52Z", "actor": "attendant-0031" },
+        { "state": "parked", "time": "2026-09-24T19:22:05Z", "actor": "runner-0107" }
+      ]
+    },
+    {
+      "id": "d8…0427",
+      "version": 2,
+      "place": { "id": "b1…0005", "className": "Place" },
+      "session": { "id": "f1…0427", "className": "Session" },
+      "ticketNumber": "V-20427",
+      "vehicle": { "make": "Ford", "model": "Explorer", "colour": "red" },
+      "customer": { "contactChannel": { "type": "app", "handle": "push:b803…5d" } },
+      "dropOff": { "time": "2026-09-24T19:20:19Z", "attendant": "attendant-0031", "keyTag": "K-124" },
+      "storage": { "zone": "P3 row E", "keyLocation": "board-2 hook 22", "parkedTime": "2026-09-24T19:27:44Z", "parkedBy": "runner-0112" },
+      "valetStatus": "parked",
+      "statusHistory": [
+        { "state": "dropped", "time": "2026-09-24T19:20:19Z", "actor": "attendant-0031" },
+        { "state": "parked", "time": "2026-09-24T19:27:44Z", "actor": "runner-0112" }
+      ]
+    },
+    {
+      "id": "d8…0428",
+      "version": 2,
+      "place": { "id": "b1…0005", "className": "Place" },
+      "session": { "id": "f1…0428", "className": "Session" },
+      "ticketNumber": "V-20428",
+      "vehicle": { "make": "BMW", "model": "X3", "colour": "silver" },
+      "dropOff": { "time": "2026-09-24T19:25:44Z", "attendant": "attendant-0031", "keyTag": "K-125" },
+      "storage": { "zone": "P3 row E", "keyLocation": "board-2 hook 23", "parkedTime": "2026-09-24T19:32:18Z", "parkedBy": "runner-0107" },
+      "valetStatus": "parked",
+      "statusHistory": [
+        { "state": "dropped", "time": "2026-09-24T19:25:44Z", "actor": "attendant-0031" },
+        { "state": "parked", "time": "2026-09-24T19:32:18Z", "actor": "runner-0107" }
+      ]
+    },
+    {
+      "id": "d8…0429",
+      "version": 2,
+      "place": { "id": "b1…0005", "className": "Place" },
+      "session": { "id": "f1…0429", "className": "Session" },
+      "ticketNumber": "V-20429",
+      "vehicle": { "make": "Volvo", "model": "XC60", "colour": "green" },
+      "customer": { "displayName": "J. Lindqvist", "contactChannel": { "type": "sms", "handle": "***-***-6630" } },
+      "dropOff": { "time": "2026-09-24T19:31:02Z", "attendant": "attendant-0031", "mileage": 30411, "keyTag": "K-126" },
+      "storage": { "zone": "P3 row E", "keyLocation": "board-2 hook 24", "parkedTime": "2026-09-24T19:38:15Z", "parkedBy": "runner-0107" },
+      "valetStatus": "parked",
+      "statusHistory": [
+        { "state": "dropped", "time": "2026-09-24T19:31:02Z", "actor": "attendant-0031" },
+        { "state": "parked", "time": "2026-09-24T19:38:15Z", "actor": "runner-0107" }
+      ],
+      "_claimCode": "9VJ4"
+    },
+    {
+      "id": "d8…0902",
+      "version": 2,
+      "place": { "id": "b1…0006", "className": "Place" },
+      "session": { "id": "f1…0902", "className": "Session" },
+      "ticketNumber": "H-0902",
+      "vehicle": { "make": "Mazda", "model": "CX-5", "colour": "grey" },
+      "dropOff": { "time": "2026-09-24T19:05:00Z", "attendant": "harbor-attendant-07", "keyTag": "H-K-12" },
+      "storage": { "zone": "Harbor L1", "keyLocation": "harbor box 12", "parkedTime": "2026-09-24T19:11:00Z", "parkedBy": "harbor-runner-02" },
+      "valetStatus": "parked",
+      "statusHistory": [
+        { "state": "dropped", "time": "2026-09-24T19:05:00Z", "actor": "harbor-attendant-07" },
+        { "state": "parked", "time": "2026-09-24T19:11:00Z", "actor": "harbor-runner-02" }
+      ]
+    }
+  ]
+}

@@ -1,0 +1,76 @@
+{
+  "_comment": "Stage directions for the replay of apx-data: world events the prose describes but no request performs. Keys are scenario ids; `at` is the 0-based exchange index the step runs before ('start' = before the scenario).",
+  "DATA-04": [
+    {
+      "at": 1,
+      "inject": {
+        "kind": "dataWrite",
+        "collection": "rateTables",
+        "op": "change",
+        "id": "d5000000-0000-4000-8000-000000000001",
+        "record": {
+          "id": "d5000000-0000-4000-8000-000000000001",
+          "rateLineCollections": [
+            {
+              "id": "d6000000-0000-4000-8000-000000000001",
+              "rateLines": [{ "id": "d7000000-0000-4000-8000-000000000004", "version": 1, "sequence": 4, "rateLineType": "flatRate", "value": 12.0, "description": [{ "language": "en", "string": "evening flat after 18:00" }] }]
+            }
+          ]
+        }
+      }
+    }
+  ],
+  "DATA-09": [
+    { "at": 0, "inject": { "kind": "grant", "credentials": ["default", "city-platform"], "add": ["b1000000-0000-4000-8000-000000000003"] } }
+  ],
+  "DATA-15": [
+    {
+      "at": "start",
+      "inject": {
+        "kind": "dataWrite",
+        "collection": "sessions",
+        "op": "create",
+        "record": {
+          "id": "c4000000-0000-4000-8000-000000000102",
+          "version": 1,
+          "actualStart": "2026-09-24T18:31:04Z",
+          "actualEnd": "2026-09-24T21:40:12Z",
+          "hierarchyElement": { "id": "b1000000-0000-4000-8000-000000000001", "version": 8, "className": "Place" },
+          "identifiedCredentials": [{ "type": "ticket", "credentialAssignedType": "other", "identifier": { "id": "T-1101", "className": "Credential" } }],
+          "segments": [
+            { "id": "c5000000-0000-4000-8000-000000000102", "version": 1, "actualStart": "2026-09-24T18:31:04Z", "actualEnd": "2026-09-24T21:40:12Z", "assignedRight": { "id": "e2000000-0000-4000-8000-000000000101", "version": 1, "className": "AssignedRight" }, "validationType": ["ticket"] }
+          ]
+        }
+      }
+    }
+  ],
+  "DATA-16": [
+    { "at": 1, "inject": { "kind": "grant", "credentials": ["default", "city-platform"], "add": ["b1000000-0000-4000-8000-000000000021"] } }
+  ],
+  "DATA-26": [{ "at": 6, "inject": { "kind": "contactDirectory", "available": false } }],
+  "DATA-27": [{ "at": "start", "inject": { "kind": "contactDirectory", "available": true } }],
+  "DATA-29": [
+    { "at": 2, "inject": { "kind": "occupancy", "place": "b1000000-0000-4000-8000-000000000001", "count": 379, "percentage": 90.2, "recordDateTime": "2026-09-24T17:52:00Z" } }
+  ],
+  "DATA-31": [
+    { "at": "start", "inject": { "kind": "feedCursor", "name": "c:00046", "collection": "sessions", "credential": "city-platform" } },
+    {
+      "at": "start",
+      "inject": {
+        "kind": "dataWrite",
+        "collection": "sessions",
+        "op": "create",
+        "record": {
+          "id": "c4000000-0000-4000-8000-000000000104",
+          "version": 1,
+          "actualStart": "2026-09-24T23:05:29Z",
+          "hierarchyElement": { "id": "b1000000-0000-4000-8000-000000000001", "version": 8, "className": "Place" },
+          "identifiedCredentials": [{ "type": "ticket", "credentialAssignedType": "other", "identifier": { "id": "T-1104", "className": "Credential" } }],
+          "segments": [
+            { "id": "c5000000-0000-4000-8000-000000000104", "version": 1, "actualStart": "2026-09-24T23:05:29Z", "assignedRight": { "id": "e2000000-0000-4000-8000-000000000104", "version": 1, "className": "AssignedRight" }, "validationType": ["ticket"] }
+          ]
+        }
+      }
+    }
+  ]
+}

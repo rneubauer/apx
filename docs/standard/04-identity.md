@@ -72,7 +72,9 @@ official APDS extension mechanism (Use Case §C.2.5):
 - An **APX decoration key** (`apds-ext:apx:…`) MUST carry a value valid
   against that decoration's schema wherever the container appears — the
   `Extensions` schema binds each one (`devicestatus`, `ratepolicy`,
-  `lpr-read`, `lane-cameras`, `reservation`, `permit`), so a validator
+  `lpr-read`, `lane-cameras`, `reservation`, `permit`, `session-detail`,
+  `match-evidence`, `violation-source`, `payment-detail`,
+  `credential-digest`), so a validator
   checks them on every payload. `alert-evidence` and `correlation` are
   defined in prose only (Part 7 §7.1, Part 17) and are not yet bound.
 

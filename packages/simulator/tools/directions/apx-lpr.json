@@ -1,0 +1,47 @@
+{
+  "_comment": "Stage directions for the replay of apx-lpr: world events the prose describes but no request performs, and the tokens it names for requests that carry no ```http block. Keys are scenario ids; `at` is the 0-based exchange index the step runs before.",
+  "LPR-06": [
+    {
+      "at": 2,
+      "headers": {
+        "Authorization": "Bearer <apx.lpr:read apx.data:write apx.alerts:read>"
+      }
+    }
+  ],
+  "LPR-18": [
+    {
+      "at": 0,
+      "headers": {
+        "Authorization": "Bearer <expired at 2026-09-24T23:00:00Z>"
+      }
+    }
+  ],
+  "LPR-30": [
+    {
+      "at": 1,
+      "inject": {
+        "kind": "plateRead",
+        "id": "f2000000-0000-4000-8000-000000000971",
+        "lane": "b2000000-0000-4000-8000-000000000061",
+        "camera": "cam-exit-1",
+        "plate": "NGT-0214",
+        "accessEvent": "exit",
+        "confidence": 0.93,
+        "time": "2026-09-24T04:40:52Z",
+        "plateFace": "rear",
+        "movement": "away",
+        "frameReads": 4,
+        "platesRead": 1,
+        "captureGroup": "cam-exit-1/20260924T044052/0009",
+        "engine": "vendor-x/7.2",
+        "credential": "riverside-lpr-system"
+      }
+    },
+    {
+      "at": 1,
+      "headers": {
+        "Authorization": "Bearer <apx.lpr:read apx.data:read>"
+      }
+    }
+  ]
+}

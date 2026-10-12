@@ -1,0 +1,272 @@
+{
+  "name": "Scenario 26 - EV charging: ICE in the bay, a free-vend charge on the parking bill, idle after complete, a cable that won't let go",
+  "world": "apx-charging",
+  "token": "agent-console",
+  "steps": [
+    { "name": "07:51:20 the clock", "clock": { "now": "2026-09-21T07:51:20Z" } },
+    {
+      "name": "camera: a vehicle in bay E2, not plugged in, not an EV",
+      "request": {
+        "method": "POST", "path": "/v1/charging/points/b6…0002/bay", "token": "camera-p1",
+        "headers": { "Idempotency-Key": "cam-p1-e2-20260921T075120" },
+        "body": {
+          "presence": "vehicleNotPluggedIn", "source": "overheadCamera",
+          "observation": { "id": "c1…0901", "className": "Observation" },
+          "observedTime": "2026-09-21T07:51:20Z",
+          "vehicle": { "credentialType": "licensePlate", "credentialIdentification": "KRT-2210", "jurisdiction": "US-IL", "evCapable": false },
+          "confidence": 0.93,
+          "imageLink": "https://api.lakeside-garage.example/charging/e2/2026-09-21T0751-overhead.jpg",
+          "detail": "make/model recognition: gasoline SUV"
+        }
+      },
+      "expect": { "status": 200, "body": { "availability": "blocked", "bay": { "presence": "vehicleNotPluggedIn", "source": "overheadCamera", "sinceTime": "2026-09-21T07:51:20Z" }, "connectors": [{ "connectorIndex": 1, "availability": "available" }] } }
+    },
+    {
+      "name": "camera re-sends the same report: idempotent replay",
+      "request": {
+        "method": "POST", "path": "/v1/charging/points/b6…0002/bay", "token": "camera-p1",
+        "headers": { "Idempotency-Key": "cam-p1-e2-20260921T075120" },
+        "body": {
+          "presence": "vehicleNotPluggedIn", "source": "overheadCamera",
+          "observation": { "id": "c1…0901", "className": "Observation" },
+          "observedTime": "2026-09-21T07:51:20Z",
+          "vehicle": { "credentialType": "licensePlate", "credentialIdentification": "KRT-2210", "jurisdiction": "US-IL", "evCapable": false },
+          "confidence": 0.93,
+          "imageLink": "https://api.lakeside-garage.example/charging/e2/2026-09-21T0751-overhead.jpg",
+          "detail": "make/model recognition: gasoline SUV"
+        }
+      },
+      "expect": { "status": 200, "body": { "availability": "blocked" } }
+    },
+    {
+      "name": "a bay report without Idempotency-Key is refused",
+      "request": { "method": "POST", "path": "/v1/charging/points/b6…0002/bay", "token": "camera-p1", "body": { "presence": "empty", "source": "overheadCamera" } },
+      "expect": { "status": 400, "problem": "idempotency-key-required" }
+    },
+    { "name": "08:04:58 the clock (the 10-minute bay grace has passed)", "clock": { "now": "2026-09-21T08:04:58Z" } },
+    { "name": "the ICE-in-EV-bay alert is raised", "events": { "type": "apx.alert.raised.v1", "exactly": 1 } },
+    {
+      "name": "bridge heartbeat for E1: a bay member in the body is ignored",
+      "request": {
+        "method": "PUT", "path": "/v1/charging/points/b6…0001/status", "token": "bridge-lsg-01",
+        "body": {
+          "chargingPoint": { "id": "b6…0001", "className": "ElectricChargingEquipment" },
+          "availability": "available",
+          "connectors": [{ "connectorIndex": 1, "availability": "available" }],
+          "bay": { "presence": "blocked", "source": "charger" },
+          "lastCommunication": "2026-09-21T08:04:58Z"
+        }
+      },
+      "expect": { "status": 200, "body": { "availability": "available", "bay": { "presence": "empty" }, "lastCommunication": "2026-09-21T08:04:58Z" } }
+    },
+    {
+      "name": "bridge PUT whose chargingPoint does not match the path is refused",
+      "request": {
+        "method": "PUT", "path": "/v1/charging/points/b6…0001/status", "token": "bridge-lsg-01",
+        "body": { "chargingPoint": { "id": "b6…0002", "className": "ElectricChargingEquipment" }, "availability": "available" }
+      },
+      "expect": { "status": 400, "problem": "invalid-request" }
+    },
+    {
+      "name": "Step 1 - 08:05 what is on P1 (operator read, fused)",
+      "request": { "method": "GET", "path": "/v1/charging/points?place=b1…0005" },
+      "expect": {
+        "status": 200,
+        "body": {
+          "meta": { "total": 2 },
+          "data": [
+            { "chargingPoint": { "id": "b6…0001" }, "refillPointIndex": 1, "evseId": "US*LSG*E20419*1", "availability": "available", "bay": { "presence": "empty" } },
+            { "chargingPoint": { "id": "b6…0002" }, "availability": "blocked", "bay": { "presence": "vehicleNotPluggedIn", "observation": { "id": "c1…0901" }, "vehicle": { "credentialIdentification": "KRT-2210", "evCapable": false }, "sinceTime": "2026-09-21T07:51:20Z" } }
+          ]
+        }
+      }
+    },
+    {
+      "name": "the alert is iceInEvSpace on E2 with the camera Observation as evidence",
+      "request": { "method": "GET", "path": "/v1/alerts?alertType=iceInEvSpace" },
+      "expect": { "status": 200, "body": { "data": [{ "alertType": "iceInEvSpace", "status": "raised", "source": { "device": { "id": "b6…0002" } }, "relatedEntity": { "id": "c1…0901" } }] } }
+    },
+    { "name": "08:12:00 the clock", "clock": { "now": "2026-09-21T08:12:00Z" } },
+    { "name": "the bay camera reads SYN-7734 pulling into E1", "inject": { "kind": "bayCamera", "point": "b6…0001", "presence": "vehicleNotPluggedIn", "plate": "SYN-7734", "jurisdiction": "US-IL", "evCapable": true, "observation": "c1…0902", "confidence": 0.96 } },
+    { "name": "08:12:04 the clock", "clock": { "now": "2026-09-21T08:12:04Z" } },
+    {
+      "name": "a parkingSession-settled open with no stay to post to is 422",
+      "request": {
+        "method": "POST", "path": "/v1/charging/sessions", "token": "bridge-lsg-01",
+        "headers": { "Idempotency-Key": "ocpp-lsg-e1-tx-88212" },
+        "body": {
+          "place": { "id": "b1…0005", "className": "Place" },
+          "chargingPoint": { "id": "b6…0001", "className": "ElectricChargingEquipment" },
+          "connectorIndex": 1,
+          "authorization": { "method": "rfid", "authorizedTime": "2026-09-21T08:12:04Z" },
+          "settlement": { "mode": "parkingSession" }
+        }
+      },
+      "expect": { "status": 422, "problem": "request-unprocessable" }
+    },
+    {
+      "name": "Step 2 - 08:12 a free-vend plug-in at E1 opens a session, attributed to the stay by the bay plate",
+      "request": {
+        "method": "POST", "path": "/v1/charging/sessions", "token": "bridge-lsg-01",
+        "headers": { "Idempotency-Key": "ocpp-lsg-e1-tx-88213", "X-Sim-Assign-Id": "e2…0042" },
+        "body": {
+          "place": { "id": "b1…0005", "className": "Place" },
+          "chargingPoint": { "id": "b6…0001", "className": "ElectricChargingEquipment" },
+          "connectorIndex": 1,
+          "authorization": { "method": "unlimitedAccess", "authorizedTime": "2026-09-21T08:12:04Z", "authorizedBy": "bridge-lsg-01" },
+          "settlement": { "mode": "parkingSession" },
+          "network": { "partyId": "US-LSG", "ocppTransactionId": "tx-88213" }
+        }
+      },
+      "expect": {
+        "status": 201,
+        "body": {
+          "id": "e2…0042", "chargingStatus": "authorized",
+          "evseId": "US*LSG*E20419*1", "space": { "id": "b3…0301" },
+          "parkingSession": { "id": "f1…0777" },
+          "vehicle": { "credentialIdentification": "SYN-7734" },
+          "authorization": { "method": "unlimitedAccess", "methodDetail": "free-vend; attributed to the parking session by bay LPR (SYN-7734)" },
+          "idlePolicy": { "graceMinutes": 10, "idleRatePer": "minute", "maxIdleMinutes": 60 },
+          "timeline": { "authorizedTime": "2026-09-21T08:12:04Z" },
+          "statusHistory": [{ "state": "authorized", "actor": "bridge-lsg-01" }]
+        }
+      },
+      "save": { "cs": "$.id" }
+    },
+    {
+      "name": "a second session on the busy connector is 409",
+      "request": {
+        "method": "POST", "path": "/v1/charging/sessions", "token": "bridge-lsg-01",
+        "headers": { "Idempotency-Key": "ocpp-lsg-e1-tx-88214" },
+        "body": {
+          "place": { "id": "b1…0005", "className": "Place" },
+          "chargingPoint": { "id": "b6…0001", "className": "ElectricChargingEquipment" },
+          "connectorIndex": 1,
+          "authorization": { "method": "rfid" },
+          "settlement": { "mode": "directPayment" }
+        }
+      },
+      "expect": { "status": 409, "problem": "charging-point-unavailable" }
+    },
+    {
+      "name": "Step 3 - pluggedIn",
+      "request": { "method": "POST", "path": "/v1/charging/sessions/{cs}/events", "token": "bridge-lsg-01", "headers": { "Idempotency-Key": "ocpp-tx-88213-seq-1" }, "body": { "eventType": "pluggedIn", "time": "2026-09-21T08:12:04Z", "connectorIndex": 1, "externalEventId": "tx-88213/1" } },
+      "expect": { "status": 200, "body": { "chargingStatus": "pluggedIn", "timeline": { "pluggedInTime": "2026-09-21T08:12:04Z" } } }
+    },
+    {
+      "name": "E1 is occupied with the vehicle plugged in (fusion: vehicle + cable)",
+      "request": { "method": "GET", "path": "/v1/charging/points/b6…0001" },
+      "expect": { "status": 200, "body": { "availability": "occupied", "bay": { "presence": "vehiclePluggedIn" }, "currentSession": { "id": "e2…0042" } } }
+    },
+    {
+      "name": "Step 3 - chargingStarted",
+      "request": { "method": "POST", "path": "/v1/charging/sessions/{cs}/events", "token": "bridge-lsg-01", "headers": { "Idempotency-Key": "ocpp-tx-88213-seq-2" }, "body": { "eventType": "chargingStarted", "time": "2026-09-21T08:12:19Z", "meterWh": 1418320, "powerKw": 7.1, "stateOfChargePercent": 31, "externalEventId": "tx-88213/2" } },
+      "expect": { "status": 200, "body": { "chargingStatus": "charging", "energy": { "meterStartWh": 1418320, "deliveredKwh": 0 } } }
+    },
+    {
+      "name": "a second pluggedIn is an illegal transition",
+      "request": { "method": "POST", "path": "/v1/charging/sessions/{cs}/events", "token": "bridge-lsg-01", "headers": { "Idempotency-Key": "ocpp-tx-88213-bad-1" }, "body": { "eventType": "pluggedIn", "time": "2026-09-21T08:13:00Z" } },
+      "expect": { "status": 409, "problem": "charging-transition-illegal" }
+    },
+    {
+      "name": "Step 3 - meterValue at 08:55",
+      "request": { "method": "POST", "path": "/v1/charging/sessions/{cs}/events", "token": "bridge-lsg-01", "headers": { "Idempotency-Key": "ocpp-tx-88213-seq-9" }, "body": { "eventType": "meterValue", "time": "2026-09-21T08:55:00Z", "meterWh": 1423460, "powerKw": 7.2, "stateOfChargePercent": 62, "externalEventId": "tx-88213/9" } },
+      "expect": { "status": 200, "body": { "chargingStatus": "charging", "energy": { "deliveredKwh": 5.14, "currentPowerKw": 7.2, "stateOfChargePercent": 62, "lastMeterTime": "2026-09-21T08:55:00Z" }, "cost": { "energy": { "currencyValue": 1.8 }, "total": { "currencyValue": 1.8 }, "pricedAt": "2026-09-21T08:55:00Z" } } }
+    },
+    {
+      "name": "a meter value older than the last event is out of time order",
+      "request": { "method": "POST", "path": "/v1/charging/sessions/{cs}/events", "token": "bridge-lsg-01", "headers": { "Idempotency-Key": "ocpp-tx-88213-late-5" }, "body": { "eventType": "meterValue", "time": "2026-09-21T08:30:00Z", "meterWh": 1420000 } },
+      "expect": { "status": 409, "problem": "charging-transition-illegal" }
+    },
+    { "name": "08:55 the clock", "clock": { "now": "2026-09-21T08:55:00Z" } },
+    {
+      "name": "Step 4 - the driver's app reads its own session (minimized)",
+      "request": { "method": "GET", "path": "/v1/charging/sessions/{cs}", "token": "driver-pwa" },
+      "expect": { "status": 200, "body": { "chargingStatus": "charging", "vehicle": { "credentialType": "licensePlate", "jurisdiction": "US-IL" }, "authorization": { "method": "unlimitedAccess" }, "energy": { "deliveredKwh": 5.14, "stateOfChargePercent": 62 }, "idlePolicy": { "graceMinutes": 10, "idleRate": { "currencyValue": 0.4 } }, "settlement": { "mode": "parkingSession" } } }
+    },
+    {
+      "name": "the driver's app sees the place's chargers, minimized",
+      "request": { "method": "GET", "path": "/v1/charging/points?place=b1…0005", "token": "driver-pwa" },
+      "expect": { "status": 200, "body": { "data": [{ "availability": "charging", "bay": { "presence": "vehiclePluggedIn" } }, { "availability": "blocked", "bay": { "presence": "vehicleNotPluggedIn" } }] } }
+    },
+    {
+      "name": "the driver's token cannot list sessions",
+      "request": { "method": "GET", "path": "/v1/charging/sessions", "token": "driver-pwa" },
+      "expect": { "status": 403, "problem": "insufficient-scope" }
+    },
+    { "name": "09:20:41 the clock", "clock": { "now": "2026-09-21T09:20:41Z" } },
+    {
+      "name": "Step 5 - chargingEnded: complete",
+      "request": { "method": "POST", "path": "/v1/charging/sessions/{cs}/events", "token": "bridge-lsg-01", "headers": { "Idempotency-Key": "ocpp-tx-88213-seq-15" }, "body": { "eventType": "chargingEnded", "time": "2026-09-21T09:20:41Z", "meterWh": 1442920, "stopReason": "evFull", "stateOfChargePercent": 100, "externalEventId": "tx-88213/15" } },
+      "expect": { "status": 200, "body": { "chargingStatus": "complete", "stopReason": "evFull", "energy": { "meterStopWh": 1442920, "deliveredKwh": 24.6 }, "timeline": { "chargingEndedTime": "2026-09-21T09:20:41Z" } } }
+    },
+    { "name": "nobody comes: ten minutes pass", "clock": { "advance": "10m" } },
+    {
+      "name": "Step 5 - 09:30:41 the server moved it to idle",
+      "request": { "method": "GET", "path": "/v1/charging/sessions/{cs}" },
+      "expect": { "status": 200, "body": { "chargingStatus": "idle", "timeline": { "idleStartedTime": "2026-09-21T09:30:41Z" }, "statusHistory": [{ "state": "authorized" }, { "state": "pluggedIn" }, { "state": "charging" }, { "state": "complete", "detail": "evFull; 24.6 kWh" }, { "state": "idle", "actor": "server", "detail": "grace 10 min elapsed" }] } }
+    },
+    { "name": "the idle hand-off event went out once", "events": { "type": "apx.charging.idle.started.v1", "exactly": 1 } },
+    {
+      "name": "E1 is occupied, bay vehiclePluggedIn, while idle",
+      "request": { "method": "GET", "path": "/v1/charging/points/b6…0001" },
+      "expect": { "status": 200, "body": { "availability": "occupied", "bay": { "presence": "vehiclePluggedIn" } } }
+    },
+    { "name": "09:41:12 the clock", "clock": { "now": "2026-09-21T09:41:12Z" } },
+    {
+      "name": "Step 6 - the agent sends unlockConnector",
+      "request": {
+        "method": "POST", "path": "/v1/commands",
+        "headers": { "Idempotency-Key": "agent-0219-20260921-094112", "X-Sim-Assign-Id": "a5…0111" },
+        "body": {
+          "commandType": "unlockConnector",
+          "target": { "id": "b6…0001", "className": "ElectricChargingEquipment" },
+          "parameters": { "connectorIndex": 1, "chargingSession": { "id": "e2…0042", "className": "ChargingSession" } },
+          "reason": "customer at charger, connector latched after complete",
+          "expiryTime": "2026-09-21T09:46:12Z"
+        }
+      },
+      "expect": { "status": 202, "body": { "commandType": "unlockConnector", "status": "accepted" } },
+      "save": { "cmd": "$.id" }
+    },
+    { "name": "the bridge dispatches and the charger acknowledges", "clock": { "advance": "5s" } },
+    {
+      "name": "the command succeeded at deviceAcknowledged",
+      "request": { "method": "GET", "path": "/v1/commands/{cmd}" },
+      "expect": { "status": 200, "body": { "status": "succeeded", "confirmationLevel": "deviceAcknowledged" } }
+    },
+    { "name": "09:43:30 the clock", "clock": { "now": "2026-09-21T09:43:30Z" } },
+    {
+      "name": "Step 7 - unplugged: the bill",
+      "request": { "method": "POST", "path": "/v1/charging/sessions/{cs}/events", "token": "bridge-lsg-01", "headers": { "Idempotency-Key": "ocpp-tx-88213-seq-16" }, "body": { "eventType": "unplugged", "time": "2026-09-21T09:43:30Z", "externalEventId": "tx-88213/16" } },
+      "expect": {
+        "status": 200,
+        "body": {
+          "chargingStatus": "unplugged",
+          "timeline": { "idleStartedTime": "2026-09-21T09:30:41Z", "unpluggedTime": "2026-09-21T09:43:30Z" },
+          "cost": { "energy": { "currencyValue": 8.61 }, "idle": { "currencyValue": 5.2 }, "total": { "currencyValue": 13.81 }, "tariffReference": "lsg-l2-std-2026", "pricedAt": "2026-09-21T09:43:30Z" },
+          "statusHistory": [{}, {}, {}, {}, {}, { "state": "unplugged", "detail": "idle 13 min; energy $8.61 + idle $5.20 posted to session f1000000-0777" }]
+        }
+      }
+    },
+    { "name": "the car drives out of E1", "inject": { "kind": "bayCamera", "point": "b6…0001", "presence": "empty" } },
+    {
+      "name": "E1 is available again; E2 still blocked",
+      "request": { "method": "GET", "path": "/v1/charging/points?place=b1…0005" },
+      "expect": { "status": 200, "body": { "data": [{ "availability": "available", "bay": { "presence": "empty" }, "connectors": [{ "availability": "available" }] }, { "availability": "blocked" }] } }
+    },
+    {
+      "name": "a payment on a parkingSession-settled charge is a settlement conflict",
+      "request": { "method": "POST", "path": "/v1/charging/sessions/{cs}/payment", "token": "bridge-lsg-01", "body": { "payment": { "id": "d9…0001", "className": "PaymentRecord" } } },
+      "expect": { "status": 409, "problem": "charging-settlement-conflict" }
+    },
+    { "name": "the driver pays $13.81 plus parking at the exit pay station", "inject": { "kind": "parkingSessionSettled", "session": "f1…0777" } },
+    {
+      "name": "the charge closes with the parking stay",
+      "request": { "method": "GET", "path": "/v1/charging/sessions/{cs}" },
+      "expect": { "status": 200, "body": { "chargingStatus": "closed", "settlement": { "mode": "parkingSession", "settledTime": "2026-09-21T09:43:30Z" } } }
+    },
+    { "name": "seven session transitions published (authorized ... closed)", "events": { "type": "apx.charging.session.status.v1", "exactly": 7 } },
+    { "name": "point status changes published", "events": { "type": "apx.charging.point.status.v1", "min": 5 } }
+  ]
+}

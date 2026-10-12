@@ -86,3 +86,19 @@ counterpart of the seeded `iceInEvSpace`) and `evBayBlocked` (the bay is
 obstructed by something other than a parked vehicle). Both are derived
 from the Part 23 §23.3 bay-presence fusion and carry the camera
 Observation as evidence.
+
+## 7.6 List-arrival alert types (Part 24)
+
+Registered in `apx-alert-types` v5:
+
+- `watchListArrival` — a credential on a `watch` plate list was read at a
+  place where the list has `alertOnArrival`;
+- `scofflawArrival` — the same for a `scofflaw` list;
+- `refusedServiceArrival` — a listed credential arrived at a lane where
+  the list has `refuseService`, and service was refused.
+
+Each carries the `PlateListEntry` as `relatedEntity` and the read as
+evidence (`apds-ext:apx:alert-evidence@1.0`, §7.1); a refused-service
+alert SHOULD also reference the `displayMessage` command whose
+`result.display` proves what the lane showed (Part 6 §6.1a). Subscribers
+that want only these use `filters.alertTypes` (Part 8 §8.5a).

@@ -1,0 +1,137 @@
+# APX plate lists — optional conformance class apx-plate-lists (Part 24).
+#
+# Third-party lists about a plate — watch, scofflaw, allow, enforcement
+# vehicles — kept by an operator or a city and pushed to the systems that
+# screen arrivals. Not credentials (Part 21 models media a customer holds)
+# and not rights (Part 14): a list says what to do when a plate is seen.
+
+PlateListPlaceFlags:
+  title: PlateListPlaceFlags
+  description: What the list does at one place (Part 24 §24.1).
+  type: object
+  required: [place]
+  properties:
+    place:
+      description: The HierarchyElement subtree the flags apply to.
+      $ref: "../../../vendor/apds/4.1/apds-api-4.1.yaml#/components/schemas/Reference"
+    enforced:
+      type: boolean
+      description: A match counts for compliance (`allow`) or enforcement (`scofflaw`, `watch`) at this place.
+    alertOnArrival:
+      type: boolean
+      description: A match raises the Part 7 arrival alert of the list's category.
+    refuseService:
+      type: boolean
+      description: A match refuses service at the lane (the refused-service sign, Part 6 `displayMessage`).
+
+PlateList:
+  title: PlateList
+  description: |-
+    A list of credentials with a category and per-place behaviour
+    (Part 24). Entries are kept separately (`PlateListEntry`); the list
+    carries the policy.
+  type: object
+  required: [id, version, name, category, status]
+  properties:
+    id:
+      type: string
+      format: uuid
+      readOnly: true
+    version:
+      type: integer
+      minimum: 1
+      readOnly: true
+    name:
+      type: string
+    category:
+      type: string
+      description: definedValue from `apx-plate-list-categories` (Part 11) — `allow`, `watch`, `scofflaw`, `enforcementVehicle` — or an implementer category.
+      examples: [scofflaw]
+    owner:
+      description: The Organisation that maintains the list (a city, an operator).
+      $ref: "../../../vendor/apds/4.1/apds-api-4.1.yaml#/components/schemas/Reference"
+    places:
+      type: array
+      description: Where the list applies, with per-place flags; a list with no `places` applies nowhere.
+      items:
+        $ref: "#/PlateListPlaceFlags"
+    status:
+      type: string
+      enum: [active, suspended, retired]
+    description:
+      type: string
+    entryCount:
+      type: integer
+      minimum: 0
+      readOnly: true
+    recordInfo:
+      $ref: "../common/schemas.yaml#/RecordInfo"
+    extensions:
+      $ref: "../common/schemas.yaml#/Extensions"
+
+PlateListEntry:
+  title: PlateListEntry
+  description: |-
+    One credential on a list (Part 24 §24.2). The plate value appears
+    only under `apx.platelists:read`/`:manage`; a consumer that only
+    screens may hold the `apds-ext:apx:credential-digest@1.0` decoration
+    instead (Part 9 §9.6 rule 6).
+  type: object
+  required: [id, version, credential]
+  properties:
+    id:
+      type: string
+      format: uuid
+      readOnly: true
+    version:
+      type: integer
+      minimum: 1
+      readOnly: true
+    list:
+      description: The PlateList this entry belongs to.
+      readOnly: true
+      $ref: "../../../vendor/apds/4.1/apds-api-4.1.yaml#/components/schemas/Reference"
+    credential:
+      type: object
+      required: [credentialType, credentialIdentification]
+      properties:
+        credentialType:
+          $ref: "../../../vendor/apds/4.1/apds-api-4.1.yaml#/components/schemas/CredentialTypeEnum"
+        credentialIdentification:
+          type: string
+          description: The plate or credential value.
+        jurisdiction:
+          type: string
+          description: Issuing jurisdiction of the plate (state, province, country code).
+    validity:
+      type: object
+      description: When the entry is in force; absent bounds are open.
+      properties:
+        start:
+          $ref: "../../../vendor/apds/4.1/apds-api-4.1.yaml#/components/schemas/DateTime"
+        end:
+          $ref: "../../../vendor/apds/4.1/apds-api-4.1.yaml#/components/schemas/DateTime"
+    details:
+      type: object
+      description: Why the credential is on the list, as the list owner records it.
+      properties:
+        amountOwed:
+          $ref: "../../../vendor/apds/4.1/apds-api-4.1.yaml#/components/schemas/AmountInCurrency"
+        noticeCount:
+          type: integer
+          minimum: 0
+        reference:
+          type: string
+          description: The owner's case or file reference, opaque.
+        note:
+          type: string
+    vehicle:
+      type: object
+      description: A description that helps an officer confirm the match; never a registry.
+      properties:
+        description:
+          type: string
+    recordInfo:
+      $ref: "../common/schemas.yaml#/RecordInfo"
+    extensions:
+      $ref: "../common/schemas.yaml#/Extensions"

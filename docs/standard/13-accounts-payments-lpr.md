@@ -22,8 +22,9 @@ integration over live PARCS state.
   member — a Reference to that declined PaymentRecord — so the caller can
   cite it without a second lookup. `captureLater: true` asks for an
   authorization only — a hold (§13.1a). Captured account payments reduce
-  the account balance; a hold does not until it is captured. Scope
-  `apx.payments:write`.
+  the account balance; a hold does not until it is captured. The body
+  MAY carry `apds-ext:apx:payment-detail@1.0` (the itemization and the
+  rate sold, §13.6a). Scope `apx.payments:write`.
 - `POST /v1/payments/{id}/postings` — accounting write-back
   (PARIS-style): posts account/card/amount/transaction
   ID to the AR system and returns `{confirmationNumber, accountUpdated,
@@ -34,6 +35,11 @@ integration over live PARCS state.
   `cardNumber` member, a PAN pasted into a search) MUST refuse it with
   `422 personal-data-not-permitted` before the request is persisted or
   logged, and MUST NOT echo the digits in the problem.
+- **Lookup in a body.** `POST /v1/accounts:search` takes the same keys as
+  `GET /v1/accounts` in an `AccountSearch` body and answers exactly as
+  the `GET` does, so names, phones, emails, and plates never enter a URL
+  (Part 9 §9.6). Implementations claiming `apx-accounts` MUST serve it;
+  a deployment that crosses a network boundary SHOULD use it.
 
 ## 13.1a Payment lifecycle and payment links (financial actions)
 
@@ -111,7 +117,7 @@ creator and to callers who ask for holds.
   `ticketLast4`, `cardLast4`, `ticketNumber` (exact), or `account` (the
   account's statement view); `date` and `place` only narrow a keyed query.
   A query with no key is `400 invalid-request`: the operation never serves
-  the whole ledger.
+  the whole ledger as a lookup. The one exception is the change feed below.
   **Privacy rule (normative):** truncated-key lookups (`ticketLast4` or
   `cardLast4`) without a `date` are constrained to the last 8 hours; older
   records require the full ticket number (`ticketNumber`) or an
@@ -125,6 +131,17 @@ creator and to callers who ask for holds.
   which returns only holds; `captureStatus=captured` returns only
   collected payments. `captureStatus` narrows a keyed query and is never a
   key on its own.
+  **Change feed (normative).** With `mode=change` the route is a feed,
+  not a lookup: no key is needed and the 8-hour window does not apply,
+  because it serves exactly what `apx.accounts.payment.recorded.v1`
+  delivers to the same credential (§13.4) — a hold appears at capture,
+  never before, and a voided hold never appears. `ticketLast4` and
+  `cardLast4` are refused with it (400 `invalid-request`). Part 5 §5.2
+  rule 8, difference 6.
+- `POST /v1/payments:search` takes the same keys in a `PaymentSearch`
+  body, with the same keys rule, 8-hour window, hold rules, grant rules,
+  and response as the `GET` (Part 9 §9.6). Implementations claiming
+  `apx-payment-history` MUST serve it.
 
 ## 13.3 `apx-lpr`
 
@@ -147,6 +164,16 @@ creator and to callers who ask for holds.
   `extensions` container minus the `apds-ext:apx:lpr-read@1.0` block
   (which is `detail`), so a vendor key preserved on ingest is visible
   through the APX surface (Part 4 §4.3).
+- **Read-back by path.** `GET /v1/lpr/reads/{observation}` returns the one
+  `LprRead` for an ingested Observation — the same projection as
+  `?observation=`, addressed like the revision routes. Unknown or purged
+  (§13.3b) is 404 `target-not-found`; a read at a place outside the grant
+  is 403 `insufficient-grant`.
+- **Lookup in a body.** `POST /v1/lpr/reads:search` takes the `GET`'s
+  keys in an `LprReadSearch` body, with the same key rule, grant rules,
+  and response, so a plate never enters a URL that proxies, gateways, and
+  access logs keep (Part 9 §9.6). The `GET` keeps working; a deployment
+  that crosses a network boundary SHOULD use the `POST`.
 
 ### 13.3a Read detail, access events, and lane cameras (normative)
 
@@ -164,7 +191,12 @@ consumer still sees a valid Observation.
    `.plateCategory`, `.make`, `.model`, `.color`, `.bodyType` are each an
    `AttributeRead` (`value` + `confidence` 0–1). The winning values MUST
    also appear in the APDS-native fields (`observedCredentialId`,
-   `vehicleAncillaryIdentification`) so APDS-only readers see them;
+   `vehicleAncillaryIdentification`) so APDS-only readers see them,
+   whenever the APDS object can be formed. APDS 4.1 requires `country`
+   in `vehicleAncillaryIdentification`, so for a read whose plate country
+   the engine did not report, `make`, `model`, and `color` appear in
+   `detail` only and `vehicleAncillaryIdentification` is omitted — the
+   attributes are kept, not dropped;
    `Confidence.overallConfidence` remains the overall score. Every
    attribute is optional — an engine that does not classify colour omits
    `color` rather than guessing. `plateCategory` is the plate's category
@@ -205,6 +237,37 @@ consumer still sees a valid Observation.
    `version`, and publishes `apx.data.observation.updated.v1` (§13.4);
    `If-Match` guards against a stale revision (409 `version-conflict`),
    and resending the current value changes nothing.
+4a. **Read review.** A read the place sends to human review — low
+   confidence, no confidence, reads of one passage that disagree, or a
+   jurisdiction that requires a person to confirm a plate before
+   enforcement — carries `detail.review` with `state: pending` and its
+   `reasons` (definedValues of `apx-read-review-reasons`, Part 11). A
+   reviewer decides through `PUT /v1/lpr/reads/{observation}/plate`
+   (`PlateCorrection`, scope `apx.data:write`): `confirmed` keeps the
+   engine's values; `corrected` writes the given `plate`, `country`, and
+   `stateProvince` into `observedCredentialId`,
+   `vehicleAncillaryIdentification` (item 1) and `detail`; `rejected`
+   marks the read unusable for pairing and enforcement. `corrected`
+   without a `plate`, or `plate`, `country`, or `stateProvince` sent
+   with any other decision, is 422 `request-unprocessable`. On the first
+   correction the server keeps the engine's values, as `AttributeRead`s
+   with their confidences, in `detail.review.original`, and MUST NOT
+   change them afterwards — a later correction replaces the current
+   values, never the original. Every decision that changes the read sets
+   `review.state`, `decidedTime`, and `decidedBy`, increments the
+   Observation `version`, and publishes
+   `apx.data.observation.updated.v1`; resending the decision and values
+   the read already has is a no-op (200, no new version, no event).
+   `If-Match` guards against a stale decision (409 `version-conflict`).
+   The correction is per read: it happens before any Session exists, it
+   changes no Session, and every Session the read feeds sees it (a
+   Session's own plate is corrected through `PUT /v1/sessions/{id}/plate`,
+   Part 17 §17.5). Without `apx.lpr:read` the 200 echoes only the plate
+   values the caller supplied (Part 9 §9.6). A read with no review is
+   `notRequired` or carries no `review`. The review queue itself
+   (assignment, ordering, reviewers) stays implementation-private. Part
+   19 §19.4 rule 6 refuses to issue a Violation while any of its evidence
+   reads is `pending` or `rejected`, whatever the detection mode.
 5. **Lane cameras.** A lane's LPR cameras are described on its APDS
    `VehicularAccess` by the Level B decoration
    `apds-ext:apx:lane-cameras@1.0` (`LaneCameras`). Per camera:
@@ -245,10 +308,19 @@ consumer still sees a valid Observation.
    reads are paired into Sessions is implementation-defined. APX defines
    no notion of wrong-way travel: `VehicularAccess.accessType` says what
    a lane is for, and APX does not judge reads against it.
-7. **Privacy.** `detail` is plate-bearing personal data under Part 9
-   §9.6: it appears only under `apx.lpr:*` (and the Part 17 candidate
-   route); make, model, and colour are carried as attributes of the
-   read, not as a vehicle registry.
+7. **Privacy.** `detail` splits in two. The **plate-bearing** members —
+   `plate`, `alternateReads`, `plateCategory`, `plateBox`, `review`,
+   and the vehicle attributes `make`, `model`, `color`, `bodyType`,
+   `country`, `stateProvince` — are personal data under Part 9 §9.6 and
+   appear only under `apx.lpr:*` (and the Part 17 candidate route); make,
+   model, and colour are attributes of the read, not a vehicle registry.
+   The **passage facts** — `accessEvent`, `movement`, `plateFace`,
+   `frameReads`, `platesRead`, `captureGroup`, `speed`, `engine` —
+   identify nobody and MUST also be served under `apx.data:read`,
+   including on `apx.data.observation.created.v1` and `.updated.v1`
+   delivered to a subscriber without `apx.lpr:read`, so a counting
+   display or an arrival screen can tell an entry from an exit without
+   learning the plate.
 8. **Ingest mapping.** Engines report in their own formats; the LPR
    system maps them onto the Observation as follows.
    - **Identity.** The Observation `id` SHOULD be the engine's own read
@@ -281,6 +353,25 @@ this, so "purged" and "never captured" stay distinguishable:
    change feed, so downstream copies can follow. A purged read is not
    tombstoned on the APX surface.
 
+### 13.3c Images of a read (normative)
+
+An engine may keep several stills of one read: the plate crop, a wider
+crop around the plate, the overview, and the scene around the vehicle.
+APDS `Observation.images[]` can carry them all, but APDS `ImageTypeEnum`
+names only `overview` and `plate`.
+
+1. `LprRead.images[]` lists every unpurged image of the read, each with
+   its `id`, `imageType`, access-controlled `imageLink`, and `cameraId`.
+   `imageLink` on the read stays the preferred still.
+2. `imageType` is an APDS `ImageTypeEnum` value or one of `plateExtended`
+   (a wider crop around the plate) and `context` (the scene around the
+   vehicle, wider than the overview), carried as strings until APDS adds
+   them (requested in `docs/apds-change-requests.md`). On the
+   Observation, such images are listed with no `imageType`.
+3. Servers SHOULD list every unpurged image on both the Observation and
+   the `LprRead`. Access and purge follow Part 9 §9.6(2) and §13.3b; a
+   purged image leaves the list.
+
 ## 13.4 Eventing — the analytics feed
 
 APDS's native `EventTypeEnum` publishes entity lifecycle events for
@@ -306,7 +397,9 @@ LPR analytics. APX closes both gaps (registry `apx-topics`):
 - `apx.data.observation.updated.v1` — published whenever an ingested
   Observation changes — today, when the LPR system revises `accessEvent`
   through `PUT /v1/lpr/reads/{observation}/access-event` (§13.3a(4)),
-  and on any other replacement an implementation supports. Event `data`
+  when a reviewer decides its plate through
+  `PUT /v1/lpr/reads/{observation}/plate` (§13.3a(4a)), and on any other
+  replacement an implementation supports. Event `data`
   is the APDS Observation as it now stands; `subject` and place binding
   are those of `observation.created.v1`. Implementations claiming
   `apx-lpr` MUST publish it; consumers key on the Observation id and keep
@@ -316,8 +409,10 @@ LPR analytics. APX closes both gaps (registry `apx-topics`):
 that wants *everything* about a location combines three mechanisms, all
 already normative: (1) bulk/exactly-once history via the Part 5 change
 feed (`mode=change&cursor=…`) on every native route — sessions, rates,
-rights, observations; (2) real-time push via one Part 8 subscription
-mixing APDS EventTypeEnum topics with the APX topics above plus
+rights, observations — and on the APX resource lists of Part 5 §5.2
+rule 8 (payments, commands, alerts, violations, and the rest); (2)
+real-time push via one Part 8 subscription mixing APDS EventTypeEnum
+topics with the APX topics above plus
 `apx.data.occupancy.v1`, alert, and command topics; (3) point-in-time
 convenience reads (occupancy §5.5, lane inquiry §6.2). Nothing about a
 place that APX models is unreachable by feed.
@@ -374,7 +469,8 @@ relate field-by-field:
 | `id` / `version` | `VersionedIdentity` (allOf) | same identity shape |
 | `transactionID` | `transactionID` | identical meaning |
 | `dateCollected` | `dateCollected` | identical (`dateAuthorised` has no APX field; authorization time is the record's creation) |
-| `amount` | `paymentLines[].value` summed | APX carries the total; line itemization stays APDS-side |
+| `amount` | `paymentLines[].value` summed (`paymentType: payment` lines) | APX carries the total; the itemization, when the implementation records one, rides `apds-ext:apx:payment-detail@1.0` `lines` (§13.6a) as APDS `PaymentLine`s |
+| `extensions["apds-ext:apx:payment-detail@1.0"].rateSold` | `extensions["apds-ext:apx:payment-detail@1.0"].rateSold` | the same decoration on both; on `Payment` it never carries `lines` (§13.6a) |
 | `meansOfPayment` | — | APDS vocabulary (`MeansOfPaymentEnum`, which APDS uses for the means a place accepts), APX-only member: APDS `Payment` has no per-payment means |
 | `channel` | — | APX-only (where the payment was captured; PCI-safe) |
 | `paymentStatus` | — | APX-only; APDS Payment records only collected payments — `approved` with `captureStatus` `captured` (or absent) is the only state that maps |
@@ -390,6 +486,93 @@ entities MUST materialize every `approved`, captured PaymentRecord (a hold
 only once it is captured) as (or bind it
 to) a native `Payment` with a `paymentLines` entry of `paymentType:
 payment` and `value` = `amount`, so plain APDS consumers see the money
-without speaking APX. Declined and reversed records exist only on the APX
+without speaking APX. A record itemized with
+`apds-ext:apx:payment-detail@1.0` `lines` (§13.6a) is materialized with
+those lines as its `paymentLines`, unchanged (same `id`s), in place of the
+single line; its `rateSold` is copied to the same decoration on the native
+`Payment`, which carries no `lines`. Declined and reversed records exist only on the APX
 surface — APDS has no vocabulary for them, which is precisely the gap
 `PaymentRecord` fills.
+
+## 13.6a Payment detail (normative)
+
+`PaymentRecord.amount` is the total. Revenue reports, the rate-deck price
+check, and fee reconciliation need what the total is made of and what
+was sold. APDS already has the itemization shape — `Payment.paymentLines[]`,
+each a `PaymentLine` with a `paymentType` (`payment | validation`), a
+`value`, and an `idCode` that APDS leaves as a bilateral cost code — but no
+shared vocabulary for `idCode` and no member for the rate sold. The Level
+B decoration `apds-ext:apx:payment-detail@1.0` (`PaymentDetail`) adds
+both, on a `PaymentRecord` and on the materialized APDS `Payment`, without
+re-shaping anything APDS defines:
+
+1. `lines[]` — the itemization, as APDS `PaymentLine`s (by `$ref`; each
+   has the `id` and `version` of `VersionedIdentity`). A line's code is
+   its `idCode`: a definedValue of `apx-payment-line-codes` (Part 11:
+   `base`, `convenienceFee`, `serviceFee`, `tax`, `discount`,
+   `validation`, `idle`, `energy`) or an implementer code (Part 11
+   §11.1). The code fixes the APDS `paymentType`:
+   - a `validation` line is `paymentType: validation`; its `value` is the
+     amount the validation offset (a positive value), which is not money
+     collected. It MAY carry the validation's identifier (Part 20) in
+     `identifierId`;
+   - every other line is `paymentType: payment`. A `discount` is a
+     reduction in the price and carries a negative `value`. When a
+     validation covers part of the charge, `base` is the part paid in
+     money and the `validation` line carries the rest.
+   A line coded `validation` with `paymentType: payment`, or a line of
+   another registry code with `paymentType: validation`, is `422
+   request-unprocessable`.
+2. `rateSold` — the rate the seller sold, as the seller names it (`id`,
+   `name`), the APDS `RateTable` at the version applied when the deck is
+   the source, the `product` (`standard | pass | other`), and the
+   `class` (`standard | validation | discount | zeroed | other`).
+3. **Lines sum to the total.** On a `PaymentRecord`, the `currencyValue`s
+   of the `paymentType: payment` lines MUST sum to `amount`, in the same
+   `currencyType`. A `POST /v1/payments` whose lines do not is `422
+   request-unprocessable`, checked before the payment layer is asked:
+   nothing is charged and no record is created.
+4. **One store.** `lines` appears only on a `PaymentRecord`. On a native
+   `Payment` the itemization is the Payment's own `paymentLines`, and the
+   decoration there carries `rateSold` and MUST NOT carry `lines`; a
+   materialized record's lines become those `paymentLines` unchanged
+   (§13.6). The same lines are never stored twice (Part 0 §0.2).
+5. **The lines describe the sale.** Refunds, captures, and voids do not
+   rewrite them: `refundedAmount` (§13.1a) records what was given back. A
+   server that accepts the decoration on `POST /v1/payments` returns it
+   unchanged on the record, in `GET /v1/payments` and
+   `POST /v1/payments:search`, and in `apx.accounts.payment.recorded.v1`
+   events.
+6. **No inferred lines.** Implementations SHOULD decorate every
+   `PaymentRecord` they can itemize, and MUST NOT invent lines they do
+   not know. An undecorated record, or one without a fee line, means the
+   itemization is unknown, not that there is none: a client MUST NOT
+   infer a fee of zero from an absent line, and a server MUST NOT add a
+   zero-value line it was not given.
+
+```json
+"extensions": {
+  "apds-ext:apx:payment-detail@1.0": {
+    "rateSold": { "id": "evening-flat", "name": "Evening Flat Rate", "product": "standard", "class": "validation" },
+    "lines": [
+      { "id": "e1000000-0000-4000-8000-000000000101", "version": 1, "paymentType": "payment", "idCode": "base",
+        "value": { "currencyType": "USD", "currencyValue": 9.00 } },
+      { "id": "e1000000-0000-4000-8000-000000000102", "version": 1, "paymentType": "payment", "idCode": "convenienceFee",
+        "value": { "currencyType": "USD", "currencyValue": 0.75 } },
+      { "id": "e1000000-0000-4000-8000-000000000103", "version": 1, "paymentType": "validation", "idCode": "validation",
+        "value": { "currencyType": "USD", "currencyValue": 3.00 } }
+    ]
+  }
+}
+```
+
+Here `amount` is USD 9.75: the $12.00 evening rate, $3.00 of it validated,
+plus the $0.75 app fee.
+
+APDS impact: none. The registry gives a shared meaning to a member APDS
+leaves bilateral, and the decoration sits in the extension container plain
+APDS consumers ignore (declared on `Payment` by the data overlay, APX
+erratum 010). A shared code list for `PaymentLine.idCode` and a rate-sold
+member on `Payment` are offered to APDS as suggestions
+(`docs/apds-change-requests.md`, Part B); if APDS adopts them, the APDS
+form wins (Part 3 §3.3(8)).

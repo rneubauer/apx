@@ -1647,6 +1647,218 @@ Idempotency-Key: cc-7773-nego
 
 ---
 
+## CTL-26 — Negotiated amount: the agent states any figure, with a reason
+
+<!-- apx:scenario CTL-26 kind=happy ics=APX-CTL-16 -->
+
+**Given** the host lists `negotiatedAmounts` beside `negotiatedRates`, and
+the car in lane 2 still owes the flat $20 from CTL-19. **When** the
+supervisor on the call agrees $12.50 for a billing error on the driver's
+last visit, then comps the ticket entirely. **Then** each push is 202, the
+lane shows the stated amount with the reason and the agent, and nothing
+about the deck changes. A request naming both a table and an amount, an
+amount without a reason, and an amount in the wrong currency are each
+refused with 400.
+
+```http
+POST /v1/commands
+Idempotency-Key: cc-7780-amount
+```
+
+<!-- apx:request POST /v1/commands -->
+```json
+{
+  "commandType": "pushNegotiatedRate",
+  "target": { "id": "b2000000-0000-4000-8000-000000000002", "className": "VehicularAccess" },
+  "parameters": {
+    "amount": { "currencyType": "USD", "currencyValue": 12.5 }
+  },
+  "agent": "agent:m.reyes",
+  "agentType": "human",
+  "reason": "billing error on the driver's previous visit, agreed on the call"
+}
+```
+
+<!-- apx:response 202 -->
+```json
+{
+  "id": "d1000000-0000-4000-8000-000000000126",
+  "version": 2,
+  "commandType": "pushNegotiatedRate",
+  "target": { "id": "b2000000-0000-4000-8000-000000000002", "className": "VehicularAccess" },
+  "parameters": {
+    "amount": { "currencyType": "USD", "currencyValue": 12.5 }
+  },
+  "requestedBy": { "id": "a1000000-0000-4000-8000-000000000001", "className": "Organisation" },
+  "agent": "agent:m.reyes",
+  "agentType": "human",
+  "reason": "billing error on the driver's previous visit, agreed on the call",
+  "status": "accepted",
+  "statusHistory": [
+    { "state": "received", "time": "2026-09-24T20:32:00Z", "actor": "apx-operator" },
+    { "state": "accepted", "time": "2026-09-24T20:32:00Z", "actor": "lakeside-parcs" }
+  ]
+}
+```
+
+<!-- apx:request GET /v1/lanes/b2000000-0000-4000-8000-000000000002/current -->
+<!-- apx:response 200 -->
+```json
+{
+  "lane": { "id": "b2000000-0000-4000-8000-000000000002", "className": "VehicularAccess" },
+  "currentTicket": {
+    "ticketNumber": "T-1044",
+    "session": { "id": "c4000000-0000-4000-8000-000000000044", "className": "Session" },
+    "issuedTime": "2026-09-24T09:15:00Z",
+    "amountDue": { "currencyType": "USD", "currencyValue": 12.5 },
+    "paidInFull": false,
+    "validations": [],
+    "negotiatedAmount": {
+      "amount": { "currencyType": "USD", "currencyValue": 12.5 },
+      "reason": "billing error on the driver's previous visit, agreed on the call",
+      "agent": "agent:m.reyes",
+      "command": { "id": "d1000000-0000-4000-8000-000000000126", "className": "Command" }
+    }
+  }
+}
+```
+
+The driver disputes the original charge further; the supervisor comps the
+ticket. Zero is a valid amount.
+
+```http
+POST /v1/commands
+Idempotency-Key: cc-7781-amount
+```
+
+<!-- apx:request POST /v1/commands -->
+```json
+{
+  "commandType": "pushNegotiatedRate",
+  "target": { "id": "b2000000-0000-4000-8000-000000000002", "className": "VehicularAccess" },
+  "parameters": {
+    "amount": { "currencyType": "USD", "currencyValue": 0 }
+  },
+  "agent": "agent:m.reyes",
+  "agentType": "human",
+  "reason": "comped by the supervisor: repeat billing complaint"
+}
+```
+
+<!-- apx:response 202 -->
+```json
+{
+  "id": "d1000000-0000-4000-8000-000000000127",
+  "version": 2,
+  "commandType": "pushNegotiatedRate",
+  "target": { "id": "b2000000-0000-4000-8000-000000000002", "className": "VehicularAccess" },
+  "parameters": {
+    "amount": { "currencyType": "USD", "currencyValue": 0 }
+  },
+  "requestedBy": { "id": "a1000000-0000-4000-8000-000000000001", "className": "Organisation" },
+  "agent": "agent:m.reyes",
+  "agentType": "human",
+  "reason": "comped by the supervisor: repeat billing complaint",
+  "status": "accepted",
+  "statusHistory": [
+    { "state": "received", "time": "2026-09-24T20:33:00Z", "actor": "apx-operator" },
+    { "state": "accepted", "time": "2026-09-24T20:33:00Z", "actor": "lakeside-parcs" }
+  ]
+}
+```
+
+```http
+POST /v1/commands
+Idempotency-Key: cc-7782-amount
+```
+
+<!-- apx:request POST /v1/commands -->
+```json
+{
+  "commandType": "pushNegotiatedRate",
+  "target": { "id": "b2000000-0000-4000-8000-000000000002", "className": "VehicularAccess" },
+  "parameters": {
+    "rateTable": { "id": "d5000000-0000-4000-8000-000000000002", "version": 3, "className": "RateTable" },
+    "amount": { "currencyType": "USD", "currencyValue": 15.0 }
+  },
+  "agent": "agent:m.reyes",
+  "agentType": "human",
+  "reason": "both by mistake"
+}
+```
+
+<!-- apx:response 400 -->
+```json
+{
+  "type": "https://apx-standard.org/problems/invalid-request",
+  "title": "Invalid request",
+  "status": 400,
+  "detail": "pushNegotiatedRate takes exactly one of parameters.rateTable and parameters.amount.",
+  "instance": "/v1/commands"
+}
+```
+
+```http
+POST /v1/commands
+Idempotency-Key: cc-7783-amount
+```
+
+<!-- apx:request POST /v1/commands -->
+```json
+{
+  "commandType": "pushNegotiatedRate",
+  "target": { "id": "b2000000-0000-4000-8000-000000000002", "className": "VehicularAccess" },
+  "parameters": {
+    "amount": { "currencyType": "USD", "currencyValue": 15.0 }
+  },
+  "agent": "agent:m.reyes",
+  "agentType": "human"
+}
+```
+
+<!-- apx:response 400 -->
+```json
+{
+  "type": "https://apx-standard.org/problems/invalid-request",
+  "title": "Invalid request",
+  "status": 400,
+  "detail": "a stated amount requires reason: there is no deck table to explain it",
+  "instance": "/v1/commands"
+}
+```
+
+```http
+POST /v1/commands
+Idempotency-Key: cc-7784-amount
+```
+
+<!-- apx:request POST /v1/commands -->
+```json
+{
+  "commandType": "pushNegotiatedRate",
+  "target": { "id": "b2000000-0000-4000-8000-000000000002", "className": "VehicularAccess" },
+  "parameters": {
+    "amount": { "currencyType": "EUR", "currencyValue": 15.0 }
+  },
+  "agent": "agent:m.reyes",
+  "agentType": "human",
+  "reason": "wrong currency"
+}
+```
+
+<!-- apx:response 400 -->
+```json
+{
+  "type": "https://apx-standard.org/problems/invalid-request",
+  "title": "Invalid request",
+  "status": 400,
+  "detail": "the ticket is priced in USD, not EUR",
+  "instance": "/v1/commands"
+}
+```
+
+---
+
 ## CTL-20 — Ticket matching by a named card, and what it refuses
 
 <!-- apx:scenario CTL-20 kind=happy ics=APX-CTL-11,APX-CTL-12 -->

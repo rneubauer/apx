@@ -1,0 +1,1736 @@
+{
+  "extends": "base-lakeside",
+  "name": "apx-lpr",
+  "description": "The cast of docs/scenarios/by-module/apx-lpr: Lakeside Garage with entry lane 1, exit lane 2 and the reversible centre lane and their cameras; Riverside Lot (b1…0006), a gateless pay-by-plate surface lot whose entry and exit lanes share a driveway; Harbor Deck outside the grant; the reads, sessions and the reservation the scenarios pre-suppose; retention 30 days imagery / 90 days reads.",
+  "lpr": {
+    "pairing": {
+      "places": [
+        "b1…0006"
+      ]
+    },
+    "retention": {
+      "imagery": "P30D",
+      "reads": "P90D",
+      "holds": []
+    },
+    "disputeWindow": "PT30M"
+  },
+  "places": [
+    {
+      "id": "b1…0006",
+      "name": "Riverside Lot",
+      "type": "Place",
+      "operator": "a1…0001",
+      "timeZone": "America/Chicago",
+      "supplyQuantity": 80,
+      "version": 2,
+      "coordinates": [
+        -87.6188,
+        41.8827
+      ]
+    }
+  ],
+  "lanes": [
+    {
+      "id": "b2…0001",
+      "placeId": "b1…0001",
+      "name": "entry lane 1",
+      "accessType": "entry",
+      "gate": "c1…0001",
+      "version": 3,
+      "extensions": {
+        "apds-ext:apx:lane-cameras@1.0": {
+          "cameras": [
+            {
+              "cameraId": "cam-entry-1",
+              "faces": "inward"
+            }
+          ]
+        }
+      }
+    },
+    {
+      "id": "b2…0002",
+      "placeId": "b1…0001",
+      "name": "exit lane 2",
+      "accessType": "exit",
+      "gate": "c1…0002",
+      "version": 2,
+      "extensions": {
+        "apds-ext:apx:lane-cameras@1.0": {
+          "cameras": [
+            {
+              "cameraId": "cam-exit-2",
+              "faces": "outward"
+            }
+          ]
+        }
+      }
+    },
+    {
+      "id": "b2…0004",
+      "placeId": "b1…0001",
+      "name": "reversible centre lane",
+      "accessType": "reversible",
+      "version": 5,
+      "extensions": {
+        "apds-ext:apx:lane-cameras@1.0": {
+          "cameras": [
+            {
+              "cameraId": "cam-rev-in",
+              "faces": "inward"
+            },
+            {
+              "cameraId": "cam-rev-out",
+              "faces": "outward"
+            }
+          ]
+        }
+      }
+    },
+    {
+      "id": "b2…0003",
+      "placeId": "b1…0002",
+      "name": "Harbor Deck exit lane",
+      "accessType": "exit",
+      "gate": "c1…0031",
+      "version": 1
+    },
+    {
+      "id": "b2…0060",
+      "placeId": "b1…0006",
+      "name": "Riverside — entry lane",
+      "accessType": "entry",
+      "version": 2,
+      "creationTime": "2026-09-01T12:00:00Z",
+      "extensions": {
+        "apds-ext:apx:lane-cameras@1.0": {
+          "cameras": [
+            {
+              "cameraId": "cam-in-1",
+              "faces": "inward"
+            },
+            {
+              "cameraId": "cam-in-1f",
+              "faces": "outward"
+            }
+          ]
+        }
+      }
+    },
+    {
+      "id": "b2…0061",
+      "placeId": "b1…0006",
+      "name": "Riverside — exit lane",
+      "accessType": "exit",
+      "version": 3,
+      "creationTime": "2026-09-01T12:00:00Z",
+      "extensions": {
+        "apds-ext:apx:lane-cameras@1.0": {
+          "cameras": [
+            {
+              "cameraId": "cam-exit-1",
+              "faces": "outward"
+            },
+            {
+              "cameraId": "cam-exit-1f",
+              "faces": "inward"
+            }
+          ]
+        }
+      }
+    }
+  ],
+  "devices": [
+    {
+      "id": "c1…0001",
+      "placeId": "b1…0001",
+      "laneId": "b2…0001",
+      "name": "entry gate",
+      "equipmentType": "barrier",
+      "state": "available"
+    },
+    {
+      "id": "c1…0002",
+      "placeId": "b1…0001",
+      "laneId": "b2…0002",
+      "name": "exit gate",
+      "equipmentType": "barrier",
+      "state": "available"
+    },
+    {
+      "id": "c1…0011",
+      "placeId": "b1…0001",
+      "laneId": "b2…0001",
+      "name": "cam-entry-1",
+      "equipmentType": "camera",
+      "state": "available"
+    },
+    {
+      "id": "c1…0012",
+      "placeId": "b1…0001",
+      "laneId": "b2…0002",
+      "name": "cam-exit-2",
+      "equipmentType": "camera",
+      "state": "available"
+    },
+    {
+      "id": "c1…0041",
+      "placeId": "b1…0001",
+      "laneId": "b2…0004",
+      "name": "cam-rev-in",
+      "equipmentType": "camera",
+      "state": "available"
+    },
+    {
+      "id": "c1…0042",
+      "placeId": "b1…0001",
+      "laneId": "b2…0004",
+      "name": "cam-rev-out",
+      "equipmentType": "camera",
+      "state": "available"
+    },
+    {
+      "id": "c1…0031",
+      "placeId": "b1…0002",
+      "laneId": "b2…0003",
+      "name": "Harbor Deck exit gate",
+      "equipmentType": "barrier",
+      "state": "available"
+    },
+    {
+      "id": "c1…0061",
+      "placeId": "b1…0006",
+      "laneId": "b2…0060",
+      "name": "cam-in-1",
+      "equipmentType": "camera",
+      "state": "available"
+    },
+    {
+      "id": "c1…0062",
+      "placeId": "b1…0006",
+      "laneId": "b2…0060",
+      "name": "cam-in-1f",
+      "equipmentType": "camera",
+      "state": "available"
+    },
+    {
+      "id": "c1…0063",
+      "placeId": "b1…0006",
+      "laneId": "b2…0061",
+      "name": "cam-exit-1",
+      "equipmentType": "camera",
+      "state": "available"
+    },
+    {
+      "id": "c1…0064",
+      "placeId": "b1…0006",
+      "laneId": "b2…0061",
+      "name": "cam-exit-1f",
+      "equipmentType": "camera",
+      "state": "available"
+    },
+    {
+      "id": "c1…0065",
+      "placeId": "b1…0006",
+      "laneId": "b2…0061",
+      "name": "cam-ramp-1",
+      "equipmentType": "camera",
+      "state": "available"
+    }
+  ],
+  "observations": [
+    {
+      "id": "f2…0902",
+      "version": 1,
+      "type": "licensePlate",
+      "method": "anpr",
+      "observedCredentialId": "SYN-1234",
+      "observationStartTime": "2026-09-24T18:40:09Z",
+      "creationDateTime": "2026-09-24T18:40:10Z",
+      "elementIds": {
+        "id": "b2…0002",
+        "version": 2,
+        "className": "VehicularAccess"
+      },
+      "observerOrganisation": {
+        "id": "a1…0001",
+        "version": 1,
+        "className": "Organisation"
+      },
+      "location": {
+        "observerLocation": {
+          "type": "Point",
+          "coordinates": [
+            -87.6244,
+            41.8819
+          ]
+        }
+      },
+      "vehicleAncillaryIdentification": {
+        "country": "US",
+        "stateProvince": "IL"
+      },
+      "confidence": {
+        "overallConfidence": 0.95
+      },
+      "images": [
+        {
+          "id": "img-0902-plate",
+          "imageType": "plate",
+          "imageLink": "https://api.lakeside-garage.example/v1/media/f2000000-0902/plate.jpg",
+          "cameraID": "cam-exit-2"
+        }
+      ],
+      "extensions": {
+        "apds-ext:apx:lpr-read@1.0": {
+          "plate": {
+            "value": "SYN-1234",
+            "confidence": 0.95
+          },
+          "stateProvince": {
+            "value": "IL",
+            "confidence": 0.9
+          },
+          "platesRead": 1,
+          "plateFace": "rear",
+          "movement": "away",
+          "accessEvent": "exit",
+          "captureGroup": "cam-exit-2/20260924T184009/0388",
+          "engine": "vendor-x/7.2"
+        }
+      }
+    },
+    {
+      "id": "f2…0904",
+      "version": 1,
+      "type": "licensePlate",
+      "method": "anpr",
+      "observedCredentialId": "WHT-0406",
+      "observationStartTime": "2026-09-24T15:15:00Z",
+      "creationDateTime": "2026-09-24T15:15:01Z",
+      "elementIds": {
+        "id": "b2…0002",
+        "version": 2,
+        "className": "VehicularAccess"
+      },
+      "observerOrganisation": {
+        "id": "a1…0001",
+        "version": 1,
+        "className": "Organisation"
+      },
+      "location": {
+        "observerLocation": {
+          "type": "Point",
+          "coordinates": [
+            -87.6244,
+            41.8819
+          ]
+        }
+      },
+      "vehicleAncillaryIdentification": {
+        "stateProvince": "WI",
+        "make": "Subaru"
+      },
+      "confidence": {
+        "overallConfidence": 0.81
+      },
+      "images": [
+        {
+          "id": "img-0904-plate",
+          "imageType": "plate",
+          "imageLink": "https://api.lakeside-garage.example/v1/media/f2000000-0904/plate.jpg",
+          "cameraID": "cam-exit-2"
+        }
+      ],
+      "extensions": {
+        "apds-ext:apx:lpr-read@1.0": {
+          "plate": {
+            "value": "WHT-0406",
+            "confidence": 0.81
+          },
+          "stateProvince": {
+            "value": "WI",
+            "confidence": 0.55
+          },
+          "make": {
+            "value": "Subaru",
+            "confidence": 0.9
+          },
+          "frameReads": 1,
+          "platesRead": 1,
+          "plateFace": "rear",
+          "movement": "unknown",
+          "accessEvent": "exit",
+          "captureGroup": "cam-exit-2/20260924T151500/0350",
+          "engine": "vendor-x/7.2"
+        }
+      }
+    },
+    {
+      "id": "f2…0912",
+      "version": 1,
+      "type": "licensePlate",
+      "method": "anpr",
+      "observedCredentialId": "KLM-4470",
+      "observationStartTime": "2026-09-24T09:12:03Z",
+      "creationDateTime": "2026-09-24T09:12:04Z",
+      "elementIds": {
+        "id": "b2…0061",
+        "version": 3,
+        "className": "VehicularAccess"
+      },
+      "observerOrganisation": {
+        "id": "a1…0001",
+        "version": 1,
+        "className": "Organisation"
+      },
+      "location": {
+        "observerLocation": {
+          "type": "Point",
+          "coordinates": [
+            -87.6188,
+            41.8827
+          ]
+        }
+      },
+      "vehicleAncillaryIdentification": {
+        "country": "US",
+        "stateProvince": "IL",
+        "make": "Honda",
+        "model": "Accord",
+        "color": "blue"
+      },
+      "confidence": {
+        "overallConfidence": 0.97
+      },
+      "images": [
+        {
+          "id": "img-0912-rear",
+          "imageType": "plate",
+          "imageLink": "https://api.lakeside-garage.example/v1/media/f2000000-0912/rear.jpg",
+          "cameraID": "cam-exit-1"
+        }
+      ],
+      "extensions": {
+        "apds-ext:apx:lpr-read@1.0": {
+          "plate": {
+            "value": "KLM-4470",
+            "confidence": 0.97
+          },
+          "stateProvince": {
+            "value": "IL",
+            "confidence": 0.95
+          },
+          "make": {
+            "value": "Honda",
+            "confidence": 0.92
+          },
+          "model": {
+            "value": "Accord",
+            "confidence": 0.8
+          },
+          "color": {
+            "value": "blue",
+            "confidence": 0.9
+          },
+          "bodyType": {
+            "value": "sedan",
+            "confidence": 0.98
+          },
+          "frameReads": 5,
+          "platesRead": 2,
+          "plateFace": "rear",
+          "movement": "away",
+          "accessEvent": "exit",
+          "captureGroup": "exit-1/20260924T091202/0418",
+          "engine": "vendor-x/7.2"
+        }
+      }
+    },
+    {
+      "id": "f2…0913",
+      "version": 1,
+      "type": "licensePlate",
+      "method": "anpr",
+      "observedCredentialId": "KLM-4470",
+      "observationStartTime": "2026-09-24T09:12:02Z",
+      "creationDateTime": "2026-09-24T09:12:03Z",
+      "elementIds": {
+        "id": "b2…0061",
+        "version": 3,
+        "className": "VehicularAccess"
+      },
+      "observerOrganisation": {
+        "id": "a1…0001",
+        "version": 1,
+        "className": "Organisation"
+      },
+      "location": {
+        "observerLocation": {
+          "type": "Point",
+          "coordinates": [
+            -87.6188,
+            41.8827
+          ]
+        }
+      },
+      "vehicleAncillaryIdentification": {
+        "country": "US",
+        "stateProvince": "IL"
+      },
+      "confidence": {
+        "overallConfidence": 0.93
+      },
+      "images": [
+        {
+          "id": "img-0913-front",
+          "imageType": "plate",
+          "imageLink": "https://api.lakeside-garage.example/v1/media/f2000000-0913/front.jpg",
+          "cameraID": "cam-exit-1f"
+        }
+      ],
+      "extensions": {
+        "apds-ext:apx:lpr-read@1.0": {
+          "plate": {
+            "value": "KLM-4470",
+            "confidence": 0.93
+          },
+          "alternateReads": [
+            {
+              "plate": "KLM-4478",
+              "stateProvince": "IL",
+              "confidence": 0.62
+            }
+          ],
+          "frameReads": 3,
+          "platesRead": 2,
+          "plateFace": "front",
+          "movement": "toward",
+          "accessEvent": "exit",
+          "captureGroup": "exit-1/20260924T091202/0418",
+          "engine": "vendor-x/7.2"
+        }
+      }
+    },
+    {
+      "id": "f2…0013",
+      "version": 1,
+      "type": "licensePlate",
+      "method": "anpr",
+      "observedCredentialId": "5VN-4B21",
+      "observationStartTime": "2026-09-24T17:41:22Z",
+      "creationDateTime": "2026-09-24T17:41:23Z",
+      "elementIds": {
+        "id": "b2…0001",
+        "version": 3,
+        "className": "VehicularAccess"
+      },
+      "observerOrganisation": {
+        "id": "a1…0001",
+        "version": 1,
+        "className": "Organisation"
+      },
+      "location": {
+        "observerLocation": {
+          "type": "Point",
+          "coordinates": [
+            -87.6244,
+            41.8819
+          ]
+        }
+      },
+      "vehicleAncillaryIdentification": {
+        "country": "US",
+        "stateProvince": "FL"
+      },
+      "confidence": {
+        "overallConfidence": 0.41
+      },
+      "images": [
+        {
+          "id": "img-0013-plate",
+          "imageType": "plate",
+          "imageLink": "https://api.lakeside-garage.example/v1/media/f2000000-0013/plate.jpg",
+          "cameraID": "cam-entry-1"
+        }
+      ],
+      "extensions": {
+        "apds-ext:apx:lpr-read@1.0": {
+          "plate": {
+            "value": "5VN-4B21",
+            "confidence": 0.41
+          },
+          "stateProvince": {
+            "value": "FL",
+            "confidence": 0.7
+          },
+          "alternateReads": [
+            {
+              "plate": "SVN-4821",
+              "stateProvince": "FL",
+              "confidence": 0.38
+            }
+          ],
+          "platesRead": 1,
+          "plateFace": "rear",
+          "movement": "away",
+          "accessEvent": "entry",
+          "captureGroup": "cam-entry-1/20260924T174122/0301",
+          "engine": "vendor-x/7.2"
+        }
+      }
+    },
+    {
+      "id": "f2…0014",
+      "version": 1,
+      "type": "licensePlate",
+      "method": "anpr",
+      "observedCredentialId": "SVN-4821",
+      "observationStartTime": "2026-09-24T22:39:04Z",
+      "creationDateTime": "2026-09-24T22:39:05Z",
+      "elementIds": {
+        "id": "b2…0002",
+        "version": 2,
+        "className": "VehicularAccess"
+      },
+      "observerOrganisation": {
+        "id": "a1…0001",
+        "version": 1,
+        "className": "Organisation"
+      },
+      "location": {
+        "observerLocation": {
+          "type": "Point",
+          "coordinates": [
+            -87.6244,
+            41.8819
+          ]
+        }
+      },
+      "vehicleAncillaryIdentification": {
+        "country": "US",
+        "stateProvince": "FL"
+      },
+      "confidence": {
+        "overallConfidence": 0.97
+      },
+      "images": [
+        {
+          "id": "img-0014-plate",
+          "imageType": "plate",
+          "imageLink": "https://api.lakeside-garage.example/v1/media/f2000000-0014/plate.jpg",
+          "cameraID": "cam-exit-2"
+        },
+        {
+          "id": "img-0014-overview",
+          "imageType": "overview",
+          "imageLink": "https://api.lakeside-garage.example/v1/media/f2000000-0014/overview.jpg",
+          "cameraID": "cam-exit-2"
+        }
+      ],
+      "extensions": {
+        "apds-ext:apx:lpr-read@1.0": {
+          "plate": {
+            "value": "SVN-4821",
+            "confidence": 0.97
+          },
+          "stateProvince": {
+            "value": "FL",
+            "confidence": 0.94
+          },
+          "platesRead": 1,
+          "plateFace": "rear",
+          "movement": "away",
+          "accessEvent": "exit",
+          "captureGroup": "cam-exit-2/20260924T223904/0512",
+          "engine": "vendor-x/7.2"
+        }
+      }
+    },
+    {
+      "id": "f2…0710",
+      "version": 1,
+      "type": "licensePlate",
+      "method": "anpr",
+      "observedCredentialId": "JKL-7710",
+      "observationStartTime": "2026-07-10T13:20:11Z",
+      "creationDateTime": "2026-07-10T13:20:12Z",
+      "elementIds": {
+        "id": "b2…0001",
+        "version": 3,
+        "className": "VehicularAccess"
+      },
+      "observerOrganisation": {
+        "id": "a1…0001",
+        "version": 1,
+        "className": "Organisation"
+      },
+      "location": {
+        "observerLocation": {
+          "type": "Point",
+          "coordinates": [
+            -87.6244,
+            41.8819
+          ]
+        }
+      },
+      "vehicleAncillaryIdentification": {
+        "country": "US",
+        "stateProvince": "IL"
+      },
+      "confidence": {
+        "overallConfidence": 0.94
+      },
+      "images": [
+        {
+          "id": "img-0710-plate",
+          "imageType": "plate",
+          "imageLink": "https://api.lakeside-garage.example/v1/media/f2000000-0710/plate.jpg",
+          "cameraID": "cam-entry-1"
+        }
+      ]
+    },
+    {
+      "id": "f2…0502",
+      "version": 1,
+      "type": "licensePlate",
+      "method": "anpr",
+      "observedCredentialId": "ABC-0502",
+      "observationStartTime": "2026-05-02T09:10:44Z",
+      "creationDateTime": "2026-05-02T09:10:45Z",
+      "elementIds": {
+        "id": "b2…0001",
+        "version": 3,
+        "className": "VehicularAccess"
+      },
+      "observerOrganisation": {
+        "id": "a1…0001",
+        "version": 1,
+        "className": "Organisation"
+      },
+      "location": {
+        "observerLocation": {
+          "type": "Point",
+          "coordinates": [
+            -87.6244,
+            41.8819
+          ]
+        }
+      },
+      "confidence": {
+        "overallConfidence": 0.92
+      },
+      "images": [
+        {
+          "id": "img-0502-plate",
+          "imageType": "plate",
+          "imageLink": "https://api.lakeside-garage.example/v1/media/f2000000-0502/plate.jpg",
+          "cameraID": "cam-entry-1"
+        }
+      ]
+    },
+    {
+      "id": "f2…0906",
+      "version": 1,
+      "type": "licensePlate",
+      "method": "anpr",
+      "observedCredentialId": "FLT-0092",
+      "observationStartTime": "2026-09-24T14:02:50Z",
+      "creationDateTime": "2026-09-24T14:02:51Z",
+      "elementIds": {
+        "id": "b2…0001",
+        "version": 3,
+        "className": "VehicularAccess"
+      },
+      "observerOrganisation": {
+        "id": "a1…0001",
+        "version": 1,
+        "className": "Organisation"
+      },
+      "location": {
+        "observerLocation": {
+          "type": "Point",
+          "coordinates": [
+            -87.6244,
+            41.8819
+          ]
+        }
+      },
+      "confidence": {
+        "overallConfidence": 0.96
+      },
+      "images": [
+        {
+          "id": "img-0906-plate",
+          "imageType": "plate",
+          "imageLink": "https://api.lakeside-garage.example/v1/media/f2000000-0906/plate.jpg",
+          "cameraID": "cam-entry-1"
+        }
+      ]
+    },
+    {
+      "id": "f2…0907",
+      "version": 1,
+      "type": "licensePlate",
+      "method": "anpr",
+      "observedCredentialId": "FLT-0092",
+      "observationStartTime": "2026-09-24T16:30:12Z",
+      "creationDateTime": "2026-09-24T16:30:13Z",
+      "elementIds": {
+        "id": "b2…0060",
+        "version": 2,
+        "className": "VehicularAccess"
+      },
+      "observerOrganisation": {
+        "id": "a1…0001",
+        "version": 1,
+        "className": "Organisation"
+      },
+      "location": {
+        "observerLocation": {
+          "type": "Point",
+          "coordinates": [
+            -87.6188,
+            41.8827
+          ]
+        }
+      },
+      "confidence": {
+        "overallConfidence": 0.9
+      },
+      "images": [
+        {
+          "id": "img-0907-plate",
+          "imageType": "plate",
+          "imageLink": "https://api.lakeside-garage.example/v1/media/f2000000-0907/plate.jpg",
+          "cameraID": "cam-in-1"
+        }
+      ]
+    },
+    {
+      "id": "f2…0920",
+      "version": 1,
+      "type": "licensePlate",
+      "method": "anpr",
+      "observedCredentialId": "HBR-5510",
+      "observationStartTime": "2026-09-24T12:30:00Z",
+      "creationDateTime": "2026-09-24T12:30:01Z",
+      "elementIds": {
+        "id": "b2…0003",
+        "version": 1,
+        "className": "VehicularAccess"
+      },
+      "observerOrganisation": {
+        "id": "a1…0002",
+        "version": 1,
+        "className": "Organisation"
+      },
+      "location": {
+        "observerLocation": {
+          "type": "Point",
+          "coordinates": [
+            -87.6102,
+            41.8901
+          ]
+        }
+      },
+      "confidence": {
+        "overallConfidence": 0.93
+      },
+      "images": [
+        {
+          "id": "img-0920-plate",
+          "imageType": "plate",
+          "imageLink": "https://api.lakeside-garage.example/v1/media/f2000000-0920/plate.jpg"
+        }
+      ]
+    },
+    {
+      "id": "f2…0950",
+      "version": 1,
+      "type": "licensePlate",
+      "method": "anpr",
+      "observedCredentialId": "LKS-7710",
+      "observationStartTime": "2026-09-24T07:44:02Z",
+      "creationDateTime": "2026-09-24T07:44:03Z",
+      "elementIds": {
+        "id": "b2…0004",
+        "version": 5,
+        "className": "VehicularAccess"
+      },
+      "observerOrganisation": {
+        "id": "a1…0001",
+        "version": 1,
+        "className": "Organisation"
+      },
+      "location": {
+        "observerLocation": {
+          "type": "Point",
+          "coordinates": [
+            -87.6244,
+            41.8819
+          ]
+        }
+      },
+      "confidence": {
+        "overallConfidence": 0.95
+      },
+      "images": [
+        {
+          "id": "img-0950-plate",
+          "imageType": "plate",
+          "imageLink": "https://api.lakeside-garage.example/v1/media/f2000000-0950/plate.jpg",
+          "cameraID": "cam-rev-in"
+        }
+      ],
+      "extensions": {
+        "apds-ext:apx:lpr-read@1.0": {
+          "plate": {
+            "value": "LKS-7710",
+            "confidence": 0.95
+          },
+          "frameReads": 5,
+          "platesRead": 1,
+          "plateFace": "rear",
+          "movement": "away",
+          "accessEvent": "entry",
+          "captureGroup": "rev/20260924T074402/0012"
+        }
+      }
+    },
+    {
+      "id": "f2…0951",
+      "version": 1,
+      "type": "licensePlate",
+      "method": "anpr",
+      "observedCredentialId": "LKS-7710",
+      "observationStartTime": "2026-09-24T17:20:11Z",
+      "creationDateTime": "2026-09-24T17:20:12Z",
+      "elementIds": {
+        "id": "b2…0004",
+        "version": 5,
+        "className": "VehicularAccess"
+      },
+      "observerOrganisation": {
+        "id": "a1…0001",
+        "version": 1,
+        "className": "Organisation"
+      },
+      "location": {
+        "observerLocation": {
+          "type": "Point",
+          "coordinates": [
+            -87.6244,
+            41.8819
+          ]
+        }
+      },
+      "confidence": {
+        "overallConfidence": 0.89
+      },
+      "images": [
+        {
+          "id": "img-0951-plate",
+          "imageType": "plate",
+          "imageLink": "https://api.lakeside-garage.example/v1/media/f2000000-0951/plate.jpg",
+          "cameraID": "cam-rev-in"
+        }
+      ],
+      "extensions": {
+        "apds-ext:apx:lpr-read@1.0": {
+          "plate": {
+            "value": "LKS-7710",
+            "confidence": 0.89
+          },
+          "frameReads": 3,
+          "platesRead": 2,
+          "plateFace": "front",
+          "movement": "toward",
+          "accessEvent": "exit",
+          "captureGroup": "rev/20260924T172011/0081"
+        }
+      }
+    },
+    {
+      "id": "f2…0952",
+      "version": 1,
+      "type": "licensePlate",
+      "method": "anpr",
+      "observedCredentialId": "LKS-7710",
+      "observationStartTime": "2026-09-24T17:20:12Z",
+      "creationDateTime": "2026-09-24T17:20:13Z",
+      "elementIds": {
+        "id": "b2…0004",
+        "version": 5,
+        "className": "VehicularAccess"
+      },
+      "observerOrganisation": {
+        "id": "a1…0001",
+        "version": 1,
+        "className": "Organisation"
+      },
+      "location": {
+        "observerLocation": {
+          "type": "Point",
+          "coordinates": [
+            -87.6244,
+            41.8819
+          ]
+        }
+      },
+      "confidence": {
+        "overallConfidence": 0.96
+      },
+      "images": [
+        {
+          "id": "img-0952-plate",
+          "imageType": "plate",
+          "imageLink": "https://api.lakeside-garage.example/v1/media/f2000000-0952/plate.jpg",
+          "cameraID": "cam-rev-out"
+        }
+      ],
+      "extensions": {
+        "apds-ext:apx:lpr-read@1.0": {
+          "plate": {
+            "value": "LKS-7710",
+            "confidence": 0.96
+          },
+          "bodyType": {
+            "value": "van",
+            "confidence": 0.94
+          },
+          "frameReads": 6,
+          "platesRead": 2,
+          "plateFace": "rear",
+          "movement": "away",
+          "accessEvent": "exit",
+          "captureGroup": "rev/20260924T172011/0081"
+        }
+      }
+    },
+    {
+      "id": "f2…0931",
+      "version": 1,
+      "type": "licensePlate",
+      "method": "anpr",
+      "observedCredentialId": "SNW-1102",
+      "observationStartTime": "2026-09-24T07:55:40Z",
+      "creationDateTime": "2026-09-24T07:55:41Z",
+      "elementIds": {
+        "id": "b2…0061",
+        "version": 3,
+        "className": "VehicularAccess"
+      },
+      "observerOrganisation": {
+        "id": "a1…0001",
+        "version": 1,
+        "className": "Organisation"
+      },
+      "location": {
+        "observerLocation": {
+          "type": "Point",
+          "coordinates": [
+            -87.6188,
+            41.8827
+          ]
+        }
+      },
+      "confidence": {
+        "overallConfidence": 0.88
+      },
+      "images": [
+        {
+          "id": "img-0931-plate",
+          "imageType": "plate",
+          "imageLink": "https://api.lakeside-garage.example/v1/media/f2000000-0931/plate.jpg",
+          "cameraID": "cam-exit-1"
+        }
+      ],
+      "extensions": {
+        "apds-ext:apx:lpr-read@1.0": {
+          "plate": {
+            "value": "SNW-1102",
+            "confidence": 0.88
+          },
+          "frameReads": 6,
+          "platesRead": 1,
+          "plateFace": "front",
+          "movement": "stopped",
+          "accessEvent": "unknown",
+          "captureGroup": "cam-exit-1/20260924T075540/0433"
+        }
+      }
+    }
+  ],
+  "sessions": [
+    {
+      "id": "f1…0001",
+      "version": 2,
+      "actualStart": "2026-09-24T08:02:11Z",
+      "actualEnd": "2026-09-24T18:40:30Z",
+      "initiator": {
+        "id": "a1…0001",
+        "version": 1,
+        "className": "Organisation"
+      },
+      "hierarchyElement": {
+        "id": "b1…0001",
+        "version": 7,
+        "className": "Place"
+      },
+      "identifiedCredentials": [
+        {
+          "type": "licensePlate",
+          "credentialAssignedType": "other",
+          "identifier": {
+            "id": "SYN-1234",
+            "className": "Credential"
+          }
+        },
+        {
+          "type": "ticket",
+          "credentialAssignedType": "other",
+          "identifier": {
+            "id": "T-1001",
+            "className": "Credential"
+          }
+        }
+      ],
+      "segments": [
+        {
+          "id": "f3…0001",
+          "version": 1,
+          "actualStart": "2026-09-24T08:02:11Z",
+          "actualEnd": "2026-09-24T18:40:30Z",
+          "assignedRight": {
+            "id": "e2…0001",
+            "version": 1,
+            "className": "AssignedRight"
+          },
+          "validationType": [
+            "ticket"
+          ]
+        }
+      ],
+      "_place": "b1…0001",
+      "_plate": "SYN-1234",
+      "_ticketNumber": "T-1001",
+      "_entryObservation": "f2…0901",
+      "_exitObservation": "f2…0902",
+      "_entryLane": "b2…0001",
+      "_exitLane": "b2…0002",
+      "_amountDue": {
+        "currencyType": "USD",
+        "currencyValue": 9
+      }
+    },
+    {
+      "id": "f1…0031",
+      "version": 3,
+      "actualStart": "2026-09-24T17:41:22Z",
+      "initiator": {
+        "id": "a1…0001",
+        "version": 1,
+        "className": "Organisation"
+      },
+      "hierarchyElement": {
+        "id": "b1…0001",
+        "version": 7,
+        "className": "Place"
+      },
+      "identifiedCredentials": [
+        {
+          "type": "licensePlate",
+          "credentialAssignedType": "other",
+          "identifier": {
+            "id": "5VN-4B21",
+            "className": "Credential"
+          }
+        }
+      ],
+      "segments": [
+        {
+          "id": "f3…0031",
+          "version": 1,
+          "actualStart": "2026-09-24T17:41:22Z",
+          "assignedRight": {
+            "id": "e2…0014",
+            "version": 1,
+            "className": "AssignedRight"
+          },
+          "validationType": [
+            "licensePlate"
+          ]
+        }
+      ],
+      "_place": "b1…0001",
+      "_plate": "5VN-4B21",
+      "_entryObservation": "f2…0013",
+      "_entryLane": "b2…0001",
+      "_reservation": "e2…0014",
+      "_reservationPlate": "SVN-4821"
+    },
+    {
+      "id": "f1…0049",
+      "version": 3,
+      "actualStart": "2026-09-24T16:10:00Z",
+      "actualEnd": "2026-09-24T19:40:05Z",
+      "initiator": {
+        "id": "a1…0001",
+        "version": 1,
+        "className": "Organisation"
+      },
+      "hierarchyElement": {
+        "id": "b1…0001",
+        "version": 7,
+        "className": "Place"
+      },
+      "identifiedCredentials": [
+        {
+          "type": "licensePlate",
+          "credentialAssignedType": "other",
+          "identifier": {
+            "id": "MNO-3300",
+            "className": "Credential"
+          }
+        }
+      ],
+      "segments": [
+        {
+          "id": "f3…0049",
+          "version": 1,
+          "actualStart": "2026-09-24T16:10:00Z",
+          "actualEnd": "2026-09-24T19:40:05Z",
+          "assignedRight": {
+            "id": "e2…0049",
+            "version": 1,
+            "className": "AssignedRight"
+          },
+          "validationType": [
+            "licensePlate"
+          ]
+        }
+      ],
+      "_place": "b1…0001",
+      "_plate": "MNO-3300",
+      "_settled": true
+    },
+    {
+      "id": "f1…0077",
+      "version": 1,
+      "actualStart": "2026-09-24T21:05:00Z",
+      "initiator": {
+        "id": "a1…0001",
+        "version": 1,
+        "className": "Organisation"
+      },
+      "hierarchyElement": {
+        "id": "b1…0001",
+        "version": 7,
+        "className": "Place"
+      },
+      "identifiedCredentials": [
+        {
+          "type": "ticket",
+          "credentialAssignedType": "other",
+          "identifier": {
+            "id": "T-1077",
+            "className": "Credential"
+          }
+        }
+      ],
+      "segments": [
+        {
+          "id": "f3…0077",
+          "version": 1,
+          "actualStart": "2026-09-24T21:05:00Z",
+          "assignedRight": {
+            "id": "e2…0077",
+            "version": 1,
+            "className": "AssignedRight"
+          },
+          "validationType": [
+            "ticket"
+          ]
+        }
+      ],
+      "_place": "b1…0001",
+      "_ticketNumber": "T-1077",
+      "_entryLane": "b2…0001"
+    },
+    {
+      "id": "f1…0203",
+      "version": 1,
+      "actualStart": "2026-09-24T12:30:00Z",
+      "initiator": {
+        "id": "a1…0002",
+        "version": 1,
+        "className": "Organisation"
+      },
+      "hierarchyElement": {
+        "id": "b1…0002",
+        "version": 2,
+        "className": "Place"
+      },
+      "identifiedCredentials": [
+        {
+          "type": "licensePlate",
+          "credentialAssignedType": "other",
+          "identifier": {
+            "id": "HBR-5510",
+            "className": "Credential"
+          }
+        }
+      ],
+      "segments": [
+        {
+          "id": "f3…0203",
+          "version": 1,
+          "actualStart": "2026-09-24T12:30:00Z",
+          "assignedRight": {
+            "id": "e2…0203",
+            "version": 1,
+            "className": "AssignedRight"
+          },
+          "validationType": [
+            "licensePlate"
+          ]
+        }
+      ],
+      "_place": "b1…0002",
+      "_plate": "HBR-5510",
+      "_entryObservation": "f2…0920"
+    },
+    {
+      "id": "f1…0610",
+      "version": 2,
+      "actualStart": "2026-09-24T07:44:02Z",
+      "actualEnd": "2026-09-24T17:20:12Z",
+      "initiator": {
+        "id": "a1…0001",
+        "version": 1,
+        "className": "Organisation"
+      },
+      "hierarchyElement": {
+        "id": "b1…0001",
+        "version": 7,
+        "className": "Place"
+      },
+      "identifiedCredentials": [
+        {
+          "type": "licensePlate",
+          "credentialAssignedType": "other",
+          "identifier": {
+            "id": "LKS-7710",
+            "className": "Credential"
+          }
+        }
+      ],
+      "segments": [
+        {
+          "id": "f3…0610",
+          "version": 1,
+          "actualStart": "2026-09-24T07:44:02Z",
+          "actualEnd": "2026-09-24T17:20:12Z",
+          "assignedRight": {
+            "id": "e2…0610",
+            "version": 1,
+            "className": "AssignedRight"
+          },
+          "validationType": [
+            "licensePlate"
+          ]
+        }
+      ],
+      "_place": "b1…0001",
+      "_plate": "LKS-7710",
+      "_entryObservation": "f2…0950",
+      "_exitObservation": "f2…0952",
+      "_observations": [
+        "f2…0951"
+      ],
+      "_entryLane": "b2…0004",
+      "_exitLane": "b2…0004"
+    },
+    {
+      "id": "f1…0655",
+      "version": 2,
+      "actualStart": "2026-09-24T08:31:40Z",
+      "actualEnd": "2026-09-24T09:12:03Z",
+      "initiator": {
+        "id": "a1…0001",
+        "version": 1,
+        "className": "Organisation"
+      },
+      "hierarchyElement": {
+        "id": "b1…0006",
+        "version": 2,
+        "className": "Place"
+      },
+      "identifiedCredentials": [
+        {
+          "type": "licensePlate",
+          "credentialAssignedType": "other",
+          "identifier": {
+            "id": "KLM-4470",
+            "className": "Credential"
+          }
+        }
+      ],
+      "segments": [
+        {
+          "id": "f3…0655",
+          "version": 1,
+          "actualStart": "2026-09-24T08:31:40Z",
+          "actualEnd": "2026-09-24T09:12:03Z",
+          "assignedRight": {
+            "id": "e2…0655",
+            "version": 1,
+            "className": "AssignedRight"
+          },
+          "validationType": [
+            "licensePlate"
+          ]
+        }
+      ],
+      "_place": "b1…0006",
+      "_plate": "KLM-4470",
+      "_exitObservation": "f2…0912",
+      "_observations": [
+        "f2…0913"
+      ],
+      "_exitLane": "b2…0061"
+    },
+    {
+      "id": "f1…0710",
+      "version": 2,
+      "actualStart": "2026-07-10T13:20:11Z",
+      "actualEnd": "2026-07-10T15:02:40Z",
+      "initiator": {
+        "id": "a1…0001",
+        "version": 1,
+        "className": "Organisation"
+      },
+      "hierarchyElement": {
+        "id": "b1…0001",
+        "version": 7,
+        "className": "Place"
+      },
+      "identifiedCredentials": [
+        {
+          "type": "licensePlate",
+          "credentialAssignedType": "other",
+          "identifier": {
+            "id": "JKL-7710",
+            "className": "Credential"
+          }
+        },
+        {
+          "type": "ticket",
+          "credentialAssignedType": "other",
+          "identifier": {
+            "id": "T-0412",
+            "className": "Credential"
+          }
+        }
+      ],
+      "segments": [
+        {
+          "id": "f3…0710",
+          "version": 1,
+          "actualStart": "2026-07-10T13:20:11Z",
+          "actualEnd": "2026-07-10T15:02:40Z",
+          "assignedRight": {
+            "id": "e2…0710",
+            "version": 1,
+            "className": "AssignedRight"
+          },
+          "validationType": [
+            "ticket"
+          ]
+        }
+      ],
+      "_place": "b1…0001",
+      "_plate": "JKL-7710",
+      "_ticketNumber": "T-0412",
+      "_entryObservation": "f2…0710"
+    },
+    {
+      "id": "f1…0903",
+      "version": 1,
+      "actualStart": "2026-09-24T10:15:40Z",
+      "initiator": {
+        "id": "a1…0001",
+        "version": 1,
+        "className": "Organisation"
+      },
+      "hierarchyElement": {
+        "id": "b1…0006",
+        "version": 2,
+        "className": "Place"
+      },
+      "identifiedCredentials": [
+        {
+          "type": "licensePlate",
+          "credentialAssignedType": "other",
+          "identifier": {
+            "id": "PXQ-2200",
+            "className": "Credential"
+          }
+        }
+      ],
+      "segments": [
+        {
+          "id": "f3…0903",
+          "version": 1,
+          "actualStart": "2026-09-24T10:15:40Z",
+          "assignedRight": {
+            "id": "e2…0903",
+            "version": 1,
+            "className": "AssignedRight"
+          },
+          "validationType": [
+            "licensePlate"
+          ]
+        }
+      ],
+      "_place": "b1…0006",
+      "_plate": "PXQ-2200",
+      "_entryObservation": "f2…0903"
+    },
+    {
+      "id": "f1…0905",
+      "version": 2,
+      "actualStart": "2026-09-24T11:05:30Z",
+      "initiator": {
+        "id": "a1…0001",
+        "version": 1,
+        "className": "Organisation"
+      },
+      "hierarchyElement": {
+        "id": "b1…0001",
+        "version": 7,
+        "className": "Place"
+      },
+      "identifiedCredentials": [
+        {
+          "type": "licensePlate",
+          "credentialAssignedType": "other",
+          "identifier": {
+            "id": "QRS-8080",
+            "className": "Credential"
+          }
+        }
+      ],
+      "segments": [
+        {
+          "id": "f3…0905",
+          "version": 1,
+          "actualStart": "2026-09-24T11:05:30Z",
+          "assignedRight": {
+            "id": "e2…0905",
+            "version": 1,
+            "className": "AssignedRight"
+          },
+          "validationType": [
+            "licensePlate"
+          ]
+        }
+      ],
+      "_place": "b1…0001",
+      "_plate": "QRS-8080",
+      "_entryObservation": "f2…0905",
+      "_entryLane": "b2…0001"
+    },
+    {
+      "id": "f1…0906",
+      "version": 1,
+      "actualStart": "2026-09-24T14:02:50Z",
+      "initiator": {
+        "id": "a1…0001",
+        "version": 1,
+        "className": "Organisation"
+      },
+      "hierarchyElement": {
+        "id": "b1…0001",
+        "version": 7,
+        "className": "Place"
+      },
+      "identifiedCredentials": [
+        {
+          "type": "licensePlate",
+          "credentialAssignedType": "other",
+          "identifier": {
+            "id": "FLT-0092",
+            "className": "Credential"
+          }
+        },
+        {
+          "type": "ticket",
+          "credentialAssignedType": "other",
+          "identifier": {
+            "id": "T-1090",
+            "className": "Credential"
+          }
+        }
+      ],
+      "segments": [
+        {
+          "id": "f3…0906",
+          "version": 1,
+          "actualStart": "2026-09-24T14:02:50Z",
+          "assignedRight": {
+            "id": "e2…0906",
+            "version": 1,
+            "className": "AssignedRight"
+          },
+          "validationType": [
+            "ticket"
+          ]
+        }
+      ],
+      "_place": "b1…0001",
+      "_plate": "FLT-0092",
+      "_ticketNumber": "T-1090",
+      "_entryObservation": "f2…0906",
+      "_entryLane": "b2…0001"
+    },
+    {
+      "id": "f1…0907",
+      "version": 1,
+      "actualStart": "2026-09-24T16:30:12Z",
+      "initiator": {
+        "id": "a1…0001",
+        "version": 1,
+        "className": "Organisation"
+      },
+      "hierarchyElement": {
+        "id": "b1…0006",
+        "version": 2,
+        "className": "Place"
+      },
+      "identifiedCredentials": [
+        {
+          "type": "licensePlate",
+          "credentialAssignedType": "other",
+          "identifier": {
+            "id": "FLT-0092",
+            "className": "Credential"
+          }
+        }
+      ],
+      "segments": [
+        {
+          "id": "f3…0907",
+          "version": 1,
+          "actualStart": "2026-09-24T16:30:12Z",
+          "assignedRight": {
+            "id": "e2…0907",
+            "version": 1,
+            "className": "AssignedRight"
+          },
+          "validationType": [
+            "licensePlate"
+          ]
+        }
+      ],
+      "_place": "b1…0006",
+      "_plate": "FLT-0092",
+      "_entryObservation": "f2…0907",
+      "_entryLane": "b2…0060"
+    }
+  ],
+  "assignedRights": [
+    {
+      "id": "e2…0014",
+      "version": 2,
+      "rightSpecification": {
+        "id": "d6…0001",
+        "version": 1,
+        "className": "RightSpecification"
+      },
+      "rightHolder": {
+        "credentials": [
+          {
+            "type": "licensePlate",
+            "credentialAssignedType": "vehicle",
+            "identifier": {
+              "id": "SVN-4821",
+              "className": "Credential"
+            }
+          }
+        ]
+      },
+      "issuanceTime": "2026-09-20T10:00:00Z",
+      "plannedUses": [
+        {
+          "startTime": "2026-09-24T17:30:00Z",
+          "endTime": "2026-09-24T23:30:00Z"
+        }
+      ],
+      "extensions": {
+        "apds-ext:apx:reservation@1.0": {
+          "reservationState": "checkedIn",
+          "plannedStart": "2026-09-24T17:30:00Z",
+          "plannedEnd": "2026-09-24T23:30:00Z",
+          "checkInSession": {
+            "id": "f1…0031",
+            "className": "Session"
+          }
+        }
+      },
+      "_place": "b1…0001",
+      "_plate": "SVN-4821"
+    }
+  ],
+  "credentials": {
+    "default": {
+      "scopes": [
+        "apx.lpr:read",
+        "apx.data:write"
+      ],
+      "apx_org": {
+        "id": "a1…0001",
+        "className": "Organisation"
+      },
+      "apx_places": [
+        "b1…0001",
+        "b1…0006"
+      ],
+      "user": "console-lakeside"
+    },
+    "riverside-lpr-system": {
+      "scopes": [
+        "apx.data:write",
+        "apx.lpr:read"
+      ],
+      "apx_org": {
+        "id": "a1…0001",
+        "className": "Organisation"
+      },
+      "apx_places": [
+        "b1…0006"
+      ]
+    },
+    "lakeside-parcs": {
+      "scopes": [
+        "apx.data:read",
+        "apx.data:write",
+        "apx.control:read",
+        "apx.control:execute",
+        "apx.alerts:write",
+        "apx.alerts:read",
+        "apx.lpr:read"
+      ],
+      "apx_org": {
+        "id": "a1…0001",
+        "className": "Organisation"
+      },
+      "apx_places": [
+        "b1…0001",
+        "b1…0006"
+      ]
+    }
+  }
+}

@@ -77,3 +77,43 @@ feeds and grant-expansion signaling (Part 5 §5.2), and site-bound payments
 and plate reads (Part 13). An aggregator conforming to those Parts gives
 each tenant exactly the single-site experience — which is this Part's
 acceptance test.
+
+## 18.6 Replicated site implementations (normative)
+
+§18.3 moves a place from one implementation to another once. A
+replicated pair is different: a site implementation (an edge server at
+the garage) and an aggregating implementation (a cloud core) both serve
+the same place at the same time, with authority split by entity class —
+typically the aggregator for configuration (places, rates, rights,
+plate lists, policy) and the site for what it observed and decided
+(reads, Sessions, violations, commands, alerts). The site keeps working
+when the link is down, and an air-gapped site may never connect.
+
+1. **Authority is declared.** Each side lists, in its discovery document
+   (`DiscoveryDocument.replication[]`, Part 16 §16.2), the authoritative
+   side per place and entity class, and the peer's `EventEnvelope.source`.
+   A client write to a class at a place where the other side is
+   authoritative is 409 `not-authoritative`; nothing is written.
+2. **Provenance survives replication.** A replicator (a client holding
+   `apx.replication:write`) writing the other side's records keeps the
+   origin `id`, sets `RecordInfo.origin` to the origin's
+   `EventEnvelope.source`, keeps the original `creationTime`, and replays
+   lifecycle transitions with their original `statusHistory[].time` and
+   `actor`. Without that scope, a write is stamped by the receiver as
+   usual, and a write carrying `RecordInfo.origin` is 400
+   `invalid-request`.
+3. **Idempotency is origin-scoped.** A replicated write carries the
+   origin's key as `<origin>:<key>` in `Idempotency-Key`, so a key minted
+   at the site never collides with one minted at the aggregator
+   (Part 4 §4.2a).
+4. **Each side pulls the other's authoritative classes** by the Part 5
+   change feed (§5.2, including rule 8 for APX resources), with cursors
+   held by the replicator. A conflicting write to a class resolves to the
+   authority; the non-authoritative copy is overwritten on the next pull.
+5. **Events.** Each side publishes events only for records it is
+   authoritative for; a replicated record does not publish a second
+   `…created` event at the receiver. Subscribers key on the place binding
+   and envelope `id` (§18.3(6)).
+6. A replicated pair is not a move: §18.3's re-onboarding and §18.4's
+   cutover do not apply, and the grants, cursors, and subscriptions of
+   each side are its own.

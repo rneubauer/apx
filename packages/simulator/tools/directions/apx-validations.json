@@ -1,0 +1,111 @@
+{
+  "_comment": "Stage directions for the replay of apx-validations: world events the prose describes but no request performs. Keys are scenario ids; `at` is the 0-based exchange index the step runs before ('start' = before the scenario). `actAs` stands in for the scenario's caller where the prose names a merchant terminal but the exchange carries no Authorization of its own (the runner applies an ```http block to one request only).",
+  "VAL-06": [
+    {
+      "at": 0,
+      "inject": {
+        "kind": "programUpdate",
+        "program": "e5000000-0000-4000-8000-000000000001",
+        "actor": "backoffice-mreyes",
+        "detail": "maxPerDay raised to 250",
+        "set": {
+          "rules": {
+            "maxPerTicket": 1,
+            "maxPerDay": 250,
+            "validityWindow": "P1D",
+            "stackable": false
+          }
+        }
+      }
+    }
+  ],
+  "VAL-08": [
+    {
+      "at": "start",
+      "clock": {
+        "now": "2026-09-12T17:00:00Z"
+      }
+    },
+    {
+      "at": 1,
+      "inject": {
+        "kind": "actAs",
+        "credential": "harbor-bistro-ipad"
+      }
+    },
+    {
+      "at": 4,
+      "inject": {
+        "kind": "actAs",
+        "credential": null
+      }
+    }
+  ],
+  "VAL-13": [
+    {
+      "at": 3,
+      "inject": {
+        "kind": "redemptionVolume",
+        "program": "e5000000-0000-4000-8000-000000000001",
+        "date": "2026-09-27"
+      }
+    }
+  ],
+  "VAL-16": [
+    {
+      "at": "start",
+      "inject": {
+        "kind": "redeemAtPayStation",
+        "code": "HB-A1C8-ZR5N-W6LJ",
+        "ticket": "T-2213",
+        "device": "c1000000-0000-4000-8000-000000000003",
+        "time": "2026-09-13T02:00:14Z",
+        "id": "e7000000-0000-4000-8000-000000000044"
+      }
+    }
+  ],
+  "VAL-17": [
+    {
+      "at": "start",
+      "inject": {
+        "kind": "statementPeriodEnds",
+        "program": "e5000000-0000-4000-8000-000000000001",
+        "offset": "PT9H"
+      }
+    }
+  ],
+  "VAL-20": [
+    {
+      "at": 1,
+      "inject": {
+        "kind": "actAs",
+        "credential": "harbor-bistro-ipad"
+      }
+    }
+  ],
+  "VAL-21": [
+    {
+      "at": "start",
+      "inject": {
+        "kind": "actAs",
+        "credential": null
+      }
+    }
+  ],
+  "VAL-25": [
+    {
+      "at": 5,
+      "inject": {
+        "kind": "actAs",
+        "credential": "harbor-bistro-ipad"
+      }
+    },
+    {
+      "at": 6,
+      "inject": {
+        "kind": "actAs",
+        "credential": null
+      }
+    }
+  ]
+}

@@ -43,7 +43,7 @@ table below.
 | `approval-required` | 403 | Requires-approval action executed without approval evidence (Part 17 §17.3) |
 | `rate-limited` | 429 | Throttled; response carries `Retry-After` (§12.3) |
 | `violation-transition-illegal` | 409 | Violation transition requested from a state that does not allow it (Part 19 §19.1) |
-| `violation-not-issuable` | 409 | `issue` on an unreviewed `guided`/`manual` detection, or an `automated` one where policy forbids unreviewed issuance (Part 19 §19.4) |
+| `violation-not-issuable` | 409 | `issue` on an unreviewed `guided`/`manual` detection, an `automated` one where policy forbids unreviewed issuance, one whose Session link rests on `lenient` or unapplied match evidence, or one with an evidence read whose plate review is `pending` or `rejected` (Part 19 §19.4) |
 | `appeal-closed` | 409 | Appeal operation on a violation with no open appeal, a second appeal, or a closed/voided violation (Part 19 §19.1) |
 | `program-not-active` | 422 | Issuance or redemption against a validation program that is not `active`, or a transition out of `ended` (Part 20 §20.1, §20.3) |
 | `instrument-invalid` | 422 | Validation code unknown, void, expired, or already redeemed; or an instrument required and absent (Part 20 §20.3) |
@@ -64,7 +64,7 @@ table below.
 | `valet-verification-failed` | 403 | Handback claimant verification failed; the attempt is recorded in `statusHistory` (Part 22 §22.4) |
 <<<<<<< HEAD
 | `agent-required` | 400 | `pushNegotiatedRate` or `matchTicket` without `agent` — the selecting or matching principal is mandatory (Part 6 §6.6–6.7) |
-| `rate-not-negotiable` | 422 | `pushNegotiatedRate` names a RateTable not flagged negotiable for the target's place, or one that does not apply there (Part 6 §6.6) |
+| `rate-not-negotiable` | 422 | `pushNegotiatedRate` names a RateTable not flagged negotiable for the target's place, or one that does not apply there, or states an `amount` on a host that does not offer the `negotiatedAmounts` feature (Part 6 §6.6) |
 | `lane-no-current-transaction` | 409 | `pushNegotiatedRate` or `matchTicket` at a lane with no vehicle transaction in progress (Part 6 §6.6–6.7) |
 | `session-not-open` | 422 | `matchTicket` names a Session that is closed, already bound to an exit, or at a different place (Part 6 §6.7); or a plate correction or right unlink on a closed Session outside the operator's dispute window (Part 14 §14.1b, Part 17 §17.5) |
 | `unauthenticated` | 401 | Access token missing, malformed, expired, or revoked (Part 9 §9.1) |
@@ -81,6 +81,8 @@ table below.
 | `charging-transition-illegal` | 409 | A ChargingEvent illegal from the session's current state, or out of time order (Part 23 §23.2) |
 | `charging-point-unavailable` | 409 | Opening a session on a point/connector that is inoperative, out of order, reserved for another right, or already serving an active session (Part 23 §23.2) |
 | `charging-settlement-conflict` | 409 | `…/payment` on a `parkingSession`-settled session, on a `directPayment` session not yet `unplugged`, or on an already `closed` session (Part 23 §23.5) |
+| `read-already-bound` | 409 | A `session-detail` write binds a read as `entry` or `exit` that another Session of the same place already holds, and does not name that Session in `supersedes` (Part 5 §5.8) |
+| `not-authoritative` | 409 | A write to an entity class for which, at that place, the other replicated implementation is authoritative (Part 18 §18.6) |
 
 Problem responses SHOULD include `detail` and MAY carry additional members
 (RFC 9457 extension members), including an `extensions` container.

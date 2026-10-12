@@ -1,0 +1,23 @@
+{
+  "_comment": "Stage directions for the replay of apx-valet: world events the prose describes but no request performs. Keys are scenario ids; `at` is the 0-based exchange index the step runs before ('start' = before the scenario).",
+  "VLT-09": [
+    { "at": "start", "clock": { "now": "2026-09-24T21:40:10Z" } },
+    { "at": "start", "inject": { "kind": "valetVehicleMoved", "ticket": "d8000000-0000-4000-8000-000000000423", "position": { "zone": "P3 row D", "keyLocation": "board-2 hook 18" }, "actor": "runner-0107" } },
+    { "at": "start", "inject": { "kind": "valetCustomerArrives", "ticket": "d8000000-0000-4000-8000-000000000423", "channel": "sms" } },
+    { "at": 1, "clock": { "now": "2026-09-24T22:08:02Z" } },
+    { "at": 1, "inject": { "kind": "valetCustomerArrives", "ticket": "d8000000-0000-4000-8000-000000000423", "channel": "sms" } },
+    { "at": 1, "clock": { "now": "2026-09-24T22:10:30Z" } },
+    { "at": 1, "inject": { "kind": "valetRunnerArrives", "ticket": "d8000000-0000-4000-8000-000000000423", "runner": "runner-0112" } }
+  ],
+  "VLT-10": [
+    { "at": 4, "clock": { "now": "2026-09-24T21:26:15Z" } },
+    { "at": 4, "inject": { "kind": "valetVehicleMoved", "ticket": "d8000000-0000-4000-8000-000000000429", "position": { "stagingLane": "b2000000-0000-4000-8000-000000000051" }, "actor": "runner-0107" } }
+  ],
+  "VLT-12": [
+    { "at": "start", "clock": { "now": "2026-09-24T21:26:15Z" } },
+    { "at": "start", "inject": { "kind": "valetVehicleMoved", "ticket": "d8000000-0000-4000-8000-000000000429", "position": { "stagingLane": "b2000000-0000-4000-8000-000000000051" }, "actor": "runner-0112" } }
+  ],
+  "VLT-14": [
+    { "at": 1, "inject": { "kind": "valetVehicleMoved", "ticket": "d8000000-0000-4000-8000-000000000427", "position": { "stagingLane": "b2000000-0000-4000-8000-000000000051" }, "actor": "runner-0107" } }
+  ]
+}

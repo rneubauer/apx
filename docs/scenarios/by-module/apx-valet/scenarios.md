@@ -1723,6 +1723,11 @@ Authorization: Bearer <apx.valet:request, bound to d8…0419>
 }
 ```
 
+```http
+GET /v1/valet/tickets/d8000000-0000-4000-8000-000000000420
+Authorization: Bearer <apx.valet:request, bound to d8…0419>
+```
+
 <!-- apx:request GET /v1/valet/tickets/d8000000-0000-4000-8000-000000000420 -->
 <!-- apx:response 404 -->
 ```json
@@ -1733,6 +1738,11 @@ Authorization: Bearer <apx.valet:request, bound to d8…0419>
   "detail": "No valet ticket d8000000-0000-4000-8000-000000000420 for this token.",
   "instance": "/v1/valet/tickets/d8000000-0000-4000-8000-000000000420"
 }
+```
+
+```http
+POST /v1/valet/tickets/d8000000-0000-4000-8000-000000000420/retrieve
+Authorization: Bearer <apx.valet:request, bound to d8…0419>
 ```
 
 <!-- apx:request POST /v1/valet/tickets/d8000000-0000-4000-8000-000000000420/retrieve -->
@@ -1749,6 +1759,11 @@ Authorization: Bearer <apx.valet:request, bound to d8…0419>
   "detail": "No valet ticket d8000000-0000-4000-8000-000000000420 for this token.",
   "instance": "/v1/valet/tickets/d8000000-0000-4000-8000-000000000420/retrieve"
 }
+```
+
+```http
+POST /v1/valet/tickets/d8000000-0000-4000-8000-000000000420/cancel-retrieval
+Authorization: Bearer <apx.valet:request, bound to d8…0419>
 ```
 
 <!-- apx:request POST /v1/valet/tickets/d8000000-0000-4000-8000-000000000420/cancel-retrieval -->

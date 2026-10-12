@@ -1,0 +1,19 @@
+{
+  "id": "7c8d9e0f-1a2b-4c3d-8e4f-5a6b7c8d9e0f",
+  "version": 1,
+  "name": "apx-session-end-reasons",
+  "creator": { "id": "a1000000-0000-4000-8000-000000000001", "className": "Organisation" },
+  "locator": "https://apx-standard.org/registries/apx-session-end-reasons.json",
+  "userDefinedCodeListEntries": [
+    { "definedValue": "exitRead", "entryDescription": "An exit read of the vehicle closed the Session.", "entryIndex": 0 },
+    { "definedValue": "reentry", "entryDescription": "The same plate entered again; the earlier Session was closed at the new entry.", "entryIndex": 1 },
+    { "definedValue": "stale", "entryDescription": "Closed by rule after no observation for the place's maximum stay; closure.rule names the rule and endInferred is true.", "entryIndex": 2 },
+    { "definedValue": "parentExit", "entryDescription": "An area Session closed because its parent visit ended.", "entryIndex": 3 },
+    { "definedValue": "areaLeft", "entryDescription": "An area Session closed because the vehicle was seen leaving the area.", "entryIndex": 4 },
+    { "definedValue": "inventorySweep", "entryDescription": "A sweep of the facility found the vehicle gone.", "entryIndex": 5 },
+    { "definedValue": "valetHandback", "entryDescription": "The valet handed the vehicle back (Part 22).", "entryIndex": 6 },
+    { "definedValue": "exitOnly", "entryDescription": "An exit with no observed entry; actualStart is synthetic and closure.startObserved is false.", "entryIndex": 7 },
+    { "definedValue": "operator", "entryDescription": "A person closed the Session.", "entryIndex": 8 },
+    { "definedValue": "review", "entryDescription": "A reviewer paired the exit read that closed the Session.", "entryIndex": 9 }
+  ]
+}

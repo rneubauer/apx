@@ -1,0 +1,53 @@
+{
+  "_comment": "Stage directions for the replay of apx-discovery: what the host claims changes between scenarios (a vendor domain is added, mTLS is turned on, the claim is trimmed), the TLS connection presents another client's certificate, and the wallboard credential takes over. `at` is the 0-based exchange index the step runs before ('start' = before the scenario).",
+  "DSC-11": [
+    {
+      "at": "start",
+      "inject": {
+        "kind": "hostConfig",
+        "set": { "conformanceClasses": ["apx-data", "apx-events", "apx-events-sse", "apx-control", "apx-alerts", "apx-discovery", "apx-resolution", "apx-lpr", "acmecorp-loyalty"] }
+      }
+    }
+  ],
+  "DSC-12": [{ "at": "start", "inject": { "kind": "hostConfig", "clear": true } }],
+  "DSC-13": [
+    {
+      "at": "start",
+      "inject": {
+        "kind": "hostConfig",
+        "set": { "conformanceClasses": ["apx-data", "apx-events", "apx-events-sse", "apx-control", "apx-alerts", "apx-discovery", "apx-resolution", "apx-lpr", "apx-mtls"] }
+      }
+    },
+    { "at": 1, "inject": { "kind": "tlsConnection", "clientCertificate": "console-lakeside" } },
+    { "at": 2, "inject": { "kind": "tlsConnection", "clientCertificate": "bi-citypark" } }
+  ],
+  "DSC-14": [
+    { "at": "start", "inject": { "kind": "tlsConnection", "clientCertificate": null } },
+    {
+      "at": "start",
+      "inject": {
+        "kind": "hostConfig",
+        "clear": true
+      }
+    },
+    {
+      "at": "start",
+      "inject": {
+        "kind": "hostConfig",
+        "set": {
+          "conformanceClasses": ["apx-data", "apx-events", "apx-control", "apx-discovery"],
+          "registries": {
+            "apx-command-types": "https://api.lakeside-garage.example/registries/apx-command-types.json",
+            "apx-device-states": "https://api.lakeside-garage.example/registries/apx-device-states.json",
+            "apx-topics": "https://api.lakeside-garage.example/registries/apx-topics.json",
+            "apx-conformance-classes": "https://api.lakeside-garage.example/registries/apx-conformance-classes.json"
+          }
+        }
+      }
+    }
+  ],
+  "DSC-16": [
+    { "at": "start", "reset": "apx-discovery-wallboard" },
+    { "at": "start", "inject": { "kind": "hostConfig", "set": { "conformanceClasses": ["apx-data", "apx-events", "apx-control", "apx-discovery"] } } }
+  ]
+}

@@ -164,6 +164,14 @@ SubscriptionFilters:
       type: string
       description: For alert topics — minimum severity delivered.
       enum: [info, warning, minor, major, critical]
+    alertTypes:
+      type: array
+      description: |-
+        For alert topics — only alerts whose `alertType` is listed are
+        delivered (Part 8 §8.5a). Values are `apx-alert-types` entries or
+        implementer types; combines with `severityFloor` (both must hold).
+      items: { type: string }
+      examples: [["scofflawArrival", "refusedServiceArrival"]]
 
 ApxEventSubscriptionPatch:
   title: ApxEventSubscriptionPatch

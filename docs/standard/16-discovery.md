@@ -21,7 +21,7 @@ locations. This is how a client with nothing but a hostname gets started.
   offered, and MUST ignore classes it does not recognise.
 - **Features.** `features` lists the optional features the implementation
   offers, as definedValues of the `apx-features` registry (Part 11; Part 6
-  §6.5: `negotiatedRates`, `ticketMatching`) or vendor features, named
+  §6.5: `negotiatedRates`, `negotiatedAmounts`, `ticketMatching`) or vendor features, named
   `<vendor-ns>-<feature>` like vendor classes (Part 3 §3.1). An offered
   feature MUST be listed; an unlisted one is not offered.
 - **Registries and edition.** `registries` is keyed by the registry `name`
@@ -70,6 +70,10 @@ locations. This is how a client with nothing but a hostname gets started.
   `subscriptionsMax`, and `streamConnectionsMax`; every value is a
   per-credential integer, and other keys are advisory vendor additions. A
   `429 rate-limited` `detail` SHOULD name the key that was exceeded.
+- **Replication.** An implementation that shares a place with a
+  replicated site or aggregator implementation lists, in `replication[]`,
+  which side is authoritative for each entity class at each place
+  (Part 18 §18.6). The member is absent otherwise.
 - **Lifetime.** The document is computed per request and is valid for the
   lifetime of the token it was computed for. A change to a client's scopes
   or grant MUST take effect through a new token (the old one revoked or

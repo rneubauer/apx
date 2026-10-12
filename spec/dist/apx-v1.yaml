@@ -1625,7 +1625,7 @@ paths:
         '403':
           $ref: '#/components/responses/Forbidden'
         '409':
-          description: 'Conflict. APX (Part 5 §5.1a, Part 12 §12.1): a client sending `Accept: application/problem+json` receives problem type `id-collision` (client-supplied id already exists) instead of ResponseStatus.'
+          description: 'Conflict. APX (Part 5 §5.1a, Part 12 §12.1): a client sending `Accept: application/problem+json` receives problem type `id-collision` (client-supplied id already exists), or `read-already-bound` (a read in `apds-ext:apx:session-detail@1.0` is bound as `entry` or `exit` to another Session of the same place that the write does not name in `supersedes`, Part 5 §5.8 rule 2), instead of ResponseStatus; nothing is written.'
           content:
             application/json:
               schema:
@@ -1636,6 +1636,12 @@ paths:
                     status: error
                     code: 409
                     message: Session can not be created due to conflicting data.
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+        '422':
+          description: The Session's `apds-ext:apx:session-detail@1.0` breaks a consistency rule of Part 5 §5.8 — more than one `representative` read, `lifecycle` `open` with an `actualEnd` or any other `lifecycle` without one, or a `parent` whose `hierarchyElement` is not an ancestor of this Session's (problem type `request-unprocessable`); or a read naming no Observation visible to the caller (`reference-unknown`). Nothing is written.
+          content:
             application/problem+json:
               schema:
                 $ref: '#/components/schemas/Problem'
@@ -1757,7 +1763,7 @@ paths:
               schema:
                 $ref: '#/components/schemas/Problem'
         '409':
-          description: 'Conflict. APX (Part 5 §5.1a, Part 12 §12.1): a client sending `Accept: application/problem+json` receives problem type `version-conflict` (stale `version`) instead of ResponseStatus.'
+          description: 'Conflict. APX (Part 5 §5.1a, Part 12 §12.1): a client sending `Accept: application/problem+json` receives problem type `version-conflict` (stale `version`), or `read-already-bound` (a read in `apds-ext:apx:session-detail@1.0` is bound as `entry` or `exit` to another Session of the same place that the write does not name in `supersedes`, Part 5 §5.8 rule 2), instead of ResponseStatus; nothing is written.'
           content:
             application/json:
               schema:
@@ -1768,6 +1774,12 @@ paths:
                     status: error
                     code: 409
                     message: Session can not be updated due to conflicting data.
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+        '422':
+          description: The Session's `apds-ext:apx:session-detail@1.0` breaks a consistency rule of Part 5 §5.8 — more than one `representative` read, `lifecycle` `open` with an `actualEnd` or any other `lifecycle` without one, or a `parent` whose `hierarchyElement` is not an ancestor of this Session's (problem type `request-unprocessable`); or a read naming no Observation visible to the caller (`reference-unknown`). Nothing is written.
+          content:
             application/problem+json:
               schema:
                 $ref: '#/components/schemas/Problem'
@@ -2850,6 +2862,8 @@ paths:
         `apx_places` grant are returned; naming a `place` outside the grant
         is 403 `insufficient-grant`. All filters combine with AND.
       parameters:
+        - $ref: '#/components/parameters/ModeParam'
+        - $ref: '#/components/parameters/CursorParam'
         - name: target
           in: query
           schema:
@@ -2905,7 +2919,7 @@ paths:
         - $ref: '#/components/parameters/page'
       responses:
         '200':
-          description: Paginated commands (APDS PaginatedList shape).
+          description: Paginated commands (APDS PaginatedList shape); with `mode=change`, the changes after `cursor` in the same envelope (Part 5 §5.2 rule 8).
           content:
             application/json:
               schema:
@@ -2917,10 +2931,22 @@ paths:
                     type: array
                     items:
                       $ref: '#/components/schemas/Command'
+                  updateMode:
+                    $ref: '#/components/schemas/ChangeFeedUpdateMode'
+                  cursor:
+                    $ref: '#/components/schemas/ChangeFeedCursor'
+                  deleted:
+                    $ref: '#/components/schemas/ChangeFeedTombstones'
+                  grantAdditions:
+                    $ref: '#/components/schemas/ChangeFeedGrantAdditions'
+                  next:
+                    $ref: '#/components/schemas/ChangeFeedNext'
         '401':
           $ref: '#/components/responses/Unauthorized'
         '403':
           $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/CursorRefused'
         '429':
           $ref: '#/components/responses/TooManyRequests'
   /v1/commands/{id}:
@@ -3256,6 +3282,8 @@ paths:
         window; all filters combine with AND (Part 15 §15.2). Results are
         constrained to the caller's grant.
       parameters:
+        - $ref: '#/components/parameters/ModeParam'
+        - $ref: '#/components/parameters/CursorParam'
         - name: plate
           in: query
           description: Convenience alias for `credentialType=licensePlate&credentialIdentification=<plate>`.
@@ -3311,7 +3339,7 @@ paths:
         - $ref: '#/components/parameters/page'
       responses:
         '200':
-          description: Matching transactions.
+          description: Matching transactions; with `mode=change`, the changes after `cursor` in the same envelope (Part 5 §5.2 rule 8).
           content:
             application/json:
               schema:
@@ -3323,12 +3351,24 @@ paths:
                     type: array
                     items:
                       $ref: '#/components/schemas/TollTransaction'
+                  updateMode:
+                    $ref: '#/components/schemas/ChangeFeedUpdateMode'
+                  cursor:
+                    $ref: '#/components/schemas/ChangeFeedCursor'
+                  deleted:
+                    $ref: '#/components/schemas/ChangeFeedTombstones'
+                  grantAdditions:
+                    $ref: '#/components/schemas/ChangeFeedGrantAdditions'
+                  next:
+                    $ref: '#/components/schemas/ChangeFeedNext'
         '400':
           $ref: '#/components/responses/BadRequest'
         '401':
           $ref: '#/components/responses/Unauthorized'
         '403':
           $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/CursorRefused'
         '429':
           $ref: '#/components/responses/TooManyRequests'
   /v1/tolling/transactions/{id}:
@@ -3731,13 +3771,17 @@ paths:
       summary: List/filter violations
       description: |-
         Filter by plate (credentialIdentification), notice number, status,
-        type, place (subtree-inclusive), detection mode, and the
-        `since`..`until` window on detectedTime. Results are constrained
+        type, place (subtree-inclusive), detection mode, the
+        `since`..`until` window on detectedTime, and — for violations
+        imported from another enforcement system (Part 19 §19.13) — the
+        source system and the source's record id. Results are constrained
         to the caller's place grant; a lookup that names no place (by
         plate or notice number) returns only violations at granted places
         (Part 9 §9.3a). Plate values appear only under `apx.violations:*`
         scopes (Part 9 §9.6).
       parameters:
+        - $ref: '#/components/parameters/ModeParam'
+        - $ref: '#/components/parameters/CursorParam'
         - name: plate
           in: query
           schema:
@@ -3790,10 +3834,22 @@ paths:
             type: string
             format: date-time
           description: Upper bound (exclusive) on `detection.detectedTime`.
+        - name: sourceSystem
+          in: query
+          required: false
+          schema:
+            type: string
+          description: Imported violations from this source system only (`system` of `apds-ext:apx:violation-source@1.0`, Part 19 §19.13).
+        - name: sourceRecordId
+          in: query
+          required: false
+          schema:
+            type: string
+          description: Exact match on the source's record id (`recordId`); like `noticeNumber`, it names no place (Part 9 §9.3a rule 3).
         - $ref: '#/components/parameters/page'
       responses:
         '200':
-          description: Paginated violations (APDS PaginatedList shape).
+          description: Paginated violations (APDS PaginatedList shape); with `mode=change`, the changes after `cursor` in the same envelope (Part 5 §5.2 rule 8).
           content:
             application/json:
               schema:
@@ -3805,10 +3861,22 @@ paths:
                     type: array
                     items:
                       $ref: '#/components/schemas/Violation'
+                  updateMode:
+                    $ref: '#/components/schemas/ChangeFeedUpdateMode'
+                  cursor:
+                    $ref: '#/components/schemas/ChangeFeedCursor'
+                  deleted:
+                    $ref: '#/components/schemas/ChangeFeedTombstones'
+                  grantAdditions:
+                    $ref: '#/components/schemas/ChangeFeedGrantAdditions'
+                  next:
+                    $ref: '#/components/schemas/ChangeFeedNext'
         '401':
           $ref: '#/components/responses/Unauthorized'
         '403':
           $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/CursorRefused'
         '429':
           $ref: '#/components/responses/TooManyRequests'
   /v1/violations/{id}:
@@ -3918,7 +3986,13 @@ paths:
         the operator's published documentation where the policy is
         silent); a `guided` or `manual` detection still in `detected`, or
         an automated one the policy does not permit, is 409
-        `violation-not-issuable`. Sets `notice`, `amount`, and `dueTime`.
+        `violation-not-issuable`. Whatever the detection mode, `issue` is
+        also 409 `violation-not-issuable` while any LPR read in
+        `observations[]` has plate review `pending` or `rejected` (Part 13
+        §13.3a(4a), Part 19 §19.4 rule 6), and when the `relatedSession`
+        link rests on match evidence with `plate.method: lenient` or
+        `applied: false` (Part 5 §5.8, Part 19 §19.4 rule 5). Sets
+        `notice`, `amount`, and `dueTime`.
 
         The server resolves the EnforcementPolicy in force at `place`
         (Part 19 §19.10) and refuses with 422 when the request breaks it:
@@ -3962,7 +4036,12 @@ paths:
               schema:
                 $ref: '#/components/schemas/Problem'
         '409':
-          description: Not issuable from the current state or detection mode.
+          description: |-
+            Not issuable from the current state or detection mode, while an
+            evidence read's plate review is `pending` or `rejected`, or on
+            lenient or unapplied match evidence (`violation-not-issuable`,
+            Part 19 §19.4); or an illegal transition
+            (`violation-transition-illegal`).
           content:
             application/problem+json:
               schema:
@@ -3988,7 +4067,11 @@ paths:
         Transition `issued → paid`. The payment itself is taken through the
         Part 13 surface (`POST /v1/payments`, a payment link, or an APDS
         Payment ingested from a pay station); this attaches its reference.
-        Not in `issued` is 409 `violation-transition-illegal`.
+        Not in `issued` is 409 `violation-transition-illegal`. A body
+        `amount` below what is outstanding is a partial payment (Part 19
+        §19.6a): it is appended to `payments[]`, `amountPaid` grows, and
+        the violation stays `issued`; it moves to `paid` when `amountPaid`
+        reaches `amount`.
       parameters:
         - name: id
           in: path
@@ -4353,10 +4436,12 @@ paths:
               - active
               - superseded
               - retired
+        - $ref: '#/components/parameters/ModeParam'
+        - $ref: '#/components/parameters/CursorParam'
         - $ref: '#/components/parameters/page'
       responses:
         '200':
-          description: Paginated policies (APDS PaginatedList shape).
+          description: Paginated policies (APDS PaginatedList shape); with `mode=change`, the changes after `cursor` in the same envelope (Part 5 §5.2 rule 8).
           content:
             application/json:
               schema:
@@ -4368,10 +4453,22 @@ paths:
                     type: array
                     items:
                       $ref: '#/components/schemas/EnforcementPolicy'
+                  updateMode:
+                    $ref: '#/components/schemas/ChangeFeedUpdateMode'
+                  cursor:
+                    $ref: '#/components/schemas/ChangeFeedCursor'
+                  deleted:
+                    $ref: '#/components/schemas/ChangeFeedTombstones'
+                  grantAdditions:
+                    $ref: '#/components/schemas/ChangeFeedGrantAdditions'
+                  next:
+                    $ref: '#/components/schemas/ChangeFeedNext'
         '401':
           $ref: '#/components/responses/Unauthorized'
         '403':
           $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/CursorRefused'
         '429':
           $ref: '#/components/responses/TooManyRequests'
   /v1/enforcement/policies/effective:
@@ -4598,10 +4695,12 @@ paths:
               - active
               - superseded
               - removed
+        - $ref: '#/components/parameters/ModeParam'
+        - $ref: '#/components/parameters/CursorParam'
         - $ref: '#/components/parameters/page'
       responses:
         '200':
-          description: Paginated signage (APDS PaginatedList shape).
+          description: Paginated signage (APDS PaginatedList shape); with `mode=change`, the changes after `cursor` in the same envelope (Part 5 §5.2 rule 8).
           content:
             application/json:
               schema:
@@ -4613,10 +4712,22 @@ paths:
                     type: array
                     items:
                       $ref: '#/components/schemas/Signage'
+                  updateMode:
+                    $ref: '#/components/schemas/ChangeFeedUpdateMode'
+                  cursor:
+                    $ref: '#/components/schemas/ChangeFeedCursor'
+                  deleted:
+                    $ref: '#/components/schemas/ChangeFeedTombstones'
+                  grantAdditions:
+                    $ref: '#/components/schemas/ChangeFeedGrantAdditions'
+                  next:
+                    $ref: '#/components/schemas/ChangeFeedNext'
         '401':
           $ref: '#/components/responses/Unauthorized'
         '403':
           $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/CursorRefused'
         '429':
           $ref: '#/components/responses/TooManyRequests'
   /v1/enforcement/signage/effective:
@@ -4842,6 +4953,8 @@ paths:
         `apx.validations:redeem` token sees only programs whose provider is
         its own `apx_org` (Part 20 §20.5).
       parameters:
+        - $ref: '#/components/parameters/ModeParam'
+        - $ref: '#/components/parameters/CursorParam'
         - name: place
           in: query
           schema:
@@ -4863,7 +4976,7 @@ paths:
         - $ref: '#/components/parameters/page'
       responses:
         '200':
-          description: Paginated programs (APDS PaginatedList shape).
+          description: Paginated programs (APDS PaginatedList shape); with `mode=change`, the changes after `cursor` in the same envelope (Part 5 §5.2 rule 8).
           content:
             application/json:
               schema:
@@ -4875,10 +4988,22 @@ paths:
                     type: array
                     items:
                       $ref: '#/components/schemas/ValidationProgram'
+                  updateMode:
+                    $ref: '#/components/schemas/ChangeFeedUpdateMode'
+                  cursor:
+                    $ref: '#/components/schemas/ChangeFeedCursor'
+                  deleted:
+                    $ref: '#/components/schemas/ChangeFeedTombstones'
+                  grantAdditions:
+                    $ref: '#/components/schemas/ChangeFeedGrantAdditions'
+                  next:
+                    $ref: '#/components/schemas/ChangeFeedNext'
         '401':
           $ref: '#/components/responses/Unauthorized'
         '403':
           $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/CursorRefused'
         '429':
           $ref: '#/components/responses/TooManyRequests'
   /v1/validations/programs/{id}:
@@ -5081,10 +5206,12 @@ paths:
       summary: List issuances for a program
       description: Batches issued to the program, newest first. Codes are never returned here.
       parameters:
+        - $ref: '#/components/parameters/ModeParam'
+        - $ref: '#/components/parameters/CursorParam'
         - $ref: '#/components/parameters/page'
       responses:
         '200':
-          description: Paginated issuances (APDS PaginatedList shape).
+          description: Paginated issuances (APDS PaginatedList shape); with `mode=change`, the changes after `cursor` in the same envelope (Part 5 §5.2 rule 8).
           content:
             application/json:
               schema:
@@ -5096,12 +5223,22 @@ paths:
                     type: array
                     items:
                       $ref: '#/components/schemas/ValidationIssuance'
+                  updateMode:
+                    $ref: '#/components/schemas/ChangeFeedUpdateMode'
+                  cursor:
+                    $ref: '#/components/schemas/ChangeFeedCursor'
+                  deleted:
+                    $ref: '#/components/schemas/ChangeFeedTombstones'
+                  grantAdditions:
+                    $ref: '#/components/schemas/ChangeFeedGrantAdditions'
+                  next:
+                    $ref: '#/components/schemas/ChangeFeedNext'
         '401':
           $ref: '#/components/responses/Unauthorized'
         '403':
           $ref: '#/components/responses/Forbidden'
         '404':
-          description: No such program.
+          description: No such program, or (`mode=change`) a refused cursor (`target-not-found`; Part 5 §5.2 rules 2 and 5).
           content:
             application/problem+json:
               schema:
@@ -5359,6 +5496,8 @@ paths:
         applied it, channel, status, and `since` (appliedTime). A `redeem`
         token sees only its own provider's redemptions (§20.5).
       parameters:
+        - $ref: '#/components/parameters/ModeParam'
+        - $ref: '#/components/parameters/CursorParam'
         - name: program
           in: query
           schema:
@@ -5410,7 +5549,7 @@ paths:
         - $ref: '#/components/parameters/page'
       responses:
         '200':
-          description: Paginated redemptions (APDS PaginatedList shape).
+          description: Paginated redemptions (APDS PaginatedList shape); with `mode=change`, the changes after `cursor` in the same envelope (Part 5 §5.2 rule 8).
           content:
             application/json:
               schema:
@@ -5422,10 +5561,22 @@ paths:
                     type: array
                     items:
                       $ref: '#/components/schemas/ValidationRedemption'
+                  updateMode:
+                    $ref: '#/components/schemas/ChangeFeedUpdateMode'
+                  cursor:
+                    $ref: '#/components/schemas/ChangeFeedCursor'
+                  deleted:
+                    $ref: '#/components/schemas/ChangeFeedTombstones'
+                  grantAdditions:
+                    $ref: '#/components/schemas/ChangeFeedGrantAdditions'
+                  next:
+                    $ref: '#/components/schemas/ChangeFeedNext'
         '401':
           $ref: '#/components/responses/Unauthorized'
         '403':
           $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/CursorRefused'
         '429':
           $ref: '#/components/responses/TooManyRequests'
   /v1/validations/redemptions/{id}:
@@ -5671,10 +5822,12 @@ paths:
       summary: List closed statements for a program
       description: Closed statements, newest period first; `lines[]` omitted.
       parameters:
+        - $ref: '#/components/parameters/ModeParam'
+        - $ref: '#/components/parameters/CursorParam'
         - $ref: '#/components/parameters/page'
       responses:
         '200':
-          description: Paginated statements (APDS PaginatedList shape).
+          description: Paginated statements (APDS PaginatedList shape); with `mode=change`, the changes after `cursor` in the same envelope (Part 5 §5.2 rule 8).
           content:
             application/json:
               schema:
@@ -5686,12 +5839,22 @@ paths:
                     type: array
                     items:
                       $ref: '#/components/schemas/ValidationStatement'
+                  updateMode:
+                    $ref: '#/components/schemas/ChangeFeedUpdateMode'
+                  cursor:
+                    $ref: '#/components/schemas/ChangeFeedCursor'
+                  deleted:
+                    $ref: '#/components/schemas/ChangeFeedTombstones'
+                  grantAdditions:
+                    $ref: '#/components/schemas/ChangeFeedGrantAdditions'
+                  next:
+                    $ref: '#/components/schemas/ChangeFeedNext'
         '401':
           $ref: '#/components/responses/Unauthorized'
         '403':
           $ref: '#/components/responses/Forbidden'
         '404':
-          description: No such program.
+          description: No such program, or (`mode=change`) a refused cursor (`target-not-found`; Part 5 §5.2 rules 2 and 5).
           content:
             application/problem+json:
               schema:
@@ -5828,6 +5991,8 @@ paths:
         A lookup by `identification` that matches only records outside the
         grant returns an empty 200 (Part 9 §9.3a).
       parameters:
+        - $ref: '#/components/parameters/ModeParam'
+        - $ref: '#/components/parameters/CursorParam'
         - name: holder
           in: query
           schema:
@@ -5866,7 +6031,7 @@ paths:
         - $ref: '#/components/parameters/page'
       responses:
         '200':
-          description: Paginated credentials (APDS PaginatedList shape).
+          description: Paginated credentials (APDS PaginatedList shape); with `mode=change`, the changes after `cursor` in the same envelope (Part 5 §5.2 rule 8).
           content:
             application/json:
               schema:
@@ -5878,10 +6043,22 @@ paths:
                     type: array
                     items:
                       $ref: '#/components/schemas/CredentialRecord'
+                  updateMode:
+                    $ref: '#/components/schemas/ChangeFeedUpdateMode'
+                  cursor:
+                    $ref: '#/components/schemas/ChangeFeedCursor'
+                  deleted:
+                    $ref: '#/components/schemas/ChangeFeedTombstones'
+                  grantAdditions:
+                    $ref: '#/components/schemas/ChangeFeedGrantAdditions'
+                  next:
+                    $ref: '#/components/schemas/ChangeFeedNext'
         '401':
           $ref: '#/components/responses/Unauthorized'
         '403':
           $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/CursorRefused'
         '429':
           $ref: '#/components/responses/TooManyRequests'
   /v1/credentials/{id}:
@@ -6345,6 +6522,8 @@ paths:
         (Part 9 §9.3a). Retention per Part 9 §9.6. The same events are
         published as `apx.credentials.access.v1` (Part 21 §21.4).
       parameters:
+        - $ref: '#/components/parameters/ModeParam'
+        - $ref: '#/components/parameters/CursorParam'
         - name: place
           in: query
           description: HierarchyElement ids, comma-separated; subtree-inclusive.
@@ -6407,7 +6586,7 @@ paths:
         - $ref: '#/components/parameters/page'
       responses:
         '200':
-          description: Paginated access events (APDS PaginatedList shape).
+          description: Paginated access events (APDS PaginatedList shape); with `mode=change`, the changes after `cursor` in the same envelope (Part 5 §5.2 rule 8).
           content:
             application/json:
               schema:
@@ -6419,12 +6598,24 @@ paths:
                     type: array
                     items:
                       $ref: '#/components/schemas/AccessEvent'
+                  updateMode:
+                    $ref: '#/components/schemas/ChangeFeedUpdateMode'
+                  cursor:
+                    $ref: '#/components/schemas/ChangeFeedCursor'
+                  deleted:
+                    $ref: '#/components/schemas/ChangeFeedTombstones'
+                  grantAdditions:
+                    $ref: '#/components/schemas/ChangeFeedGrantAdditions'
+                  next:
+                    $ref: '#/components/schemas/ChangeFeedNext'
         '400':
           $ref: '#/components/responses/BadRequest'
         '401':
           $ref: '#/components/responses/Unauthorized'
         '403':
           $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/CursorRefused'
         '429':
           $ref: '#/components/responses/TooManyRequests'
   /v1/valet/tickets:
@@ -6510,6 +6701,8 @@ paths:
       summary: List/filter valet tickets
       description: Filter by place (subtree-inclusive), status, plate, ticket number, customer account, and `since` (dropOff.time).
       parameters:
+        - $ref: '#/components/parameters/ModeParam'
+        - $ref: '#/components/parameters/CursorParam'
         - name: place
           in: query
           schema:
@@ -6549,7 +6742,7 @@ paths:
         - $ref: '#/components/parameters/page'
       responses:
         '200':
-          description: Paginated tickets (APDS PaginatedList shape).
+          description: Paginated tickets (APDS PaginatedList shape); with `mode=change`, the changes after `cursor` in the same envelope (Part 5 §5.2 rule 8).
           content:
             application/json:
               schema:
@@ -6561,10 +6754,22 @@ paths:
                     type: array
                     items:
                       $ref: '#/components/schemas/ValetTicket'
+                  updateMode:
+                    $ref: '#/components/schemas/ChangeFeedUpdateMode'
+                  cursor:
+                    $ref: '#/components/schemas/ChangeFeedCursor'
+                  deleted:
+                    $ref: '#/components/schemas/ChangeFeedTombstones'
+                  grantAdditions:
+                    $ref: '#/components/schemas/ChangeFeedGrantAdditions'
+                  next:
+                    $ref: '#/components/schemas/ChangeFeedNext'
         '401':
           $ref: '#/components/responses/Unauthorized'
         '403':
           $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/CursorRefused'
         '429':
           $ref: '#/components/responses/TooManyRequests'
   /v1/valet/queue:
@@ -7422,6 +7627,8 @@ paths:
       summary: List/filter charging sessions
       description: Filter by place (subtree-inclusive), charging point, status, plate, parking session, account, and `since` (timeline.authorizedTime).
       parameters:
+        - $ref: '#/components/parameters/ModeParam'
+        - $ref: '#/components/parameters/CursorParam'
         - name: place
           in: query
           schema:
@@ -7469,7 +7676,7 @@ paths:
         - $ref: '#/components/parameters/page'
       responses:
         '200':
-          description: Paginated sessions (APDS PaginatedList shape).
+          description: Paginated sessions (APDS PaginatedList shape); with `mode=change`, the changes after `cursor` in the same envelope (Part 5 §5.2 rule 8).
           content:
             application/json:
               schema:
@@ -7481,10 +7688,22 @@ paths:
                     type: array
                     items:
                       $ref: '#/components/schemas/ChargingSession'
+                  updateMode:
+                    $ref: '#/components/schemas/ChangeFeedUpdateMode'
+                  cursor:
+                    $ref: '#/components/schemas/ChangeFeedCursor'
+                  deleted:
+                    $ref: '#/components/schemas/ChangeFeedTombstones'
+                  grantAdditions:
+                    $ref: '#/components/schemas/ChangeFeedGrantAdditions'
+                  next:
+                    $ref: '#/components/schemas/ChangeFeedNext'
         '401':
           $ref: '#/components/responses/Unauthorized'
         '403':
           $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/CursorRefused'
         '429':
           $ref: '#/components/responses/TooManyRequests'
   /v1/charging/sessions/{id}:
@@ -7656,6 +7875,1110 @@ paths:
             application/problem+json:
               schema:
                 $ref: '#/components/schemas/Problem'
+        '429':
+          $ref: '#/components/responses/TooManyRequests'
+  /v1/lpr/reads/{observation}:
+    get:
+      operationId: get-apx-v1-lpr-reads-observation
+      security:
+        - apxOAuth:
+            - apx.lpr:read
+      tags:
+        - LPR
+      summary: Read back one ingested LPR read by its Observation id
+      description: |-
+        One `LprRead` for the Observation (Part 13 §13.3). The same
+        projection as `GET /v1/lpr/reads?observation=`, addressed by path
+        like the revision routes. A read at a place outside the caller's
+        `apx_places` grant is 403 `insufficient-grant`; an unknown or purged
+        read is 404 `target-not-found` (§13.3b).
+      parameters:
+        - name: observation
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: The read.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/LprRead'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '429':
+          $ref: '#/components/responses/TooManyRequests'
+  /v1/lpr/reads/{observation}/plate:
+    put:
+      operationId: put-apx-v1-lpr-reads-observation-plate
+      security:
+        - apxOAuth:
+            - apx.data:write
+      tags:
+        - LPR
+      summary: A reviewer confirms, corrects, or rejects a read's plate
+      description: |-
+        Read-level plate review (Part 13 §13.3a(4a)), the counterpart of
+        the access-event revision: a reviewer's decision on one read,
+        before any Session exists and however many Sessions the read
+        feeds. `corrected` writes the winning values into the
+        Observation's `observedCredentialId` and
+        `vehicleAncillaryIdentification` and into `detail.plate`,
+        `.country`, `.stateProvince`, keeping the engine's values, with
+        their confidences, in `detail.review.original` — set on the first
+        correction and never changed afterwards. Every decision that
+        changes the read sets `detail.review`, increments the Observation
+        `version`, and publishes `apx.data.observation.updated.v1`.
+        Resending the decision and values the read already has is a
+        no-op: 200 with the current `version`, no new version, no event.
+        `If-Match` carries the Observation `version` last read (409
+        `version-conflict` when stale; nothing is written). `corrected`
+        without `plate`, or `plate`, `country`, or `stateProvince` with
+        any other decision, is 422 `request-unprocessable`. A `pending` or
+        `rejected` read is not issuable evidence (Part 19 §19.4 rule 6).
+        The write changes no Session.
+
+        The 200 is the read as it now stands when the caller also holds
+        `apx.lpr:read`; otherwise (scope `apx.data:write` alone suffices
+        for the write) it is the access-event-style minimal echo, which
+        carries only the plate values the caller itself supplied and
+        discloses no other plate-bearing data (Part 9 §9.6).
+      parameters:
+        - name: observation
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+        - $ref: '#/components/parameters/IfMatch'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PlateCorrection'
+      responses:
+        '200':
+          description: The read after the decision.
+          content:
+            application/json:
+              schema:
+                oneOf:
+                  - $ref: '#/components/schemas/LprRead'
+                  - type: object
+                    required:
+                      - observation
+                      - version
+                      - review
+                    properties:
+                      observation:
+                        $ref: '#/components/schemas/Reference'
+                      version:
+                        type: integer
+                        minimum: 1
+                      review:
+                        type: object
+                        properties:
+                          state:
+                            type: string
+                            enum:
+                              - pending
+                              - confirmed
+                              - corrected
+                              - rejected
+                              - notRequired
+                      plate:
+                        type: string
+                        description: Echoed only when the caller sent it.
+                      country:
+                        type: string
+                        description: Echoed only when the caller sent it.
+                      stateProvince:
+                        type: string
+                        description: Echoed only when the caller sent it.
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '409':
+          description: '`If-Match` names a stale Observation version (`version-conflict`); nothing is written.'
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+        '422':
+          description: '`corrected` without a `plate`, or `plate`, `country`, or `stateProvince` sent with another decision (`request-unprocessable`); nothing is written.'
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+        '429':
+          $ref: '#/components/responses/TooManyRequests'
+  /v1/lpr/reads:search:
+    post:
+      operationId: post-apx-v1-lpr-reads-search
+      security:
+        - apxOAuth:
+            - apx.lpr:read
+      tags:
+        - LPR
+      summary: The reads lookup with the plate in a body, never a URL
+      description: |-
+        The same lookup as `GET /v1/lpr/reads`, with the keys in the body
+        so a plate never enters a URL that proxies, gateways, and access
+        logs keep (Part 9 §9.6; Part 13 §13.3). Same rules, grant
+        behaviour, and response. The `GET` keeps working; a deployment
+        that crosses a network boundary SHOULD use this form.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/LprReadSearch'
+      responses:
+        '200':
+          description: Matching reads.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  meta:
+                    $ref: '#/components/schemas/PaginatedListMeta'
+                  data:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/LprRead'
+        '400':
+          description: None of `plate`, `ticket`, `observation`, or `session` given (`invalid-request`).
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '429':
+          $ref: '#/components/responses/TooManyRequests'
+  /v1/accounts:search:
+    post:
+      operationId: post-apx-v1-accounts-search
+      security:
+        - apxOAuth:
+            - apx.accounts:read
+      tags:
+        - Accounts
+      summary: The account lookup with personal data in a body, never a URL
+      description: |-
+        The same lookup as `GET /v1/accounts` (Part 13 §13.1) with the keys
+        in the body (Part 9 §9.6). Same rules, grant behaviour, and
+        response; a card number pasted into `card` is 422
+        `personal-data-not-permitted`.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/AccountSearch'
+      responses:
+        '200':
+          description: Matching accounts.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  meta:
+                    $ref: '#/components/schemas/PaginatedListMeta'
+                  data:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/Account'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '422':
+          description: More than truncated card digits in `card` (`personal-data-not-permitted`).
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+        '429':
+          $ref: '#/components/responses/TooManyRequests'
+  /v1/payments:search:
+    post:
+      operationId: post-apx-v1-payments-search
+      security:
+        - apxOAuth:
+            - apx.accounts:read
+      tags:
+        - Accounts
+      summary: The payment-history lookup with the keys in a body
+      description: |-
+        The same lookup as `GET /v1/payments` (Part 13 §13.2) with the keys
+        in the body (Part 9 §9.6). Same keys rule (at least one), 8-hour
+        window on truncated keys, hold rules, grant behaviour, and response.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PaymentSearch'
+      responses:
+        '200':
+          description: Matching payments.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  meta:
+                    $ref: '#/components/schemas/PaginatedListMeta'
+                  data:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/PaymentRecord'
+        '400':
+          description: No key given (`invalid-request`).
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '422':
+          description: More than four card digits in `cardLast4` (`personal-data-not-permitted`).
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+        '429':
+          $ref: '#/components/responses/TooManyRequests'
+  /v1/violations:search:
+    post:
+      operationId: post-apx-v1-violations-search
+      security:
+        - apxOAuth:
+            - apx.violations:read
+      tags:
+        - Violations
+      summary: The violations lookup with the plate in a body
+      description: |-
+        The same lookup as `GET /v1/violations` (Part 19 §19.2) with the
+        keys in the body (Part 9 §9.6). Same rules and response.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                plate:
+                  type: string
+                noticeNumber:
+                  type: string
+                status:
+                  type: string
+                  enum:
+                    - detected
+                    - confirmed
+                    - dismissed
+                    - issued
+                    - paid
+                    - appealed
+                    - closed
+                    - voided
+                type:
+                  type: string
+                place:
+                  type: string
+                  format: uuid
+                detectionMode:
+                  type: string
+                  enum:
+                    - automated
+                    - guided
+                    - manual
+                since:
+                  type: string
+                  format: date-time
+                until:
+                  type: string
+                  format: date-time
+                sourceSystem:
+                  type: string
+                sourceRecordId:
+                  type: string
+                page:
+                  type: integer
+                  minimum: 1
+      responses:
+        '200':
+          description: Matching violations.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  meta:
+                    $ref: '#/components/schemas/PaginatedListMeta'
+                  data:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/Violation'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '429':
+          $ref: '#/components/responses/TooManyRequests'
+  /v1/enforcement/eligibility:check:
+    post:
+      operationId: post-apx-v1-enforcement-eligibility-check
+      security:
+        - apxOAuth:
+            - apx.violations:read
+      tags:
+        - Violations
+      summary: The eligibility check with the credential in a body
+      description: |-
+        The same question as `GET /v1/enforcement/eligibility` (Part 19
+        §19.3) with the credential in the body (Part 9 §9.6). Same answer.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - credential
+                - place
+              properties:
+                credential:
+                  type: string
+                credentialType:
+                  $ref: '#/components/schemas/CredentialTypeEnum'
+                place:
+                  type: string
+                  format: uuid
+                at:
+                  type: string
+                  format: date-time
+      responses:
+        '200':
+          description: The eligibility result.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/EligibilityResult'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '429':
+          $ref: '#/components/responses/TooManyRequests'
+  /v1/enforcement/violation-imports:
+    post:
+      operationId: post-apx-v1-enforcement-violation-imports
+      security:
+        - apxOAuth:
+            - apx.violations:manage
+      tags:
+        - Violations
+      summary: Import a violation an external enforcement system issued (idempotent)
+      description: |-
+        Records a citation, warning, or notice that another system
+        detected and issued, in whatever state the source reports it,
+        with the `statusHistory[]` times the source recorded (Part 19
+        §19.13). The path is under `/v1/enforcement`, like the eligibility
+        check, so it cannot be mistaken for `/v1/violations/{id}` (§19.2).
+
+        `Idempotency-Key` is REQUIRED and the record is also keyed on the
+        decoration's `system` + `recordId`: a later import with a higher
+        `sourceRevision` — or, when the source keeps no counter, a later
+        `sourceUpdatedTime` — updates the record (200, version + 1,
+        `apx.violations.status.v1`); the same revision is a no-op 200; an
+        older one is 409 `version-conflict`. `statusHistory[]` is
+        append-only: the server keeps the entries it holds and appends only
+        the source's later ones, never rewriting history.
+
+        A state at or past issuance (`issued`, `paid`, `appealed`,
+        `closed`) without `notice` (with `noticeNumber` and `issuedTime`)
+        or `amount` is 400 `invalid-request`; `paid` with `amountPaid`
+        below `amount` is 422 `request-unprocessable`. The server performs
+        no eligibility check and applies no policy clamp to an imported
+        amount: the source decided. Publishes `apx.violations.detected.v1`
+        on first import, and `.issued.v1` when the imported state is at or
+        beyond `issued`.
+      parameters:
+        - name: Idempotency-Key
+          in: header
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ViolationImport'
+      responses:
+        '200':
+          description: An existing import updated, the same revision again (no change), or an idempotent replay.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Violation'
+        '201':
+          description: Imported.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Violation'
+        '400':
+          description: |-
+            Missing `Idempotency-Key` (`idempotency-key-required`), or a body
+            that fails the schema — no `apds-ext:apx:violation-source@1.0`,
+            or a state at or past issuance without `notice` or `amount`
+            (`invalid-request`, with `errors[]`).
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '409':
+          description: '`Idempotency-Key` replayed with a different body (`idempotency-conflict`), or a source revision older than the one held (`version-conflict`).'
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+        '422':
+          description: |-
+            Unknown `place` or a `violationType` outside the served
+            registries (`reference-unknown`); `violationStatus: paid` with
+            `amountPaid` below `amount`, or a payment in another currency
+            than `amount` (`request-unprocessable`).
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+        '429':
+          $ref: '#/components/responses/TooManyRequests'
+  /v1/violations/{id}/session:
+    post:
+      operationId: post-apx-v1-violations-id-session
+      security:
+        - apxOAuth:
+            - apx.violations:manage
+      tags:
+        - Violations
+      summary: Set, correct, or clear the Session a violation relates to
+      description: |-
+        Sets, corrects, or clears (`session: null`) `relatedSession` after
+        creation, with the match evidence (Part 19 §19.13;
+        `apds-ext:apx:match-evidence@1.0` is written onto the violation).
+        The link is not a lifecycle transition: it is valid in every
+        state, terminal ones included, and appends nothing to
+        `statusHistory[]`. `If-Match` carries the Violation `version` last
+        read (409 `version-conflict` when stale; nothing is written). On a
+        change `version` increments and `apx.violations.status.v1` is
+        published; resending what the violation already holds is a no-op
+        (200, no new version, no event). A Session that does not exist or
+        is not visible to the caller is 422 `reference-unknown`; one at a
+        place outside the hierarchy of the violation's `place` (neither
+        the same element, an ancestor, nor a descendant) is 422
+        `request-unprocessable`.
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+        - $ref: '#/components/parameters/IfMatch'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ViolationSessionLink'
+      responses:
+        '200':
+          description: The violation with its Session link as it now stands.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Violation'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '409':
+          description: Stale `If-Match` (`version-conflict`); nothing is written.
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+        '422':
+          description: |-
+            `reference-unknown` — the Session names nothing visible to the
+            caller; `request-unprocessable` — the Session is at a place
+            outside the hierarchy of the violation's `place`.
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+        '429':
+          $ref: '#/components/responses/TooManyRequests'
+  /v1/places/{id}/occupancy/history:
+    get:
+      operationId: get-apx-v1-places-id-occupancy-history
+      security:
+        - apxOAuth:
+            - apx.data:read
+      tags:
+        - Data
+      summary: Occupancy per clock interval for one element
+      description: |-
+        The history behind the §5.5 snapshot (Part 5 §5.5a), derived from
+        the APDS DemandTable records the implementation holds for the
+        element. Buckets align to `interval` boundaries in the place's time
+        zone; an element the implementation holds no occupancy for is 404
+        `target-not-found`; the `apx_places` grant must cover the element.
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+        - name: from
+          in: query
+          required: true
+          schema:
+            type: string
+            format: date-time
+        - name: to
+          in: query
+          required: true
+          schema:
+            type: string
+            format: date-time
+        - name: interval
+          in: query
+          description: Bucket length (ISO 8601 duration); default `PT1H`. Servers MAY refuse an interval shorter than their sampling with 400.
+          schema:
+            type: string
+            default: PT1H
+      responses:
+        '200':
+          description: The buckets.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/OccupancyHistoryPage'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '429':
+          $ref: '#/components/responses/TooManyRequests'
+  /v1/plate-lists:
+    get:
+      operationId: get-apx-v1-plate-lists
+      security:
+        - apxOAuth:
+            - apx.platelists:read
+      tags:
+        - Plate lists
+      summary: List plate lists
+      description: |-
+        The lists visible to the caller: those with a `places[]` entry
+        inside the grant, and those owned by the caller's `apx_org`.
+        `mode=change&cursor=` serves the Part 5 §5.2 feed of lists
+        (entries have their own feed).
+      parameters:
+        - $ref: '#/components/parameters/ModeParam'
+        - $ref: '#/components/parameters/CursorParam'
+        - name: place
+          in: query
+          schema:
+            type: string
+            format: uuid
+          description: Lists that apply at this element or its subtree.
+        - name: category
+          in: query
+          schema:
+            type: string
+        - name: status
+          in: query
+          schema:
+            type: string
+            enum:
+              - active
+              - suspended
+              - retired
+        - $ref: '#/components/parameters/page'
+      responses:
+        '200':
+          description: Paginated lists; with `mode=change`, the changes after `cursor` in the same envelope (Part 5 §5.2 rule 8).
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  meta:
+                    $ref: '#/components/schemas/PaginatedListMeta'
+                  data:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/PlateList'
+                  updateMode:
+                    $ref: '#/components/schemas/ChangeFeedUpdateMode'
+                  cursor:
+                    $ref: '#/components/schemas/ChangeFeedCursor'
+                  deleted:
+                    $ref: '#/components/schemas/ChangeFeedTombstones'
+                  grantAdditions:
+                    $ref: '#/components/schemas/ChangeFeedGrantAdditions'
+                  next:
+                    $ref: '#/components/schemas/ChangeFeedNext'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/CursorRefused'
+        '429':
+          $ref: '#/components/responses/TooManyRequests'
+    post:
+      operationId: post-apx-v1-plate-lists
+      security:
+        - apxOAuth:
+            - apx.platelists:manage
+      tags:
+        - Plate lists
+      summary: Create a plate list
+      description: |-
+        Creates a list owned by the caller's `apx_org` (Part 24 §24.1).
+        Every `places[].place` must lie inside the grant (403
+        `insufficient-grant`). `Idempotency-Key` optional (Part 4 §4.2a).
+        Publishes `apx.platelists.changed.v1`.
+      parameters:
+        - $ref: '#/components/parameters/IdempotencyKeyOptional'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PlateList'
+      responses:
+        '200':
+          description: Idempotent replay.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PlateList'
+        '201':
+          description: Created.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PlateList'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '409':
+          description: '`Idempotency-Key` replayed with a different body (`idempotency-conflict`).'
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+        '422':
+          description: A `category` outside the served registries, or a `places[].place` that does not exist (`reference-unknown`).
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+        '429':
+          $ref: '#/components/responses/TooManyRequests'
+  /v1/plate-lists/{id}:
+    get:
+      operationId: get-apx-v1-plate-lists-id
+      security:
+        - apxOAuth:
+            - apx.platelists:read
+      tags:
+        - Plate lists
+      summary: Read a plate list
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: The list.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PlateList'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '429':
+          $ref: '#/components/responses/TooManyRequests'
+    put:
+      operationId: put-apx-v1-plate-lists-id
+      security:
+        - apxOAuth:
+            - apx.platelists:manage
+      tags:
+        - Plate lists
+      summary: Replace a plate list's policy (name, category, places, status)
+      description: |-
+        Full replacement with the version last read as `If-Match` or body
+        `version` (409 `version-conflict`, Part 4 §4.2a). Entries are not
+        part of this body. Publishes `apx.platelists.changed.v1`.
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+        - $ref: '#/components/parameters/IfMatch'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PlateList'
+      responses:
+        '200':
+          description: The list as it now stands.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PlateList'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '409':
+          description: Stale version (`version-conflict`).
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+        '422':
+          description: A `category` outside the served registries, or an unknown place (`reference-unknown`).
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+        '429':
+          $ref: '#/components/responses/TooManyRequests'
+  /v1/plate-lists/{id}/entries:
+    get:
+      operationId: get-apx-v1-plate-lists-id-entries
+      security:
+        - apxOAuth:
+            - apx.platelists:read
+      tags:
+        - Plate lists
+      summary: List a plate list's entries
+      description: |-
+        Entries of one list, optionally by exact credential value;
+        `mode=change&cursor=` serves the Part 5 §5.2 feed of entries so a
+        screening module keeps a local copy current. Plate values appear
+        only under `apx.platelists:*` (Part 9 §9.6); a consumer holding
+        only `apx.data:read` may subscribe to digests instead (§9.6 rule 6).
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+        - $ref: '#/components/parameters/ModeParam'
+        - $ref: '#/components/parameters/CursorParam'
+        - name: credential
+          in: query
+          schema:
+            type: string
+          description: Exact `credential.credentialIdentification` match.
+        - name: activeAt
+          in: query
+          schema:
+            type: string
+            format: date-time
+          description: Only entries whose validity contains this instant.
+        - $ref: '#/components/parameters/page'
+      responses:
+        '200':
+          description: Paginated entries; with `mode=change`, the changes after `cursor` in the same envelope (Part 5 §5.2 rule 8).
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  meta:
+                    $ref: '#/components/schemas/PaginatedListMeta'
+                  data:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/PlateListEntry'
+                  updateMode:
+                    $ref: '#/components/schemas/ChangeFeedUpdateMode'
+                  cursor:
+                    $ref: '#/components/schemas/ChangeFeedCursor'
+                  deleted:
+                    $ref: '#/components/schemas/ChangeFeedTombstones'
+                  grantAdditions:
+                    $ref: '#/components/schemas/ChangeFeedGrantAdditions'
+                  next:
+                    $ref: '#/components/schemas/ChangeFeedNext'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '429':
+          $ref: '#/components/responses/TooManyRequests'
+    post:
+      operationId: post-apx-v1-plate-lists-id-entries
+      security:
+        - apxOAuth:
+            - apx.platelists:manage
+      tags:
+        - Plate lists
+      summary: Add an entry to a plate list
+      description: |-
+        Adds a credential to the list (Part 24 §24.2). An entry whose
+        credential is already on the list with an overlapping validity is
+        updated in place (200) rather than duplicated. `Idempotency-Key`
+        optional. Publishes `apx.platelists.changed.v1` with the list.
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+        - $ref: '#/components/parameters/IdempotencyKeyOptional'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PlateListEntry'
+      responses:
+        '200':
+          description: An existing entry for the credential updated, or an idempotent replay.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PlateListEntry'
+        '201':
+          description: Added.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PlateListEntry'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '409':
+          description: '`Idempotency-Key` replayed with a different body (`idempotency-conflict`).'
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+        '422':
+          description: An inverted validity window (`request-unprocessable`), or a full card number where a plate is expected (`personal-data-not-permitted`).
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+        '429':
+          $ref: '#/components/responses/TooManyRequests'
+  /v1/plate-lists/{id}/entries/{entryId}:
+    get:
+      operationId: get-apx-v1-plate-lists-id-entries-entryid
+      security:
+        - apxOAuth:
+            - apx.platelists:read
+      tags:
+        - Plate lists
+      summary: Read one entry
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+        - name: entryId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: The entry.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PlateListEntry'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '429':
+          $ref: '#/components/responses/TooManyRequests'
+    delete:
+      operationId: delete-apx-v1-plate-lists-id-entries-entryid
+      security:
+        - apxOAuth:
+            - apx.platelists:manage
+      tags:
+        - Plate lists
+      summary: Remove an entry
+      description: Removes the credential from the list; the entry feed emits a tombstone. Publishes `apx.platelists.changed.v1`.
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+        - name: entryId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '204':
+          description: Removed.
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '429':
+          $ref: '#/components/responses/TooManyRequests'
+  /v1/digest-keys:
+    get:
+      operationId: get-apx-v1-digest-keys
+      security:
+        - apxOAuth:
+            - apx.digest:use
+      tags:
+        - Discovery
+      summary: The keys behind `apds-ext:apx:credential-digest@1.0`
+      description: |-
+        The digest keys the implementation currently signs credential
+        digests with, so an authorised consumer can compute the digest of
+        a plate it holds and match it to decorated records without ever
+        receiving plates (Part 9 §9.6 rule 6). Rotation is by `keyId`;
+        both keys are served during an overlap. The normalization the
+        implementation applies before hashing is stated per key.
+      responses:
+        '200':
+          description: The keys.
+          content:
+            application/json:
+              schema:
+                type: object
+                required:
+                  - keys
+                properties:
+                  keys:
+                    type: array
+                    items:
+                      type: object
+                      required:
+                        - keyId
+                        - alg
+                        - key
+                      properties:
+                        keyId:
+                          type: string
+                        alg:
+                          type: string
+                          enum:
+                            - HS256
+                        key:
+                          type: string
+                          description: base64url key material, at least 32 bytes.
+                        validFrom:
+                          $ref: '#/components/schemas/DateTime'
+                        validTo:
+                          $ref: '#/components/schemas/DateTime'
+                        normalization:
+                          type: string
+                          description: The normalization applied before hashing, e.g. `upper; strip non-alphanumerics; jurisdiction appended as `|<ISO 3166-2>``.
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
         '429':
           $ref: '#/components/responses/TooManyRequests'
   /v1/reservations/recent:
@@ -8136,10 +9459,12 @@ paths:
             items:
               type: string
               format: uuid
+        - $ref: '#/components/parameters/ModeParam'
+        - $ref: '#/components/parameters/CursorParam'
         - $ref: '#/components/parameters/page'
       responses:
         '200':
-          description: Matching accounts.
+          description: Matching accounts; with `mode=change`, the changes after `cursor` in the same envelope (Part 5 §5.2 rule 8).
           content:
             application/json:
               schema:
@@ -8151,10 +9476,22 @@ paths:
                     type: array
                     items:
                       $ref: '#/components/schemas/Account'
+                  updateMode:
+                    $ref: '#/components/schemas/ChangeFeedUpdateMode'
+                  cursor:
+                    $ref: '#/components/schemas/ChangeFeedCursor'
+                  deleted:
+                    $ref: '#/components/schemas/ChangeFeedTombstones'
+                  grantAdditions:
+                    $ref: '#/components/schemas/ChangeFeedGrantAdditions'
+                  next:
+                    $ref: '#/components/schemas/ChangeFeedNext'
         '401':
           $ref: '#/components/responses/Unauthorized'
         '403':
           $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/CursorRefused'
         '429':
           $ref: '#/components/responses/TooManyRequests'
   /v1/accounts/{id}:
@@ -8262,8 +9599,11 @@ paths:
             `payment` member referencing the recorded declined PaymentRecord,
             Part 13 §13.1); a body carrying card data beyond the truncated
             last four (`personal-data-not-permitted`, refused before it is
-            persisted or logged); or `captureLater` on a server without an
-            authorization lifecycle (`request-unprocessable`).
+            persisted or logged); `captureLater` on a server without an
+            authorization lifecycle, or `apds-ext:apx:payment-detail@1.0`
+            lines whose `paymentType: payment` values do not sum to
+            `amount` or whose `paymentType` contradicts the `validation`
+            code (`request-unprocessable`, nothing charged, Part 13 §13.6a).
           content:
             application/problem+json:
               schema:
@@ -8288,6 +9628,8 @@ paths:
         grant (§13.5). Holds (`captureStatus: authorized`) are omitted
         unless `captureStatus=authorized` is asked for.
       parameters:
+        - $ref: '#/components/parameters/ModeParam'
+        - $ref: '#/components/parameters/CursorParam'
         - name: ticketLast4
           in: query
           schema:
@@ -8347,7 +9689,7 @@ paths:
         - $ref: '#/components/parameters/page'
       responses:
         '200':
-          description: Matching payments.
+          description: Matching payments; with `mode=change`, the changes after `cursor` in the same envelope (Part 5 §5.2 rule 8).
           content:
             application/json:
               schema:
@@ -8359,12 +9701,24 @@ paths:
                     type: array
                     items:
                       $ref: '#/components/schemas/PaymentRecord'
+                  updateMode:
+                    $ref: '#/components/schemas/ChangeFeedUpdateMode'
+                  cursor:
+                    $ref: '#/components/schemas/ChangeFeedCursor'
+                  deleted:
+                    $ref: '#/components/schemas/ChangeFeedTombstones'
+                  grantAdditions:
+                    $ref: '#/components/schemas/ChangeFeedGrantAdditions'
+                  next:
+                    $ref: '#/components/schemas/ChangeFeedNext'
         '400':
           $ref: '#/components/responses/BadRequest'
         '401':
           $ref: '#/components/responses/Unauthorized'
         '403':
           $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/CursorRefused'
         '422':
           description: |-
             A query parameter carries more card digits than the truncated
@@ -9196,6 +10550,8 @@ paths:
         organisation and are excluded whenever `place` is given (Part 7
         §7.1).
       parameters:
+        - $ref: '#/components/parameters/ModeParam'
+        - $ref: '#/components/parameters/CursorParam'
         - name: status
           in: query
           schema:
@@ -9244,7 +10600,7 @@ paths:
         - $ref: '#/components/parameters/page'
       responses:
         '200':
-          description: Paginated alerts (APDS PaginatedList shape).
+          description: Paginated alerts (APDS PaginatedList shape); with `mode=change`, the changes after `cursor` in the same envelope (Part 5 §5.2 rule 8).
           content:
             application/json:
               schema:
@@ -9256,10 +10612,22 @@ paths:
                     type: array
                     items:
                       $ref: '#/components/schemas/Alert'
+                  updateMode:
+                    $ref: '#/components/schemas/ChangeFeedUpdateMode'
+                  cursor:
+                    $ref: '#/components/schemas/ChangeFeedCursor'
+                  deleted:
+                    $ref: '#/components/schemas/ChangeFeedTombstones'
+                  grantAdditions:
+                    $ref: '#/components/schemas/ChangeFeedGrantAdditions'
+                  next:
+                    $ref: '#/components/schemas/ChangeFeedNext'
         '401':
           $ref: '#/components/responses/Unauthorized'
         '403':
           $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/CursorRefused'
         '429':
           $ref: '#/components/responses/TooManyRequests'
   /v1/alerts/{id}:
@@ -10140,7 +11508,8 @@ webhooks:
         Published whenever an ingested Observation changes — for example
         the LPR system revising `accessEvent` through
         `PUT /v1/lpr/reads/{observation}/access-event` (Part 13 §13.3a(4),
-        §13.4). `data` is the
+        §13.4), or a reviewer's plate decision through
+        `PUT /v1/lpr/reads/{observation}/plate` (§13.3a(4a)). `data` is the
         APDS `ObservationElement` as it now stands; `subject` and the place
         binding (`elementIds`) are as for `apx.data.observation.created.v1`.
         Consumers key on the Observation id and keep the highest `version`.
@@ -10246,8 +11615,12 @@ components:
       in: query
       required: false
       description: |-
-        APX data profile: `full` (default — behaves exactly like stock APDS 4.1)
-        or `change` (return a ChangeFeedPage of deltas since `cursor`/`since`).
+        APX change feed (Part 5 §5.2): `full` (default — the route's ordinary
+        list; on a native APDS route, exactly stock APDS 4.1) or `change` (the
+        changes after `cursor`: a ChangeFeedPage on a native route, the route's
+        own list envelope with the change-page members on an APX list route,
+        rule 8; on an APX list route without a cursor, an empty page holding the
+        current head cursor).
       schema:
         type: string
         enum:
@@ -10258,7 +11631,7 @@ components:
       name: cursor
       in: query
       required: false
-      description: Opaque change-feed cursor from a previous ChangeFeedPage. Only meaningful with `mode=change`.
+      description: Opaque change-feed cursor from a previous change page. Only meaningful with `mode=change`; a refused cursor is 404 `target-not-found` (Part 5 §5.2 rules 2 and 5).
       schema:
         type: string
     IfMatch:
@@ -10577,6 +11950,17 @@ components:
         application/problem+json:
           schema:
             $ref: '#/components/schemas/Problem'
+    CursorRefused:
+      description: |-
+        `mode=change` only (Part 5 §5.2): the cursor is unknown, older
+        than the retention window, or was issued for another (class,
+        credential, filter set). Problem type `target-not-found`; re-sync
+        with `mode=full`. The cursor is an APX parameter, so this refusal
+        is always a Problem (Part 5 §5.2 rules 2 and 5).
+      content:
+        application/problem+json:
+          schema:
+            $ref: '#/components/schemas/Problem'
     NotFound:
       description: |-
         The addressed resource does not exist (problem type
@@ -10659,6 +12043,10 @@ components:
             apx.valet:read: Read valet tickets and the retrieval queue
             apx.valet:manage: Take custody, park, stage, hand back, and manage retrievals
             apx.valet:request: Customer scope — request or cancel retrieval and read status/ETA for the caller's own ticket (text, app, web, voice bot)
+            apx.platelists:read: Read plate lists and their entries, plate values included (Part 24)
+            apx.platelists:manage: Create and maintain plate lists and entries (Part 24)
+            apx.digest:use: Receive the credential digest keys (Part 9 §9.6 rule 6)
+            apx.replication:write: Replay another implementation's records with their original provenance and lifecycle times (Part 18 §18.6)
             apx.charging:read: read charging-point status (with bay presence) and charging sessions
             apx.charging:manage: bridge scope; push point availability, bay observations, open sessions, report timeline events, attach settlement
             apx.charging:status: customer scope; minimized read of the caller's own charging session and the place's charger availability (app, text, voice bot)
@@ -10684,6 +12072,15 @@ components:
         lastUpdateUser:
           type: string
           description: Human or system principal that last updated the record.
+        origin:
+          type: string
+          description: |-
+            The implementation that first created the record, when it differs
+            from the one serving it (Part 18 §18.6 replication): the origin's
+            `EventEnvelope.source` value. Absent on records the serving
+            implementation created itself.
+          examples:
+            - https://edge.lakeside-garage.example/v1
     Extensions:
       title: Extensions
       description: |-
@@ -10709,6 +12106,18 @@ components:
           $ref: '#/components/schemas/ReservationExtension'
         apds-ext:apx:permit@1.0:
           $ref: '#/components/schemas/PermitExtension'
+        apds-ext:apx:permit@1.1:
+          $ref: '#/components/schemas/PermitExtension'
+        apds-ext:apx:session-detail@1.0:
+          $ref: '#/components/schemas/SessionDetail'
+        apds-ext:apx:match-evidence@1.0:
+          $ref: '#/components/schemas/MatchEvidence'
+        apds-ext:apx:violation-source@1.0:
+          $ref: '#/components/schemas/ViolationSource'
+        apds-ext:apx:payment-detail@1.0:
+          $ref: '#/components/schemas/PaymentDetail'
+        apds-ext:apx:credential-digest@1.0:
+          $ref: '#/components/schemas/CredentialDigest'
       additionalProperties:
         type: object
     ApxResourceCore:
@@ -10923,6 +12332,50 @@ components:
               className: Session
               deleteTimestamp: '2026-08-06T17:58:12Z'
           cursor: c:00042
+    ChangeFeedUpdateMode:
+      title: ChangeFeedUpdateMode
+      type: string
+      const: change
+      description: |-
+        Present, with the value `change`, exactly when the page answers
+        `mode=change` (Part 5 §5.2 rule 8); absent on an ordinary list page.
+    ChangeFeedCursor:
+      title: ChangeFeedCursor
+      type: string
+      description: |-
+        `mode=change` only. Opaque cursor resuming strictly after the last
+        change in this page (Part 5 §5.2 rules 1, 2, 5).
+    ChangeFeedTombstones:
+      title: ChangeFeedTombstones
+      type: array
+      description: |-
+        `mode=change` only. Resources removed since the cursor (retention
+        purge, Part 9 §9.6; release of a moved place, Part 18 §18.4), as APDS
+        DeletedReferences carrying the APX resource's schema name as
+        `className`. Retained for the cursor window (Part 5 §5.2 rule 4).
+      items:
+        $ref: '#/components/schemas/DeletedReference'
+    ChangeFeedGrantAdditions:
+      title: ChangeFeedGrantAdditions
+      type: array
+      description: |-
+        `mode=change` only. Present on the first page served after the
+        credential's `apx_places` grant gained subtrees: the new subtree roots,
+        which the client full-syncs with the route's `place` filter before
+        relying on the feed for them (Part 5 §5.2 rule 7).
+      items:
+        type: string
+        format: uuid
+    ChangeFeedNext:
+      title: ChangeFeedNext
+      type:
+        - string
+        - 'null'
+      format: uri-reference
+      description: |-
+        `mode=change` only. Link to the next page when more changes are
+        immediately available (the same request with this page's `cursor`);
+        null otherwise.
     OccupancySnapshot:
       title: OccupancySnapshot
       description: |-
@@ -11318,7 +12771,9 @@ components:
             pushRate.rateTable VersionedReference, applyValidation.ticket +
             provider, displayMessage.message, setDeviceState.state,
             pushNegotiatedRate.rateTable VersionedReference to a RateTable
-            flagged negotiable, matchTicket.session + evidence,
+            flagged negotiable, or pushNegotiatedRate.amount AmountInCurrency
+            (any amount the agent states, where the host offers the
+            negotiatedAmounts feature), matchTicket.session + evidence,
             resetPassback/forceIn/forceOut.credential, courtesyExit.holder).
         requestedBy:
           description: The organisation requesting the action (defaults to the token's apx_org).
@@ -11561,8 +13016,12 @@ components:
               type: object
               description: |-
                 The negotiated rate in effect on this ticket, if a
-                pushNegotiatedRate command succeeded for it (Part 6 §6.6). Absent
-                when the ticket prices from the lane's normal rate deck.
+                pushNegotiatedRate command that selected a RateTable succeeded
+                for it (Part 6 §6.6). Absent when the ticket prices from the
+                lane's normal rate deck, and absent when the agent stated an
+                amount instead (see `negotiatedAmount`). At most one of
+                `negotiatedRate` and `negotiatedAmount` is present: the latest
+                succeeded pushNegotiatedRate for the ticket decides which.
               required:
                 - rateTable
                 - command
@@ -11579,6 +13038,35 @@ components:
                 policy:
                   description: The table's `apds-ext:apx:ratepolicy@1.0` decoration as it stood when applied (its displayName is what the agent saw).
                   $ref: '#/components/schemas/RatePolicy'
+            negotiatedAmount:
+              type: object
+              description: |-
+                The amount an agent stated for this ticket, if a
+                pushNegotiatedRate command carrying `parameters.amount` succeeded
+                for it (the negotiatedAmounts feature, Part 6 §6.3, §6.6). Absent
+                otherwise. It is what the ticket owes, not a discount. At most one
+                of `negotiatedRate` and `negotiatedAmount` is present: the latest
+                succeeded pushNegotiatedRate for the ticket decides which.
+              required:
+                - amount
+                - reason
+                - agent
+                - command
+              properties:
+                amount:
+                  description: The amount stated, as the command's `parameters.amount`.
+                  $ref: '#/components/schemas/AmountInCurrency'
+                reason:
+                  type: string
+                  minLength: 1
+                  description: The command's `reason`, copied for the screen-pop.
+                agent:
+                  type: string
+                  minLength: 1
+                  description: The principal who stated the amount (the command's `agent`), copied for the screen-pop.
+                command:
+                  description: The pushNegotiatedRate Command that applied it — the audit trail.
+                  $ref: '#/components/schemas/Reference'
             matchedCommand:
               description: |-
                 When this ticket was bound to an open session by a matchTicket
@@ -12217,8 +13705,34 @@ components:
         imageLink:
           description: |-
             Screenshot/still of the read (APDS Image). Absent when no image was
-            taken or the imagery has been purged (see `purgedImagery`).
+            taken or the imagery has been purged (see `purgedImagery`). The
+            preferred still; every unpurged image is in `images[]`.
           $ref: '#/components/schemas/Url'
+        images:
+          type: array
+          description: |-
+            Every unpurged image of the read (Part 13 §13.3c), by kind:
+            the APDS `ImageTypeEnum` values plus `plateExtended` (a wider crop
+            around the plate) and `context` (the scene around the vehicle,
+            wider than the overview), carried as `imageType` strings until
+            APDS adds them. Same access and purge rules as `imageLink`.
+          items:
+            type: object
+            required:
+              - id
+            properties:
+              id:
+                type: string
+                description: The APDS Image id.
+              imageType:
+                type: string
+                description: '`overview`, `plate` (APDS ImageTypeEnum), `plateExtended`, `context`, or an implementer kind.'
+                examples:
+                  - plateExtended
+              imageLink:
+                $ref: '#/components/schemas/Url'
+              cameraId:
+                type: string
         lane:
           description: |-
             The VehicularAccess (lane) the read was taken at, when the
@@ -12456,6 +13970,48 @@ components:
         engine:
           type: string
           description: Recognition engine/vendor identifier, opaque (for confidence calibration downstream).
+        review:
+          type: object
+          description: |-
+            The human-review state of the read (Part 13 §13.3a(4a)): a
+            low-confidence read, or any read in a jurisdiction that requires
+            review, is `pending` until a reviewer confirms, corrects, or
+            rejects it through `PUT /v1/lpr/reads/{observation}/plate`.
+            `notRequired` is a read no rule sent to review. Absent means the
+            implementation does not review reads.
+          properties:
+            state:
+              type: string
+              enum:
+                - pending
+                - confirmed
+                - corrected
+                - rejected
+                - notRequired
+            reasons:
+              type: array
+              description: Why the read was sent to review — definedValues from `apx-read-review-reasons` (Part 11) or implementer values.
+              items:
+                type: string
+            decidedTime:
+              $ref: '#/components/schemas/DateTime'
+            decidedBy:
+              type: string
+              description: Opaque reviewer principal.
+            original:
+              type: object
+              description: |-
+                The engine's values before the first correction, with their
+                confidences, kept so the correction is auditable. Set by the
+                server on the first `corrected` decision and never changed
+                afterwards (Part 13 §13.3a(4a)).
+              properties:
+                plate:
+                  $ref: '#/components/schemas/AttributeRead'
+                country:
+                  $ref: '#/components/schemas/AttributeRead'
+                stateProvince:
+                  $ref: '#/components/schemas/AttributeRead'
       examples:
         - plate:
             value: RVR-8821
@@ -12970,92 +14526,16 @@ components:
           description: The specific APDS Space, when the detection is space-resolved (sensor, bay camera).
           $ref: '#/components/schemas/Reference'
         detection:
-          type: object
-          description: How and when the candidate was found.
-          required:
-            - mode
-            - detectedTime
-          properties:
-            mode:
-              type: string
-              enum:
-                - automated
-                - guided
-                - manual
-              description: |-
-                `automated` — a camera/sensor pipeline created the violation with
-                no human in the loop. `guided` — the system surfaced a candidate
-                (typically to a handheld) and an officer confirms on site.
-                `manual` — an officer created the violation directly.
-            detectedTime:
-              $ref: '#/components/schemas/DateTime'
-            detector:
-              description: The detecting device (SupplementalEquipment) or, for guided/manual, the officer's Contact.
-              $ref: '#/components/schemas/Reference'
-            principal:
-              type: string
-              description: Opaque principal of the human or system that detected (officer badge id, pipeline name).
-              examples:
-                - officer-0417
-            confidence:
-              type: number
-              minimum: 0
-              maximum: 1
-              description: Detection confidence (plate read × rule certainty), when the detector reports one.
-            rule:
-              type: string
-              description: Implementer identifier of the enforcement rule that fired (automated mode).
-              examples:
-                - overstay-2h-zone-b
+          $ref: '#/components/schemas/ViolationDetection'
         vehicle:
-          type: object
-          description: The credential observed on the vehicle (an APDS CredentialTypeEnum credential).
-          required:
-            - credentialType
-            - credentialIdentification
-          properties:
-            credentialType:
-              $ref: '#/components/schemas/CredentialTypeEnum'
-            credentialIdentification:
-              type: string
-              description: The credential value — plate string, permit number, transponder id.
-              examples:
-                - SYN-4471
-            jurisdiction:
-              type: string
-              description: Issuing jurisdiction of the plate/credential (state, province, country code).
-              examples:
-                - US-IL
-            description:
-              type: string
-              description: Free-text vehicle description captured by the officer (make, colour).
+          $ref: '#/components/schemas/ViolationVehicle'
         observations:
           type: array
           description: The underlying APDS Observations (plate reads, sensor events) the finding is built from.
           items:
             $ref: '#/components/schemas/Reference'
         evidence:
-          type: array
-          description: |-
-            Evidence media, as access-controlled LINKS (Part 9 §9.6 — never
-            inline). Each item points at an APDS Image reachable under the same
-            authentication and place grant as this resource.
-          items:
-            type: object
-            required:
-              - imageLink
-            properties:
-              imageLink:
-                $ref: '#/components/schemas/Url'
-              imageType:
-                $ref: '#/components/schemas/ImageTypeEnum'
-              capturedTime:
-                $ref: '#/components/schemas/DateTime'
-              device:
-                description: The capturing SupplementalEquipment (camera, handheld).
-                $ref: '#/components/schemas/Reference'
-              description:
-                type: string
+          $ref: '#/components/schemas/ViolationEvidence'
         eligibilityCheck:
           description: The entitlement check performed at detection time (the same shape `GET /v1/enforcement/eligibility` returns).
           $ref: '#/components/schemas/EligibilityResult'
@@ -13066,31 +14546,7 @@ components:
           description: The AssignedRight that was closest to covering the stay (expired permit, wrong-zone reservation…).
           $ref: '#/components/schemas/Reference'
         location:
-          type: object
-          description: |-
-            Where the violation was observed and from where — modelled on the
-            APDS Observation `Location` shape (Part 19 §19.9), with two
-            differences: `observerLocation` is optional here (APDS requires
-            it; an automated finding copied from a fixed sensor may have
-            none), and `accuracyMetres` is added. The member names and the
-            `PointLocation` types are APDS's own. GeoJSON positions are
-            [longitude, latitude] in that order; enforcement tools that store
-            latitude first MUST swap on the wire. Automated detections SHOULD
-            copy this from the underlying Observation.
-          properties:
-            observedLocation:
-              description: The vehicle's position (GeoJSON Point).
-              $ref: '#/components/schemas/GeoJsonObject'
-            observerLocation:
-              description: The officer's or camera's position when the finding was made (GeoJSON Point).
-              $ref: '#/components/schemas/GeoJsonObject'
-            observedLocationTextual:
-              description: Human-readable address or description of the observed location.
-              $ref: '#/components/schemas/MultilingualString'
-            accuracyMetres:
-              type: number
-              minimum: 0
-              description: Horizontal accuracy reported by the capturing device.
+          $ref: '#/components/schemas/ViolationLocation'
         policy:
           description: The EnforcementPolicy resolved for `place` at `issue` (Part 19 §19.10), frozen with its version.
           $ref: '#/components/schemas/VersionedReference'
@@ -13193,6 +14649,24 @@ components:
         payment:
           description: Reference to the settling APDS Payment or APX PaymentRecord (Part 13).
           $ref: '#/components/schemas/Reference'
+        payments:
+          type: array
+          readOnly: true
+          description: |-
+            Every payment applied to the notice, in order (Part 19 §19.6a).
+            `payment` remains the settling one; a partial payment appears
+            here, raises `amountPaid`, and leaves the state `issued` until
+            `amountPaid` reaches `amount`. For an imported violation (§19.13)
+            an item may carry only the source's own payment `reference`, when
+            the money never moved through this server's Part 13 records.
+          items:
+            $ref: '#/components/schemas/ViolationAppliedPayment'
+        amountPaid:
+          readOnly: true
+          description: |-
+            The sum received so far against `amount` (Part 19 §19.6a). `paid`
+            means `amountPaid` ≥ `amount`. Absent means nothing received.
+          $ref: '#/components/schemas/AmountInCurrency'
         appeal:
           type: object
           description: The appeal on this violation, if one was opened. One appeal per violation.
@@ -13486,7 +14960,10 @@ components:
           type: string
     ViolationPaymentAttachment:
       title: ViolationPaymentAttachment
-      description: Request body attaching the settling Payment to an issued violation.
+      description: |-
+        Request body attaching a Payment to an issued violation. The full
+        amount (or the remainder) settles it (`paid`); a smaller `amount` is
+        a partial payment (Part 19 §19.6a) that stays `issued`.
       type: object
       required:
         - payment
@@ -13494,6 +14971,9 @@ components:
         payment:
           description: Reference to the settling APDS Payment (or APX PaymentRecord taken via `POST /v1/payments`).
           $ref: '#/components/schemas/Reference'
+        amount:
+          description: The amount this payment contributes; absent means the full outstanding amount.
+          $ref: '#/components/schemas/AmountInCurrency'
         note:
           type: string
     ViolationAppealOpen:
@@ -15974,6 +17454,1012 @@ components:
           description: The charging network's CDR id.
         note:
           type: string
+    SessionDetail:
+      title: SessionDetail
+      description: |-
+        The `apds-ext:apx:session-detail@1.0` decoration on an APDS Session
+        (Part 5 §5.8): what the pairing of reads decided and APDS has no
+        members for — the reads behind the visit, why and how it ended, the
+        matches it rests on, and the parent visit of an area Session. Written
+        with the native Session POST/PUT by an external pairing engine; a
+        server that pairs reads itself SHOULD write the same block on its own
+        Sessions. A plain APDS client ignores it. It adds no event topic and
+        carries no plate characters. A write that breaks a consistency rule
+        of §5.8 is 422 and nothing is written.
+      type: object
+      properties:
+        reads:
+          type: array
+          description: |-
+            The reads attached to this Session. A read already bound as
+            `entry` or `exit` to another Session of the same place is refused
+            with 409 `read-already-bound` unless `supersedes` names that Session.
+            A read naming no Observation visible to the caller is 422
+            `reference-unknown`.
+          items:
+            $ref: '#/components/schemas/SessionReadBinding'
+        supersedes:
+          description: The Session whose reads this write takes over (a re-pairing).
+          $ref: '#/components/schemas/Reference'
+        lifecycle:
+          type: string
+          enum:
+            - open
+            - ended
+            - final
+            - disputed
+          description: |-
+            `open` — a vehicle is in the facility, no `actualEnd` yet; `ended` —
+            closed, may still be revised; `final` — no further revision
+            expected; `disputed` — under review. Every state but `open` requires
+            `actualEnd`, and `open` forbids it (422 `request-unprocessable`
+            otherwise). `final` is the writer's statement, never a lock: a
+            server MUST NOT refuse a later revision on that ground.
+        closure:
+          $ref: '#/components/schemas/SessionClosure'
+        flags:
+          type: array
+          description: Open flags — `entryUnknown`, `orphanExit`, `reentry`, `passThrough`, or implementer values.
+          items:
+            type: string
+        matches:
+          type: array
+          items:
+            $ref: '#/components/schemas/MatchEvidence'
+        parent:
+          description: |-
+            The visit this area Session is part of (className `Session`). The
+            parent's `hierarchyElement` MUST be an ancestor of this Session's
+            (422 `request-unprocessable` otherwise). Consumers count visits by
+            Sessions without `parent`; children still open when the parent
+            ends SHOULD be closed no later than its `actualEnd` with `endReason`
+            `parentExit`.
+          $ref: '#/components/schemas/Reference'
+        passThrough:
+          type: boolean
+          description: An area stay shorter than the area's minimum dwell — never scored or billed.
+    SessionReadBinding:
+      title: SessionReadBinding
+      description: |-
+        One LPR read attached to a Session by the pairing engine (Part 5
+        §5.8, member `reads[]` of `apds-ext:apx:session-detail@1.0`).
+      type: object
+      required:
+        - observation
+        - role
+      properties:
+        observation:
+          description: The APDS ObservationElement (className `ObservationElement`).
+          $ref: '#/components/schemas/Reference'
+        role:
+          type: string
+          enum:
+            - entry
+            - exit
+            - duplicate
+            - activity
+          description: |-
+            `entry` and `exit` are the passages that opened and closed the
+            visit; `duplicate` is the same passage seen by another camera or
+            frame; `activity` is the vehicle seen inside (a sweep, a bay camera).
+        representative:
+          type: boolean
+          description: |-
+            The read that stands for the visit in lists and screen-pops. At
+            most one per Session; two are 422 `request-unprocessable` (Part 5
+            §5.8 rule 1).
+    SessionClosure:
+      title: SessionClosure
+      description: Why and how a Session ended (Part 5 §5.8).
+      type: object
+      properties:
+        endReason:
+          type: string
+          description: definedValue from `apx-session-end-reasons` (Part 11) or an implementer code list.
+          examples:
+            - exitRead
+        endInferred:
+          type: boolean
+          description: True when `actualEnd` was set by a rule rather than observed.
+        startObserved:
+          type: boolean
+          description: |-
+            False declares `actualStart` synthetic — an exit-only Session whose
+            entry was never observed; the writer SHOULD then set `actualStart`
+            equal to `actualEnd`. Consumers MUST exclude such Sessions from
+            dwell statistics and from occupancy (Part 5 §5.8 rule 4). Absent
+            means true.
+        rule:
+          type:
+            - string
+            - 'null'
+          description: The implementer rule that closed a `stale` Session (e.g. `transient-48h`); null when none applied.
+    MatchEvidence:
+      title: MatchEvidence
+      description: |-
+        How a link to a Session was established and how sure it is (Part 5
+        §5.8; shared by the `matches[]` member of
+        `apds-ext:apx:session-detail@1.0` and the decoration
+        `apds-ext:apx:match-evidence@1.0` on a Violation or ValetTicket).
+        Carries no plate characters and no vehicle attribute values
+        (Part 9 §9.6). Where both ends of one link carry evidence (the
+        Session's `matches[]` entry and the decoration on the Violation or
+        ValetTicket), the two MUST agree. Evidence with `plate.method:
+        lenient` or `applied: false` may excuse a stay but never accuse one:
+        `issue` on a Violation resting on it is 409 `violation-not-issuable`
+        (Part 19 §19.4 rule 5).
+      type: object
+      required:
+        - target
+        - matchType
+        - applied
+      properties:
+        target:
+          description: |-
+            The record at the other end of the link. In `matches[]`: an
+            AssignedRight, a ValetTicket, a Violation, a PlateListEntry, or an
+            Observation. In the decoration on a Violation or ValetTicket: the
+            Session.
+          $ref: '#/components/schemas/Reference'
+        matchType:
+          type: string
+          enum:
+            - right
+            - valet
+            - violation
+            - list
+            - exitPairing
+            - sweep
+            - other
+          description: |-
+            The kind of link: `right` — an AssignedRight covers the stay;
+            `valet` — a ValetTicket's stay; `violation` — a Violation's stay;
+            `list` — a plate-list entry matched the vehicle (Part 24);
+            `exitPairing` — an exit read paired to the Session's entry;
+            `sweep` — the vehicle seen during an inventory or patrol sweep tied
+            to the Session; `other` — anything else.
+          examples:
+            - right
+        plate:
+          type: object
+          description: How the plate strings agreed, when the link rests on a plate.
+          required:
+            - method
+          properties:
+            method:
+              type: string
+              enum:
+                - exact
+                - alias
+                - fold
+                - fuzzy
+                - lenient
+                - reviewer
+              description: |-
+                `exact` — the same characters; `alias` — a plate the right or
+                account lists for the same vehicle; `fold` — equal after
+                folding look-alike characters (O/0, I/1, B/8); `fuzzy` — within
+                the implementation's edit-cost threshold; `lenient` — accepted
+                under a relaxed rule that may excuse a stay but never accuse
+                one; `reviewer` — a person judged the plates to match where no
+                automatic method did.
+            editCost:
+              type:
+                - number
+                - 'null'
+              minimum: 0
+              description: The weighted edit cost of a `fuzzy` or `lenient` match; null otherwise.
+            jurisdiction:
+              type: string
+              enum:
+                - agrees
+                - differs
+                - unknown
+        vehicle:
+          type: object
+          description: The vehicle-attribute evidence (make, model, colour) behind the match, as a level and a score — never the values.
+          required:
+            - level
+          properties:
+            level:
+              type: string
+              enum:
+                - unknown
+                - mismatch
+                - inconclusive
+                - weak
+                - good
+                - strong
+              description: |-
+                `unknown` — not compared; `mismatch` — the attributes contradict
+                the match; `inconclusive` — compared, no signal; `weak`, `good`,
+                `strong` — increasing support.
+            llr:
+              type: number
+              description: Log-likelihood ratio of the vehicle evidence.
+            model:
+              type: string
+              description: The evidence model and version that scored it, opaque.
+        applied:
+          type: boolean
+          description: |-
+            False is a shadow match — recorded for evaluation, not acted on. A
+            link the record actually carries has `applied: true`.
+        decidedBy:
+          type: string
+          enum:
+            - system
+            - person
+          description: |-
+            Whether software or a person made the link. A `matchTicket` that
+            binds a lane-inquiry candidate SHOULD be recorded as `person`
+            (Part 5 §5.8 rule 5).
+        decidedTime:
+          description: When the link was made.
+          $ref: '#/components/schemas/DateTime'
+    OccupancyHistoryPage:
+      title: OccupancyHistoryPage
+      description: |-
+        Occupancy per clock interval for one HierarchyElement (Part 5 §5.5a):
+        the history behind the §5.5 snapshot, derived from the APDS
+        DemandTable records the implementation holds. Buckets are aligned to
+        the interval boundary in the place's time zone; a bucket with no
+        demand record carries no counts, never a guess.
+      type: object
+      required:
+        - place
+        - interval
+        - from
+        - to
+        - buckets
+      properties:
+        place:
+          $ref: '#/components/schemas/Reference'
+        interval:
+          description: The bucket length as requested (ISO 8601 duration, e.g. `PT1H`).
+          $ref: '#/components/schemas/Duration'
+        from:
+          $ref: '#/components/schemas/DateTime'
+        to:
+          $ref: '#/components/schemas/DateTime'
+        buckets:
+          type: array
+          items:
+            type: object
+            required:
+              - start
+            properties:
+              start:
+                $ref: '#/components/schemas/DateTime'
+              maxCount:
+                type: integer
+                minimum: 0
+                description: The highest demand count recorded in the bucket.
+              avgCount:
+                type: number
+                minimum: 0
+                description: The time-weighted mean demand count over the bucket.
+              supplyQuantity:
+                type: integer
+                minimum: 0
+                description: The supply in force during the bucket (APDS Supply.supplyQuantity).
+              samples:
+                type: integer
+                minimum: 0
+                description: How many demand records the bucket is computed from.
+        extensions:
+          $ref: '#/components/schemas/Extensions'
+    CredentialDigest:
+      title: CredentialDigest
+      description: |-
+        The `apds-ext:apx:credential-digest@1.0` decoration (Part 9 §9.6 rule
+        6): a keyed digest of a normalized credential identification (a plate),
+        so a consumer that only needs "same plate?" can match without the
+        plate itself. `value` is base64url(HMAC-SHA-256(key, normalized
+        identification)); the key is named by `keyId` and distributed through
+        `GET /v1/digest-keys`. Visible under `apx.data:read`.
+      type: object
+      required:
+        - alg
+        - keyId
+        - value
+      properties:
+        alg:
+          type: string
+          enum:
+            - HS256
+        keyId:
+          type: string
+          description: The digest key the value was computed under (rotation by keyId).
+        value:
+          type: string
+          description: base64url, no padding.
+        credentialType:
+          $ref: '#/components/schemas/CredentialTypeEnum'
+    PlateCorrection:
+      title: PlateCorrection
+      description: |-
+        Request body of `PUT /v1/lpr/reads/{observation}/plate` (Part 13
+        §13.3a(4a)): a reviewer's decision on one read. `confirmed` keeps the
+        engine's values; `corrected` replaces them with the ones given;
+        `rejected` marks the read unusable for pairing and enforcement.
+        `plate`, `country`, and `stateProvince` belong to `corrected` only:
+        sent with another decision they are 422 `request-unprocessable`.
+      type: object
+      required:
+        - decision
+      properties:
+        decision:
+          type: string
+          enum:
+            - confirmed
+            - corrected
+            - rejected
+        plate:
+          type: string
+          description: The corrected plate. Required when `decision` is `corrected`; not allowed otherwise.
+        country:
+          type: string
+          description: APDS VehicleAncillaryIdentification.country vocabulary. Only with `corrected`.
+        stateProvince:
+          type: string
+          description: APDS VehicleAncillaryIdentification.stateProvince vocabulary. Only with `corrected`.
+        reason:
+          type: string
+        reviewer:
+          type: string
+          description: Opaque reviewer principal (recorded as `review.decidedBy`).
+        extensions:
+          $ref: '#/components/schemas/Extensions'
+    LprReadSearch:
+      title: LprReadSearch
+      description: |-
+        Request body of `POST /v1/lpr/reads:search` (Part 13 §13.3): the same
+        keys as the `GET` lookup, carried in a body so a plate never enters a
+        URL that proxies and access logs keep (Part 9 §9.6). At least one of
+        `plate`, `ticket`, `observation`, or `session` is REQUIRED.
+      type: object
+      properties:
+        plate:
+          type: string
+        ticket:
+          type: string
+        observation:
+          type: string
+          format: uuid
+        session:
+          type: string
+          format: uuid
+        place:
+          type: string
+          format: uuid
+          description: Narrow results below the grant to one HierarchyElement and its subtree.
+        page:
+          type: integer
+          minimum: 1
+    AccountSearch:
+      title: AccountSearch
+      description: |-
+        Request body of `POST /v1/accounts:search` (Part 13 §13.1): the same
+        keys as the `GET` lookup, carried in a body so personal data never
+        enters a URL (Part 9 §9.6).
+      type: object
+      properties:
+        name:
+          type: string
+        phone:
+          type: string
+        email:
+          type: string
+        card:
+          type: string
+          description: Truncated card digits only (two to four); more is 422 `personal-data-not-permitted`.
+        plate:
+          type: string
+        place:
+          type: array
+          items:
+            type: string
+            format: uuid
+        page:
+          type: integer
+          minimum: 1
+    PaymentSearch:
+      title: PaymentSearch
+      description: |-
+        Request body of `POST /v1/payments:search` (Part 13 §13.2): the same
+        keys and rules as the `GET` lookup, in a body (Part 9 §9.6).
+      type: object
+      properties:
+        ticketLast4:
+          type: string
+        cardLast4:
+          type: string
+          pattern: ^[0-9]{2,4}$
+        ticketNumber:
+          type: string
+        account:
+          type: string
+          format: uuid
+        date:
+          type: string
+          format: date
+        place:
+          type: array
+          items:
+            type: string
+            format: uuid
+        captureStatus:
+          type: string
+          enum:
+            - authorized
+            - captured
+        page:
+          type: integer
+          minimum: 1
+    PaymentDetail:
+      title: PaymentDetail
+      description: |-
+        The `apds-ext:apx:payment-detail@1.0` decoration (Part 13 §13.6a) on a
+        `PaymentRecord` or an APDS `Payment`: the rate sold and the lines that
+        sum to the total, so revenue reports and the deck price check have
+        the base amount, the fee, and the product without a bilateral code.
+        On a `PaymentRecord` it carries `rateSold` and `lines`; on a native
+        APDS `Payment` it carries `rateSold` only, because the Payment's own
+        `paymentLines` are the itemization there.
+      type: object
+      minProperties: 1
+      properties:
+        rateSold:
+          type: object
+          description: The rate the vendor sold, as the vendor names it.
+          properties:
+            id:
+              type: string
+              description: The vendor's rate id, or the APDS RateTable id when the deck is the source.
+            name:
+              type: string
+            rateTable:
+              description: The APDS RateTable at the version applied, when known.
+              $ref: '#/components/schemas/VersionedReference'
+            product:
+              type: string
+              enum:
+                - standard
+                - pass
+                - other
+            class:
+              type: string
+              enum:
+                - standard
+                - validation
+                - discount
+                - zeroed
+                - other
+        lines:
+          type: array
+          minItems: 1
+          description: |-
+            The itemization, as APDS `PaymentLine`s (by `$ref`, never
+            re-shaped). Each line's code is its `idCode`: a definedValue of
+            `apx-payment-line-codes` (Part 11) or an implementer code. A line
+            coded `validation` has `paymentType: validation` and its `value` is
+            the value the validation offset (not money collected); every other
+            line has `paymentType: payment`, and a reduction (`discount`) is a
+            negative `value`. The `currencyValue`s of the `paymentType:
+            payment` lines MUST sum to the record's `amount`, in its
+            `currencyType`; otherwise 422 `request-unprocessable` and nothing
+            is charged. Only on a `PaymentRecord`: on a native APDS `Payment`
+            the itemization is that Payment's own `paymentLines` and this
+            member is absent (one store, Part 13 §13.6a).
+          items:
+            $ref: '#/components/schemas/PaymentLine'
+    ViolationDetection:
+      title: ViolationDetection
+      type: object
+      description: How and when the candidate was found.
+      required:
+        - mode
+        - detectedTime
+      properties:
+        mode:
+          type: string
+          enum:
+            - automated
+            - guided
+            - manual
+          description: |-
+            `automated` — a camera/sensor pipeline created the violation with
+            no human in the loop. `guided` — the system surfaced a candidate
+            (typically to a handheld) and an officer confirms on site.
+            `manual` — an officer created the violation directly.
+        detectedTime:
+          $ref: '#/components/schemas/DateTime'
+        detector:
+          description: The detecting device (SupplementalEquipment) or, for guided/manual, the officer's Contact.
+          $ref: '#/components/schemas/Reference'
+        principal:
+          type: string
+          description: Opaque principal of the human or system that detected (officer badge id, pipeline name).
+          examples:
+            - officer-0417
+        confidence:
+          type: number
+          minimum: 0
+          maximum: 1
+          description: Detection confidence (plate read × rule certainty), when the detector reports one.
+        rule:
+          type: string
+          description: Implementer identifier of the enforcement rule that fired (automated mode).
+          examples:
+            - overstay-2h-zone-b
+    ViolationVehicle:
+      title: ViolationVehicle
+      type: object
+      description: The credential observed on the vehicle (an APDS CredentialTypeEnum credential).
+      required:
+        - credentialType
+        - credentialIdentification
+      properties:
+        credentialType:
+          $ref: '#/components/schemas/CredentialTypeEnum'
+        credentialIdentification:
+          type: string
+          description: The credential value — plate string, permit number, transponder id.
+          examples:
+            - SYN-4471
+        jurisdiction:
+          type: string
+          description: Issuing jurisdiction of the plate/credential (state, province, country code).
+          examples:
+            - US-IL
+        description:
+          type: string
+          description: Free-text vehicle description captured by the officer (make, colour).
+    ViolationEvidence:
+      title: ViolationEvidence
+      type: array
+      description: |-
+        Evidence media, as access-controlled LINKS (Part 9 §9.6 — never
+        inline). Each item points at an APDS Image reachable under the same
+        authentication and place grant as this resource.
+      items:
+        type: object
+        required:
+          - imageLink
+        properties:
+          imageLink:
+            $ref: '#/components/schemas/Url'
+          imageType:
+            $ref: '#/components/schemas/ImageTypeEnum'
+          capturedTime:
+            $ref: '#/components/schemas/DateTime'
+          device:
+            description: The capturing SupplementalEquipment (camera, handheld).
+            $ref: '#/components/schemas/Reference'
+          description:
+            type: string
+    ViolationLocation:
+      title: ViolationLocation
+      type: object
+      description: |-
+        Where the violation was observed and from where — modelled on the
+        APDS Observation `Location` shape (Part 19 §19.9), with two
+        differences: `observerLocation` is optional here (APDS requires
+        it; an automated finding copied from a fixed sensor may have
+        none), and `accuracyMetres` is added. The member names and the
+        `PointLocation` types are APDS's own. GeoJSON positions are
+        [longitude, latitude] in that order; enforcement tools that store
+        latitude first MUST swap on the wire. Automated detections SHOULD
+        copy this from the underlying Observation.
+      properties:
+        observedLocation:
+          description: The vehicle's position (GeoJSON Point).
+          $ref: '#/components/schemas/GeoJsonObject'
+        observerLocation:
+          description: The officer's or camera's position when the finding was made (GeoJSON Point).
+          $ref: '#/components/schemas/GeoJsonObject'
+        observedLocationTextual:
+          description: Human-readable address or description of the observed location.
+          $ref: '#/components/schemas/MultilingualString'
+        accuracyMetres:
+          type: number
+          minimum: 0
+          description: Horizontal accuracy reported by the capturing device.
+    ViolationAppliedPayment:
+      title: ViolationAppliedPayment
+      description: |-
+        One payment applied to a violation (Part 19 §19.6a): a partial
+        payment or the settling one. `payment` references the Part 13 record
+        (APDS Payment or APX PaymentRecord) when the money moved through this
+        server; a payment an import source took itself (§19.13) may carry
+        only the source's own `reference`.
+      type: object
+      required:
+        - amount
+      properties:
+        amount:
+          description: The amount applied to this violation.
+          $ref: '#/components/schemas/AmountInCurrency'
+        paidTime:
+          description: When the payment was made (for an import, as the source reported it).
+          $ref: '#/components/schemas/DateTime'
+        payment:
+          description: The APDS Payment or APX PaymentRecord (Part 13), when one exists on this server.
+          $ref: '#/components/schemas/Reference'
+        reference:
+          type: string
+          description: The import source's own identifier for the payment, when it reported one.
+          examples:
+            - PMT-77120
+    ViolationSource:
+      title: ViolationSource
+      description: |-
+        The `apds-ext:apx:violation-source@1.0` decoration (Part 19 §19.13): a
+        violation issued by an external enforcement system and imported
+        through `POST /v1/enforcement/violation-imports`, keyed on `system` +
+        `recordId`. `sourceRevision`, or without one `sourceUpdatedTime`,
+        orders the source's revisions.
+      type: object
+      required:
+        - system
+        - recordId
+      properties:
+        system:
+          type: string
+          description: The issuing system, opaque (`passport`, `aims`…).
+        recordId:
+          type: string
+          description: The source's own citation or record id.
+        sourceStatus:
+          type: string
+          description: The source's own status vocabulary, carried as reported (`issued`, `warned`, `voided`, `dismissed`, `partiallyPaid`…).
+        sourceRevision:
+          type: integer
+          minimum: 0
+          description: The source's revision counter; a re-import with a higher value updates the record.
+        sourceUpdatedTime:
+          description: When the source last changed the record. Orders revisions when the source keeps no `sourceRevision`.
+          $ref: '#/components/schemas/DateTime'
+        receivedTime:
+          description: When this server applied the revision it now holds. Server-set.
+          readOnly: true
+          $ref: '#/components/schemas/DateTime'
+        officer:
+          type: string
+          description: The source's officer identifier, opaque.
+        violationCode:
+          type: string
+          description: The source's own violation code, when it has no `apx-violation-types` equivalent.
+    ViolationImport:
+      title: ViolationImport
+      description: |-
+        Request body of `POST /v1/enforcement/violation-imports` (Part 19
+        §19.13): a violation as an external enforcement system reports it —
+        in any state, with the `statusHistory[]` times the source recorded,
+        the notice, the amounts and payments, and the
+        `apds-ext:apx:violation-source@1.0` decoration that keys it. The
+        members mean what they mean on `Violation`; the difference is that
+        `violationStatus`, `notice`, `amountPaid`, `payments`, and
+        `statusHistory` are written by the caller here, because the source,
+        not this server, decided them. A state at or past issuance
+        (`issued`, `paid`, `appealed`, `closed`) REQUIRES `notice` (with
+        `noticeNumber` and `issuedTime`) and `amount` (400 `invalid-request`
+        otherwise); `paid` with `amountPaid` below `amount` is 422
+        `request-unprocessable`. A warning with no fine is `issued` (or
+        `closed`) with `notice.noticeKind` `warning` and a zero `amount`.
+      type: object
+      required:
+        - violationType
+        - violationStatus
+        - place
+        - detection
+        - statusHistory
+        - extensions
+      properties:
+        id:
+          type: string
+          format: uuid
+          description: The source's id for the violation, when it is a UUID the server may keep; the server MAY mint its own.
+        violationType:
+          type: string
+          description: definedValue from `apx-violation-types` or an implementer code list.
+          examples:
+            - noValidRight
+        violationStatus:
+          type: string
+          enum:
+            - detected
+            - confirmed
+            - dismissed
+            - issued
+            - paid
+            - appealed
+            - closed
+            - voided
+          description: |-
+            The APX state the source's status maps to. `paid` requires
+            `amountPaid` at least `amount`; a part-paid violation is `issued`
+            (Part 19 §19.6a). The source's own wording goes in the decoration's
+            `sourceStatus`.
+        place:
+          description: The HierarchyElement where the violation was observed.
+          $ref: '#/components/schemas/Reference'
+        space:
+          description: The specific APDS Space, when space-resolved.
+          $ref: '#/components/schemas/Reference'
+        detection:
+          $ref: '#/components/schemas/ViolationDetection'
+        vehicle:
+          $ref: '#/components/schemas/ViolationVehicle'
+        observations:
+          type: array
+          description: The underlying APDS Observations, when the source shared them.
+          items:
+            $ref: '#/components/schemas/Reference'
+        evidence:
+          $ref: '#/components/schemas/ViolationEvidence'
+        relatedSession:
+          description: The APDS Session the vehicle was in, when known (or set later through `POST /v1/violations/{id}/session`).
+          $ref: '#/components/schemas/Reference'
+        relatedRight:
+          description: The AssignedRight closest to covering the stay, when known.
+          $ref: '#/components/schemas/Reference'
+        location:
+          $ref: '#/components/schemas/ViolationLocation'
+        notice:
+          type: object
+          description: The notice, warning, or citation as the source issued it.
+          required:
+            - noticeNumber
+            - issuedTime
+          properties:
+            noticeKind:
+              type: string
+              description: warning | notice | citation (implementer code list).
+              examples:
+                - citation
+            noticeNumber:
+              type: string
+              description: The number printed on the notice — the lookup a driver can make (`?noticeNumber=`).
+              examples:
+                - EX-2026-018342
+            issuedTime:
+              description: When the source issued it, as the source reported it.
+              $ref: '#/components/schemas/DateTime'
+            issuedBy:
+              description: The issuing Organisation or officer Contact, when it is known here.
+              $ref: '#/components/schemas/Reference'
+            deliveryMethod:
+              type: string
+              description: windshield | handed | mail | electronic (implementer code list).
+              examples:
+                - windshield
+        amount:
+          description: The amount payable now, as the source reports it.
+          $ref: '#/components/schemas/AmountInCurrency'
+        dueTime:
+          $ref: '#/components/schemas/DateTime'
+        amountPaid:
+          description: The total paid toward `amount`, as the source reports it.
+          $ref: '#/components/schemas/AmountInCurrency'
+        payments:
+          type: array
+          description: The payments the source applied, in order.
+          items:
+            $ref: '#/components/schemas/ViolationAppliedPayment'
+        statusHistory:
+          type: array
+          minItems: 1
+          description: |-
+            The lifecycle as the source recorded it, oldest first, with the
+            source's own times (`actor` is the source's principal — an officer
+            badge, the system name). Append-only: the server keeps the entries
+            it already holds and appends only those later than its last one
+            (Part 4 §4.2).
+          items:
+            type: object
+            required:
+              - state
+              - time
+              - actor
+            properties:
+              state:
+                type: string
+              time:
+                $ref: '#/components/schemas/DateTime'
+              actor:
+                type: string
+              detail:
+                type: string
+        extensions:
+          description: The extension container; MUST carry `apds-ext:apx:violation-source@1.0`.
+          allOf:
+            - $ref: '#/components/schemas/Extensions'
+            - required:
+                - apds-ext:apx:violation-source@1.0
+      allOf:
+        - if:
+            required:
+              - violationStatus
+            properties:
+              violationStatus:
+                enum:
+                  - issued
+                  - paid
+                  - appealed
+                  - closed
+          then:
+            required:
+              - notice
+              - amount
+    ViolationSessionLink:
+      title: ViolationSessionLink
+      description: |-
+        Request body of `POST /v1/violations/{id}/session` (Part 19 §19.13):
+        sets, corrects, or clears `relatedSession` after creation, carrying the
+        match evidence. `session: null` clears the link. `If-Match` carries the
+        Violation version last read.
+      type: object
+      required:
+        - session
+      properties:
+        session:
+          description: The APDS Session (className `Session`), or null to clear the link.
+          oneOf:
+            - $ref: '#/components/schemas/Reference'
+            - type: 'null'
+        evidence:
+          description: How the match was made; written onto the violation as `apds-ext:apx:match-evidence@1.0`, with the Session as `target`.
+          $ref: '#/components/schemas/MatchEvidence'
+        reason:
+          type: string
+          description: Why the link was set or changed (implementer code list — lateMatch, reviewerCorrection, mismatch…).
+          examples:
+            - lateMatch
+    PlateList:
+      title: PlateList
+      description: |-
+        A list of credentials with a category and per-place behaviour
+        (Part 24). Entries are kept separately (`PlateListEntry`); the list
+        carries the policy.
+      type: object
+      required:
+        - id
+        - version
+        - name
+        - category
+        - status
+      properties:
+        id:
+          type: string
+          format: uuid
+          readOnly: true
+        version:
+          type: integer
+          minimum: 1
+          readOnly: true
+        name:
+          type: string
+        category:
+          type: string
+          description: definedValue from `apx-plate-list-categories` (Part 11) — `allow`, `watch`, `scofflaw`, `enforcementVehicle` — or an implementer category.
+          examples:
+            - scofflaw
+        owner:
+          description: The Organisation that maintains the list (a city, an operator).
+          $ref: '#/components/schemas/Reference'
+        places:
+          type: array
+          description: Where the list applies, with per-place flags; a list with no `places` applies nowhere.
+          items:
+            $ref: '#/components/schemas/PlateListPlaceFlags'
+        status:
+          type: string
+          enum:
+            - active
+            - suspended
+            - retired
+        description:
+          type: string
+        entryCount:
+          type: integer
+          minimum: 0
+          readOnly: true
+        recordInfo:
+          $ref: '#/components/schemas/RecordInfo'
+        extensions:
+          $ref: '#/components/schemas/Extensions'
+    PlateListEntry:
+      title: PlateListEntry
+      description: |-
+        One credential on a list (Part 24 §24.2). The plate value appears
+        only under `apx.platelists:read`/`:manage`; a consumer that only
+        screens may hold the `apds-ext:apx:credential-digest@1.0` decoration
+        instead (Part 9 §9.6 rule 6).
+      type: object
+      required:
+        - id
+        - version
+        - credential
+      properties:
+        id:
+          type: string
+          format: uuid
+          readOnly: true
+        version:
+          type: integer
+          minimum: 1
+          readOnly: true
+        list:
+          description: The PlateList this entry belongs to.
+          readOnly: true
+          $ref: '#/components/schemas/Reference'
+        credential:
+          type: object
+          required:
+            - credentialType
+            - credentialIdentification
+          properties:
+            credentialType:
+              $ref: '#/components/schemas/CredentialTypeEnum'
+            credentialIdentification:
+              type: string
+              description: The plate or credential value.
+            jurisdiction:
+              type: string
+              description: Issuing jurisdiction of the plate (state, province, country code).
+        validity:
+          type: object
+          description: When the entry is in force; absent bounds are open.
+          properties:
+            start:
+              $ref: '#/components/schemas/DateTime'
+            end:
+              $ref: '#/components/schemas/DateTime'
+        details:
+          type: object
+          description: Why the credential is on the list, as the list owner records it.
+          properties:
+            amountOwed:
+              $ref: '#/components/schemas/AmountInCurrency'
+            noticeCount:
+              type: integer
+              minimum: 0
+            reference:
+              type: string
+              description: The owner's case or file reference, opaque.
+            note:
+              type: string
+        vehicle:
+          type: object
+          description: A description that helps an officer confirm the match; never a registry.
+          properties:
+            description:
+              type: string
+        recordInfo:
+          $ref: '#/components/schemas/RecordInfo'
+        extensions:
+          $ref: '#/components/schemas/Extensions'
+    PlateListPlaceFlags:
+      title: PlateListPlaceFlags
+      description: What the list does at one place (Part 24 §24.1).
+      type: object
+      required:
+        - place
+      properties:
+        place:
+          description: The HierarchyElement subtree the flags apply to.
+          $ref: '#/components/schemas/Reference'
+        enforced:
+          type: boolean
+          description: A match counts for compliance (`allow`) or enforcement (`scofflaw`, `watch`) at this place.
+        alertOnArrival:
+          type: boolean
+          description: A match raises the Part 7 arrival alert of the list's category.
+        refuseService:
+          type: boolean
+          description: A match refuses service at the lane (the refused-service sign, Part 6 `displayMessage`).
     DiscoveryDocument:
       title: DiscoveryDocument
       description: |-
@@ -16083,6 +18569,37 @@ components:
           examples:
             - requestsPerMinute: 600
               commandsPerMinute: 60
+        replication:
+          type: array
+          description: |-
+            Part 18 §18.6 — for a place this implementation shares with a
+            replicated site or aggregator implementation, which side is
+            authoritative for each entity class. A write to a class from the
+            non-authoritative side is 409 `not-authoritative`. Absent when
+            the implementation replicates nothing.
+          items:
+            type: object
+            required:
+              - place
+              - class
+              - authority
+            properties:
+              place:
+                type: string
+                format: uuid
+                description: The HierarchyElement subtree root the row applies to.
+              class:
+                type: string
+                description: An APDS class (`Session`, `RateTable`…) or APX resource class (`Violation`, `Alert`…).
+              authority:
+                type: string
+                enum:
+                  - site
+                  - aggregator
+              peer:
+                type: string
+                format: uri-reference
+                description: The other implementation's `EventEnvelope.source`.
         extensions:
           $ref: '#/components/schemas/Extensions'
     ResolutionContext:
@@ -20407,6 +22924,9 @@ components:
               description: A data class that enables transaction details to be accumulated.
               items:
                 $ref: '#/components/schemas/PaymentLine'
+            extensions:
+              description: The APDS extension container (Use Case Document §C.2.5; Part 4 §4.3). Undeclared on APDS 4.1 entities (APX erratum 010). Carries apds-ext:apx:payment-detail@1.0 with rateSold only; the Payment's own paymentLines are the itemization (Part 13 §13.6a).
+              $ref: '#/components/schemas/Extensions'
           required:
             - serviceProvider
             - paymentLines
@@ -20800,8 +23320,11 @@ components:
     PermitExtension:
       title: PermitExtension
       description: |-
-        The `apds-ext:apx:permit@1.0` extension object (Part 14 §14.2): links a
-        renewal permit to the one it renews, so a portal can follow the chain.
+        The `apds-ext:apx:permit@1.1` extension object (Part 14 §14.2; `@1.0`
+        remains valid and carries the first two members only): links a renewal
+        permit to the one it renews, so a portal can follow the chain, and
+        caps how many of a multi-vehicle permit's vehicles may be parked at
+        once (§14.2d).
       type: object
       properties:
         renews:
@@ -20811,6 +23334,28 @@ components:
           description: Set by the server on the renewed permit when a renewal is issued.
           readOnly: true
           $ref: '#/components/schemas/Reference'
+        maxConcurrentVehicles:
+          type: integer
+          minimum: 1
+          description: |-
+            How many of the permit's registered vehicles may be parked at the
+            place at once (Part 14 §14.2d). Absent means every registered
+            vehicle may. A vehicle beyond the limit is an overage.
+        overageBilling:
+          type: object
+          description: What an overage costs (Part 14 §14.2d).
+          required:
+            - mode
+          properties:
+            mode:
+              type: string
+              enum:
+                - rack
+                - dayRate
+                - none
+              description: '`rack` — the place''s transient rate deck; `dayRate` — the flat `dayRate`; `none` — recorded, not billed.'
+            dayRate:
+              $ref: '#/components/schemas/AmountInCurrency'
     SubscriptionFilters:
       title: SubscriptionFilters
       type: object
@@ -20834,6 +23379,17 @@ components:
             - minor
             - major
             - critical
+        alertTypes:
+          type: array
+          description: |-
+            For alert topics — only alerts whose `alertType` is listed are
+            delivered (Part 8 §8.5a). Values are `apx-alert-types` entries or
+            implementer types; combines with `severityFloor` (both must hold).
+          items:
+            type: string
+          examples:
+            - - scofflawArrival
+              - refusedServiceArrival
     ApxEventSubscriptionPatch:
       title: ApxEventSubscriptionPatch
       description: |-
@@ -20916,7 +23472,9 @@ components:
         command reaches `succeeded` (Part 6 §6.1a) and absent before then. Members
         are normative per command type: `lostTicket` → `ticketNumber`, `session`,
         `amountDue`; `matchTicket` → `session`, `amountDue`;
-        `pushNegotiatedRate` → `rateTable`, `amountDue`. Other command types
+        `pushNegotiatedRate` → `amountDue`, and `rateTable` when a table was
+        selected (absent for a stated amount, which the lane inquiry reports
+        as `currentTicket.negotiatedAmount`). Other command types
         leave it absent unless a registry entry says otherwise. It restates what
         the lane inquiry shows, so a console can continue (print, take payment)
         without parsing `statusHistory[].detail` or making a second call.
@@ -20933,8 +23491,32 @@ components:
           description: The amount due on the ticket immediately after the command.
           $ref: '#/components/schemas/AmountInCurrency'
         rateTable:
-          description: The RateTable at the exact version applied (pushNegotiatedRate).
+          description: The RateTable at the exact version applied (pushNegotiatedRate with a table; absent for a stated amount).
           $ref: '#/components/schemas/VersionedReference'
+        display:
+          type: object
+          description: |-
+            Proof of display for `displayMessage` (Part 6 §6.1a): what the
+            device confirmed it showed, when, and whether the player or an
+            operator acknowledged it.
+          properties:
+            shownTime:
+              $ref: '#/components/schemas/DateTime'
+            contentHash:
+              type: string
+              description: Hash of the rendered content, so a dispute can prove what was shown.
+            wordingVersion:
+              type: string
+              description: The wording version the template was rendered under.
+            screenshot:
+              description: Access-controlled link to a capture of the display (Part 9 §9.6).
+              $ref: '#/components/schemas/Url'
+            acknowledgedBy:
+              type: string
+              enum:
+                - player
+                - operator
+                - none
         extensions:
           $ref: '#/components/schemas/Extensions'
     TollPricing:
@@ -22367,5 +24949,6 @@ x-tagGroups:
   - name: Enforcement and service
     tags:
       - Violations
+      - Plate lists
       - Resolution
       - Support

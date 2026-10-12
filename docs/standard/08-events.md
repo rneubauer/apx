@@ -168,6 +168,15 @@ event to be attributable to a location. The binding rule, per topic:
    `insufficient-grant` (§8.1); the filter can narrow the grant, never
    widen it.
 
+## 8.5a Alert-type filter (normative)
+
+`filters.alertTypes[]` applies to the alert topics (`apx.alert.raised.v1`,
+`apx.alert.status.v1`): only alerts whose `alertType` is listed are
+delivered. It combines with `severityFloor` (both must hold) and with
+`places`. Values are not validated against `apx-alert-types`, because
+`alertType` is open (Part 7 §7.1); a value no alert carries simply
+matches nothing. On other topics the filter is ignored.
+
 ## 8.6 Publishing obligations
 
 Implementations claiming `apx-events` MUST publish the APDS EventTypeEnum
@@ -188,6 +197,6 @@ schemas:
 | APDS `EventTypeEnum` values (`SessionCreated`, …) | APDS `EventData` (the entity; for `*Deleted`, its last state) | the entity |
 | `apx.subscription.failed.v1` | `SubscriptionFailure` (subscription Reference with `className` `ApxEventSubscription`, `endpoint`, `failedTime`, `firstFailedEventId`, `attempts`, `lastCode`) | the subscription |
 | `apx.data.observation.created.v1` | APDS `ObservationElement` — one event per element, so an ingested `ObservationSet` yields one event per read | the element (`className` `ObservationElement`) |
-| `apx.data.observation.updated.v1` | APDS `ObservationElement` as it stands after a change (e.g. an `accessEvent` revised through `PUT /v1/lpr/reads/{observation}/access-event`, Part 13 §13.3a(4)); consumers keep the highest `version` | the element (`className` `ObservationElement`) |
+| `apx.data.observation.updated.v1` | APDS `ObservationElement` as it stands after a change (e.g. an `accessEvent` revised through `PUT /v1/lpr/reads/{observation}/access-event`, Part 13 §13.3a(4), or a plate review decision through `PUT /v1/lpr/reads/{observation}/plate`, §13.3a(4a)); consumers keep the highest `version` | the element (`className` `ObservationElement`) |
 | `apx.reservation.noshow.v1` | `ReservationSummary` | the AssignedRight |
 | `apx.data.occupancy.v1` | `OccupancySnapshot` | the HierarchyElement |

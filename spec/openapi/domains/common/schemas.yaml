@@ -23,6 +23,38 @@ RecordInfo:
     lastUpdateUser:
       type: string
       description: Human or system principal that last updated the record.
+    origin:
+      type: string
+      description: |-
+        The implementation that first created the record, when it differs
+        from the one serving it (Part 18 §18.6 replication): the origin's
+        `EventEnvelope.source` value. Absent on records the serving
+        implementation created itself.
+      examples: ["https://edge.lakeside-garage.example/v1"]
+
+CredentialDigest:
+  title: CredentialDigest
+  description: |-
+    The `apds-ext:apx:credential-digest@1.0` decoration (Part 9 §9.6 rule
+    6): a keyed digest of a normalized credential identification (a plate),
+    so a consumer that only needs "same plate?" can match without the
+    plate itself. `value` is base64url(HMAC-SHA-256(key, normalized
+    identification)); the key is named by `keyId` and distributed through
+    `GET /v1/digest-keys`. Visible under `apx.data:read`.
+  type: object
+  required: [alg, keyId, value]
+  properties:
+    alg:
+      type: string
+      enum: [HS256]
+    keyId:
+      type: string
+      description: The digest key the value was computed under (rotation by keyId).
+    value:
+      type: string
+      description: base64url, no padding.
+    credentialType:
+      $ref: "../../../vendor/apds/4.1/apds-api-4.1.yaml#/components/schemas/CredentialTypeEnum"
 
 Extensions:
   title: Extensions
@@ -49,6 +81,18 @@ Extensions:
       $ref: "../reservations/schemas.yaml#/ReservationExtension"
     "apds-ext:apx:permit@1.0":
       $ref: "../reservations/schemas.yaml#/PermitExtension"
+    "apds-ext:apx:permit@1.1":
+      $ref: "../reservations/schemas.yaml#/PermitExtension"
+    "apds-ext:apx:session-detail@1.0":
+      $ref: "../data/schemas.yaml#/SessionDetail"
+    "apds-ext:apx:match-evidence@1.0":
+      $ref: "../data/schemas.yaml#/MatchEvidence"
+    "apds-ext:apx:violation-source@1.0":
+      $ref: "../violations/schemas.yaml#/ViolationSource"
+    "apds-ext:apx:payment-detail@1.0":
+      $ref: "../accounts/schemas.yaml#/PaymentDetail"
+    "apds-ext:apx:credential-digest@1.0":
+      $ref: "#/CredentialDigest"
   additionalProperties:
     type: object
 

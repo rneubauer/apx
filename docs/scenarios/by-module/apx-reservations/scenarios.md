@@ -481,6 +481,11 @@ APX-Update-Mode: full
 
 The same request with `Accept: application/problem+json`:
 
+```http
+PUT /rights/assigned/e2000000-0000-4000-8000-000000000101
+Accept: application/problem+json
+```
+
 <!-- apx:request PUT /rights/assigned/e2000000-0000-4000-8000-000000000101 -->
 ```json
 {

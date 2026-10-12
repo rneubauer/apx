@@ -110,6 +110,13 @@ tags:
       queue with ETA (from text, app, web, voice bot, kiosk, or
       attendant), staging, and verified handback. The APDS Session
       remains the stay and the money. See written standard Part 22.
+  - name: Plate lists
+    description: |-
+      Third-party lists about a plate — watch, scofflaw, allow, and
+      enforcement vehicles — with per-place flags (enforced, alert on
+      arrival, refuse service), kept by a city or an operator and synced to
+      the systems that screen arrivals through the change feed. Optional
+      class apx-plate-lists. See written standard Part 24.
   - name: Charging
     description: |-
       EV charging, the parking-side view (optional class apx-charging;
@@ -645,6 +652,8 @@ paths:
         `apx_places` grant are returned; naming a `place` outside the grant
         is 403 `insufficient-grant`. All filters combine with AND.
       parameters:
+        - $ref: "#/components/parameters/ModeParam"
+        - $ref: "#/components/parameters/CursorParam"
         - name: target
           in: query
           schema: { type: string, format: uuid }
@@ -679,7 +688,7 @@ paths:
         - $ref: "../vendor/apds/4.1/apds-api-4.1.yaml#/components/parameters/page"
       responses:
         "200":
-          description: Paginated commands (APDS PaginatedList shape).
+          description: Paginated commands (APDS PaginatedList shape); with `mode=change`, the changes after `cursor` in the same envelope (Part 5 §5.2 rule 8).
           content:
             application/json:
               schema:
@@ -690,9 +699,15 @@ paths:
                   data:
                     type: array
                     items: { $ref: "#/components/schemas/Command" }
+                  updateMode: { $ref: "#/components/schemas/ChangeFeedUpdateMode" }
+                  cursor: { $ref: "#/components/schemas/ChangeFeedCursor" }
+                  deleted: { $ref: "#/components/schemas/ChangeFeedTombstones" }
+                  grantAdditions: { $ref: "#/components/schemas/ChangeFeedGrantAdditions" }
+                  next: { $ref: "#/components/schemas/ChangeFeedNext" }
         "401": { $ref: "#/components/responses/Unauthorized" }
         "403": { $ref: "#/components/responses/Forbidden" }
         "429": { $ref: "#/components/responses/TooManyRequests" }
+        "404": { $ref: "#/components/responses/CursorRefused" }
 
   /v1/commands/{id}:
     get:
@@ -961,6 +976,8 @@ paths:
         window; all filters combine with AND (Part 15 §15.2). Results are
         constrained to the caller's grant.
       parameters:
+        - $ref: "#/components/parameters/ModeParam"
+        - $ref: "#/components/parameters/CursorParam"
         - name: plate
           in: query
           description: Convenience alias for `credentialType=licensePlate&credentialIdentification=<plate>`.
@@ -1002,7 +1019,7 @@ paths:
         - $ref: "../vendor/apds/4.1/apds-api-4.1.yaml#/components/parameters/page"
       responses:
         "200":
-          description: Matching transactions.
+          description: Matching transactions; with `mode=change`, the changes after `cursor` in the same envelope (Part 5 §5.2 rule 8).
           content:
             application/json:
               schema:
@@ -1013,10 +1030,16 @@ paths:
                   data:
                     type: array
                     items: { $ref: "#/components/schemas/TollTransaction" }
+                  updateMode: { $ref: "#/components/schemas/ChangeFeedUpdateMode" }
+                  cursor: { $ref: "#/components/schemas/ChangeFeedCursor" }
+                  deleted: { $ref: "#/components/schemas/ChangeFeedTombstones" }
+                  grantAdditions: { $ref: "#/components/schemas/ChangeFeedGrantAdditions" }
+                  next: { $ref: "#/components/schemas/ChangeFeedNext" }
         "400": { $ref: "#/components/responses/BadRequest" }
         "401": { $ref: "#/components/responses/Unauthorized" }
         "403": { $ref: "#/components/responses/Forbidden" }
         "429": { $ref: "#/components/responses/TooManyRequests" }
+        "404": { $ref: "#/components/responses/CursorRefused" }
 
   /v1/tolling/transactions/{id}:
     get:
@@ -1324,13 +1347,17 @@ paths:
       summary: List/filter violations
       description: |-
         Filter by plate (credentialIdentification), notice number, status,
-        type, place (subtree-inclusive), detection mode, and the
-        `since`..`until` window on detectedTime. Results are constrained
+        type, place (subtree-inclusive), detection mode, the
+        `since`..`until` window on detectedTime, and — for violations
+        imported from another enforcement system (Part 19 §19.13) — the
+        source system and the source's record id. Results are constrained
         to the caller's place grant; a lookup that names no place (by
         plate or notice number) returns only violations at granted places
         (Part 9 §9.3a). Plate values appear only under `apx.violations:*`
         scopes (Part 9 §9.6).
       parameters:
+        - $ref: "#/components/parameters/ModeParam"
+        - $ref: "#/components/parameters/CursorParam"
         - { name: plate, in: query, schema: { type: string } }
         - name: noticeNumber
           in: query
@@ -1351,10 +1378,20 @@ paths:
           required: false
           schema: { type: string, format: date-time }
           description: Upper bound (exclusive) on `detection.detectedTime`.
+        - name: sourceSystem
+          in: query
+          required: false
+          schema: { type: string }
+          description: Imported violations from this source system only (`system` of `apds-ext:apx:violation-source@1.0`, Part 19 §19.13).
+        - name: sourceRecordId
+          in: query
+          required: false
+          schema: { type: string }
+          description: Exact match on the source's record id (`recordId`); like `noticeNumber`, it names no place (Part 9 §9.3a rule 3).
         - $ref: "../vendor/apds/4.1/apds-api-4.1.yaml#/components/parameters/page"
       responses:
         "200":
-          description: Paginated violations (APDS PaginatedList shape).
+          description: Paginated violations (APDS PaginatedList shape); with `mode=change`, the changes after `cursor` in the same envelope (Part 5 §5.2 rule 8).
           content:
             application/json:
               schema:
@@ -1365,9 +1402,15 @@ paths:
                   data:
                     type: array
                     items: { $ref: "#/components/schemas/Violation" }
+                  updateMode: { $ref: "#/components/schemas/ChangeFeedUpdateMode" }
+                  cursor: { $ref: "#/components/schemas/ChangeFeedCursor" }
+                  deleted: { $ref: "#/components/schemas/ChangeFeedTombstones" }
+                  grantAdditions: { $ref: "#/components/schemas/ChangeFeedGrantAdditions" }
+                  next: { $ref: "#/components/schemas/ChangeFeedNext" }
         "401": { $ref: "#/components/responses/Unauthorized" }
         "403": { $ref: "#/components/responses/Forbidden" }
         "429": { $ref: "#/components/responses/TooManyRequests" }
+        "404": { $ref: "#/components/responses/CursorRefused" }
 
   /v1/violations/{id}:
     get:
@@ -1449,7 +1492,13 @@ paths:
         the operator's published documentation where the policy is
         silent); a `guided` or `manual` detection still in `detected`, or
         an automated one the policy does not permit, is 409
-        `violation-not-issuable`. Sets `notice`, `amount`, and `dueTime`.
+        `violation-not-issuable`. Whatever the detection mode, `issue` is
+        also 409 `violation-not-issuable` while any LPR read in
+        `observations[]` has plate review `pending` or `rejected` (Part 13
+        §13.3a(4a), Part 19 §19.4 rule 6), and when the `relatedSession`
+        link rests on match evidence with `plate.method: lenient` or
+        `applied: false` (Part 5 §5.8, Part 19 §19.4 rule 5). Sets
+        `notice`, `amount`, and `dueTime`.
 
         The server resolves the EnforcementPolicy in force at `place`
         (Part 19 §19.10) and refuses with 422 when the request breaks it:
@@ -1481,7 +1530,12 @@ paths:
             application/problem+json:
               schema: { $ref: "#/components/schemas/Problem" }
         "409":
-          description: Not issuable from the current state or detection mode.
+          description: |-
+            Not issuable from the current state or detection mode, while an
+            evidence read's plate review is `pending` or `rejected`, or on
+            lenient or unapplied match evidence (`violation-not-issuable`,
+            Part 19 §19.4); or an illegal transition
+            (`violation-transition-illegal`).
           content:
             application/problem+json:
               schema: { $ref: "#/components/schemas/Problem" }
@@ -1504,7 +1558,11 @@ paths:
         Transition `issued → paid`. The payment itself is taken through the
         Part 13 surface (`POST /v1/payments`, a payment link, or an APDS
         Payment ingested from a pay station); this attaches its reference.
-        Not in `issued` is 409 `violation-transition-illegal`.
+        Not in `issued` is 409 `violation-transition-illegal`. A body
+        `amount` below what is outstanding is a partial payment (Part 19
+        §19.6a): it is appended to `payments[]`, `amountPaid` grows, and
+        the violation stays `issued`; it moves to `paid` when `amountPaid`
+        reaches `amount`.
       parameters:
         - { name: id, in: path, required: true, schema: { type: string, format: uuid } }
       requestBody:
@@ -1779,10 +1837,12 @@ paths:
         - name: status
           in: query
           schema: { type: string, enum: [active, superseded, retired] }
+        - $ref: "#/components/parameters/ModeParam"
+        - $ref: "#/components/parameters/CursorParam"
         - $ref: "../vendor/apds/4.1/apds-api-4.1.yaml#/components/parameters/page"
       responses:
         "200":
-          description: Paginated policies (APDS PaginatedList shape).
+          description: Paginated policies (APDS PaginatedList shape); with `mode=change`, the changes after `cursor` in the same envelope (Part 5 §5.2 rule 8).
           content:
             application/json:
               schema:
@@ -1793,8 +1853,14 @@ paths:
                   data:
                     type: array
                     items: { $ref: "#/components/schemas/EnforcementPolicy" }
+                  updateMode: { $ref: "#/components/schemas/ChangeFeedUpdateMode" }
+                  cursor: { $ref: "#/components/schemas/ChangeFeedCursor" }
+                  deleted: { $ref: "#/components/schemas/ChangeFeedTombstones" }
+                  grantAdditions: { $ref: "#/components/schemas/ChangeFeedGrantAdditions" }
+                  next: { $ref: "#/components/schemas/ChangeFeedNext" }
         "401": { $ref: "#/components/responses/Unauthorized" }
         "403": { $ref: "#/components/responses/Forbidden" }
+        "404": { $ref: "#/components/responses/CursorRefused" }
         "429": { $ref: "#/components/responses/TooManyRequests" }
 
   /v1/enforcement/policies/effective:
@@ -1957,10 +2023,12 @@ paths:
         - name: status
           in: query
           schema: { type: string, enum: [active, superseded, removed] }
+        - $ref: "#/components/parameters/ModeParam"
+        - $ref: "#/components/parameters/CursorParam"
         - $ref: "../vendor/apds/4.1/apds-api-4.1.yaml#/components/parameters/page"
       responses:
         "200":
-          description: Paginated signage (APDS PaginatedList shape).
+          description: Paginated signage (APDS PaginatedList shape); with `mode=change`, the changes after `cursor` in the same envelope (Part 5 §5.2 rule 8).
           content:
             application/json:
               schema:
@@ -1971,8 +2039,14 @@ paths:
                   data:
                     type: array
                     items: { $ref: "#/components/schemas/Signage" }
+                  updateMode: { $ref: "#/components/schemas/ChangeFeedUpdateMode" }
+                  cursor: { $ref: "#/components/schemas/ChangeFeedCursor" }
+                  deleted: { $ref: "#/components/schemas/ChangeFeedTombstones" }
+                  grantAdditions: { $ref: "#/components/schemas/ChangeFeedGrantAdditions" }
+                  next: { $ref: "#/components/schemas/ChangeFeedNext" }
         "401": { $ref: "#/components/responses/Unauthorized" }
         "403": { $ref: "#/components/responses/Forbidden" }
+        "404": { $ref: "#/components/responses/CursorRefused" }
         "429": { $ref: "#/components/responses/TooManyRequests" }
 
   /v1/enforcement/signage/effective:
@@ -2146,6 +2220,8 @@ paths:
         `apx.validations:redeem` token sees only programs whose provider is
         its own `apx_org` (Part 20 §20.5).
       parameters:
+        - $ref: "#/components/parameters/ModeParam"
+        - $ref: "#/components/parameters/CursorParam"
         - { name: place, in: query, schema: { type: string, format: uuid } }
         - { name: provider, in: query, schema: { type: string, format: uuid } }
         - name: status
@@ -2154,7 +2230,7 @@ paths:
         - $ref: "../vendor/apds/4.1/apds-api-4.1.yaml#/components/parameters/page"
       responses:
         "200":
-          description: Paginated programs (APDS PaginatedList shape).
+          description: Paginated programs (APDS PaginatedList shape); with `mode=change`, the changes after `cursor` in the same envelope (Part 5 §5.2 rule 8).
           content:
             application/json:
               schema:
@@ -2165,9 +2241,15 @@ paths:
                   data:
                     type: array
                     items: { $ref: "#/components/schemas/ValidationProgram" }
+                  updateMode: { $ref: "#/components/schemas/ChangeFeedUpdateMode" }
+                  cursor: { $ref: "#/components/schemas/ChangeFeedCursor" }
+                  deleted: { $ref: "#/components/schemas/ChangeFeedTombstones" }
+                  grantAdditions: { $ref: "#/components/schemas/ChangeFeedGrantAdditions" }
+                  next: { $ref: "#/components/schemas/ChangeFeedNext" }
         "401": { $ref: "#/components/responses/Unauthorized" }
         "403": { $ref: "#/components/responses/Forbidden" }
         "429": { $ref: "#/components/responses/TooManyRequests" }
+        "404": { $ref: "#/components/responses/CursorRefused" }
 
   /v1/validations/programs/{id}:
     parameters:
@@ -2321,10 +2403,12 @@ paths:
       summary: List issuances for a program
       description: Batches issued to the program, newest first. Codes are never returned here.
       parameters:
+        - $ref: "#/components/parameters/ModeParam"
+        - $ref: "#/components/parameters/CursorParam"
         - $ref: "../vendor/apds/4.1/apds-api-4.1.yaml#/components/parameters/page"
       responses:
         "200":
-          description: Paginated issuances (APDS PaginatedList shape).
+          description: Paginated issuances (APDS PaginatedList shape); with `mode=change`, the changes after `cursor` in the same envelope (Part 5 §5.2 rule 8).
           content:
             application/json:
               schema:
@@ -2335,10 +2419,15 @@ paths:
                   data:
                     type: array
                     items: { $ref: "#/components/schemas/ValidationIssuance" }
+                  updateMode: { $ref: "#/components/schemas/ChangeFeedUpdateMode" }
+                  cursor: { $ref: "#/components/schemas/ChangeFeedCursor" }
+                  deleted: { $ref: "#/components/schemas/ChangeFeedTombstones" }
+                  grantAdditions: { $ref: "#/components/schemas/ChangeFeedGrantAdditions" }
+                  next: { $ref: "#/components/schemas/ChangeFeedNext" }
         "401": { $ref: "#/components/responses/Unauthorized" }
         "403": { $ref: "#/components/responses/Forbidden" }
         "404":
-          description: No such program.
+          description: No such program, or (`mode=change`) a refused cursor (`target-not-found`; Part 5 §5.2 rules 2 and 5).
           content:
             application/problem+json:
               schema: { $ref: "#/components/schemas/Problem" }
@@ -2532,6 +2621,8 @@ paths:
         applied it, channel, status, and `since` (appliedTime). A `redeem`
         token sees only its own provider's redemptions (§20.5).
       parameters:
+        - $ref: "#/components/parameters/ModeParam"
+        - $ref: "#/components/parameters/CursorParam"
         - { name: program, in: query, schema: { type: string, format: uuid } }
         - name: command
           in: query
@@ -2551,7 +2642,7 @@ paths:
         - $ref: "../vendor/apds/4.1/apds-api-4.1.yaml#/components/parameters/page"
       responses:
         "200":
-          description: Paginated redemptions (APDS PaginatedList shape).
+          description: Paginated redemptions (APDS PaginatedList shape); with `mode=change`, the changes after `cursor` in the same envelope (Part 5 §5.2 rule 8).
           content:
             application/json:
               schema:
@@ -2562,9 +2653,15 @@ paths:
                   data:
                     type: array
                     items: { $ref: "#/components/schemas/ValidationRedemption" }
+                  updateMode: { $ref: "#/components/schemas/ChangeFeedUpdateMode" }
+                  cursor: { $ref: "#/components/schemas/ChangeFeedCursor" }
+                  deleted: { $ref: "#/components/schemas/ChangeFeedTombstones" }
+                  grantAdditions: { $ref: "#/components/schemas/ChangeFeedGrantAdditions" }
+                  next: { $ref: "#/components/schemas/ChangeFeedNext" }
         "401": { $ref: "#/components/responses/Unauthorized" }
         "403": { $ref: "#/components/responses/Forbidden" }
         "429": { $ref: "#/components/responses/TooManyRequests" }
+        "404": { $ref: "#/components/responses/CursorRefused" }
 
   /v1/validations/redemptions/{id}:
     get:
@@ -2737,10 +2834,12 @@ paths:
       summary: List closed statements for a program
       description: Closed statements, newest period first; `lines[]` omitted.
       parameters:
+        - $ref: "#/components/parameters/ModeParam"
+        - $ref: "#/components/parameters/CursorParam"
         - $ref: "../vendor/apds/4.1/apds-api-4.1.yaml#/components/parameters/page"
       responses:
         "200":
-          description: Paginated statements (APDS PaginatedList shape).
+          description: Paginated statements (APDS PaginatedList shape); with `mode=change`, the changes after `cursor` in the same envelope (Part 5 §5.2 rule 8).
           content:
             application/json:
               schema:
@@ -2751,10 +2850,15 @@ paths:
                   data:
                     type: array
                     items: { $ref: "#/components/schemas/ValidationStatement" }
+                  updateMode: { $ref: "#/components/schemas/ChangeFeedUpdateMode" }
+                  cursor: { $ref: "#/components/schemas/ChangeFeedCursor" }
+                  deleted: { $ref: "#/components/schemas/ChangeFeedTombstones" }
+                  grantAdditions: { $ref: "#/components/schemas/ChangeFeedGrantAdditions" }
+                  next: { $ref: "#/components/schemas/ChangeFeedNext" }
         "401": { $ref: "#/components/responses/Unauthorized" }
         "403": { $ref: "#/components/responses/Forbidden" }
         "404":
-          description: No such program.
+          description: No such program, or (`mode=change`) a refused cursor (`target-not-found`; Part 5 §5.2 rules 2 and 5).
           content:
             application/problem+json:
               schema: { $ref: "#/components/schemas/Problem" }
@@ -2866,6 +2970,8 @@ paths:
         A lookup by `identification` that matches only records outside the
         grant returns an empty 200 (Part 9 §9.3a).
       parameters:
+        - $ref: "#/components/parameters/ModeParam"
+        - $ref: "#/components/parameters/CursorParam"
         - { name: holder, in: query, schema: { type: string, format: uuid } }
         - { name: account, in: query, schema: { type: string, format: uuid } }
         - name: type
@@ -2880,7 +2986,7 @@ paths:
         - $ref: "../vendor/apds/4.1/apds-api-4.1.yaml#/components/parameters/page"
       responses:
         "200":
-          description: Paginated credentials (APDS PaginatedList shape).
+          description: Paginated credentials (APDS PaginatedList shape); with `mode=change`, the changes after `cursor` in the same envelope (Part 5 §5.2 rule 8).
           content:
             application/json:
               schema:
@@ -2891,9 +2997,15 @@ paths:
                   data:
                     type: array
                     items: { $ref: "#/components/schemas/CredentialRecord" }
+                  updateMode: { $ref: "#/components/schemas/ChangeFeedUpdateMode" }
+                  cursor: { $ref: "#/components/schemas/ChangeFeedCursor" }
+                  deleted: { $ref: "#/components/schemas/ChangeFeedTombstones" }
+                  grantAdditions: { $ref: "#/components/schemas/ChangeFeedGrantAdditions" }
+                  next: { $ref: "#/components/schemas/ChangeFeedNext" }
         "401": { $ref: "#/components/responses/Unauthorized" }
         "403": { $ref: "#/components/responses/Forbidden" }
         "429": { $ref: "#/components/responses/TooManyRequests" }
+        "404": { $ref: "#/components/responses/CursorRefused" }
 
   /v1/credentials/{id}:
     get:
@@ -3225,6 +3337,8 @@ paths:
         (Part 9 §9.3a). Retention per Part 9 §9.6. The same events are
         published as `apx.credentials.access.v1` (Part 21 §21.4).
       parameters:
+        - $ref: "#/components/parameters/ModeParam"
+        - $ref: "#/components/parameters/CursorParam"
         - name: place
           in: query
           description: HierarchyElement ids, comma-separated; subtree-inclusive.
@@ -3248,7 +3362,7 @@ paths:
         - $ref: "../vendor/apds/4.1/apds-api-4.1.yaml#/components/parameters/page"
       responses:
         "200":
-          description: Paginated access events (APDS PaginatedList shape).
+          description: Paginated access events (APDS PaginatedList shape); with `mode=change`, the changes after `cursor` in the same envelope (Part 5 §5.2 rule 8).
           content:
             application/json:
               schema:
@@ -3259,10 +3373,16 @@ paths:
                   data:
                     type: array
                     items: { $ref: "./domains/credentials/schemas.yaml#/AccessEvent" }
+                  updateMode: { $ref: "#/components/schemas/ChangeFeedUpdateMode" }
+                  cursor: { $ref: "#/components/schemas/ChangeFeedCursor" }
+                  deleted: { $ref: "#/components/schemas/ChangeFeedTombstones" }
+                  grantAdditions: { $ref: "#/components/schemas/ChangeFeedGrantAdditions" }
+                  next: { $ref: "#/components/schemas/ChangeFeedNext" }
         "400": { $ref: "#/components/responses/BadRequest" }
         "401": { $ref: "#/components/responses/Unauthorized" }
         "403": { $ref: "#/components/responses/Forbidden" }
         "429": { $ref: "#/components/responses/TooManyRequests" }
+        "404": { $ref: "#/components/responses/CursorRefused" }
 
   # ===== Valet (optional class apx-valet; Part 22) ===== #
   # Net-new: APDS has no valet entity. The stay is a native Session; this
@@ -3334,6 +3454,8 @@ paths:
       summary: List/filter valet tickets
       description: Filter by place (subtree-inclusive), status, plate, ticket number, customer account, and `since` (dropOff.time).
       parameters:
+        - $ref: "#/components/parameters/ModeParam"
+        - $ref: "#/components/parameters/CursorParam"
         - { name: place, in: query, schema: { type: string, format: uuid } }
         - name: status
           in: query
@@ -3345,7 +3467,7 @@ paths:
         - $ref: "../vendor/apds/4.1/apds-api-4.1.yaml#/components/parameters/page"
       responses:
         "200":
-          description: Paginated tickets (APDS PaginatedList shape).
+          description: Paginated tickets (APDS PaginatedList shape); with `mode=change`, the changes after `cursor` in the same envelope (Part 5 §5.2 rule 8).
           content:
             application/json:
               schema:
@@ -3356,9 +3478,15 @@ paths:
                   data:
                     type: array
                     items: { $ref: "#/components/schemas/ValetTicket" }
+                  updateMode: { $ref: "#/components/schemas/ChangeFeedUpdateMode" }
+                  cursor: { $ref: "#/components/schemas/ChangeFeedCursor" }
+                  deleted: { $ref: "#/components/schemas/ChangeFeedTombstones" }
+                  grantAdditions: { $ref: "#/components/schemas/ChangeFeedGrantAdditions" }
+                  next: { $ref: "#/components/schemas/ChangeFeedNext" }
         "401": { $ref: "#/components/responses/Unauthorized" }
         "403": { $ref: "#/components/responses/Forbidden" }
         "429": { $ref: "#/components/responses/TooManyRequests" }
+        "404": { $ref: "#/components/responses/CursorRefused" }
 
   /v1/valet/queue:
     get:
@@ -3996,6 +4124,8 @@ paths:
       summary: List/filter charging sessions
       description: Filter by place (subtree-inclusive), charging point, status, plate, parking session, account, and `since` (timeline.authorizedTime).
       parameters:
+        - $ref: "#/components/parameters/ModeParam"
+        - $ref: "#/components/parameters/CursorParam"
         - { name: place, in: query, schema: { type: string, format: uuid } }
         - { name: chargingPoint, in: query, schema: { type: string, format: uuid } }
         - name: status
@@ -4008,7 +4138,7 @@ paths:
         - $ref: "../vendor/apds/4.1/apds-api-4.1.yaml#/components/parameters/page"
       responses:
         "200":
-          description: Paginated sessions (APDS PaginatedList shape).
+          description: Paginated sessions (APDS PaginatedList shape); with `mode=change`, the changes after `cursor` in the same envelope (Part 5 §5.2 rule 8).
           content:
             application/json:
               schema:
@@ -4019,9 +4149,15 @@ paths:
                   data:
                     type: array
                     items: { $ref: "#/components/schemas/ChargingSession" }
+                  updateMode: { $ref: "#/components/schemas/ChangeFeedUpdateMode" }
+                  cursor: { $ref: "#/components/schemas/ChangeFeedCursor" }
+                  deleted: { $ref: "#/components/schemas/ChangeFeedTombstones" }
+                  grantAdditions: { $ref: "#/components/schemas/ChangeFeedGrantAdditions" }
+                  next: { $ref: "#/components/schemas/ChangeFeedNext" }
         "401": { $ref: "#/components/responses/Unauthorized" }
         "403": { $ref: "#/components/responses/Forbidden" }
         "429": { $ref: "#/components/responses/TooManyRequests" }
+        "404": { $ref: "#/components/responses/CursorRefused" }
 
   /v1/charging/sessions/{id}:
     get:
@@ -4149,6 +4285,824 @@ paths:
           content:
             application/problem+json:
               schema: { $ref: "#/components/schemas/Problem" }
+        "429": { $ref: "#/components/responses/TooManyRequests" }
+
+  # ===== Read-level plate review, read-back, and searches (Part 13 §13.3, §13.3a(4a); Part 9 §9.6) ===== #
+  /v1/lpr/reads/{observation}:
+    get:
+      operationId: get-apx-v1-lpr-reads-observation
+      security:
+        - apxOAuth: ["apx.lpr:read"]
+      tags: [LPR]
+      summary: Read back one ingested LPR read by its Observation id
+      description: |-
+        One `LprRead` for the Observation (Part 13 §13.3). The same
+        projection as `GET /v1/lpr/reads?observation=`, addressed by path
+        like the revision routes. A read at a place outside the caller's
+        `apx_places` grant is 403 `insufficient-grant`; an unknown or purged
+        read is 404 `target-not-found` (§13.3b).
+      parameters:
+        - { name: observation, in: path, required: true, schema: { type: string, format: uuid } }
+      responses:
+        "200":
+          description: The read.
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/LprRead" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+        "404": { $ref: "#/components/responses/NotFound" }
+        "429": { $ref: "#/components/responses/TooManyRequests" }
+
+  /v1/lpr/reads/{observation}/plate:
+    put:
+      operationId: put-apx-v1-lpr-reads-observation-plate
+      security:
+        - apxOAuth: ["apx.data:write"]
+      tags: [LPR]
+      summary: A reviewer confirms, corrects, or rejects a read's plate
+      description: |-
+        Read-level plate review (Part 13 §13.3a(4a)), the counterpart of
+        the access-event revision: a reviewer's decision on one read,
+        before any Session exists and however many Sessions the read
+        feeds. `corrected` writes the winning values into the
+        Observation's `observedCredentialId` and
+        `vehicleAncillaryIdentification` and into `detail.plate`,
+        `.country`, `.stateProvince`, keeping the engine's values, with
+        their confidences, in `detail.review.original` — set on the first
+        correction and never changed afterwards. Every decision that
+        changes the read sets `detail.review`, increments the Observation
+        `version`, and publishes `apx.data.observation.updated.v1`.
+        Resending the decision and values the read already has is a
+        no-op: 200 with the current `version`, no new version, no event.
+        `If-Match` carries the Observation `version` last read (409
+        `version-conflict` when stale; nothing is written). `corrected`
+        without `plate`, or `plate`, `country`, or `stateProvince` with
+        any other decision, is 422 `request-unprocessable`. A `pending` or
+        `rejected` read is not issuable evidence (Part 19 §19.4 rule 6).
+        The write changes no Session.
+
+        The 200 is the read as it now stands when the caller also holds
+        `apx.lpr:read`; otherwise (scope `apx.data:write` alone suffices
+        for the write) it is the access-event-style minimal echo, which
+        carries only the plate values the caller itself supplied and
+        discloses no other plate-bearing data (Part 9 §9.6).
+      parameters:
+        - { name: observation, in: path, required: true, schema: { type: string, format: uuid } }
+        - $ref: "#/components/parameters/IfMatch"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/PlateCorrection" }
+      responses:
+        "200":
+          description: The read after the decision.
+          content:
+            application/json:
+              schema:
+                oneOf:
+                  - $ref: "#/components/schemas/LprRead"
+                  - type: object
+                    required: [observation, version, review]
+                    properties:
+                      observation:
+                        $ref: "../vendor/apds/4.1/apds-api-4.1.yaml#/components/schemas/Reference"
+                      version:
+                        type: integer
+                        minimum: 1
+                      review:
+                        type: object
+                        properties:
+                          state:
+                            type: string
+                            enum: [pending, confirmed, corrected, rejected, notRequired]
+                      plate:
+                        type: string
+                        description: Echoed only when the caller sent it.
+                      country:
+                        type: string
+                        description: Echoed only when the caller sent it.
+                      stateProvince:
+                        type: string
+                        description: Echoed only when the caller sent it.
+        "400": { $ref: "#/components/responses/BadRequest" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+        "404": { $ref: "#/components/responses/NotFound" }
+        "409":
+          description: "`If-Match` names a stale Observation version (`version-conflict`); nothing is written."
+          content:
+            application/problem+json:
+              schema: { $ref: "#/components/schemas/Problem" }
+        "422":
+          description: "`corrected` without a `plate`, or `plate`, `country`, or `stateProvince` sent with another decision (`request-unprocessable`); nothing is written."
+          content:
+            application/problem+json:
+              schema: { $ref: "#/components/schemas/Problem" }
+        "429": { $ref: "#/components/responses/TooManyRequests" }
+
+  /v1/lpr/reads:search:
+    post:
+      operationId: post-apx-v1-lpr-reads-search
+      security:
+        - apxOAuth: ["apx.lpr:read"]
+      tags: [LPR]
+      summary: The reads lookup with the plate in a body, never a URL
+      description: |-
+        The same lookup as `GET /v1/lpr/reads`, with the keys in the body
+        so a plate never enters a URL that proxies, gateways, and access
+        logs keep (Part 9 §9.6; Part 13 §13.3). Same rules, grant
+        behaviour, and response. The `GET` keeps working; a deployment
+        that crosses a network boundary SHOULD use this form.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/LprReadSearch" }
+      responses:
+        "200":
+          description: Matching reads.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  meta:
+                    $ref: "../vendor/apds/4.1/apds-api-4.1.yaml#/components/schemas/PaginatedListMeta"
+                  data:
+                    type: array
+                    items: { $ref: "#/components/schemas/LprRead" }
+        "400":
+          description: None of `plate`, `ticket`, `observation`, or `session` given (`invalid-request`).
+          content:
+            application/problem+json:
+              schema: { $ref: "#/components/schemas/Problem" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+        "429": { $ref: "#/components/responses/TooManyRequests" }
+
+  /v1/accounts:search:
+    post:
+      operationId: post-apx-v1-accounts-search
+      security:
+        - apxOAuth: ["apx.accounts:read"]
+      tags: [Accounts]
+      summary: The account lookup with personal data in a body, never a URL
+      description: |-
+        The same lookup as `GET /v1/accounts` (Part 13 §13.1) with the keys
+        in the body (Part 9 §9.6). Same rules, grant behaviour, and
+        response; a card number pasted into `card` is 422
+        `personal-data-not-permitted`.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/AccountSearch" }
+      responses:
+        "200":
+          description: Matching accounts.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  meta:
+                    $ref: "../vendor/apds/4.1/apds-api-4.1.yaml#/components/schemas/PaginatedListMeta"
+                  data:
+                    type: array
+                    items: { $ref: "#/components/schemas/Account" }
+        "400": { $ref: "#/components/responses/BadRequest" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+        "422":
+          description: More than truncated card digits in `card` (`personal-data-not-permitted`).
+          content:
+            application/problem+json:
+              schema: { $ref: "#/components/schemas/Problem" }
+        "429": { $ref: "#/components/responses/TooManyRequests" }
+
+  /v1/payments:search:
+    post:
+      operationId: post-apx-v1-payments-search
+      security:
+        - apxOAuth: ["apx.accounts:read"]
+      tags: [Accounts]
+      summary: The payment-history lookup with the keys in a body
+      description: |-
+        The same lookup as `GET /v1/payments` (Part 13 §13.2) with the keys
+        in the body (Part 9 §9.6). Same keys rule (at least one), 8-hour
+        window on truncated keys, hold rules, grant behaviour, and response.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/PaymentSearch" }
+      responses:
+        "200":
+          description: Matching payments.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  meta:
+                    $ref: "../vendor/apds/4.1/apds-api-4.1.yaml#/components/schemas/PaginatedListMeta"
+                  data:
+                    type: array
+                    items: { $ref: "#/components/schemas/PaymentRecord" }
+        "400":
+          description: No key given (`invalid-request`).
+          content:
+            application/problem+json:
+              schema: { $ref: "#/components/schemas/Problem" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+        "422":
+          description: More than four card digits in `cardLast4` (`personal-data-not-permitted`).
+          content:
+            application/problem+json:
+              schema: { $ref: "#/components/schemas/Problem" }
+        "429": { $ref: "#/components/responses/TooManyRequests" }
+
+  /v1/violations:search:
+    post:
+      operationId: post-apx-v1-violations-search
+      security:
+        - apxOAuth: ["apx.violations:read"]
+      tags: [Violations]
+      summary: The violations lookup with the plate in a body
+      description: |-
+        The same lookup as `GET /v1/violations` (Part 19 §19.2) with the
+        keys in the body (Part 9 §9.6). Same rules and response.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                plate: { type: string }
+                noticeNumber: { type: string }
+                status:
+                  type: string
+                  enum: [detected, confirmed, dismissed, issued, paid, appealed, closed, voided]
+                type: { type: string }
+                place:
+                  type: string
+                  format: uuid
+                detectionMode:
+                  type: string
+                  enum: [automated, guided, manual]
+                since:
+                  type: string
+                  format: date-time
+                until:
+                  type: string
+                  format: date-time
+                sourceSystem: { type: string }
+                sourceRecordId: { type: string }
+                page:
+                  type: integer
+                  minimum: 1
+      responses:
+        "200":
+          description: Matching violations.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  meta:
+                    $ref: "../vendor/apds/4.1/apds-api-4.1.yaml#/components/schemas/PaginatedListMeta"
+                  data:
+                    type: array
+                    items: { $ref: "#/components/schemas/Violation" }
+        "400": { $ref: "#/components/responses/BadRequest" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+        "429": { $ref: "#/components/responses/TooManyRequests" }
+
+  /v1/enforcement/eligibility:check:
+    post:
+      operationId: post-apx-v1-enforcement-eligibility-check
+      security:
+        - apxOAuth: ["apx.violations:read"]
+      tags: [Violations]
+      summary: The eligibility check with the credential in a body
+      description: |-
+        The same question as `GET /v1/enforcement/eligibility` (Part 19
+        §19.3) with the credential in the body (Part 9 §9.6). Same answer.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [credential, place]
+              properties:
+                credential: { type: string }
+                credentialType:
+                  $ref: "../vendor/apds/4.1/apds-api-4.1.yaml#/components/schemas/CredentialTypeEnum"
+                place:
+                  type: string
+                  format: uuid
+                at:
+                  type: string
+                  format: date-time
+      responses:
+        "200":
+          description: The eligibility result.
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/EligibilityResult" }
+        "400": { $ref: "#/components/responses/BadRequest" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+        "404": { $ref: "#/components/responses/NotFound" }
+        "429": { $ref: "#/components/responses/TooManyRequests" }
+
+  # ===== Violations issued elsewhere (Part 19 §19.13) ===== #
+  /v1/enforcement/violation-imports:
+    post:
+      operationId: post-apx-v1-enforcement-violation-imports
+      security:
+        - apxOAuth: ["apx.violations:manage"]
+      tags: [Violations]
+      summary: Import a violation an external enforcement system issued (idempotent)
+      description: |-
+        Records a citation, warning, or notice that another system
+        detected and issued, in whatever state the source reports it,
+        with the `statusHistory[]` times the source recorded (Part 19
+        §19.13). The path is under `/v1/enforcement`, like the eligibility
+        check, so it cannot be mistaken for `/v1/violations/{id}` (§19.2).
+
+        `Idempotency-Key` is REQUIRED and the record is also keyed on the
+        decoration's `system` + `recordId`: a later import with a higher
+        `sourceRevision` — or, when the source keeps no counter, a later
+        `sourceUpdatedTime` — updates the record (200, version + 1,
+        `apx.violations.status.v1`); the same revision is a no-op 200; an
+        older one is 409 `version-conflict`. `statusHistory[]` is
+        append-only: the server keeps the entries it holds and appends only
+        the source's later ones, never rewriting history.
+
+        A state at or past issuance (`issued`, `paid`, `appealed`,
+        `closed`) without `notice` (with `noticeNumber` and `issuedTime`)
+        or `amount` is 400 `invalid-request`; `paid` with `amountPaid`
+        below `amount` is 422 `request-unprocessable`. The server performs
+        no eligibility check and applies no policy clamp to an imported
+        amount: the source decided. Publishes `apx.violations.detected.v1`
+        on first import, and `.issued.v1` when the imported state is at or
+        beyond `issued`.
+      parameters:
+        - { name: Idempotency-Key, in: header, required: true, schema: { type: string } }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/ViolationImport" }
+      responses:
+        "200":
+          description: An existing import updated, the same revision again (no change), or an idempotent replay.
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/Violation" }
+        "201":
+          description: Imported.
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/Violation" }
+        "400":
+          description: |-
+            Missing `Idempotency-Key` (`idempotency-key-required`), or a body
+            that fails the schema — no `apds-ext:apx:violation-source@1.0`,
+            or a state at or past issuance without `notice` or `amount`
+            (`invalid-request`, with `errors[]`).
+          content:
+            application/problem+json:
+              schema: { $ref: "#/components/schemas/Problem" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+        "409":
+          description: "`Idempotency-Key` replayed with a different body (`idempotency-conflict`), or a source revision older than the one held (`version-conflict`)."
+          content:
+            application/problem+json:
+              schema: { $ref: "#/components/schemas/Problem" }
+        "422":
+          description: |-
+            Unknown `place` or a `violationType` outside the served
+            registries (`reference-unknown`); `violationStatus: paid` with
+            `amountPaid` below `amount`, or a payment in another currency
+            than `amount` (`request-unprocessable`).
+          content:
+            application/problem+json:
+              schema: { $ref: "#/components/schemas/Problem" }
+        "429": { $ref: "#/components/responses/TooManyRequests" }
+
+  /v1/violations/{id}/session:
+    post:
+      operationId: post-apx-v1-violations-id-session
+      security:
+        - apxOAuth: ["apx.violations:manage"]
+      tags: [Violations]
+      summary: Set, correct, or clear the Session a violation relates to
+      description: |-
+        Sets, corrects, or clears (`session: null`) `relatedSession` after
+        creation, with the match evidence (Part 19 §19.13;
+        `apds-ext:apx:match-evidence@1.0` is written onto the violation).
+        The link is not a lifecycle transition: it is valid in every
+        state, terminal ones included, and appends nothing to
+        `statusHistory[]`. `If-Match` carries the Violation `version` last
+        read (409 `version-conflict` when stale; nothing is written). On a
+        change `version` increments and `apx.violations.status.v1` is
+        published; resending what the violation already holds is a no-op
+        (200, no new version, no event). A Session that does not exist or
+        is not visible to the caller is 422 `reference-unknown`; one at a
+        place outside the hierarchy of the violation's `place` (neither
+        the same element, an ancestor, nor a descendant) is 422
+        `request-unprocessable`.
+      parameters:
+        - { name: id, in: path, required: true, schema: { type: string, format: uuid } }
+        - $ref: "#/components/parameters/IfMatch"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/ViolationSessionLink" }
+      responses:
+        "200":
+          description: The violation with its Session link as it now stands.
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/Violation" }
+        "400": { $ref: "#/components/responses/BadRequest" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+        "404": { $ref: "#/components/responses/NotFound" }
+        "409":
+          description: Stale `If-Match` (`version-conflict`); nothing is written.
+          content:
+            application/problem+json:
+              schema: { $ref: "#/components/schemas/Problem" }
+        "422":
+          description: |-
+            `reference-unknown` — the Session names nothing visible to the
+            caller; `request-unprocessable` — the Session is at a place
+            outside the hierarchy of the violation's `place`.
+          content:
+            application/problem+json:
+              schema: { $ref: "#/components/schemas/Problem" }
+        "429": { $ref: "#/components/responses/TooManyRequests" }
+
+  # ===== Occupancy history (Part 5 §5.5a) ===== #
+  /v1/places/{id}/occupancy/history:
+    get:
+      operationId: get-apx-v1-places-id-occupancy-history
+      security:
+        - apxOAuth: ["apx.data:read"]
+      tags: [Data]
+      summary: Occupancy per clock interval for one element
+      description: |-
+        The history behind the §5.5 snapshot (Part 5 §5.5a), derived from
+        the APDS DemandTable records the implementation holds for the
+        element. Buckets align to `interval` boundaries in the place's time
+        zone; an element the implementation holds no occupancy for is 404
+        `target-not-found`; the `apx_places` grant must cover the element.
+      parameters:
+        - { name: id, in: path, required: true, schema: { type: string, format: uuid } }
+        - { name: from, in: query, required: true, schema: { type: string, format: date-time } }
+        - { name: to, in: query, required: true, schema: { type: string, format: date-time } }
+        - name: interval
+          in: query
+          description: Bucket length (ISO 8601 duration); default `PT1H`. Servers MAY refuse an interval shorter than their sampling with 400.
+          schema: { type: string, default: PT1H }
+      responses:
+        "200":
+          description: The buckets.
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/OccupancyHistoryPage" }
+        "400": { $ref: "#/components/responses/BadRequest" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+        "404": { $ref: "#/components/responses/NotFound" }
+        "429": { $ref: "#/components/responses/TooManyRequests" }
+
+  # ===== Plate lists (optional class apx-plate-lists; Part 24) ===== #
+  /v1/plate-lists:
+    get:
+      operationId: get-apx-v1-plate-lists
+      security:
+        - apxOAuth: ["apx.platelists:read"]
+      tags: [Plate lists]
+      summary: List plate lists
+      description: |-
+        The lists visible to the caller: those with a `places[]` entry
+        inside the grant, and those owned by the caller's `apx_org`.
+        `mode=change&cursor=` serves the Part 5 §5.2 feed of lists
+        (entries have their own feed).
+      parameters:
+        - $ref: "#/components/parameters/ModeParam"
+        - $ref: "#/components/parameters/CursorParam"
+        - { name: place, in: query, schema: { type: string, format: uuid }, description: Lists that apply at this element or its subtree. }
+        - { name: category, in: query, schema: { type: string } }
+        - { name: status, in: query, schema: { type: string, enum: [active, suspended, retired] } }
+        - $ref: "../vendor/apds/4.1/apds-api-4.1.yaml#/components/parameters/page"
+      responses:
+        "200":
+          description: Paginated lists; with `mode=change`, the changes after `cursor` in the same envelope (Part 5 §5.2 rule 8).
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  meta:
+                    $ref: "../vendor/apds/4.1/apds-api-4.1.yaml#/components/schemas/PaginatedListMeta"
+                  data:
+                    type: array
+                    items: { $ref: "#/components/schemas/PlateList" }
+                  updateMode: { $ref: "#/components/schemas/ChangeFeedUpdateMode" }
+                  cursor: { $ref: "#/components/schemas/ChangeFeedCursor" }
+                  deleted: { $ref: "#/components/schemas/ChangeFeedTombstones" }
+                  grantAdditions: { $ref: "#/components/schemas/ChangeFeedGrantAdditions" }
+                  next: { $ref: "#/components/schemas/ChangeFeedNext" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+        "404": { $ref: "#/components/responses/CursorRefused" }
+        "429": { $ref: "#/components/responses/TooManyRequests" }
+    post:
+      operationId: post-apx-v1-plate-lists
+      security:
+        - apxOAuth: ["apx.platelists:manage"]
+      tags: [Plate lists]
+      summary: Create a plate list
+      description: |-
+        Creates a list owned by the caller's `apx_org` (Part 24 §24.1).
+        Every `places[].place` must lie inside the grant (403
+        `insufficient-grant`). `Idempotency-Key` optional (Part 4 §4.2a).
+        Publishes `apx.platelists.changed.v1`.
+      parameters:
+        - $ref: "#/components/parameters/IdempotencyKeyOptional"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/PlateList" }
+      responses:
+        "200":
+          description: Idempotent replay.
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/PlateList" }
+        "201":
+          description: Created.
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/PlateList" }
+        "400": { $ref: "#/components/responses/BadRequest" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+        "409":
+          description: "`Idempotency-Key` replayed with a different body (`idempotency-conflict`)."
+          content:
+            application/problem+json:
+              schema: { $ref: "#/components/schemas/Problem" }
+        "422":
+          description: A `category` outside the served registries, or a `places[].place` that does not exist (`reference-unknown`).
+          content:
+            application/problem+json:
+              schema: { $ref: "#/components/schemas/Problem" }
+        "429": { $ref: "#/components/responses/TooManyRequests" }
+
+  /v1/plate-lists/{id}:
+    get:
+      operationId: get-apx-v1-plate-lists-id
+      security:
+        - apxOAuth: ["apx.platelists:read"]
+      tags: [Plate lists]
+      summary: Read a plate list
+      parameters:
+        - { name: id, in: path, required: true, schema: { type: string, format: uuid } }
+      responses:
+        "200":
+          description: The list.
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/PlateList" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+        "404": { $ref: "#/components/responses/NotFound" }
+        "429": { $ref: "#/components/responses/TooManyRequests" }
+    put:
+      operationId: put-apx-v1-plate-lists-id
+      security:
+        - apxOAuth: ["apx.platelists:manage"]
+      tags: [Plate lists]
+      summary: Replace a plate list's policy (name, category, places, status)
+      description: |-
+        Full replacement with the version last read as `If-Match` or body
+        `version` (409 `version-conflict`, Part 4 §4.2a). Entries are not
+        part of this body. Publishes `apx.platelists.changed.v1`.
+      parameters:
+        - { name: id, in: path, required: true, schema: { type: string, format: uuid } }
+        - $ref: "#/components/parameters/IfMatch"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/PlateList" }
+      responses:
+        "200":
+          description: The list as it now stands.
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/PlateList" }
+        "400": { $ref: "#/components/responses/BadRequest" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+        "404": { $ref: "#/components/responses/NotFound" }
+        "409":
+          description: Stale version (`version-conflict`).
+          content:
+            application/problem+json:
+              schema: { $ref: "#/components/schemas/Problem" }
+        "422":
+          description: A `category` outside the served registries, or an unknown place (`reference-unknown`).
+          content:
+            application/problem+json:
+              schema: { $ref: "#/components/schemas/Problem" }
+        "429": { $ref: "#/components/responses/TooManyRequests" }
+
+  /v1/plate-lists/{id}/entries:
+    get:
+      operationId: get-apx-v1-plate-lists-id-entries
+      security:
+        - apxOAuth: ["apx.platelists:read"]
+      tags: [Plate lists]
+      summary: List a plate list's entries
+      description: |-
+        Entries of one list, optionally by exact credential value;
+        `mode=change&cursor=` serves the Part 5 §5.2 feed of entries so a
+        screening module keeps a local copy current. Plate values appear
+        only under `apx.platelists:*` (Part 9 §9.6); a consumer holding
+        only `apx.data:read` may subscribe to digests instead (§9.6 rule 6).
+      parameters:
+        - { name: id, in: path, required: true, schema: { type: string, format: uuid } }
+        - $ref: "#/components/parameters/ModeParam"
+        - $ref: "#/components/parameters/CursorParam"
+        - { name: credential, in: query, schema: { type: string }, description: Exact `credential.credentialIdentification` match. }
+        - { name: activeAt, in: query, schema: { type: string, format: date-time }, description: Only entries whose validity contains this instant. }
+        - $ref: "../vendor/apds/4.1/apds-api-4.1.yaml#/components/parameters/page"
+      responses:
+        "200":
+          description: Paginated entries; with `mode=change`, the changes after `cursor` in the same envelope (Part 5 §5.2 rule 8).
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  meta:
+                    $ref: "../vendor/apds/4.1/apds-api-4.1.yaml#/components/schemas/PaginatedListMeta"
+                  data:
+                    type: array
+                    items: { $ref: "#/components/schemas/PlateListEntry" }
+                  updateMode: { $ref: "#/components/schemas/ChangeFeedUpdateMode" }
+                  cursor: { $ref: "#/components/schemas/ChangeFeedCursor" }
+                  deleted: { $ref: "#/components/schemas/ChangeFeedTombstones" }
+                  grantAdditions: { $ref: "#/components/schemas/ChangeFeedGrantAdditions" }
+                  next: { $ref: "#/components/schemas/ChangeFeedNext" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+        "404": { $ref: "#/components/responses/NotFound" }
+        "429": { $ref: "#/components/responses/TooManyRequests" }
+    post:
+      operationId: post-apx-v1-plate-lists-id-entries
+      security:
+        - apxOAuth: ["apx.platelists:manage"]
+      tags: [Plate lists]
+      summary: Add an entry to a plate list
+      description: |-
+        Adds a credential to the list (Part 24 §24.2). An entry whose
+        credential is already on the list with an overlapping validity is
+        updated in place (200) rather than duplicated. `Idempotency-Key`
+        optional. Publishes `apx.platelists.changed.v1` with the list.
+      parameters:
+        - { name: id, in: path, required: true, schema: { type: string, format: uuid } }
+        - $ref: "#/components/parameters/IdempotencyKeyOptional"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/PlateListEntry" }
+      responses:
+        "200":
+          description: An existing entry for the credential updated, or an idempotent replay.
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/PlateListEntry" }
+        "201":
+          description: Added.
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/PlateListEntry" }
+        "400": { $ref: "#/components/responses/BadRequest" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+        "404": { $ref: "#/components/responses/NotFound" }
+        "409":
+          description: "`Idempotency-Key` replayed with a different body (`idempotency-conflict`)."
+          content:
+            application/problem+json:
+              schema: { $ref: "#/components/schemas/Problem" }
+        "422":
+          description: An inverted validity window (`request-unprocessable`), or a full card number where a plate is expected (`personal-data-not-permitted`).
+          content:
+            application/problem+json:
+              schema: { $ref: "#/components/schemas/Problem" }
+        "429": { $ref: "#/components/responses/TooManyRequests" }
+
+  /v1/plate-lists/{id}/entries/{entryId}:
+    get:
+      operationId: get-apx-v1-plate-lists-id-entries-entryid
+      security:
+        - apxOAuth: ["apx.platelists:read"]
+      tags: [Plate lists]
+      summary: Read one entry
+      parameters:
+        - { name: id, in: path, required: true, schema: { type: string, format: uuid } }
+        - { name: entryId, in: path, required: true, schema: { type: string, format: uuid } }
+      responses:
+        "200":
+          description: The entry.
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/PlateListEntry" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+        "404": { $ref: "#/components/responses/NotFound" }
+        "429": { $ref: "#/components/responses/TooManyRequests" }
+    delete:
+      operationId: delete-apx-v1-plate-lists-id-entries-entryid
+      security:
+        - apxOAuth: ["apx.platelists:manage"]
+      tags: [Plate lists]
+      summary: Remove an entry
+      description: Removes the credential from the list; the entry feed emits a tombstone. Publishes `apx.platelists.changed.v1`.
+      parameters:
+        - { name: id, in: path, required: true, schema: { type: string, format: uuid } }
+        - { name: entryId, in: path, required: true, schema: { type: string, format: uuid } }
+      responses:
+        "204":
+          description: Removed.
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+        "404": { $ref: "#/components/responses/NotFound" }
+        "429": { $ref: "#/components/responses/TooManyRequests" }
+
+  # ===== Credential digest keys (Part 9 §9.6 rule 6) ===== #
+  /v1/digest-keys:
+    get:
+      operationId: get-apx-v1-digest-keys
+      security:
+        - apxOAuth: ["apx.digest:use"]
+      tags: [Discovery]
+      summary: The keys behind `apds-ext:apx:credential-digest@1.0`
+      description: |-
+        The digest keys the implementation currently signs credential
+        digests with, so an authorised consumer can compute the digest of
+        a plate it holds and match it to decorated records without ever
+        receiving plates (Part 9 §9.6 rule 6). Rotation is by `keyId`;
+        both keys are served during an overlap. The normalization the
+        implementation applies before hashing is stated per key.
+      responses:
+        "200":
+          description: The keys.
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [keys]
+                properties:
+                  keys:
+                    type: array
+                    items:
+                      type: object
+                      required: [keyId, alg, key]
+                      properties:
+                        keyId: { type: string }
+                        alg: { type: string, enum: [HS256] }
+                        key:
+                          type: string
+                          description: base64url key material, at least 32 bytes.
+                        validFrom:
+                          $ref: "../vendor/apds/4.1/apds-api-4.1.yaml#/components/schemas/DateTime"
+                        validTo:
+                          $ref: "../vendor/apds/4.1/apds-api-4.1.yaml#/components/schemas/DateTime"
+                        normalization:
+                          type: string
+                          description: "The normalization applied before hashing, e.g. `upper; strip non-alphanumerics; jurisdiction appended as `|<ISO 3166-2>``."
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/Forbidden" }
         "429": { $ref: "#/components/responses/TooManyRequests" }
 
   # ===== Reservations & permits (optional classes; Part 14) ===== #
@@ -4526,10 +5480,12 @@ paths:
           style: form
           explode: false
           schema: { type: array, items: { type: string, format: uuid } }
+        - $ref: "#/components/parameters/ModeParam"
+        - $ref: "#/components/parameters/CursorParam"
         - $ref: "../vendor/apds/4.1/apds-api-4.1.yaml#/components/parameters/page"
       responses:
         "200":
-          description: Matching accounts.
+          description: Matching accounts; with `mode=change`, the changes after `cursor` in the same envelope (Part 5 §5.2 rule 8).
           content:
             application/json:
               schema:
@@ -4540,8 +5496,14 @@ paths:
                   data:
                     type: array
                     items: { $ref: "#/components/schemas/Account" }
+                  updateMode: { $ref: "#/components/schemas/ChangeFeedUpdateMode" }
+                  cursor: { $ref: "#/components/schemas/ChangeFeedCursor" }
+                  deleted: { $ref: "#/components/schemas/ChangeFeedTombstones" }
+                  grantAdditions: { $ref: "#/components/schemas/ChangeFeedGrantAdditions" }
+                  next: { $ref: "#/components/schemas/ChangeFeedNext" }
         "401": { $ref: "#/components/responses/Unauthorized" }
         "403": { $ref: "#/components/responses/Forbidden" }
+        "404": { $ref: "#/components/responses/CursorRefused" }
         "429": { $ref: "#/components/responses/TooManyRequests" }
 
   /v1/accounts/{id}:
@@ -4625,8 +5587,11 @@ paths:
             `payment` member referencing the recorded declined PaymentRecord,
             Part 13 §13.1); a body carrying card data beyond the truncated
             last four (`personal-data-not-permitted`, refused before it is
-            persisted or logged); or `captureLater` on a server without an
-            authorization lifecycle (`request-unprocessable`).
+            persisted or logged); `captureLater` on a server without an
+            authorization lifecycle, or `apds-ext:apx:payment-detail@1.0`
+            lines whose `paymentType: payment` values do not sum to
+            `amount` or whose `paymentType` contradicts the `validation`
+            code (`request-unprocessable`, nothing charged, Part 13 §13.6a).
           content:
             application/problem+json:
               schema: { $ref: "#/components/schemas/Problem" }
@@ -4647,6 +5612,8 @@ paths:
         grant (§13.5). Holds (`captureStatus: authorized`) are omitted
         unless `captureStatus=authorized` is asked for.
       parameters:
+        - $ref: "#/components/parameters/ModeParam"
+        - $ref: "#/components/parameters/CursorParam"
         - { name: ticketLast4, in: query, schema: { type: string } }
         - name: cardLast4
           in: query
@@ -4687,7 +5654,7 @@ paths:
         - $ref: "../vendor/apds/4.1/apds-api-4.1.yaml#/components/parameters/page"
       responses:
         "200":
-          description: Matching payments.
+          description: Matching payments; with `mode=change`, the changes after `cursor` in the same envelope (Part 5 §5.2 rule 8).
           content:
             application/json:
               schema:
@@ -4698,6 +5665,11 @@ paths:
                   data:
                     type: array
                     items: { $ref: "#/components/schemas/PaymentRecord" }
+                  updateMode: { $ref: "#/components/schemas/ChangeFeedUpdateMode" }
+                  cursor: { $ref: "#/components/schemas/ChangeFeedCursor" }
+                  deleted: { $ref: "#/components/schemas/ChangeFeedTombstones" }
+                  grantAdditions: { $ref: "#/components/schemas/ChangeFeedGrantAdditions" }
+                  next: { $ref: "#/components/schemas/ChangeFeedNext" }
         "400": { $ref: "#/components/responses/BadRequest" }
         "401": { $ref: "#/components/responses/Unauthorized" }
         "403": { $ref: "#/components/responses/Forbidden" }
@@ -4710,6 +5682,7 @@ paths:
             application/problem+json:
               schema: { $ref: "#/components/schemas/Problem" }
         "429": { $ref: "#/components/responses/TooManyRequests" }
+        "404": { $ref: "#/components/responses/CursorRefused" }
 
   /v1/payments/{id}/postings:
     post:
@@ -5345,6 +6318,8 @@ paths:
         organisation and are excluded whenever `place` is given (Part 7
         §7.1).
       parameters:
+        - $ref: "#/components/parameters/ModeParam"
+        - $ref: "#/components/parameters/CursorParam"
         - name: status
           in: query
           schema: { type: string, enum: [raised, acknowledged, resolved, expired] }
@@ -5371,7 +6346,7 @@ paths:
         - $ref: "../vendor/apds/4.1/apds-api-4.1.yaml#/components/parameters/page"
       responses:
         "200":
-          description: Paginated alerts (APDS PaginatedList shape).
+          description: Paginated alerts (APDS PaginatedList shape); with `mode=change`, the changes after `cursor` in the same envelope (Part 5 §5.2 rule 8).
           content:
             application/json:
               schema:
@@ -5383,9 +6358,15 @@ paths:
                     type: array
                     items:
                       $ref: "#/components/schemas/Alert"
+                  updateMode: { $ref: "#/components/schemas/ChangeFeedUpdateMode" }
+                  cursor: { $ref: "#/components/schemas/ChangeFeedCursor" }
+                  deleted: { $ref: "#/components/schemas/ChangeFeedTombstones" }
+                  grantAdditions: { $ref: "#/components/schemas/ChangeFeedGrantAdditions" }
+                  next: { $ref: "#/components/schemas/ChangeFeedNext" }
         "401": { $ref: "#/components/responses/Unauthorized" }
         "403": { $ref: "#/components/responses/Forbidden" }
         "429": { $ref: "#/components/responses/TooManyRequests" }
+        "404": { $ref: "#/components/responses/CursorRefused" }
 
   /v1/alerts/{id}:
     get:
@@ -6039,7 +7020,8 @@ webhooks:
         Published whenever an ingested Observation changes — for example
         the LPR system revising `accessEvent` through
         `PUT /v1/lpr/reads/{observation}/access-event` (Part 13 §13.3a(4),
-        §13.4). `data` is the
+        §13.4), or a reviewer's plate decision through
+        `PUT /v1/lpr/reads/{observation}/plate` (§13.3a(4a)). `data` is the
         APDS `ObservationElement` as it now stands; `subject` and the place
         binding (`elementIds`) are as for `apx.data.observation.created.v1`.
         Consumers key on the Observation id and keep the highest `version`.
@@ -6127,6 +7109,16 @@ components:
       content:
         application/problem+json:
           schema: { $ref: "#/components/schemas/Problem" }
+    CursorRefused:
+      description: |-
+        `mode=change` only (Part 5 §5.2): the cursor is unknown, older
+        than the retention window, or was issued for another (class,
+        credential, filter set). Problem type `target-not-found`; re-sync
+        with `mode=full`. The cursor is an APX parameter, so this refusal
+        is always a Problem (Part 5 §5.2 rules 2 and 5).
+      content:
+        application/problem+json:
+          schema: { $ref: "#/components/schemas/Problem" }
     NotFound:
       description: |-
         The addressed resource does not exist (problem type
@@ -6200,6 +7192,10 @@ components:
             apx.valet:read: Read valet tickets and the retrieval queue
             apx.valet:manage: Take custody, park, stage, hand back, and manage retrievals
             apx.valet:request: Customer scope — request or cancel retrieval and read status/ETA for the caller's own ticket (text, app, web, voice bot)
+            apx.platelists:read: Read plate lists and their entries, plate values included (Part 24)
+            apx.platelists:manage: Create and maintain plate lists and entries (Part 24)
+            apx.digest:use: Receive the credential digest keys (Part 9 §9.6 rule 6)
+            apx.replication:write: Replay another implementation's records with their original provenance and lifecycle times (Part 18 §18.6)
             apx.charging:read: read charging-point status (with bay presence) and charging sessions
             apx.charging:manage: bridge scope; push point availability, bay observations, open sessions, report timeline events, attach settlement
             apx.charging:status: customer scope; minimized read of the caller's own charging session and the place's charger availability (app, text, voice bot)
@@ -6219,6 +7215,16 @@ components:
       $ref: "./domains/common/schemas.yaml#/CodeListValue"
     ChangeFeedPage:
       $ref: "./domains/data/schemas.yaml#/ChangeFeedPage"
+    ChangeFeedUpdateMode:
+      $ref: "./domains/data/schemas.yaml#/ChangeFeedUpdateMode"
+    ChangeFeedCursor:
+      $ref: "./domains/data/schemas.yaml#/ChangeFeedCursor"
+    ChangeFeedTombstones:
+      $ref: "./domains/data/schemas.yaml#/ChangeFeedTombstones"
+    ChangeFeedGrantAdditions:
+      $ref: "./domains/data/schemas.yaml#/ChangeFeedGrantAdditions"
+    ChangeFeedNext:
+      $ref: "./domains/data/schemas.yaml#/ChangeFeedNext"
     OccupancySnapshot:
       $ref: "./domains/data/schemas.yaml#/OccupancySnapshot"
     ApxEventSubscription:
@@ -6343,6 +7349,50 @@ components:
       $ref: "./domains/charging/schemas.yaml#/ChargingEvent"
     ChargingPaymentAttachment:
       $ref: "./domains/charging/schemas.yaml#/ChargingPaymentAttachment"
+    SessionDetail:
+      $ref: "./domains/data/schemas.yaml#/SessionDetail"
+    SessionReadBinding:
+      $ref: "./domains/data/schemas.yaml#/SessionReadBinding"
+    SessionClosure:
+      $ref: "./domains/data/schemas.yaml#/SessionClosure"
+    MatchEvidence:
+      $ref: "./domains/data/schemas.yaml#/MatchEvidence"
+    OccupancyHistoryPage:
+      $ref: "./domains/data/schemas.yaml#/OccupancyHistoryPage"
+    CredentialDigest:
+      $ref: "./domains/common/schemas.yaml#/CredentialDigest"
+    PlateCorrection:
+      $ref: "./domains/lpr/schemas.yaml#/PlateCorrection"
+    LprReadSearch:
+      $ref: "./domains/lpr/schemas.yaml#/LprReadSearch"
+    AccountSearch:
+      $ref: "./domains/accounts/schemas.yaml#/AccountSearch"
+    PaymentSearch:
+      $ref: "./domains/accounts/schemas.yaml#/PaymentSearch"
+    PaymentDetail:
+      $ref: "./domains/accounts/schemas.yaml#/PaymentDetail"
+    ViolationDetection:
+      $ref: "./domains/violations/schemas.yaml#/ViolationDetection"
+    ViolationVehicle:
+      $ref: "./domains/violations/schemas.yaml#/ViolationVehicle"
+    ViolationEvidence:
+      $ref: "./domains/violations/schemas.yaml#/ViolationEvidence"
+    ViolationLocation:
+      $ref: "./domains/violations/schemas.yaml#/ViolationLocation"
+    ViolationAppliedPayment:
+      $ref: "./domains/violations/schemas.yaml#/ViolationAppliedPayment"
+    ViolationSource:
+      $ref: "./domains/violations/schemas.yaml#/ViolationSource"
+    ViolationImport:
+      $ref: "./domains/violations/schemas.yaml#/ViolationImport"
+    ViolationSessionLink:
+      $ref: "./domains/violations/schemas.yaml#/ViolationSessionLink"
+    PlateList:
+      $ref: "./domains/platelists/schemas.yaml#/PlateList"
+    PlateListEntry:
+      $ref: "./domains/platelists/schemas.yaml#/PlateListEntry"
+    PlateListPlaceFlags:
+      $ref: "./domains/platelists/schemas.yaml#/PlateListPlaceFlags"
     DiscoveryDocument:
       $ref: "./domains/discovery/schemas.yaml#/DiscoveryDocument"
     ResolutionContext:
