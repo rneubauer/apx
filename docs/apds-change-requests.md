@@ -40,7 +40,7 @@ byte-identical to the published 4.1 document.
 | [007](errata/007-quotes-post-no-request-body.md) | [#40](https://github.com/parkingdata/spec/issues/40) `POST /quotes` has no request body; `GET /quotes` returns one object | Omission + suggestion | Declare the request body; confirm the `GET` shape | Overlay adds an optional body |
 | [008](errata/008-referencetoquote-identical-branches.md) | [#41](https://github.com/parkingdata/spec/issues/41) `ReferenceToQuote` is a `oneOf` of two identical branches | Correction | Make the branches distinct and non-empty | No workaround; book with the full `AssignedRight` |
 | [009](errata/009-identifiers-ratetableid-spelling.md) | [#42](https://github.com/parkingdata/spec/issues/42) `Identifiers` requires `rateTableId`, declares `rateTableID` | Correction | Align the spelling | Overlay declares `rateTableId` |
-| [010](errata/010-entities-no-extensions.md) | [#43](https://github.com/parkingdata/spec/issues/43) No entity declares the `extensions` container of Use Case §C.2.5 | Suggestion | Declare `Extensions` once on `VersionedIdentity` | Overlay adds it to 8 entities |
+| [010](errata/010-entities-no-extensions.md) | [#43](https://github.com/parkingdata/spec/issues/43) No entity declares the `extensions` container of Use Case §C.2.5 | Suggestion | Declare `Extensions` once on `VersionedIdentity` | Overlay adds it to 9 entities (the 8 listed, and `Payment`) |
 | [011](errata/011-geojsonobject-no-coordinates.md) | [#44](https://github.com/parkingdata/spec/issues/44) `GeoJsonObject` has no `coordinates` | Omission | Declare `coordinates`, ideally a `GeoJsonPoint` | Overlay adds `coordinates` |
 | [012](errata/012-native-response-code-irregularities.md) | [#45](https://github.com/parkingdata/spec/issues/45) Response codes on `/rates`, `/rights/assigned/{id}`, `/contacts` differ from siblings | Suggestion | Align codes (201 on create; 400/404/409 declared) | Overlay adds the missing codes |
 | [013](errata/013-hierarchyelement-subtypes-unmapped.md) | [#46](https://github.com/parkingdata/spec/issues/46) `HierarchyElement` maps 3 of 10 types; `VehicularAccess` (lanes) unreachable | Omission | Restore the 7 commented-out mappings | Lane fields carried unvalidated |
@@ -50,7 +50,7 @@ Full reports: [APX errata folder](errata/README.md).
 
 ## Part B — Additions APDS could consider
 
-Nine suggestions, not filed as errata, where APX currently fills a gap in
+Ten suggestions, not filed as errata, where APX currently fills a gap in
 its own namespace. If APDS covered any of them natively, APX would move to
 the APDS form and retire its own.
 
@@ -64,6 +64,7 @@ the APDS form and retire its own.
 | **Two more image kinds** — `plateExtended` and `context` in `ImageTypeEnum` | Engines keep a wider crop around the plate and a scene wider than the overview; consumers could ask for the still they need | The images are listed untyped on `Observation.images[]` and typed as strings on `LprRead.images[]` (Part 13 §13.3c) |
 | **`country` optional in `VehicleAncillaryIdentification`** | A read whose plate country the engine could not place could still carry make, model, and colour — often the reads that most need them | The attributes ride in the APX `detail` decoration and the APDS object is omitted (Part 13 §13.3a(1)) |
 | **A Session end reason** | Consumers could tell an exit read from a stale closure or an exit with no observed entry, and compute the same dwell and occupancy figures from the same Sessions | `apds-ext:apx:session-detail@1.0` with registry `apx-session-end-reasons` (Part 5 §5.8) |
+| **Payment detail**: a shared code list for `PaymentLine.idCode` (or a fee value in `PaymentTypeEnum`), and a member on `Payment` naming the rate sold | `idCode` is bilateral, so two parties cannot tell a price line from a fee or a tax, and nothing says which rate a payment bought | Registry `apx-payment-line-codes` for `idCode`, and decoration `apds-ext:apx:payment-detail@1.0` with `rateSold` (Part 13 §13.6a) |
 | **An identifiable holder** (see Part A, 014) | Rights, permits, accounts, and payments for one customer can be grouped | `className: "RightHolder"`, local id (Part 1 §1.3 item 14) |
 
 APX also defines surfaces APDS does not yet cover — alerts, lane control,

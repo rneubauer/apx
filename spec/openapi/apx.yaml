@@ -5587,8 +5587,11 @@ paths:
             `payment` member referencing the recorded declined PaymentRecord,
             Part 13 §13.1); a body carrying card data beyond the truncated
             last four (`personal-data-not-permitted`, refused before it is
-            persisted or logged); or `captureLater` on a server without an
-            authorization lifecycle (`request-unprocessable`).
+            persisted or logged); `captureLater` on a server without an
+            authorization lifecycle, or `apds-ext:apx:payment-detail@1.0`
+            lines whose `paymentType: payment` values do not sum to
+            `amount` or whose `paymentType` contradicts the `validation`
+            code (`request-unprocessable`, nothing charged, Part 13 §13.6a).
           content:
             application/problem+json:
               schema: { $ref: "#/components/schemas/Problem" }

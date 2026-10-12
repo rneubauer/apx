@@ -16,11 +16,11 @@
   },
   "normativeArtifacts": {
     "bundle": {
-      "spec/dist/apx-v1.yaml": "2ca31066b78f74ac62ddef359fc4a7f6060452b9dfe051423e67ce4192f94a59",
-      "spec/dist/apx-v1.json": "3056ffbcb8adb26774516325aa39ae119563bb60d07899730b80bd9da3c62c42"
+      "spec/dist/apx-v1.yaml": "517c1ee17f29430f39e0029700041bdc619c7d2c2d1babb85ea5cf278b243161",
+      "spec/dist/apx-v1.json": "5ed326f45c38ce18ef7a8de6a535805226341f43ea6a2f294159a0b643e8dc52"
     },
     "overlays": {
-      "spec/openapi/overlays/apx-data-overlay.yaml": "e8dcdf3961bcc24c4354a5f0f6c10080d223afbe4db7c082e824e91a3b3fdb52",
+      "spec/openapi/overlays/apx-data-overlay.yaml": "e7510f09c14a93dc82d39dba0e9f42a193f5831e4fadb75a4419a1039ebb5932",
       "spec/openapi/overlays/apx-docs-overlay.yaml": "26ed0f31e49cca89d46dbb4a7f178c3bea381a71866fa93787da017790e0f60b",
       "spec/openapi/overlays/apx-examples-overlay.yaml": "eba9a810147c95091a6c8efef69ecaa7280e6513a09f46fc0a5736998cd239b6"
     },
@@ -71,7 +71,7 @@
         "version": 1,
         "entries": 8,
         "locator": "https://apx-standard.org/registries/apx-payment-line-codes.json",
-        "sha256": "38f4b1c6093eae6c4db7a1d4c04d5a9f841f31025f1e97c65bbceaebdd44b27a"
+        "sha256": "66d0f86a7a07ffbf181f5126ef36cd6ce452307f47cbb36b862780695fd9a388"
       },
       "apx-plate-list-categories": {
         "version": 1,

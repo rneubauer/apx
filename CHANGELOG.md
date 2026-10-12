@@ -116,8 +116,22 @@ The machine-readable spec (`spec/openapi/apx.yaml`, bundled as
     `ticketLast4`/`cardLast4` (Part 13 §13.2). Annex A APX-CORE-18 (revised)
     and APX-PHX-02.
   - Payment detail (G8, Part 13 §13.6a): decoration
-    `apds-ext:apx:payment-detail@1.0` with `rateSold` and lines summing
-    to the total; new registry `apx-payment-line-codes` v1.
+    `apds-ext:apx:payment-detail@1.0` with `rateSold` and `lines` that
+    reuse APDS `PaymentLine` by `$ref`, the line code in `idCode`; new
+    registry `apx-payment-line-codes` v1 (`base`, `convenienceFee`,
+    `serviceFee`, `tax`, `discount`, `validation`, `idle`, `energy`). A
+    `validation` line is `paymentType: validation` (the value offset, not
+    money collected); every other code is `paymentType: payment`, a
+    `discount` negative. The `payment` lines MUST sum to `amount`, else
+    422 `request-unprocessable` with nothing charged; refunds never
+    rewrite the lines; the decoration is returned unchanged on reads and
+    events; no zero-fee line is inferred. One store: on a native APDS
+    `Payment` the decoration carries `rateSold` only, and a materialized
+    record's lines become its `paymentLines` unchanged (§13.6). The data
+    overlay declares `extensions` on `Payment` (erratum 010 workaround,
+    now nine entities). Annex A APX-ACC-07 amended, APX-ACC-09 expanded;
+    a Part B suggestion in `docs/apds-change-requests.md` offers the code
+    list and the rate-sold member to APDS. Worked scenario 32.
   - Permit concurrency (G9, Part 14 §14.2d): `apds-ext:apx:permit@1.1`
     adds `maxConcurrentVehicles` and `overageBilling`.
   - Plate lists (G10, new Part 24, class `apx-plate-lists`): six
@@ -161,10 +175,19 @@ The machine-readable spec (`spec/openapi/apx.yaml`, bundled as
 - `docs/apds-change-requests.md`: the change requests for the APDS working
   group (errata 001–014, five optional additions, a suggested order),
   linked from the landing page and the errata README.
-- The vetting suite is now public: 377 scenarios in
+- The vetting suite is now public: 379 scenarios in
   `docs/scenarios/by-module/`, one folder per conformance class with its
   findings (221), linked from the worked scenarios. `npm run vetting`
-  checks every request and response against the bundle.
+  checks every request and response against the bundle. DATA-34 (session
+  detail and match evidence on a pairing client's Session) is new; the
+  module table is refreshed from `npm run vetting`.
+- Worked scenarios 28–32, written against the gap work above: 28 a
+  pairing client's session detail and match evidence (Part 5 §5.8), 29
+  plate review on an LPR read (Part 13 §13.3a(4a)), 30 a citation
+  imported from another enforcement system with a part payment and a late
+  session link (Part 19 §19.13), 31 an enforcement back office catching up
+  on the change feed after three days offline (Part 5 §5.2 rule 8), 32
+  payment detail and the revenue report (Part 13 §13.6a).
 - The next round in the open: 150 proposed operational cases drafted by
   ChatGPT, with the brief they came from, in `docs/scenarios/proposed/`
   (unverified, awaiting triage).

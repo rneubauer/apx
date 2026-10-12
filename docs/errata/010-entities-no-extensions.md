@@ -58,7 +58,8 @@ VersionedIdentity:
 
 The APX data overlay declares `extensions` (APX's `Extensions` schema,
 which is exactly the above) on the eight entity schemas listed, in the
-bundled document.
+bundled document, and on `Payment`, which carries APX's `payment-detail`
+decoration (`rateSold` only; Part 13 §13.6a).
 
 ---
 

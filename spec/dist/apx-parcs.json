@@ -10108,6 +10108,10 @@
                 "items": {
                   "$ref": "#/components/schemas/PaymentLine"
                 }
+              },
+              "extensions": {
+                "description": "The APDS extension container (Use Case Document §C.2.5; Part 4 §4.3). Undeclared on APDS 4.1 entities (APX erratum 010). Carries apds-ext:apx:payment-detail@1.0 with rateSold only; the Payment's own paymentLines are the itemization (Part 13 §13.6a).",
+                "$ref": "#/components/schemas/Extensions"
               }
             },
             "required": [
@@ -11247,8 +11251,9 @@
       },
       "PaymentDetail": {
         "title": "PaymentDetail",
-        "description": "The `apds-ext:apx:payment-detail@1.0` decoration (Part 13 §13.6a) on a\n`PaymentRecord` or an APDS `Payment`: the rate sold and the lines that\nsum to the total, so revenue reports and the deck price check have\nthe base amount, the fee, and the product without a bilateral code.",
+        "description": "The `apds-ext:apx:payment-detail@1.0` decoration (Part 13 §13.6a) on a\n`PaymentRecord` or an APDS `Payment`: the rate sold and the lines that\nsum to the total, so revenue reports and the deck price check have\nthe base amount, the fee, and the product without a bilateral code.\nOn a `PaymentRecord` it carries `rateSold` and `lines`; on a native\nAPDS `Payment` it carries `rateSold` only, because the Payment's own\n`paymentLines` are the itemization there.",
         "type": "object",
+        "minProperties": 1,
         "properties": {
           "rateSold": {
             "type": "object",
@@ -11287,28 +11292,10 @@
           },
           "lines": {
             "type": "array",
-            "description": "The lines; their `value`s sum to the payment's `amount`.",
+            "minItems": 1,
+            "description": "The itemization, as APDS `PaymentLine`s (by `$ref`, never\nre-shaped). Each line's code is its `idCode`: a definedValue of\n`apx-payment-line-codes` (Part 11) or an implementer code. A line\ncoded `validation` has `paymentType: validation` and its `value` is\nthe value the validation offset (not money collected); every other\nline has `paymentType: payment`, and a reduction (`discount`) is a\nnegative `value`. The `currencyValue`s of the `paymentType:\npayment` lines MUST sum to the record's `amount`, in its\n`currencyType`; otherwise 422 `request-unprocessable` and nothing\nis charged. Only on a `PaymentRecord`: on a native APDS `Payment`\nthe itemization is that Payment's own `paymentLines` and this\nmember is absent (one store, Part 13 §13.6a).",
             "items": {
-              "type": "object",
-              "required": [
-                "code",
-                "value"
-              ],
-              "properties": {
-                "code": {
-                  "type": "string",
-                  "description": "definedValue from `apx-payment-line-codes` (Part 11) or an implementer code.",
-                  "examples": [
-                    "convenienceFee"
-                  ]
-                },
-                "value": {
-                  "$ref": "#/components/schemas/AmountInCurrency"
-                },
-                "description": {
-                  "type": "string"
-                }
-              }
+              "$ref": "#/components/schemas/PaymentLine"
             }
           }
         }

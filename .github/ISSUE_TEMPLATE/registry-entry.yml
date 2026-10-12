@@ -29,6 +29,10 @@ body:
         - apx-toll-dispute-resolutions
         - apx-access-denial-reasons
         - apx-features
+        - apx-session-end-reasons
+        - apx-read-review-reasons
+        - apx-payment-line-codes
+        - apx-plate-list-categories
     validations:
       required: true
   - type: input

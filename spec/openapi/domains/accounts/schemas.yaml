@@ -159,7 +159,11 @@ PaymentDetail:
     `PaymentRecord` or an APDS `Payment`: the rate sold and the lines that
     sum to the total, so revenue reports and the deck price check have
     the base amount, the fee, and the product without a bilateral code.
+    On a `PaymentRecord` it carries `rateSold` and `lines`; on a native
+    APDS `Payment` it carries `rateSold` only, because the Payment's own
+    `paymentLines` are the itemization there.
   type: object
+  minProperties: 1
   properties:
     rateSold:
       type: object
@@ -181,19 +185,22 @@ PaymentDetail:
           enum: [standard, validation, discount, zeroed, other]
     lines:
       type: array
-      description: The lines; their `value`s sum to the payment's `amount`.
+      minItems: 1
+      description: |-
+        The itemization, as APDS `PaymentLine`s (by `$ref`, never
+        re-shaped). Each line's code is its `idCode`: a definedValue of
+        `apx-payment-line-codes` (Part 11) or an implementer code. A line
+        coded `validation` has `paymentType: validation` and its `value` is
+        the value the validation offset (not money collected); every other
+        line has `paymentType: payment`, and a reduction (`discount`) is a
+        negative `value`. The `currencyValue`s of the `paymentType:
+        payment` lines MUST sum to the record's `amount`, in its
+        `currencyType`; otherwise 422 `request-unprocessable` and nothing
+        is charged. Only on a `PaymentRecord`: on a native APDS `Payment`
+        the itemization is that Payment's own `paymentLines` and this
+        member is absent (one store, Part 13 §13.6a).
       items:
-        type: object
-        required: [code, value]
-        properties:
-          code:
-            type: string
-            description: definedValue from `apx-payment-line-codes` (Part 11) or an implementer code.
-            examples: [convenienceFee]
-          value:
-            $ref: "../../../vendor/apds/4.1/apds-api-4.1.yaml#/components/schemas/AmountInCurrency"
-          description:
-            type: string
+        $ref: "../../../vendor/apds/4.1/apds-api-4.1.yaml#/components/schemas/PaymentLine"
 
 AccountSearch:
   title: AccountSearch

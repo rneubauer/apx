@@ -1013,6 +1013,11 @@ actions:
       extensions:
         description: "The APDS extension container (Use Case Document §C.2.5; Part 4 §4.3). Undeclared on APDS 4.1 entities (APX erratum 010)."
         $ref: "#/components/schemas/Extensions"
+  - target: $.components.schemas.Payment.allOf['1'].properties
+    update:
+      extensions:
+        description: "The APDS extension container (Use Case Document §C.2.5; Part 4 §4.3). Undeclared on APDS 4.1 entities (APX erratum 010). Carries apds-ext:apx:payment-detail@1.0 with rateSold only; the Payment's own paymentLines are the itemization (Part 13 §13.6a)."
+        $ref: "#/components/schemas/Extensions"
   - target: $.components.schemas.GeoJsonObject.properties
     description: "Erratum 011: GeoJsonObject declares no coordinates member."
     update:
