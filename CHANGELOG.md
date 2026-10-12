@@ -6,7 +6,7 @@ conformance/versioning rules in Part 3 of the written standard.
 The machine-readable spec (`spec/openapi/apx.yaml`, bundled as
 `spec/dist/apx-v1.*`) is normative; entries here are informative.
 
-## [Unreleased]
+## [0.14.0] — 2026-10-12
 
 **Added.**
 - **EV charging (Part 23, optional class `apx-charging`)** merged from
