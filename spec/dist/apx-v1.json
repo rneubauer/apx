@@ -4467,29 +4467,37 @@
         ],
         "responses": {
           "200": {
-            "description": "Paginated commands (APDS PaginatedList shape).",
+            "description": "Paginated commands (APDS PaginatedList shape); with `mode=change`, the changes after `cursor` in the same envelope (Part 5 §5.2 rule 8).",
             "content": {
               "application/json": {
                 "schema": {
-                  "oneOf": [
-                    {
-                      "$ref": "#/components/schemas/ChangeFeedPage"
+                  "type": "object",
+                  "properties": {
+                    "meta": {
+                      "$ref": "#/components/schemas/PaginatedListMeta"
                     },
-                    {
-                      "type": "object",
-                      "properties": {
-                        "meta": {
-                          "$ref": "#/components/schemas/PaginatedListMeta"
-                        },
-                        "data": {
-                          "type": "array",
-                          "items": {
-                            "$ref": "#/components/schemas/Command"
-                          }
-                        }
+                    "data": {
+                      "type": "array",
+                      "items": {
+                        "$ref": "#/components/schemas/Command"
                       }
+                    },
+                    "updateMode": {
+                      "$ref": "#/components/schemas/ChangeFeedUpdateMode"
+                    },
+                    "cursor": {
+                      "$ref": "#/components/schemas/ChangeFeedCursor"
+                    },
+                    "deleted": {
+                      "$ref": "#/components/schemas/ChangeFeedTombstones"
+                    },
+                    "grantAdditions": {
+                      "$ref": "#/components/schemas/ChangeFeedGrantAdditions"
+                    },
+                    "next": {
+                      "$ref": "#/components/schemas/ChangeFeedNext"
                     }
-                  ]
+                  }
                 }
               }
             }
@@ -4501,14 +4509,7 @@
             "$ref": "#/components/responses/Forbidden"
           },
           "404": {
-            "description": "mode=change only: the cursor is unknown, older than the retention window, or was issued for another (class, credential, filter set) — problem type `target-not-found`; re-sync with mode=full (Part 5 §5.2 rules 2, 5 and 8).",
-            "content": {
-              "application/problem+json": {
-                "schema": {
-                  "$ref": "#/components/schemas/Problem"
-                }
-              }
-            }
+            "$ref": "#/components/responses/CursorRefused"
           },
           "429": {
             "$ref": "#/components/responses/TooManyRequests"
@@ -5106,29 +5107,37 @@
         ],
         "responses": {
           "200": {
-            "description": "Matching transactions.",
+            "description": "Matching transactions; with `mode=change`, the changes after `cursor` in the same envelope (Part 5 §5.2 rule 8).",
             "content": {
               "application/json": {
                 "schema": {
-                  "oneOf": [
-                    {
-                      "$ref": "#/components/schemas/ChangeFeedPage"
+                  "type": "object",
+                  "properties": {
+                    "meta": {
+                      "$ref": "#/components/schemas/PaginatedListMeta"
                     },
-                    {
-                      "type": "object",
-                      "properties": {
-                        "meta": {
-                          "$ref": "#/components/schemas/PaginatedListMeta"
-                        },
-                        "data": {
-                          "type": "array",
-                          "items": {
-                            "$ref": "#/components/schemas/TollTransaction"
-                          }
-                        }
+                    "data": {
+                      "type": "array",
+                      "items": {
+                        "$ref": "#/components/schemas/TollTransaction"
                       }
+                    },
+                    "updateMode": {
+                      "$ref": "#/components/schemas/ChangeFeedUpdateMode"
+                    },
+                    "cursor": {
+                      "$ref": "#/components/schemas/ChangeFeedCursor"
+                    },
+                    "deleted": {
+                      "$ref": "#/components/schemas/ChangeFeedTombstones"
+                    },
+                    "grantAdditions": {
+                      "$ref": "#/components/schemas/ChangeFeedGrantAdditions"
+                    },
+                    "next": {
+                      "$ref": "#/components/schemas/ChangeFeedNext"
                     }
-                  ]
+                  }
                 }
               }
             }
@@ -5143,14 +5152,7 @@
             "$ref": "#/components/responses/Forbidden"
           },
           "404": {
-            "description": "mode=change only: the cursor is unknown, older than the retention window, or was issued for another (class, credential, filter set) — problem type `target-not-found`; re-sync with mode=full (Part 5 §5.2 rules 2, 5 and 8).",
-            "content": {
-              "application/problem+json": {
-                "schema": {
-                  "$ref": "#/components/schemas/Problem"
-                }
-              }
-            }
+            "$ref": "#/components/responses/CursorRefused"
           },
           "429": {
             "$ref": "#/components/responses/TooManyRequests"
@@ -5810,29 +5812,37 @@
         ],
         "responses": {
           "200": {
-            "description": "Paginated violations (APDS PaginatedList shape).",
+            "description": "Paginated violations (APDS PaginatedList shape); with `mode=change`, the changes after `cursor` in the same envelope (Part 5 §5.2 rule 8).",
             "content": {
               "application/json": {
                 "schema": {
-                  "oneOf": [
-                    {
-                      "$ref": "#/components/schemas/ChangeFeedPage"
+                  "type": "object",
+                  "properties": {
+                    "meta": {
+                      "$ref": "#/components/schemas/PaginatedListMeta"
                     },
-                    {
-                      "type": "object",
-                      "properties": {
-                        "meta": {
-                          "$ref": "#/components/schemas/PaginatedListMeta"
-                        },
-                        "data": {
-                          "type": "array",
-                          "items": {
-                            "$ref": "#/components/schemas/Violation"
-                          }
-                        }
+                    "data": {
+                      "type": "array",
+                      "items": {
+                        "$ref": "#/components/schemas/Violation"
                       }
+                    },
+                    "updateMode": {
+                      "$ref": "#/components/schemas/ChangeFeedUpdateMode"
+                    },
+                    "cursor": {
+                      "$ref": "#/components/schemas/ChangeFeedCursor"
+                    },
+                    "deleted": {
+                      "$ref": "#/components/schemas/ChangeFeedTombstones"
+                    },
+                    "grantAdditions": {
+                      "$ref": "#/components/schemas/ChangeFeedGrantAdditions"
+                    },
+                    "next": {
+                      "$ref": "#/components/schemas/ChangeFeedNext"
                     }
-                  ]
+                  }
                 }
               }
             }
@@ -5844,14 +5854,7 @@
             "$ref": "#/components/responses/Forbidden"
           },
           "404": {
-            "description": "mode=change only: the cursor is unknown, older than the retention window, or was issued for another (class, credential, filter set) — problem type `target-not-found`; re-sync with mode=full (Part 5 §5.2 rules 2, 5 and 8).",
-            "content": {
-              "application/problem+json": {
-                "schema": {
-                  "$ref": "#/components/schemas/Problem"
-                }
-              }
-            }
+            "$ref": "#/components/responses/CursorRefused"
           },
           "429": {
             "$ref": "#/components/responses/TooManyRequests"
@@ -6641,12 +6644,18 @@
             }
           },
           {
+            "$ref": "#/components/parameters/ModeParam"
+          },
+          {
+            "$ref": "#/components/parameters/CursorParam"
+          },
+          {
             "$ref": "#/components/parameters/page"
           }
         ],
         "responses": {
           "200": {
-            "description": "Paginated policies (APDS PaginatedList shape).",
+            "description": "Paginated policies (APDS PaginatedList shape); with `mode=change`, the changes after `cursor` in the same envelope (Part 5 §5.2 rule 8).",
             "content": {
               "application/json": {
                 "schema": {
@@ -6660,6 +6669,21 @@
                       "items": {
                         "$ref": "#/components/schemas/EnforcementPolicy"
                       }
+                    },
+                    "updateMode": {
+                      "$ref": "#/components/schemas/ChangeFeedUpdateMode"
+                    },
+                    "cursor": {
+                      "$ref": "#/components/schemas/ChangeFeedCursor"
+                    },
+                    "deleted": {
+                      "$ref": "#/components/schemas/ChangeFeedTombstones"
+                    },
+                    "grantAdditions": {
+                      "$ref": "#/components/schemas/ChangeFeedGrantAdditions"
+                    },
+                    "next": {
+                      "$ref": "#/components/schemas/ChangeFeedNext"
                     }
                   }
                 }
@@ -6671,6 +6695,9 @@
           },
           "403": {
             "$ref": "#/components/responses/Forbidden"
+          },
+          "404": {
+            "$ref": "#/components/responses/CursorRefused"
           },
           "429": {
             "$ref": "#/components/responses/TooManyRequests"
@@ -7022,12 +7049,18 @@
             }
           },
           {
+            "$ref": "#/components/parameters/ModeParam"
+          },
+          {
+            "$ref": "#/components/parameters/CursorParam"
+          },
+          {
             "$ref": "#/components/parameters/page"
           }
         ],
         "responses": {
           "200": {
-            "description": "Paginated signage (APDS PaginatedList shape).",
+            "description": "Paginated signage (APDS PaginatedList shape); with `mode=change`, the changes after `cursor` in the same envelope (Part 5 §5.2 rule 8).",
             "content": {
               "application/json": {
                 "schema": {
@@ -7041,6 +7074,21 @@
                       "items": {
                         "$ref": "#/components/schemas/Signage"
                       }
+                    },
+                    "updateMode": {
+                      "$ref": "#/components/schemas/ChangeFeedUpdateMode"
+                    },
+                    "cursor": {
+                      "$ref": "#/components/schemas/ChangeFeedCursor"
+                    },
+                    "deleted": {
+                      "$ref": "#/components/schemas/ChangeFeedTombstones"
+                    },
+                    "grantAdditions": {
+                      "$ref": "#/components/schemas/ChangeFeedGrantAdditions"
+                    },
+                    "next": {
+                      "$ref": "#/components/schemas/ChangeFeedNext"
                     }
                   }
                 }
@@ -7052,6 +7100,9 @@
           },
           "403": {
             "$ref": "#/components/responses/Forbidden"
+          },
+          "404": {
+            "$ref": "#/components/responses/CursorRefused"
           },
           "429": {
             "$ref": "#/components/responses/TooManyRequests"
@@ -7435,29 +7486,37 @@
         ],
         "responses": {
           "200": {
-            "description": "Paginated programs (APDS PaginatedList shape).",
+            "description": "Paginated programs (APDS PaginatedList shape); with `mode=change`, the changes after `cursor` in the same envelope (Part 5 §5.2 rule 8).",
             "content": {
               "application/json": {
                 "schema": {
-                  "oneOf": [
-                    {
-                      "$ref": "#/components/schemas/ChangeFeedPage"
+                  "type": "object",
+                  "properties": {
+                    "meta": {
+                      "$ref": "#/components/schemas/PaginatedListMeta"
                     },
-                    {
-                      "type": "object",
-                      "properties": {
-                        "meta": {
-                          "$ref": "#/components/schemas/PaginatedListMeta"
-                        },
-                        "data": {
-                          "type": "array",
-                          "items": {
-                            "$ref": "#/components/schemas/ValidationProgram"
-                          }
-                        }
+                    "data": {
+                      "type": "array",
+                      "items": {
+                        "$ref": "#/components/schemas/ValidationProgram"
                       }
+                    },
+                    "updateMode": {
+                      "$ref": "#/components/schemas/ChangeFeedUpdateMode"
+                    },
+                    "cursor": {
+                      "$ref": "#/components/schemas/ChangeFeedCursor"
+                    },
+                    "deleted": {
+                      "$ref": "#/components/schemas/ChangeFeedTombstones"
+                    },
+                    "grantAdditions": {
+                      "$ref": "#/components/schemas/ChangeFeedGrantAdditions"
+                    },
+                    "next": {
+                      "$ref": "#/components/schemas/ChangeFeedNext"
                     }
-                  ]
+                  }
                 }
               }
             }
@@ -7469,14 +7528,7 @@
             "$ref": "#/components/responses/Forbidden"
           },
           "404": {
-            "description": "mode=change only: the cursor is unknown, older than the retention window, or was issued for another (class, credential, filter set) — problem type `target-not-found`; re-sync with mode=full (Part 5 §5.2 rules 2, 5 and 8).",
-            "content": {
-              "application/problem+json": {
-                "schema": {
-                  "$ref": "#/components/schemas/Problem"
-                }
-              }
-            }
+            "$ref": "#/components/responses/CursorRefused"
           },
           "429": {
             "$ref": "#/components/responses/TooManyRequests"
@@ -7776,12 +7828,18 @@
         "description": "Batches issued to the program, newest first. Codes are never returned here.",
         "parameters": [
           {
+            "$ref": "#/components/parameters/ModeParam"
+          },
+          {
+            "$ref": "#/components/parameters/CursorParam"
+          },
+          {
             "$ref": "#/components/parameters/page"
           }
         ],
         "responses": {
           "200": {
-            "description": "Paginated issuances (APDS PaginatedList shape).",
+            "description": "Paginated issuances (APDS PaginatedList shape); with `mode=change`, the changes after `cursor` in the same envelope (Part 5 §5.2 rule 8).",
             "content": {
               "application/json": {
                 "schema": {
@@ -7795,6 +7853,21 @@
                       "items": {
                         "$ref": "#/components/schemas/ValidationIssuance"
                       }
+                    },
+                    "updateMode": {
+                      "$ref": "#/components/schemas/ChangeFeedUpdateMode"
+                    },
+                    "cursor": {
+                      "$ref": "#/components/schemas/ChangeFeedCursor"
+                    },
+                    "deleted": {
+                      "$ref": "#/components/schemas/ChangeFeedTombstones"
+                    },
+                    "grantAdditions": {
+                      "$ref": "#/components/schemas/ChangeFeedGrantAdditions"
+                    },
+                    "next": {
+                      "$ref": "#/components/schemas/ChangeFeedNext"
                     }
                   }
                 }
@@ -7808,7 +7881,7 @@
             "$ref": "#/components/responses/Forbidden"
           },
           "404": {
-            "description": "No such program.",
+            "description": "No such program, or (`mode=change`) a refused cursor (`target-not-found`; Part 5 §5.2 rules 2 and 5).",
             "content": {
               "application/problem+json": {
                 "schema": {
@@ -8266,29 +8339,37 @@
         ],
         "responses": {
           "200": {
-            "description": "Paginated redemptions (APDS PaginatedList shape).",
+            "description": "Paginated redemptions (APDS PaginatedList shape); with `mode=change`, the changes after `cursor` in the same envelope (Part 5 §5.2 rule 8).",
             "content": {
               "application/json": {
                 "schema": {
-                  "oneOf": [
-                    {
-                      "$ref": "#/components/schemas/ChangeFeedPage"
+                  "type": "object",
+                  "properties": {
+                    "meta": {
+                      "$ref": "#/components/schemas/PaginatedListMeta"
                     },
-                    {
-                      "type": "object",
-                      "properties": {
-                        "meta": {
-                          "$ref": "#/components/schemas/PaginatedListMeta"
-                        },
-                        "data": {
-                          "type": "array",
-                          "items": {
-                            "$ref": "#/components/schemas/ValidationRedemption"
-                          }
-                        }
+                    "data": {
+                      "type": "array",
+                      "items": {
+                        "$ref": "#/components/schemas/ValidationRedemption"
                       }
+                    },
+                    "updateMode": {
+                      "$ref": "#/components/schemas/ChangeFeedUpdateMode"
+                    },
+                    "cursor": {
+                      "$ref": "#/components/schemas/ChangeFeedCursor"
+                    },
+                    "deleted": {
+                      "$ref": "#/components/schemas/ChangeFeedTombstones"
+                    },
+                    "grantAdditions": {
+                      "$ref": "#/components/schemas/ChangeFeedGrantAdditions"
+                    },
+                    "next": {
+                      "$ref": "#/components/schemas/ChangeFeedNext"
                     }
-                  ]
+                  }
                 }
               }
             }
@@ -8300,14 +8381,7 @@
             "$ref": "#/components/responses/Forbidden"
           },
           "404": {
-            "description": "mode=change only: the cursor is unknown, older than the retention window, or was issued for another (class, credential, filter set) — problem type `target-not-found`; re-sync with mode=full (Part 5 §5.2 rules 2, 5 and 8).",
-            "content": {
-              "application/problem+json": {
-                "schema": {
-                  "$ref": "#/components/schemas/Problem"
-                }
-              }
-            }
+            "$ref": "#/components/responses/CursorRefused"
           },
           "429": {
             "$ref": "#/components/responses/TooManyRequests"
@@ -8675,12 +8749,18 @@
         "description": "Closed statements, newest period first; `lines[]` omitted.",
         "parameters": [
           {
+            "$ref": "#/components/parameters/ModeParam"
+          },
+          {
+            "$ref": "#/components/parameters/CursorParam"
+          },
+          {
             "$ref": "#/components/parameters/page"
           }
         ],
         "responses": {
           "200": {
-            "description": "Paginated statements (APDS PaginatedList shape).",
+            "description": "Paginated statements (APDS PaginatedList shape); with `mode=change`, the changes after `cursor` in the same envelope (Part 5 §5.2 rule 8).",
             "content": {
               "application/json": {
                 "schema": {
@@ -8694,6 +8774,21 @@
                       "items": {
                         "$ref": "#/components/schemas/ValidationStatement"
                       }
+                    },
+                    "updateMode": {
+                      "$ref": "#/components/schemas/ChangeFeedUpdateMode"
+                    },
+                    "cursor": {
+                      "$ref": "#/components/schemas/ChangeFeedCursor"
+                    },
+                    "deleted": {
+                      "$ref": "#/components/schemas/ChangeFeedTombstones"
+                    },
+                    "grantAdditions": {
+                      "$ref": "#/components/schemas/ChangeFeedGrantAdditions"
+                    },
+                    "next": {
+                      "$ref": "#/components/schemas/ChangeFeedNext"
                     }
                   }
                 }
@@ -8707,7 +8802,7 @@
             "$ref": "#/components/responses/Forbidden"
           },
           "404": {
-            "description": "No such program.",
+            "description": "No such program, or (`mode=change`) a refused cursor (`target-not-found`; Part 5 §5.2 rules 2 and 5).",
             "content": {
               "application/problem+json": {
                 "schema": {
@@ -8964,29 +9059,37 @@
         ],
         "responses": {
           "200": {
-            "description": "Paginated credentials (APDS PaginatedList shape).",
+            "description": "Paginated credentials (APDS PaginatedList shape); with `mode=change`, the changes after `cursor` in the same envelope (Part 5 §5.2 rule 8).",
             "content": {
               "application/json": {
                 "schema": {
-                  "oneOf": [
-                    {
-                      "$ref": "#/components/schemas/ChangeFeedPage"
+                  "type": "object",
+                  "properties": {
+                    "meta": {
+                      "$ref": "#/components/schemas/PaginatedListMeta"
                     },
-                    {
-                      "type": "object",
-                      "properties": {
-                        "meta": {
-                          "$ref": "#/components/schemas/PaginatedListMeta"
-                        },
-                        "data": {
-                          "type": "array",
-                          "items": {
-                            "$ref": "#/components/schemas/CredentialRecord"
-                          }
-                        }
+                    "data": {
+                      "type": "array",
+                      "items": {
+                        "$ref": "#/components/schemas/CredentialRecord"
                       }
+                    },
+                    "updateMode": {
+                      "$ref": "#/components/schemas/ChangeFeedUpdateMode"
+                    },
+                    "cursor": {
+                      "$ref": "#/components/schemas/ChangeFeedCursor"
+                    },
+                    "deleted": {
+                      "$ref": "#/components/schemas/ChangeFeedTombstones"
+                    },
+                    "grantAdditions": {
+                      "$ref": "#/components/schemas/ChangeFeedGrantAdditions"
+                    },
+                    "next": {
+                      "$ref": "#/components/schemas/ChangeFeedNext"
                     }
-                  ]
+                  }
                 }
               }
             }
@@ -8998,14 +9101,7 @@
             "$ref": "#/components/responses/Forbidden"
           },
           "404": {
-            "description": "mode=change only: the cursor is unknown, older than the retention window, or was issued for another (class, credential, filter set) — problem type `target-not-found`; re-sync with mode=full (Part 5 §5.2 rules 2, 5 and 8).",
-            "content": {
-              "application/problem+json": {
-                "schema": {
-                  "$ref": "#/components/schemas/Problem"
-                }
-              }
-            }
+            "$ref": "#/components/responses/CursorRefused"
           },
           "429": {
             "$ref": "#/components/responses/TooManyRequests"
@@ -9828,29 +9924,37 @@
         ],
         "responses": {
           "200": {
-            "description": "Paginated access events (APDS PaginatedList shape).",
+            "description": "Paginated access events (APDS PaginatedList shape); with `mode=change`, the changes after `cursor` in the same envelope (Part 5 §5.2 rule 8).",
             "content": {
               "application/json": {
                 "schema": {
-                  "oneOf": [
-                    {
-                      "$ref": "#/components/schemas/ChangeFeedPage"
+                  "type": "object",
+                  "properties": {
+                    "meta": {
+                      "$ref": "#/components/schemas/PaginatedListMeta"
                     },
-                    {
-                      "type": "object",
-                      "properties": {
-                        "meta": {
-                          "$ref": "#/components/schemas/PaginatedListMeta"
-                        },
-                        "data": {
-                          "type": "array",
-                          "items": {
-                            "$ref": "#/components/schemas/AccessEvent"
-                          }
-                        }
+                    "data": {
+                      "type": "array",
+                      "items": {
+                        "$ref": "#/components/schemas/AccessEvent"
                       }
+                    },
+                    "updateMode": {
+                      "$ref": "#/components/schemas/ChangeFeedUpdateMode"
+                    },
+                    "cursor": {
+                      "$ref": "#/components/schemas/ChangeFeedCursor"
+                    },
+                    "deleted": {
+                      "$ref": "#/components/schemas/ChangeFeedTombstones"
+                    },
+                    "grantAdditions": {
+                      "$ref": "#/components/schemas/ChangeFeedGrantAdditions"
+                    },
+                    "next": {
+                      "$ref": "#/components/schemas/ChangeFeedNext"
                     }
-                  ]
+                  }
                 }
               }
             }
@@ -9865,14 +9969,7 @@
             "$ref": "#/components/responses/Forbidden"
           },
           "404": {
-            "description": "mode=change only: the cursor is unknown, older than the retention window, or was issued for another (class, credential, filter set) — problem type `target-not-found`; re-sync with mode=full (Part 5 §5.2 rules 2, 5 and 8).",
-            "content": {
-              "application/problem+json": {
-                "schema": {
-                  "$ref": "#/components/schemas/Problem"
-                }
-              }
-            }
+            "$ref": "#/components/responses/CursorRefused"
           },
           "429": {
             "$ref": "#/components/responses/TooManyRequests"
@@ -10059,29 +10156,37 @@
         ],
         "responses": {
           "200": {
-            "description": "Paginated tickets (APDS PaginatedList shape).",
+            "description": "Paginated tickets (APDS PaginatedList shape); with `mode=change`, the changes after `cursor` in the same envelope (Part 5 §5.2 rule 8).",
             "content": {
               "application/json": {
                 "schema": {
-                  "oneOf": [
-                    {
-                      "$ref": "#/components/schemas/ChangeFeedPage"
+                  "type": "object",
+                  "properties": {
+                    "meta": {
+                      "$ref": "#/components/schemas/PaginatedListMeta"
                     },
-                    {
-                      "type": "object",
-                      "properties": {
-                        "meta": {
-                          "$ref": "#/components/schemas/PaginatedListMeta"
-                        },
-                        "data": {
-                          "type": "array",
-                          "items": {
-                            "$ref": "#/components/schemas/ValetTicket"
-                          }
-                        }
+                    "data": {
+                      "type": "array",
+                      "items": {
+                        "$ref": "#/components/schemas/ValetTicket"
                       }
+                    },
+                    "updateMode": {
+                      "$ref": "#/components/schemas/ChangeFeedUpdateMode"
+                    },
+                    "cursor": {
+                      "$ref": "#/components/schemas/ChangeFeedCursor"
+                    },
+                    "deleted": {
+                      "$ref": "#/components/schemas/ChangeFeedTombstones"
+                    },
+                    "grantAdditions": {
+                      "$ref": "#/components/schemas/ChangeFeedGrantAdditions"
+                    },
+                    "next": {
+                      "$ref": "#/components/schemas/ChangeFeedNext"
                     }
-                  ]
+                  }
                 }
               }
             }
@@ -10093,14 +10198,7 @@
             "$ref": "#/components/responses/Forbidden"
           },
           "404": {
-            "description": "mode=change only: the cursor is unknown, older than the retention window, or was issued for another (class, credential, filter set) — problem type `target-not-found`; re-sync with mode=full (Part 5 §5.2 rules 2, 5 and 8).",
-            "content": {
-              "application/problem+json": {
-                "schema": {
-                  "$ref": "#/components/schemas/Problem"
-                }
-              }
-            }
+            "$ref": "#/components/responses/CursorRefused"
           },
           "429": {
             "$ref": "#/components/responses/TooManyRequests"
@@ -11428,29 +11526,37 @@
         ],
         "responses": {
           "200": {
-            "description": "Paginated sessions (APDS PaginatedList shape).",
+            "description": "Paginated sessions (APDS PaginatedList shape); with `mode=change`, the changes after `cursor` in the same envelope (Part 5 §5.2 rule 8).",
             "content": {
               "application/json": {
                 "schema": {
-                  "oneOf": [
-                    {
-                      "$ref": "#/components/schemas/ChangeFeedPage"
+                  "type": "object",
+                  "properties": {
+                    "meta": {
+                      "$ref": "#/components/schemas/PaginatedListMeta"
                     },
-                    {
-                      "type": "object",
-                      "properties": {
-                        "meta": {
-                          "$ref": "#/components/schemas/PaginatedListMeta"
-                        },
-                        "data": {
-                          "type": "array",
-                          "items": {
-                            "$ref": "#/components/schemas/ChargingSession"
-                          }
-                        }
+                    "data": {
+                      "type": "array",
+                      "items": {
+                        "$ref": "#/components/schemas/ChargingSession"
                       }
+                    },
+                    "updateMode": {
+                      "$ref": "#/components/schemas/ChangeFeedUpdateMode"
+                    },
+                    "cursor": {
+                      "$ref": "#/components/schemas/ChangeFeedCursor"
+                    },
+                    "deleted": {
+                      "$ref": "#/components/schemas/ChangeFeedTombstones"
+                    },
+                    "grantAdditions": {
+                      "$ref": "#/components/schemas/ChangeFeedGrantAdditions"
+                    },
+                    "next": {
+                      "$ref": "#/components/schemas/ChangeFeedNext"
                     }
-                  ]
+                  }
                 }
               }
             }
@@ -11462,14 +11568,7 @@
             "$ref": "#/components/responses/Forbidden"
           },
           "404": {
-            "description": "mode=change only: the cursor is unknown, older than the retention window, or was issued for another (class, credential, filter set) — problem type `target-not-found`; re-sync with mode=full (Part 5 §5.2 rules 2, 5 and 8).",
-            "content": {
-              "application/problem+json": {
-                "schema": {
-                  "$ref": "#/components/schemas/Problem"
-                }
-              }
-            }
+            "$ref": "#/components/responses/CursorRefused"
           },
           "429": {
             "$ref": "#/components/responses/TooManyRequests"
@@ -12614,29 +12713,37 @@
         ],
         "responses": {
           "200": {
-            "description": "Paginated lists, or a ChangeFeedPage.",
+            "description": "Paginated lists; with `mode=change`, the changes after `cursor` in the same envelope (Part 5 §5.2 rule 8).",
             "content": {
               "application/json": {
                 "schema": {
-                  "oneOf": [
-                    {
-                      "$ref": "#/components/schemas/ChangeFeedPage"
+                  "type": "object",
+                  "properties": {
+                    "meta": {
+                      "$ref": "#/components/schemas/PaginatedListMeta"
                     },
-                    {
-                      "type": "object",
-                      "properties": {
-                        "meta": {
-                          "$ref": "#/components/schemas/PaginatedListMeta"
-                        },
-                        "data": {
-                          "type": "array",
-                          "items": {
-                            "$ref": "#/components/schemas/PlateList"
-                          }
-                        }
+                    "data": {
+                      "type": "array",
+                      "items": {
+                        "$ref": "#/components/schemas/PlateList"
                       }
+                    },
+                    "updateMode": {
+                      "$ref": "#/components/schemas/ChangeFeedUpdateMode"
+                    },
+                    "cursor": {
+                      "$ref": "#/components/schemas/ChangeFeedCursor"
+                    },
+                    "deleted": {
+                      "$ref": "#/components/schemas/ChangeFeedTombstones"
+                    },
+                    "grantAdditions": {
+                      "$ref": "#/components/schemas/ChangeFeedGrantAdditions"
+                    },
+                    "next": {
+                      "$ref": "#/components/schemas/ChangeFeedNext"
                     }
-                  ]
+                  }
                 }
               }
             }
@@ -12648,14 +12755,7 @@
             "$ref": "#/components/responses/Forbidden"
           },
           "404": {
-            "description": "mode=change only: unknown, expired, or foreign cursor (`target-not-found`).",
-            "content": {
-              "application/problem+json": {
-                "schema": {
-                  "$ref": "#/components/schemas/Problem"
-                }
-              }
-            }
+            "$ref": "#/components/responses/CursorRefused"
           },
           "429": {
             "$ref": "#/components/responses/TooManyRequests"
@@ -12938,29 +13038,37 @@
         ],
         "responses": {
           "200": {
-            "description": "Paginated entries, or a ChangeFeedPage.",
+            "description": "Paginated entries; with `mode=change`, the changes after `cursor` in the same envelope (Part 5 §5.2 rule 8).",
             "content": {
               "application/json": {
                 "schema": {
-                  "oneOf": [
-                    {
-                      "$ref": "#/components/schemas/ChangeFeedPage"
+                  "type": "object",
+                  "properties": {
+                    "meta": {
+                      "$ref": "#/components/schemas/PaginatedListMeta"
                     },
-                    {
-                      "type": "object",
-                      "properties": {
-                        "meta": {
-                          "$ref": "#/components/schemas/PaginatedListMeta"
-                        },
-                        "data": {
-                          "type": "array",
-                          "items": {
-                            "$ref": "#/components/schemas/PlateListEntry"
-                          }
-                        }
+                    "data": {
+                      "type": "array",
+                      "items": {
+                        "$ref": "#/components/schemas/PlateListEntry"
                       }
+                    },
+                    "updateMode": {
+                      "$ref": "#/components/schemas/ChangeFeedUpdateMode"
+                    },
+                    "cursor": {
+                      "$ref": "#/components/schemas/ChangeFeedCursor"
+                    },
+                    "deleted": {
+                      "$ref": "#/components/schemas/ChangeFeedTombstones"
+                    },
+                    "grantAdditions": {
+                      "$ref": "#/components/schemas/ChangeFeedGrantAdditions"
+                    },
+                    "next": {
+                      "$ref": "#/components/schemas/ChangeFeedNext"
                     }
-                  ]
+                  }
                 }
               }
             }
@@ -13889,12 +13997,18 @@
             }
           },
           {
+            "$ref": "#/components/parameters/ModeParam"
+          },
+          {
+            "$ref": "#/components/parameters/CursorParam"
+          },
+          {
             "$ref": "#/components/parameters/page"
           }
         ],
         "responses": {
           "200": {
-            "description": "Matching accounts.",
+            "description": "Matching accounts; with `mode=change`, the changes after `cursor` in the same envelope (Part 5 §5.2 rule 8).",
             "content": {
               "application/json": {
                 "schema": {
@@ -13908,6 +14022,21 @@
                       "items": {
                         "$ref": "#/components/schemas/Account"
                       }
+                    },
+                    "updateMode": {
+                      "$ref": "#/components/schemas/ChangeFeedUpdateMode"
+                    },
+                    "cursor": {
+                      "$ref": "#/components/schemas/ChangeFeedCursor"
+                    },
+                    "deleted": {
+                      "$ref": "#/components/schemas/ChangeFeedTombstones"
+                    },
+                    "grantAdditions": {
+                      "$ref": "#/components/schemas/ChangeFeedGrantAdditions"
+                    },
+                    "next": {
+                      "$ref": "#/components/schemas/ChangeFeedNext"
                     }
                   }
                 }
@@ -13919,6 +14048,9 @@
           },
           "403": {
             "$ref": "#/components/responses/Forbidden"
+          },
+          "404": {
+            "$ref": "#/components/responses/CursorRefused"
           },
           "429": {
             "$ref": "#/components/responses/TooManyRequests"
@@ -14175,29 +14307,37 @@
         ],
         "responses": {
           "200": {
-            "description": "Matching payments.",
+            "description": "Matching payments; with `mode=change`, the changes after `cursor` in the same envelope (Part 5 §5.2 rule 8).",
             "content": {
               "application/json": {
                 "schema": {
-                  "oneOf": [
-                    {
-                      "$ref": "#/components/schemas/ChangeFeedPage"
+                  "type": "object",
+                  "properties": {
+                    "meta": {
+                      "$ref": "#/components/schemas/PaginatedListMeta"
                     },
-                    {
-                      "type": "object",
-                      "properties": {
-                        "meta": {
-                          "$ref": "#/components/schemas/PaginatedListMeta"
-                        },
-                        "data": {
-                          "type": "array",
-                          "items": {
-                            "$ref": "#/components/schemas/PaymentRecord"
-                          }
-                        }
+                    "data": {
+                      "type": "array",
+                      "items": {
+                        "$ref": "#/components/schemas/PaymentRecord"
                       }
+                    },
+                    "updateMode": {
+                      "$ref": "#/components/schemas/ChangeFeedUpdateMode"
+                    },
+                    "cursor": {
+                      "$ref": "#/components/schemas/ChangeFeedCursor"
+                    },
+                    "deleted": {
+                      "$ref": "#/components/schemas/ChangeFeedTombstones"
+                    },
+                    "grantAdditions": {
+                      "$ref": "#/components/schemas/ChangeFeedGrantAdditions"
+                    },
+                    "next": {
+                      "$ref": "#/components/schemas/ChangeFeedNext"
                     }
-                  ]
+                  }
                 }
               }
             }
@@ -14212,14 +14352,7 @@
             "$ref": "#/components/responses/Forbidden"
           },
           "404": {
-            "description": "mode=change only: the cursor is unknown, older than the retention window, or was issued for another (class, credential, filter set) — problem type `target-not-found`; re-sync with mode=full (Part 5 §5.2 rules 2, 5 and 8).",
-            "content": {
-              "application/problem+json": {
-                "schema": {
-                  "$ref": "#/components/schemas/Problem"
-                }
-              }
-            }
+            "$ref": "#/components/responses/CursorRefused"
           },
           "422": {
             "description": "A query parameter carries more card digits than the truncated\nlast four (`personal-data-not-permitted`, Part 13 §13.2). The\nserver refuses before logging the request.",
@@ -15415,29 +15548,37 @@
         ],
         "responses": {
           "200": {
-            "description": "Paginated alerts (APDS PaginatedList shape).",
+            "description": "Paginated alerts (APDS PaginatedList shape); with `mode=change`, the changes after `cursor` in the same envelope (Part 5 §5.2 rule 8).",
             "content": {
               "application/json": {
                 "schema": {
-                  "oneOf": [
-                    {
-                      "$ref": "#/components/schemas/ChangeFeedPage"
+                  "type": "object",
+                  "properties": {
+                    "meta": {
+                      "$ref": "#/components/schemas/PaginatedListMeta"
                     },
-                    {
-                      "type": "object",
-                      "properties": {
-                        "meta": {
-                          "$ref": "#/components/schemas/PaginatedListMeta"
-                        },
-                        "data": {
-                          "type": "array",
-                          "items": {
-                            "$ref": "#/components/schemas/Alert"
-                          }
-                        }
+                    "data": {
+                      "type": "array",
+                      "items": {
+                        "$ref": "#/components/schemas/Alert"
                       }
+                    },
+                    "updateMode": {
+                      "$ref": "#/components/schemas/ChangeFeedUpdateMode"
+                    },
+                    "cursor": {
+                      "$ref": "#/components/schemas/ChangeFeedCursor"
+                    },
+                    "deleted": {
+                      "$ref": "#/components/schemas/ChangeFeedTombstones"
+                    },
+                    "grantAdditions": {
+                      "$ref": "#/components/schemas/ChangeFeedGrantAdditions"
+                    },
+                    "next": {
+                      "$ref": "#/components/schemas/ChangeFeedNext"
                     }
-                  ]
+                  }
                 }
               }
             }
@@ -15449,14 +15590,7 @@
             "$ref": "#/components/responses/Forbidden"
           },
           "404": {
-            "description": "mode=change only: the cursor is unknown, older than the retention window, or was issued for another (class, credential, filter set) — problem type `target-not-found`; re-sync with mode=full (Part 5 §5.2 rules 2, 5 and 8).",
-            "content": {
-              "application/problem+json": {
-                "schema": {
-                  "$ref": "#/components/schemas/Problem"
-                }
-              }
-            }
+            "$ref": "#/components/responses/CursorRefused"
           },
           "429": {
             "$ref": "#/components/responses/TooManyRequests"
@@ -16859,7 +16993,7 @@
         "name": "mode",
         "in": "query",
         "required": false,
-        "description": "APX data profile: `full` (default — behaves exactly like stock APDS 4.1)\nor `change` (return a ChangeFeedPage of deltas since `cursor`/`since`).",
+        "description": "APX change feed (Part 5 §5.2): `full` (default — the route's ordinary\nlist; on a native APDS route, exactly stock APDS 4.1) or `change` (the\nchanges after `cursor`: a ChangeFeedPage on a native route, the route's\nown list envelope with the change-page members on an APX list route,\nrule 8; on an APX list route without a cursor, an empty page holding the\ncurrent head cursor).",
         "schema": {
           "type": "string",
           "enum": [
@@ -16873,7 +17007,7 @@
         "name": "cursor",
         "in": "query",
         "required": false,
-        "description": "Opaque change-feed cursor from a previous ChangeFeedPage. Only meaningful with `mode=change`.",
+        "description": "Opaque change-feed cursor from a previous change page. Only meaningful with `mode=change`; a refused cursor is 404 `target-not-found` (Part 5 §5.2 rules 2 and 5).",
         "schema": {
           "type": "string"
         }
@@ -17261,6 +17395,16 @@
       },
       "Unauthorized": {
         "description": "Missing, malformed, expired, or revoked access token (problem type\n`unauthenticated`, Part 12).",
+        "content": {
+          "application/problem+json": {
+            "schema": {
+              "$ref": "#/components/schemas/Problem"
+            }
+          }
+        }
+      },
+      "CursorRefused": {
+        "description": "`mode=change` only (Part 5 §5.2): the cursor is unknown, older\nthan the retention window, or was issued for another (class,\ncredential, filter set). Problem type `target-not-found`; re-sync\nwith `mode=full`. The cursor is an APX parameter, so this refusal\nis always a Problem (Part 5 §5.2 rules 2 and 5).",
         "content": {
           "application/problem+json": {
             "schema": {
@@ -17705,6 +17849,43 @@
             "cursor": "c:00042"
           }
         ]
+      },
+      "ChangeFeedUpdateMode": {
+        "title": "ChangeFeedUpdateMode",
+        "type": "string",
+        "const": "change",
+        "description": "Present, with the value `change`, exactly when the page answers\n`mode=change` (Part 5 §5.2 rule 8); absent on an ordinary list page."
+      },
+      "ChangeFeedCursor": {
+        "title": "ChangeFeedCursor",
+        "type": "string",
+        "description": "`mode=change` only. Opaque cursor resuming strictly after the last\nchange in this page (Part 5 §5.2 rules 1, 2, 5)."
+      },
+      "ChangeFeedTombstones": {
+        "title": "ChangeFeedTombstones",
+        "type": "array",
+        "description": "`mode=change` only. Resources removed since the cursor (retention\npurge, Part 9 §9.6; release of a moved place, Part 18 §18.4), as APDS\nDeletedReferences carrying the APX resource's schema name as\n`className`. Retained for the cursor window (Part 5 §5.2 rule 4).",
+        "items": {
+          "$ref": "#/components/schemas/DeletedReference"
+        }
+      },
+      "ChangeFeedGrantAdditions": {
+        "title": "ChangeFeedGrantAdditions",
+        "type": "array",
+        "description": "`mode=change` only. Present on the first page served after the\ncredential's `apx_places` grant gained subtrees: the new subtree roots,\nwhich the client full-syncs with the route's `place` filter before\nrelying on the feed for them (Part 5 §5.2 rule 7).",
+        "items": {
+          "type": "string",
+          "format": "uuid"
+        }
+      },
+      "ChangeFeedNext": {
+        "title": "ChangeFeedNext",
+        "type": [
+          "string",
+          "null"
+        ],
+        "format": "uri-reference",
+        "description": "`mode=change` only. Link to the next page when more changes are\nimmediately available (the same request with this page's `cursor`);\nnull otherwise."
       },
       "OccupancySnapshot": {
         "title": "OccupancySnapshot",
@@ -18444,22 +18625,15 @@
               },
               "negotiatedRate": {
                 "type": "object",
-                "description": "The negotiated rate in effect on this ticket, if a\npushNegotiatedRate command succeeded for it (Part 6 §6.6). Absent\nwhen the ticket prices from the lane's normal rate deck. Exactly\none of rateTable (a table selected from the deck) or amount (a\nfigure the agent stated) is present.",
+                "description": "The negotiated rate in effect on this ticket, if a\npushNegotiatedRate command that selected a RateTable succeeded\nfor it (Part 6 §6.6). Absent when the ticket prices from the\nlane's normal rate deck, and absent when the agent stated an\namount instead (see `negotiatedAmount`). At most one of\n`negotiatedRate` and `negotiatedAmount` is present: the latest\nsucceeded pushNegotiatedRate for the ticket decides which.",
                 "required": [
+                  "rateTable",
                   "command"
                 ],
                 "properties": {
                   "rateTable": {
                     "description": "The RateTable selected (VersionedReference — the exact version applied).",
                     "$ref": "#/components/schemas/VersionedReference"
-                  },
-                  "amount": {
-                    "description": "The amount the agent stated for this ticket (the negotiatedAmounts feature). It is what the ticket owes, not a discount.",
-                    "$ref": "#/components/schemas/AmountInCurrency"
-                  },
-                  "reason": {
-                    "type": "string",
-                    "description": "The command's reason, copied for the screen-pop. Always present with amount."
                   },
                   "command": {
                     "description": "The pushNegotiatedRate Command that applied it — carries `agent`, `reason`, and the audit trail.",
@@ -18472,6 +18646,36 @@
                   "policy": {
                     "description": "The table's `apds-ext:apx:ratepolicy@1.0` decoration as it stood when applied (its displayName is what the agent saw).",
                     "$ref": "#/components/schemas/RatePolicy"
+                  }
+                }
+              },
+              "negotiatedAmount": {
+                "type": "object",
+                "description": "The amount an agent stated for this ticket, if a\npushNegotiatedRate command carrying `parameters.amount` succeeded\nfor it (the negotiatedAmounts feature, Part 6 §6.3, §6.6). Absent\notherwise. It is what the ticket owes, not a discount. At most one\nof `negotiatedRate` and `negotiatedAmount` is present: the latest\nsucceeded pushNegotiatedRate for the ticket decides which.",
+                "required": [
+                  "amount",
+                  "reason",
+                  "agent",
+                  "command"
+                ],
+                "properties": {
+                  "amount": {
+                    "description": "The amount stated, as the command's `parameters.amount`.",
+                    "$ref": "#/components/schemas/AmountInCurrency"
+                  },
+                  "reason": {
+                    "type": "string",
+                    "minLength": 1,
+                    "description": "The command's `reason`, copied for the screen-pop."
+                  },
+                  "agent": {
+                    "type": "string",
+                    "minLength": 1,
+                    "description": "The principal who stated the amount (the command's `agent`), copied for the screen-pop."
+                  },
+                  "command": {
+                    "description": "The pushNegotiatedRate Command that applied it — the audit trail.",
+                    "$ref": "#/components/schemas/Reference"
                   }
                 }
               },
@@ -30871,30 +31075,9 @@
           }
         }
       },
-      "ChangePayload": {
-        "title": "ChangePayload",
-        "description": "A change-mode payload for any native APDS entity class (Part 5 §5.1):\nthe entity's identity plus only the members that changed. An absent\nmember is unchanged; an explicit `null` clears it. Nested objects that\ncarry their own `id` (a Session segment, say) follow the same rule.\n\nThis schema checks the envelope only (identity present, any member may\nbe null). Each member present is still validated by the server against\nthe class's native property schema, and a member the class does not\ndefine is refused with 400 (Part 5 §5.1a). It is the request schema of\na native `PUT` sent with `APX-Update-Mode: change`, and the shape of\nevery `ChangeFeedPage` item.",
-        "type": "object",
-        "required": [
-          "id"
-        ],
-        "properties": {
-          "id": {
-            "type": "string",
-            "minLength": 1,
-            "description": "The entity's identifier (APDS VersionedIdentity.id)."
-          },
-          "version": {
-            "type": "integer",
-            "minimum": 1,
-            "description": "On a write, the version the client last read (the precondition,\nPart 4 §4.2a); on a feed item, the version after the change."
-          }
-        },
-        "additionalProperties": true
-      },
       "CommandResult": {
         "title": "CommandResult",
-        "description": "The structured outcome of a command, populated by the server when the\ncommand reaches `succeeded` (Part 6 §6.1a) and absent before then. Members\nare normative per command type: `lostTicket` → `ticketNumber`, `session`,\n`amountDue`; `matchTicket` → `session`, `amountDue`;\n`pushNegotiatedRate` → `amountDue`, and `rateTable` when a table was\nselected (absent for a stated amount). Other command types\nleave it absent unless a registry entry says otherwise. It restates what\nthe lane inquiry shows, so a console can continue (print, take payment)\nwithout parsing `statusHistory[].detail` or making a second call.",
+        "description": "The structured outcome of a command, populated by the server when the\ncommand reaches `succeeded` (Part 6 §6.1a) and absent before then. Members\nare normative per command type: `lostTicket` → `ticketNumber`, `session`,\n`amountDue`; `matchTicket` → `session`, `amountDue`;\n`pushNegotiatedRate` → `amountDue`, and `rateTable` when a table was\nselected (absent for a stated amount, which the lane inquiry reports\nas `currentTicket.negotiatedAmount`). Other command types\nleave it absent unless a registry entry says otherwise. It restates what\nthe lane inquiry shows, so a console can continue (print, take payment)\nwithout parsing `statusHistory[].detail` or making a second call.",
         "type": "object",
         "readOnly": true,
         "properties": {
@@ -31425,6 +31608,27 @@
             "description": "The last HTTP status code received (0 = network error)."
           }
         }
+      },
+      "ChangePayload": {
+        "title": "ChangePayload",
+        "description": "A change-mode payload for any native APDS entity class (Part 5 §5.1):\nthe entity's identity plus only the members that changed. An absent\nmember is unchanged; an explicit `null` clears it. Nested objects that\ncarry their own `id` (a Session segment, say) follow the same rule.\n\nThis schema checks the envelope only (identity present, any member may\nbe null). Each member present is still validated by the server against\nthe class's native property schema, and a member the class does not\ndefine is refused with 400 (Part 5 §5.1a). It is the request schema of\na native `PUT` sent with `APX-Update-Mode: change`, and the shape of\nevery `ChangeFeedPage` item.",
+        "type": "object",
+        "required": [
+          "id"
+        ],
+        "properties": {
+          "id": {
+            "type": "string",
+            "minLength": 1,
+            "description": "The entity's identifier (APDS VersionedIdentity.id)."
+          },
+          "version": {
+            "type": "integer",
+            "minimum": 1,
+            "description": "On a write, the version the client last read (the precondition,\nPart 4 §4.2a); on a feed item, the version after the change."
+          }
+        },
+        "additionalProperties": true
       },
       "HierarchyElementChangePayload": {
         "title": "HierarchyElementChangePayload",

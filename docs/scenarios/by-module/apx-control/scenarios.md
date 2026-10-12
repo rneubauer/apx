@@ -1713,11 +1713,11 @@ Idempotency-Key: cc-7780-amount
     "amountDue": { "currencyType": "USD", "currencyValue": 12.5 },
     "paidInFull": false,
     "validations": [],
-    "negotiatedRate": {
+    "negotiatedAmount": {
       "amount": { "currencyType": "USD", "currencyValue": 12.5 },
       "reason": "billing error on the driver's previous visit, agreed on the call",
-      "command": { "id": "d1000000-0000-4000-8000-000000000126", "className": "Command" },
-      "agent": "agent:m.reyes"
+      "agent": "agent:m.reyes",
+      "command": { "id": "d1000000-0000-4000-8000-000000000126", "className": "Command" }
     }
   }
 }

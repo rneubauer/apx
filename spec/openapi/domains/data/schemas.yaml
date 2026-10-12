@@ -55,6 +55,59 @@ ChangeFeedPage:
       format: uri-reference
       description: Link to the next page when more changes are immediately available; null otherwise.
 
+# --- Change-page members of the APX list routes (Part 5 §5.2 rule 8) ---
+# An APX list route answers `mode=change` in its own list envelope, so these
+# members are added, optional, to that envelope instead of swapping the
+# response for a ChangeFeedPage (which would re-type an existing response,
+# Part 3 §3.2). Each mirrors the ChangeFeedPage member of the same name.
+
+ChangeFeedUpdateMode:
+  title: ChangeFeedUpdateMode
+  type: string
+  const: change
+  description: |-
+    Present, with the value `change`, exactly when the page answers
+    `mode=change` (Part 5 §5.2 rule 8); absent on an ordinary list page.
+
+ChangeFeedCursor:
+  title: ChangeFeedCursor
+  type: string
+  description: |-
+    `mode=change` only. Opaque cursor resuming strictly after the last
+    change in this page (Part 5 §5.2 rules 1, 2, 5).
+
+ChangeFeedTombstones:
+  title: ChangeFeedTombstones
+  type: array
+  description: |-
+    `mode=change` only. Resources removed since the cursor (retention
+    purge, Part 9 §9.6; release of a moved place, Part 18 §18.4), as APDS
+    DeletedReferences carrying the APX resource's schema name as
+    `className`. Retained for the cursor window (Part 5 §5.2 rule 4).
+  items:
+    $ref: "../../../vendor/apds/4.1/apds-api-4.1.yaml#/components/schemas/DeletedReference"
+
+ChangeFeedGrantAdditions:
+  title: ChangeFeedGrantAdditions
+  type: array
+  description: |-
+    `mode=change` only. Present on the first page served after the
+    credential's `apx_places` grant gained subtrees: the new subtree roots,
+    which the client full-syncs with the route's `place` filter before
+    relying on the feed for them (Part 5 §5.2 rule 7).
+  items:
+    type: string
+    format: uuid
+
+ChangeFeedNext:
+  title: ChangeFeedNext
+  type: [string, "null"]
+  format: uri-reference
+  description: |-
+    `mode=change` only. Link to the next page when more changes are
+    immediately available (the same request with this page's `cursor`);
+    null otherwise.
+
 ChangePayload:
   title: ChangePayload
   description: |-
@@ -357,8 +410,12 @@ ModeParam:
   in: query
   required: false
   description: |-
-    APX data profile: `full` (default — behaves exactly like stock APDS 4.1)
-    or `change` (return a ChangeFeedPage of deltas since `cursor`/`since`).
+    APX change feed (Part 5 §5.2): `full` (default — the route's ordinary
+    list; on a native APDS route, exactly stock APDS 4.1) or `change` (the
+    changes after `cursor`: a ChangeFeedPage on a native route, the route's
+    own list envelope with the change-page members on an APX list route,
+    rule 8; on an APX list route without a cursor, an empty page holding the
+    current head cursor).
   schema:
     type: string
     enum: [full, change]
@@ -368,7 +425,7 @@ CursorParam:
   name: cursor
   in: query
   required: false
-  description: Opaque change-feed cursor from a previous ChangeFeedPage. Only meaningful with `mode=change`.
+  description: Opaque change-feed cursor from a previous change page. Only meaningful with `mode=change`; a refused cursor is 404 `target-not-found` (Part 5 §5.2 rules 2 and 5).
   schema:
     type: string
 

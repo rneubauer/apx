@@ -72,8 +72,24 @@ The machine-readable spec (`spec/openapi/apx.yaml`, bundled as
     to set the Session link later with evidence, and partial payment
     (`payments[]`, `amountPaid`, the attachment's `amount`).
   - Change feed on APX lists (G7, Part 5 §5.2 rule 8): `mode=change&cursor=`
-    on the eleven APX list routes of stateful resources, with the cursor
-    404 declared.
+    on eighteen `/v1` list routes of stateful resources (commands, alerts,
+    accounts, payments, toll transactions, violations, enforcement
+    policies and signage, validation programs, issuances, redemptions and
+    statements, credentials, access events, valet tickets, charging
+    sessions, plate lists and their entries), each a MUST of the class
+    that owns the route. The change page is the route's own list envelope
+    with optional `updateMode`, `cursor`, `deleted`, `grantAdditions` and
+    `next` members (new schemas `ChangeFeedUpdateMode`, `ChangeFeedCursor`,
+    `ChangeFeedTombstones`, `ChangeFeedGrantAdditions`, `ChangeFeedNext`)
+    and no `meta`, so no existing response is re-typed; a refused cursor
+    is the shared `CursorRefused` 404. Items are whole current
+    representations, never an older state after a newer one; no cursor
+    returns an empty page holding the head cursor; a filtered feed carries
+    a change when the resource matched before or after it; tombstones
+    cover retention purges and moved places. The payment feed needs no key
+    and no 8-hour window, shows holds from capture, and refuses
+    `ticketLast4`/`cardLast4` (Part 13 §13.2). Annex A APX-CORE-18 (revised)
+    and APX-PHX-02.
   - Payment detail (G8, Part 13 §13.6a): decoration
     `apds-ext:apx:payment-detail@1.0` with `rateSold` and lines summing
     to the total; new registry `apx-payment-line-codes` v1.
@@ -151,10 +167,13 @@ The machine-readable spec (`spec/openapi/apx.yaml`, bundled as
   owes, with no floor or ceiling, zero included. `agent` and `reason`
   are REQUIRED with an amount; both or neither member, a negative value,
   or another currency is `400 invalid-request`; an amount on a host
-  without the feature is `422 rate-not-negotiable`. The lane's
-  `currentTicket.negotiatedRate` now carries `amount` and `reason`
-  (its `rateTable` is no longer required, since one of the two is
-  present), and `result.amountDue` restates it. §6.3's design rule now
+  without the feature is `422 rate-not-negotiable`. The lane inquiry
+  reports a stated amount in a new optional sibling,
+  `currentTicket.negotiatedAmount` (`amount`, `reason`, `agent`,
+  `command`), so `currentTicket.negotiatedRate` and its required
+  `rateTable` are unchanged and the schema change is purely additive; a
+  ticket shows at most one of the two. `result.amountDue` restates the
+  amount. §6.3's design rule now
   names this as the one single-ticket price change outside validations,
   attributable to an agent with a reason. `apx-command-types` v5
   (description only), Annex A APX-CTL-16, vetting scenario CTL-26. This

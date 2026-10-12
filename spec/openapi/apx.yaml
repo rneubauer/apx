@@ -688,27 +688,26 @@ paths:
         - $ref: "../vendor/apds/4.1/apds-api-4.1.yaml#/components/parameters/page"
       responses:
         "200":
-          description: Paginated commands (APDS PaginatedList shape).
+          description: Paginated commands (APDS PaginatedList shape); with `mode=change`, the changes after `cursor` in the same envelope (Part 5 §5.2 rule 8).
           content:
             application/json:
               schema:
-                oneOf:
-                  - $ref: "#/components/schemas/ChangeFeedPage"
-                  - type: object
-                    properties:
-                      meta:
-                        $ref: "../vendor/apds/4.1/apds-api-4.1.yaml#/components/schemas/PaginatedListMeta"
-                      data:
-                        type: array
-                        items: { $ref: "#/components/schemas/Command" }
+                type: object
+                properties:
+                  meta:
+                    $ref: "../vendor/apds/4.1/apds-api-4.1.yaml#/components/schemas/PaginatedListMeta"
+                  data:
+                    type: array
+                    items: { $ref: "#/components/schemas/Command" }
+                  updateMode: { $ref: "#/components/schemas/ChangeFeedUpdateMode" }
+                  cursor: { $ref: "#/components/schemas/ChangeFeedCursor" }
+                  deleted: { $ref: "#/components/schemas/ChangeFeedTombstones" }
+                  grantAdditions: { $ref: "#/components/schemas/ChangeFeedGrantAdditions" }
+                  next: { $ref: "#/components/schemas/ChangeFeedNext" }
         "401": { $ref: "#/components/responses/Unauthorized" }
         "403": { $ref: "#/components/responses/Forbidden" }
         "429": { $ref: "#/components/responses/TooManyRequests" }
-        "404":
-          description: "mode=change only: the cursor is unknown, older than the retention window, or was issued for another (class, credential, filter set) — problem type `target-not-found`; re-sync with mode=full (Part 5 §5.2 rules 2, 5 and 8)."
-          content:
-            application/problem+json:
-              schema: { $ref: "#/components/schemas/Problem" }
+        "404": { $ref: "#/components/responses/CursorRefused" }
 
   /v1/commands/{id}:
     get:
@@ -1020,28 +1019,27 @@ paths:
         - $ref: "../vendor/apds/4.1/apds-api-4.1.yaml#/components/parameters/page"
       responses:
         "200":
-          description: Matching transactions.
+          description: Matching transactions; with `mode=change`, the changes after `cursor` in the same envelope (Part 5 §5.2 rule 8).
           content:
             application/json:
               schema:
-                oneOf:
-                  - $ref: "#/components/schemas/ChangeFeedPage"
-                  - type: object
-                    properties:
-                      meta:
-                        $ref: "../vendor/apds/4.1/apds-api-4.1.yaml#/components/schemas/PaginatedListMeta"
-                      data:
-                        type: array
-                        items: { $ref: "#/components/schemas/TollTransaction" }
+                type: object
+                properties:
+                  meta:
+                    $ref: "../vendor/apds/4.1/apds-api-4.1.yaml#/components/schemas/PaginatedListMeta"
+                  data:
+                    type: array
+                    items: { $ref: "#/components/schemas/TollTransaction" }
+                  updateMode: { $ref: "#/components/schemas/ChangeFeedUpdateMode" }
+                  cursor: { $ref: "#/components/schemas/ChangeFeedCursor" }
+                  deleted: { $ref: "#/components/schemas/ChangeFeedTombstones" }
+                  grantAdditions: { $ref: "#/components/schemas/ChangeFeedGrantAdditions" }
+                  next: { $ref: "#/components/schemas/ChangeFeedNext" }
         "400": { $ref: "#/components/responses/BadRequest" }
         "401": { $ref: "#/components/responses/Unauthorized" }
         "403": { $ref: "#/components/responses/Forbidden" }
         "429": { $ref: "#/components/responses/TooManyRequests" }
-        "404":
-          description: "mode=change only: the cursor is unknown, older than the retention window, or was issued for another (class, credential, filter set) — problem type `target-not-found`; re-sync with mode=full (Part 5 §5.2 rules 2, 5 and 8)."
-          content:
-            application/problem+json:
-              schema: { $ref: "#/components/schemas/Problem" }
+        "404": { $ref: "#/components/responses/CursorRefused" }
 
   /v1/tolling/transactions/{id}:
     get:
@@ -1381,27 +1379,26 @@ paths:
         - $ref: "../vendor/apds/4.1/apds-api-4.1.yaml#/components/parameters/page"
       responses:
         "200":
-          description: Paginated violations (APDS PaginatedList shape).
+          description: Paginated violations (APDS PaginatedList shape); with `mode=change`, the changes after `cursor` in the same envelope (Part 5 §5.2 rule 8).
           content:
             application/json:
               schema:
-                oneOf:
-                  - $ref: "#/components/schemas/ChangeFeedPage"
-                  - type: object
-                    properties:
-                      meta:
-                        $ref: "../vendor/apds/4.1/apds-api-4.1.yaml#/components/schemas/PaginatedListMeta"
-                      data:
-                        type: array
-                        items: { $ref: "#/components/schemas/Violation" }
+                type: object
+                properties:
+                  meta:
+                    $ref: "../vendor/apds/4.1/apds-api-4.1.yaml#/components/schemas/PaginatedListMeta"
+                  data:
+                    type: array
+                    items: { $ref: "#/components/schemas/Violation" }
+                  updateMode: { $ref: "#/components/schemas/ChangeFeedUpdateMode" }
+                  cursor: { $ref: "#/components/schemas/ChangeFeedCursor" }
+                  deleted: { $ref: "#/components/schemas/ChangeFeedTombstones" }
+                  grantAdditions: { $ref: "#/components/schemas/ChangeFeedGrantAdditions" }
+                  next: { $ref: "#/components/schemas/ChangeFeedNext" }
         "401": { $ref: "#/components/responses/Unauthorized" }
         "403": { $ref: "#/components/responses/Forbidden" }
         "429": { $ref: "#/components/responses/TooManyRequests" }
-        "404":
-          description: "mode=change only: the cursor is unknown, older than the retention window, or was issued for another (class, credential, filter set) — problem type `target-not-found`; re-sync with mode=full (Part 5 §5.2 rules 2, 5 and 8)."
-          content:
-            application/problem+json:
-              schema: { $ref: "#/components/schemas/Problem" }
+        "404": { $ref: "#/components/responses/CursorRefused" }
 
   /v1/violations/{id}:
     get:
@@ -1813,10 +1810,12 @@ paths:
         - name: status
           in: query
           schema: { type: string, enum: [active, superseded, retired] }
+        - $ref: "#/components/parameters/ModeParam"
+        - $ref: "#/components/parameters/CursorParam"
         - $ref: "../vendor/apds/4.1/apds-api-4.1.yaml#/components/parameters/page"
       responses:
         "200":
-          description: Paginated policies (APDS PaginatedList shape).
+          description: Paginated policies (APDS PaginatedList shape); with `mode=change`, the changes after `cursor` in the same envelope (Part 5 §5.2 rule 8).
           content:
             application/json:
               schema:
@@ -1827,8 +1826,14 @@ paths:
                   data:
                     type: array
                     items: { $ref: "#/components/schemas/EnforcementPolicy" }
+                  updateMode: { $ref: "#/components/schemas/ChangeFeedUpdateMode" }
+                  cursor: { $ref: "#/components/schemas/ChangeFeedCursor" }
+                  deleted: { $ref: "#/components/schemas/ChangeFeedTombstones" }
+                  grantAdditions: { $ref: "#/components/schemas/ChangeFeedGrantAdditions" }
+                  next: { $ref: "#/components/schemas/ChangeFeedNext" }
         "401": { $ref: "#/components/responses/Unauthorized" }
         "403": { $ref: "#/components/responses/Forbidden" }
+        "404": { $ref: "#/components/responses/CursorRefused" }
         "429": { $ref: "#/components/responses/TooManyRequests" }
 
   /v1/enforcement/policies/effective:
@@ -1991,10 +1996,12 @@ paths:
         - name: status
           in: query
           schema: { type: string, enum: [active, superseded, removed] }
+        - $ref: "#/components/parameters/ModeParam"
+        - $ref: "#/components/parameters/CursorParam"
         - $ref: "../vendor/apds/4.1/apds-api-4.1.yaml#/components/parameters/page"
       responses:
         "200":
-          description: Paginated signage (APDS PaginatedList shape).
+          description: Paginated signage (APDS PaginatedList shape); with `mode=change`, the changes after `cursor` in the same envelope (Part 5 §5.2 rule 8).
           content:
             application/json:
               schema:
@@ -2005,8 +2012,14 @@ paths:
                   data:
                     type: array
                     items: { $ref: "#/components/schemas/Signage" }
+                  updateMode: { $ref: "#/components/schemas/ChangeFeedUpdateMode" }
+                  cursor: { $ref: "#/components/schemas/ChangeFeedCursor" }
+                  deleted: { $ref: "#/components/schemas/ChangeFeedTombstones" }
+                  grantAdditions: { $ref: "#/components/schemas/ChangeFeedGrantAdditions" }
+                  next: { $ref: "#/components/schemas/ChangeFeedNext" }
         "401": { $ref: "#/components/responses/Unauthorized" }
         "403": { $ref: "#/components/responses/Forbidden" }
+        "404": { $ref: "#/components/responses/CursorRefused" }
         "429": { $ref: "#/components/responses/TooManyRequests" }
 
   /v1/enforcement/signage/effective:
@@ -2190,27 +2203,26 @@ paths:
         - $ref: "../vendor/apds/4.1/apds-api-4.1.yaml#/components/parameters/page"
       responses:
         "200":
-          description: Paginated programs (APDS PaginatedList shape).
+          description: Paginated programs (APDS PaginatedList shape); with `mode=change`, the changes after `cursor` in the same envelope (Part 5 §5.2 rule 8).
           content:
             application/json:
               schema:
-                oneOf:
-                  - $ref: "#/components/schemas/ChangeFeedPage"
-                  - type: object
-                    properties:
-                      meta:
-                        $ref: "../vendor/apds/4.1/apds-api-4.1.yaml#/components/schemas/PaginatedListMeta"
-                      data:
-                        type: array
-                        items: { $ref: "#/components/schemas/ValidationProgram" }
+                type: object
+                properties:
+                  meta:
+                    $ref: "../vendor/apds/4.1/apds-api-4.1.yaml#/components/schemas/PaginatedListMeta"
+                  data:
+                    type: array
+                    items: { $ref: "#/components/schemas/ValidationProgram" }
+                  updateMode: { $ref: "#/components/schemas/ChangeFeedUpdateMode" }
+                  cursor: { $ref: "#/components/schemas/ChangeFeedCursor" }
+                  deleted: { $ref: "#/components/schemas/ChangeFeedTombstones" }
+                  grantAdditions: { $ref: "#/components/schemas/ChangeFeedGrantAdditions" }
+                  next: { $ref: "#/components/schemas/ChangeFeedNext" }
         "401": { $ref: "#/components/responses/Unauthorized" }
         "403": { $ref: "#/components/responses/Forbidden" }
         "429": { $ref: "#/components/responses/TooManyRequests" }
-        "404":
-          description: "mode=change only: the cursor is unknown, older than the retention window, or was issued for another (class, credential, filter set) — problem type `target-not-found`; re-sync with mode=full (Part 5 §5.2 rules 2, 5 and 8)."
-          content:
-            application/problem+json:
-              schema: { $ref: "#/components/schemas/Problem" }
+        "404": { $ref: "#/components/responses/CursorRefused" }
 
   /v1/validations/programs/{id}:
     parameters:
@@ -2364,10 +2376,12 @@ paths:
       summary: List issuances for a program
       description: Batches issued to the program, newest first. Codes are never returned here.
       parameters:
+        - $ref: "#/components/parameters/ModeParam"
+        - $ref: "#/components/parameters/CursorParam"
         - $ref: "../vendor/apds/4.1/apds-api-4.1.yaml#/components/parameters/page"
       responses:
         "200":
-          description: Paginated issuances (APDS PaginatedList shape).
+          description: Paginated issuances (APDS PaginatedList shape); with `mode=change`, the changes after `cursor` in the same envelope (Part 5 §5.2 rule 8).
           content:
             application/json:
               schema:
@@ -2378,10 +2392,15 @@ paths:
                   data:
                     type: array
                     items: { $ref: "#/components/schemas/ValidationIssuance" }
+                  updateMode: { $ref: "#/components/schemas/ChangeFeedUpdateMode" }
+                  cursor: { $ref: "#/components/schemas/ChangeFeedCursor" }
+                  deleted: { $ref: "#/components/schemas/ChangeFeedTombstones" }
+                  grantAdditions: { $ref: "#/components/schemas/ChangeFeedGrantAdditions" }
+                  next: { $ref: "#/components/schemas/ChangeFeedNext" }
         "401": { $ref: "#/components/responses/Unauthorized" }
         "403": { $ref: "#/components/responses/Forbidden" }
         "404":
-          description: No such program.
+          description: No such program, or (`mode=change`) a refused cursor (`target-not-found`; Part 5 §5.2 rules 2 and 5).
           content:
             application/problem+json:
               schema: { $ref: "#/components/schemas/Problem" }
@@ -2596,27 +2615,26 @@ paths:
         - $ref: "../vendor/apds/4.1/apds-api-4.1.yaml#/components/parameters/page"
       responses:
         "200":
-          description: Paginated redemptions (APDS PaginatedList shape).
+          description: Paginated redemptions (APDS PaginatedList shape); with `mode=change`, the changes after `cursor` in the same envelope (Part 5 §5.2 rule 8).
           content:
             application/json:
               schema:
-                oneOf:
-                  - $ref: "#/components/schemas/ChangeFeedPage"
-                  - type: object
-                    properties:
-                      meta:
-                        $ref: "../vendor/apds/4.1/apds-api-4.1.yaml#/components/schemas/PaginatedListMeta"
-                      data:
-                        type: array
-                        items: { $ref: "#/components/schemas/ValidationRedemption" }
+                type: object
+                properties:
+                  meta:
+                    $ref: "../vendor/apds/4.1/apds-api-4.1.yaml#/components/schemas/PaginatedListMeta"
+                  data:
+                    type: array
+                    items: { $ref: "#/components/schemas/ValidationRedemption" }
+                  updateMode: { $ref: "#/components/schemas/ChangeFeedUpdateMode" }
+                  cursor: { $ref: "#/components/schemas/ChangeFeedCursor" }
+                  deleted: { $ref: "#/components/schemas/ChangeFeedTombstones" }
+                  grantAdditions: { $ref: "#/components/schemas/ChangeFeedGrantAdditions" }
+                  next: { $ref: "#/components/schemas/ChangeFeedNext" }
         "401": { $ref: "#/components/responses/Unauthorized" }
         "403": { $ref: "#/components/responses/Forbidden" }
         "429": { $ref: "#/components/responses/TooManyRequests" }
-        "404":
-          description: "mode=change only: the cursor is unknown, older than the retention window, or was issued for another (class, credential, filter set) — problem type `target-not-found`; re-sync with mode=full (Part 5 §5.2 rules 2, 5 and 8)."
-          content:
-            application/problem+json:
-              schema: { $ref: "#/components/schemas/Problem" }
+        "404": { $ref: "#/components/responses/CursorRefused" }
 
   /v1/validations/redemptions/{id}:
     get:
@@ -2789,10 +2807,12 @@ paths:
       summary: List closed statements for a program
       description: Closed statements, newest period first; `lines[]` omitted.
       parameters:
+        - $ref: "#/components/parameters/ModeParam"
+        - $ref: "#/components/parameters/CursorParam"
         - $ref: "../vendor/apds/4.1/apds-api-4.1.yaml#/components/parameters/page"
       responses:
         "200":
-          description: Paginated statements (APDS PaginatedList shape).
+          description: Paginated statements (APDS PaginatedList shape); with `mode=change`, the changes after `cursor` in the same envelope (Part 5 §5.2 rule 8).
           content:
             application/json:
               schema:
@@ -2803,10 +2823,15 @@ paths:
                   data:
                     type: array
                     items: { $ref: "#/components/schemas/ValidationStatement" }
+                  updateMode: { $ref: "#/components/schemas/ChangeFeedUpdateMode" }
+                  cursor: { $ref: "#/components/schemas/ChangeFeedCursor" }
+                  deleted: { $ref: "#/components/schemas/ChangeFeedTombstones" }
+                  grantAdditions: { $ref: "#/components/schemas/ChangeFeedGrantAdditions" }
+                  next: { $ref: "#/components/schemas/ChangeFeedNext" }
         "401": { $ref: "#/components/responses/Unauthorized" }
         "403": { $ref: "#/components/responses/Forbidden" }
         "404":
-          description: No such program.
+          description: No such program, or (`mode=change`) a refused cursor (`target-not-found`; Part 5 §5.2 rules 2 and 5).
           content:
             application/problem+json:
               schema: { $ref: "#/components/schemas/Problem" }
@@ -2934,27 +2959,26 @@ paths:
         - $ref: "../vendor/apds/4.1/apds-api-4.1.yaml#/components/parameters/page"
       responses:
         "200":
-          description: Paginated credentials (APDS PaginatedList shape).
+          description: Paginated credentials (APDS PaginatedList shape); with `mode=change`, the changes after `cursor` in the same envelope (Part 5 §5.2 rule 8).
           content:
             application/json:
               schema:
-                oneOf:
-                  - $ref: "#/components/schemas/ChangeFeedPage"
-                  - type: object
-                    properties:
-                      meta:
-                        $ref: "../vendor/apds/4.1/apds-api-4.1.yaml#/components/schemas/PaginatedListMeta"
-                      data:
-                        type: array
-                        items: { $ref: "#/components/schemas/CredentialRecord" }
+                type: object
+                properties:
+                  meta:
+                    $ref: "../vendor/apds/4.1/apds-api-4.1.yaml#/components/schemas/PaginatedListMeta"
+                  data:
+                    type: array
+                    items: { $ref: "#/components/schemas/CredentialRecord" }
+                  updateMode: { $ref: "#/components/schemas/ChangeFeedUpdateMode" }
+                  cursor: { $ref: "#/components/schemas/ChangeFeedCursor" }
+                  deleted: { $ref: "#/components/schemas/ChangeFeedTombstones" }
+                  grantAdditions: { $ref: "#/components/schemas/ChangeFeedGrantAdditions" }
+                  next: { $ref: "#/components/schemas/ChangeFeedNext" }
         "401": { $ref: "#/components/responses/Unauthorized" }
         "403": { $ref: "#/components/responses/Forbidden" }
         "429": { $ref: "#/components/responses/TooManyRequests" }
-        "404":
-          description: "mode=change only: the cursor is unknown, older than the retention window, or was issued for another (class, credential, filter set) — problem type `target-not-found`; re-sync with mode=full (Part 5 §5.2 rules 2, 5 and 8)."
-          content:
-            application/problem+json:
-              schema: { $ref: "#/components/schemas/Problem" }
+        "404": { $ref: "#/components/responses/CursorRefused" }
 
   /v1/credentials/{id}:
     get:
@@ -3311,28 +3335,27 @@ paths:
         - $ref: "../vendor/apds/4.1/apds-api-4.1.yaml#/components/parameters/page"
       responses:
         "200":
-          description: Paginated access events (APDS PaginatedList shape).
+          description: Paginated access events (APDS PaginatedList shape); with `mode=change`, the changes after `cursor` in the same envelope (Part 5 §5.2 rule 8).
           content:
             application/json:
               schema:
-                oneOf:
-                  - $ref: "#/components/schemas/ChangeFeedPage"
-                  - type: object
-                    properties:
-                      meta:
-                        $ref: "../vendor/apds/4.1/apds-api-4.1.yaml#/components/schemas/PaginatedListMeta"
-                      data:
-                        type: array
-                        items: { $ref: "./domains/credentials/schemas.yaml#/AccessEvent" }
+                type: object
+                properties:
+                  meta:
+                    $ref: "../vendor/apds/4.1/apds-api-4.1.yaml#/components/schemas/PaginatedListMeta"
+                  data:
+                    type: array
+                    items: { $ref: "./domains/credentials/schemas.yaml#/AccessEvent" }
+                  updateMode: { $ref: "#/components/schemas/ChangeFeedUpdateMode" }
+                  cursor: { $ref: "#/components/schemas/ChangeFeedCursor" }
+                  deleted: { $ref: "#/components/schemas/ChangeFeedTombstones" }
+                  grantAdditions: { $ref: "#/components/schemas/ChangeFeedGrantAdditions" }
+                  next: { $ref: "#/components/schemas/ChangeFeedNext" }
         "400": { $ref: "#/components/responses/BadRequest" }
         "401": { $ref: "#/components/responses/Unauthorized" }
         "403": { $ref: "#/components/responses/Forbidden" }
         "429": { $ref: "#/components/responses/TooManyRequests" }
-        "404":
-          description: "mode=change only: the cursor is unknown, older than the retention window, or was issued for another (class, credential, filter set) — problem type `target-not-found`; re-sync with mode=full (Part 5 §5.2 rules 2, 5 and 8)."
-          content:
-            application/problem+json:
-              schema: { $ref: "#/components/schemas/Problem" }
+        "404": { $ref: "#/components/responses/CursorRefused" }
 
   # ===== Valet (optional class apx-valet; Part 22) ===== #
   # Net-new: APDS has no valet entity. The stay is a native Session; this
@@ -3417,27 +3440,26 @@ paths:
         - $ref: "../vendor/apds/4.1/apds-api-4.1.yaml#/components/parameters/page"
       responses:
         "200":
-          description: Paginated tickets (APDS PaginatedList shape).
+          description: Paginated tickets (APDS PaginatedList shape); with `mode=change`, the changes after `cursor` in the same envelope (Part 5 §5.2 rule 8).
           content:
             application/json:
               schema:
-                oneOf:
-                  - $ref: "#/components/schemas/ChangeFeedPage"
-                  - type: object
-                    properties:
-                      meta:
-                        $ref: "../vendor/apds/4.1/apds-api-4.1.yaml#/components/schemas/PaginatedListMeta"
-                      data:
-                        type: array
-                        items: { $ref: "#/components/schemas/ValetTicket" }
+                type: object
+                properties:
+                  meta:
+                    $ref: "../vendor/apds/4.1/apds-api-4.1.yaml#/components/schemas/PaginatedListMeta"
+                  data:
+                    type: array
+                    items: { $ref: "#/components/schemas/ValetTicket" }
+                  updateMode: { $ref: "#/components/schemas/ChangeFeedUpdateMode" }
+                  cursor: { $ref: "#/components/schemas/ChangeFeedCursor" }
+                  deleted: { $ref: "#/components/schemas/ChangeFeedTombstones" }
+                  grantAdditions: { $ref: "#/components/schemas/ChangeFeedGrantAdditions" }
+                  next: { $ref: "#/components/schemas/ChangeFeedNext" }
         "401": { $ref: "#/components/responses/Unauthorized" }
         "403": { $ref: "#/components/responses/Forbidden" }
         "429": { $ref: "#/components/responses/TooManyRequests" }
-        "404":
-          description: "mode=change only: the cursor is unknown, older than the retention window, or was issued for another (class, credential, filter set) — problem type `target-not-found`; re-sync with mode=full (Part 5 §5.2 rules 2, 5 and 8)."
-          content:
-            application/problem+json:
-              schema: { $ref: "#/components/schemas/Problem" }
+        "404": { $ref: "#/components/responses/CursorRefused" }
 
   /v1/valet/queue:
     get:
@@ -4089,27 +4111,26 @@ paths:
         - $ref: "../vendor/apds/4.1/apds-api-4.1.yaml#/components/parameters/page"
       responses:
         "200":
-          description: Paginated sessions (APDS PaginatedList shape).
+          description: Paginated sessions (APDS PaginatedList shape); with `mode=change`, the changes after `cursor` in the same envelope (Part 5 §5.2 rule 8).
           content:
             application/json:
               schema:
-                oneOf:
-                  - $ref: "#/components/schemas/ChangeFeedPage"
-                  - type: object
-                    properties:
-                      meta:
-                        $ref: "../vendor/apds/4.1/apds-api-4.1.yaml#/components/schemas/PaginatedListMeta"
-                      data:
-                        type: array
-                        items: { $ref: "#/components/schemas/ChargingSession" }
+                type: object
+                properties:
+                  meta:
+                    $ref: "../vendor/apds/4.1/apds-api-4.1.yaml#/components/schemas/PaginatedListMeta"
+                  data:
+                    type: array
+                    items: { $ref: "#/components/schemas/ChargingSession" }
+                  updateMode: { $ref: "#/components/schemas/ChangeFeedUpdateMode" }
+                  cursor: { $ref: "#/components/schemas/ChangeFeedCursor" }
+                  deleted: { $ref: "#/components/schemas/ChangeFeedTombstones" }
+                  grantAdditions: { $ref: "#/components/schemas/ChangeFeedGrantAdditions" }
+                  next: { $ref: "#/components/schemas/ChangeFeedNext" }
         "401": { $ref: "#/components/responses/Unauthorized" }
         "403": { $ref: "#/components/responses/Forbidden" }
         "429": { $ref: "#/components/responses/TooManyRequests" }
-        "404":
-          description: "mode=change only: the cursor is unknown, older than the retention window, or was issued for another (class, credential, filter set) — problem type `target-not-found`; re-sync with mode=full (Part 5 §5.2 rules 2, 5 and 8)."
-          content:
-            application/problem+json:
-              schema: { $ref: "#/components/schemas/Problem" }
+        "404": { $ref: "#/components/responses/CursorRefused" }
 
   /v1/charging/sessions/{id}:
     get:
@@ -4708,26 +4729,25 @@ paths:
         - $ref: "../vendor/apds/4.1/apds-api-4.1.yaml#/components/parameters/page"
       responses:
         "200":
-          description: Paginated lists, or a ChangeFeedPage.
+          description: Paginated lists; with `mode=change`, the changes after `cursor` in the same envelope (Part 5 §5.2 rule 8).
           content:
             application/json:
               schema:
-                oneOf:
-                  - $ref: "#/components/schemas/ChangeFeedPage"
-                  - type: object
-                    properties:
-                      meta:
-                        $ref: "../vendor/apds/4.1/apds-api-4.1.yaml#/components/schemas/PaginatedListMeta"
-                      data:
-                        type: array
-                        items: { $ref: "#/components/schemas/PlateList" }
+                type: object
+                properties:
+                  meta:
+                    $ref: "../vendor/apds/4.1/apds-api-4.1.yaml#/components/schemas/PaginatedListMeta"
+                  data:
+                    type: array
+                    items: { $ref: "#/components/schemas/PlateList" }
+                  updateMode: { $ref: "#/components/schemas/ChangeFeedUpdateMode" }
+                  cursor: { $ref: "#/components/schemas/ChangeFeedCursor" }
+                  deleted: { $ref: "#/components/schemas/ChangeFeedTombstones" }
+                  grantAdditions: { $ref: "#/components/schemas/ChangeFeedGrantAdditions" }
+                  next: { $ref: "#/components/schemas/ChangeFeedNext" }
         "401": { $ref: "#/components/responses/Unauthorized" }
         "403": { $ref: "#/components/responses/Forbidden" }
-        "404":
-          description: "mode=change only: unknown, expired, or foreign cursor (`target-not-found`)."
-          content:
-            application/problem+json:
-              schema: { $ref: "#/components/schemas/Problem" }
+        "404": { $ref: "#/components/responses/CursorRefused" }
         "429": { $ref: "#/components/responses/TooManyRequests" }
     post:
       operationId: post-apx-v1-plate-lists
@@ -4854,19 +4874,22 @@ paths:
         - $ref: "../vendor/apds/4.1/apds-api-4.1.yaml#/components/parameters/page"
       responses:
         "200":
-          description: Paginated entries, or a ChangeFeedPage.
+          description: Paginated entries; with `mode=change`, the changes after `cursor` in the same envelope (Part 5 §5.2 rule 8).
           content:
             application/json:
               schema:
-                oneOf:
-                  - $ref: "#/components/schemas/ChangeFeedPage"
-                  - type: object
-                    properties:
-                      meta:
-                        $ref: "../vendor/apds/4.1/apds-api-4.1.yaml#/components/schemas/PaginatedListMeta"
-                      data:
-                        type: array
-                        items: { $ref: "#/components/schemas/PlateListEntry" }
+                type: object
+                properties:
+                  meta:
+                    $ref: "../vendor/apds/4.1/apds-api-4.1.yaml#/components/schemas/PaginatedListMeta"
+                  data:
+                    type: array
+                    items: { $ref: "#/components/schemas/PlateListEntry" }
+                  updateMode: { $ref: "#/components/schemas/ChangeFeedUpdateMode" }
+                  cursor: { $ref: "#/components/schemas/ChangeFeedCursor" }
+                  deleted: { $ref: "#/components/schemas/ChangeFeedTombstones" }
+                  grantAdditions: { $ref: "#/components/schemas/ChangeFeedGrantAdditions" }
+                  next: { $ref: "#/components/schemas/ChangeFeedNext" }
         "401": { $ref: "#/components/responses/Unauthorized" }
         "403": { $ref: "#/components/responses/Forbidden" }
         "404": { $ref: "#/components/responses/NotFound" }
@@ -5376,10 +5399,12 @@ paths:
           style: form
           explode: false
           schema: { type: array, items: { type: string, format: uuid } }
+        - $ref: "#/components/parameters/ModeParam"
+        - $ref: "#/components/parameters/CursorParam"
         - $ref: "../vendor/apds/4.1/apds-api-4.1.yaml#/components/parameters/page"
       responses:
         "200":
-          description: Matching accounts.
+          description: Matching accounts; with `mode=change`, the changes after `cursor` in the same envelope (Part 5 §5.2 rule 8).
           content:
             application/json:
               schema:
@@ -5390,8 +5415,14 @@ paths:
                   data:
                     type: array
                     items: { $ref: "#/components/schemas/Account" }
+                  updateMode: { $ref: "#/components/schemas/ChangeFeedUpdateMode" }
+                  cursor: { $ref: "#/components/schemas/ChangeFeedCursor" }
+                  deleted: { $ref: "#/components/schemas/ChangeFeedTombstones" }
+                  grantAdditions: { $ref: "#/components/schemas/ChangeFeedGrantAdditions" }
+                  next: { $ref: "#/components/schemas/ChangeFeedNext" }
         "401": { $ref: "#/components/responses/Unauthorized" }
         "403": { $ref: "#/components/responses/Forbidden" }
+        "404": { $ref: "#/components/responses/CursorRefused" }
         "429": { $ref: "#/components/responses/TooManyRequests" }
 
   /v1/accounts/{id}:
@@ -5539,19 +5570,22 @@ paths:
         - $ref: "../vendor/apds/4.1/apds-api-4.1.yaml#/components/parameters/page"
       responses:
         "200":
-          description: Matching payments.
+          description: Matching payments; with `mode=change`, the changes after `cursor` in the same envelope (Part 5 §5.2 rule 8).
           content:
             application/json:
               schema:
-                oneOf:
-                  - $ref: "#/components/schemas/ChangeFeedPage"
-                  - type: object
-                    properties:
-                      meta:
-                        $ref: "../vendor/apds/4.1/apds-api-4.1.yaml#/components/schemas/PaginatedListMeta"
-                      data:
-                        type: array
-                        items: { $ref: "#/components/schemas/PaymentRecord" }
+                type: object
+                properties:
+                  meta:
+                    $ref: "../vendor/apds/4.1/apds-api-4.1.yaml#/components/schemas/PaginatedListMeta"
+                  data:
+                    type: array
+                    items: { $ref: "#/components/schemas/PaymentRecord" }
+                  updateMode: { $ref: "#/components/schemas/ChangeFeedUpdateMode" }
+                  cursor: { $ref: "#/components/schemas/ChangeFeedCursor" }
+                  deleted: { $ref: "#/components/schemas/ChangeFeedTombstones" }
+                  grantAdditions: { $ref: "#/components/schemas/ChangeFeedGrantAdditions" }
+                  next: { $ref: "#/components/schemas/ChangeFeedNext" }
         "400": { $ref: "#/components/responses/BadRequest" }
         "401": { $ref: "#/components/responses/Unauthorized" }
         "403": { $ref: "#/components/responses/Forbidden" }
@@ -5564,11 +5598,7 @@ paths:
             application/problem+json:
               schema: { $ref: "#/components/schemas/Problem" }
         "429": { $ref: "#/components/responses/TooManyRequests" }
-        "404":
-          description: "mode=change only: the cursor is unknown, older than the retention window, or was issued for another (class, credential, filter set) — problem type `target-not-found`; re-sync with mode=full (Part 5 §5.2 rules 2, 5 and 8)."
-          content:
-            application/problem+json:
-              schema: { $ref: "#/components/schemas/Problem" }
+        "404": { $ref: "#/components/responses/CursorRefused" }
 
   /v1/payments/{id}/postings:
     post:
@@ -6232,28 +6262,27 @@ paths:
         - $ref: "../vendor/apds/4.1/apds-api-4.1.yaml#/components/parameters/page"
       responses:
         "200":
-          description: Paginated alerts (APDS PaginatedList shape).
+          description: Paginated alerts (APDS PaginatedList shape); with `mode=change`, the changes after `cursor` in the same envelope (Part 5 §5.2 rule 8).
           content:
             application/json:
               schema:
-                oneOf:
-                  - $ref: "#/components/schemas/ChangeFeedPage"
-                  - type: object
-                    properties:
-                      meta:
-                        $ref: "../vendor/apds/4.1/apds-api-4.1.yaml#/components/schemas/PaginatedListMeta"
-                      data:
-                        type: array
-                        items:
-                          $ref: "#/components/schemas/Alert"
+                type: object
+                properties:
+                  meta:
+                    $ref: "../vendor/apds/4.1/apds-api-4.1.yaml#/components/schemas/PaginatedListMeta"
+                  data:
+                    type: array
+                    items:
+                      $ref: "#/components/schemas/Alert"
+                  updateMode: { $ref: "#/components/schemas/ChangeFeedUpdateMode" }
+                  cursor: { $ref: "#/components/schemas/ChangeFeedCursor" }
+                  deleted: { $ref: "#/components/schemas/ChangeFeedTombstones" }
+                  grantAdditions: { $ref: "#/components/schemas/ChangeFeedGrantAdditions" }
+                  next: { $ref: "#/components/schemas/ChangeFeedNext" }
         "401": { $ref: "#/components/responses/Unauthorized" }
         "403": { $ref: "#/components/responses/Forbidden" }
         "429": { $ref: "#/components/responses/TooManyRequests" }
-        "404":
-          description: "mode=change only: the cursor is unknown, older than the retention window, or was issued for another (class, credential, filter set) — problem type `target-not-found`; re-sync with mode=full (Part 5 §5.2 rules 2, 5 and 8)."
-          content:
-            application/problem+json:
-              schema: { $ref: "#/components/schemas/Problem" }
+        "404": { $ref: "#/components/responses/CursorRefused" }
 
   /v1/alerts/{id}:
     get:
@@ -6995,6 +7024,16 @@ components:
       content:
         application/problem+json:
           schema: { $ref: "#/components/schemas/Problem" }
+    CursorRefused:
+      description: |-
+        `mode=change` only (Part 5 §5.2): the cursor is unknown, older
+        than the retention window, or was issued for another (class,
+        credential, filter set). Problem type `target-not-found`; re-sync
+        with `mode=full`. The cursor is an APX parameter, so this refusal
+        is always a Problem (Part 5 §5.2 rules 2 and 5).
+      content:
+        application/problem+json:
+          schema: { $ref: "#/components/schemas/Problem" }
     NotFound:
       description: |-
         The addressed resource does not exist (problem type
@@ -7091,6 +7130,16 @@ components:
       $ref: "./domains/common/schemas.yaml#/CodeListValue"
     ChangeFeedPage:
       $ref: "./domains/data/schemas.yaml#/ChangeFeedPage"
+    ChangeFeedUpdateMode:
+      $ref: "./domains/data/schemas.yaml#/ChangeFeedUpdateMode"
+    ChangeFeedCursor:
+      $ref: "./domains/data/schemas.yaml#/ChangeFeedCursor"
+    ChangeFeedTombstones:
+      $ref: "./domains/data/schemas.yaml#/ChangeFeedTombstones"
+    ChangeFeedGrantAdditions:
+      $ref: "./domains/data/schemas.yaml#/ChangeFeedGrantAdditions"
+    ChangeFeedNext:
+      $ref: "./domains/data/schemas.yaml#/ChangeFeedNext"
     OccupancySnapshot:
       $ref: "./domains/data/schemas.yaml#/OccupancySnapshot"
     ApxEventSubscription:

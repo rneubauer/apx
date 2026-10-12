@@ -128,7 +128,8 @@ CommandResult:
     are normative per command type: `lostTicket` → `ticketNumber`, `session`,
     `amountDue`; `matchTicket` → `session`, `amountDue`;
     `pushNegotiatedRate` → `amountDue`, and `rateTable` when a table was
-    selected (absent for a stated amount). Other command types
+    selected (absent for a stated amount, which the lane inquiry reports
+    as `currentTicket.negotiatedAmount`). Other command types
     leave it absent unless a registry entry says otherwise. It restates what
     the lane inquiry shows, so a console can continue (print, take payment)
     without parsing `statusHistory[].detail` or making a second call.
@@ -273,21 +274,17 @@ LaneStatus:
           type: object
           description: |-
             The negotiated rate in effect on this ticket, if a
-            pushNegotiatedRate command succeeded for it (Part 6 §6.6). Absent
-            when the ticket prices from the lane's normal rate deck. Exactly
-            one of rateTable (a table selected from the deck) or amount (a
-            figure the agent stated) is present.
-          required: [command]
+            pushNegotiatedRate command that selected a RateTable succeeded
+            for it (Part 6 §6.6). Absent when the ticket prices from the
+            lane's normal rate deck, and absent when the agent stated an
+            amount instead (see `negotiatedAmount`). At most one of
+            `negotiatedRate` and `negotiatedAmount` is present: the latest
+            succeeded pushNegotiatedRate for the ticket decides which.
+          required: [rateTable, command]
           properties:
             rateTable:
               description: The RateTable selected (VersionedReference — the exact version applied).
               $ref: "../../../vendor/apds/4.1/apds-api-4.1.yaml#/components/schemas/VersionedReference"
-            amount:
-              description: The amount the agent stated for this ticket (the negotiatedAmounts feature). It is what the ticket owes, not a discount.
-              $ref: "../../../vendor/apds/4.1/apds-api-4.1.yaml#/components/schemas/AmountInCurrency"
-            reason:
-              type: string
-              description: The command's reason, copied for the screen-pop. Always present with amount.
             command:
               description: The pushNegotiatedRate Command that applied it — carries `agent`, `reason`, and the audit trail.
               $ref: "../../../vendor/apds/4.1/apds-api-4.1.yaml#/components/schemas/Reference"
@@ -297,6 +294,31 @@ LaneStatus:
             policy:
               description: The table's `apds-ext:apx:ratepolicy@1.0` decoration as it stood when applied (its displayName is what the agent saw).
               $ref: "#/RatePolicy"
+        negotiatedAmount:
+          type: object
+          description: |-
+            The amount an agent stated for this ticket, if a
+            pushNegotiatedRate command carrying `parameters.amount` succeeded
+            for it (the negotiatedAmounts feature, Part 6 §6.3, §6.6). Absent
+            otherwise. It is what the ticket owes, not a discount. At most one
+            of `negotiatedRate` and `negotiatedAmount` is present: the latest
+            succeeded pushNegotiatedRate for the ticket decides which.
+          required: [amount, reason, agent, command]
+          properties:
+            amount:
+              description: The amount stated, as the command's `parameters.amount`.
+              $ref: "../../../vendor/apds/4.1/apds-api-4.1.yaml#/components/schemas/AmountInCurrency"
+            reason:
+              type: string
+              minLength: 1
+              description: The command's `reason`, copied for the screen-pop.
+            agent:
+              type: string
+              minLength: 1
+              description: The principal who stated the amount (the command's `agent`), copied for the screen-pop.
+            command:
+              description: The pushNegotiatedRate Command that applied it — the audit trail.
+              $ref: "../../../vendor/apds/4.1/apds-api-4.1.yaml#/components/schemas/Reference"
         matchedCommand:
           description: |-
             When this ticket was bound to an open session by a matchTicket

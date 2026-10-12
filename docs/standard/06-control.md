@@ -258,10 +258,13 @@ exactly that.
     `422 rate-not-negotiable`;
   - an empty lane with `409 lane-no-current-transaction`, as for a table.
 
-  The lane inquiry then shows `currentTicket.negotiatedRate` with
-  `amount`, `reason`, the command, and the agent, and the command's
-  `result.amountDue` restates it. The next car prices from the deck as
-  usual.
+  The lane inquiry then shows `currentTicket.negotiatedAmount` with the
+  `amount`, `reason`, `agent`, and the command, and the command's
+  `result.amountDue` restates it (`result.rateTable` is absent). A stated
+  amount is never reported through `currentTicket.negotiatedRate`, whose
+  `rateTable` stays required: a ticket shows at most one of the two
+  members, the one the latest succeeded `pushNegotiatedRate` for it set.
+  The next car prices from the deck as usual.
 - **Attribution, not restriction (design rule).** Every negotiated rate
   names who set it and, for a stated amount, why. That keeps §6.3's rule
   intact: every change on a ticket is attributable on the audit record.

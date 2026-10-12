@@ -116,7 +116,7 @@ creator and to callers who ask for holds.
   `ticketLast4`, `cardLast4`, `ticketNumber` (exact), or `account` (the
   account's statement view); `date` and `place` only narrow a keyed query.
   A query with no key is `400 invalid-request`: the operation never serves
-  the whole ledger.
+  the whole ledger as a lookup. The one exception is the change feed below.
   **Privacy rule (normative):** truncated-key lookups (`ticketLast4` or
   `cardLast4`) without a `date` are constrained to the last 8 hours; older
   records require the full ticket number (`ticketNumber`) or an
@@ -130,6 +130,13 @@ creator and to callers who ask for holds.
   which returns only holds; `captureStatus=captured` returns only
   collected payments. `captureStatus` narrows a keyed query and is never a
   key on its own.
+  **Change feed (normative).** With `mode=change` the route is a feed,
+  not a lookup: no key is needed and the 8-hour window does not apply,
+  because it serves exactly what `apx.accounts.payment.recorded.v1`
+  delivers to the same credential (§13.4) — a hold appears at capture,
+  never before, and a voided hold never appears. `ticketLast4` and
+  `cardLast4` are refused with it (400 `invalid-request`). Part 5 §5.2
+  rule 8, difference 6.
 - `POST /v1/payments:search` takes the same keys in a `PaymentSearch`
   body, with the same keys rule, 8-hour window, hold rules, grant rules,
   and response as the `GET` (Part 9 §9.6). Implementations claiming
@@ -390,8 +397,10 @@ LPR analytics. APX closes both gaps (registry `apx-topics`):
 that wants *everything* about a location combines three mechanisms, all
 already normative: (1) bulk/exactly-once history via the Part 5 change
 feed (`mode=change&cursor=…`) on every native route — sessions, rates,
-rights, observations; (2) real-time push via one Part 8 subscription
-mixing APDS EventTypeEnum topics with the APX topics above plus
+rights, observations — and on the APX resource lists of Part 5 §5.2
+rule 8 (payments, commands, alerts, violations, and the rest); (2)
+real-time push via one Part 8 subscription mixing APDS EventTypeEnum
+topics with the APX topics above plus
 `apx.data.occupancy.v1`, alert, and command topics; (3) point-in-time
 convenience reads (occupancy §5.5, lane inquiry §6.2). Nothing about a
 place that APX models is unreachable by feed.

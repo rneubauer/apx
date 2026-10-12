@@ -193,6 +193,7 @@ export default {
                 current: {
                   ...l.current,
                   amountDue: amount ?? l.current.amountDue,
+                  negotiatedAmount: undefined,
                   negotiatedRate: {
                     rateTable: p.rateTable,
                     command: refOf(id, 'Command'),
@@ -314,7 +315,9 @@ export default {
             ...l.current,
             amountDue: money(amount.currencyValue, amount.currencyType),
             paidInFull: amount.currencyValue === 0,
-            negotiatedRate: { amount: money(amount.currencyValue, amount.currencyType), reason: cmd.reason, command: refOf(id, 'Command'), agent: cmd.agent },
+            // A stated amount is its own member; negotiatedRate (rateTable required) is cleared.
+            negotiatedRate: undefined,
+            negotiatedAmount: { amount: money(amount.currencyValue, amount.currencyType), reason: cmd.reason, agent: cmd.agent, command: refOf(id, 'Command') },
           },
         }),
         { bump: false }
@@ -716,6 +719,7 @@ export default {
       validations: t.validations ?? [],
       ...(t.lpr ? { lpr: t.lpr } : {}),
       ...(t.negotiatedRate ? { negotiatedRate: t.negotiatedRate } : {}),
+      ...(t.negotiatedAmount ? { negotiatedAmount: t.negotiatedAmount } : {}),
       ...(t.matchedCommand ? { matchedCommand: t.matchedCommand } : {}),
     });
 

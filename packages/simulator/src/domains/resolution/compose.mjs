@@ -306,6 +306,7 @@ export function createComposer(sim) {
     validations: t.validations ?? [],
     ...(t.lpr ? { lpr: t.lpr } : {}),
     ...(t.negotiatedRate ? { negotiatedRate: t.negotiatedRate } : {}),
+    ...(t.negotiatedAmount ? { negotiatedAmount: t.negotiatedAmount } : {}),
     ...(t.matchedCommand ? { matchedCommand: t.matchedCommand } : {}),
   });
 
