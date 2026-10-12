@@ -22,8 +22,9 @@ integration over live PARCS state.
   member — a Reference to that declined PaymentRecord — so the caller can
   cite it without a second lookup. `captureLater: true` asks for an
   authorization only — a hold (§13.1a). Captured account payments reduce
-  the account balance; a hold does not until it is captured. Scope
-  `apx.payments:write`.
+  the account balance; a hold does not until it is captured. The body
+  MAY carry `apds-ext:apx:payment-detail@1.0` (the itemization and the
+  rate sold, §13.6a). Scope `apx.payments:write`.
 - `POST /v1/payments/{id}/postings` — accounting write-back
   (PARIS-style): posts account/card/amount/transaction
   ID to the AR system and returns `{confirmationNumber, accountUpdated,
@@ -428,7 +429,8 @@ relate field-by-field:
 | `id` / `version` | `VersionedIdentity` (allOf) | same identity shape |
 | `transactionID` | `transactionID` | identical meaning |
 | `dateCollected` | `dateCollected` | identical (`dateAuthorised` has no APX field; authorization time is the record's creation) |
-| `amount` | `paymentLines[].value` summed | APX carries the total; line itemization stays APDS-side |
+| `amount` | `paymentLines[].value` summed (`paymentType: payment` lines) | APX carries the total; the itemization, when the implementation records one, rides `apds-ext:apx:payment-detail@1.0` `lines` (§13.6a) as APDS `PaymentLine`s |
+| `extensions["apds-ext:apx:payment-detail@1.0"].rateSold` | `extensions["apds-ext:apx:payment-detail@1.0"].rateSold` | the same decoration on both (§13.6a) |
 | `meansOfPayment` | — | APDS vocabulary (`MeansOfPaymentEnum`, which APDS uses for the means a place accepts), APX-only member: APDS `Payment` has no per-payment means |
 | `channel` | — | APX-only (where the payment was captured; PCI-safe) |
 | `paymentStatus` | — | APX-only; APDS Payment records only collected payments — `approved` with `captureStatus` `captured` (or absent) is the only state that maps |
@@ -444,6 +446,75 @@ entities MUST materialize every `approved`, captured PaymentRecord (a hold
 only once it is captured) as (or bind it
 to) a native `Payment` with a `paymentLines` entry of `paymentType:
 payment` and `value` = `amount`, so plain APDS consumers see the money
-without speaking APX. Declined and reversed records exist only on the APX
+without speaking APX. A record itemized with
+`apds-ext:apx:payment-detail@1.0` `lines` (§13.6a) is materialized with
+those lines as its `paymentLines`, unchanged (same `id`s), in place of the
+single line; its `rateSold` is copied to the same decoration on the native
+`Payment`. Declined and reversed records exist only on the APX
 surface — APDS has no vocabulary for them, which is precisely the gap
 `PaymentRecord` fills.
+
+## 13.6a Payment detail: itemization and the rate sold (normative)
+
+Revenue reports and price checks need more than a total: how much was the
+price and how much a fee or tax, and which rate the customer bought. APDS
+already has the itemization shape — `Payment.paymentLines[]`, each a
+`PaymentLine` with a `paymentType` (`payment | validation`) and an
+`idCode` that APDS leaves as a bilateral cost code — but no shared
+vocabulary for `idCode` and no member for the rate sold. APX adds both,
+without re-shaping anything APDS defines:
+
+1. **Line codes.** A `PaymentLine` of `paymentType: payment` SHOULD carry
+   in `idCode` a definedValue of the `apx-payment-line-codes` registry
+   (Part 11): `base` (the price, or the part of it paid in money when a
+   validation covers the rest), `convenienceFee` (a channel's
+   per-transaction fee), `serviceFee` (another service sold with the
+   parking), `tax`. An implementer extends the list with its own codes per
+   Part 11 §11.1(4). The `idCode` of a `validation` line is not governed by
+   this registry; it stays the bilateral code of the validation program.
+2. **The decoration.** `apds-ext:apx:payment-detail@1.0` (`PaymentDetail`)
+   rides the `extensions` container of a `PaymentRecord` and of a native
+   APDS `Payment` (Part 4 §4.3):
+   - `rateSold` (`RateSold`): the seller's rate `code` and `name`, the
+     published `rateTable` it came from when there is one, the `rightType`
+     bought (APDS `RightSpecificationTypeEnum`; omitted inside an
+     AssignedRight, whose RightSpecification says it), and `priceClass`
+     (`standard | discounted | validated | complimentary | other`).
+   - `lines`: the itemization, as APDS `PaymentLine`s. **Only on a
+     `PaymentRecord`**; on a native `Payment` the itemization is its own
+     `paymentLines`, and the decoration there MUST NOT carry `lines`, so
+     there is one store, never two (Part 0 §0.2).
+3. **Lines sum to the total.** On a `PaymentRecord`, the `currencyValue`s
+   of the `paymentType: payment` lines MUST sum to `amount`, in the same
+   `currencyType`. On a native `Payment`, the `payment` lines are the
+   total. `validation` lines record value offset by a validation and are
+   not part of the money collected. A `POST /v1/payments` whose lines do
+   not sum to `amount` is `422 request-unprocessable`; nothing is charged.
+4. **The lines describe the sale.** Refunds do not rewrite them:
+   `refundedAmount` (§13.1a) records what was given back.
+5. **Optional.** A server that does not itemize omits the decoration; a
+   client MUST NOT infer a fee of zero from its absence. A server that
+   accepts the decoration on `POST /v1/payments` returns it on the record,
+   in `GET /v1/payments`, and in `apx.accounts.payment.recorded.v1`
+   events, unchanged.
+
+```json
+"extensions": {
+  "apds-ext:apx:payment-detail@1.0": {
+    "rateSold": { "code": "evening-flat", "name": "Evening Flat Rate", "rightType": "oneTimeUseParking", "priceClass": "standard" },
+    "lines": [
+      { "id": "e1000000-0000-4000-8000-000000000101", "version": 1, "paymentType": "payment", "idCode": "base",
+        "value": { "currencyType": "USD", "currencyValue": 12.00 } },
+      { "id": "e1000000-0000-4000-8000-000000000102", "version": 1, "paymentType": "payment", "idCode": "convenienceFee",
+        "value": { "currencyType": "USD", "currencyValue": 0.75 } }
+    ]
+  }
+}
+```
+
+APDS impact: none. The registry gives a shared meaning to a member APDS
+leaves bilateral, and the decoration sits in the extension container plain
+APDS consumers ignore. A fee value in APDS `PaymentTypeEnum`, and a
+rate-sold member on `Payment`, are offered to APDS as suggestions
+(`docs/apds-change-requests.md`, Part B); if APDS adopts them, the APDS
+form wins (Part 3 §3.3(8)).

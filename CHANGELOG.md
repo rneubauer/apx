@@ -106,6 +106,20 @@ The machine-readable spec (`spec/openapi/apx.yaml`, bundled as
   before or after it. The payment feed needs no key and refuses
   `ticketLast4`/`cardLast4` (Part 13 §13.2). Annex A rows APX-CORE-17 and
   APX-PHX-02; worked scenario 31.
+- Payment detail (Part 13 §13.6a): decoration
+  `apds-ext:apx:payment-detail@1.0` (`PaymentDetail`, `RateSold`) on
+  `PaymentRecord` and on the native APDS `Payment`. It names the rate sold
+  (seller `code` and `name`, the published `rateTable`, APDS
+  `RightSpecificationTypeEnum` as `rightType`, and a `priceClass`) and, on
+  a PaymentRecord, itemizes it as APDS `PaymentLine`s whose `payment`
+  lines MUST sum to `amount` (otherwise 422 `request-unprocessable`).
+  New registry `apx-payment-line-codes` (`base`, `convenienceFee`,
+  `serviceFee`, `tax`) gives `PaymentLine.idCode` a shared meaning. A
+  materialized Payment keeps the record's lines as its `paymentLines`
+  (§13.6; Annex A APX-ACC-07 amended, APX-ACC-08 added). The data overlay
+  declares `extensions` on `Payment` (erratum 010 workaround, now nine
+  entities). Scenario 32 shows it end to end; a seventh Part B suggestion
+  in `docs/apds-change-requests.md` offers the same to APDS.
 
 ## [0.13.0] — 2026-09-29
 

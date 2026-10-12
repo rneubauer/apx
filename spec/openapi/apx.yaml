@@ -4501,8 +4501,10 @@ paths:
             `payment` member referencing the recorded declined PaymentRecord,
             Part 13 §13.1); a body carrying card data beyond the truncated
             last four (`personal-data-not-permitted`, refused before it is
-            persisted or logged); or `captureLater` on a server without an
-            authorization lifecycle (`request-unprocessable`).
+            persisted or logged); `captureLater` on a server without an
+            authorization lifecycle, or `apds-ext:apx:payment-detail@1.0`
+            lines whose `payment` values do not sum to `amount`
+            (`request-unprocessable`, Part 13 §13.6a).
           content:
             application/problem+json:
               schema: { $ref: "#/components/schemas/Problem" }
@@ -6280,6 +6282,10 @@ components:
       $ref: "./domains/accounts/schemas.yaml#/Account"
     PaymentRecord:
       $ref: "./domains/accounts/schemas.yaml#/PaymentRecord"
+    PaymentDetail:
+      $ref: "./domains/accounts/schemas.yaml#/PaymentDetail"
+    RateSold:
+      $ref: "./domains/accounts/schemas.yaml#/RateSold"
     Posting:
       $ref: "./domains/accounts/schemas.yaml#/Posting"
     PaymentLink:

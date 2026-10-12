@@ -1,0 +1,13 @@
+{
+  "id": "fb5e0331-03e9-4444-8731-17744b384e1a",
+  "version": 1,
+  "name": "apx-payment-line-codes",
+  "creator": { "id": "a1000000-0000-4000-8000-000000000001", "className": "Organisation" },
+  "locator": "https://apx-standard.org/registries/apx-payment-line-codes.json",
+  "userDefinedCodeListEntries": [
+    { "definedValue": "base", "entryDescription": "The price of the parking or product itself, before fees and taxes: the part paid in money (a validation's share is a paymentType validation line, not base) (Part 13 §13.6a).", "entryIndex": 0 },
+    { "definedValue": "convenienceFee", "entryDescription": "A per-transaction fee the customer pays for using a payment channel such as a mobile app or online booking, collected on top of the price (Part 13 §13.6a).", "entryIndex": 1 },
+    { "definedValue": "serviceFee", "entryDescription": "A fee for a service sold with the parking, other than the parking itself and other than a channel fee (Part 13 §13.6a).", "entryIndex": 2 },
+    { "definedValue": "tax", "entryDescription": "A tax collected with the payment, such as a parking or sales tax (Part 13 §13.6a).", "entryIndex": 3 }
+  ]
+}

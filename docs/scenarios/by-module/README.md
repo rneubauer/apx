@@ -1,6 +1,6 @@
 # APX vetting scenarios, by module
 
-The worked scenarios one folder up tell 30 end-to-end stories. This
+The worked scenarios one folder up tell 31 end-to-end stories. This
 folder is the test bench underneath them: **384 scenarios**, one set per
 conformance class, written to find the places the spec could not say what
 a real deployment needs. Every request and response in them is checked
@@ -13,7 +13,7 @@ findings table says how.
 
 | Module | Scenarios | Operations | Responses | Annex A rows | Findings |
 |---|---|---|---|---|---|
-| [`apx-accounts`](apx-accounts/scenarios.md) (incl. `apx-payment-history`) | 26 | 11/11 | 73/75 | 7/9 | [14](apx-accounts/findings.md) |
+| [`apx-accounts`](apx-accounts/scenarios.md) (incl. `apx-payment-history`) | 26 | 11/11 | 73/75 | 7/10 | [14](apx-accounts/findings.md) |
 | [`apx-alerts`](apx-alerts/scenarios.md) | 22 | 5/5 | 30/31 | 5/6 | [9](apx-alerts/findings.md) |
 | [`apx-control`](apx-control/scenarios.md) | 25 | 8/8 | 41/42 | 14/14 | [10](apx-control/findings.md) |
 | [`apx-credentials`](apx-credentials/scenarios.md) | 26 | 11/11 | 71/73 | 6/6 | [11](apx-credentials/findings.md) |
@@ -28,7 +28,7 @@ findings table says how.
 | [`apx-valet`](apx-valet/scenarios.md) | 25 | 12/12 | 78/79 | 8/8 | [16](apx-valet/findings.md) |
 | [`apx-validations`](apx-validations/scenarios.md) | 25 | 17/17 | 105/107 | 8/8 | [13](apx-validations/findings.md) |
 | [`apx-violations`](apx-violations/scenarios.md) | 34 | 22/22 | 132/144 | 16/16 | [17](apx-violations/findings.md) |
-| **total** | **384** | | | **125/134** | **221** |
+| **total** | **384** | | | **125/135** | **221** |
 
 *Operations* and *Responses* count the routes and declared status codes
 each module's scenarios exercise. The seven Annex A rows not yet cited

@@ -55,6 +55,8 @@ Extensions:
       $ref: "../data/schemas.yaml#/MatchEvidence"
     "apds-ext:apx:violation-source@1.0":
       $ref: "../violations/schemas.yaml#/ViolationSource"
+    "apds-ext:apx:payment-detail@1.0":
+      $ref: "../accounts/schemas.yaml#/PaymentDetail"
   additionalProperties:
     type: object
 

@@ -19,6 +19,7 @@ APX open vocabularies are published as **APDS UserDefinedCodeList documents**
 | `apx-features` | Optional features of a conformance class | `features` in `/.well-known/apx-configuration` and discovery documents (Part 6 §6.5, Part 16) |
 | `apx-session-end-reasons` | Why a Session ended (open) | `SessionClosure.endReason` in `apds-ext:apx:session-detail@1.0` (Part 5 §5.8) |
 | `apx-plate-review-reasons` | Why a read was sent to plate review (open) | `LprReadDetail.review.reasons` (Part 13 §13.3a(9)) |
+| `apx-payment-line-codes` | What a payment line is for: the price, a channel fee, a service fee, a tax (open) | APDS `PaymentLine.idCode` on `paymentType: payment` lines (Part 13 §13.6a) |
 
 ## 11.1 Rules
 

@@ -8755,6 +8755,9 @@
           },
           "apds-ext:apx:violation-source@1.0": {
             "$ref": "#/components/schemas/ViolationSource"
+          },
+          "apds-ext:apx:payment-detail@1.0": {
+            "$ref": "#/components/schemas/PaymentDetail"
           }
         },
         "additionalProperties": {
@@ -10028,6 +10031,10 @@
                 "items": {
                   "$ref": "#/components/schemas/PaymentLine"
                 }
+              },
+              "extensions": {
+                "description": "The APDS extension container (Use Case Document §C.2.5; Part 4 §4.3). Undeclared on APDS 4.1 entities (APX erratum 010). Carries apds-ext:apx:payment-detail@1.0 (Part 13 §13.6a).",
+                "$ref": "#/components/schemas/Extensions"
               }
             },
             "required": [
@@ -11039,6 +11046,25 @@
           }
         }
       },
+      "PaymentDetail": {
+        "title": "PaymentDetail",
+        "description": "The `apds-ext:apx:payment-detail@1.0` decoration (Part 13 §13.6a): what\na payment was made of and what it bought. On an APX `PaymentRecord` it\ncarries `rateSold` and the itemized `lines`; on a native APDS `Payment`\nit carries `rateSold` only, because the Payment's own `paymentLines`\nare the itemization there (one store, never two).",
+        "type": "object",
+        "minProperties": 1,
+        "properties": {
+          "rateSold": {
+            "$ref": "#/components/schemas/RateSold"
+          },
+          "lines": {
+            "type": "array",
+            "minItems": 1,
+            "description": "The payment's itemization as APDS `PaymentLine` entries (by `$ref`,\nnever re-shaped). The `currencyValue`s of the `paymentType: payment`\nlines MUST sum to the record's `amount`, in its `currencyType`;\n`paymentType: validation` lines record value offset by a validation\nand are not part of `amount`. A `payment` line's `idCode` is a\ndefinedValue of the `apx-payment-line-codes` registry (Part 11) or\nof an implementer's own list. Lines that do not sum to `amount` are\n422 `request-unprocessable`. Only on a `PaymentRecord`; on materialization these\nbecome the native Payment's `paymentLines` (Part 13 §13.6).",
+            "items": {
+              "$ref": "#/components/schemas/PaymentLine"
+            }
+          }
+        }
+      },
       "PlaceInformation": {
         "title": "PlaceInformation",
         "description": "Defines information concerning multiple features relating to parking hierarchy elements.",
@@ -11923,6 +11949,47 @@
             "description": "The implementation's own name for the rule that closed the\nSession, when `endReason` is `stale` (for example a\n48-hour transient limit). Opaque to APX.",
             "examples": [
               "transient-48h"
+            ]
+          }
+        }
+      },
+      "RateSold": {
+        "title": "RateSold",
+        "description": "The rate or product the payment bought, as the seller sold it (Part 13\n§13.6a), so a revenue report can group by rate and a price check can\ncompare the amount with the published deck.",
+        "type": "object",
+        "minProperties": 1,
+        "properties": {
+          "code": {
+            "type": "string",
+            "description": "The seller's identifier for the rate or product (a plain string,\nmeaningful to the seller; Part 11 §11.1a form 4).",
+            "examples": [
+              "early-bird"
+            ]
+          },
+          "name": {
+            "type": "string",
+            "description": "The rate's customer-facing name, as displayed when it was sold.",
+            "examples": [
+              "Early Bird"
+            ]
+          },
+          "rateTable": {
+            "description": "The published APDS `RateTable` the price came from, when the place\npublishes its deck on `/rates` and the rate sold is in it.",
+            "$ref": "#/components/schemas/VersionedReference"
+          },
+          "rightType": {
+            "description": "What kind of right the payment bought, in APDS's own vocabulary\n(`RightSpecificationTypeEnum`): `oneTimeUseParking` for a transient\nstay, `permitParking` for a pass or permit. Omit on a Payment\ninside an AssignedRight, whose RightSpecification already says it.",
+            "$ref": "#/components/schemas/RightSpecificationTypeEnum"
+          },
+          "priceClass": {
+            "type": "string",
+            "description": "How the price relates to the rate's list price. `standard` = the\nlist price; `discounted` = reduced by a promotion, coupon, or\nnegotiated rate; `validated` = offset in full or part by a\nvalidation (the `validation` lines carry the value); `complimentary`\n= no charge, recorded for audit; `other`.",
+            "enum": [
+              "standard",
+              "discounted",
+              "validated",
+              "complimentary",
+              "other"
             ]
           }
         }

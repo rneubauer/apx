@@ -31,6 +31,7 @@ body:
         - apx-features
         - apx-session-end-reasons
         - apx-plate-review-reasons
+        - apx-payment-line-codes
     validations:
       required: true
   - type: input
