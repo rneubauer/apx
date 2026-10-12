@@ -1,6 +1,6 @@
 # APX Scenarios — the API at work
 
-Twenty-seven end-to-end stories showing real wire exchanges against an APX
+Twenty-eight end-to-end stories showing real wire exchanges against an APX
 implementation. Every JSON payload marked with an `<!-- apx:validate … -->`
 comment is machine-validated against the bundled spec by
 `npm run scenarios:check` — the samples cannot drift from the standard.
@@ -34,6 +34,7 @@ comment is machine-validated against the bundled spec by
 | [25](25-ticket-matching-exit-lane.md) | Ticket matching — no ticket at the exit: the camera's entry read is offered as a candidate, a permit holder is found by phone, the agent binds the open session, the exit prices from the real entry, and the lost-ticket fee is the fallback, not the default | `apx-control`, `apx-lpr`, `apx-accounts` |
 | [27](27-lpr-reversible-lane.md) | Reversible lane — one camera facing each way so a rear plate is read in either mode, an old front-plate camera on the entry lane, a read first reported `unknown` and corrected by the LPR system, and the `observation.updated.v1` event that carries the correction to billing | `apx-lpr`, `apx-events` |
 | [28](28-session-detail-pairing-client.md) | A separate pairing service writes what it decided — the reads behind a visit, a permit matched by folding a look-alike character, the valet section as a child of the visit, a car seen only leaving, and a read claimed twice | `apx-data`, `apx-lpr` |
+| [29](29-lpr-plate-review.md) | Plate review — a low-confidence read held back from enforcement, an issue refused while its review is pending, a person corrects the plate from the image (the engine's value kept), the replacement reaches the pipeline as an event, and a reflector read rejected outright | `apx-lpr`, `apx-violations`, `apx-events` |
 
 ## By module — the vetting suite
 

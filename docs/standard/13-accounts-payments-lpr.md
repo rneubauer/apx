@@ -267,6 +267,47 @@ consumer still sees a valid Observation.
      as 0,0.
    - **Confidence.** Every confidence is on the 0–1 scale; an engine
      that reports 0–100 is scaled.
+9. **Plate review.** Some reads need a person to check the plate before
+   anything acts on them — a low-confidence read, or any read where the
+   jurisdiction requires human review. The review belongs to the read,
+   not a Session: it happens before any Session exists, one read can
+   feed several Sessions, and evidence is handed to enforcement per read.
+   - **State.** `detail.review` (`PlateReview`) carries `state`
+     (`pending | confirmed | corrected | rejected | notRequired`), the
+     `reasons` it was sent to review (registry
+     `apx-plate-review-reasons`, Part 11), and `decidedTime`. The LPR
+     system MAY set `pending` on ingest, and the server MAY set it there
+     under its own policy; absent means no review was recorded. The
+     queue itself — assignment, ordering, who reviews — is
+     implementation-defined.
+   - **Decision.** A reviewer's decision is written through
+     `PUT /v1/lpr/reads/{observation}/plate` with `decision`
+     `confirmed`, `corrected` (with `plate`, and `country` /
+     `stateProvince` where they change), or `rejected` (unusable as
+     plate evidence: illegible, not a plate, the wrong vehicle), and an
+     optional `reason`. On `corrected` the server MUST write the winning
+     values into the APDS-native fields (`observedCredentialId`,
+     `vehicleAncillaryIdentification`) and into `detail.plate`,
+     `.country`, `.stateProvince` (as `AttributeRead`s without a
+     confidence), and MUST keep the engine's values in
+     `detail.review.original` on the first correction, never changing
+     them afterwards. The write follows item 4: it increments the
+     Observation `version`, publishes `apx.data.observation.updated.v1`
+     (§13.4), takes `If-Match` (stale → 409 `version-conflict`), and
+     resending what the read already has changes nothing. `corrected`
+     without `plate`, or plate values with another decision, is 422
+     `request-unprocessable`.
+   - **Effect.** The write changes the read only. A Session already
+     built on it is corrected through `PUT /v1/sessions/{id}/plate`
+     citing the Observation (Part 17 §17.5), or re-paired by the
+     implementation (item 6). A read whose review is `pending` or
+     `rejected` MUST NOT be the basis of an issued Violation (Part 19
+     §19.4), and consumers SHOULD NOT pair a `rejected` read into a
+     Session.
+   - **Privacy.** The route is authorized by `apx.data:write`, like the
+     Session plate correction; its 200 echoes only the plate values the
+     caller supplied (Part 9 §9.6). `detail.review`, including
+     `original`, is visible only where `detail` is (item 7).
 
 ### 13.3b Retention and purge of reads (normative)
 
@@ -310,7 +351,9 @@ LPR analytics. APX closes both gaps (registry `apx-topics`):
 - `apx.data.observation.updated.v1` — published whenever an ingested
   Observation changes — today, when the LPR system revises `accessEvent`
   through `PUT /v1/lpr/reads/{observation}/access-event` (§13.3a(4)),
-  and on any other replacement an implementation supports. Event `data`
+  when a reviewer decides its plate through
+  `PUT /v1/lpr/reads/{observation}/plate` (§13.3a(9)), and on any other
+  replacement an implementation supports. Event `data`
   is the APDS Observation as it now stands; `subject` and place binding
   are those of `observation.created.v1`. Implementations claiming
   `apx-lpr` MUST publish it; consumers key on the Observation id and keep

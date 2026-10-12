@@ -1,0 +1,13 @@
+{
+  "id": "215fadb4-3a67-4528-a1a0-fbe58fbd4e58",
+  "version": 1,
+  "name": "apx-plate-review-reasons",
+  "creator": { "id": "a1000000-0000-4000-8000-000000000001", "className": "Organisation" },
+  "locator": "https://apx-standard.org/registries/apx-plate-review-reasons.json",
+  "userDefinedCodeListEntries": [
+    { "definedValue": "lowConfidence", "entryDescription": "The read's overall or plate confidence is below the threshold the policy sets for acting without review.", "entryIndex": 0 },
+    { "definedValue": "noConfidence", "entryDescription": "The engine reported no confidence for the plate, so its quality cannot be judged automatically.", "entryIndex": 1 },
+    { "definedValue": "jurisdictionRequiresReview", "entryDescription": "The applicable law or operator policy requires a person to check every read of this kind (for example, before any enforcement use), whatever its confidence.", "entryIndex": 2 },
+    { "definedValue": "conflictingReads", "entryDescription": "Reads of the same passage (one captureGroup) disagree on the plate, country, or state/province.", "entryIndex": 3 }
+  ]
+}

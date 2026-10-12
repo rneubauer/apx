@@ -162,7 +162,10 @@ agents speaking to customers.
 `PUT /v1/sessions/{id}/plate` (a transactional domain action, naturally
 idempotent, optionally citing the chosen Observation). This closes the
 reservation/plate-mismatch loop: find reservation → find session → correct
-plate → link → retry access, every step audited.
+plate → link → retry access, every step audited. A correction of one
+**read** — before any Session exists, or for evidence handed to
+enforcement — is Part 13 §13.3a(9) (`PUT /v1/lpr/reads/{observation}/plate`);
+it does not change a Session, which is still corrected here.
 
 **Materialization (normative).** The correction MUST materialize in the
 underlying APDS Session — `identifiedCredentials[]` /

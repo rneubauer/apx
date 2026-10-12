@@ -5965,7 +5965,7 @@
           "Violations"
         ],
         "summary": "Issue the notice or citation",
-        "description": "Transition `confirmed → issued` — or `detected → issued` for\n`automated` detections where the policy in force permits\nunreviewed issuance (`EnforcementPolicy.unreviewedIssuance`, or\nthe operator's published documentation where the policy is\nsilent); a `guided` or `manual` detection still in `detected`, or\nan automated one the policy does not permit, is 409\n`violation-not-issuable`. Sets `notice`, `amount`, and `dueTime`.\n\nThe server resolves the EnforcementPolicy in force at `place`\n(Part 19 §19.10) and refuses with 422 when the request breaks it:\n`delivery-method-not-permitted`, `notice-deadline-passed`,\n`penalty-exceeds-cap` (or clamps, per the policy), or\n`signage-required`. On success `policy`, `signage[]`,\n`unpaidAmount`, `capAmount`, and the first `amountHistory` entry\n(`reason: issued`, or `reason: cap` with `requestedAmount` when\nclamped) are frozen onto the violation. Publishes\n`apx.violations.issued.v1`.",
+        "description": "Transition `confirmed → issued` — or `detected → issued` for\n`automated` detections where the policy in force permits\nunreviewed issuance (`EnforcementPolicy.unreviewedIssuance`, or\nthe operator's published documentation where the policy is\nsilent); a `guided` or `manual` detection still in `detected`, an\nautomated one the policy does not permit, or one whose\n`observations[]` include an LPR read with plate review `pending`\nor `rejected` (Part 13 §13.3a(9), Part 19 §19.4(6)), is 409\n`violation-not-issuable`. Sets `notice`, `amount`, and `dueTime`.\n\nThe server resolves the EnforcementPolicy in force at `place`\n(Part 19 §19.10) and refuses with 422 when the request breaks it:\n`delivery-method-not-permitted`, `notice-deadline-passed`,\n`penalty-exceeds-cap` (or clamps, per the policy), or\n`signage-required`. On success `policy`, `signage[]`,\n`unpaidAmount`, `capAmount`, and the first `amountHistory` entry\n(`reason: issued`, or `reason: cap` with `requestedAmount` when\nclamped) are frozen onto the violation. Publishes\n`apx.violations.issued.v1`.",
         "parameters": [
           {
             "name": "id",
@@ -12692,6 +12692,184 @@
         }
       }
     },
+    "/v1/lpr/reads/{observation}/plate": {
+      "put": {
+        "operationId": "put-apx-v1-lpr-reads-observation-plate",
+        "security": [
+          {
+            "apxOAuth": [
+              "apx.data:write"
+            ]
+          }
+        ],
+        "tags": [
+          "LPR"
+        ],
+        "summary": "Record a plate review decision on a read",
+        "description": "A person's decision on one read's plate (Part 13 §13.3a(9)):\n`confirmed` (the engine's plate stands), `corrected` (replaced by\nthe `plate`, `country`, and `stateProvince` sent), or `rejected`\n(the read is unusable as plate evidence). The correction belongs\nto the read, not a Session: it happens before any Session exists,\nand one read can feed several. APDS 4.1 has no route that\nreplaces one Observation, so this is the revision route, the\nplate counterpart of `…/access-event`.\n\nThe server writes the decision into the Observation's\n`apds-ext:apx:lpr-read@1.0` decoration (`detail.review`); on\n`corrected` it also writes the winning values into\n`observedCredentialId` and `vehicleAncillaryIdentification` and\ninto `detail.plate`, `.country`, `.stateProvince`, keeping the\nengine's values in `detail.review.original` on the first\ncorrection. It increments the Observation `version` and publishes\n`apx.data.observation.updated.v1` (Part 13 §13.4). Resending the\ndecision and values the read already has is a no-op: 200 with the\ncurrent `version`, no new version, no event. `If-Match` carries\nthe Observation `version` the caller last saw; a stale one is 409\n`version-conflict` and nothing is written (Part 4 §4.2a).\n`corrected` without `plate`, or `plate`, `country`, or\n`stateProvince` with any other decision, is 422\n`request-unprocessable`. A read at a place outside the caller's\n`apx_places` grant is 403 `insufficient-grant`.\n\nThe write does not change any Session: a Session built on the\nread is corrected through `PUT /v1/sessions/{id}/plate` citing\nthis Observation (Part 17 §17.5). The 200 echoes only the plate\nvalues the caller supplied and discloses no other plate-bearing\ndata (Part 9 §9.6).",
+        "parameters": [
+          {
+            "name": "observation",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            },
+            "description": "The APDS Observation id of the read."
+          },
+          {
+            "$ref": "#/components/parameters/IfMatch"
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": [
+                  "decision"
+                ],
+                "properties": {
+                  "decision": {
+                    "type": "string",
+                    "enum": [
+                      "confirmed",
+                      "corrected",
+                      "rejected"
+                    ],
+                    "description": "The reviewer's decision (Part 13 §13.3a(9))."
+                  },
+                  "plate": {
+                    "type": "string",
+                    "description": "The corrected plate. REQUIRED with `corrected`; not allowed otherwise."
+                  },
+                  "country": {
+                    "type": "string",
+                    "examples": [
+                      "US"
+                    ],
+                    "description": "APDS VehicleAncillaryIdentification.country vocabulary. Only with `corrected`."
+                  },
+                  "stateProvince": {
+                    "type": "string",
+                    "examples": [
+                      "CA"
+                    ],
+                    "description": "APDS VehicleAncillaryIdentification.stateProvince vocabulary. Only with `corrected`."
+                  },
+                  "reason": {
+                    "type": "string",
+                    "description": "The reviewer's note, kept as `detail.review.reason`."
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "The read's review as it now stands.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": [
+                    "observation",
+                    "review",
+                    "version"
+                  ],
+                  "properties": {
+                    "observation": {
+                      "$ref": "#/components/schemas/Reference"
+                    },
+                    "review": {
+                      "description": "The review state after the write, without `original` (Part 9 §9.6).",
+                      "type": "object",
+                      "required": [
+                        "state"
+                      ],
+                      "properties": {
+                        "state": {
+                          "type": "string",
+                          "enum": [
+                            "confirmed",
+                            "corrected",
+                            "rejected"
+                          ]
+                        },
+                        "decidedTime": {
+                          "type": "string",
+                          "format": "date-time"
+                        }
+                      }
+                    },
+                    "plate": {
+                      "type": "string",
+                      "description": "Echoed only when the caller sent it."
+                    },
+                    "country": {
+                      "type": "string"
+                    },
+                    "stateProvince": {
+                      "type": "string"
+                    },
+                    "version": {
+                      "type": "integer",
+                      "minimum": 1,
+                      "description": "The Observation `version` after the write (Part 4 §4.2a)."
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/BadRequest"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "404": {
+            "description": "No such LPR read (`target-not-found`), including a purged one (Part 13 §13.3b).",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "`If-Match` names a stale Observation version (`version-conflict`, Part 4 §4.2a); nothing is written.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "`corrected` without `plate`, or plate values with another decision (`request-unprocessable`).",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "429": {
+            "$ref": "#/components/responses/TooManyRequests"
+          }
+        }
+      }
+    },
     "/v1/alerts": {
       "post": {
         "operationId": "post-apx-v1-alerts",
@@ -14138,7 +14316,7 @@
       "post": {
         "operationId": "receive-apx-data-observation-updated",
         "summary": "An ingested Observation was replaced",
-        "description": "Published whenever an ingested Observation changes — for example\nthe LPR system revising `accessEvent` through\n`PUT /v1/lpr/reads/{observation}/access-event` (Part 13 §13.3a(4),\n§13.4). `data` is the\nAPDS `ObservationElement` as it now stands; `subject` and the place\nbinding (`elementIds`) are as for `apx.data.observation.created.v1`.\nConsumers key on the Observation id and keep the highest `version`.\nPlate values are subject to Part 9 §9.6.",
+        "description": "Published whenever an ingested Observation changes — for example\nthe LPR system revising `accessEvent` through\n`PUT /v1/lpr/reads/{observation}/access-event` (Part 13 §13.3a(4),\n§13.4), or a reviewer's decision on its plate through\n`PUT /v1/lpr/reads/{observation}/plate` (§13.3a(9)). `data` is the\nAPDS `ObservationElement` as it now stands; `subject` and the place\nbinding (`elementIds`) are as for `apx.data.observation.created.v1`.\nConsumers key on the Observation id and keep the highest `version`.\nPlate values are subject to Part 9 §9.6.",
         "parameters": [
           {
             "name": "APX-Signature",
@@ -16981,6 +17159,9 @@
           "engine": {
             "type": "string",
             "description": "Recognition engine/vendor identifier, opaque (for confidence calibration downstream)."
+          },
+          "review": {
+            "$ref": "#/components/schemas/PlateReview"
           }
         },
         "examples": [
@@ -17073,6 +17254,58 @@
             ]
           }
         ]
+      },
+      "PlateReview": {
+        "title": "PlateReview",
+        "description": "Whether a person has checked the read's plate, and what they decided\n(Part 13 §13.3a(9)). Absent means no review was recorded. The LPR\nsystem or the server sets `pending` with `reasons` when its policy\nsends the read to review; a decision through\n`PUT /v1/lpr/reads/{observation}/plate` sets the outcome. The review\nqueue itself (assignment, ordering, reviewers) is\nimplementation-defined. Plate-bearing: visible only where `detail`\nis (Part 9 §9.6).",
+        "type": "object",
+        "required": [
+          "state"
+        ],
+        "properties": {
+          "state": {
+            "type": "string",
+            "enum": [
+              "pending",
+              "confirmed",
+              "corrected",
+              "rejected",
+              "notRequired"
+            ],
+            "description": "`pending` — awaiting a person; `confirmed` — the engine's plate\nwas checked and stands; `corrected` — a person replaced the plate,\ncountry, or state/province; `rejected` — the read is unusable as\nplate evidence (illegible, not a plate, wrong vehicle);\n`notRequired` — policy did not send this read to review."
+          },
+          "reasons": {
+            "type": "array",
+            "description": "Why the read was sent to review: `definedValue`s from the\n`apx-plate-review-reasons` registry (or an implementer code list,\nPart 11 §11.1(4)).",
+            "items": {
+              "type": "string"
+            }
+          },
+          "decidedTime": {
+            "type": "string",
+            "format": "date-time",
+            "description": "When the decision was recorded (server time). Absent while `pending`."
+          },
+          "reason": {
+            "type": "string",
+            "description": "The reviewer's note on the decision, as sent with it."
+          },
+          "original": {
+            "type": "object",
+            "description": "The values the engine reported before the first correction, kept\nso the correction stays auditable. Set by the server on the first\n`corrected` decision and never changed afterwards.",
+            "properties": {
+              "plate": {
+                "$ref": "#/components/schemas/AttributeRead"
+              },
+              "country": {
+                "$ref": "#/components/schemas/AttributeRead"
+              },
+              "stateProvince": {
+                "$ref": "#/components/schemas/AttributeRead"
+              }
+            }
+          }
+        }
       },
       "ReservationExtension": {
         "title": "ReservationExtension",

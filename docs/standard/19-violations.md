@@ -200,6 +200,13 @@ counterpart of Part 6's lane inquiry. It returns an `EligibilityResult`:
    `plate.method: lenient` or `applied: false`, the server MUST refuse
    `issue` (409 `violation-not-issuable`): a lenient match may excuse a
    stay but never accuse one.
+6. **Reviewed reads.** Whatever the detection method, the server MUST
+   refuse `issue` (409 `violation-not-issuable`) while any LPR read in
+   the Violation's `observations[]` has `detail.review.state` `pending`
+   (its plate review is not done) or `rejected` (a reviewer found it
+   unusable as plate evidence) — Part 13 §13.3a(9). A read with no
+   `review`, or `notRequired`, `confirmed`, or `corrected`, does not
+   block issuance.
 
 ## 19.5 Evidence and privacy
 

@@ -102,8 +102,9 @@ payment history — are subject to this clause:
    never carried (Part 0 §0.4); plate values appear only under `apx.lpr:*`,
    `apx.tolling:*`, `apx.violations:*`, or `apx.accounts:*` scopes;
    imagery is carried as links, never inline. `PUT /v1/sessions/{id}/plate`
-   (scope `apx.data:write`) echoes only the plate values the caller
-   supplied and discloses no other plate-bearing data (Part 17 §17.5).
+   and `PUT /v1/lpr/reads/{observation}/plate` (scope `apx.data:write`)
+   echo only the plate values the caller supplied and disclose no other
+   plate-bearing data (Part 17 §17.5, Part 13 §13.3a(9)).
 2. **Access-controlled imagery (normative).** `imageLink` and any other
    media URL MUST require the same authentication and place grant as the
    API call that produced it. Unauthenticated, long-lived image URLs do

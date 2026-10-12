@@ -1,6 +1,6 @@
 # APX vetting scenarios, by module
 
-The worked scenarios one folder up tell 27 end-to-end stories. This
+The worked scenarios one folder up tell 28 end-to-end stories. This
 folder is the test bench underneath them: **380 scenarios**, one set per
 conformance class, written to find the places the spec could not say what
 a real deployment needs. Every request and response in them is checked

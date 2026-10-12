@@ -49,6 +49,21 @@ The machine-readable spec (`spec/openapi/apx.yaml`, bundled as
   separate pairing service) and vetting scenarios DATA-34, DATA-35,
   VIO-30. A sixth Part B addition in `docs/apds-change-requests.md`: an
   end reason and an observed-start flag on the APDS Session.
+- Plate review on LPR reads (Part 13 §13.3a(9)). `LprReadDetail.review`
+  (`PlateReview`: `state` `pending | confirmed | corrected | rejected |
+  notRequired`, `reasons`, `decidedTime`, `reason`, and the engine's
+  values in `original`), and `PUT /v1/lpr/reads/{observation}/plate` to
+  record a reviewer's decision on one read, mirroring the access-event
+  revision route: `If-Match`, version bump,
+  `apx.data.observation.updated.v1`, same decision → no-op, a corrected
+  plate written into the APDS-native fields. APX could correct the plate
+  of a Session (Part 17 §17.5) but not of a read, though the correction
+  comes before any Session and enforcement evidence is per read. New
+  registry `apx-plate-review-reasons` (`lowConfidence`, `noConfidence`,
+  `jurisdictionRequiresReview`, `conflictingReads`); Part 19 §19.4(6):
+  `issue` is refused (409 `violation-not-issuable`) while an evidence
+  read's review is `pending` or `rejected`. Annex A APX-LPR-07 and an
+  extended APX-VIO-03; scenario 29.
 
 ## [0.13.0] — 2026-09-29
 

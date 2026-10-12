@@ -1437,8 +1437,10 @@ paths:
         `automated` detections where the policy in force permits
         unreviewed issuance (`EnforcementPolicy.unreviewedIssuance`, or
         the operator's published documentation where the policy is
-        silent); a `guided` or `manual` detection still in `detected`, or
-        an automated one the policy does not permit, is 409
+        silent); a `guided` or `manual` detection still in `detected`, an
+        automated one the policy does not permit, or one whose
+        `observations[]` include an LPR read with plate review `pending`
+        or `rejected` (Part 13 §13.3a(9), Part 19 §19.4(6)), is 409
         `violation-not-issuable`. Sets `notice`, `amount`, and `dueTime`.
 
         The server resolves the EnforcementPolicy in force at `place`
@@ -4883,6 +4885,127 @@ paths:
               schema: { $ref: "#/components/schemas/Problem" }
         "429": { $ref: "#/components/responses/TooManyRequests" }
 
+  /v1/lpr/reads/{observation}/plate:
+    put:
+      operationId: put-apx-v1-lpr-reads-observation-plate
+      security:
+        - apxOAuth: ["apx.data:write"]
+      tags: [LPR]
+      summary: Record a plate review decision on a read
+      description: |-
+        A person's decision on one read's plate (Part 13 §13.3a(9)):
+        `confirmed` (the engine's plate stands), `corrected` (replaced by
+        the `plate`, `country`, and `stateProvince` sent), or `rejected`
+        (the read is unusable as plate evidence). The correction belongs
+        to the read, not a Session: it happens before any Session exists,
+        and one read can feed several. APDS 4.1 has no route that
+        replaces one Observation, so this is the revision route, the
+        plate counterpart of `…/access-event`.
+
+        The server writes the decision into the Observation's
+        `apds-ext:apx:lpr-read@1.0` decoration (`detail.review`); on
+        `corrected` it also writes the winning values into
+        `observedCredentialId` and `vehicleAncillaryIdentification` and
+        into `detail.plate`, `.country`, `.stateProvince`, keeping the
+        engine's values in `detail.review.original` on the first
+        correction. It increments the Observation `version` and publishes
+        `apx.data.observation.updated.v1` (Part 13 §13.4). Resending the
+        decision and values the read already has is a no-op: 200 with the
+        current `version`, no new version, no event. `If-Match` carries
+        the Observation `version` the caller last saw; a stale one is 409
+        `version-conflict` and nothing is written (Part 4 §4.2a).
+        `corrected` without `plate`, or `plate`, `country`, or
+        `stateProvince` with any other decision, is 422
+        `request-unprocessable`. A read at a place outside the caller's
+        `apx_places` grant is 403 `insufficient-grant`.
+
+        The write does not change any Session: a Session built on the
+        read is corrected through `PUT /v1/sessions/{id}/plate` citing
+        this Observation (Part 17 §17.5). The 200 echoes only the plate
+        values the caller supplied and discloses no other plate-bearing
+        data (Part 9 §9.6).
+      parameters:
+        - { name: observation, in: path, required: true, schema: { type: string, format: uuid }, description: The APDS Observation id of the read. }
+        - $ref: "#/components/parameters/IfMatch"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [decision]
+              properties:
+                decision:
+                  type: string
+                  enum: [confirmed, corrected, rejected]
+                  description: The reviewer's decision (Part 13 §13.3a(9)).
+                plate:
+                  type: string
+                  description: The corrected plate. REQUIRED with `corrected`; not allowed otherwise.
+                country:
+                  type: string
+                  examples: [US]
+                  description: APDS VehicleAncillaryIdentification.country vocabulary. Only with `corrected`.
+                stateProvince:
+                  type: string
+                  examples: [CA]
+                  description: APDS VehicleAncillaryIdentification.stateProvince vocabulary. Only with `corrected`.
+                reason:
+                  type: string
+                  description: The reviewer's note, kept as `detail.review.reason`.
+      responses:
+        "200":
+          description: The read's review as it now stands.
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [observation, review, version]
+                properties:
+                  observation:
+                    $ref: "../vendor/apds/4.1/apds-api-4.1.yaml#/components/schemas/Reference"
+                  review:
+                    description: The review state after the write, without `original` (Part 9 §9.6).
+                    type: object
+                    required: [state]
+                    properties:
+                      state:
+                        type: string
+                        enum: [confirmed, corrected, rejected]
+                      decidedTime:
+                        type: string
+                        format: date-time
+                  plate:
+                    type: string
+                    description: Echoed only when the caller sent it.
+                  country:
+                    type: string
+                  stateProvince:
+                    type: string
+                  version:
+                    type: integer
+                    minimum: 1
+                    description: The Observation `version` after the write (Part 4 §4.2a).
+        "400": { $ref: "#/components/responses/BadRequest" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+        "404":
+          description: No such LPR read (`target-not-found`), including a purged one (Part 13 §13.3b).
+          content:
+            application/problem+json:
+              schema: { $ref: "#/components/schemas/Problem" }
+        "409":
+          description: "`If-Match` names a stale Observation version (`version-conflict`, Part 4 §4.2a); nothing is written."
+          content:
+            application/problem+json:
+              schema: { $ref: "#/components/schemas/Problem" }
+        "422":
+          description: "`corrected` without `plate`, or plate values with another decision (`request-unprocessable`)."
+          content:
+            application/problem+json:
+              schema: { $ref: "#/components/schemas/Problem" }
+        "429": { $ref: "#/components/responses/TooManyRequests" }
+
   # ===== Alerts (conformance class apx-alerts) ===== #
   /v1/alerts:
     post:
@@ -5652,7 +5775,8 @@ webhooks:
         Published whenever an ingested Observation changes — for example
         the LPR system revising `accessEvent` through
         `PUT /v1/lpr/reads/{observation}/access-event` (Part 13 §13.3a(4),
-        §13.4). `data` is the
+        §13.4), or a reviewer's decision on its plate through
+        `PUT /v1/lpr/reads/{observation}/plate` (§13.3a(9)). `data` is the
         APDS `ObservationElement` as it now stands; `subject` and the place
         binding (`elementIds`) are as for `apx.data.observation.created.v1`.
         Consumers key on the Observation id and keep the highest `version`.
@@ -5873,6 +5997,8 @@ components:
       $ref: "./domains/lpr/schemas.yaml#/LprReadDetail"
     LaneCameras:
       $ref: "./domains/lpr/schemas.yaml#/LaneCameras"
+    PlateReview:
+      $ref: "./domains/lpr/schemas.yaml#/PlateReview"
     ReservationExtension:
       $ref: "./domains/reservations/schemas.yaml#/ReservationExtension"
     ReservationSummary:

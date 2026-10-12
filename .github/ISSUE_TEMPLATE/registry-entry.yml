@@ -30,6 +30,7 @@ body:
         - apx-access-denial-reasons
         - apx-features
         - apx-session-end-reasons
+        - apx-plate-review-reasons
     validations:
       required: true
   - type: input

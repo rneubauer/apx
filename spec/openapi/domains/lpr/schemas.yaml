@@ -204,6 +204,60 @@ LprReadDetail:
     engine:
       type: string
       description: Recognition engine/vendor identifier, opaque (for confidence calibration downstream).
+    review:
+      $ref: "#/PlateReview"
+
+PlateReview:
+  title: PlateReview
+  description: |-
+    Whether a person has checked the read's plate, and what they decided
+    (Part 13 §13.3a(9)). Absent means no review was recorded. The LPR
+    system or the server sets `pending` with `reasons` when its policy
+    sends the read to review; a decision through
+    `PUT /v1/lpr/reads/{observation}/plate` sets the outcome. The review
+    queue itself (assignment, ordering, reviewers) is
+    implementation-defined. Plate-bearing: visible only where `detail`
+    is (Part 9 §9.6).
+  type: object
+  required: [state]
+  properties:
+    state:
+      type: string
+      enum: [pending, confirmed, corrected, rejected, notRequired]
+      description: |-
+        `pending` — awaiting a person; `confirmed` — the engine's plate
+        was checked and stands; `corrected` — a person replaced the plate,
+        country, or state/province; `rejected` — the read is unusable as
+        plate evidence (illegible, not a plate, wrong vehicle);
+        `notRequired` — policy did not send this read to review.
+    reasons:
+      type: array
+      description: |-
+        Why the read was sent to review: `definedValue`s from the
+        `apx-plate-review-reasons` registry (or an implementer code list,
+        Part 11 §11.1(4)).
+      items:
+        type: string
+    decidedTime:
+      type: string
+      format: date-time
+      description: When the decision was recorded (server time). Absent while `pending`.
+    reason:
+      type: string
+      description: The reviewer's note on the decision, as sent with it.
+    original:
+      type: object
+      description: |-
+        The values the engine reported before the first correction, kept
+        so the correction stays auditable. Set by the server on the first
+        `corrected` decision and never changed afterwards.
+      properties:
+        plate:
+          $ref: "#/AttributeRead"
+        country:
+          $ref: "#/AttributeRead"
+        stateProvince:
+          $ref: "#/AttributeRead"
 
 LaneCameras:
   title: LaneCameras

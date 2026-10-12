@@ -5188,7 +5188,7 @@
       "post": {
         "operationId": "receive-apx-data-observation-updated",
         "summary": "An ingested Observation was replaced",
-        "description": "Published whenever an ingested Observation changes — for example\nthe LPR system revising `accessEvent` through\n`PUT /v1/lpr/reads/{observation}/access-event` (Part 13 §13.3a(4),\n§13.4). `data` is the\nAPDS `ObservationElement` as it now stands; `subject` and the place\nbinding (`elementIds`) are as for `apx.data.observation.created.v1`.\nConsumers key on the Observation id and keep the highest `version`.\nPlate values are subject to Part 9 §9.6.",
+        "description": "Published whenever an ingested Observation changes — for example\nthe LPR system revising `accessEvent` through\n`PUT /v1/lpr/reads/{observation}/access-event` (Part 13 §13.3a(4),\n§13.4), or a reviewer's decision on its plate through\n`PUT /v1/lpr/reads/{observation}/plate` (§13.3a(9)). `data` is the\nAPDS `ObservationElement` as it now stands; `subject` and the place\nbinding (`elementIds`) are as for `apx.data.observation.created.v1`.\nConsumers key on the Observation id and keep the highest `version`.\nPlate values are subject to Part 9 §9.6.",
         "parameters": [
           {
             "name": "APX-Signature",
@@ -10613,6 +10613,9 @@
           "engine": {
             "type": "string",
             "description": "Recognition engine/vendor identifier, opaque (for confidence calibration downstream)."
+          },
+          "review": {
+            "$ref": "#/components/schemas/PlateReview"
           }
         },
         "examples": [
@@ -11698,6 +11701,58 @@
             "type": "number",
             "minimum": 0,
             "maximum": 1
+          }
+        }
+      },
+      "PlateReview": {
+        "title": "PlateReview",
+        "description": "Whether a person has checked the read's plate, and what they decided\n(Part 13 §13.3a(9)). Absent means no review was recorded. The LPR\nsystem or the server sets `pending` with `reasons` when its policy\nsends the read to review; a decision through\n`PUT /v1/lpr/reads/{observation}/plate` sets the outcome. The review\nqueue itself (assignment, ordering, reviewers) is\nimplementation-defined. Plate-bearing: visible only where `detail`\nis (Part 9 §9.6).",
+        "type": "object",
+        "required": [
+          "state"
+        ],
+        "properties": {
+          "state": {
+            "type": "string",
+            "enum": [
+              "pending",
+              "confirmed",
+              "corrected",
+              "rejected",
+              "notRequired"
+            ],
+            "description": "`pending` — awaiting a person; `confirmed` — the engine's plate\nwas checked and stands; `corrected` — a person replaced the plate,\ncountry, or state/province; `rejected` — the read is unusable as\nplate evidence (illegible, not a plate, wrong vehicle);\n`notRequired` — policy did not send this read to review."
+          },
+          "reasons": {
+            "type": "array",
+            "description": "Why the read was sent to review: `definedValue`s from the\n`apx-plate-review-reasons` registry (or an implementer code list,\nPart 11 §11.1(4)).",
+            "items": {
+              "type": "string"
+            }
+          },
+          "decidedTime": {
+            "type": "string",
+            "format": "date-time",
+            "description": "When the decision was recorded (server time). Absent while `pending`."
+          },
+          "reason": {
+            "type": "string",
+            "description": "The reviewer's note on the decision, as sent with it."
+          },
+          "original": {
+            "type": "object",
+            "description": "The values the engine reported before the first correction, kept\nso the correction stays auditable. Set by the server on the first\n`corrected` decision and never changed afterwards.",
+            "properties": {
+              "plate": {
+                "$ref": "#/components/schemas/AttributeRead"
+              },
+              "country": {
+                "$ref": "#/components/schemas/AttributeRead"
+              },
+              "stateProvince": {
+                "$ref": "#/components/schemas/AttributeRead"
+              }
+            }
           }
         }
       },
