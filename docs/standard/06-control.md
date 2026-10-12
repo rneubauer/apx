@@ -299,3 +299,17 @@ the real fare.
   what a supervisor must approve. As with §6.6 those are operator policy,
   presented through Part 17 §17.3's allowed actions when a context is in
   play, and applied by the presenting system otherwise.
+
+## 6.8 Charging commands (Part 23)
+
+`startCharging`, `stopCharging`, and `unlockConnector` (registry
+`apx-command-types` v4) target an APDS `ElectricChargingEquipment`.
+Parameters: `connectorIndex` (1-based position in the static
+`connectors[]`) and `chargingSession` (Reference), or for
+`startCharging` an `authorization` object (the
+`ChargingSession.authorization` shape) in place of the session. The
+operator's charging-network bridge translates them to the charger
+protocol; `confirmationLevel` applies as in §6.1. Part 23 §23.9 defines
+their semantics; they are offered only by an implementation that claims
+`apx-charging`, and `commandTypes` in a discovery document lists them
+only for a client that may execute them.

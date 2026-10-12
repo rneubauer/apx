@@ -1,6 +1,6 @@
 {
   "id": "6b7c8d9e-0f1a-4b2c-9d3e-4f5a6b7c8d9e",
-  "version": 1,
+  "version": 2,
   "name": "apx-violation-types",
   "creator": { "id": "a1000000-0000-4000-8000-000000000001", "className": "Organisation" },
   "locator": "https://apx-standard.org/registries/apx-violation-types.json",
@@ -14,6 +14,7 @@
     { "definedValue": "permitMisuse", "entryDescription": "A permit or credential is presented by a vehicle it was not issued to, or is suspended, cloned, or otherwise invalid.", "entryIndex": 6 },
     { "definedValue": "noParkingPeriod", "entryDescription": "The vehicle is parked during a period when the place is closed to parking (street cleaning, event closure, tow-away window).", "entryIndex": 7 },
     { "definedValue": "obstruction", "entryDescription": "The vehicle obstructs a lane, access, exit, hydrant, or another space.", "entryIndex": 8 },
-    { "definedValue": "other", "entryDescription": "A violation class not otherwise listed; the notice text carries the specifics.", "entryIndex": 9 }
+    { "definedValue": "other", "entryDescription": "A violation class not otherwise listed; the notice text carries the specifics.", "entryIndex": 9 },
+    { "definedValue": "chargingBayIdle", "entryDescription": "A vehicle remained connected in an EV charging bay after charging completed beyond the posted idle limit (Part 23 §23.10); evidenced by the ChargingSession and the bay Observation.", "entryIndex": 10 }
   ]
 }

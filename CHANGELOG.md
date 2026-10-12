@@ -9,6 +9,43 @@ The machine-readable spec (`spec/openapi/apx.yaml`, bundled as
 ## [Unreleased]
 
 **Added.**
+- **EV charging (Part 23, optional class `apx-charging`)** merged from
+  `beta/ev-charging` and registered: the parking-side view of charging,
+  not a charger protocol (OCPP) or a roaming protocol (OCPI), whose
+  identifiers ride along opaquely. APDS 4.1 already has the static
+  infrastructure (`ElectricChargingEquipment`, `ElectricChargingPoint`,
+  `Connector`, the IEC enums, `kWh`, `refillPointIndex`,
+  `electricVehicleOnly`), all reused by `$ref`. New: `ChargingPointStatus`
+  (live availability per point and connector in the OCPI status
+  vocabulary, `currentSession`, `reservedFor`, and `bay` presence);
+  `ChargingBayPresence` (what the overhead camera, sensor, or attendant
+  sees — `empty | vehiclePluggedIn | vehicleNotPluggedIn | blocked`,
+  fused with the charger's connector state by a normative table so "car
+  in the EV bay, not plugged in" and "bay blocked" are first-class facts
+  with the Observation as evidence); `ChargingSession` referencing the
+  APDS Session for the stay — authorization (APDS
+  `AuthenticationAndIdentificationEnum`), the OCPP-aligned lifecycle
+  `authorized → pluggedIn → charging ⇄ suspended → complete → idle →
+  unplugged → closed` with server-side `idle` after a snapshotted
+  `idlePolicy` grace, energy and state of charge, cost breakdown, and
+  three settlement modes (`parkingSession` one bill at exit,
+  `directPayment`, `chargingNetwork`); `ChargingEvent` (the bridge's
+  ingest, one per OCPP TransactionEvent). Nine operations under
+  `/v1/charging`; scopes `apx.charging:read`/`:manage` and the customer
+  `apx.charging:status` (minimized). Additive cross-links:
+  `ValetTicket.charging` (Part 22 §22.9), `OccupancySnapshot.evCharging`
+  (Part 5 §5.5). Charger control through the Part 6 command plane
+  (§6.8). Scenario 26 (ICE in the bay caught by the camera, free-vend
+  charge attributed to the parking session by bay LPR, idle after
+  complete, `unlockConnector`, one bill at exit). Registered in this
+  change: `apx-conformance-classes` v7 (`apx-charging`), `apx-topics` v11
+  (`apx.charging.session.status.v1`, `apx.charging.idle.started.v1`,
+  `apx.charging.point.status.v1`), `apx-command-types` v4
+  (`startCharging`, `stopCharging`, `unlockConnector`), `apx-alert-types`
+  v4 (`evBayNotCharging`, `evBayBlocked`), `apx-violation-types` v2
+  (`chargingBayIdle`), and Part 12 problem types
+  `charging-transition-illegal`, `charging-point-unavailable`,
+  `charging-settlement-conflict`; Annex A.21 rows are claimable.
 - `docs/apds-change-requests.md`: the change requests for the APDS working
   group (errata 001–014, five optional additions, a suggested order),
   linked from the landing page and the errata README.

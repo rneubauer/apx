@@ -62,6 +62,7 @@ table below.
 | `valet-transition-illegal` | 409 | Valet ticket transition requested from a state that does not allow it (Part 22 §22.1) |
 | `valet-vehicle-not-located` | 409 | `retrieve` on a ticket still in `dropped` — no parked position recorded yet (Part 22 §22.1) |
 | `valet-verification-failed` | 403 | Handback claimant verification failed; the attempt is recorded in `statusHistory` (Part 22 §22.4) |
+<<<<<<< HEAD
 | `agent-required` | 400 | `pushNegotiatedRate` or `matchTicket` without `agent` — the selecting or matching principal is mandatory (Part 6 §6.6–6.7) |
 | `rate-not-negotiable` | 422 | `pushNegotiatedRate` names a RateTable not flagged negotiable for the target's place, or one that does not apply there (Part 6 §6.6) |
 | `lane-no-current-transaction` | 409 | `pushNegotiatedRate` or `matchTicket` at a lane with no vehicle transaction in progress (Part 6 §6.6–6.7) |
@@ -77,6 +78,9 @@ table below.
 | `payment-state-illegal` | 409 | Refund, void, capture, or posting on a payment, or cancel on a payment link, whose state does not allow it (Part 13 §13.1a) |
 | `reservation-transition-illegal` | 409 | Reservation transition (amend, check-in, cancel, no-show) from a state that does not allow it (Part 14 §14.1) |
 | `stream-position-expired` | 410 | SSE `Last-Event-ID` is older than the server's buffer; re-sync via the Part 5 change feed and reconnect without it (Part 8 §8.4) |
+| `charging-transition-illegal` | 409 | A ChargingEvent illegal from the session's current state, or out of time order (Part 23 §23.2) |
+| `charging-point-unavailable` | 409 | Opening a session on a point/connector that is inoperative, out of order, reserved for another right, or already serving an active session (Part 23 §23.2) |
+| `charging-settlement-conflict` | 409 | `…/payment` on a `parkingSession`-settled session, on a `directPayment` session not yet `unplugged`, or on an already `closed` session (Part 23 §23.5) |
 
 Problem responses SHOULD include `detail` and MAY carry additional members
 (RFC 9457 extension members), including an `extensions` container.

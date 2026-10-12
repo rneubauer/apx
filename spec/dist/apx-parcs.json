@@ -5366,7 +5366,10 @@
               "apx.credentials:manage": "Issue, activate, suspend, resume, report lost, revoke, and replace credentials",
               "apx.valet:read": "Read valet tickets and the retrieval queue",
               "apx.valet:manage": "Take custody, park, stage, hand back, and manage retrievals",
-              "apx.valet:request": "Customer scope — request or cancel retrieval and read status/ETA for the caller's own ticket (text, app, web, voice bot)"
+              "apx.valet:request": "Customer scope — request or cancel retrieval and read status/ETA for the caller's own ticket (text, app, web, voice bot)",
+              "apx.charging:read": "read charging-point status (with bay presence) and charging sessions",
+              "apx.charging:manage": "bridge scope; push point availability, bay observations, open sessions, report timeline events, attach settlement",
+              "apx.charging:status": "customer scope; minimized read of the caller's own charging session and the place's charger availability (app, text, voice bot)"
             }
           }
         }
@@ -7673,6 +7676,40 @@
             "examples": [
               59
             ]
+          },
+          "evCharging": {
+            "type": "object",
+            "description": "Part 23 §23.7 — charging availability under this\nelement, derived from ChargingPointStatus. Optional; present only\nwhen the implementation claims `apx-charging`.\nCounts are of charging points (APDS ElectricChargingEquipment),\nnot connectors. Absent counts are unknown, never guessed.",
+            "properties": {
+              "pointsTotal": {
+                "type": "integer",
+                "minimum": 0
+              },
+              "available": {
+                "type": "integer",
+                "minimum": 0,
+                "description": "Points with `availability: available`."
+              },
+              "charging": {
+                "type": "integer",
+                "minimum": 0
+              },
+              "occupiedNotCharging": {
+                "type": "integer",
+                "minimum": 0,
+                "description": "Points `occupied` (cable connected, no energy) — includes complete and idle sessions."
+              },
+              "blocked": {
+                "type": "integer",
+                "minimum": 0,
+                "description": "Points whose bay holds a vehicle that is not plugged in, or is obstructed."
+              },
+              "inoperative": {
+                "type": "integer",
+                "minimum": 0,
+                "description": "Points `inoperative` or `outOfOrder`."
+              }
+            }
           },
           "extensions": {
             "$ref": "#/components/schemas/Extensions"

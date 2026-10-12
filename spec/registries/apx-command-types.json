@@ -1,6 +1,6 @@
 {
   "id": "0b1f8a4e-1c2d-4e5f-9a6b-7c8d9e0f1a2b",
-  "version": 3,
+  "version": 4,
   "name": "apx-command-types",
   "creator": { "id": "a1000000-0000-4000-8000-000000000001", "className": "Organisation" },
   "locator": "https://apx-standard.org/registries/apx-command-types.json",
@@ -19,6 +19,9 @@
     { "definedValue": "forceOut", "entryDescription": "Force the credential referenced in parameters to recorded presence 'outside' (passback correction).", "entryIndex": 11 },
     { "definedValue": "courtesyExit", "entryDescription": "Vend the gate at the target lane as a tracked courtesy exit for the account/holder referenced in parameters — counted against courtesy policy.", "entryIndex": 12 },
     { "definedValue": "pushNegotiatedRate", "entryDescription": "Apply the negotiable RateTable referenced in parameters to the CURRENT ticket at the target lane only — never to the lane's deck; the command's agent is who selected it.", "entryIndex": 13 },
-    { "definedValue": "matchTicket", "entryDescription": "Bind the current transaction at the target lane to the open Session referenced in parameters (ticket matching), pricing the exit from that session's true entry time; the command's agent is who made the match.", "entryIndex": 14 }
+    { "definedValue": "matchTicket", "entryDescription": "Bind the current transaction at the target lane to the open Session referenced in parameters (ticket matching), pricing the exit from that session's true entry time; the command's agent is who made the match.", "entryIndex": 14 },
+    { "definedValue": "startCharging", "entryDescription": "Remote-start charging on the target ElectricChargingEquipment for a plugged-in vehicle whose own authorization failed; parameters connectorIndex and chargingSession (Reference), or an authorization object for the server to open one (Part 23 §23.9).", "entryIndex": 15 },
+    { "definedValue": "stopCharging", "entryDescription": "Remote-stop charging on the target ElectricChargingEquipment; parameters connectorIndex and chargingSession; the bridge reports chargingEnded with stopReason remote (Part 23 §23.9).", "entryIndex": 16 },
+    { "definedValue": "unlockConnector", "entryDescription": "Release a cable the target ElectricChargingEquipment will not let go of; parameter connectorIndex; physicallyConfirmed only when the charger reported the connector unlocked or the bay camera saw the cable move (Part 23 §23.9).", "entryIndex": 17 }
   ]
 }
