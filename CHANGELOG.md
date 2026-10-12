@@ -89,6 +89,23 @@ The machine-readable spec (`spec/openapi/apx.yaml`, bundled as
   import body can reuse them; the wire shape is unchanged.
 - Annex A APX-VIO-14 to 16; worked scenario 30 (an imported citation,
   part-paid, linked to its stay); vetting scenarios VIO-31 to 34.
+- Change feed on the APX resource lists (Part 5 §5.2 rule 8, new §5.2a):
+  `mode=change&cursor=` on fifteen `/v1` list routes (commands, alerts,
+  accounts, payments, toll transactions, violations, enforcement policies
+  and signage, validation programs, issuances, redemptions and statements,
+  credentials, access events, valet tickets), each required by the class
+  that owns the route. Until now only the native APDS routes had a
+  cursor feed, so a module on another server could not catch up after a
+  link loss longer than the webhook retry window. The change page is the
+  route's own list envelope with optional `updateMode`, `cursor`,
+  `deleted`, `grantAdditions` and `next` members (new schemas
+  `ChangeFeedUpdateMode`, `ChangeFeedCursor`, `ChangeFeedTombstones`,
+  `ChangeFeedGrantAdditions`, `ChangeFeedNext`), so no existing response
+  is re-typed. Items are whole representations; no cursor returns the head
+  cursor; a filtered feed carries a change when the resource matched
+  before or after it. The payment feed needs no key and refuses
+  `ticketLast4`/`cardLast4` (Part 13 §13.2). Annex A rows APX-CORE-17 and
+  APX-PHX-02; worked scenario 31.
 
 ## [0.13.0] — 2026-09-29
 

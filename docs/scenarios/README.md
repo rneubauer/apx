@@ -1,6 +1,6 @@
 # APX Scenarios — the API at work
 
-Twenty-nine end-to-end stories showing real wire exchanges against an APX
+Thirty end-to-end stories showing real wire exchanges against an APX
 implementation. Every JSON payload marked with an `<!-- apx:validate … -->`
 comment is machine-validated against the bundled spec by
 `npm run scenarios:check` — the samples cannot drift from the standard.
@@ -36,6 +36,7 @@ comment is machine-validated against the bundled spec by
 | [28](28-session-detail-pairing-client.md) | A separate pairing service writes what it decided — the reads behind a visit, a permit matched by folding a look-alike character, the valet section as a child of the visit, a car seen only leaving, and a read claimed twice | `apx-data`, `apx-lpr` |
 | [29](29-lpr-plate-review.md) | Plate review — a low-confidence read held back from enforcement, an issue refused while its review is pending, a person corrects the plate from the image (the engine's value kept), the replacement reaches the pipeline as an event, and a reflector read rejected outright | `apx-lpr`, `apx-violations`, `apx-events` |
 | [30](30-violation-imported-citation.md) | A citation written on another system — imported with the issuer's times and status, a part payment as a newer revision, the stay linked that night with the match evidence, and local transitions refused | `apx-violations`, `apx-events` |
+| [31](31-change-feed-after-link-loss.md) | Three days offline — an enforcement back office on its own server catches up by cursor: the head cursor before the first full list, whole violations and a retention tombstone after the outage, a filtered feed that still sees a paid notice leave it, the payment ledger feed that refuses a card-fragment search, and a cursor too old to honour | `apx-violations`, `apx-accounts`, `apx-payment-history` |
 
 ## By module — the vetting suite
 

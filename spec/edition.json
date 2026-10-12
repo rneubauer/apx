@@ -16,8 +16,8 @@
   },
   "normativeArtifacts": {
     "bundle": {
-      "spec/dist/apx-v1.yaml": "782fd34800832df605a4cc09be0a53e219f976a7a9e70cf81bdc5ece86ee95e5",
-      "spec/dist/apx-v1.json": "f592e3d378afbc9358dbdb27c2c0fb7847de3ea189e1cefb59592133c39b70b8"
+      "spec/dist/apx-v1.yaml": "451ec1c9f020386cc2b49062b915eb8e5c34e3e994441c4ec310bc8896f6dd5d",
+      "spec/dist/apx-v1.json": "4e4738888f92217cb9bc4696b2fa492a8eeee8a51615eadcc356f8c01c09df6b"
     },
     "overlays": {
       "spec/openapi/overlays/apx-data-overlay.yaml": "f85f932062c95ea4e0fe58f94f50e9cf7bb50acebdb4fd5f9e3dba46a50e0ec3",
@@ -205,7 +205,7 @@
   },
   "surface": {
     "paths": 115,
-    "schemas": 303,
+    "schemas": 308,
     "conformanceClasses": [
       "apx-data",
       "apx-events",

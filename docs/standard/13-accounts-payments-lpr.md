@@ -125,6 +125,11 @@ creator and to callers who ask for holds.
   which returns only holds; `captureStatus=captured` returns only
   collected payments. `captureStatus` narrows a keyed query and is never a
   key on its own.
+  **Change feed (normative).** With `mode=change` the route is a feed,
+  not a lookup: no key is needed and the 8-hour window does not apply,
+  because it serves exactly what `apx.accounts.payment.recorded.v1`
+  delivers to the same credential (§13.4); `ticketLast4` and `cardLast4`
+  are refused with it (400 `invalid-request`). Part 5 §5.2a rule 6.
 
 ## 13.3 `apx-lpr`
 
@@ -363,8 +368,10 @@ LPR analytics. APX closes both gaps (registry `apx-topics`):
 that wants *everything* about a location combines three mechanisms, all
 already normative: (1) bulk/exactly-once history via the Part 5 change
 feed (`mode=change&cursor=…`) on every native route — sessions, rates,
-rights, observations; (2) real-time push via one Part 8 subscription
-mixing APDS EventTypeEnum topics with the APX topics above plus
+rights, observations — and on the APX resource lists of Part 5 §5.2a
+(payments, commands, alerts, violations, and the rest); (2) real-time
+push via one Part 8 subscription mixing APDS EventTypeEnum topics with
+the APX topics above plus
 `apx.data.occupancy.v1`, alert, and command topics; (3) point-in-time
 convenience reads (occupancy §5.5, lane inquiry §6.2). Nothing about a
 place that APX models is unreachable by feed.

@@ -111,6 +111,9 @@ Rules:
    subtrees before relying on the feed for them, selecting each with the
    native `place` filter (subtree-inclusive; the data overlay adds it to
    `/places`, which APDS 4.1 omits).
+8. **APX resource lists.** The feed is not limited to the native routes:
+   every list route of a stateful APX resource accepts `mode=change` and
+   `cursor` under the same rules 1–7, with the differences in §5.2a.
 
 **Rate deck mirroring (informative).** A third-party system that needs the
 operator's rate deck — a call platform, a reservation channel, a revenue
@@ -139,6 +142,92 @@ route's filter surface and create exactly the "parallel construct" Part 10
 filters, and grants compose per-collection, and a stock APDS client on the
 same route sees stock behavior — at the cost of needing the overlay to
 express the additions, which is the trade this standard accepts.
+
+## 5.2a Change feed on APX resource lists (normative)
+
+A module that runs apart from the implementation it reads from — a pairing
+engine, an enforcement back office, a site server that replicates to an
+aggregator — catches up after an outage by cursor. Webhook retries end
+after 24 hours and an SSE stream keeps as little as 1000 events or 15
+minutes (Part 8 §8.3–8.4), so without a feed a link loss longer than that
+loses violations, alerts, or tickets for good. Every route in the table below therefore accepts
+`mode=change&cursor=` (Part 0 §0.5: `ModeParam` and `CursorParam` on the
+operation). Each route is required by the class that owns it:
+
+| Route | Resource | Required by |
+|---|---|---|
+| `GET /v1/commands` | Command | `apx-control` |
+| `GET /v1/alerts` | Alert | `apx-alerts` |
+| `GET /v1/accounts` | Account | `apx-accounts` |
+| `GET /v1/payments` | PaymentRecord | `apx-payment-history` |
+| `GET /v1/tolling/transactions` | TollTransaction | `apx-tolling` |
+| `GET /v1/violations` | Violation | `apx-violations` |
+| `GET /v1/enforcement/policies` | EnforcementPolicy | `apx-violations` |
+| `GET /v1/enforcement/signage` | Signage | `apx-violations` |
+| `GET /v1/validations/programs` | ValidationProgram | `apx-validations` |
+| `GET /v1/validations/programs/{id}/issuances` | ValidationIssuance | `apx-validations` |
+| `GET /v1/validations/redemptions` | ValidationRedemption | `apx-validations` |
+| `GET /v1/validations/programs/{id}/statements` | ValidationStatement | `apx-validations` |
+| `GET /v1/credentials` | CredentialRecord | `apx-credentials` |
+| `GET /v1/access-events` | AccessEvent | `apx-credentials` |
+| `GET /v1/valet/tickets` | ValetTicket | `apx-valet` |
+
+Rules 1, 2 and 4–7 of §5.2 apply unchanged: ordered and gapless per (route,
+credential, filter set), cursors opaque and honoured for at least 7 days,
+a refused cursor is 404 `target-not-found` (always a Problem), tombstones
+retained for the same window, grant additions signalled. The differences:
+
+1. **Envelope.** The change page is the route's own list envelope, not a
+   `ChangeFeedPage`: `data` holds the changed resources, and the members
+   `updateMode` (`change`), `cursor`, `deleted`, `grantAdditions`, and
+   `next` carry what the `ChangeFeedPage` members of the same name carry.
+   `meta` is absent. A client tells the two kinds of page apart by
+   `updateMode`. (Swapping the response for a `ChangeFeedPage` would
+   re-type a response that already exists, which Part 3 §3.2 forbids
+   within a major version.)
+2. **Items are whole.** Each item in `data` is the resource's complete
+   current representation, never a change payload: APX resources change by
+   domain operations, not by change-mode writes, and each keeps its own
+   history (`statusHistory[]`, `amountHistory[]`). A server MAY deliver
+   only the latest state of a resource that changed several times after
+   the cursor; it MUST NOT deliver an older state after a newer one.
+   Consumers key on `id` and keep the highest `version` where the resource
+   has one.
+3. **Starting the feed.** These routes have no `modified_since` (rule 3).
+   `mode=change` without a `cursor` returns a page with no items whose
+   `cursor` is the feed's current head. A client starting from nothing takes
+   the head cursor first, then lists with `mode=full`, then follows the
+   cursor; a change that lands between the two is seen twice, never missed,
+   and rule 2 resolves it.
+4. **Filters.** `mode=change` composes with the route's own filters (rule
+   6). A change belongs to a filtered feed when the resource matched the
+   filter set before the change **or** after it, so a consumer filtering
+   on `status` sees the change that takes a resource out of its view. The
+   `page` parameter is not used with `mode=change`; a page ends where the
+   server chooses and `next` (or the `cursor`) continues it.
+5. **Tombstones.** APX resources are rarely deleted (a void is a state).
+   `deleted[]` carries the resources a retention purge removed (Part 9
+   §9.6) and those released with a moved place (Part 18 §18.4), with the
+   resource's schema name (`Violation`, `ValetTicket`, …) as `className`.
+6. **Payments.** `GET /v1/payments` serves keyed lookups only (Part 13
+   §13.2). Its feed is the catch-up path for the same records
+   `apx.accounts.payment.recorded.v1` already delivers to the credential
+   (Part 13 §13.4), so `mode=change` needs no key and has no 8-hour window,
+   and follows that topic's rules: a hold appears at capture, never
+   before, and a voided hold never appears. The truncated keys
+   `ticketLast4` and `cardLast4` are refused with `mode=change` (400
+   `invalid-request`), so the feed is never a way round the §13.2 window.
+
+**Not feeds (informative).** Routes that compute a view rather than list
+stored resources take no cursor: `/v1/valet/queue`,
+`/v1/enforcement/policies/effective`, `/v1/enforcement/signage/effective`,
+`/v1/reservations/recent`, `/v1/validations/providers`,
+`/v1/devices` (a status snapshot), `/v1/lpr/reads` and
+`/v1/lpr/candidates` (projections of Observations, whose feed is
+`/observations`), and `/v1/resolution/contexts/{id}/allowed-actions`.
+`GET /v1/credentials/{id}/access-events` is a slice of
+`/v1/access-events`; a client feeds the latter with `credential=`.
+`/v1/support/interactions` stays a lookup (Part 17 §17.6) in this edition.
 
 ## 5.3 Push (client→server ingest)
 
@@ -188,7 +277,9 @@ the §5.1a validation and error-dialect rules; §5.2 change feed on
 implementation serves observation ingest — `/observations` (the
 exactly-once path Part 13 §13.4 relies on); the stock-APDS compatibility
 guarantee (a client sending no APX headers/params observes pure APDS 4.1
-behavior). Implementations that hold occupancy data for an element MUST
+behavior). The §5.2a feeds on APX resource lists are required by the
+class that owns each route, not by `apx-data`. Implementations that hold
+occupancy data for an element MUST
 serve §5.5 for it; implementations with no occupancy data MAY omit the
 endpoint entirely (discovery then does not list it).
 

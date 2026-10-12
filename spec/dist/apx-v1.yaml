@@ -2914,10 +2914,12 @@ paths:
             type: string
             format: date-time
           description: Received before this instant.
+        - $ref: '#/components/parameters/ModeParam'
+        - $ref: '#/components/parameters/CursorParam'
         - $ref: '#/components/parameters/page'
       responses:
         '200':
-          description: Paginated commands (APDS PaginatedList shape).
+          description: Paginated commands (APDS PaginatedList shape); with `mode=change`, the changes after `cursor` in the same envelope (Part 5 §5.2a).
           content:
             application/json:
               schema:
@@ -2929,10 +2931,22 @@ paths:
                     type: array
                     items:
                       $ref: '#/components/schemas/Command'
+                  updateMode:
+                    $ref: '#/components/schemas/ChangeFeedUpdateMode'
+                  cursor:
+                    $ref: '#/components/schemas/ChangeFeedCursor'
+                  deleted:
+                    $ref: '#/components/schemas/ChangeFeedTombstones'
+                  grantAdditions:
+                    $ref: '#/components/schemas/ChangeFeedGrantAdditions'
+                  next:
+                    $ref: '#/components/schemas/ChangeFeedNext'
         '401':
           $ref: '#/components/responses/Unauthorized'
         '403':
           $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/CursorRefused'
         '429':
           $ref: '#/components/responses/TooManyRequests'
   /v1/commands/{id}:
@@ -3320,10 +3334,12 @@ paths:
           schema:
             type: string
             format: date-time
+        - $ref: '#/components/parameters/ModeParam'
+        - $ref: '#/components/parameters/CursorParam'
         - $ref: '#/components/parameters/page'
       responses:
         '200':
-          description: Matching transactions.
+          description: Matching transactions; with `mode=change`, the changes after `cursor` in the same envelope (Part 5 §5.2a).
           content:
             application/json:
               schema:
@@ -3335,12 +3351,24 @@ paths:
                     type: array
                     items:
                       $ref: '#/components/schemas/TollTransaction'
+                  updateMode:
+                    $ref: '#/components/schemas/ChangeFeedUpdateMode'
+                  cursor:
+                    $ref: '#/components/schemas/ChangeFeedCursor'
+                  deleted:
+                    $ref: '#/components/schemas/ChangeFeedTombstones'
+                  grantAdditions:
+                    $ref: '#/components/schemas/ChangeFeedGrantAdditions'
+                  next:
+                    $ref: '#/components/schemas/ChangeFeedNext'
         '400':
           $ref: '#/components/responses/BadRequest'
         '401':
           $ref: '#/components/responses/Unauthorized'
         '403':
           $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/CursorRefused'
         '429':
           $ref: '#/components/responses/TooManyRequests'
   /v1/tolling/transactions/{id}:
@@ -3814,10 +3842,12 @@ paths:
           schema:
             type: string
           description: Exact match on the source's record id (`recordId`); like `noticeNumber`, it names no place (Part 9 §9.3a rule 3).
+        - $ref: '#/components/parameters/ModeParam'
+        - $ref: '#/components/parameters/CursorParam'
         - $ref: '#/components/parameters/page'
       responses:
         '200':
-          description: Paginated violations (APDS PaginatedList shape).
+          description: Paginated violations (APDS PaginatedList shape); with `mode=change`, the changes after `cursor` in the same envelope (Part 5 §5.2a).
           content:
             application/json:
               schema:
@@ -3829,10 +3859,22 @@ paths:
                     type: array
                     items:
                       $ref: '#/components/schemas/Violation'
+                  updateMode:
+                    $ref: '#/components/schemas/ChangeFeedUpdateMode'
+                  cursor:
+                    $ref: '#/components/schemas/ChangeFeedCursor'
+                  deleted:
+                    $ref: '#/components/schemas/ChangeFeedTombstones'
+                  grantAdditions:
+                    $ref: '#/components/schemas/ChangeFeedGrantAdditions'
+                  next:
+                    $ref: '#/components/schemas/ChangeFeedNext'
         '401':
           $ref: '#/components/responses/Unauthorized'
         '403':
           $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/CursorRefused'
         '429':
           $ref: '#/components/responses/TooManyRequests'
   /v1/violations/{id}:
@@ -4557,10 +4599,12 @@ paths:
               - active
               - superseded
               - retired
+        - $ref: '#/components/parameters/ModeParam'
+        - $ref: '#/components/parameters/CursorParam'
         - $ref: '#/components/parameters/page'
       responses:
         '200':
-          description: Paginated policies (APDS PaginatedList shape).
+          description: Paginated policies (APDS PaginatedList shape); with `mode=change`, the changes after `cursor` in the same envelope (Part 5 §5.2a).
           content:
             application/json:
               schema:
@@ -4572,10 +4616,22 @@ paths:
                     type: array
                     items:
                       $ref: '#/components/schemas/EnforcementPolicy'
+                  updateMode:
+                    $ref: '#/components/schemas/ChangeFeedUpdateMode'
+                  cursor:
+                    $ref: '#/components/schemas/ChangeFeedCursor'
+                  deleted:
+                    $ref: '#/components/schemas/ChangeFeedTombstones'
+                  grantAdditions:
+                    $ref: '#/components/schemas/ChangeFeedGrantAdditions'
+                  next:
+                    $ref: '#/components/schemas/ChangeFeedNext'
         '401':
           $ref: '#/components/responses/Unauthorized'
         '403':
           $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/CursorRefused'
         '429':
           $ref: '#/components/responses/TooManyRequests'
   /v1/enforcement/policies/effective:
@@ -4802,10 +4858,12 @@ paths:
               - active
               - superseded
               - removed
+        - $ref: '#/components/parameters/ModeParam'
+        - $ref: '#/components/parameters/CursorParam'
         - $ref: '#/components/parameters/page'
       responses:
         '200':
-          description: Paginated signage (APDS PaginatedList shape).
+          description: Paginated signage (APDS PaginatedList shape); with `mode=change`, the changes after `cursor` in the same envelope (Part 5 §5.2a).
           content:
             application/json:
               schema:
@@ -4817,10 +4875,22 @@ paths:
                     type: array
                     items:
                       $ref: '#/components/schemas/Signage'
+                  updateMode:
+                    $ref: '#/components/schemas/ChangeFeedUpdateMode'
+                  cursor:
+                    $ref: '#/components/schemas/ChangeFeedCursor'
+                  deleted:
+                    $ref: '#/components/schemas/ChangeFeedTombstones'
+                  grantAdditions:
+                    $ref: '#/components/schemas/ChangeFeedGrantAdditions'
+                  next:
+                    $ref: '#/components/schemas/ChangeFeedNext'
         '401':
           $ref: '#/components/responses/Unauthorized'
         '403':
           $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/CursorRefused'
         '429':
           $ref: '#/components/responses/TooManyRequests'
   /v1/enforcement/signage/effective:
@@ -5064,10 +5134,12 @@ paths:
               - active
               - suspended
               - ended
+        - $ref: '#/components/parameters/ModeParam'
+        - $ref: '#/components/parameters/CursorParam'
         - $ref: '#/components/parameters/page'
       responses:
         '200':
-          description: Paginated programs (APDS PaginatedList shape).
+          description: Paginated programs (APDS PaginatedList shape); with `mode=change`, the changes after `cursor` in the same envelope (Part 5 §5.2a).
           content:
             application/json:
               schema:
@@ -5079,10 +5151,22 @@ paths:
                     type: array
                     items:
                       $ref: '#/components/schemas/ValidationProgram'
+                  updateMode:
+                    $ref: '#/components/schemas/ChangeFeedUpdateMode'
+                  cursor:
+                    $ref: '#/components/schemas/ChangeFeedCursor'
+                  deleted:
+                    $ref: '#/components/schemas/ChangeFeedTombstones'
+                  grantAdditions:
+                    $ref: '#/components/schemas/ChangeFeedGrantAdditions'
+                  next:
+                    $ref: '#/components/schemas/ChangeFeedNext'
         '401':
           $ref: '#/components/responses/Unauthorized'
         '403':
           $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/CursorRefused'
         '429':
           $ref: '#/components/responses/TooManyRequests'
   /v1/validations/programs/{id}:
@@ -5285,10 +5369,12 @@ paths:
       summary: List issuances for a program
       description: Batches issued to the program, newest first. Codes are never returned here.
       parameters:
+        - $ref: '#/components/parameters/ModeParam'
+        - $ref: '#/components/parameters/CursorParam'
         - $ref: '#/components/parameters/page'
       responses:
         '200':
-          description: Paginated issuances (APDS PaginatedList shape).
+          description: Paginated issuances (APDS PaginatedList shape); with `mode=change`, the changes after `cursor` in the same envelope (Part 5 §5.2a).
           content:
             application/json:
               schema:
@@ -5300,12 +5386,22 @@ paths:
                     type: array
                     items:
                       $ref: '#/components/schemas/ValidationIssuance'
+                  updateMode:
+                    $ref: '#/components/schemas/ChangeFeedUpdateMode'
+                  cursor:
+                    $ref: '#/components/schemas/ChangeFeedCursor'
+                  deleted:
+                    $ref: '#/components/schemas/ChangeFeedTombstones'
+                  grantAdditions:
+                    $ref: '#/components/schemas/ChangeFeedGrantAdditions'
+                  next:
+                    $ref: '#/components/schemas/ChangeFeedNext'
         '401':
           $ref: '#/components/responses/Unauthorized'
         '403':
           $ref: '#/components/responses/Forbidden'
         '404':
-          description: No such program.
+          description: No such program, or (`mode=change`) a refused cursor (`target-not-found`; Part 5 §5.2 rules 2 and 5).
           content:
             application/problem+json:
               schema:
@@ -5611,10 +5707,12 @@ paths:
           schema:
             type: string
             format: date-time
+        - $ref: '#/components/parameters/ModeParam'
+        - $ref: '#/components/parameters/CursorParam'
         - $ref: '#/components/parameters/page'
       responses:
         '200':
-          description: Paginated redemptions (APDS PaginatedList shape).
+          description: Paginated redemptions (APDS PaginatedList shape); with `mode=change`, the changes after `cursor` in the same envelope (Part 5 §5.2a).
           content:
             application/json:
               schema:
@@ -5626,10 +5724,22 @@ paths:
                     type: array
                     items:
                       $ref: '#/components/schemas/ValidationRedemption'
+                  updateMode:
+                    $ref: '#/components/schemas/ChangeFeedUpdateMode'
+                  cursor:
+                    $ref: '#/components/schemas/ChangeFeedCursor'
+                  deleted:
+                    $ref: '#/components/schemas/ChangeFeedTombstones'
+                  grantAdditions:
+                    $ref: '#/components/schemas/ChangeFeedGrantAdditions'
+                  next:
+                    $ref: '#/components/schemas/ChangeFeedNext'
         '401':
           $ref: '#/components/responses/Unauthorized'
         '403':
           $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/CursorRefused'
         '429':
           $ref: '#/components/responses/TooManyRequests'
   /v1/validations/redemptions/{id}:
@@ -5875,10 +5985,12 @@ paths:
       summary: List closed statements for a program
       description: Closed statements, newest period first; `lines[]` omitted.
       parameters:
+        - $ref: '#/components/parameters/ModeParam'
+        - $ref: '#/components/parameters/CursorParam'
         - $ref: '#/components/parameters/page'
       responses:
         '200':
-          description: Paginated statements (APDS PaginatedList shape).
+          description: Paginated statements (APDS PaginatedList shape); with `mode=change`, the changes after `cursor` in the same envelope (Part 5 §5.2a).
           content:
             application/json:
               schema:
@@ -5890,12 +6002,22 @@ paths:
                     type: array
                     items:
                       $ref: '#/components/schemas/ValidationStatement'
+                  updateMode:
+                    $ref: '#/components/schemas/ChangeFeedUpdateMode'
+                  cursor:
+                    $ref: '#/components/schemas/ChangeFeedCursor'
+                  deleted:
+                    $ref: '#/components/schemas/ChangeFeedTombstones'
+                  grantAdditions:
+                    $ref: '#/components/schemas/ChangeFeedGrantAdditions'
+                  next:
+                    $ref: '#/components/schemas/ChangeFeedNext'
         '401':
           $ref: '#/components/responses/Unauthorized'
         '403':
           $ref: '#/components/responses/Forbidden'
         '404':
-          description: No such program.
+          description: No such program, or (`mode=change`) a refused cursor (`target-not-found`; Part 5 §5.2 rules 2 and 5).
           content:
             application/problem+json:
               schema:
@@ -6067,10 +6189,12 @@ paths:
           schema:
             type: string
             format: uuid
+        - $ref: '#/components/parameters/ModeParam'
+        - $ref: '#/components/parameters/CursorParam'
         - $ref: '#/components/parameters/page'
       responses:
         '200':
-          description: Paginated credentials (APDS PaginatedList shape).
+          description: Paginated credentials (APDS PaginatedList shape); with `mode=change`, the changes after `cursor` in the same envelope (Part 5 §5.2a).
           content:
             application/json:
               schema:
@@ -6082,10 +6206,22 @@ paths:
                     type: array
                     items:
                       $ref: '#/components/schemas/CredentialRecord'
+                  updateMode:
+                    $ref: '#/components/schemas/ChangeFeedUpdateMode'
+                  cursor:
+                    $ref: '#/components/schemas/ChangeFeedCursor'
+                  deleted:
+                    $ref: '#/components/schemas/ChangeFeedTombstones'
+                  grantAdditions:
+                    $ref: '#/components/schemas/ChangeFeedGrantAdditions'
+                  next:
+                    $ref: '#/components/schemas/ChangeFeedNext'
         '401':
           $ref: '#/components/responses/Unauthorized'
         '403':
           $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/CursorRefused'
         '429':
           $ref: '#/components/responses/TooManyRequests'
   /v1/credentials/{id}:
@@ -6608,10 +6744,12 @@ paths:
           schema:
             type: string
             format: date-time
+        - $ref: '#/components/parameters/ModeParam'
+        - $ref: '#/components/parameters/CursorParam'
         - $ref: '#/components/parameters/page'
       responses:
         '200':
-          description: Paginated access events (APDS PaginatedList shape).
+          description: Paginated access events (APDS PaginatedList shape); with `mode=change`, the changes after `cursor` in the same envelope (Part 5 §5.2a).
           content:
             application/json:
               schema:
@@ -6623,12 +6761,24 @@ paths:
                     type: array
                     items:
                       $ref: '#/components/schemas/AccessEvent'
+                  updateMode:
+                    $ref: '#/components/schemas/ChangeFeedUpdateMode'
+                  cursor:
+                    $ref: '#/components/schemas/ChangeFeedCursor'
+                  deleted:
+                    $ref: '#/components/schemas/ChangeFeedTombstones'
+                  grantAdditions:
+                    $ref: '#/components/schemas/ChangeFeedGrantAdditions'
+                  next:
+                    $ref: '#/components/schemas/ChangeFeedNext'
         '400':
           $ref: '#/components/responses/BadRequest'
         '401':
           $ref: '#/components/responses/Unauthorized'
         '403':
           $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/CursorRefused'
         '429':
           $ref: '#/components/responses/TooManyRequests'
   /v1/valet/tickets:
@@ -6750,10 +6900,12 @@ paths:
           schema:
             type: string
             format: date-time
+        - $ref: '#/components/parameters/ModeParam'
+        - $ref: '#/components/parameters/CursorParam'
         - $ref: '#/components/parameters/page'
       responses:
         '200':
-          description: Paginated tickets (APDS PaginatedList shape).
+          description: Paginated tickets (APDS PaginatedList shape); with `mode=change`, the changes after `cursor` in the same envelope (Part 5 §5.2a).
           content:
             application/json:
               schema:
@@ -6765,10 +6917,22 @@ paths:
                     type: array
                     items:
                       $ref: '#/components/schemas/ValetTicket'
+                  updateMode:
+                    $ref: '#/components/schemas/ChangeFeedUpdateMode'
+                  cursor:
+                    $ref: '#/components/schemas/ChangeFeedCursor'
+                  deleted:
+                    $ref: '#/components/schemas/ChangeFeedTombstones'
+                  grantAdditions:
+                    $ref: '#/components/schemas/ChangeFeedGrantAdditions'
+                  next:
+                    $ref: '#/components/schemas/ChangeFeedNext'
         '401':
           $ref: '#/components/responses/Unauthorized'
         '403':
           $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/CursorRefused'
         '429':
           $ref: '#/components/responses/TooManyRequests'
   /v1/valet/queue:
@@ -7806,10 +7970,12 @@ paths:
             items:
               type: string
               format: uuid
+        - $ref: '#/components/parameters/ModeParam'
+        - $ref: '#/components/parameters/CursorParam'
         - $ref: '#/components/parameters/page'
       responses:
         '200':
-          description: Matching accounts.
+          description: Matching accounts; with `mode=change`, the changes after `cursor` in the same envelope (Part 5 §5.2a).
           content:
             application/json:
               schema:
@@ -7821,10 +7987,22 @@ paths:
                     type: array
                     items:
                       $ref: '#/components/schemas/Account'
+                  updateMode:
+                    $ref: '#/components/schemas/ChangeFeedUpdateMode'
+                  cursor:
+                    $ref: '#/components/schemas/ChangeFeedCursor'
+                  deleted:
+                    $ref: '#/components/schemas/ChangeFeedTombstones'
+                  grantAdditions:
+                    $ref: '#/components/schemas/ChangeFeedGrantAdditions'
+                  next:
+                    $ref: '#/components/schemas/ChangeFeedNext'
         '401':
           $ref: '#/components/responses/Unauthorized'
         '403':
           $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/CursorRefused'
         '429':
           $ref: '#/components/responses/TooManyRequests'
   /v1/accounts/{id}:
@@ -8014,10 +8192,12 @@ paths:
             enum:
               - authorized
               - captured
+        - $ref: '#/components/parameters/ModeParam'
+        - $ref: '#/components/parameters/CursorParam'
         - $ref: '#/components/parameters/page'
       responses:
         '200':
-          description: Matching payments.
+          description: Matching payments; with `mode=change`, the changes after `cursor` in the same envelope (Part 5 §5.2a).
           content:
             application/json:
               schema:
@@ -8029,12 +8209,24 @@ paths:
                     type: array
                     items:
                       $ref: '#/components/schemas/PaymentRecord'
+                  updateMode:
+                    $ref: '#/components/schemas/ChangeFeedUpdateMode'
+                  cursor:
+                    $ref: '#/components/schemas/ChangeFeedCursor'
+                  deleted:
+                    $ref: '#/components/schemas/ChangeFeedTombstones'
+                  grantAdditions:
+                    $ref: '#/components/schemas/ChangeFeedGrantAdditions'
+                  next:
+                    $ref: '#/components/schemas/ChangeFeedNext'
         '400':
           $ref: '#/components/responses/BadRequest'
         '401':
           $ref: '#/components/responses/Unauthorized'
         '403':
           $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/CursorRefused'
         '422':
           description: |-
             A query parameter carries more card digits than the truncated
@@ -9059,10 +9251,12 @@ paths:
           schema:
             type: string
             format: date-time
+        - $ref: '#/components/parameters/ModeParam'
+        - $ref: '#/components/parameters/CursorParam'
         - $ref: '#/components/parameters/page'
       responses:
         '200':
-          description: Paginated alerts (APDS PaginatedList shape).
+          description: Paginated alerts (APDS PaginatedList shape); with `mode=change`, the changes after `cursor` in the same envelope (Part 5 §5.2a).
           content:
             application/json:
               schema:
@@ -9074,10 +9268,22 @@ paths:
                     type: array
                     items:
                       $ref: '#/components/schemas/Alert'
+                  updateMode:
+                    $ref: '#/components/schemas/ChangeFeedUpdateMode'
+                  cursor:
+                    $ref: '#/components/schemas/ChangeFeedCursor'
+                  deleted:
+                    $ref: '#/components/schemas/ChangeFeedTombstones'
+                  grantAdditions:
+                    $ref: '#/components/schemas/ChangeFeedGrantAdditions'
+                  next:
+                    $ref: '#/components/schemas/ChangeFeedNext'
         '401':
           $ref: '#/components/responses/Unauthorized'
         '403':
           $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/CursorRefused'
         '429':
           $ref: '#/components/responses/TooManyRequests'
   /v1/alerts/{id}:
@@ -10065,8 +10271,11 @@ components:
       in: query
       required: false
       description: |-
-        APX data profile: `full` (default — behaves exactly like stock APDS 4.1)
-        or `change` (return a ChangeFeedPage of deltas since `cursor`/`since`).
+        APX change feed (Part 5 §5.2, §5.2a): `full` (default — the route's
+        ordinary list; on a native APDS route, exactly stock APDS 4.1) or
+        `change` (a ChangeFeedPage of the changes after `cursor`; on an APX
+        list route without a cursor, an empty page holding the current head
+        cursor).
       schema:
         type: string
         enum:
@@ -10077,7 +10286,7 @@ components:
       name: cursor
       in: query
       required: false
-      description: Opaque change-feed cursor from a previous ChangeFeedPage. Only meaningful with `mode=change`.
+      description: Opaque change-feed cursor from a previous ChangeFeedPage. Only meaningful with `mode=change`; a refused cursor is 404 `target-not-found` (Part 5 §5.2 rules 2 and 5).
       schema:
         type: string
     IfMatch:
@@ -10392,6 +10601,17 @@ components:
       description: |-
         Missing, malformed, expired, or revoked access token (problem type
         `unauthenticated`, Part 12).
+      content:
+        application/problem+json:
+          schema:
+            $ref: '#/components/schemas/Problem'
+    CursorRefused:
+      description: |-
+        `mode=change` only (Part 5 §5.2a): the cursor is unknown, older
+        than the retention window, or was issued for another (class,
+        credential, filter set). Problem type `target-not-found`; re-sync
+        with `mode=full`. The cursor is an APX parameter, so this refusal
+        is always a Problem (Part 5 §5.2 rules 2 and 5).
       content:
         application/problem+json:
           schema:
@@ -10745,6 +10965,50 @@ components:
               className: Session
               deleteTimestamp: '2026-08-06T17:58:12Z'
           cursor: c:00042
+    ChangeFeedUpdateMode:
+      title: ChangeFeedUpdateMode
+      type: string
+      const: change
+      description: |-
+        Present, with the value `change`, exactly when the page answers
+        `mode=change` (Part 5 §5.2a); absent on an ordinary list page.
+    ChangeFeedCursor:
+      title: ChangeFeedCursor
+      type: string
+      description: |-
+        `mode=change` only. Opaque cursor resuming strictly after the last
+        change in this page (Part 5 §5.2 rules 1, 2, 5).
+    ChangeFeedTombstones:
+      title: ChangeFeedTombstones
+      type: array
+      description: |-
+        `mode=change` only. Resources removed since the cursor (retention
+        purge, Part 9 §9.6; release of a moved place, Part 18 §18.4), as APDS
+        DeletedReferences carrying the APX resource's schema name as
+        `className`. Retained for the cursor window (Part 5 §5.2 rule 4).
+      items:
+        $ref: '#/components/schemas/DeletedReference'
+    ChangeFeedGrantAdditions:
+      title: ChangeFeedGrantAdditions
+      type: array
+      description: |-
+        `mode=change` only. Present on the first page served after the
+        credential's `apx_places` grant gained subtrees: the new subtree roots,
+        which the client full-syncs with the route's `place` filter before
+        relying on the feed for them (Part 5 §5.2 rule 7).
+      items:
+        type: string
+        format: uuid
+    ChangeFeedNext:
+      title: ChangeFeedNext
+      type:
+        - string
+        - 'null'
+      format: uri-reference
+      description: |-
+        `mode=change` only. Link to the next page when more changes are
+        immediately available (the same request with this page's `cursor`);
+        null otherwise.
     OccupancySnapshot:
       title: OccupancySnapshot
       description: |-

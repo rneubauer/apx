@@ -1,6 +1,6 @@
 # APX vetting scenarios, by module
 
-The worked scenarios one folder up tell 29 end-to-end stories. This
+The worked scenarios one folder up tell 30 end-to-end stories. This
 folder is the test bench underneath them: **384 scenarios**, one set per
 conformance class, written to find the places the spec could not say what
 a real deployment needs. Every request and response in them is checked
@@ -13,10 +13,10 @@ findings table says how.
 
 | Module | Scenarios | Operations | Responses | Annex A rows | Findings |
 |---|---|---|---|---|---|
-| [`apx-accounts`](apx-accounts/scenarios.md) (incl. `apx-payment-history`) | 26 | 11/11 | 73/73 | 7/8 | [14](apx-accounts/findings.md) |
-| [`apx-alerts`](apx-alerts/scenarios.md) | 22 | 5/5 | 30/30 | 5/6 | [9](apx-alerts/findings.md) |
-| [`apx-control`](apx-control/scenarios.md) | 25 | 8/8 | 41/41 | 14/14 | [10](apx-control/findings.md) |
-| [`apx-credentials`](apx-credentials/scenarios.md) | 26 | 11/11 | 71/71 | 6/6 | [11](apx-credentials/findings.md) |
+| [`apx-accounts`](apx-accounts/scenarios.md) (incl. `apx-payment-history`) | 26 | 11/11 | 73/75 | 7/9 | [14](apx-accounts/findings.md) |
+| [`apx-alerts`](apx-alerts/scenarios.md) | 22 | 5/5 | 30/31 | 5/6 | [9](apx-alerts/findings.md) |
+| [`apx-control`](apx-control/scenarios.md) | 25 | 8/8 | 41/42 | 14/14 | [10](apx-control/findings.md) |
+| [`apx-credentials`](apx-credentials/scenarios.md) | 26 | 11/11 | 71/73 | 6/6 | [11](apx-credentials/findings.md) |
 | [`apx-data`](apx-data/scenarios.md) | 35 | 35/35 | 204/206 | 10/10 | [16](apx-data/findings.md) |
 | [`apx-discovery`](apx-discovery/scenarios.md) (incl. `apx-mtls`) | 16 | 2/2 | 6/6 | 7/7 | [14](apx-discovery/findings.md) |
 | [`apx-events`](apx-events/scenarios.md) (incl. `apx-events-sse`) | 24 | 7/7 | 41/41 | 9/9 | [17](apx-events/findings.md) |
@@ -24,11 +24,11 @@ findings table says how.
 | [`apx-permits`](apx-permits/scenarios.md) | 15 | 2/2 | 13/13 | 2/2 | [12](apx-permits/findings.md) |
 | [`apx-reservations`](apx-reservations/scenarios.md) | 24 | 3/3 | 21/21 | 3/3 | [16](apx-reservations/findings.md) |
 | [`apx-resolution`](apx-resolution/scenarios.md) | 28 | 12/12 | 73/73 | 8/9 | [13](apx-resolution/findings.md) |
-| [`apx-tolling`](apx-tolling/scenarios.md) | 24 | 8/8 | 52/52 | 3/3 | [14](apx-tolling/findings.md) |
-| [`apx-valet`](apx-valet/scenarios.md) | 25 | 12/12 | 78/78 | 8/8 | [16](apx-valet/findings.md) |
-| [`apx-validations`](apx-validations/scenarios.md) | 25 | 17/17 | 105/105 | 8/8 | [13](apx-validations/findings.md) |
-| [`apx-violations`](apx-violations/scenarios.md) | 34 | 22/22 | 132/141 | 16/16 | [17](apx-violations/findings.md) |
-| **total** | **384** | | | **124/132** | **221** |
+| [`apx-tolling`](apx-tolling/scenarios.md) | 24 | 8/8 | 52/53 | 3/3 | [14](apx-tolling/findings.md) |
+| [`apx-valet`](apx-valet/scenarios.md) | 25 | 12/12 | 78/79 | 8/8 | [16](apx-valet/findings.md) |
+| [`apx-validations`](apx-validations/scenarios.md) | 25 | 17/17 | 105/107 | 8/8 | [13](apx-validations/findings.md) |
+| [`apx-violations`](apx-violations/scenarios.md) | 34 | 22/22 | 132/144 | 16/16 | [17](apx-violations/findings.md) |
+| **total** | **384** | | | **125/134** | **221** |
 
 *Operations* and *Responses* count the routes and declared status codes
 each module's scenarios exercise. The seven Annex A rows not yet cited

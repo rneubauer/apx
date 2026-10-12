@@ -29,6 +29,7 @@ implementation has the named capability).
 | APX-CORE-14 | Every registry version the implementation validates against is served or linked and advertised in `/.well-known/apx-configuration` `registries`; every advertised URL resolves | §11.2 |
 | APX-CORE-15 **C** (receives a migrated place) | Onboarding at the receiving implementation: the grant names exactly the migrated subtree root(s), never `"*"`; imported historical entities keep their `recordInfo` provenance | §18.3 |
 | APX-CORE-16 **C** (hands over a migrated place) | After the agreed cutover the releasing implementation publishes no events bound to the moved place, and its change feeds emit tombstones for the entities it no longer hosts | §18.4 |
+| APX-CORE-17 | For each claimed class, every route of that class in the §5.2a table accepts `mode=change&cursor=`: the route's own list envelope with `updateMode`, `cursor`, `deleted`, `grantAdditions`, `next`; whole current representations, never an older state after a newer one; no cursor → an empty page with the head cursor; a change in a filtered feed when the resource matched before or after it; §5.2 rules 1, 2, 4–7 (refused cursor → 404 `target-not-found`) | §5.2 r8, §5.2a |
 
 ## A.2 `apx-data`
 
@@ -115,6 +116,7 @@ implementation has the named capability).
 | APX-ACC-06 | More than four card digits in any body member or query parameter → 422 `personal-data-not-permitted`, refused before persisting or logging | §13.1, §13.2 |
 | APX-ACC-07 **C** (persists APDS Payment) | Every `approved`, captured PaymentRecord is materialized as, or bound to, a native APDS `Payment` with a `paymentLines` entry of `paymentType: payment` and `value` = `amount`; declined records and uncaptured holds are not | §13.6 |
 | APX-PHX-01 | Truncated-key lookups without `date` constrained to last 8 hours, not configurable wider; `ticketNumber` and `account` exempt; a query with no key → 400 | §13.2, §9.6 |
+| APX-PHX-02 | `GET /v1/payments?mode=change` serves the payment feed without a key or window, exactly the records `apx.accounts.payment.recorded.v1` delivers (holds from capture, voided holds never); `ticketLast4`/`cardLast4` with `mode=change` → 400 `invalid-request` | §13.2, §5.2a r6 |
 
 ## A.10 `apx-lpr`
 
