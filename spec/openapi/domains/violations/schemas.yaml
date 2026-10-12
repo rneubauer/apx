@@ -143,11 +143,7 @@ Violation:
             $ref: "../../../vendor/apds/4.1/apds-api-4.1.yaml#/components/schemas/DateTime"
           reason:
             type: string
-            enum: [issued, escalation, appealReduced, cap, imported]
-            description: |-
-              `imported` — the amount as an import source reported it, on
-              an imported violation's first record or a later source
-              revision that changed it (Part 19 §19.12).
+            enum: [issued, escalation, appealReduced, cap]
           step:
             type: string
             description: The policy escalation step id that fired, when `reason` is `escalation`.

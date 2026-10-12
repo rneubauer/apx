@@ -468,8 +468,13 @@ them; the `ViolationImport` body is a Violation as the source reports it.
 5. **Times and history as reported.** `statusHistory[]` carries the
    source's own entries and times. The server keeps the entries it
    already holds and appends only those later than its last one — never
-   rewriting history (Part 4 §4.2). Amount changes are appended to
-   `amountHistory[]` with `reason: imported`.
+   rewriting history (Part 4 §4.2). Amounts go to `amountHistory[]`
+   with the existing reasons, and `detail` names the source revision:
+   the amount at issuance is `issued`; a later increase the source
+   applied (a late fee, a penalty step) is `escalation`; a later
+   decrease the source granted is `appealReduced`. No entry is computed
+   by this server — the `apds-ext:apx:violation-source@1.0` decoration
+   on the violation says the whole history is the source's.
 6. **The source is the authority.** The server MUST NOT apply to an
    imported Violation the §19.1 transition rules, the §19.4 issuance
    gates, the §19.10 rule 2 policy checks, or §19.10 rule 3 escalation;

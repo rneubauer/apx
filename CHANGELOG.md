@@ -72,8 +72,9 @@ The machine-readable spec (`spec/openapi/apx.yaml`, bundled as
   `Extensions`) names the issuer and its record; `system` + `recordId` is
   the natural key. The issuer stays the authority: no issuance gates,
   policy checks or escalation here, and local transitions are refused.
-  `GET /v1/violations` gains `sourceSystem` and `sourceRecordId`;
-  `amountHistory[].reason` gains `imported`.
+  `GET /v1/violations` gains `sourceSystem` and `sourceRecordId`.
+  Source-reported amounts use the existing `amountHistory` reasons, with
+  `detail` naming the source revision.
 - Part 19 §19.6, part payments: `Violation.amountPaid` and `payments[]`
   (`ViolationAppliedPayment`), and an optional `amount` on the payment
   attachment. A violation is `paid` exactly when `amountPaid` reaches

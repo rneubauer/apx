@@ -18108,10 +18108,8 @@
                     "issued",
                     "escalation",
                     "appealReduced",
-                    "cap",
-                    "imported"
-                  ],
-                  "description": "`imported` — the amount as an import source reported it, on\nan imported violation's first record or a later source\nrevision that changed it (Part 19 §19.12)."
+                    "cap"
+                  ]
                 },
                 "step": {
                   "type": "string",

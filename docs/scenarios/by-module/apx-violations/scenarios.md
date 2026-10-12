@@ -5225,7 +5225,7 @@ with the part payment in `payments[]` and the platform's own wording
   "amount": { "currencyType": "USD", "currencyValue": 40.0 },
   "dueTime": "2026-10-22T23:59:59Z",
   "amountHistory": [
-    { "amount": { "currencyType": "USD", "currencyValue": 40.0 }, "time": "2026-10-01T14:07:12Z", "reason": "imported" }
+    { "amount": { "currencyType": "USD", "currencyValue": 40.0 }, "time": "2026-10-01T14:07:12Z", "reason": "issued", "detail": "example-enforcement revision 1" }
   ],
   "statusHistory": [
     { "state": "issued", "time": "2026-10-01T14:07:12Z", "actor": "officer-0417" }

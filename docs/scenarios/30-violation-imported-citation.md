@@ -140,7 +140,7 @@ reporting reads afterwards:
     { "amount": { "currencyType": "USD", "currencyValue": 15.0 }, "paidTime": "2026-10-04T09:12:00Z", "reference": "PMT-77120" }
   ],
   "amountHistory": [
-    { "amount": { "currencyType": "USD", "currencyValue": 40.0 }, "time": "2026-10-01T14:07:12Z", "reason": "imported" }
+    { "amount": { "currencyType": "USD", "currencyValue": 40.0 }, "time": "2026-10-01T14:07:12Z", "reason": "issued", "detail": "example-enforcement revision 1" }
   ],
   "statusHistory": [
     { "state": "issued", "time": "2026-10-01T14:07:12Z", "actor": "officer-0417" }
