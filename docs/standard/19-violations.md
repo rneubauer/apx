@@ -471,6 +471,11 @@ state its source has reached, with the source's times.
    part-paid citation is `issued` with its `payments[]` (§19.6a), and
    `paid` below `amount` is 422 `request-unprocessable`. Payments the
    source took itself carry its own `reference` (§19.6a rule 1).
+   A warning with no fine (a source status such as `warned`) is
+   `issued` with `notice.noticeKind` `warning` and an `amount` of zero
+   in the place's currency, as `POST …/{id}/issue` records one natively;
+   `sourceStatus` keeps the source's word, and a warning the source
+   treats as finished MAY be imported as `closed`.
    `statusHistory[]` is append-only: the server keeps the entries it
    already holds and appends only the source's entries later than its
    last one, never rewriting history (Part 4 §4.2).

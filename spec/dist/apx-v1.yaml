@@ -18146,7 +18146,8 @@ components:
         (`issued`, `paid`, `appealed`, `closed`) REQUIRES `notice` (with
         `noticeNumber` and `issuedTime`) and `amount` (400 `invalid-request`
         otherwise); `paid` with `amountPaid` below `amount` is 422
-        `request-unprocessable`.
+        `request-unprocessable`. A warning with no fine is `issued` (or
+        `closed`) with `notice.noticeKind` `warning` and a zero `amount`.
       type: object
       required:
         - violationType
