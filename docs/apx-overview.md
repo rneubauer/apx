@@ -315,9 +315,11 @@ candidate, an officer with a handheld confirms on site).
 | `GET /v1/violations?plate=&status=&place=` · `GET …/{id}` | Query and read, with evidence links and the full audit trail |
 | `POST …/{id}/review` | Guided enforcement: the officer confirms or dismisses the candidate |
 | `POST …/{id}/issue` | Issue the notice or citation — amount, due date, how it was delivered |
-| `POST …/{id}/payment` | Attach the settling payment (taken through the Money section — nothing new to build) |
+| `POST …/{id}/payment` | Attach a payment (taken through the Money section — nothing new to build); a part payment leaves the violation open until it is covered |
 | `POST …/{id}/appeals` · `…/appeals/resolve` | "That wasn't my car" — upheld, reduced, or dismissed, with audit |
 | `POST …/{id}/void` | Void; the record and its history stay readable |
+| `POST /v1/enforcement/violation-imports` | **Citations written on another system:** recorded with the issuer's own times, status, and payments, marked with where they came from; newer revisions update them, and the issuer stays the authority |
+| `POST …/{id}/session` | Link a violation to the stay it belongs to after the fact — or correct the link — with the evidence for the match |
 | `GET /v1/enforcement/policies/effective?place=` · `POST /v1/enforcement/policies` · `PUT …/policies/{id}` | **The law, machine-readable, per location:** which notice methods are lawful for which detections and by when, the penalty cap over the unpaid fee, the escalation schedule after 30/60 days with a ceiling, the appeal window. The server enforces it at issue and runs the escalation itself |
 | `GET /v1/enforcement/signage/effective?place=` · `POST /v1/enforcement/signage` · `PUT …/signage/{id}` | **What the sign said:** posted text (per language), a photo, where it stands, and when it was in force. Frozen onto every violation at issue, so the appeal sees the sign the officer saw |
 

@@ -5773,6 +5773,24 @@
             "description": "Upper bound (exclusive) on `detection.detectedTime`."
           },
           {
+            "name": "sourceSystem",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string"
+            },
+            "description": "Imported violations from this source system only (`apds-ext:apx:violation-source@1.0` `system`, Part 19 §19.12)."
+          },
+          {
+            "name": "sourceRecordId",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string"
+            },
+            "description": "Exact match on the source's record id (`recordId`); like `noticeNumber`, it names no place (Part 9 §9.3a rule 3)."
+          },
+          {
             "$ref": "#/components/parameters/page"
           }
         ],
@@ -6057,7 +6075,7 @@
           "Violations"
         ],
         "summary": "Attach the settling Payment reference",
-        "description": "Transition `issued → paid`. The payment itself is taken through the\nPart 13 surface (`POST /v1/payments`, a payment link, or an APDS\nPayment ingested from a pay station); this attaches its reference.\nNot in `issued` is 409 `violation-transition-illegal`.",
+        "description": "Transition `issued → paid`. The payment itself is taken through the\nPart 13 surface (`POST /v1/payments`, a payment link, or an APDS\nPayment ingested from a pay station); this attaches its reference.\nNot in `issued` is 409 `violation-transition-illegal`.\n\nA body `amount` less than what is outstanding is a part payment:\nit is appended to `payments[]`, `amountPaid` grows, the violation\nstays `issued`, and `apx.violations.status.v1` is published. The\nviolation moves to `paid` when `amountPaid` reaches `amount`\n(Part 19 §19.6). Without `amount` the attachment settles in full.\nOn an imported violation (Part 19 §19.12) this is 409\n`violation-transition-illegal`: payments come from the source.",
         "parameters": [
           {
             "name": "id",
@@ -6357,6 +6375,199 @@
           },
           "409": {
             "description": "Already terminal (`dismissed`, `closed`, or `voided`).",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "429": {
+            "$ref": "#/components/responses/TooManyRequests"
+          }
+        }
+      }
+    },
+    "/v1/violations/{id}/session": {
+      "post": {
+        "operationId": "post-apx-v1-violations-id-session",
+        "security": [
+          {
+            "apxOAuth": [
+              "apx.violations:manage"
+            ]
+          }
+        ],
+        "tags": [
+          "Violations"
+        ],
+        "summary": "Set, correct, or clear the violation's Session",
+        "description": "Links a violation to the APDS Session the vehicle was in after the\nviolation was created — the usual case for a citation imported\nfrom another enforcement system and matched to a stay later — or\ncorrects or clears (`session: null`) that link (Part 19 §19.13).\nValid in every state, terminal ones included; it is not a\nlifecycle transition and appends nothing to `statusHistory[]`.\n\n`If-Match` carries the violation `version` last read (Part 4\n§4.2a); a stale one is 409\n`version-conflict` and nothing is written. On success\n`relatedSession` is replaced, the body's `extensions` keys (for\nexample the `apds-ext:apx:match-evidence@1.0` decoration with the\nevidence for the match) are stored on the violation, `version`\nincrements, and `apx.violations.status.v1` is published. Naming\nthe Session already linked, with no extensions, is a no-op: 200,\nno new version, no event. A Session not visible to the caller is\n422 `reference-unknown`; one at a Place outside the hierarchy of\nthe violation's `place` is 422 `request-unprocessable`.",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "$ref": "#/components/parameters/IfMatch"
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ViolationSessionLink"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "The violation with its Session link as it now stands.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Violation"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/BadRequest"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "404": {
+            "description": "No such violation.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "`If-Match` names a stale violation version (`version-conflict`, Part 4 §4.2a); nothing is written.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "`reference-unknown` — the Session names nothing visible to the\ncaller; `request-unprocessable` — the Session is at a Place\noutside the hierarchy of the violation's `place`.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "429": {
+            "$ref": "#/components/responses/TooManyRequests"
+          }
+        }
+      }
+    },
+    "/v1/enforcement/violation-imports": {
+      "post": {
+        "operationId": "post-apx-v1-enforcement-violation-imports",
+        "security": [
+          {
+            "apxOAuth": [
+              "apx.violations:manage"
+            ]
+          }
+        ],
+        "tags": [
+          "Violations"
+        ],
+        "summary": "Record a violation issued by another enforcement system (idempotent)",
+        "description": "Records a violation — usually a citation — that another\nenforcement system already issued, in the state that system\nreports, with its own times (Part 19 §19.12). The body carries the\n`apds-ext:apx:violation-source@1.0` decoration, whose `system` +\n`recordId` is the natural key: the first import of a key creates\nthe violation (201); a later import of the same key with a newer\n`sourceRevision` (or, without one, a later `sourceUpdatedTime`)\nupdates it in place (200, `version` + 1); a revision that is not\nnewer changes nothing (200 with the current representation, no\nevent). The path is under `/v1/enforcement` so it cannot be\nmistaken for `/v1/violations/{id}`.\n\nThe `Idempotency-Key` header is REQUIRED (Part 4 §4.2a; same key +\ndifferent body is 409 `idempotency-conflict`); a key derived from\n`system`, `recordId`, and the revision is RECOMMENDED. The source\nis the authority for an imported violation: this server does not\nrun the §19.4 issuance gates or the §19.10 policy checks, applies\nno escalation, and refuses its own lifecycle routes on it (409\n`violation-transition-illegal`). Publishes\n`apx.violations.issued.v1` when the first import is at or past\nissuance, `apx.violations.detected.v1` when it is not, and\n`apx.violations.status.v1` for every applied revision.",
+        "parameters": [
+          {
+            "name": "Idempotency-Key",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ViolationImport"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "A newer source revision applied to the existing violation, a\nrevision that is not newer (no change), or an idempotent replay.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Violation"
+                }
+              }
+            }
+          },
+          "201": {
+            "description": "Imported violation recorded.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Violation"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Missing Idempotency-Key (`idempotency-key-required`), or a body\nthat fails the schema — no `apds-ext:apx:violation-source@1.0`,\nor a state at or past issuance without `notice` or `amount`\n(`invalid-request`, with `errors[]`).",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "409": {
+            "description": "Idempotency-Key replayed with a different body (`idempotency-conflict`).",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "`reference-unknown` — `place` or another body Reference names\nnothing visible to the caller, or `violationType` is outside the\nserved registries and code lists; `request-unprocessable` —\n`violationStatus: paid` with `amountPaid` below `amount`, or a\npayment in another currency than `amount`.",
             "content": {
               "application/problem+json": {
                 "schema": {
@@ -15032,6 +15243,9 @@
           },
           "apds-ext:apx:match-evidence@1.0": {
             "$ref": "#/components/schemas/MatchEvidence"
+          },
+          "apds-ext:apx:violation-source@1.0": {
+            "$ref": "#/components/schemas/ViolationSource"
           }
         },
         "additionalProperties": {
@@ -17765,7 +17979,7 @@
       },
       "Violation": {
         "title": "Violation",
-        "description": "An enforcement finding against a vehicle at a place: the detection\n(automated, guided, or manual), the eligibility check that justified\nit, the evidence, the issued notice/citation, settlement, and any\nappeal — with the immutable lifecycle audit (Part 4 §4.2).\n\nLifecycle (Part 19 §19.1): `detected → confirmed | dismissed`,\n`confirmed → issued`, `issued → paid | appealed`,\n`paid → appealed` (pay-then-appeal, within the policy's\n`appealWindowDays`), `appealed → issued | paid (upheld, or reduced\nwith amount replaced by adjustedAmount; back to the state the appeal\nwas opened from) | closed (dismissed)`, `paid → closed` (server-side\nadministrative transition, no API operation). The terminal states\nare `dismissed`, `closed`, and `voided`; `void` is valid from every\nother state (`detected`, `confirmed`, `issued`, `appealed`, `paid`).\nAutomated detection MAY skip review (`detected → issued`) where the\npolicy in force permits (`EnforcementPolicy.unreviewedIssuance`);\nguided detection MUST pass through review.",
+        "description": "An enforcement finding against a vehicle at a place: the detection\n(automated, guided, or manual), the eligibility check that justified\nit, the evidence, the issued notice/citation, settlement, and any\nappeal — with the immutable lifecycle audit (Part 4 §4.2).\n\nLifecycle (Part 19 §19.1): `detected → confirmed | dismissed`,\n`confirmed → issued`, `issued → paid | appealed`,\n`paid → appealed` (pay-then-appeal, within the policy's\n`appealWindowDays`), `appealed → issued | paid (upheld, or reduced\nwith amount replaced by adjustedAmount; back to the state the appeal\nwas opened from) | closed (dismissed)`, `paid → closed` (server-side\nadministrative transition, no API operation). The terminal states\nare `dismissed`, `closed`, and `voided`; `void` is valid from every\nother state (`detected`, `confirmed`, `issued`, `appealed`, `paid`).\nAutomated detection MAY skip review (`detected → issued`) where the\npolicy in force permits (`EnforcementPolicy.unreviewedIssuance`);\nguided detection MUST pass through review.\n\nA violation issued by another enforcement system and recorded here\nthrough `POST /v1/enforcement/violation-imports` carries the\n`apds-ext:apx:violation-source@1.0` decoration; its state is the one\nthe source reports, and the transitions above do not apply to it\n(Part 19 §19.12).",
         "type": "object",
         "required": [
           "id",
@@ -17817,81 +18031,10 @@
             "$ref": "#/components/schemas/Reference"
           },
           "detection": {
-            "type": "object",
-            "description": "How and when the candidate was found.",
-            "required": [
-              "mode",
-              "detectedTime"
-            ],
-            "properties": {
-              "mode": {
-                "type": "string",
-                "enum": [
-                  "automated",
-                  "guided",
-                  "manual"
-                ],
-                "description": "`automated` — a camera/sensor pipeline created the violation with\nno human in the loop. `guided` — the system surfaced a candidate\n(typically to a handheld) and an officer confirms on site.\n`manual` — an officer created the violation directly."
-              },
-              "detectedTime": {
-                "$ref": "#/components/schemas/DateTime"
-              },
-              "detector": {
-                "description": "The detecting device (SupplementalEquipment) or, for guided/manual, the officer's Contact.",
-                "$ref": "#/components/schemas/Reference"
-              },
-              "principal": {
-                "type": "string",
-                "description": "Opaque principal of the human or system that detected (officer badge id, pipeline name).",
-                "examples": [
-                  "officer-0417"
-                ]
-              },
-              "confidence": {
-                "type": "number",
-                "minimum": 0,
-                "maximum": 1,
-                "description": "Detection confidence (plate read × rule certainty), when the detector reports one."
-              },
-              "rule": {
-                "type": "string",
-                "description": "Implementer identifier of the enforcement rule that fired (automated mode).",
-                "examples": [
-                  "overstay-2h-zone-b"
-                ]
-              }
-            }
+            "$ref": "#/components/schemas/ViolationDetection"
           },
           "vehicle": {
-            "type": "object",
-            "description": "The credential observed on the vehicle (an APDS CredentialTypeEnum credential).",
-            "required": [
-              "credentialType",
-              "credentialIdentification"
-            ],
-            "properties": {
-              "credentialType": {
-                "$ref": "#/components/schemas/CredentialTypeEnum"
-              },
-              "credentialIdentification": {
-                "type": "string",
-                "description": "The credential value — plate string, permit number, transponder id.",
-                "examples": [
-                  "SYN-4471"
-                ]
-              },
-              "jurisdiction": {
-                "type": "string",
-                "description": "Issuing jurisdiction of the plate/credential (state, province, country code).",
-                "examples": [
-                  "US-IL"
-                ]
-              },
-              "description": {
-                "type": "string",
-                "description": "Free-text vehicle description captured by the officer (make, colour)."
-              }
-            }
+            "$ref": "#/components/schemas/ViolationVehicle"
           },
           "observations": {
             "type": "array",
@@ -17901,32 +18044,7 @@
             }
           },
           "evidence": {
-            "type": "array",
-            "description": "Evidence media, as access-controlled LINKS (Part 9 §9.6 — never\ninline). Each item points at an APDS Image reachable under the same\nauthentication and place grant as this resource.",
-            "items": {
-              "type": "object",
-              "required": [
-                "imageLink"
-              ],
-              "properties": {
-                "imageLink": {
-                  "$ref": "#/components/schemas/Url"
-                },
-                "imageType": {
-                  "$ref": "#/components/schemas/ImageTypeEnum"
-                },
-                "capturedTime": {
-                  "$ref": "#/components/schemas/DateTime"
-                },
-                "device": {
-                  "description": "The capturing SupplementalEquipment (camera, handheld).",
-                  "$ref": "#/components/schemas/Reference"
-                },
-                "description": {
-                  "type": "string"
-                }
-              }
-            }
+            "$ref": "#/components/schemas/ViolationEvidence"
           },
           "eligibilityCheck": {
             "description": "The entitlement check performed at detection time (the same shape `GET /v1/enforcement/eligibility` returns).",
@@ -17941,27 +18059,7 @@
             "$ref": "#/components/schemas/Reference"
           },
           "location": {
-            "type": "object",
-            "description": "Where the violation was observed and from where — modelled on the\nAPDS Observation `Location` shape (Part 19 §19.9), with two\ndifferences: `observerLocation` is optional here (APDS requires\nit; an automated finding copied from a fixed sensor may have\nnone), and `accuracyMetres` is added. The member names and the\n`PointLocation` types are APDS's own. GeoJSON positions are\n[longitude, latitude] in that order; enforcement tools that store\nlatitude first MUST swap on the wire. Automated detections SHOULD\ncopy this from the underlying Observation.",
-            "properties": {
-              "observedLocation": {
-                "description": "The vehicle's position (GeoJSON Point).",
-                "$ref": "#/components/schemas/GeoJsonObject"
-              },
-              "observerLocation": {
-                "description": "The officer's or camera's position when the finding was made (GeoJSON Point).",
-                "$ref": "#/components/schemas/GeoJsonObject"
-              },
-              "observedLocationTextual": {
-                "description": "Human-readable address or description of the observed location.",
-                "$ref": "#/components/schemas/MultilingualString"
-              },
-              "accuracyMetres": {
-                "type": "number",
-                "minimum": 0,
-                "description": "Horizontal accuracy reported by the capturing device."
-              }
-            }
+            "$ref": "#/components/schemas/ViolationLocation"
           },
           "policy": {
             "description": "The EnforcementPolicy resolved for `place` at `issue` (Part 19 §19.10), frozen with its version.",
@@ -18010,8 +18108,10 @@
                     "issued",
                     "escalation",
                     "appealReduced",
-                    "cap"
-                  ]
+                    "cap",
+                    "imported"
+                  ],
+                  "description": "`imported` — the amount as an import source reported it, on\nan imported violation's first record or a later source\nrevision that changed it (Part 19 §19.12)."
                 },
                 "step": {
                   "type": "string",
@@ -18071,8 +18171,21 @@
             "$ref": "#/components/schemas/DateTime"
           },
           "payment": {
-            "description": "Reference to the settling APDS Payment or APX PaymentRecord (Part 13).",
+            "description": "Reference to the settling APDS Payment or APX PaymentRecord (Part 13)\n— the attachment that moved the violation to `paid`. A part payment\nthat leaves an amount outstanding is listed in `payments[]` only\n(Part 19 §19.6).",
             "$ref": "#/components/schemas/Reference"
+          },
+          "amountPaid": {
+            "description": "The total paid toward `amount` so far — the sum of `payments[].amount`.\nThe violation is `paid` exactly when `amountPaid` is at least\n`amount`; a part payment leaves it `issued` (Part 19 §19.6). Absent\nwhile nothing has been paid.",
+            "readOnly": true,
+            "$ref": "#/components/schemas/AmountInCurrency"
+          },
+          "payments": {
+            "type": "array",
+            "readOnly": true,
+            "description": "Every payment applied to this violation, in order, including part\npayments and the settling one (Part 19 §19.6). For an imported\nviolation (§19.12) these are the payments the source system reports.",
+            "items": {
+              "$ref": "#/components/schemas/ViolationAppliedPayment"
+            }
           },
           "appeal": {
             "type": "object",
@@ -18474,6 +18587,10 @@
             "description": "Reference to the settling APDS Payment (or APX PaymentRecord taken via `POST /v1/payments`).",
             "$ref": "#/components/schemas/Reference"
           },
+          "amount": {
+            "description": "The part of the payment applied to this violation. Absent, the\nattachment settles the outstanding amount in full and the violation\nbecomes `paid`. Present and less than what is outstanding\n(`amount` minus `amountPaid`), it is a part payment: it is\nappended to `payments[]`, `amountPaid` grows, and the violation\nstays `issued` (Part 19 §19.6). Its currency MUST be the\nviolation's (422 `request-unprocessable` otherwise).",
+            "$ref": "#/components/schemas/AmountInCurrency"
+          },
           "note": {
             "type": "string"
           }
@@ -18574,6 +18691,439 @@
           },
           "note": {
             "type": "string"
+          }
+        }
+      },
+      "ViolationDetection": {
+        "title": "ViolationDetection",
+        "type": "object",
+        "description": "How and when the candidate was found.",
+        "required": [
+          "mode",
+          "detectedTime"
+        ],
+        "properties": {
+          "mode": {
+            "type": "string",
+            "enum": [
+              "automated",
+              "guided",
+              "manual"
+            ],
+            "description": "`automated` — a camera/sensor pipeline created the violation with\nno human in the loop. `guided` — the system surfaced a candidate\n(typically to a handheld) and an officer confirms on site.\n`manual` — an officer created the violation directly."
+          },
+          "detectedTime": {
+            "$ref": "#/components/schemas/DateTime"
+          },
+          "detector": {
+            "description": "The detecting device (SupplementalEquipment) or, for guided/manual, the officer's Contact.",
+            "$ref": "#/components/schemas/Reference"
+          },
+          "principal": {
+            "type": "string",
+            "description": "Opaque principal of the human or system that detected (officer badge id, pipeline name).",
+            "examples": [
+              "officer-0417"
+            ]
+          },
+          "confidence": {
+            "type": "number",
+            "minimum": 0,
+            "maximum": 1,
+            "description": "Detection confidence (plate read × rule certainty), when the detector reports one."
+          },
+          "rule": {
+            "type": "string",
+            "description": "Implementer identifier of the enforcement rule that fired (automated mode).",
+            "examples": [
+              "overstay-2h-zone-b"
+            ]
+          }
+        }
+      },
+      "ViolationVehicle": {
+        "title": "ViolationVehicle",
+        "type": "object",
+        "description": "The credential observed on the vehicle (an APDS CredentialTypeEnum credential).",
+        "required": [
+          "credentialType",
+          "credentialIdentification"
+        ],
+        "properties": {
+          "credentialType": {
+            "$ref": "#/components/schemas/CredentialTypeEnum"
+          },
+          "credentialIdentification": {
+            "type": "string",
+            "description": "The credential value — plate string, permit number, transponder id.",
+            "examples": [
+              "SYN-4471"
+            ]
+          },
+          "jurisdiction": {
+            "type": "string",
+            "description": "Issuing jurisdiction of the plate/credential (state, province, country code).",
+            "examples": [
+              "US-IL"
+            ]
+          },
+          "description": {
+            "type": "string",
+            "description": "Free-text vehicle description captured by the officer (make, colour)."
+          }
+        }
+      },
+      "ViolationEvidence": {
+        "title": "ViolationEvidence",
+        "type": "array",
+        "description": "Evidence media, as access-controlled LINKS (Part 9 §9.6 — never\ninline). Each item points at an APDS Image reachable under the same\nauthentication and place grant as this resource.",
+        "items": {
+          "type": "object",
+          "required": [
+            "imageLink"
+          ],
+          "properties": {
+            "imageLink": {
+              "$ref": "#/components/schemas/Url"
+            },
+            "imageType": {
+              "$ref": "#/components/schemas/ImageTypeEnum"
+            },
+            "capturedTime": {
+              "$ref": "#/components/schemas/DateTime"
+            },
+            "device": {
+              "description": "The capturing SupplementalEquipment (camera, handheld).",
+              "$ref": "#/components/schemas/Reference"
+            },
+            "description": {
+              "type": "string"
+            }
+          }
+        }
+      },
+      "ViolationLocation": {
+        "title": "ViolationLocation",
+        "type": "object",
+        "description": "Where the violation was observed and from where — modelled on the\nAPDS Observation `Location` shape (Part 19 §19.9), with two\ndifferences: `observerLocation` is optional here (APDS requires\nit; an automated finding copied from a fixed sensor may have\nnone), and `accuracyMetres` is added. The member names and the\n`PointLocation` types are APDS's own. GeoJSON positions are\n[longitude, latitude] in that order; enforcement tools that store\nlatitude first MUST swap on the wire. Automated detections SHOULD\ncopy this from the underlying Observation.",
+        "properties": {
+          "observedLocation": {
+            "description": "The vehicle's position (GeoJSON Point).",
+            "$ref": "#/components/schemas/GeoJsonObject"
+          },
+          "observerLocation": {
+            "description": "The officer's or camera's position when the finding was made (GeoJSON Point).",
+            "$ref": "#/components/schemas/GeoJsonObject"
+          },
+          "observedLocationTextual": {
+            "description": "Human-readable address or description of the observed location.",
+            "$ref": "#/components/schemas/MultilingualString"
+          },
+          "accuracyMetres": {
+            "type": "number",
+            "minimum": 0,
+            "description": "Horizontal accuracy reported by the capturing device."
+          }
+        }
+      },
+      "ViolationAppliedPayment": {
+        "title": "ViolationAppliedPayment",
+        "description": "One payment applied to a violation (Part 19 §19.6): a part payment or\nthe settling one. `payment` links the Part 13 record when the money\nmoved through this server; a payment an import source took itself\n(§19.12) may carry only the source's own `reference`.",
+        "type": "object",
+        "required": [
+          "amount"
+        ],
+        "properties": {
+          "amount": {
+            "description": "The amount applied to this violation.",
+            "$ref": "#/components/schemas/AmountInCurrency"
+          },
+          "paidTime": {
+            "$ref": "#/components/schemas/DateTime"
+          },
+          "payment": {
+            "description": "The APDS Payment or APX PaymentRecord (Part 13), when one exists on this server.",
+            "$ref": "#/components/schemas/Reference"
+          },
+          "reference": {
+            "type": "string",
+            "description": "The import source's own identifier for the payment, when it reported one.",
+            "examples": [
+              "PMT-77120"
+            ]
+          }
+        }
+      },
+      "ViolationSource": {
+        "title": "ViolationSource",
+        "description": "The `apds-ext:apx:violation-source@1.0` decoration (Part 19 §19.12): the\nenforcement system that issued a violation this server recorded by\nimport, and the source's own record of it. Present on every imported\nviolation and only on those. `system` + `recordId` is the import's\nnatural key; `sourceRevision` (or, without one, `sourceUpdatedTime`)\norders the source's revisions.",
+        "type": "object",
+        "required": [
+          "system",
+          "recordId"
+        ],
+        "properties": {
+          "system": {
+            "type": "string",
+            "description": "Identifier of the issuing enforcement system, stable for the life\nof the integration (implementer code list; a vendor namespace as in\nPart 10 is a good choice).",
+            "examples": [
+              "example-enforcement"
+            ]
+          },
+          "recordId": {
+            "type": "string",
+            "description": "The source system's identifier of the violation — usually the citation number printed on the notice.",
+            "examples": [
+              "EX-2026-018342"
+            ]
+          },
+          "sourceStatus": {
+            "type": "string",
+            "description": "The status exactly as the source reports it (`warned`,\n`partiallyPaid`, `sentToCollections`…), kept beside the APX\n`violationStatus` it was mapped to so nothing the source said is\nlost.",
+            "examples": [
+              "partiallyPaid"
+            ]
+          },
+          "sourceRevision": {
+            "type": "integer",
+            "minimum": 0,
+            "description": "The source's revision counter for the record, when it keeps one. A higher value is a newer revision.",
+            "examples": [
+              3
+            ]
+          },
+          "sourceUpdatedTime": {
+            "description": "When the source last changed the record. Orders revisions when the source keeps no counter.",
+            "$ref": "#/components/schemas/DateTime"
+          },
+          "receivedTime": {
+            "description": "When this server applied the revision it now holds. Server-set.",
+            "readOnly": true,
+            "$ref": "#/components/schemas/DateTime"
+          }
+        }
+      },
+      "ViolationImport": {
+        "title": "ViolationImport",
+        "description": "Request body of `POST /v1/enforcement/violation-imports` (Part 19\n§19.12): a violation another enforcement system issued, in whatever\nstate that system reports, with its own times. The members mean what\nthey mean on `Violation`; the difference is that `violationStatus`,\n`notice`, `amountPaid`, `payments`, and `statusHistory` are written\nby the caller here, because the source, not this server, decided\nthem. The `apds-ext:apx:violation-source@1.0` decoration is REQUIRED.\nA state at or past issuance (`issued`, `paid`, `appealed`, `closed`)\nREQUIRES `notice` (with `noticeNumber` and `issuedTime`) and `amount`.",
+        "type": "object",
+        "required": [
+          "violationType",
+          "violationStatus",
+          "place",
+          "detection",
+          "statusHistory",
+          "extensions"
+        ],
+        "properties": {
+          "violationType": {
+            "type": "string",
+            "description": "definedValue from `apx-violation-types` or an implementer code list.",
+            "examples": [
+              "noValidRight"
+            ]
+          },
+          "violationStatus": {
+            "type": "string",
+            "enum": [
+              "detected",
+              "confirmed",
+              "dismissed",
+              "issued",
+              "paid",
+              "appealed",
+              "closed",
+              "voided"
+            ],
+            "description": "The APX state the source's status maps to. `paid` requires\n`amountPaid` at least `amount`; a part-paid violation is `issued`\n(Part 19 §19.6). The source's own wording goes in the decoration's\n`sourceStatus`."
+          },
+          "place": {
+            "description": "The HierarchyElement where the violation was observed.",
+            "$ref": "#/components/schemas/Reference"
+          },
+          "space": {
+            "description": "The specific APDS Space, when space-resolved.",
+            "$ref": "#/components/schemas/Reference"
+          },
+          "detection": {
+            "$ref": "#/components/schemas/ViolationDetection"
+          },
+          "vehicle": {
+            "$ref": "#/components/schemas/ViolationVehicle"
+          },
+          "observations": {
+            "type": "array",
+            "description": "The underlying APDS Observations, when the source shared them.",
+            "items": {
+              "$ref": "#/components/schemas/Reference"
+            }
+          },
+          "evidence": {
+            "$ref": "#/components/schemas/ViolationEvidence"
+          },
+          "relatedSession": {
+            "description": "The APDS Session the vehicle was in, when the source or this server knows it (or set later, §19.13).",
+            "$ref": "#/components/schemas/Reference"
+          },
+          "relatedRight": {
+            "description": "The AssignedRight closest to covering the stay, when known.",
+            "$ref": "#/components/schemas/Reference"
+          },
+          "location": {
+            "$ref": "#/components/schemas/ViolationLocation"
+          },
+          "notice": {
+            "type": "object",
+            "description": "The notice, warning, or citation as the source issued it.",
+            "required": [
+              "noticeNumber",
+              "issuedTime"
+            ],
+            "properties": {
+              "noticeKind": {
+                "type": "string",
+                "description": "warning | notice | citation (implementer code list).",
+                "examples": [
+                  "citation"
+                ]
+              },
+              "noticeNumber": {
+                "type": "string",
+                "description": "The number printed on the notice — the lookup a driver can make (`?noticeNumber=`).",
+                "examples": [
+                  "EX-2026-018342"
+                ]
+              },
+              "issuedTime": {
+                "description": "When the source issued it, as the source reported it.",
+                "$ref": "#/components/schemas/DateTime"
+              },
+              "issuedBy": {
+                "description": "The issuing Organisation or officer Contact, when it is known here.",
+                "$ref": "#/components/schemas/Reference"
+              },
+              "deliveryMethod": {
+                "type": "string",
+                "description": "windshield | handed | mail | electronic (implementer code list).",
+                "examples": [
+                  "windshield"
+                ]
+              }
+            }
+          },
+          "amount": {
+            "description": "The amount payable now, as the source reports it.",
+            "$ref": "#/components/schemas/AmountInCurrency"
+          },
+          "dueTime": {
+            "$ref": "#/components/schemas/DateTime"
+          },
+          "amountPaid": {
+            "description": "The total paid toward `amount`, as the source reports it.",
+            "$ref": "#/components/schemas/AmountInCurrency"
+          },
+          "payments": {
+            "type": "array",
+            "description": "The payments the source applied, in order.",
+            "items": {
+              "$ref": "#/components/schemas/ViolationAppliedPayment"
+            }
+          },
+          "statusHistory": {
+            "type": "array",
+            "minItems": 1,
+            "description": "The lifecycle as the source recorded it, oldest first, with the\nsource's own times (`actor` is the source's principal — an officer\nbadge, the system name). The server keeps entries it already holds\nand appends only those later than its last one (Part 4 §4.2).",
+            "items": {
+              "type": "object",
+              "required": [
+                "state",
+                "time",
+                "actor"
+              ],
+              "properties": {
+                "state": {
+                  "type": "string"
+                },
+                "time": {
+                  "$ref": "#/components/schemas/DateTime"
+                },
+                "actor": {
+                  "type": "string"
+                },
+                "detail": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "extensions": {
+            "description": "The extension container; MUST carry `apds-ext:apx:violation-source@1.0`.",
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/Extensions"
+              },
+              {
+                "required": [
+                  "apds-ext:apx:violation-source@1.0"
+                ]
+              }
+            ]
+          }
+        },
+        "allOf": [
+          {
+            "if": {
+              "required": [
+                "violationStatus"
+              ],
+              "properties": {
+                "violationStatus": {
+                  "enum": [
+                    "issued",
+                    "paid",
+                    "appealed",
+                    "closed"
+                  ]
+                }
+              }
+            },
+            "then": {
+              "required": [
+                "notice",
+                "amount"
+              ]
+            }
+          }
+        ]
+      },
+      "ViolationSessionLink": {
+        "title": "ViolationSessionLink",
+        "description": "Request body of `POST /v1/violations/{id}/session` (Part 19 §19.13):\nset, correct, or clear the Session a violation belongs to after it was\ncreated. `session: null` clears the link. `extensions` MAY carry the\nevidence for the match — the `apds-ext:apx:match-evidence@1.0`\ndecoration where the server supports it — and is stored on the\nviolation.",
+        "type": "object",
+        "required": [
+          "session"
+        ],
+        "properties": {
+          "session": {
+            "description": "The APDS Session, or null to clear the link.",
+            "oneOf": [
+              {
+                "$ref": "#/components/schemas/Reference"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "reason": {
+            "type": "string",
+            "description": "Why the link was set or changed (implementer code list — lateMatch, reviewerCorrection, mismatch…).",
+            "examples": [
+              "lateMatch"
+            ]
+          },
+          "extensions": {
+            "$ref": "#/components/schemas/Extensions"
           }
         }
       },

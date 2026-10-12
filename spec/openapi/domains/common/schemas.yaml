@@ -53,6 +53,8 @@ Extensions:
       $ref: "../data/schemas.yaml#/SessionDetail"
     "apds-ext:apx:match-evidence@1.0":
       $ref: "../data/schemas.yaml#/MatchEvidence"
+    "apds-ext:apx:violation-source@1.0":
+      $ref: "../violations/schemas.yaml#/ViolationSource"
   additionalProperties:
     type: object
 

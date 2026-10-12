@@ -64,6 +64,30 @@ The machine-readable spec (`spec/openapi/apx.yaml`, bundled as
   `issue` is refused (409 `violation-not-issuable`) while an evidence
   read's review is `pending` or `rejected`. Annex A APX-LPR-07 and an
   extended APX-VIO-03; scenario 29.
+- Part 19 §19.12, violations issued by another enforcement system: `POST
+  /v1/enforcement/violation-imports` (Idempotency-Key required) records a
+  citation in the state its issuer reports, with the issuer's times, and
+  applies later revisions in order. The new decoration
+  `apds-ext:apx:violation-source@1.0` (`ViolationSource`, bound in
+  `Extensions`) names the issuer and its record; `system` + `recordId` is
+  the natural key. The issuer stays the authority: no issuance gates,
+  policy checks or escalation here, and local transitions are refused.
+  `GET /v1/violations` gains `sourceSystem` and `sourceRecordId`;
+  `amountHistory[].reason` gains `imported`.
+- Part 19 §19.6, part payments: `Violation.amountPaid` and `payments[]`
+  (`ViolationAppliedPayment`), and an optional `amount` on the payment
+  attachment. A violation is `paid` exactly when `amountPaid` reaches
+  `amount`; a part payment leaves it `issued`. An attachment without
+  `amount` settles in full, as before.
+- Part 19 §19.13: `POST /v1/violations/{id}/session` (`If-Match`) sets,
+  corrects, or clears `relatedSession` after creation, in any state, with
+  the match evidence in `extensions`.
+- The `Violation` sub-objects `detection`, `vehicle`, `evidence`, and
+  `location` are now named schemas (`ViolationDetection`,
+  `ViolationVehicle`, `ViolationEvidence`, `ViolationLocation`) so the
+  import body can reuse them; the wire shape is unchanged.
+- Annex A APX-VIO-14 to 16; worked scenario 30 (an imported citation,
+  part-paid, linked to its stay); vetting scenarios VIO-31 to 34.
 
 ## [0.13.0] — 2026-09-29
 

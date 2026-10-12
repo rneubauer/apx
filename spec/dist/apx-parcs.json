@@ -8691,6 +8691,9 @@
           },
           "apds-ext:apx:match-evidence@1.0": {
             "$ref": "#/components/schemas/MatchEvidence"
+          },
+          "apds-ext:apx:violation-source@1.0": {
+            "$ref": "#/components/schemas/ViolationSource"
           }
         },
         "additionalProperties": {
@@ -10922,6 +10925,55 @@
           },
           "decidedTime": {
             "description": "When the link was made.",
+            "$ref": "#/components/schemas/DateTime"
+          }
+        }
+      },
+      "ViolationSource": {
+        "title": "ViolationSource",
+        "description": "The `apds-ext:apx:violation-source@1.0` decoration (Part 19 §19.12): the\nenforcement system that issued a violation this server recorded by\nimport, and the source's own record of it. Present on every imported\nviolation and only on those. `system` + `recordId` is the import's\nnatural key; `sourceRevision` (or, without one, `sourceUpdatedTime`)\norders the source's revisions.",
+        "type": "object",
+        "required": [
+          "system",
+          "recordId"
+        ],
+        "properties": {
+          "system": {
+            "type": "string",
+            "description": "Identifier of the issuing enforcement system, stable for the life\nof the integration (implementer code list; a vendor namespace as in\nPart 10 is a good choice).",
+            "examples": [
+              "example-enforcement"
+            ]
+          },
+          "recordId": {
+            "type": "string",
+            "description": "The source system's identifier of the violation — usually the citation number printed on the notice.",
+            "examples": [
+              "EX-2026-018342"
+            ]
+          },
+          "sourceStatus": {
+            "type": "string",
+            "description": "The status exactly as the source reports it (`warned`,\n`partiallyPaid`, `sentToCollections`…), kept beside the APX\n`violationStatus` it was mapped to so nothing the source said is\nlost.",
+            "examples": [
+              "partiallyPaid"
+            ]
+          },
+          "sourceRevision": {
+            "type": "integer",
+            "minimum": 0,
+            "description": "The source's revision counter for the record, when it keeps one. A higher value is a newer revision.",
+            "examples": [
+              3
+            ]
+          },
+          "sourceUpdatedTime": {
+            "description": "When the source last changed the record. Orders revisions when the source keeps no counter.",
+            "$ref": "#/components/schemas/DateTime"
+          },
+          "receivedTime": {
+            "description": "When this server applied the revision it now holds. Server-set.",
+            "readOnly": true,
             "$ref": "#/components/schemas/DateTime"
           }
         }

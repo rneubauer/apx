@@ -1341,6 +1341,16 @@ paths:
           required: false
           schema: { type: string, format: date-time }
           description: Upper bound (exclusive) on `detection.detectedTime`.
+        - name: sourceSystem
+          in: query
+          required: false
+          schema: { type: string }
+          description: Imported violations from this source system only (`apds-ext:apx:violation-source@1.0` `system`, Part 19 §19.12).
+        - name: sourceRecordId
+          in: query
+          required: false
+          schema: { type: string }
+          description: Exact match on the source's record id (`recordId`); like `noticeNumber`, it names no place (Part 9 §9.3a rule 3).
         - $ref: "../vendor/apds/4.1/apds-api-4.1.yaml#/components/parameters/page"
       responses:
         "200":
@@ -1497,6 +1507,14 @@ paths:
         Part 13 surface (`POST /v1/payments`, a payment link, or an APDS
         Payment ingested from a pay station); this attaches its reference.
         Not in `issued` is 409 `violation-transition-illegal`.
+
+        A body `amount` less than what is outstanding is a part payment:
+        it is appended to `payments[]`, `amountPaid` grows, the violation
+        stays `issued`, and `apx.violations.status.v1` is published. The
+        violation moves to `paid` when `amountPaid` reaches `amount`
+        (Part 19 §19.6). Without `amount` the attachment settles in full.
+        On an imported violation (Part 19 §19.12) this is 409
+        `violation-transition-illegal`: payments come from the source.
       parameters:
         - { name: id, in: path, required: true, schema: { type: string, format: uuid } }
       requestBody:
@@ -1650,6 +1668,147 @@ paths:
               schema: { $ref: "#/components/schemas/Problem" }
         "429": { $ref: "#/components/responses/TooManyRequests" }
         "400": { $ref: "#/components/responses/BadRequest" }
+
+  /v1/violations/{id}/session:
+    post:
+      operationId: post-apx-v1-violations-id-session
+      security:
+        - apxOAuth: ["apx.violations:manage"]
+      tags: [Violations]
+      summary: Set, correct, or clear the violation's Session
+      description: |-
+        Links a violation to the APDS Session the vehicle was in after the
+        violation was created — the usual case for a citation imported
+        from another enforcement system and matched to a stay later — or
+        corrects or clears (`session: null`) that link (Part 19 §19.13).
+        Valid in every state, terminal ones included; it is not a
+        lifecycle transition and appends nothing to `statusHistory[]`.
+
+        `If-Match` carries the violation `version` last read (Part 4
+        §4.2a); a stale one is 409
+        `version-conflict` and nothing is written. On success
+        `relatedSession` is replaced, the body's `extensions` keys (for
+        example the `apds-ext:apx:match-evidence@1.0` decoration with the
+        evidence for the match) are stored on the violation, `version`
+        increments, and `apx.violations.status.v1` is published. Naming
+        the Session already linked, with no extensions, is a no-op: 200,
+        no new version, no event. A Session not visible to the caller is
+        422 `reference-unknown`; one at a Place outside the hierarchy of
+        the violation's `place` is 422 `request-unprocessable`.
+      parameters:
+        - { name: id, in: path, required: true, schema: { type: string, format: uuid } }
+        - $ref: "#/components/parameters/IfMatch"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/ViolationSessionLink" }
+      responses:
+        "200":
+          description: The violation with its Session link as it now stands.
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/Violation" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+        "404":
+          description: No such violation.
+          content:
+            application/problem+json:
+              schema: { $ref: "#/components/schemas/Problem" }
+        "409":
+          description: "`If-Match` names a stale violation version (`version-conflict`, Part 4 §4.2a); nothing is written."
+          content:
+            application/problem+json:
+              schema: { $ref: "#/components/schemas/Problem" }
+        "422":
+          description: |-
+            `reference-unknown` — the Session names nothing visible to the
+            caller; `request-unprocessable` — the Session is at a Place
+            outside the hierarchy of the violation's `place`.
+          content:
+            application/problem+json:
+              schema: { $ref: "#/components/schemas/Problem" }
+        "429": { $ref: "#/components/responses/TooManyRequests" }
+        "400": { $ref: "#/components/responses/BadRequest" }
+
+  /v1/enforcement/violation-imports:
+    post:
+      operationId: post-apx-v1-enforcement-violation-imports
+      security:
+        - apxOAuth: ["apx.violations:manage"]
+      tags: [Violations]
+      summary: Record a violation issued by another enforcement system (idempotent)
+      description: |-
+        Records a violation — usually a citation — that another
+        enforcement system already issued, in the state that system
+        reports, with its own times (Part 19 §19.12). The body carries the
+        `apds-ext:apx:violation-source@1.0` decoration, whose `system` +
+        `recordId` is the natural key: the first import of a key creates
+        the violation (201); a later import of the same key with a newer
+        `sourceRevision` (or, without one, a later `sourceUpdatedTime`)
+        updates it in place (200, `version` + 1); a revision that is not
+        newer changes nothing (200 with the current representation, no
+        event). The path is under `/v1/enforcement` so it cannot be
+        mistaken for `/v1/violations/{id}`.
+
+        The `Idempotency-Key` header is REQUIRED (Part 4 §4.2a; same key +
+        different body is 409 `idempotency-conflict`); a key derived from
+        `system`, `recordId`, and the revision is RECOMMENDED. The source
+        is the authority for an imported violation: this server does not
+        run the §19.4 issuance gates or the §19.10 policy checks, applies
+        no escalation, and refuses its own lifecycle routes on it (409
+        `violation-transition-illegal`). Publishes
+        `apx.violations.issued.v1` when the first import is at or past
+        issuance, `apx.violations.detected.v1` when it is not, and
+        `apx.violations.status.v1` for every applied revision.
+      parameters:
+        - { name: Idempotency-Key, in: header, required: true, schema: { type: string } }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/ViolationImport" }
+      responses:
+        "200":
+          description: |-
+            A newer source revision applied to the existing violation, a
+            revision that is not newer (no change), or an idempotent replay.
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/Violation" }
+        "201":
+          description: Imported violation recorded.
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/Violation" }
+        "400":
+          description: |-
+            Missing Idempotency-Key (`idempotency-key-required`), or a body
+            that fails the schema — no `apds-ext:apx:violation-source@1.0`,
+            or a state at or past issuance without `notice` or `amount`
+            (`invalid-request`, with `errors[]`).
+          content:
+            application/problem+json:
+              schema: { $ref: "#/components/schemas/Problem" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+        "409":
+          description: Idempotency-Key replayed with a different body (`idempotency-conflict`).
+          content:
+            application/problem+json:
+              schema: { $ref: "#/components/schemas/Problem" }
+        "422":
+          description: |-
+            `reference-unknown` — `place` or another body Reference names
+            nothing visible to the caller, or `violationType` is outside the
+            served registries and code lists; `request-unprocessable` —
+            `violationStatus: paid` with `amountPaid` below `amount`, or a
+            payment in another currency than `amount`.
+          content:
+            application/problem+json:
+              schema: { $ref: "#/components/schemas/Problem" }
+        "429": { $ref: "#/components/responses/TooManyRequests" }
 
   /v1/enforcement/eligibility:
     get:
@@ -6031,6 +6190,22 @@ components:
       $ref: "./domains/violations/schemas.yaml#/ViolationAppealResolution"
     ViolationVoid:
       $ref: "./domains/violations/schemas.yaml#/ViolationVoid"
+    ViolationDetection:
+      $ref: "./domains/violations/schemas.yaml#/ViolationDetection"
+    ViolationVehicle:
+      $ref: "./domains/violations/schemas.yaml#/ViolationVehicle"
+    ViolationEvidence:
+      $ref: "./domains/violations/schemas.yaml#/ViolationEvidence"
+    ViolationLocation:
+      $ref: "./domains/violations/schemas.yaml#/ViolationLocation"
+    ViolationAppliedPayment:
+      $ref: "./domains/violations/schemas.yaml#/ViolationAppliedPayment"
+    ViolationSource:
+      $ref: "./domains/violations/schemas.yaml#/ViolationSource"
+    ViolationImport:
+      $ref: "./domains/violations/schemas.yaml#/ViolationImport"
+    ViolationSessionLink:
+      $ref: "./domains/violations/schemas.yaml#/ViolationSessionLink"
     EnforcementPolicy:
       $ref: "./domains/violations/schemas.yaml#/EnforcementPolicy"
     Signage:

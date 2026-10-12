@@ -1,6 +1,6 @@
 # APX Scenarios — the API at work
 
-Twenty-eight end-to-end stories showing real wire exchanges against an APX
+Twenty-nine end-to-end stories showing real wire exchanges against an APX
 implementation. Every JSON payload marked with an `<!-- apx:validate … -->`
 comment is machine-validated against the bundled spec by
 `npm run scenarios:check` — the samples cannot drift from the standard.
@@ -35,11 +35,12 @@ comment is machine-validated against the bundled spec by
 | [27](27-lpr-reversible-lane.md) | Reversible lane — one camera facing each way so a rear plate is read in either mode, an old front-plate camera on the entry lane, a read first reported `unknown` and corrected by the LPR system, and the `observation.updated.v1` event that carries the correction to billing | `apx-lpr`, `apx-events` |
 | [28](28-session-detail-pairing-client.md) | A separate pairing service writes what it decided — the reads behind a visit, a permit matched by folding a look-alike character, the valet section as a child of the visit, a car seen only leaving, and a read claimed twice | `apx-data`, `apx-lpr` |
 | [29](29-lpr-plate-review.md) | Plate review — a low-confidence read held back from enforcement, an issue refused while its review is pending, a person corrects the plate from the image (the engine's value kept), the replacement reaches the pipeline as an event, and a reflector read rejected outright | `apx-lpr`, `apx-violations`, `apx-events` |
+| [30](30-violation-imported-citation.md) | A citation written on another system — imported with the issuer's times and status, a part payment as a newer revision, the stay linked that night with the match evidence, and local transitions refused | `apx-violations`, `apx-events` |
 
 ## By module — the vetting suite
 
 Under these stories sits the test bench the spec was vetted with:
-[**380 scenarios, one folder per conformance class**](by-module/README.md),
+[**384 scenarios, one folder per conformance class**](by-module/README.md),
 each with its findings. Every request and response is checked against the
 bundle by `npm run vetting`.
 
@@ -63,7 +64,7 @@ awaiting triage.
 | [`apx-tolling`](by-module/apx-tolling/scenarios.md) | 24 | [14](by-module/apx-tolling/findings.md) |
 | [`apx-valet`](by-module/apx-valet/scenarios.md) | 25 | [16](by-module/apx-valet/findings.md) |
 | [`apx-validations`](by-module/apx-validations/scenarios.md) | 25 | [13](by-module/apx-validations/findings.md) |
-| [`apx-violations`](by-module/apx-violations/scenarios.md) | 30 | [17](by-module/apx-violations/findings.md) |
+| [`apx-violations`](by-module/apx-violations/scenarios.md) | 34 | [17](by-module/apx-violations/findings.md) |
 
 ## Conventions
 

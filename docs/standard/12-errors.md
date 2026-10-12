@@ -42,7 +42,7 @@ table below.
 | `action-not-allowed` | 403 | Execution of an action the current resolution context evaluated as not allowed, or did not offer (Part 17 §17.3) |
 | `approval-required` | 403 | Requires-approval action executed without approval evidence (Part 17 §17.3) |
 | `rate-limited` | 429 | Throttled; response carries `Retry-After` (§12.3) |
-| `violation-transition-illegal` | 409 | Violation transition requested from a state that does not allow it (Part 19 §19.1) |
+| `violation-transition-illegal` | 409 | Violation transition requested from a state that does not allow it (Part 19 §19.1), or on a violation imported from another enforcement system (§19.12) |
 | `violation-not-issuable` | 409 | `issue` on an unreviewed `guided`/`manual` detection, an `automated` one where policy forbids unreviewed issuance, one whose Session link rests on `lenient` or unapplied match evidence, or one whose evidence read's plate review is `pending` or `rejected` (Part 19 §19.4) |
 | `appeal-closed` | 409 | Appeal operation on a violation with no open appeal, a second appeal, or a closed/voided violation (Part 19 §19.1) |
 | `program-not-active` | 422 | Issuance or redemption against a validation program that is not `active`, or a transition out of `ended` (Part 20 §20.1, §20.3) |

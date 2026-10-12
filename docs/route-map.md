@@ -88,6 +88,7 @@ response is `202` — poll `GET /v1/commands/{id}` or subscribe to
 | `POST /citations` / `/tickets` / `/notices` | `POST /v1/violations` — one resource for all of them; `notice.noticeKind` says which was issued (Part 19) |
 | `PATCH /citations/{id} {status: paid}` | `POST /v1/violations/{id}/payment` with the Payment reference — money is taken via `/v1/payments`, never on the violation |
 | `POST /citations/{id}/dispute` | `POST /v1/violations/{id}/appeals` · `…/appeals/resolve` |
+| `POST /citations/import` (citations another system issued) | `POST /v1/enforcement/violation-imports` with `apds-ext:apx:violation-source@1.0` — the issuer's times and status, revisions in order (Part 19 §19.12) |
 | `GET /locations/{id}/enforcement-rules` | `GET /v1/enforcement/policies/effective?place={id}` — the jurisdiction's notice, cap, and escalation rules the server itself enforces (Part 19 §19.10) |
 | `GET /locations/{id}/signs` | `GET /v1/enforcement/signage/effective?place={id}&at=` — posted text, photo, position, in force at that instant (Part 19 §19.11) |
 | `citation.latitude` / `.longitude` | `Violation.location.observedLocation` (GeoJSON Point, **longitude first**) plus `observerLocation` for the officer (Part 19 §19.9) |
