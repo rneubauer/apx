@@ -38,7 +38,15 @@ function renderSide(side) {
     state.scenarios.map((s) =>
       h('div', {
         class: `item${s.id === state.scenarioId ? ' active' : ''}`,
+        role: 'button',
+        tabindex: 0,
+        'aria-current': s.id === state.scenarioId ? 'true' : null,
         onclick: () => confirmDiscard() && openScenario(s.id).catch((e) => toast(e.message, 'bad')),
+        onkeydown: (e) => {
+          if (e.key !== 'Enter' && e.key !== ' ') return;
+          e.preventDefault();
+          e.currentTarget.click();
+        },
       }, h('div', { class: 't' }, s.name), h('div', { class: 'm' }, `${s.world} · ${s.steps} steps · ${s.id}.json`))),
   );
 }
@@ -55,10 +63,15 @@ function renderMain(main, goPresent) {
       h('h2', {}, 'Build a scenario'),
       h('p', {}, 'A scenario is a script of steps: requests a client sends, world events (a car arrives, a gate faults), clock jumps, and checks on the events published. Run it step by step, then present it.'),
       h('p', {}, 'Start one here, or use Explore: every request you send and every event you inject there can be added to the scenario with one click.'),
-      h('div', { class: 'row', style: 'justify-content:center' }, h('button', { onclick: newScenario }, 'New scenario'))));
+      h('div', { class: 'row', style: 'justify-content:center' }, h('button', { onclick: newScenario }, 'New scenario'),
+        state.scenarios.length ? h('span', { class: 'muted' }, 'or pick one on the left') : null)));
     return;
   }
-  mount(main, header(s, goPresent), runSummary(), h('div', { class: 'steps' }, s.steps.map((step, i) => stepCard(step, i))), addBar());
+  const steps = s.steps.length
+    ? h('div', { class: 'steps' }, s.steps.map((step, i) => stepCard(step, i)))
+    : h('div', { class: 'panel empty', style: 'margin-top:12px' }, h('h2', {}, 'No steps yet'),
+      h('p', {}, 'Add a step below, or send requests and fire world events in Explore and add them here with one click.'));
+  mount(main, header(s, goPresent), runSummary(), steps, addBar());
 }
 
 // ---------- header ----------
@@ -94,9 +107,12 @@ function runSummary() {
   const done = run.results.filter(Boolean);
   if (!done.length) return null;
   const failed = done.filter((r) => !r.ok).length;
-  return h('div', { class: 'row', style: 'margin-top:10px' },
+  const total = state.scenario.steps.length || 1;
+  const pct = (n) => `width:${(100 * n) / total}%`;
+  return h('div', { class: 'run-summary', role: 'status' },
     h('span', { class: failed ? 'verdict-bad' : 'verdict-ok' }, `${done.length - failed} passed${failed ? `, ${failed} failed` : ''}`),
     h('span', { class: 'muted' }, `of ${state.scenario.steps.length} steps`),
+    h('div', { class: 'meter', 'aria-hidden': 'true' }, h('div', { class: 'ok', style: pct(done.length - failed) }), h('div', { class: 'bad', style: pct(failed) })),
     Object.keys(run.vars).length ? h('span', { class: 'muted mono' }, `saved: ${Object.keys(run.vars).map((k) => `{${k}}`).join(' ')}`) : null);
 }
 
@@ -174,21 +190,28 @@ function stepCard(step, i) {
     else expanded.add(step);
     emit('scenario');
   };
-  const head = h('div', { class: 'step-head', onclick: toggle },
+  const head = h('div', {
+    class: 'step-head', onclick: toggle, tabindex: 0, 'aria-expanded': String(open), title: open ? 'Close the editor' : 'Open the editor',
+    onkeydown: (e) => {
+      if (e.target !== e.currentTarget || (e.key !== 'Enter' && e.key !== ' ')) return;
+      e.preventDefault();
+      toggle();
+    },
+  },
     h('span', { class: 'idx' }, i + 1),
     h('span', { class: `badge k-${kind}` }, kind),
     h('span', { class: 'name' }, step.name ?? ''),
     h('span', { class: 'sum' }, stepSummary(step)),
     h('span', { class: 'tools' },
-      r ? h('span', { class: r.ok ? 'verdict-ok' : 'verdict-bad' }, r.ok ? '✓' : '✗') : null,
-      h('button', { class: 'ghost small', title: 'Run this step now, against the world as it is', onclick: stop(() => runStepAt(i)), disabled: run.busy }, '▶'),
-      h('button', { class: 'ghost small', title: 'Move up', onclick: stop(() => move(i, -1)) }, '↑'),
-      h('button', { class: 'ghost small', title: 'Move down', onclick: stop(() => move(i, 1)) }, '↓'),
-      h('button', { class: 'ghost small', title: 'Duplicate', onclick: stop(() => {
+      r ? h('span', { class: r.ok ? 'mark-ok' : 'mark-bad', role: 'img', 'aria-label': r.ok ? 'passed' : 'failed', title: r.ok ? 'Passed' : 'Failed' }, r.ok ? '✓' : '✗') : null,
+      h('button', { class: 'ghost small', title: 'Run this step now, against the world as it is', 'aria-label': `Run step ${i + 1}`, onclick: stop(() => runStepAt(i)), disabled: run.busy }, '▶'),
+      h('button', { class: 'ghost small', title: 'Move up', 'aria-label': `Move step ${i + 1} up`, onclick: stop(() => move(i, -1)), disabled: i === 0 }, '↑'),
+      h('button', { class: 'ghost small', title: 'Move down', 'aria-label': `Move step ${i + 1} down`, onclick: stop(() => move(i, 1)), disabled: i === state.scenario.steps.length - 1 }, '↓'),
+      h('button', { class: 'ghost small', title: 'Duplicate', 'aria-label': `Duplicate step ${i + 1}`, onclick: stop(() => {
         state.scenario.steps.splice(i + 1, 0, structuredClone(step));
         changed();
       }) }, '⧉'),
-      h('button', { class: 'danger small', title: 'Delete', onclick: stop(() => {
+      h('button', { class: 'danger small', title: 'Delete', 'aria-label': `Delete step ${i + 1}`, onclick: stop(() => {
         state.scenario.steps.splice(i, 1);
         changed();
       }) }, '✕')));

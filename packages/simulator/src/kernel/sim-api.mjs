@@ -1,7 +1,7 @@
 /**
  * The simulator's own control surface, outside the standard, under /sim:
  *
- *   GET  /sim                          status: world, clock, counts, pending timers
+ *   GET  /sim                          status: edition, world, clock, counts, pending timers
  *   GET  /sim/worlds                   the worlds on disk
  *   POST /sim/reset        {world?}    reload a world (name, path or inline object)
  *   GET  /sim/clock                    the instant the server believes it is
@@ -21,7 +21,7 @@
  *   GET  /sim/ops                      every operation and whether it is implemented
  *   /sim/scenarios, /sim/scenario/*, /sim/injectors/catalog   see sim-scenarios.mjs
  */
-import { OPS } from './spec.mjs';
+import { OPS, EDITION } from './spec.mjs';
 import { encodeToken } from './auth.mjs';
 import { listWorlds, loadWorld } from './world.mjs';
 import { scenarioApi, injectorCatalog, topics } from './sim-scenarios.mjs';
@@ -57,6 +57,7 @@ export async function simApi(sim, { method, path, query, body: raw }) {
   if (!head) {
     return json(200, {
       simulator: 'apx-simulator',
+      edition: { edition: EDITION.edition, status: EDITION.status, apdsVersion: EDITION.extension?.apdsVersion ?? EDITION.apds?.release },
       world: sim.world.name,
       host: sim.world.host,
       clock: { now: sim.clock.now(), realtime: sim.clock.realtime, pendingTimers: sim.clock.pending().length },

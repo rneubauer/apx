@@ -50,10 +50,19 @@ curl -s -X POST http://127.0.0.1:4100/oauth/token -d 'grant_type=client_credenti
   same file `apx-sim run` reads.
 - **Explore** is a request console (any route, as any credential), the
   world-event panel, the event outbox, stored state, the operation list,
-  and the request log. Any request or world event can be added to the
-  open scenario with one click.
+  and the request log. The outbox can be filtered by event type. Any
+  request or world event can be added to the open scenario with one
+  click.
 
-The header carries the world picker and the clock.
+The header carries the APX edition the simulator serves, the world
+picker, the clock with its state (frozen, live under `--realtime`,
+running while a step runs, offline if the server stops answering), and
+a theme button: Auto follows the OS, or pin Light (often better on a
+projector) or Dark. JSON blocks are formatted and tinted; click the line
+that opens an object or array to fold it, and use Copy or Expand at the
+block's top right. The UI is plain HTML, CSS and JavaScript with no external
+assets, so it works offline. Browser zoom (Ctrl/Cmd and +) scales it
+for the back of a room; above 1800 px wide it already sets larger type.
 `scenarios/exit-lane-help-call.json` is a narrated demo to start from.
 
 To show it to people on other machines, bind to the network with

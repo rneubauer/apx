@@ -67,6 +67,13 @@ test('the injector catalog names each parameter and carries a worked example', a
   assert.ok(!injectors.some((i) => i.params.includes('kind')));
 });
 
+test('the status names the APX edition the simulator serves, for the UI header', async () => {
+  const status = await call('GET', '/sim');
+  assert.match(status.edition.edition, /^\d+\.\d+\.\d+/);
+  assert.equal(typeof status.edition.status, 'string');
+  assert.equal(status.edition.apdsVersion, '4.1');
+});
+
 test('topics come from the apx-topics registry', async () => {
   const { topics } = await call('GET', '/sim/topics');
   assert.ok(topics.some((t) => t.type === 'apx.control.command.status.v1'));
