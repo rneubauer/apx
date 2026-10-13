@@ -5107,3 +5107,916 @@ before (F-VIO-13 fixed) and the `paid → voided` transition (F-VIO-10).
 ```
 
 ---
+
+## VIO-30 — A lenient match may excuse a stay but never accuse one
+
+<!-- apx:scenario VIO-30 kind=refusal ics=APX-VIO-17,APX-VIO-03 -->
+
+**Given** `d3…0030`, an automated Lot C detection of `SYN-5528`. The
+pairing service tied it to the pay-by-plate stay `f1…0071` only through
+a lenient one-character match, so the Violation carries
+`apds-ext:apx:match-evidence@1.0` with `plate.method: lenient` (Part 5
+§5.8). The Lot C policy permits unreviewed automated issuance. **When**
+the pipeline issues it by mail. **Then** 409 `violation-not-issuable`:
+the evidence could excuse the stay, but it cannot be the basis of a
+notice (Part 19 §19.4 rule 5).
+
+<!-- apx:request GET /v1/violations/d3000000-0000-4000-8000-000000000030 -->
+<!-- apx:response 200 -->
+<!-- apx:validate MatchEvidence at /extensions/apds-ext:apx:match-evidence@1.0 -->
+```json
+{
+  "id": "d3000000-0000-4000-8000-000000000030",
+  "version": 1,
+  "violationType": "expiredRight",
+  "violationStatus": "detected",
+  "place": { "id": "b1000000-0000-4000-8000-000000000004", "className": "Place" },
+  "detection": { "mode": "automated", "detectedTime": "2026-09-25T11:02:40Z", "principal": "lpr-pipeline-lot-c", "confidence": 0.96 },
+  "vehicle": { "credentialType": "licensePlate", "credentialIdentification": "SYN-5528", "jurisdiction": "US-IL" },
+  "observations": [ { "id": "f2000000-0000-4000-8000-000000000071", "className": "Observation" } ],
+  "relatedSession": { "id": "f1000000-0000-4000-8000-000000000071", "className": "Session" },
+  "statusHistory": [
+    { "state": "detected", "time": "2026-09-25T11:02:41Z", "actor": "lpr-pipeline-lot-c" }
+  ],
+  "extensions": {
+    "apds-ext:apx:match-evidence@1.0": {
+      "target": { "id": "f1000000-0000-4000-8000-000000000071", "className": "Session" },
+      "matchType": "violation",
+      "plate": { "method": "lenient", "editCost": 1.0, "jurisdiction": "agrees" },
+      "vehicle": { "level": "inconclusive" },
+      "applied": true,
+      "decidedBy": "system",
+      "decidedTime": "2026-09-25T11:02:41Z"
+    }
+  }
+}
+```
+
+<!-- apx:request POST /v1/violations/d3000000-0000-4000-8000-000000000030/issue -->
+```json
+{ "noticeKind": "notice", "amount": { "currencyType": "USD", "currencyValue": 35.0 }, "deliveryMethod": "mail" }
+```
+
+<!-- apx:response 409 -->
+```json
+{
+  "type": "https://apx-standard.org/problems/violation-not-issuable",
+  "title": "Violation not issuable",
+  "status": 409,
+  "detail": "The link to session f1000000-0000-4000-8000-000000000071 rests on a lenient plate match; lenient evidence may excuse a stay but never accuse one (Part 19 §19.4 rule 5).",
+  "instance": "/v1/violations/d3000000-0000-4000-8000-000000000030/issue"
+}
+```
+
+---
+
+## VIO-31 — A citation written on another system: imported, then part-paid by a newer revision
+
+<!-- apx:scenario VIO-31 kind=happy ics=APX-VIO-14,APX-VIO-13,APX-VIO-08 -->
+
+**Given** Lot C, where officers also write citations on a separate
+citation platform (`example-enforcement`) and Lakeside's APX server holds
+the sessions and the reports. **When** the platform's connector imports
+citation `EX-2026-018342`, written by officer 0417 at 14:07 for $40, and
+three days later imports revision 3: the driver paid $15 of it on the
+platform. **Then** the first import is created at `issued` with the
+platform's own times (201; `apx.violations.detected.v1` and `.issued.v1`),
+with no eligibility check and no cap applied (Part 19 §19.13 rule 4);
+revision 3 updates it in place (200, version 2, `apx.violations.status.v1`),
+still `issued` because $15 is less than $40 (§19.6a rule 2), with the
+part payment in `payments[]` under the platform's own `reference` and the
+platform's wording `partiallyPaid` kept in `sourceStatus`.
+
+```http
+POST /v1/enforcement/violation-imports
+Idempotency-Key: example-enforcement:EX-2026-018342:1
+```
+
+<!-- apx:request POST /v1/enforcement/violation-imports -->
+```json
+{
+  "violationType": "noValidRight",
+  "violationStatus": "issued",
+  "place": { "id": "b1000000-0000-4000-8000-000000000004", "className": "Place" },
+  "detection": { "mode": "manual", "detectedTime": "2026-10-01T14:05:00Z", "principal": "officer-0417" },
+  "vehicle": { "credentialType": "licensePlate", "credentialIdentification": "SYN-5520", "jurisdiction": "US-IL" },
+  "notice": { "noticeKind": "citation", "noticeNumber": "EX-2026-018342", "issuedTime": "2026-10-01T14:07:12Z", "deliveryMethod": "windshield" },
+  "amount": { "currencyType": "USD", "currencyValue": 40.0 },
+  "dueTime": "2026-10-22T23:59:59Z",
+  "statusHistory": [
+    { "state": "issued", "time": "2026-10-01T14:07:12Z", "actor": "officer-0417" }
+  ],
+  "extensions": {
+    "apds-ext:apx:violation-source@1.0": {
+      "system": "example-enforcement",
+      "recordId": "EX-2026-018342",
+      "sourceStatus": "issued",
+      "sourceRevision": 1,
+      "sourceUpdatedTime": "2026-10-01T14:07:12Z",
+      "officer": "0417"
+    }
+  }
+}
+```
+
+<!-- apx:response 201 -->
+<!-- apx:validate ViolationSource at /extensions/apds-ext:apx:violation-source@1.0 -->
+```json
+{
+  "id": "d3000000-0000-4000-8000-000000000034",
+  "version": 1,
+  "violationType": "noValidRight",
+  "violationStatus": "issued",
+  "place": { "id": "b1000000-0000-4000-8000-000000000004", "className": "Place" },
+  "detection": { "mode": "manual", "detectedTime": "2026-10-01T14:05:00Z", "principal": "officer-0417" },
+  "vehicle": { "credentialType": "licensePlate", "credentialIdentification": "SYN-5520", "jurisdiction": "US-IL" },
+  "notice": { "noticeKind": "citation", "noticeNumber": "EX-2026-018342", "issuedTime": "2026-10-01T14:07:12Z", "deliveryMethod": "windshield" },
+  "amount": { "currencyType": "USD", "currencyValue": 40.0 },
+  "dueTime": "2026-10-22T23:59:59Z",
+  "amountHistory": [
+    { "amount": { "currencyType": "USD", "currencyValue": 40.0 }, "time": "2026-10-01T14:07:12Z", "reason": "issued", "detail": "example-enforcement revision 1" }
+  ],
+  "statusHistory": [
+    { "state": "issued", "time": "2026-10-01T14:07:12Z", "actor": "officer-0417" }
+  ],
+  "extensions": {
+    "apds-ext:apx:violation-source@1.0": {
+      "system": "example-enforcement",
+      "recordId": "EX-2026-018342",
+      "sourceStatus": "issued",
+      "sourceRevision": 1,
+      "sourceUpdatedTime": "2026-10-01T14:07:12Z",
+      "receivedTime": "2026-10-01T14:09:40Z",
+      "officer": "0417"
+    }
+  }
+}
+```
+
+```http
+POST /v1/enforcement/violation-imports
+Idempotency-Key: example-enforcement:EX-2026-018342:3
+```
+
+<!-- apx:request POST /v1/enforcement/violation-imports -->
+```json
+{
+  "violationType": "noValidRight",
+  "violationStatus": "issued",
+  "place": { "id": "b1000000-0000-4000-8000-000000000004", "className": "Place" },
+  "detection": { "mode": "manual", "detectedTime": "2026-10-01T14:05:00Z", "principal": "officer-0417" },
+  "vehicle": { "credentialType": "licensePlate", "credentialIdentification": "SYN-5520", "jurisdiction": "US-IL" },
+  "notice": { "noticeKind": "citation", "noticeNumber": "EX-2026-018342", "issuedTime": "2026-10-01T14:07:12Z", "deliveryMethod": "windshield" },
+  "amount": { "currencyType": "USD", "currencyValue": 40.0 },
+  "dueTime": "2026-10-22T23:59:59Z",
+  "amountPaid": { "currencyType": "USD", "currencyValue": 15.0 },
+  "payments": [
+    { "amount": { "currencyType": "USD", "currencyValue": 15.0 }, "paidTime": "2026-10-04T09:12:00Z", "reference": "PMT-77120" }
+  ],
+  "statusHistory": [
+    { "state": "issued", "time": "2026-10-01T14:07:12Z", "actor": "officer-0417" }
+  ],
+  "extensions": {
+    "apds-ext:apx:violation-source@1.0": {
+      "system": "example-enforcement",
+      "recordId": "EX-2026-018342",
+      "sourceStatus": "partiallyPaid",
+      "sourceRevision": 3,
+      "sourceUpdatedTime": "2026-10-04T09:12:00Z",
+      "officer": "0417"
+    }
+  }
+}
+```
+
+<!-- apx:response 200 -->
+```json
+{
+  "id": "d3000000-0000-4000-8000-000000000034",
+  "version": 2,
+  "violationType": "noValidRight",
+  "violationStatus": "issued",
+  "place": { "id": "b1000000-0000-4000-8000-000000000004", "className": "Place" },
+  "detection": { "mode": "manual", "detectedTime": "2026-10-01T14:05:00Z", "principal": "officer-0417" },
+  "vehicle": { "credentialType": "licensePlate", "credentialIdentification": "SYN-5520", "jurisdiction": "US-IL" },
+  "notice": { "noticeKind": "citation", "noticeNumber": "EX-2026-018342", "issuedTime": "2026-10-01T14:07:12Z", "deliveryMethod": "windshield" },
+  "amount": { "currencyType": "USD", "currencyValue": 40.0 },
+  "dueTime": "2026-10-22T23:59:59Z",
+  "amountPaid": { "currencyType": "USD", "currencyValue": 15.0 },
+  "payments": [
+    { "amount": { "currencyType": "USD", "currencyValue": 15.0 }, "paidTime": "2026-10-04T09:12:00Z", "reference": "PMT-77120" }
+  ],
+  "amountHistory": [
+    { "amount": { "currencyType": "USD", "currencyValue": 40.0 }, "time": "2026-10-01T14:07:12Z", "reason": "issued", "detail": "example-enforcement revision 1" }
+  ],
+  "statusHistory": [
+    { "state": "issued", "time": "2026-10-01T14:07:12Z", "actor": "officer-0417" }
+  ],
+  "extensions": {
+    "apds-ext:apx:violation-source@1.0": {
+      "system": "example-enforcement",
+      "recordId": "EX-2026-018342",
+      "sourceStatus": "partiallyPaid",
+      "sourceRevision": 3,
+      "sourceUpdatedTime": "2026-10-04T09:12:00Z",
+      "receivedTime": "2026-10-04T09:15:02Z",
+      "officer": "0417"
+    }
+  }
+}
+```
+
+---
+
+## VIO-32 — Imports refused: no source decoration, a `paid` that is not paid, a stale revision
+
+<!-- apx:scenario VIO-32 kind=refusal ics=APX-VIO-14 -->
+
+**Given** the imported citation `d3…0034` above, now at source revision
+3. **When** the connector sends a citation with no source decoration;
+then one marked `paid` with $15 paid against $40; then, replaying an old
+queue, revision 1 of `EX-2026-018342` again under a fresh
+`Idempotency-Key`. **Then** 400 `invalid-request` (the decoration is
+REQUIRED); 422 `request-unprocessable` (`paid` needs `amountPaid` at
+least `amount`; a part-paid citation is `issued`, §19.13 rule 3); and 409
+`version-conflict` — revision 1 is older than the revision 3 the server
+holds, so nothing changes (§19.13 rule 2). An imported violation is not
+frozen: Lakeside's own later transitions follow §19.1 like any other
+(§19.13 rule 5).
+
+```http
+POST /v1/enforcement/violation-imports
+Idempotency-Key: example-enforcement:EX-2026-018400:1
+```
+
+<!-- apx:request POST /v1/enforcement/violation-imports invalid -->
+```json
+{
+  "violationType": "noValidRight",
+  "violationStatus": "issued",
+  "place": { "id": "b1000000-0000-4000-8000-000000000004", "className": "Place" },
+  "detection": { "mode": "manual", "detectedTime": "2026-10-02T10:00:00Z" },
+  "notice": { "noticeNumber": "EX-2026-018400", "issuedTime": "2026-10-02T10:01:00Z" },
+  "amount": { "currencyType": "USD", "currencyValue": 40.0 },
+  "statusHistory": [ { "state": "issued", "time": "2026-10-02T10:01:00Z", "actor": "officer-0417" } ]
+}
+```
+
+<!-- apx:response 400 -->
+```json
+{
+  "type": "https://apx-standard.org/problems/invalid-request",
+  "title": "Request body failed validation",
+  "status": 400,
+  "detail": "An import must carry the apds-ext:apx:violation-source@1.0 decoration.",
+  "instance": "/v1/enforcement/violation-imports",
+  "errors": [ { "pointer": "/extensions", "detail": "missing apds-ext:apx:violation-source@1.0" } ]
+}
+```
+
+```http
+POST /v1/enforcement/violation-imports
+Idempotency-Key: example-enforcement:EX-2026-018401:2
+```
+
+<!-- apx:request POST /v1/enforcement/violation-imports -->
+```json
+{
+  "violationType": "noValidRight",
+  "violationStatus": "paid",
+  "place": { "id": "b1000000-0000-4000-8000-000000000004", "className": "Place" },
+  "detection": { "mode": "manual", "detectedTime": "2026-10-02T10:00:00Z" },
+  "notice": { "noticeNumber": "EX-2026-018401", "issuedTime": "2026-10-02T10:01:00Z" },
+  "amount": { "currencyType": "USD", "currencyValue": 40.0 },
+  "amountPaid": { "currencyType": "USD", "currencyValue": 15.0 },
+  "statusHistory": [ { "state": "issued", "time": "2026-10-02T10:01:00Z", "actor": "officer-0417" } ],
+  "extensions": {
+    "apds-ext:apx:violation-source@1.0": { "system": "example-enforcement", "recordId": "EX-2026-018401", "sourceStatus": "partiallyPaid", "sourceRevision": 2 }
+  }
+}
+```
+
+<!-- apx:response 422 -->
+```json
+{
+  "type": "https://apx-standard.org/problems/request-unprocessable",
+  "title": "Import state inconsistent with its amounts",
+  "status": 422,
+  "detail": "violationStatus paid requires amountPaid (15.00) to be at least amount (40.00); a part-paid citation is issued (Part 19 §19.13 rule 3).",
+  "instance": "/v1/enforcement/violation-imports"
+}
+```
+
+```http
+POST /v1/enforcement/violation-imports
+Idempotency-Key: example-enforcement:EX-2026-018342:1:requeued
+```
+
+<!-- apx:request POST /v1/enforcement/violation-imports -->
+```json
+{
+  "violationType": "noValidRight",
+  "violationStatus": "issued",
+  "place": { "id": "b1000000-0000-4000-8000-000000000004", "className": "Place" },
+  "detection": { "mode": "manual", "detectedTime": "2026-10-01T14:05:00Z", "principal": "officer-0417" },
+  "vehicle": { "credentialType": "licensePlate", "credentialIdentification": "SYN-5520", "jurisdiction": "US-IL" },
+  "notice": { "noticeKind": "citation", "noticeNumber": "EX-2026-018342", "issuedTime": "2026-10-01T14:07:12Z", "deliveryMethod": "windshield" },
+  "amount": { "currencyType": "USD", "currencyValue": 40.0 },
+  "dueTime": "2026-10-22T23:59:59Z",
+  "statusHistory": [
+    { "state": "issued", "time": "2026-10-01T14:07:12Z", "actor": "officer-0417" }
+  ],
+  "extensions": {
+    "apds-ext:apx:violation-source@1.0": {
+      "system": "example-enforcement",
+      "recordId": "EX-2026-018342",
+      "sourceStatus": "issued",
+      "sourceRevision": 1,
+      "sourceUpdatedTime": "2026-10-01T14:07:12Z",
+      "officer": "0417"
+    }
+  }
+}
+```
+
+<!-- apx:response 409 -->
+```json
+{
+  "type": "https://apx-standard.org/problems/version-conflict",
+  "title": "Stale source revision",
+  "status": 409,
+  "detail": "example-enforcement EX-2026-018342 is held at sourceRevision 3; revision 1 is older and changes nothing (Part 19 §19.13 rule 2).",
+  "instance": "/v1/enforcement/violation-imports"
+}
+```
+
+---
+
+## VIO-33 — A notice paid in two parts
+
+<!-- apx:scenario VIO-33 kind=lifecycle ics=APX-VIO-13,APX-VIO-05 -->
+
+**Given** `d3…0032`, a $35 automated notice issued here at version 2.
+**When** the driver pays $20 in the app, and later the remaining $15.
+**Then** the first attachment, with `amount` $20, is a part payment: still
+`issued`, `amountPaid` $20, a `statusHistory[]` entry noting it, no
+`payment` yet, and `apx.violations.status.v1` (Part 19 §19.6a rule 2); the
+second, with no `amount`, contributes the whole outstanding $15, brings
+`amountPaid` to $35, moves it to `paid`, and becomes `payment` (§19.6a
+rules 1 and 3).
+
+<!-- apx:request POST /v1/violations/d3000000-0000-4000-8000-000000000032/payment -->
+```json
+{
+  "payment": { "id": "d9000000-0000-4000-8000-000000000010", "className": "PaymentRecord" },
+  "amount": { "currencyType": "USD", "currencyValue": 20.0 }
+}
+```
+
+<!-- apx:response 200 -->
+```json
+{
+  "id": "d3000000-0000-4000-8000-000000000032",
+  "version": 3,
+  "violationType": "expiredRight",
+  "violationStatus": "issued",
+  "place": { "id": "b1000000-0000-4000-8000-000000000004", "className": "Place" },
+  "detection": { "mode": "automated", "detectedTime": "2026-10-03T09:40:00Z" },
+  "amount": { "currencyType": "USD", "currencyValue": 35.0 },
+  "amountPaid": { "currencyType": "USD", "currencyValue": 20.0 },
+  "payments": [
+    { "amount": { "currencyType": "USD", "currencyValue": 20.0 }, "paidTime": "2026-10-05T18:02:00Z", "payment": { "id": "d9000000-0000-4000-8000-000000000010", "className": "PaymentRecord" } }
+  ],
+  "statusHistory": [
+    { "state": "detected", "time": "2026-10-03T09:40:01Z", "actor": "lpr-pipeline-lot-c" },
+    { "state": "issued", "time": "2026-10-03T09:40:06Z", "actor": "lpr-pipeline-lot-c" },
+    { "state": "issued", "time": "2026-10-05T18:02:00Z", "actor": "appeals-portal", "detail": "part payment d9…0010: 20.00 of 35.00; 15.00 outstanding" }
+  ]
+}
+```
+
+<!-- apx:request POST /v1/violations/d3000000-0000-4000-8000-000000000032/payment -->
+```json
+{
+  "payment": { "id": "d9000000-0000-4000-8000-000000000011", "className": "PaymentRecord" }
+}
+```
+
+<!-- apx:response 200 -->
+```json
+{
+  "id": "d3000000-0000-4000-8000-000000000032",
+  "version": 4,
+  "violationType": "expiredRight",
+  "violationStatus": "paid",
+  "place": { "id": "b1000000-0000-4000-8000-000000000004", "className": "Place" },
+  "detection": { "mode": "automated", "detectedTime": "2026-10-03T09:40:00Z" },
+  "amount": { "currencyType": "USD", "currencyValue": 35.0 },
+  "payment": { "id": "d9000000-0000-4000-8000-000000000011", "className": "PaymentRecord" },
+  "amountPaid": { "currencyType": "USD", "currencyValue": 35.0 },
+  "payments": [
+    { "amount": { "currencyType": "USD", "currencyValue": 20.0 }, "paidTime": "2026-10-05T18:02:00Z", "payment": { "id": "d9000000-0000-4000-8000-000000000010", "className": "PaymentRecord" } },
+    { "amount": { "currencyType": "USD", "currencyValue": 15.0 }, "paidTime": "2026-10-08T12:30:00Z", "payment": { "id": "d9000000-0000-4000-8000-000000000011", "className": "PaymentRecord" } }
+  ],
+  "statusHistory": [
+    { "state": "detected", "time": "2026-10-03T09:40:01Z", "actor": "lpr-pipeline-lot-c" },
+    { "state": "issued", "time": "2026-10-03T09:40:06Z", "actor": "lpr-pipeline-lot-c" },
+    { "state": "issued", "time": "2026-10-05T18:02:00Z", "actor": "appeals-portal", "detail": "part payment d9…0010: 20.00 of 35.00; 15.00 outstanding" },
+    { "state": "paid", "time": "2026-10-08T12:30:00Z", "actor": "appeals-portal", "detail": "settled by d9…0011; 20.00 + 15.00" }
+  ]
+}
+```
+
+---
+
+## VIO-34 — Linking the stay later: the session route, a stale version, a Session at another lot
+
+<!-- apx:scenario VIO-34 kind=edge ics=APX-VIO-15,APX-VIO-08 -->
+
+**Given** the imported citation `d3…0034` (version 2) and the stays
+Lakeside reconciles each night. **When** the reconciliation matches the
+citation to Session `f1…0071` and links it with `POST
+/v1/violations/{id}/session`, carrying its match evidence in `evidence`;
+then a second worker retries the link with the version it read before;
+then a reviewer tries to link Session `f1…0090`, a stay at Lot D.
+**Then** 200 at version 3 with `relatedSession` set, the evidence written
+as `apds-ext:apx:match-evidence@1.0` with the Session as `target`, no
+`statusHistory[]` entry (the link is not a transition, and an imported
+violation accepts it), and `apx.violations.status.v1`; 409
+`version-conflict`, nothing written; 422 `request-unprocessable` — Lot D
+is bound under its own root, neither Lot C, an ancestor, nor a
+descendant of it (Part 19 §19.13 rule 6).
+
+```http
+POST /v1/violations/d3000000-0000-4000-8000-000000000034/session
+If-Match: "2"
+```
+
+<!-- apx:request POST /v1/violations/d3000000-0000-4000-8000-000000000034/session -->
+<!-- apx:validate MatchEvidence at /evidence -->
+```json
+{
+  "session": { "id": "f1000000-0000-4000-8000-000000000071", "className": "Session" },
+  "reason": "lateMatch",
+  "evidence": {
+    "target": { "id": "f1000000-0000-4000-8000-000000000071", "className": "Session" },
+    "matchType": "violation",
+    "plate": { "method": "exact", "jurisdiction": "agrees" },
+    "applied": true,
+    "decidedBy": "system",
+    "decidedTime": "2026-10-04T23:40:00Z"
+  }
+}
+```
+
+<!-- apx:response 200 -->
+```json
+{
+  "id": "d3000000-0000-4000-8000-000000000034",
+  "version": 3,
+  "violationType": "noValidRight",
+  "violationStatus": "issued",
+  "place": { "id": "b1000000-0000-4000-8000-000000000004", "className": "Place" },
+  "detection": { "mode": "manual", "detectedTime": "2026-10-01T14:05:00Z", "principal": "officer-0417" },
+  "vehicle": { "credentialType": "licensePlate", "credentialIdentification": "SYN-5520", "jurisdiction": "US-IL" },
+  "relatedSession": { "id": "f1000000-0000-4000-8000-000000000071", "className": "Session" },
+  "notice": { "noticeKind": "citation", "noticeNumber": "EX-2026-018342", "issuedTime": "2026-10-01T14:07:12Z", "deliveryMethod": "windshield" },
+  "amount": { "currencyType": "USD", "currencyValue": 40.0 },
+  "amountPaid": { "currencyType": "USD", "currencyValue": 15.0 },
+  "payments": [
+    { "amount": { "currencyType": "USD", "currencyValue": 15.0 }, "paidTime": "2026-10-04T09:12:00Z", "reference": "PMT-77120" }
+  ],
+  "statusHistory": [
+    { "state": "issued", "time": "2026-10-01T14:07:12Z", "actor": "officer-0417" }
+  ],
+  "extensions": {
+    "apds-ext:apx:violation-source@1.0": {
+      "system": "example-enforcement",
+      "recordId": "EX-2026-018342",
+      "sourceStatus": "partiallyPaid",
+      "sourceRevision": 3,
+      "sourceUpdatedTime": "2026-10-04T09:12:00Z",
+      "receivedTime": "2026-10-04T09:15:02Z",
+      "officer": "0417"
+    },
+    "apds-ext:apx:match-evidence@1.0": {
+      "target": { "id": "f1000000-0000-4000-8000-000000000071", "className": "Session" },
+      "matchType": "violation",
+      "plate": { "method": "exact", "jurisdiction": "agrees" },
+      "applied": true,
+      "decidedBy": "system",
+      "decidedTime": "2026-10-04T23:40:00Z"
+    }
+  }
+}
+```
+
+```http
+POST /v1/violations/d3000000-0000-4000-8000-000000000034/session
+If-Match: "2"
+```
+
+<!-- apx:request POST /v1/violations/d3000000-0000-4000-8000-000000000034/session -->
+```json
+{
+  "session": { "id": "f1000000-0000-4000-8000-000000000071", "className": "Session" },
+  "reason": "lateMatch"
+}
+```
+
+<!-- apx:response 409 -->
+```json
+{
+  "type": "https://apx-standard.org/problems/version-conflict",
+  "title": "Stale version",
+  "status": 409,
+  "detail": "If-Match \"2\" is stale; the violation is at version 3. Nothing was written.",
+  "instance": "/v1/violations/d3000000-0000-4000-8000-000000000034/session"
+}
+```
+
+```http
+POST /v1/violations/d3000000-0000-4000-8000-000000000034/session
+If-Match: "3"
+```
+
+<!-- apx:request POST /v1/violations/d3000000-0000-4000-8000-000000000034/session -->
+```json
+{
+  "session": { "id": "f1000000-0000-4000-8000-000000000090", "className": "Session" },
+  "reason": "reviewerCorrection"
+}
+```
+
+<!-- apx:response 422 -->
+```json
+{
+  "type": "https://apx-standard.org/problems/request-unprocessable",
+  "title": "Session outside the violation's place",
+  "status": 422,
+  "detail": "Session f1…0090 is at Lot D (b1…0005), outside the hierarchy of the violation's place b1…0004 (Part 19 §19.13 rule 6).",
+  "instance": "/v1/violations/d3000000-0000-4000-8000-000000000034/session"
+}
+```
+
+---
+
+## VIO-35 — Evidence that cannot accuse: a read still in review, a rejected read, a shadow match
+
+<!-- apx:scenario VIO-35 kind=refusal ics=APX-VIO-16,APX-VIO-17 -->
+
+**Given** three Lot C violations that officer 0417 has already confirmed.
+`d3…0035` rests on read `f2…0072`, which the place sent to plate review
+(`detail.review.state: pending`, reasons `lowConfidence` and
+`jurisdictionRequiresReview`). `d3…0036` rests on read `f2…0073`, which a
+reviewer has since `rejected` as unusable. `d3…0037` carries no match
+evidence of its own, but its related Session `f1…0072` records the match
+in its `session-detail` `matches[]` entry with `applied: false` (a shadow
+match). **When** the officer issues each one. **Then** three 409
+`violation-not-issuable`. The officer's review lifts neither gate: rule 6
+holds "whatever the detection mode" while a read is `pending` or
+`rejected` (Part 19 §19.4 rule 6, Part 13 §13.3a(4a)), and rule 5 reads
+the Session end of the link as well as the Violation's (§19.4 rule 5).
+
+<!-- apx:request POST /v1/violations/d3000000-0000-4000-8000-000000000035/issue -->
+```json
+{ "noticeKind": "citation", "amount": { "currencyType": "USD", "currencyValue": 35.0 }, "deliveryMethod": "windshield" }
+```
+
+<!-- apx:response 409 -->
+```json
+{
+  "type": "https://apx-standard.org/problems/violation-not-issuable",
+  "title": "Violation not issuable",
+  "status": 409,
+  "detail": "LPR read f2000000-0000-4000-8000-000000000072 has review state pending: its plate review is not done (Part 19 §19.4 rule 6; Part 13 §13.3a(4a)).",
+  "instance": "/v1/violations/d3000000-0000-4000-8000-000000000035/issue"
+}
+```
+
+<!-- apx:request POST /v1/violations/d3000000-0000-4000-8000-000000000036/issue -->
+```json
+{ "noticeKind": "citation", "amount": { "currencyType": "USD", "currencyValue": 35.0 }, "deliveryMethod": "windshield" }
+```
+
+<!-- apx:response 409 -->
+```json
+{
+  "type": "https://apx-standard.org/problems/violation-not-issuable",
+  "title": "Violation not issuable",
+  "status": 409,
+  "detail": "LPR read f2000000-0000-4000-8000-000000000073 has review state rejected: a reviewer rejected it as plate evidence (Part 19 §19.4 rule 6; Part 13 §13.3a(4a)).",
+  "instance": "/v1/violations/d3000000-0000-4000-8000-000000000036/issue"
+}
+```
+
+<!-- apx:request POST /v1/violations/d3000000-0000-4000-8000-000000000037/issue -->
+```json
+{ "noticeKind": "citation", "amount": { "currencyType": "USD", "currencyValue": 35.0 }, "deliveryMethod": "windshield" }
+```
+
+<!-- apx:response 409 -->
+```json
+{
+  "type": "https://apx-standard.org/problems/violation-not-issuable",
+  "title": "Violation not issuable",
+  "status": 409,
+  "detail": "Session f1000000-0000-4000-8000-000000000072 records its match to this violation as an unapplied (shadow) match (session-detail matches[]); lenient or unapplied evidence may excuse a stay but never accuse one (Part 19 §19.4 rule 5).",
+  "instance": "/v1/violations/d3000000-0000-4000-8000-000000000037/issue"
+}
+```
+
+---
+
+## VIO-36 — A warning from the citation platform: imported at zero, found by its record, linked, cleared, linked again after void
+
+<!-- apx:scenario VIO-36 kind=lifecycle ics=APX-VIO-14,APX-VIO-15 -->
+
+**Given** the citation platform `example-enforcement` also records
+warnings, which carry no fine. Its own status for one is `warned`, and it
+keeps no revision counter, only an update time. **When** its connector
+imports warning `EX-2026-W00731`; Lakeside's back office finds it by the
+platform's record id; the nightly reconciliation links it to Session
+`f1…0076`, and a retry sends the same link again; a reviewer clears the
+link as a mismatch; the warning is voided as issued in error; and the
+reconciliation links the Session again. **Then** 201 at `issued` with
+`notice.noticeKind` `warning` and an `amount` of zero in USD, with the
+platform's word `warned` kept in `sourceStatus` (Part 19 §19.13 rule 3);
+200 with that one violation for `sourceSystem` + `sourceRecordId`
+(§19.2); 200 at version 2 with `relatedSession` and the evidence; 200
+still at version 2, and no event, for the repeat (§19.13 rule 6:
+identical content is a no-op); 200 at version 3 with neither
+`relatedSession` nor the evidence decoration; 200 `voided` at version 4;
+and 200 at version 5. The link is not a transition, so a terminal
+violation accepts it, and none of the three link changes appends to
+`statusHistory[]`.
+
+```http
+POST /v1/enforcement/violation-imports
+Idempotency-Key: example-enforcement:EX-2026-W00731:2026-10-07T15:20:00Z
+```
+
+<!-- apx:request POST /v1/enforcement/violation-imports -->
+```json
+{
+  "violationType": "noValidRight",
+  "violationStatus": "issued",
+  "place": { "id": "b1000000-0000-4000-8000-000000000004", "className": "Place" },
+  "detection": { "mode": "manual", "detectedTime": "2026-10-07T15:18:00Z", "principal": "officer-0417" },
+  "vehicle": { "credentialType": "licensePlate", "credentialIdentification": "SYN-5531", "jurisdiction": "US-IL" },
+  "notice": { "noticeKind": "warning", "noticeNumber": "EX-2026-W00731", "issuedTime": "2026-10-07T15:20:00Z", "deliveryMethod": "windshield" },
+  "amount": { "currencyType": "USD", "currencyValue": 0 },
+  "statusHistory": [
+    { "state": "issued", "time": "2026-10-07T15:20:00Z", "actor": "officer-0417", "detail": "warning; no fine" }
+  ],
+  "extensions": {
+    "apds-ext:apx:violation-source@1.0": {
+      "system": "example-enforcement",
+      "recordId": "EX-2026-W00731",
+      "sourceStatus": "warned",
+      "sourceUpdatedTime": "2026-10-07T15:20:00Z",
+      "officer": "0417"
+    }
+  }
+}
+```
+
+<!-- apx:response 201 -->
+<!-- apx:validate ViolationSource at /extensions/apds-ext:apx:violation-source@1.0 -->
+```json
+{
+  "id": "d3000000-0000-4000-8000-000000000038",
+  "version": 1,
+  "violationType": "noValidRight",
+  "violationStatus": "issued",
+  "place": { "id": "b1000000-0000-4000-8000-000000000004", "className": "Place" },
+  "detection": { "mode": "manual", "detectedTime": "2026-10-07T15:18:00Z", "principal": "officer-0417" },
+  "vehicle": { "credentialType": "licensePlate", "credentialIdentification": "SYN-5531", "jurisdiction": "US-IL" },
+  "notice": { "noticeKind": "warning", "noticeNumber": "EX-2026-W00731", "issuedTime": "2026-10-07T15:20:00Z", "deliveryMethod": "windshield" },
+  "amount": { "currencyType": "USD", "currencyValue": 0 },
+  "amountHistory": [
+    { "amount": { "currencyType": "USD", "currencyValue": 0 }, "time": "2026-10-07T15:20:00Z", "reason": "issued", "detail": "example-enforcement update 2026-10-07T15:20:00Z" }
+  ],
+  "statusHistory": [
+    { "state": "issued", "time": "2026-10-07T15:20:00Z", "actor": "officer-0417", "detail": "warning; no fine" }
+  ],
+  "extensions": {
+    "apds-ext:apx:violation-source@1.0": {
+      "system": "example-enforcement",
+      "recordId": "EX-2026-W00731",
+      "sourceStatus": "warned",
+      "sourceUpdatedTime": "2026-10-07T15:20:00Z",
+      "receivedTime": "2026-10-07T15:21:30Z",
+      "officer": "0417"
+    }
+  }
+}
+```
+
+<!-- apx:request GET /v1/violations?sourceSystem=example-enforcement&sourceRecordId=EX-2026-W00731 -->
+<!-- apx:response 200 -->
+```json
+{
+  "meta": { "referenceInstant": 1791387000, "offset": 0, "pageSize": 100, "total": 1 },
+  "data": [
+    {
+      "id": "d3000000-0000-4000-8000-000000000038",
+      "version": 1,
+      "violationType": "noValidRight",
+      "violationStatus": "issued",
+      "place": { "id": "b1000000-0000-4000-8000-000000000004", "className": "Place" },
+      "detection": { "mode": "manual", "detectedTime": "2026-10-07T15:18:00Z", "principal": "officer-0417" },
+      "notice": { "noticeKind": "warning", "noticeNumber": "EX-2026-W00731", "issuedTime": "2026-10-07T15:20:00Z", "deliveryMethod": "windshield" },
+      "amount": { "currencyType": "USD", "currencyValue": 0 },
+      "statusHistory": [
+        { "state": "issued", "time": "2026-10-07T15:20:00Z", "actor": "officer-0417", "detail": "warning; no fine" }
+      ]
+    }
+  ]
+}
+```
+
+```http
+POST /v1/violations/d3000000-0000-4000-8000-000000000038/session
+If-Match: "1"
+```
+
+<!-- apx:request POST /v1/violations/d3000000-0000-4000-8000-000000000038/session -->
+<!-- apx:validate MatchEvidence at /evidence -->
+```json
+{
+  "session": { "id": "f1000000-0000-4000-8000-000000000076", "className": "Session" },
+  "reason": "lateMatch",
+  "evidence": {
+    "target": { "id": "f1000000-0000-4000-8000-000000000076", "className": "Session" },
+    "matchType": "violation",
+    "plate": { "method": "exact", "jurisdiction": "agrees" },
+    "applied": true,
+    "decidedBy": "system",
+    "decidedTime": "2026-10-07T23:40:00Z"
+  }
+}
+```
+
+<!-- apx:response 200 -->
+```json
+{
+  "id": "d3000000-0000-4000-8000-000000000038",
+  "version": 2,
+  "violationType": "noValidRight",
+  "violationStatus": "issued",
+  "place": { "id": "b1000000-0000-4000-8000-000000000004", "className": "Place" },
+  "detection": { "mode": "manual", "detectedTime": "2026-10-07T15:18:00Z", "principal": "officer-0417" },
+  "relatedSession": { "id": "f1000000-0000-4000-8000-000000000076", "className": "Session" },
+  "notice": { "noticeKind": "warning", "noticeNumber": "EX-2026-W00731", "issuedTime": "2026-10-07T15:20:00Z", "deliveryMethod": "windshield" },
+  "amount": { "currencyType": "USD", "currencyValue": 0 },
+  "statusHistory": [
+    { "state": "issued", "time": "2026-10-07T15:20:00Z", "actor": "officer-0417", "detail": "warning; no fine" }
+  ],
+  "extensions": {
+    "apds-ext:apx:violation-source@1.0": {
+      "system": "example-enforcement",
+      "recordId": "EX-2026-W00731",
+      "sourceStatus": "warned",
+      "sourceUpdatedTime": "2026-10-07T15:20:00Z",
+      "receivedTime": "2026-10-07T15:21:30Z",
+      "officer": "0417"
+    },
+    "apds-ext:apx:match-evidence@1.0": {
+      "target": { "id": "f1000000-0000-4000-8000-000000000076", "className": "Session" },
+      "matchType": "violation",
+      "plate": { "method": "exact", "jurisdiction": "agrees" },
+      "applied": true,
+      "decidedBy": "system",
+      "decidedTime": "2026-10-07T23:40:00Z"
+    }
+  }
+}
+```
+
+The reconciliation's first answer was lost in transit, so it reads the
+violation again and resends the same link with the version it now holds:
+
+```http
+POST /v1/violations/d3000000-0000-4000-8000-000000000038/session
+If-Match: "2"
+```
+
+<!-- apx:request POST /v1/violations/d3000000-0000-4000-8000-000000000038/session -->
+```json
+{
+  "session": { "id": "f1000000-0000-4000-8000-000000000076", "className": "Session" },
+  "reason": "lateMatch",
+  "evidence": {
+    "target": { "id": "f1000000-0000-4000-8000-000000000076", "className": "Session" },
+    "matchType": "violation",
+    "plate": { "method": "exact", "jurisdiction": "agrees" },
+    "applied": true,
+    "decidedBy": "system",
+    "decidedTime": "2026-10-07T23:40:00Z"
+  }
+}
+```
+
+<!-- apx:response 200 -->
+```json
+{
+  "id": "d3000000-0000-4000-8000-000000000038",
+  "version": 2,
+  "violationType": "noValidRight",
+  "violationStatus": "issued",
+  "place": { "id": "b1000000-0000-4000-8000-000000000004", "className": "Place" },
+  "detection": { "mode": "manual", "detectedTime": "2026-10-07T15:18:00Z", "principal": "officer-0417" },
+  "relatedSession": { "id": "f1000000-0000-4000-8000-000000000076", "className": "Session" },
+  "amount": { "currencyType": "USD", "currencyValue": 0 }
+}
+```
+
+```http
+POST /v1/violations/d3000000-0000-4000-8000-000000000038/session
+If-Match: "2"
+```
+
+<!-- apx:request POST /v1/violations/d3000000-0000-4000-8000-000000000038/session -->
+```json
+{ "session": null, "reason": "mismatch" }
+```
+
+<!-- apx:response 200 -->
+```json
+{
+  "id": "d3000000-0000-4000-8000-000000000038",
+  "version": 3,
+  "violationType": "noValidRight",
+  "violationStatus": "issued",
+  "place": { "id": "b1000000-0000-4000-8000-000000000004", "className": "Place" },
+  "detection": { "mode": "manual", "detectedTime": "2026-10-07T15:18:00Z", "principal": "officer-0417" },
+  "notice": { "noticeKind": "warning", "noticeNumber": "EX-2026-W00731", "issuedTime": "2026-10-07T15:20:00Z", "deliveryMethod": "windshield" },
+  "amount": { "currencyType": "USD", "currencyValue": 0 },
+  "statusHistory": [
+    { "state": "issued", "time": "2026-10-07T15:20:00Z", "actor": "officer-0417", "detail": "warning; no fine" }
+  ],
+  "extensions": {
+    "apds-ext:apx:violation-source@1.0": {
+      "system": "example-enforcement",
+      "recordId": "EX-2026-W00731",
+      "sourceStatus": "warned",
+      "sourceUpdatedTime": "2026-10-07T15:20:00Z",
+      "receivedTime": "2026-10-07T15:21:30Z",
+      "officer": "0417"
+    }
+  }
+}
+```
+
+<!-- apx:request POST /v1/violations/d3000000-0000-4000-8000-000000000038/void -->
+```json
+{ "reason": "issuedInError", "note": "Vehicle displayed a valid pay-by-plate receipt." }
+```
+
+<!-- apx:response 200 -->
+```json
+{
+  "id": "d3000000-0000-4000-8000-000000000038",
+  "version": 4,
+  "violationType": "noValidRight",
+  "violationStatus": "voided",
+  "place": { "id": "b1000000-0000-4000-8000-000000000004", "className": "Place" },
+  "detection": { "mode": "manual", "detectedTime": "2026-10-07T15:18:00Z", "principal": "officer-0417" },
+  "amount": { "currencyType": "USD", "currencyValue": 0 },
+  "statusHistory": [
+    { "state": "issued", "time": "2026-10-07T15:20:00Z", "actor": "officer-0417", "detail": "warning; no fine" },
+    { "state": "voided", "time": "2026-10-08T09:05:00Z", "actor": "enforcement-console", "detail": "issuedInError: Vehicle displayed a valid pay-by-plate receipt." }
+  ]
+}
+```
+
+```http
+POST /v1/violations/d3000000-0000-4000-8000-000000000038/session
+If-Match: "4"
+```
+
+<!-- apx:request POST /v1/violations/d3000000-0000-4000-8000-000000000038/session -->
+```json
+{ "session": { "id": "f1000000-0000-4000-8000-000000000076", "className": "Session" }, "reason": "reviewerCorrection" }
+```
+
+<!-- apx:response 200 -->
+```json
+{
+  "id": "d3000000-0000-4000-8000-000000000038",
+  "version": 5,
+  "violationType": "noValidRight",
+  "violationStatus": "voided",
+  "place": { "id": "b1000000-0000-4000-8000-000000000004", "className": "Place" },
+  "detection": { "mode": "manual", "detectedTime": "2026-10-07T15:18:00Z", "principal": "officer-0417" },
+  "relatedSession": { "id": "f1000000-0000-4000-8000-000000000076", "className": "Session" },
+  "amount": { "currencyType": "USD", "currencyValue": 0 },
+  "statusHistory": [
+    { "state": "issued", "time": "2026-10-07T15:20:00Z", "actor": "officer-0417", "detail": "warning; no fine" },
+    { "state": "voided", "time": "2026-10-08T09:05:00Z", "actor": "enforcement-console", "detail": "issuedInError: Vehicle displayed a valid pay-by-plate receipt." }
+  ]
+}
+```
+
+---

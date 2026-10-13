@@ -115,6 +115,9 @@ export default {
     const recompute = (id) => {
       const rec = contexts().get(id);
       if (!rec) return null;
+      // A context seeded verbatim by a world fixture pins no subjects, so
+      // there is nothing to recompose it from; it stays as written.
+      if (!rec._subjects) return rec;
       if (expired(rec)) {
         if (!rec._policy?._expired) return contexts().update(id, (r) => ({ ...r, _policy: EXPIRED }), { bump: false });
         return rec;

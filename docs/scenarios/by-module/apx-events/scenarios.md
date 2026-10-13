@@ -530,7 +530,10 @@ The alert, on the same ops-monitor subscription (which also holds
 narrow its filters, tries to attach to the stream, reads its ledger, and
 finally resumes. **Then** 410 `subscription-failed` on the update (Part 8 §8.1: while
 `failed`, the only PATCH accepted is one that sets `status: active`),
-410 on the stream, 200 on the ledger, and 200 on a status-only
+404 `target-not-found` on the stream (Part 8 §8.4 checks `transport`
+before state, and this subscription is `webhook`, so there is no stream
+for it in any state; the 410 there applies to a failed `sse`
+subscription), 200 on the ledger, and 200 on a status-only
 `PATCH` — the body is a merge patch, so nothing else has to be resent.
 
 <!-- apx:request PATCH /webhooks/e8000000-0000-4000-8000-000000000003 -->
@@ -561,13 +564,13 @@ Accept: text/event-stream
 ```
 
 <!-- apx:request GET /v1/events/stream?subscription=e8000000-0000-4000-8000-000000000003 -->
-<!-- apx:response 410 -->
+<!-- apx:response 404 -->
 ```json
 {
-  "type": "https://apx-standard.org/problems/subscription-failed",
-  "title": "Subscription is failed",
-  "status": 410,
-  "detail": "Subscription e8000000-0000-4000-8000-000000000003 is in state failed.",
+  "type": "https://apx-standard.org/problems/target-not-found",
+  "title": "Target not found",
+  "status": 404,
+  "detail": "Subscription e8000000-0000-4000-8000-000000000003 has transport webhook; the stream serves transport sse only.",
   "instance": "/v1/events/stream"
 }
 ```

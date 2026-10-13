@@ -8,9 +8,10 @@ import { entry, getVisible, paginate, wire, money } from '../common.mjs';
 import { evaluateEligibility, relatedOf } from './eligibility.mjs';
 import { applyIssuePolicy, frozenTerms, policyTerms, policyInForce } from './policy.mjs';
 import { violations, publish, pauseEsc, resumeEsc, armEscalation, armClosure } from './timers.mjs';
-import { config, isKnownType, toMs, iso, fmt, short, actorOf, transitionIllegal, invalid, bodyPlace, queryPlace, TERMINAL, ENTITLEMENT_TYPES, TOPIC, DAY_MS } from './model.mjs';
+import { checkIssuanceEvidence, sourceOf } from './evidence.mjs';
+import { config, isKnownType, toMs, iso, fmt, round2, short, actorOf, transitionIllegal, invalid, bodyPlace, queryPlace, TERMINAL, ENTITLEMENT_TYPES, TOPIC, DAY_MS } from './model.mjs';
 
-const READ_ONLY = ['id', 'version', 'violationStatus', 'eligibilityCheck', 'policy', 'signage', 'amountHistory', 'notice', 'appeal', 'statusHistory', 'unpaidAmount', 'capAmount', 'amount', 'dueTime', 'payment', 'recordInfo', 'relatedSession', 'relatedRight'];
+const READ_ONLY = ['id', 'version', 'violationStatus', 'payments', 'amountPaid', 'eligibilityCheck', 'policy', 'signage', 'amountHistory', 'notice', 'appeal', 'statusHistory', 'unpaidAmount', 'capAmount', 'amount', 'dueTime', 'payment', 'recordInfo', 'relatedSession', 'relatedRight'];
 
 /** §19.9 rule 1: GeoJSON positions are [longitude, latitude]. */
 function checkLocation(sim, location) {
@@ -97,27 +98,48 @@ export function registerLifecycle(sim) {
 
   sim.on('get-apx-v1-violations-id', (ctx) => wire(load(ctx)));
 
-  sim.on('get-apx-v1-violations', (ctx) => {
-    const q = ctx.query;
-    const place = q.has('place') ? queryPlace(ctx, q.get('place')) : null;
-    const since = toMs(q.get('since'));
-    const until = toMs(q.get('until'));
-    const rows = violations(sim)
+/**
+   * The §19.2 lookup, shared by GET /v1/violations and POST /v1/violations:search.
+   * `has`/`get` read the filters from the query string or the body. Every
+   * key that names no place (plate, noticeNumber, sourceRecordId) still
+   * returns only rows at granted places (Part 9 §9.3a rule 3).
+   */
+  const lookup = (ctx, { has, get }) => {
+    const place = has('place') ? queryPlace(ctx, get('place')) : null;
+    const since = toMs(get('since'));
+    const until = toMs(get('until'));
+    const eq = (key, value) => !has(key) || value === get(key);
+    return violations(sim)
       .find((v) => {
         if (!ctx.principal.hasGrant || !ctx.hierarchy.covers(ctx.principal.places, v._place)) return false;
         if (place && !ctx.hierarchy.within(v._place, place.id)) return false;
-        if (q.has('plate') && v.vehicle?.credentialIdentification !== q.get('plate')) return false;
-        if (q.has('noticeNumber') && v.notice?.noticeNumber !== q.get('noticeNumber')) return false;
-        if (q.has('status') && v.violationStatus !== q.get('status')) return false;
-        if (q.has('type') && v.violationType !== q.get('type')) return false;
-        if (q.has('detectionMode') && v.detection?.mode !== q.get('detectionMode')) return false;
+        const source = sourceOf(v);
+        const checks = [
+          eq('plate', v.vehicle?.credentialIdentification),
+          eq('noticeNumber', v.notice?.noticeNumber),
+          eq('status', v.violationStatus),
+          eq('type', v.violationType),
+          eq('detectionMode', v.detection?.mode),
+          eq('sourceSystem', source?.system),
+          eq('sourceRecordId', source?.recordId),
+        ];
+        if (checks.includes(false)) return false;
         const t = toMs(v.detection?.detectedTime);
         if (since !== undefined && t < since) return false;
-        if (until !== undefined && t > until) return false;
+        if (until !== undefined && t >= until) return false; // until is exclusive
         return true;
       })
       .sort((a, b) => toMs(b.detection.detectedTime) - toMs(a.detection.detectedTime));
-    return paginate(ctx, rows);
+  };
+
+  sim.on('get-apx-v1-violations', (ctx) => paginate(ctx, lookup(ctx, { has: (k) => ctx.query.has(k), get: (k) => ctx.query.get(k) })));
+
+  sim.on('post-apx-v1-violations-search', (ctx) => {
+    const b = ctx.body ?? {};
+    const has = (k) => b[k] !== undefined && b[k] !== null;
+    const rows = lookup(ctx, { has, get: (k) => b[k] });
+    const query = { int: (k) => (k === 'page' && Number.isInteger(b.page) ? b.page : undefined) };
+    return paginate({ query, clock: ctx.clock }, rows);
   });
 
   // ---------- review ----------
@@ -148,8 +170,9 @@ export function registerLifecycle(sim) {
   };
 
   const checkIssuable = (v) => {
+    if (v.violationStatus !== 'confirmed' && v.violationStatus !== 'detected') transitionIllegal(`issue is valid only from confirmed (or detected, automated, where policy permits); violation ${v.id} is ${v.violationStatus}.`);
+    checkIssuanceEvidence(sim, v); // §19.4 rules 5 and 6, every detection mode
     if (v.violationStatus === 'confirmed') return null;
-    if (v.violationStatus !== 'detected') transitionIllegal(`issue is valid only from confirmed (or detected, automated, where policy permits); violation ${v.id} is ${v.violationStatus}.`);
     const mode = v.detection.mode;
     if (mode !== 'automated') fail('violation-not-issuable', `Detection mode ${mode} requires review before issuance; current status is detected.`);
     const { policy, rule } = unreviewedRule(v);
@@ -209,18 +232,52 @@ export function registerLifecycle(sim) {
 
   // ---------- payment ----------
 
+  // §19.6a: each attachment contributes its `amount` (absent = the whole
+  // outstanding balance), is appended to payments[] and summed in
+  // amountPaid; the violation is `paid` only when amountPaid ≥ amount.
   sim.on('post-apx-v1-violations-id-payment', (ctx) => {
     const v = load(ctx);
+    const b = ctx.body;
     if (v.violationStatus !== 'issued') transitionIllegal(`payment is valid only from issued; violation ${v.id} is ${v.violationStatus}.`);
+    const currency = v.amount?.currencyType ?? 'USD';
+    if (b.amount && b.amount.currencyType !== currency) {
+      fail('invalid-request', `amount is in ${b.amount.currencyType}; the violation is payable in ${currency}.`, { errors: [{ pointer: '/amount/currencyType', detail: `must be ${currency}` }] });
+    }
     const nowMs = ctx.clock.nowMs();
-    const ref = ctx.body.payment;
+    const now = iso(nowMs);
+    const ref = b.payment;
+    const owed = v.amount?.currencyValue ?? 0;
+    const before = v.amountPaid?.currencyValue ?? 0;
+    const part = b.amount ? b.amount.currencyValue : Math.max(0, round2(owed - before));
+    const after = round2(before + part);
+    const applied = { amount: money(part, currency), paidTime: now, payment: ref };
+    const patch = { payments: [...(v.payments ?? []), applied], amountPaid: money(after, currency) };
+    const label = `${short(ref.id)}`;
+    if (after < owed) {
+      const detail = [`part payment ${label}: ${fmt(part)} of ${fmt(owed)}; ${fmt(owed - after)} outstanding`, b.note].filter(Boolean).join('; ');
+      return wire(move(ctx, v, 'issued', { detail, patch })); // the escalation clock keeps running
+    }
+    const parts = patch.payments.map((x) => fmt(x.amount.currencyValue));
+    const settled = parts.length > 1 ? `settled by ${label}; ${parts.join(' + ')}` : `${ref.className ?? 'Payment'} ${label}`;
     const paid = move(ctx, v, 'paid', {
-      detail: [`${ref.className ?? 'Payment'} ${short(ref.id)}`, ctx.body.note].filter(Boolean).join('; '),
-      patch: { payment: ref, _esc: pauseEsc(v, nowMs), _paidSince: iso(nowMs) },
+      detail: [settled, b.note].filter(Boolean).join('; '),
+      patch: { ...patch, payment: ref, _esc: pauseEsc(v, nowMs), _paidSince: now },
     });
     armClosure(sim, paid.id);
     return wire(violations(sim).get(paid.id));
   });
+
+  /**
+   * §19.6a rule 4: a refund reduces amountPaid by the refunded amount — the
+   * Part 13 refund record's own amount when this server holds it, else
+   * `fallback` (the figure the transition implies).
+   */
+  const lessRefund = (v, refund, fallback) => {
+    if (!refund || !v.amountPaid) return {};
+    const held = sim.store.collection('payments').get(refund.id)?.amount?.currencyValue;
+    const refunded = held !== undefined ? Math.abs(held) : Math.max(0, fallback);
+    return { amountPaid: money(Math.max(0, round2(v.amountPaid.currencyValue - refunded)), v.amountPaid.currencyType) };
+  };
 
   // ---------- appeals ----------
 
@@ -263,7 +320,7 @@ export function registerLifecycle(sim) {
     const now = iso(nowMs);
     const appeal = { ...v.appeal, resolvedTime: now, resolution: b.resolution, ...(b.note ? { resolutionNote: b.note } : {}), ...(b.refund ? { refund: b.refund } : {}) };
     const refundNote = b.refund ? `; refund ${short(b.refund.id)}` : '';
-    if (b.resolution === 'dismissed') return wire(move(ctx, v, 'closed', { detail: `appeal dismissed${refundNote}`, patch: { appeal } }));
+    if (b.resolution === 'dismissed') return wire(move(ctx, v, 'closed', { detail: `appeal dismissed${refundNote}`, patch: { appeal, ...lessRefund(v, b.refund, v.amountPaid?.currencyValue ?? 0) } }));
     const back = v.appeal.openedFrom ?? 'issued';
     const patch = { appeal };
     let detail = `appeal upheld${refundNote}`;
@@ -272,11 +329,20 @@ export function registerLifecycle(sim) {
       patch.amount = amount;
       patch.amountHistory = [...(v.amountHistory ?? []), { amount, time: now, reason: 'appealReduced', ...(b.refund ? { detail: `refund ${short(b.refund.id)} ${fmt(v.amount.currencyValue - amount.currencyValue)}` } : {}) }];
       detail = `appeal reduced: ${fmt(v.amount.currencyValue)} → ${fmt(amount.currencyValue)}${refundNote}`;
+      Object.assign(patch, lessRefund(v, b.refund, (v.amountPaid?.currencyValue ?? 0) - amount.currencyValue));
     }
-    if (back === 'issued') patch._esc = resumeEsc(v, nowMs);
+    // §19.6a rule 2: a reduction to no more than what was already received settles it.
+    const received = (patch.amountPaid ?? v.amountPaid)?.currencyValue;
+    const owed = (patch.amount ?? v.amount)?.currencyValue ?? 0;
+    const settled = back === 'issued' && received !== undefined && received >= owed;
+    const target = settled ? 'paid' : back;
+    if (settled) {
+      Object.assign(patch, { payment: v.payments?.at(-1)?.payment ?? v.payment, _esc: pauseEsc(v, nowMs), _paidSince: now });
+      detail = `${detail}; settled by the ${fmt(received)} already received`;
+    } else if (back === 'issued') patch._esc = resumeEsc(v, nowMs);
     else patch._paidSince = now;
-    const out = move(ctx, v, back, { detail, patch });
-    if (back === 'issued') armEscalation(sim, out.id);
+    const out = move(ctx, v, target, { detail, patch });
+    if (target === 'issued') armEscalation(sim, out.id);
     else armClosure(sim, out.id);
     return wire(violations(sim).get(out.id));
   });
@@ -289,6 +355,6 @@ export function registerLifecycle(sim) {
     if (v.violationStatus === 'voided') transitionIllegal(`Violation ${v.id} is already voided.`);
     if (TERMINAL.has(v.violationStatus)) transitionIllegal(`Violation ${v.id} is ${v.violationStatus} (terminal); void is refused.`);
     const detail = [b.reason, b.note].filter(Boolean).join(': ') + (b.refund ? `; refund ${short(b.refund.id)}` : '');
-    return wire(move(ctx, v, 'voided', { detail, patch: { _esc: pauseEsc(v, ctx.clock.nowMs()), ...(b.refund ? { _refund: b.refund } : {}) } }));
+    return wire(move(ctx, v, 'voided', { detail, patch: { _esc: pauseEsc(v, ctx.clock.nowMs()), ...(b.refund ? { _refund: b.refund } : {}), ...lessRefund(v, b.refund, v.amountPaid?.currencyValue ?? 0) } }));
   });
 }

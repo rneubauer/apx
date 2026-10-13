@@ -1,7 +1,7 @@
 # APX vetting scenarios, by module
 
 The worked scenarios one folder up tell 32 end-to-end stories. This
-folder is the test bench underneath them: **379 scenarios**, one set per
+folder is the test bench underneath them: **386 scenarios**, one set per
 conformance class, written to find the places the spec could not say what
 a real deployment needs. Every request and response in them is checked
 against the bundled spec (`spec/dist/apx-v1.json`), and what the spec
@@ -27,8 +27,8 @@ findings table says how.
 | [`apx-tolling`](apx-tolling/scenarios.md) | 24 | 8/8 | 52/53 | 3/3 | [14](apx-tolling/findings.md) |
 | [`apx-valet`](apx-valet/scenarios.md) | 25 | 12/12 | 78/79 | 8/8 | [16](apx-valet/findings.md) |
 | [`apx-validations`](apx-validations/scenarios.md) | 25 | 17/17 | 105/107 | 8/8 | [13](apx-validations/findings.md) |
-| [`apx-violations`](apx-violations/scenarios.md) | 29 | 20/24 | 125/155 | 12/17 | [17](apx-violations/findings.md) |
-| **total** | **379** | | | **120/150** | **221** |
+| [`apx-violations`](apx-violations/scenarios.md) | 36 | 22/24 | 133/155 | 17/17 | [17](apx-violations/findings.md) |
+| **total** | **386** | | | **125/150** | **221** |
 
 *Operations* and *Responses* count the routes and declared status codes
 each module's scenarios exercise; the total of the Annex A column

@@ -43,7 +43,7 @@ comment is machine-validated against the bundled spec by
 ## By module — the vetting suite
 
 Under these stories sits the test bench the spec was vetted with:
-[**379 scenarios, one folder per conformance class**](by-module/README.md),
+[**386 scenarios, one folder per conformance class**](by-module/README.md),
 each with its findings. Every request and response is checked against the
 bundle by `npm run vetting`.
 
@@ -67,7 +67,7 @@ awaiting triage.
 | [`apx-tolling`](by-module/apx-tolling/scenarios.md) | 24 | [14](by-module/apx-tolling/findings.md) |
 | [`apx-valet`](by-module/apx-valet/scenarios.md) | 25 | [16](by-module/apx-valet/findings.md) |
 | [`apx-validations`](by-module/apx-validations/scenarios.md) | 25 | [13](by-module/apx-validations/findings.md) |
-| [`apx-violations`](by-module/apx-violations/scenarios.md) | 29 | [17](by-module/apx-violations/findings.md) |
+| [`apx-violations`](by-module/apx-violations/scenarios.md) | 36 | [17](by-module/apx-violations/findings.md) |
 
 ## Conventions
 

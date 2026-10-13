@@ -1,7 +1,7 @@
 {
   "extends": "base-lakeside",
   "name": "apx-violations",
-  "description": "The cast of docs/scenarios/by-module/apx-violations: Lakeside Garage with Level 2 (bay 218), Level 3, Lot C and Level 4; Lot D under its own root; the LPR van and officer Okafor's handheld; the Lot C and garage enforcement policies; the Lot C and Level 2 signs; the permits, reservation, pay-by-plate sessions and plate reads the eligibility checks consult; and the violations the prose finds already on file.",
+  "description": "The cast of docs/scenarios/by-module/apx-violations: Lakeside Garage with Level 2 (bay 218), Level 3, Lot C and Level 4; Lot D under its own root; the LPR van and officer Okafor's handheld; the Lot C and garage enforcement policies; the Lot C and Level 2 signs; the permits, reservation, pay-by-plate sessions and plate reads the eligibility checks consult;; the violations the prose finds already on file; and, for VIO-30 to VIO-36, the stays a later import links to, reads still in plate review, and a Session whose own match to a violation is a shadow match.",
   "enforcement": {
     "graceMinutes": 15,
     "refundWindowDays": 30,
@@ -113,6 +113,39 @@
       "identifiedCredentials": [{ "type": "licensePlate", "credentialAssignedType": "vehicle", "identifier": { "id": "SYN-6102", "className": "VehicleCredential" } }],
       "segments": [{ "id": "f1…1061", "version": 1 }],
       "_place": "b1…0004", "_plate": "SYN-6102", "_rightType": "payByPlate"
+    },
+    {
+      "id": "f1…0071", "version": 1, "actualStart": "2026-09-25T09:30:00Z", "actualEnd": "2026-09-25T11:30:00Z",
+      "initiator": { "id": "a1…0001", "version": 1, "className": "Organisation" },
+      "hierarchyElement": { "id": "b1…0004", "version": 1, "className": "Place" },
+      "identifiedCredentials": [{ "type": "licensePlate", "credentialAssignedType": "vehicle", "identifier": { "id": "SYN-5528", "className": "VehicleCredential" } }],
+      "segments": [{ "id": "f1…1071", "version": 1 }],
+      "_place": "b1…0004", "_plate": "SYN-5528", "_rightType": "payByPlate"
+    },
+    {
+      "id": "f1…0072", "version": 1, "actualStart": "2026-10-06T08:00:00Z", "actualEnd": "2026-10-06T10:00:00Z",
+      "initiator": { "id": "a1…0001", "version": 1, "className": "Organisation" },
+      "hierarchyElement": { "id": "b1…0004", "version": 1, "className": "Place" },
+      "identifiedCredentials": [{ "type": "licensePlate", "credentialAssignedType": "vehicle", "identifier": { "id": "SYN-5536", "className": "VehicleCredential" } }],
+      "segments": [{ "id": "f1…1072", "version": 1 }],
+      "extensions": { "apds-ext:apx:session-detail@1.0": { "matches": [{ "target": { "id": "d3…0037", "className": "Violation" }, "matchType": "violation", "plate": { "method": "fuzzy", "editCost": 0.5, "jurisdiction": "agrees" }, "applied": false, "decidedBy": "system", "decidedTime": "2026-10-06T10:20:05Z" }] } },
+      "_place": "b1…0004", "_plate": "SYN-5536", "_rightType": "payByPlate"
+    },
+    {
+      "id": "f1…0076", "version": 1, "actualStart": "2026-10-07T13:00:00Z", "actualEnd": "2026-10-07T15:00:00Z",
+      "initiator": { "id": "a1…0001", "version": 1, "className": "Organisation" },
+      "hierarchyElement": { "id": "b1…0004", "version": 1, "className": "Place" },
+      "identifiedCredentials": [{ "type": "licensePlate", "credentialAssignedType": "vehicle", "identifier": { "id": "SYN-5531", "className": "VehicleCredential" } }],
+      "segments": [{ "id": "f1…1076", "version": 1 }],
+      "_place": "b1…0004", "_plate": "SYN-5531", "_rightType": "payByPlate"
+    },
+    {
+      "id": "f1…0090", "version": 1, "actualStart": "2026-10-01T13:00:00Z", "actualEnd": "2026-10-01T15:30:00Z",
+      "initiator": { "id": "a1…0001", "version": 1, "className": "Organisation" },
+      "hierarchyElement": { "id": "b1…0005", "version": 1, "className": "Place" },
+      "identifiedCredentials": [{ "type": "licensePlate", "credentialAssignedType": "vehicle", "identifier": { "id": "SYN-5520", "className": "VehicleCredential" } }],
+      "segments": [{ "id": "f1…1090", "version": 1 }],
+      "_place": "b1…0005", "_plate": "SYN-5520", "_rightType": "payByPlate"
     }
   ],
   "observations": [
@@ -124,7 +157,11 @@
     { "id": "f2…0052", "version": 1, "_place": "b1…0001", "_plate": "SYN-8820", "_time": "2026-09-24T08:31:47Z", "_confidence": 0.96, "_imageLink": "https://api.lakeside-garage.example/lpr/f2000000-0052.jpg" },
     { "id": "f2…0061", "version": 1, "_place": "b1…0003", "_plate": "PM-4410", "_credentialType": "permit", "_time": "2026-09-24T10:30:05Z", "_confidence": 0.92, "_imageLink": "https://api.lakeside-garage.example/lpr/f2000000-0061.jpg" },
     { "id": "f2…0070", "version": 1, "_place": "b1…0004", "_plate": "SYN-9031", "_time": "2026-09-23T06:15:40Z", "_confidence": 0.9, "_imageLink": "https://api.lakeside-garage.example/lpr/f2000000-0070.jpg", "_device": "b2…0031" },
-    { "id": "f2…0080", "version": 1, "_place": "b1…0004", "_plate": "SYN-5150", "_time": "2026-09-24T14:00:00Z", "_confidence": 0.9, "_imageLink": "https://api.lakeside-garage.example/lpr/f2000000-0080.jpg", "_device": "b2…0031" }
+    { "id": "f2…0080", "version": 1, "_place": "b1…0004", "_plate": "SYN-5150", "_time": "2026-09-24T14:00:00Z", "_confidence": 0.9, "_imageLink": "https://api.lakeside-garage.example/lpr/f2000000-0080.jpg", "_device": "b2…0031" },
+    { "id": "f2…0071", "version": 1, "_place": "b1…0004", "_plate": "SYN-5528", "_time": "2026-09-25T11:02:40Z", "_confidence": 0.71, "_imageLink": "https://api.lakeside-garage.example/lpr/f2000000-0071.jpg", "_device": "b2…0031" },
+    { "id": "f2…0072", "version": 1, "_place": "b1…0004", "_plate": "SYN-5533", "_time": "2026-10-06T07:12:00Z", "_confidence": 0.71, "_imageLink": "https://api.lakeside-garage.example/lpr/f2000000-0072.jpg", "_device": "b2…0031", "extensions": { "apds-ext:apx:lpr-read@1.0": { "review": { "state": "pending", "reasons": ["lowConfidence", "jurisdictionRequiresReview"] } } } },
+    { "id": "f2…0073", "version": 1, "_place": "b1…0004", "_plate": "SYN-5534", "_time": "2026-10-06T07:40:00Z", "_confidence": 0.71, "_imageLink": "https://api.lakeside-garage.example/lpr/f2000000-0073.jpg", "_device": "b2…0031", "extensions": { "apds-ext:apx:lpr-read@1.0": { "review": { "state": "rejected", "reasons": ["ambiguousCharacters"], "decidedTime": "2026-10-06T09:05:00Z", "decidedBy": "reviewer:a.ruiz" } } } },
+    { "id": "f2…0074", "version": 1, "_place": "b1…0004", "_plate": "SYN-5536", "_time": "2026-10-06T10:20:00Z", "_confidence": 0.71, "_imageLink": "https://api.lakeside-garage.example/lpr/f2000000-0074.jpg", "_device": "b2…0031" }
   ],
   "payments": [
     { "id": "d9…0004", "version": 1, "transactionID": "PORTAL-20260926-120040", "place": { "id": "b1…0004", "className": "Place" }, "dateCollected": "2026-09-26T12:00:40Z", "amount": { "currencyType": "USD", "currencyValue": 35.0 }, "channel": "online", "paymentStatus": "approved", "ticketNumber": "LG-2026-018530", "_place": "b1…0004" },
@@ -310,6 +347,58 @@
       "vehicle": { "credentialType": "licensePlate", "credentialIdentification": "SYN-5501", "jurisdiction": "US-IL" },
       "statusHistory": [{ "state": "detected", "time": "2026-09-24T08:10:01Z", "actor": "harbor-lpr" }],
       "recordInfo": { "creationTime": "2026-09-24T08:10:01Z", "creator": { "id": "a1…0002", "className": "Organisation" }, "lastUpdate": "2026-09-24T08:10:01Z" }
+    },
+    {
+      "id": "d3…0030", "version": 1, "violationType": "expiredRight", "violationStatus": "detected",
+      "place": { "id": "b1…0004", "className": "Place" },
+      "detection": { "mode": "automated", "detectedTime": "2026-09-25T11:02:40Z", "principal": "lpr-pipeline-lot-c", "confidence": 0.96 },
+      "vehicle": { "credentialType": "licensePlate", "credentialIdentification": "SYN-5528", "jurisdiction": "US-IL" },
+      "observations": [{ "id": "f2…0071", "className": "Observation" }],
+      "relatedSession": { "id": "f1…0071", "className": "Session" },
+      "statusHistory": [{ "state": "detected", "time": "2026-09-25T11:02:41Z", "actor": "lpr-pipeline-lot-c" }],
+      "extensions": { "apds-ext:apx:match-evidence@1.0": { "target": { "id": "f1…0071", "className": "Session" }, "matchType": "violation", "plate": { "method": "lenient", "editCost": 1, "jurisdiction": "agrees" }, "vehicle": { "level": "inconclusive" }, "applied": true, "decidedBy": "system", "decidedTime": "2026-09-25T11:02:41Z" } },
+      "recordInfo": { "creationTime": "2026-09-25T11:02:41Z", "creator": { "id": "a1…0001", "className": "Organisation" }, "creationUser": "lpr-pipeline-lot-c" }
+    },
+    {
+      "id": "d3…0032", "version": 2, "violationType": "expiredRight", "violationStatus": "issued", "dueTime": "2026-11-02T23:59:59Z",
+      "place": { "id": "b1…0004", "className": "Place" },
+      "detection": { "mode": "automated", "detectedTime": "2026-10-03T09:40:00Z", "principal": "lpr-pipeline-lot-c", "confidence": 0.95 },
+      "vehicle": { "credentialType": "licensePlate", "credentialIdentification": "SYN-5530", "jurisdiction": "US-IL" },
+      "evidence": [{ "imageLink": "https://api.lakeside-garage.example/lpr/f2000000-0075.jpg", "imageType": "plate", "capturedTime": "2026-10-03T09:40:00Z" }],
+      "policy": { "id": "d4…0001", "version": 1, "className": "EnforcementPolicy" },
+      "notice": { "noticeKind": "notice", "noticeNumber": "LG-2026-018610", "issuedTime": "2026-10-03T09:40:06Z", "issuedBy": { "id": "a1…0001", "className": "Organisation" }, "deliveryMethod": "mail" },
+      "amount": { "currencyType": "USD", "currencyValue": 35 },
+      "amountHistory": [{ "amount": { "currencyType": "USD", "currencyValue": 35 }, "time": "2026-10-03T09:40:06Z", "reason": "issued" }],
+      "statusHistory": [{ "state": "detected", "time": "2026-10-03T09:40:01Z", "actor": "lpr-pipeline-lot-c" }, { "state": "issued", "time": "2026-10-03T09:40:06Z", "actor": "lpr-pipeline-lot-c" }],
+      "recordInfo": { "creationTime": "2026-10-03T09:40:01Z", "creator": { "id": "a1…0001", "className": "Organisation" }, "creationUser": "lpr-pipeline-lot-c", "lastUpdate": "2026-10-03T09:40:06Z" }
+    },
+    {
+      "id": "d3…0035", "version": 2, "violationType": "expiredRight", "violationStatus": "confirmed",
+      "place": { "id": "b1…0004", "className": "Place" },
+      "detection": { "mode": "automated", "detectedTime": "2026-10-06T07:12:00Z", "principal": "lpr-pipeline-lot-c", "confidence": 0.71 },
+      "vehicle": { "credentialType": "licensePlate", "credentialIdentification": "SYN-5533", "jurisdiction": "US-IL" },
+      "observations": [{ "id": "f2…0072", "className": "Observation" }],
+      "statusHistory": [{ "state": "detected", "time": "2026-10-06T07:12:01Z", "actor": "lpr-pipeline-lot-c" }, { "state": "confirmed", "time": "2026-10-06T08:30:00Z", "actor": "officer-0417" }],
+      "recordInfo": { "creationTime": "2026-10-06T07:12:01Z", "creator": { "id": "a1…0001", "className": "Organisation" }, "creationUser": "lpr-pipeline-lot-c" }
+    },
+    {
+      "id": "d3…0036", "version": 2, "violationType": "expiredRight", "violationStatus": "confirmed",
+      "place": { "id": "b1…0004", "className": "Place" },
+      "detection": { "mode": "automated", "detectedTime": "2026-10-06T07:40:00Z", "principal": "lpr-pipeline-lot-c", "confidence": 0.71 },
+      "vehicle": { "credentialType": "licensePlate", "credentialIdentification": "SYN-5534", "jurisdiction": "US-IL" },
+      "observations": [{ "id": "f2…0073", "className": "Observation" }],
+      "statusHistory": [{ "state": "detected", "time": "2026-10-06T07:40:01Z", "actor": "lpr-pipeline-lot-c" }, { "state": "confirmed", "time": "2026-10-06T08:31:00Z", "actor": "officer-0417" }],
+      "recordInfo": { "creationTime": "2026-10-06T07:40:01Z", "creator": { "id": "a1…0001", "className": "Organisation" }, "creationUser": "lpr-pipeline-lot-c" }
+    },
+    {
+      "id": "d3…0037", "version": 2, "violationType": "maximumStayExceeded", "violationStatus": "confirmed",
+      "place": { "id": "b1…0004", "className": "Place" },
+      "detection": { "mode": "automated", "detectedTime": "2026-10-06T10:20:00Z", "principal": "lpr-pipeline-lot-c", "confidence": 0.71 },
+      "vehicle": { "credentialType": "licensePlate", "credentialIdentification": "SYN-5536", "jurisdiction": "US-IL" },
+      "observations": [{ "id": "f2…0074", "className": "Observation" }],
+      "statusHistory": [{ "state": "detected", "time": "2026-10-06T10:20:01Z", "actor": "lpr-pipeline-lot-c" }, { "state": "confirmed", "time": "2026-10-06T10:45:00Z", "actor": "officer-0417" }],
+      "recordInfo": { "creationTime": "2026-10-06T10:20:01Z", "creator": { "id": "a1…0001", "className": "Organisation" }, "creationUser": "lpr-pipeline-lot-c" },
+      "relatedSession": { "id": "f1…0072", "className": "Session" }
     }
   ],
   "credentials": {
