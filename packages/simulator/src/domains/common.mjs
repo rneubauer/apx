@@ -94,31 +94,6 @@ export function checkPrecondition(ctx, current) {
   }
 }
 
-/**
- * Part 17 §17.3 rule 3 for a domain operation whose body names no
- * resolutionContext (PUT /v1/sessions/{id}/plate): the newest live context
- * that evaluated `operationId` on `targetId` binds the write. `allowed:
- * false` is 403 action-not-allowed; `requiresApproval` without
- * `approval.approvedBy` is 403 approval-required. No such context: no gate.
- */
-export function enforceContextDecision(sim, operationId, targetId, approval) {
-  const now = sim.clock.nowMs();
-  const live = sim.store
-    .collection('resolutionContexts')
-    .all()
-    .filter((rc) => !(rc._expiresAt && now >= Date.parse(rc._expiresAt)));
-  for (const rc of [...live].reverse()) {
-    const action = (rc.allowedActions ?? []).find((a) => (a.action === operationId || a.execution?.operationId === operationId) && a.target?.id === targetId);
-    if (!action) continue;
-    if (action.allowed === false) fail('action-not-allowed', `Context ${rc.id} evaluated ${operationId} as not allowed.`);
-    if (action.requiresApproval && !approval?.approvedBy) {
-      fail('approval-required', `Context ${rc.id} allows ${operationId} only with approval by role ${action.approvalRole ?? 'supervisor'}; no approval evidence supplied.`);
-    }
-    return rc;
-  }
-  return null;
-}
-
 export const shortId = (id) => (typeof id === 'string' ? `${id.slice(0, 8)}-${id.slice(-4)}` : String(id));
 
 export const mls = (text, language = 'en') => [{ language, string: text }];

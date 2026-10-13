@@ -29,9 +29,10 @@
  */
 import { parseDuration } from '../kernel/clock.mjs';
 import { fail } from '../kernel/problems.mjs';
-import { paginate, refOf, checkPrecondition, wire, enforceContextDecision } from './common.mjs';
+import { paginate, refOf, checkPrecondition, wire } from './common.mjs';
 import { createModel, READ_KEY, CAMERAS_KEY } from './lpr/model.mjs';
 
+const PLATE_OP = 'put-apx-v1-sessions-id-plate';
 const DEFAULT_DISPUTE_WINDOW = 'PT30M';
 
 export default {
@@ -221,7 +222,7 @@ export default {
       checkPrecondition(ctx, s);
       const b = ctx.body;
       refuseClosed(ctx, s, b);
-      enforceContextDecision(sim, 'put-apx-v1-sessions-id-plate', s.id, b.approval);
+      enforceContextDecision(s.id, b.approval);
       const credentials = [m.plateCredential(b.plate), ...(s.identifiedCredentials ?? []).filter((c) => c?.type !== 'licensePlate')];
       const vehicle = b.country || b.stateProvince ? { ...(s.identifiedVehicle ?? {}), ...(b.country ? { country: b.country } : {}), ...(b.stateProvince ? { stateProvince: b.stateProvince } : {}) } : s.identifiedVehicle;
       const cited = b.observation?.id && m.isRead(m.observations().get(b.observation.id)) ? b.observation.id : null;
@@ -256,6 +257,30 @@ export default {
         version: current.version,
       };
     });
+
+    /**
+     * Part 17 §17.3 rule 3: the plate body names no resolutionContext, so
+     * the newest live context that evaluated the plate action on this
+     * session binds the write. allowed=false → 403 action-not-allowed;
+     * requiresApproval without approval.approvedBy → 403 approval-required.
+     * No such context: no gate.
+     */
+    function enforceContextDecision(sessionId, approval) {
+      const now = sim.clock.nowMs();
+      const live = sim.store
+        .collection('resolutionContexts')
+        .all()
+        .filter((rc) => !(rc._expiresAt && now >= Date.parse(rc._expiresAt)));
+      for (const rc of [...live].reverse()) {
+        const action = (rc.allowedActions ?? []).find((a) => (a.action === PLATE_OP || a.execution?.operationId === PLATE_OP) && a.target?.id === sessionId);
+        if (!action) continue;
+        if (action.allowed === false) fail('action-not-allowed', `Context ${rc.id} evaluated ${PLATE_OP} as not allowed.`);
+        if (action.requiresApproval && !approval?.approvedBy) {
+          fail('approval-required', `Context ${rc.id} allows ${PLATE_OP} only with approval by role ${action.approvalRole ?? 'supervisor'}; no approval evidence supplied.`);
+        }
+        return;
+      }
+    }
 
     /** Part 17 §17.5: a closed Session is corrected only inside the dispute window and only with a reason. */
     function refuseClosed(ctx, s, b) {
