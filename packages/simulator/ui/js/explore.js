@@ -19,8 +19,16 @@ export function mountExplore(root, { isActive }) {
   rootEl = root;
   on((what) => {
     if (!isActive()) return;
-    if (what === 'status' && ['Events', 'Log', 'State'].includes(tab) && state.status?.events !== lastEventCount) render();
+    // Without the live stream (state.live false) fall back to watching the event count.
+    if (what === 'status' && !state.live && ['Events', 'Log', 'State'].includes(tab) && state.status?.events !== lastEventCount) render();
     if (what === 'world') render();
+  });
+  // With it, refresh the open tab only when its kind of thing changed (see app.js).
+  const wants = { Events: ['event'], Log: ['request'], State: ['store'] };
+  window.addEventListener('sim:change', (e) => {
+    if (!isActive() || !wants[tab]) return;
+    const kinds = e.detail?.kinds ?? [];
+    if (kinds.includes('hello') || kinds.includes('reset') || wants[tab].some((k) => kinds.includes(k))) render();
   });
   return render;
 }

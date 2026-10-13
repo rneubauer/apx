@@ -1,0 +1,423 @@
+{
+  "name": "LPR entry and exit: two camera vendors, one visit",
+  "description": "A car enters Riverside Lot, a gateless pay-by-plate lot, and leaves two hours later. Two cameras from different vendors post plain APDS Observations; the lane says which way each camera faces, the read says whether it was an entry or an exit, and subscribers and lookups see the same shape whoever made the camera.",
+  "world": "apx-lpr",
+  "token": "<apx.data:read apx.lpr:read>",
+  "steps": [
+    {
+      "name": "Riverside Lot, 08:58 on a Friday",
+      "narration": "A gateless surface lot, paid by plate. There is no ticket and no barrier: the plate reads are the visit. The entry and exit lanes carry cameras from two different vendors, and both post to the same APX server.",
+      "clock": {
+        "now": "2026-09-25T13:58:00Z"
+      }
+    },
+    {
+      "name": "How the entry lane is set up",
+      "narration": "The lane is a native APDS VehicularAccess. APX adds one decoration that lists its cameras and which way each faces: inward, looking into the lot, or outward. With that, a consumer can interpret any camera's movement without knowing the vendor.",
+      "request": {
+        "method": "GET",
+        "path": "/places/b2…0060"
+      },
+      "expect": {
+        "status": 200,
+        "body": {
+          "accessType": "entry",
+          "extensions": {
+            "apds-ext:apx:lane-cameras@1.0": {
+              "cameras": [
+                {
+                  "cameraId": "cam-in-1",
+                  "faces": "inward"
+                },
+                {
+                  "cameraId": "cam-in-1f",
+                  "faces": "outward"
+                }
+              ]
+            }
+          }
+        }
+      }
+    },
+    {
+      "name": "The operations dashboard subscribes to plate reads",
+      "narration": "One subscription, on the standard APDS webhook route, to the two observation topics APX adds. Plate reads are personal data, so the credential must hold apx.lpr:read to receive them.",
+      "request": {
+        "method": "POST",
+        "path": "/webhooks",
+        "token": "<apx.subscriptions:manage apx.lpr:read>",
+        "headers": {
+          "Prefer": "return=representation"
+        },
+        "body": {
+          "endpoint": "https://dashboard.riverside.example/apx/events",
+          "topics": [
+            "apx.data.observation.created.v1",
+            "apx.data.observation.updated.v1"
+          ],
+          "filters": {
+            "places": [
+              "b1…0006"
+            ]
+          }
+        }
+      },
+      "expect": {
+        "status": 201,
+        "body": {
+          "status": "active"
+        }
+      },
+      "save": {
+        "sub": "$.id"
+      }
+    },
+    {
+      "name": "A car drives in",
+      "narration": "The entry camera's LPR system posts the read on APDS's own POST /observations. The APX decoration carries what the engine saw: the plate with its confidence, a rear plate moving away from an inward camera, and the LPR system's own call that this was an entry.",
+      "request": {
+        "method": "POST",
+        "path": "/observations",
+        "token": "riverside-lpr-system",
+        "body": {
+          "id": "f2000000-0000-4000-8000-000000000971",
+          "version": 1,
+          "type": "licensePlate",
+          "method": "anpr",
+          "observedCredentialId": "TRN-5527",
+          "observationStartTime": "2026-09-25T13:58:04Z",
+          "creationDateTime": "2026-09-25T13:58:05Z",
+          "elementIds": {
+            "id": "b2000000-0000-4000-8000-000000000060",
+            "version": 2,
+            "className": "VehicularAccess"
+          },
+          "observerOrganisation": {
+            "id": "a1…0001",
+            "version": 1,
+            "className": "Organisation"
+          },
+          "location": {
+            "observerLocation": {
+              "type": "Point",
+              "coordinates": [
+                -87.6188,
+                41.8827
+              ]
+            }
+          },
+          "vehicleAncillaryIdentification": {
+            "country": "US",
+            "stateProvince": "IL"
+          },
+          "confidence": {
+            "overallConfidence": 0.96
+          },
+          "images": [
+            {
+              "id": "img-0971-plate",
+              "imageType": "plate",
+              "imageLink": "https://api.lakeside-garage.example/v1/media/f2000000-0971/plate.jpg",
+              "cameraID": "cam-in-1"
+            }
+          ],
+          "extensions": {
+            "apds-ext:apx:lpr-read@1.0": {
+              "plate": {
+                "value": "TRN-5527",
+                "confidence": 0.96
+              },
+              "stateProvince": {
+                "value": "IL",
+                "confidence": 0.91
+              },
+              "platesRead": 1,
+              "plateFace": "rear",
+              "movement": "away",
+              "frameReads": 6,
+              "accessEvent": "entry",
+              "captureGroup": "cam-in-1/20260925T135804/0042",
+              "engine": "vendor-x/7.2"
+            }
+          }
+        }
+      },
+      "expect": {
+        "status": 201,
+        "body": {
+          "ids": [
+            "f2000000-0000-4000-8000-000000000971"
+          ]
+        }
+      }
+    },
+    {
+      "name": "Subscribers hear about it",
+      "narration": "The server publishes apx.data.observation.created.v1 with the Observation as its data, and the dashboard's webhook receives it. No vendor-specific feed is involved.",
+      "events": {
+        "type": "apx.data.observation.created.v1",
+        "exactly": 1
+      },
+      "deliveries": {
+        "subscription": "{sub}",
+        "status": "delivered"
+      }
+    },
+    {
+      "name": "Who just came in",
+      "narration": "Any consumer with apx.lpr:read can look the plate up. The read comes back bound to the lot, the lane and the camera, with its access event, and linked to the visit the platform opened from it.",
+      "request": {
+        "method": "GET",
+        "path": "/v1/lpr/reads?plate=TRN-5527"
+      },
+      "expect": {
+        "status": 200,
+        "body": {
+          "data": [
+            {
+              "plate": "TRN-5527",
+              "place": {
+                "id": "b1…0006"
+              },
+              "lane": {
+                "id": "b2…0060"
+              },
+              "cameraId": "cam-in-1",
+              "confidence": 0.96,
+              "detail": {
+                "accessEvent": "entry",
+                "movement": "away",
+                "plateFace": "rear"
+              },
+              "observation": {
+                "id": "f2000000-0000-4000-8000-000000000971"
+              }
+            }
+          ]
+        }
+      },
+      "save": {
+        "visit": "$.data.0.session.id"
+      }
+    },
+    {
+      "name": "The visit is an ordinary APDS Session",
+      "narration": "Pairing reads into visits is the platform's logic, not APX's. What APX fixes is the result: a native APDS Session that starts at the capture time of the entry read, not the time it arrived.",
+      "request": {
+        "method": "GET",
+        "path": "/sessions/{visit}"
+      },
+      "expect": {
+        "status": 200,
+        "body": {
+          "actualStart": "2026-09-25T13:58:04Z",
+          "hierarchyElement": {
+            "id": "b1…0006"
+          }
+        }
+      }
+    },
+    {
+      "name": "Two hours later",
+      "narration": "The simulated clock moves to 11:07 local time.",
+      "clock": {
+        "now": "2026-09-25T16:07:40Z"
+      }
+    },
+    {
+      "name": "The car leaves, past another vendor's camera",
+      "narration": "The exit camera is a different make. The car stopped under it, waiting for a gap in traffic, so the engine got a single frame and could not call the movement. Its LPR system reports the access event as unknown rather than guess.",
+      "request": {
+        "method": "POST",
+        "path": "/observations",
+        "token": "riverside-lpr-system",
+        "body": {
+          "id": "f2000000-0000-4000-8000-000000000972",
+          "version": 1,
+          "type": "licensePlate",
+          "method": "anpr",
+          "observedCredentialId": "TRN-5527",
+          "observationStartTime": "2026-09-25T16:07:31Z",
+          "creationDateTime": "2026-09-25T16:07:33Z",
+          "elementIds": {
+            "id": "b2000000-0000-4000-8000-000000000061",
+            "version": 3,
+            "className": "VehicularAccess"
+          },
+          "observerOrganisation": {
+            "id": "a1…0001",
+            "version": 1,
+            "className": "Organisation"
+          },
+          "location": {
+            "observerLocation": {
+              "type": "Point",
+              "coordinates": [
+                -87.6188,
+                41.8827
+              ]
+            }
+          },
+          "vehicleAncillaryIdentification": {
+            "country": "US",
+            "stateProvince": "IL"
+          },
+          "confidence": {
+            "overallConfidence": 0.93
+          },
+          "images": [
+            {
+              "id": "img-0972-plate",
+              "imageType": "plate",
+              "imageLink": "https://api.lakeside-garage.example/v1/media/f2000000-0972/plate.jpg",
+              "cameraID": "cam-exit-1"
+            }
+          ],
+          "extensions": {
+            "apds-ext:apx:lpr-read@1.0": {
+              "plate": {
+                "value": "TRN-5527",
+                "confidence": 0.93
+              },
+              "stateProvince": {
+                "value": "IL",
+                "confidence": 0.88
+              },
+              "platesRead": 1,
+              "plateFace": "rear",
+              "movement": "stopped",
+              "frameReads": 1,
+              "accessEvent": "unknown",
+              "captureGroup": "cam-exit-1/20260925T160731/0187",
+              "engine": "vendor-y/3.4"
+            }
+          }
+        }
+      },
+      "expect": {
+        "status": 201,
+        "body": {
+          "ids": [
+            "f2000000-0000-4000-8000-000000000972"
+          ]
+        }
+      }
+    },
+    {
+      "name": "The server infers nothing",
+      "narration": "The read is stored and published as sent. The server does not turn an outward camera and a known plate into an exit on its own; that call belongs to the LPR system, so the visit stays open.",
+      "request": {
+        "method": "GET",
+        "path": "/v1/lpr/reads?observation=f2000000-0000-4000-8000-000000000972"
+      },
+      "expect": {
+        "status": 200,
+        "body": {
+          "data": [
+            {
+              "plate": "TRN-5527",
+              "lane": {
+                "id": "b2…0061"
+              },
+              "cameraId": "cam-exit-1",
+              "detail": {
+                "accessEvent": "unknown",
+                "movement": "stopped",
+                "engine": "vendor-y/3.4"
+              }
+            }
+          ]
+        }
+      }
+    },
+    {
+      "name": "The LPR system revises the read to an exit",
+      "narration": "Once it has matched this read with the earlier entry, the LPR system revises the access event on the read itself. If-Match on the version guards against a stale revision.",
+      "request": {
+        "method": "PUT",
+        "path": "/v1/lpr/reads/f2000000-0000-4000-8000-000000000972/access-event",
+        "token": "riverside-lpr-system",
+        "headers": {
+          "If-Match": "\"1\""
+        },
+        "body": {
+          "accessEvent": "exit"
+        }
+      },
+      "expect": {
+        "status": 200,
+        "body": {
+          "observation": {
+            "id": "f2000000-0000-4000-8000-000000000972"
+          },
+          "accessEvent": "exit",
+          "version": 2
+        }
+      }
+    },
+    {
+      "name": "Subscribers get the revised read",
+      "narration": "The change goes out as apx.data.observation.updated.v1 carrying the Observation at version 2. A consumer keys on the Observation id and keeps the highest version.",
+      "events": {
+        "type": "apx.data.observation.updated.v1",
+        "exactly": 1
+      }
+    },
+    {
+      "name": "The visit closes at the capture time",
+      "narration": "The exit closes the Session. Its end is when the camera saw the car, not when the revision arrived.",
+      "request": {
+        "method": "GET",
+        "path": "/sessions/{visit}"
+      },
+      "expect": {
+        "status": 200,
+        "body": {
+          "actualStart": "2026-09-25T13:58:04Z",
+          "actualEnd": "2026-09-25T16:07:31Z"
+        }
+      }
+    },
+    {
+      "name": "Every read behind the visit",
+      "narration": "One call returns the reads behind the Session, newest first: an exit from one vendor's camera and an entry from another's, in the same shape. That is what lets a billing system, an enforcement officer or an auditor work from any LPR vendor.",
+      "request": {
+        "method": "GET",
+        "path": "/v1/lpr/reads?session={visit}"
+      },
+      "expect": {
+        "status": 200,
+        "body": {
+          "data": [
+            {
+              "observation": {
+                "id": "f2000000-0000-4000-8000-000000000972"
+              },
+              "cameraId": "cam-exit-1",
+              "detail": {
+                "accessEvent": "exit",
+                "engine": "vendor-y/3.4"
+              },
+              "session": {
+                "id": "{visit}"
+              }
+            },
+            {
+              "observation": {
+                "id": "f2000000-0000-4000-8000-000000000971"
+              },
+              "cameraId": "cam-in-1",
+              "detail": {
+                "accessEvent": "entry",
+                "engine": "vendor-x/7.2"
+              },
+              "session": {
+                "id": "{visit}"
+              }
+            }
+          ]
+        }
+      }
+    }
+  ]
+}

@@ -94,6 +94,7 @@ export default {
     // ---------- Part 6 integration: an applyValidation command lands in the ledger ----------
 
     sim.hooks.on('validation.applied', (payload) => ledger.fromCommand(payload));
+    sim.hooks.on('lane.vehicleArrives', ({ lane }) => ledger.syncLaneOnArrival(lane));
 
     // ---------- injectors: the world acting on its own ----------
 

@@ -48,7 +48,9 @@ export function stepKind(step) {
 
 /**
  * Run one step. `io.send(req)` serves a standard request; `io.control(method,
- * path, body)` reaches /sim. Returns { ok, error?, vars, request?, response? }.
+ * path, body)` reaches /sim. Returns { ok, error?, vars, request?, response?, checks? };
+ * `checks` lists each assertion the step made (status, problem, body leaf,
+ * contract, event count, delivery) with expected, actual and ok.
  * A failed expectation is reported, not thrown; the caller decides whether to stop.
  */
 export async function runStep(raw, { io, vars = {}, defaultToken, defaultWorld = 'default' }) {
@@ -86,11 +88,52 @@ async function runRequest(step, out, { io, nextVars, defaultToken }) {
   out.request = { method, path: rq.path, headers, body: rq.body };
   out.response = { status: res.status, problem: slug, contract: res.headers?.['x-sim-contract'] ?? null, headers: res.headers, body: res.body };
   const ex = step.expect ?? {};
+  out.checks = [...(out.checks ?? []), ...requestChecks(ex, out.response)];
   if (ex.status !== undefined && res.status !== ex.status) throw new Error(`expected status ${ex.status}, got ${res.status}${slug ? ' ' + slug : ''}${res.body?.detail ? ': ' + res.body.detail : ''}`);
   if (ex.problem && slug !== ex.problem) throw new Error(`expected problem ${ex.problem}, got ${slug ?? res.status}`);
   if (ex.body !== undefined && !partialMatch(ex.body, res.body)) throw new Error(`body mismatch: expected ${JSON.stringify(ex.body).slice(0, 300)}`);
   if (out.response.contract && ex.allowContract !== true) throw new Error(`response violates the bundle: ${out.response.contract}`);
   for (const [k, path] of Object.entries(step.save ?? {})) nextVars[k] = pick(res.body, path);
+}
+
+const MAX_BODY_CHECKS = 40; // a partial body is small; this only guards the result size
+
+/**
+ * The leaves of a partial-body expectation, each with the value found at the
+ * same place in the actual body: [{ path: 'currentTicket.paidInFull', expected, actual }].
+ * An empty object or array is a leaf of its own (it asserts only the shape).
+ */
+function bodyLeaves(expected, actual, path = '') {
+  const container = expected !== null && typeof expected === 'object';
+  const entries = container ? (Array.isArray(expected) ? expected.map((v, i) => [i, v]) : Object.entries(expected)) : [];
+  if (!entries.length) return [{ path, expected, actual }];
+  const shapeOk = Array.isArray(expected) ? Array.isArray(actual) : actual !== null && typeof actual === 'object';
+  return entries.flatMap(([k, v]) => {
+    const childPath = typeof k === 'number' ? `${path}[${k}]` : path ? `${path}.${k}` : k;
+    return bodyLeaves(v, shapeOk ? actual[k] : undefined, childPath);
+  });
+}
+
+/**
+ * One entry per assertion a request step makes, pass or fail, so a UI can
+ * show expected next to actual: { check, path?, expected, actual, missing?, ok }.
+ * Additive: `ok` and `error` on the step stay the verdict.
+ */
+export function requestChecks(ex, response) {
+  const checks = [];
+  if (ex.status !== undefined) checks.push({ check: 'status', expected: ex.status, actual: response.status, ok: response.status === ex.status });
+  if (ex.problem) checks.push({ check: 'problem', expected: ex.problem, actual: response.problem ?? null, ok: response.problem === ex.problem });
+  if (ex.body !== undefined) {
+    const leaves = bodyLeaves(ex.body, response.body);
+    const body = leaves.slice(0, MAX_BODY_CHECKS).map((l) => ({
+      check: 'body', path: l.path, expected: l.expected, actual: l.actual ?? null, ...(l.actual === undefined ? { missing: true } : {}), ok: partialMatch(l.expected, l.actual),
+    }));
+    // The leaves and partialMatch agree by construction; keep the verdict honest if they ever do not.
+    if (body.every((c) => c.ok) && !partialMatch(ex.body, response.body)) body.push({ check: 'body', path: '', expected: ex.body, actual: response.body ?? null, ok: false });
+    checks.push(...body);
+  }
+  if (response.contract) checks.push({ check: 'contract', expected: 'valid against the APX bundle', actual: response.contract, ok: ex.allowContract === true, allowed: ex.allowContract === true });
+  return checks;
 }
 
 async function checkEvents(spec, out, io) {
@@ -101,6 +144,10 @@ async function checkEvents(spec, out, io) {
   const n = r?.count ?? 0;
   out.eventCount = n;
   const what = spec.type ?? 'any type';
+  const bounds = [['min', (x) => n >= x], ['max', (x) => n <= x], ['exactly', (x) => n === x]];
+  const counted = bounds.filter(([k]) => spec[k] !== undefined)
+    .map(([k, test]) => ({ check: 'events', type: spec.type ?? null, bound: k, expected: spec[k], actual: n, ok: test(spec[k]) }));
+  out.checks = [...(out.checks ?? []), ...counted];
   if (spec.min !== undefined && n < spec.min) throw new Error(`expected at least ${spec.min} events of ${what}, saw ${n}`);
   if (spec.max !== undefined && n > spec.max) throw new Error(`expected at most ${spec.max} events of ${what}, saw ${n}`);
   if (spec.exactly !== undefined && n !== spec.exactly) throw new Error(`expected exactly ${spec.exactly} events of ${what}, saw ${n}`);
@@ -111,6 +158,10 @@ async function checkDeliveries(spec, out, io) {
   const r = await io.control('GET', `/sim/deliveries${q}`);
   const rows = r?.deliveries ?? [];
   out.deliveryCount = rows.length;
+  if (spec.status) {
+    const seen = [...new Set(rows.map((d) => d.status))];
+    out.checks = [...(out.checks ?? []), { check: 'delivery', expected: spec.status, actual: seen, ok: seen.includes(spec.status) }];
+  }
   if (spec.status && !rows.some((d) => d.status === spec.status)) throw new Error(`no delivery in status ${spec.status}`);
 }
 

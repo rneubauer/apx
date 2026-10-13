@@ -1,0 +1,282 @@
+{
+  "name": "Webhook retry: an endpoint that is down, and nothing lost",
+  "description": "The city's curb platform subscribes to Lakeside's device events, then its endpoint goes down. An exit-gate fault is published; the simulated receiver answers 500, 500, then 200, and the delivery ledger shows each attempt on the Part 8 schedule (0 s, 30 s, 2 min) until the event is delivered, the same envelope every time, re-signed per attempt. Then the city pauses its subscription for a deploy: an event published meanwhile is held and delivered on resume.",
+  "world": "apx-events",
+  "token": "city-platform",
+  "steps": [
+    {
+      "name": "Lakeside Garage, 18:00 on a Thursday",
+      "narration": "The city's curb platform wants to know when Lakeside's lane equipment changes state. APX delivers events as signed webhooks with a fixed retry schedule, so a subscriber that is briefly unreachable still gets every event. The simulated clock is frozen at 18:00 and moves only when a step moves it.",
+      "clock": {
+        "now": "2026-09-24T18:00:00Z"
+      }
+    },
+    {
+      "name": "The city subscribes to device state",
+      "narration": "A webhook subscription at APDS's own /webhooks route. Asking for the representation returns the subscription and its signing secret, once; the server will not disclose the secret again.",
+      "request": {
+        "method": "POST",
+        "path": "/webhooks",
+        "headers": {
+          "Prefer": "return=representation",
+          "Idempotency-Key": "city-curb-sub-devices-1"
+        },
+        "body": {
+          "endpoint": "https://curb.city.example/apx/events",
+          "topics": ["apx.control.device.state.v1"],
+          "transport": "webhook"
+        }
+      },
+      "expect": {
+        "status": 201,
+        "body": {
+          "endpoint": "https://curb.city.example/apx/events",
+          "topics": ["apx.control.device.state.v1"],
+          "transport": "webhook",
+          "status": "active"
+        }
+      },
+      "save": {
+        "sub": "$.id"
+      }
+    },
+    {
+      "name": "The city's endpoint goes down",
+      "narration": "The simulator stands in for the city's server. It is told to answer the next two deliveries with 500 and the third with 200, as an endpoint would during a short outage.",
+      "receiver": {
+        "endpoint": "https://curb.city.example/apx/events",
+        "codes": [500, 500, 200]
+      },
+      "request": {
+        "method": "GET",
+        "path": "/sim/receivers?endpoint=https://curb.city.example/apx/events"
+      },
+      "expect": {
+        "status": 200,
+        "body": {
+          "endpoint": "https://curb.city.example/apx/events",
+          "codes": [500, 500, 200]
+        }
+      }
+    },
+    {
+      "name": "18:14: the exit barrier faults",
+      "narration": "The arm sensor on exit lane 2 reports a fault. The PARCS publishes apx.control.device.state.v1, and the first delivery attempt goes out at once.",
+      "clock": {
+        "now": "2026-09-24T18:14:00Z"
+      },
+      "inject": {
+        "kind": "deviceState",
+        "device": "c1…0002",
+        "state": "fault",
+        "actor": "barrier arm sensor"
+      },
+      "events": {
+        "type": "apx.control.device.state.v1",
+        "exactly": 1
+      }
+    },
+    {
+      "name": "First attempt: 500",
+      "narration": "The delivery ledger is part of the standard, not a simulator feature: the subscriber can read it at GET /webhooks/{id}/deliveries. One attempt, code 500, status retrying.",
+      "request": {
+        "method": "GET",
+        "path": "/webhooks/{sub}/deliveries"
+      },
+      "expect": {
+        "status": 200,
+        "body": {
+          "data": [
+            {
+              "attempts": 1,
+              "status": "retrying",
+              "lastCode": 500,
+              "attemptHistory": [ { "time": "2026-09-24T18:14:00Z", "code": 500 } ]
+            }
+          ]
+        }
+      },
+      "save": {
+        "evt": "$.data.0.eventId"
+      }
+    },
+    {
+      "name": "18:14:29: the retry is due, not yet sent",
+      "narration": "Part 8 fixes the delays between attempts: 30 seconds, then 2 minutes, 10 minutes, 1 hour, then hourly for 24 hours. Twenty-nine seconds on, the ledger still shows one attempt.",
+      "clock": {
+        "advance": "PT29S"
+      },
+      "request": {
+        "method": "GET",
+        "path": "/webhooks/{sub}/deliveries?eventId={evt}"
+      },
+      "expect": {
+        "status": 200,
+        "body": {
+          "data": [ { "eventId": "{evt}", "attempts": 1, "status": "retrying" } ]
+        }
+      }
+    },
+    {
+      "name": "18:14:30: second attempt, 500 again",
+      "narration": "Thirty seconds after the first attempt the server tries again. Still down; the next try is scheduled two minutes later.",
+      "clock": {
+        "advance": "PT1S"
+      },
+      "request": {
+        "method": "GET",
+        "path": "/webhooks/{sub}/deliveries?eventId={evt}"
+      },
+      "expect": {
+        "status": 200,
+        "body": {
+          "data": [
+            {
+              "eventId": "{evt}",
+              "attempts": 2,
+              "status": "retrying",
+              "lastCode": 500,
+              "attemptHistory": [
+                { "time": "2026-09-24T18:14:00Z", "code": 500 },
+                { "time": "2026-09-24T18:14:30Z", "code": 500 }
+              ]
+            }
+          ]
+        }
+      }
+    },
+    {
+      "name": "18:16:30: third attempt, delivered",
+      "narration": "The endpoint is back and answers 200. The ledger records the event as delivered after three attempts, with the time and code of each.",
+      "clock": {
+        "advance": "PT2M"
+      },
+      "request": {
+        "method": "GET",
+        "path": "/webhooks/{sub}/deliveries?eventId={evt}"
+      },
+      "expect": {
+        "status": 200,
+        "body": {
+          "data": [
+            {
+              "eventId": "{evt}",
+              "attempts": 3,
+              "status": "delivered",
+              "lastCode": 200,
+              "time": "2026-09-24T18:16:30Z",
+              "attemptHistory": [
+                { "time": "2026-09-24T18:14:00Z", "code": 500 },
+                { "time": "2026-09-24T18:14:30Z", "code": 500 },
+                { "time": "2026-09-24T18:16:30Z", "code": 200 }
+              ]
+            }
+          ]
+        }
+      }
+    },
+    {
+      "name": "What the city's server received",
+      "narration": "Three POSTs carrying the same event id and the same body. Each attempt has its own APX-Delivery-Id, an APX-Timestamp of that attempt, and an APX-Signature computed over that timestamp and the body, so a late retry verifies as well as the first. The receiver can de-duplicate on the event id.",
+      "request": {
+        "method": "GET",
+        "path": "/sim/receivers?endpoint=https://curb.city.example/apx/events"
+      },
+      "expect": {
+        "status": 200,
+        "body": {
+          "codes": [],
+          "inbox": [
+            { "eventId": "{evt}", "subscription": "{sub}", "code": 500, "headers": { "apx-timestamp": "2026-09-24T18:14:00Z" } },
+            { "eventId": "{evt}", "subscription": "{sub}", "code": 500, "headers": { "apx-timestamp": "2026-09-24T18:14:30Z" } },
+            { "eventId": "{evt}", "subscription": "{sub}", "code": 200, "headers": { "apx-timestamp": "2026-09-24T18:16:30Z" } }
+          ]
+        }
+      }
+    },
+    {
+      "name": "18:30: the city pauses for a deploy",
+      "narration": "Planned downtime is handled by the subscriber, not by failed deliveries. The city sets its subscription to paused; the server holds events for it for up to 24 hours.",
+      "clock": {
+        "now": "2026-09-24T18:30:00Z"
+      },
+      "request": {
+        "method": "PATCH",
+        "path": "/webhooks/{sub}",
+        "body": {
+          "status": "paused"
+        }
+      },
+      "expect": {
+        "status": 200,
+        "body": {
+          "id": "{sub}",
+          "status": "paused"
+        }
+      }
+    },
+    {
+      "name": "18:41: the barrier is repaired while paused",
+      "narration": "A technician clears the fault and the gate reports available. The event is published, but nothing is sent to the paused subscription and its ledger has no new record: a held event has no delivery until its first attempt.",
+      "clock": {
+        "now": "2026-09-24T18:41:00Z"
+      },
+      "inject": {
+        "kind": "deviceState",
+        "device": "c1…0002",
+        "state": "available",
+        "actor": "technician"
+      },
+      "request": {
+        "method": "GET",
+        "path": "/webhooks/{sub}/deliveries"
+      },
+      "expect": {
+        "status": 200,
+        "body": {
+          "meta": { "total": 1 },
+          "data": [ { "eventId": "{evt}", "status": "delivered" } ]
+        }
+      }
+    },
+    {
+      "name": "18:50: the city resumes",
+      "narration": "Setting the subscription back to active releases what was held, in the order it was published.",
+      "clock": {
+        "now": "2026-09-24T18:50:00Z"
+      },
+      "request": {
+        "method": "PATCH",
+        "path": "/webhooks/{sub}",
+        "body": {
+          "status": "active"
+        }
+      },
+      "expect": {
+        "status": 200,
+        "body": {
+          "id": "{sub}",
+          "status": "active"
+        }
+      }
+    },
+    {
+      "name": "Nothing was lost",
+      "narration": "Two events were published while the city was unreachable or paused, and the ledger shows both delivered: the fault after three attempts, the repair on its first attempt at resume. The city's view of the gate matches the garage's.",
+      "request": {
+        "method": "GET",
+        "path": "/webhooks/{sub}/deliveries"
+      },
+      "expect": {
+        "status": 200,
+        "body": {
+          "meta": { "total": 2 },
+          "data": [
+            { "attempts": 1, "status": "delivered", "lastCode": 200, "time": "2026-09-24T18:50:00Z" },
+            { "eventId": "{evt}", "attempts": 3, "status": "delivered", "lastCode": 200 }
+          ]
+        }
+      }
+    }
+  ]
+}

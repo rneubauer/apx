@@ -1,20 +1,33 @@
 // The app shell: tabs (kept in the URL hash), the world picker, the clock,
 // run state, the APX edition, status pills, the theme switch, the
-// autocomplete lists, and a status poll so the page follows changes made
-// elsewhere (another browser, curl, a test run) and notices when the
-// simulator goes away.
+// autocomplete lists, and the live link that makes the page follow changes
+// made anywhere (this page, another browser, curl, a test run) and notice
+// when the simulator goes away.
+//
+// The live link is GET /sim/stream (src/kernel/live.mjs), an EventSource of
+// small typed notices: hello, clock, reset, event, delivery, request, store.
+// Bursts are coalesced for LIVE_COALESCE_MS, the status is refreshed once,
+// and then a 'sim:change' CustomEvent is dispatched on window with
+// detail { kinds: [...], messages: { kind: data } } so any view can refresh
+// only what changed. When the stream keeps failing (or the server predates
+// it) the page falls back to polling GET /sim every POLL_MS.
 import { h, mount, toast, fmtClock, state, on, emit, sim, refreshStatus, refreshScenarios, credentials, rewind, resetRun, run } from './core.js';
 import { mountBuilder } from './builder.js';
 import { mountPresent } from './present.js';
 import { mountExplore } from './explore.js';
 
 const POLL_MS = 2000;
+const LIVE_COALESCE_MS = 100;
+const LIVE_MAX_ERRORS = 3; // consecutive stream failures before falling back to the poll
+const LIVE_RETRY_MS = 30000; // while polling, how often to try the stream again
+const LIVE_KINDS = ['hello', 'clock', 'reset', 'event', 'delivery', 'request', 'store'];
 const VIEWS = ['present', 'build', 'explore'];
 const THEMES = ['auto', 'light', 'dark'];
 const THEME_KEY = 'apx-sim-theme';
 let current = 'present';
 let offline = false;
 const renderers = {};
+const live = { source: null, errors: 0, lastTry: 0, pending: new Map(), timer: null, poll: null };
 
 function show(view) {
   current = VIEWS.includes(view) ? view : 'present';
@@ -108,21 +121,94 @@ function wireTheme() {
   document.getElementById('theme-toggle').addEventListener('click', () => applyTheme(THEMES[(THEMES.indexOf(now()) + 1) % THEMES.length]));
 }
 
+function setOffline(value) {
+  if (offline === value) return;
+  offline = value;
+  document.getElementById('offline').hidden = !value;
+  renderRunState();
+}
+
 async function poll() {
   try {
     await refreshStatus();
-    if (offline) {
-      offline = false;
-      document.getElementById('offline').hidden = true;
-      renderRunState();
-    }
+    const wasOffline = offline;
+    setOffline(false);
+    // Back online, or a while since the stream last failed: try it again.
+    if (!live.source && (wasOffline || Date.now() - live.lastTry > LIVE_RETRY_MS)) connectLive();
   } catch {
-    if (!offline) {
-      offline = true;
-      document.getElementById('offline').hidden = false;
-      renderRunState();
+    setOffline(true);
+  }
+}
+
+function startPoll() {
+  if (!live.poll) live.poll = setInterval(poll, POLL_MS);
+}
+
+function stopPoll() {
+  clearInterval(live.poll);
+  live.poll = null;
+}
+
+/** Collect a notice; the burst is handled once, LIVE_COALESCE_MS after its first message. */
+function queueLive(kind, data) {
+  live.pending.set(kind, data);
+  if (!live.timer) live.timer = setTimeout(flushLive, LIVE_COALESCE_MS);
+}
+
+async function flushLive() {
+  live.timer = null;
+  const messages = Object.fromEntries(live.pending);
+  live.pending.clear();
+  const kinds = Object.keys(messages);
+  if (!kinds.length) return;
+  if (kinds.every((k) => k === 'clock') && state.status) {
+    // The clock alone moved (every second under --realtime): no fetch needed.
+    state.status = { ...state.status, clock: { ...state.status.clock, ...messages.clock } };
+    emit('status');
+  } else {
+    try {
+      await refreshStatus();
+    } catch {
+      setOffline(true);
+      return;
     }
   }
+  window.dispatchEvent(new CustomEvent('sim:change', { detail: { kinds, messages } }));
+}
+
+function liveFailed() {
+  live.errors += 1;
+  state.live = false;
+  startPoll(); // keeps the offline state honest while the stream reconnects
+  poll();
+  if (live.source && (live.source.readyState === EventSource.CLOSED || live.errors >= LIVE_MAX_ERRORS)) {
+    live.source.close();
+    live.source = null;
+  }
+}
+
+function connectLive() {
+  if (typeof EventSource === 'undefined') return startPoll();
+  live.lastTry = Date.now();
+  const source = new EventSource('/sim/stream');
+  live.source = source;
+  const read = (e) => {
+    try {
+      return JSON.parse(e.data);
+    } catch {
+      return {};
+    }
+  };
+  source.addEventListener('hello', () => {
+    live.errors = 0;
+    state.live = true;
+    stopPoll();
+    setOffline(false);
+  });
+  for (const kind of LIVE_KINDS) source.addEventListener(kind, (e) => queueLive(kind, read(e)));
+  source.onerror = () => {
+    if (live.source === source) liveFailed();
+  };
 }
 
 function wireHeader() {
@@ -171,7 +257,7 @@ async function boot() {
   renderers.explore = mountExplore(document.getElementById('view-explore'), { isActive: isActive('explore') });
   document.getElementById('boot').remove();
   show(location.hash.slice(1) || 'present');
-  setInterval(poll, POLL_MS);
+  connectLive();
 }
 
 boot().catch((e) => {

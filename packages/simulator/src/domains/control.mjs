@@ -797,7 +797,8 @@ export default {
           : null;
       const next = lanes().update(lane, (x) => ({ ...x, current, lastRead: plate ? { plate, confidence, observation, time: now } : x.lastRead, ...(credential !== undefined ? { credential } : {}) }), { bump: false });
       sim.hooks.emit('lane.vehicleArrives', { lane: next, plate });
-      return { lane: next.id, current: next.current, lastRead: next.lastRead };
+      const after = lanes().get(lane); // hook listeners (validations) may add to the ticket
+      return { lane: after.id, current: after.current, lastRead: after.lastRead };
     });
     sim.injector('vehicleLeaves', ({ lane }) => {
       if (!lanes().has(lane)) throw new Error(`no lane ${lane}`);
