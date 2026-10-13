@@ -222,7 +222,7 @@ export default {
       checkPrecondition(ctx, s);
       const b = ctx.body;
       refuseClosed(ctx, s, b);
-      enforceContextDecision(s.id, b.approval);
+      enforceContextDecision(ctx, s.id, b.approval);
       const credentials = [m.plateCredential(b.plate), ...(s.identifiedCredentials ?? []).filter((c) => c?.type !== 'licensePlate')];
       const vehicle = b.country || b.stateProvince ? { ...(s.identifiedVehicle ?? {}), ...(b.country ? { country: b.country } : {}), ...(b.stateProvince ? { stateProvince: b.stateProvince } : {}) } : s.identifiedVehicle;
       const cited = b.observation?.id && m.isRead(m.observations().get(b.observation.id)) ? b.observation.id : null;
@@ -265,12 +265,18 @@ export default {
      * requiresApproval without approval.approvedBy → 403 approval-required.
      * No such context: no gate.
      */
-    function enforceContextDecision(sessionId, approval) {
+    function enforceContextDecision(ctx, sessionId, approval) {
       const now = sim.clock.nowMs();
+      // Only the caller's own organisation's contexts, at places it is granted.
+      // (Contexts are recomposed on every world hook and clock tick, so the
+      // stored allowedActions are current.) Which context binds a body that
+      // names none is the simulator's reading of §17.3 rule 3: the newest.
+      const org = ctx.principal.org?.id;
       const live = sim.store
         .collection('resolutionContexts')
         .all()
-        .filter((rc) => !(rc._expiresAt && now >= Date.parse(rc._expiresAt)));
+        .filter((rc) => !(rc._expiresAt && now >= Date.parse(rc._expiresAt)))
+        .filter((rc) => (!rc._org || !org || rc._org === org) && (!rc._place || m.covered(ctx.principal, rc._place)));
       for (const rc of [...live].reverse()) {
         const action = (rc.allowedActions ?? []).find((a) => (a.action === PLATE_OP || a.execution?.operationId === PLATE_OP) && a.target?.id === sessionId);
         if (!action) continue;

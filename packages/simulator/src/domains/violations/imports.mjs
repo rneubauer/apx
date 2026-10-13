@@ -43,11 +43,16 @@ function checkAmounts(b) {
   return paid === undefined ? undefined : money(paid, currency ?? b.amountPaid?.currencyType);
 }
 
-/** Append-only (Part 4 §4.2): keep what is held, add only the source's entries later than the last one. */
+/**
+ * Append-only (Part 4 §4.2): keep what is held, add only the source's
+ * entries later than the last one — and, at the last instant itself,
+ * those not already held (two source transitions in the same second).
+ */
 function mergeHistory(held, incoming) {
   if (!held?.length) return [...incoming];
   const last = Math.max(...held.map((e) => toMs(e.time)));
-  return [...held, ...incoming.filter((e) => toMs(e.time) > last)];
+  const atLast = held.filter((e) => toMs(e.time) === last).map((e) => JSON.stringify(e));
+  return [...held, ...incoming.filter((e) => toMs(e.time) > last || (toMs(e.time) === last && !atLast.includes(JSON.stringify(e))))];
 }
 
 /** amountHistory for an imported amount: the issued figure, then each change the source reports. */
@@ -74,6 +79,9 @@ export function registerImports(sim) {
     const keepLink = prev && !b.relatedSession ? { relatedSession: prev.relatedSession, [MATCH_KEY]: matchEvidenceOf(prev) } : {};
     const mergedExt = { ...(prev?.extensions ?? {}), ...extensions, [SOURCE_KEY]: { ...src, receivedTime: ctx.now() } };
     if (keepLink[MATCH_KEY]) mergedExt[MATCH_KEY] = keepLink[MATCH_KEY];
+    // A source that relinks the stay without evidence drops evidence about the Session it replaced.
+    const relinked = prev && b.relatedSession && b.relatedSession.id !== prev.relatedSession?.id;
+    if (relinked && !extensions[MATCH_KEY]) delete mergedExt[MATCH_KEY];
     const amountHistory = amountTrail(prev, b, src);
     return {
       ...fields,
@@ -85,7 +93,7 @@ export function registerImports(sim) {
       _place: node.id,
       _org: ctx.principal.org?.id,
       _imported: true,
-      ...(b.violationStatus === 'paid' ? { _paidSince: [...statusHistory].reverse().find((e) => e.state === 'paid')?.time ?? ctx.now() } : {}),
+      _paidSince: b.violationStatus === 'paid' ? ([...statusHistory].reverse().find((e) => e.state === 'paid')?.time ?? ctx.now()) : undefined, // cleared when a revision leaves paid
     };
   }
 

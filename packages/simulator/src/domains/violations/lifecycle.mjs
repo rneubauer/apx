@@ -331,10 +331,18 @@ export function registerLifecycle(sim) {
       detail = `appeal reduced: ${fmt(v.amount.currencyValue)} → ${fmt(amount.currencyValue)}${refundNote}`;
       Object.assign(patch, lessRefund(v, b.refund, (v.amountPaid?.currencyValue ?? 0) - amount.currencyValue));
     }
-    if (back === 'issued') patch._esc = resumeEsc(v, nowMs);
+    // §19.6a rule 2: a reduction to no more than what was already received settles it.
+    const received = (patch.amountPaid ?? v.amountPaid)?.currencyValue;
+    const owed = (patch.amount ?? v.amount)?.currencyValue ?? 0;
+    const settled = back === 'issued' && received !== undefined && received >= owed;
+    const target = settled ? 'paid' : back;
+    if (settled) {
+      Object.assign(patch, { payment: v.payments?.at(-1)?.payment ?? v.payment, _esc: pauseEsc(v, nowMs), _paidSince: now });
+      detail = `${detail}; settled by the ${fmt(received)} already received`;
+    } else if (back === 'issued') patch._esc = resumeEsc(v, nowMs);
     else patch._paidSince = now;
-    const out = move(ctx, v, back, { detail, patch });
-    if (back === 'issued') armEscalation(sim, out.id);
+    const out = move(ctx, v, target, { detail, patch });
+    if (target === 'issued') armEscalation(sim, out.id);
     else armClosure(sim, out.id);
     return wire(violations(sim).get(out.id));
   });

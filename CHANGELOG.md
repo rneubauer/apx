@@ -30,7 +30,8 @@ APX-VIO row.
   hierarchy is 422 `request-unprocessable`.
 - Partial payments (§19.6a): `payments[]` and `amountPaid` on every
   attachment, `paid` only when `amountPaid` ≥ `amount`, a part payment
-  noted in `statusHistory[]` while the violation stays `issued`, and refunds
+  noted in `statusHistory[]` while the violation stays `issued`, an appeal
+  reduced to no more than `amountPaid` settling it (`paid`), and refunds
   on appeal resolution and void reducing `amountPaid`.
 - The §19.4 issuance gates, in every detection mode: lenient or unapplied
   match evidence (the Violation's decoration, or the related Session's
@@ -45,7 +46,7 @@ APX-VIO row.
   record, then linked, relinked unchanged, cleared, and relinked after void.
   The suite now has 386 scenarios, and apx-violations cites Annex A
   APX-VIO-13 to 17 (17/17). The world adds the fixtures these scenarios
-  read, and `test/violations.test.mjs` adds 21 unit tests.
+  read, and `test/violations.test.mjs` adds 24 unit tests.
 
 **Fixed.**
 - Simulator: `PUT /v1/sessions/{id}/assigned-right` refused a right

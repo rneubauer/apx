@@ -93,6 +93,16 @@ describe('partial payment (§19.6a)', () => {
     assert.deepEqual(res.body.amountPaid, usd(0));
   });
 
+  test('an appeal reduced to no more than what was received settles a part-paid notice', async () => {
+    await pay(ISSUED_35, 'd9000000-0000-4000-8000-000000000010', 20);
+    await call('POST', `/v1/violations/${ISSUED_35}/appeals`, { reason: 'signageUnclear' });
+    const res = await call('POST', `/v1/violations/${ISSUED_35}/appeals/resolve`, { resolution: 'reduced', adjustedAmount: usd(20) });
+    assert.equal(res.status, 200);
+    noContractIssue(res);
+    assert.equal(res.body.violationStatus, 'paid');
+    assert.equal(res.body.payment.id, 'd9000000-0000-4000-8000-000000000010');
+  });
+
   test('a payment in another currency than the notice is 400', async () => {
     const res = await call('POST', `/v1/violations/${ISSUED_35}/payment`, { payment: ref('d9000000-0000-4000-8000-000000000013', 'PaymentRecord'), amount: { currencyType: 'EUR', currencyValue: 10 } });
     assert.equal(res.status, 400);
@@ -184,6 +194,22 @@ describe('imports (§19.13 rules 1–4)', () => {
     await importOne(importBody('EX-4'));
     const res = await importOne(importBody('EX-4', { src: { sourceRevision: 2 }, over: { statusHistory: [{ state: 'detected', time: '2026-10-01T14:05:00Z', actor: 'rewritten' }] } }));
     assert.deepEqual(res.body.statusHistory.map((e) => e.actor), ['officer-0417']);
+  });
+
+  test('two source transitions in the same second are both kept', async () => {
+    await importOne(importBody('EX-12'));
+    const same = '2026-10-01T14:07:12Z';
+    const res = await importOne(importBody('EX-12', { src: { sourceRevision: 2 }, over: { violationStatus: 'closed', statusHistory: [{ state: 'issued', time: same, actor: 'officer-0417' }, { state: 'closed', time: same, actor: 'officer-0417' }] } }));
+    assert.deepEqual(res.body.statusHistory.map((e) => e.state), ['issued', 'closed']);
+  });
+
+  test('a source relink without evidence drops the evidence about the previous Session', async () => {
+    const first = (await importOne(importBody('EX-13'))).body;
+    await link(first.id, { session: ref(STAY, 'Session'), evidence: { target: ref(STAY, 'Session'), matchType: 'violation', plate: { method: 'lenient' }, applied: true } });
+    const other = 'f1000000-0000-4000-8000-000000000076';
+    const res = await importOne(importBody('EX-13', { src: { sourceRevision: 2 }, over: { relatedSession: ref(other, 'Session') } }));
+    assert.equal(res.body.relatedSession.id, other);
+    assert.equal(res.body.extensions[MATCH], undefined);
   });
 
   test('refusals: no decoration 400, no notice at issued 400, paid below amount 422, foreign currency 422', async () => {
