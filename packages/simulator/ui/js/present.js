@@ -54,12 +54,23 @@ async function restart() {
 }
 
 function picker() {
+  const open = (id) => () => openScenario(id).then(restart).catch((e) => toast(e.message, 'bad'));
   return h('div', { class: 'panel empty' },
     h('h2', {}, 'Present a scenario'),
     h('p', {}, 'Pick a scenario to walk an audience through it. Each step runs live against the simulator: who acts, what they send, what the server answers, and which events go out to subscribers.'),
-    h('div', { class: 'row', style: 'justify-content:center;margin-top:14px' },
-      state.scenarios.map((s) => h('button', { class: 'ghost', onclick: () => openScenario(s.id).then(restart).catch((e) => toast(e.message, 'bad')) }, `${s.name}  (${s.steps} steps)`))),
-    state.scenarios.length ? null : h('p', {}, 'No scenarios yet. Build one first.'));
+    state.scenarios.length
+      ? h('div', { class: 'picker' }, state.scenarios.map((s) => h('button', { class: 'scenario-card', onclick: open(s.id) },
+        h('span', { class: 't' }, s.name),
+        s.description ? h('span', { class: 'd' }, s.description) : null,
+        h('span', { class: 'm' }, `${s.steps} steps · world ${s.world}`))))
+      : h('p', {}, 'No scenarios yet. Build one first, or save one into packages/simulator/scenarios/.'));
+}
+
+/** A round pass / fail / next mark with a name screen readers can read. */
+function stepMark(r, isNext) {
+  if (r) return h('span', { class: r.ok ? 'mark-ok' : 'mark-bad', role: 'img', 'aria-label': r.ok ? 'passed' : 'failed' }, r.ok ? '✓' : '✗');
+  if (isNext) return h('span', { class: 'mark-next', role: 'img', 'aria-label': 'next' }, '▸');
+  return h('span', { class: 'mark-none', 'aria-hidden': 'true' });
 }
 
 export function renderPresent(root) {
@@ -80,20 +91,30 @@ function timeline(s) {
         rerender();
       } }, 'Change')),
     h('div', { class: 'panel-body' }, h('div', { class: 'progress' }, h('div', { style: `width:${(100 * run.cursor) / s.steps.length}%` }))),
-    s.steps.map((step, i) => {
+    h('ol', { style: 'list-style:none;margin:0;padding:0' }, s.steps.map((step, i) => {
       const r = run.results[i];
-      const mark = r ? (r.ok ? '✓' : '✗') : i === run.cursor ? '▸' : '';
       const browse = () => {
-        if (i < run.cursor) {
-          viewing = i;
-          rerender();
-        }
+        viewing = i;
+        rerender();
       };
-      return h('div', { class: `tl${i === viewing ? ' current' : ''}`, onclick: browse },
-        h('span', { class: 'n' }, i + 1),
-        h('span', { class: `mark ${r ? (r.ok ? 'verdict-ok' : 'verdict-bad') : ''}` }, mark),
-        h('span', {}, step.name ?? stepSummary(step)));
-    }));
+      return h('li', {}, h('button', {
+        class: `tl${i === viewing ? ' current' : ''}`, onclick: browse, disabled: i >= run.cursor && i !== viewing,
+        'aria-current': i === viewing ? 'step' : null, title: i < run.cursor ? 'Show this step again' : null,
+      },
+      h('span', { class: 'n' }, i + 1),
+      stepMark(r, i === run.cursor),
+      h('span', {}, step.name ?? stepSummary(step))));
+    })));
+}
+
+function finishedBanner(s) {
+  if (run.cursor < s.steps.length || run.busy) return null;
+  const done = run.results.filter(Boolean);
+  const failed = done.filter((r) => !r.ok).length;
+  return h('div', { class: `finished ${failed ? 'bad' : 'ok'}`, role: 'status' },
+    h('span', {}, failed ? `✗ ${failed} of ${s.steps.length} steps did not go as the standard says` : `✓ All ${s.steps.length} steps went as the standard says`),
+    h('span', { class: 'grow' }),
+    h('button', { class: 'ghost small', onclick: restart }, '⟲ Play it again'));
 }
 
 function controls(s) {
@@ -121,6 +142,7 @@ function stage(s) {
   const pending = viewing === run.cursor ? 'Not run yet. Press Run to play this step live.' : 'Not run.';
   return h('div', { class: 'stage' },
     controls(s),
+    finishedBanner(s),
     h('div', { class: 'panel' }, h('div', { class: 'panel-body', style: 'display:flex;flex-direction:column;gap:10px' },
       h('div', { class: 'stage-head' },
         h('span', { class: 'muted' }, `Step ${viewing + 1} of ${s.steps.length}`),

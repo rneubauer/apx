@@ -27,22 +27,87 @@ export function mount(el, ...kids) {
   return el;
 }
 
-const esc = (s) => s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+// ---------- JSON viewer ----------
 
-/** A syntax-highlighted JSON block. The text is escaped before any markup is added. */
+const FOLD_BELOW_DEPTH = 2; // big documents open only this deep at first
+const BIG_DOCUMENT_CHARS = 20000;
+const TALL_DOCUMENT_LINES = 24; // offer "Expand" when the block scrolls
+
+const span = (cls, text) => h('span', { class: cls }, text);
+
+function scalar(v) {
+  if (typeof v === 'string') return span('s', JSON.stringify(v));
+  if (typeof v === 'number') return span('n', String(v));
+  return span('l', String(v)); // true, false, null
+}
+
+/** One member of an object or array, as DOM: scalars on one line, containers as a foldable <details>. */
+function jsonNode(value, key, last, depth, foldDeep) {
+  const keyEl = key === undefined ? null : [span('k', JSON.stringify(key)), span('p', ': ')];
+  const comma = last ? null : span('p', ',');
+  const isArr = Array.isArray(value);
+  if (value === null || typeof value !== 'object') return h('div', {}, keyEl, scalar(value), comma);
+  const entries = isArr ? value.map((v, i) => [undefined, v, i]) : Object.entries(value).map(([k, v], i) => [k, v, i]);
+  const [open, close] = isArr ? ['[', ']'] : ['{', '}'];
+  if (!entries.length) return h('div', {}, keyEl, span('p', open + close), comma);
+  const n = entries.length;
+  const hint = isArr ? `${n} item${n === 1 ? '' : 's'}` : `${n} key${n === 1 ? '' : 's'}`;
+  return h('details', { open: !foldDeep || depth < FOLD_BELOW_DEPTH },
+    h('summary', {}, keyEl, span('p', open), h('span', { class: 'fold' }, ` … ${hint} `), h('span', { class: 'fold p' }, close), h('span', { class: 'fold' }, comma ? ',' : '')),
+    h('div', { class: 'jt-kids' }, entries.map(([k, v, i]) => jsonNode(v, k, i === n - 1, depth + 1, foldDeep))),
+    h('div', {}, span('p', close), comma));
+}
+
+/** Copy text to the clipboard; falls back to a hidden textarea where the async API is unavailable (plain http on a LAN). */
+export async function copyText(text) {
+  try {
+    await navigator.clipboard.writeText(text);
+    return;
+  } catch {
+    // fall through to the legacy path
+  }
+  const ta = h('textarea', { style: 'position:fixed;left:-9999px;top:0', 'aria-hidden': 'true' });
+  ta.value = text;
+  document.body.append(ta);
+  ta.select();
+  const ok = document.execCommand('copy');
+  ta.remove();
+  if (!ok) throw new Error('The browser refused to copy');
+}
+
+/**
+ * A formatted, tinted JSON block with foldable objects and arrays, a Copy
+ * button and, when it scrolls, an Expand button. Text goes in as text nodes,
+ * never as HTML, so a body cannot inject markup.
+ */
 export function jsonView(value) {
   const text = value === undefined ? '(no body)' : typeof value === 'string' ? value : JSON.stringify(value, null, 2);
-  const html = esc(text).replace(
-    /("(?:\\u[a-fA-F0-9]{4}|\\[^u]|[^\\"])*"(\s*:)?|\b(?:true|false|null)\b|-?\d+(?:\.\d+)?(?:[eE][+-]?\d+)?)/g,
-    (m) => {
-      const cls = m.startsWith('"') ? (m.trimEnd().endsWith(':') ? 'k' : 's') : /true|false|null/.test(m) ? 'l' : 'n';
-      return `<span class="${cls}">${m}</span>`;
-    },
-  );
-  const pre = h('pre', { class: 'json' });
-  pre.innerHTML = html;
-  return pre;
+  const structured = value !== null && typeof value === 'object';
+  const pre = structured
+    ? h('pre', { class: 'json tree' }, jsonNode(value, undefined, true, 0, text.length > BIG_DOCUMENT_CHARS))
+    : h('pre', { class: 'json' }, value === undefined ? h('span', { class: 'muted' }, text) : text);
+  const box = h('div', { class: 'json-box' });
+  const copy = h('button', { type: 'button', title: 'Copy this JSON', onclick: () => copyText(text)
+    .then(() => {
+      copy.textContent = 'Copied';
+      setTimeout(() => (copy.textContent = 'Copy'), 1200);
+    })
+    .catch((e) => toast(e.message, 'bad')) }, 'Copy');
+  const tools = h('div', { class: 'json-tools' }, value === undefined ? null : copy);
+  if (text.split('\n').length > TALL_DOCUMENT_LINES) {
+    const expand = h('button', { type: 'button', 'aria-expanded': 'false', title: 'Show the whole block without scrolling', onclick: () => {
+      const tall = box.classList.toggle('tall');
+      expand.textContent = tall ? 'Collapse' : 'Expand';
+      expand.setAttribute('aria-expanded', String(tall));
+    } }, 'Expand');
+    tools.prepend(expand);
+  }
+  box.append(tools, pre);
+  return box;
 }
+
+/** A "Loading…" placeholder for panels waiting on the simulator. */
+export const loading = (what = 'Loading…') => h('div', { class: 'loading', role: 'status' }, what);
 
 export function toast(message, kind = 'info') {
   const el = h('div', { class: `toast ${kind}` }, message);

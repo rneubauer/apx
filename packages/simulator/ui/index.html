@@ -3,38 +3,57 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="color-scheme" content="light dark">
   <title>APX Simulator</title>
   <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns=%27http://www.w3.org/2000/svg%27 viewBox=%270 0 32 32%27%3E%3Crect width=%2732%27 height=%2732%27 rx=%276%27 fill=%27%231f6feb%27/%3E%3Ctext x=%2716%27 y=%2722%27 font-size=%2714%27 font-family=%27Arial%27 font-weight=%27700%27 fill=%27white%27 text-anchor=%27middle%27%3EAPX%3C/text%3E%3C/svg%3E">
   <link rel="stylesheet" href="app.css">
+  <script>
+    // Apply a pinned theme before first paint, so the page does not flash.
+    try {
+      const t = localStorage.getItem('apx-sim-theme');
+      if (t === 'light' || t === 'dark') document.documentElement.dataset.theme = t;
+    } catch {}
+  </script>
 </head>
 <body>
   <header class="topbar">
-    <div class="brand"><span class="logo">APX</span><span>Simulator</span></div>
-    <nav class="tabs" id="tabs">
-      <button data-view="present">Present</button>
-      <button data-view="build">Build</button>
-      <button data-view="explore">Explore</button>
+    <div class="brand">
+      <span class="logo">APX</span><span>Simulator</span>
+      <span id="edition" class="edition" title="The APX edition this simulator serves"></span>
+    </div>
+    <nav class="tabs" id="tabs" aria-label="Views">
+      <button data-view="present" title="Walk an audience through a scenario">Present</button>
+      <button data-view="build" title="Create, edit and run scenarios">Build</button>
+      <button data-view="explore" title="Send requests, fire world events, inspect state">Explore</button>
     </nav>
     <div class="world">
-      <label>World <select id="world-select"></select></label>
+      <label><span class="world-label">World</span> <select id="world-select" disabled><option>loading…</option></select></label>
       <button id="world-reset" class="ghost" title="Reload the world: clears all state">Reset</button>
     </div>
-    <div class="clock">
-      <div id="clock-now" class="clock-now">—</div>
+    <div class="clock" role="group" aria-label="Simulated clock">
+      <div class="clock-face">
+        <span id="run-state" class="run-state" role="status">connecting</span>
+        <time id="clock-now" class="clock-now">—</time>
+      </div>
       <div class="clock-buttons">
-        <button data-advance="PT1M">+1m</button>
-        <button data-advance="PT5M">+5m</button>
-        <button data-advance="PT15M">+15m</button>
-        <button data-advance="PT1H">+1h</button>
-        <button id="clock-set" class="ghost" title="Set the clock to an instant">Set…</button>
+        <button data-advance="PT1M" title="Advance the clock one minute">+1m</button>
+        <button data-advance="PT5M" title="Advance the clock five minutes">+5m</button>
+        <button data-advance="PT15M" title="Advance the clock fifteen minutes">+15m</button>
+        <button data-advance="PT1H" title="Advance the clock one hour">+1h</button>
+        <button id="clock-set" title="Set the clock to an instant">Set…</button>
       </div>
     </div>
-    <div class="pills" id="pills"></div>
+    <div class="header-end">
+      <div class="pills" id="pills"></div>
+      <button id="theme-toggle" class="ghost small theme-toggle" title="Theme: follow the system, light, or dark">Auto</button>
+    </div>
   </header>
+  <div id="offline" class="offline-banner" role="alert" hidden>The simulator stopped answering. Is it still running? This page reconnects on its own.</div>
   <main>
-    <section id="view-present" class="view"></section>
-    <section id="view-build" class="view"></section>
-    <section id="view-explore" class="view"></section>
+    <div id="boot" class="loading">Connecting to the simulator…</div>
+    <section id="view-present" class="view" aria-label="Present"></section>
+    <section id="view-build" class="view" aria-label="Build"></section>
+    <section id="view-explore" class="view" aria-label="Explore"></section>
   </main>
   <div id="toasts" class="toasts" aria-live="polite"></div>
   <datalist id="dl-paths"></datalist>
