@@ -6,6 +6,69 @@ conformance/versioning rules in Part 3 of the written standard.
 The machine-readable spec (`spec/openapi/apx.yaml`, bundled as
 `spec/dist/apx-v1.*`) is normative; entries here are informative.
 
+## [Unreleased]
+
+No change to the spec or the bundle. The reference simulator now covers the
+Part 19 behaviour adopted in 0.14.0, and the vetting suite cites every
+APX-VIO row.
+
+**Added.**
+- `packages/simulator`, apx-violations: `POST /v1/enforcement/violation-imports`
+  (Part 19 §19.13 rules 1–4). It is keyed on the source's `system` +
+  `recordId`. A higher `sourceRevision` (else a later `sourceUpdatedTime`)
+  updates the record, the same revision is a no-op 200, and an older one is
+  409 `version-conflict`. `statusHistory[]` is append-only, with source
+  times kept. `paid` below `amount` and a payment in another currency are
+  422. Imports get no eligibility check or policy clamp, a warning is
+  `issued` at zero, and the first import publishes `detected.v1` (plus
+  `issued.v1` at or past issuance).
+- `POST /v1/violations/{id}/session` (§19.13 rule 6): sets, corrects, or
+  clears the link (`session: null`), in any state. `If-Match` is honoured.
+  Evidence is written as `apds-ext:apx:match-evidence@1.0` targeting the
+  Session. A repeat is a no-op, and there is no `statusHistory[]` entry. An
+  unknown Session is 422 `reference-unknown`, and one outside the place
+  hierarchy is 422 `request-unprocessable`.
+- Partial payments (§19.6a): `payments[]` and `amountPaid` on every
+  attachment, `paid` only when `amountPaid` ≥ `amount`, a part payment
+  noted in `statusHistory[]` while the violation stays `issued`, and refunds
+  on appeal resolution and void reducing `amountPaid`.
+- The §19.4 issuance gates, in every detection mode: lenient or unapplied
+  match evidence (the Violation's decoration, or the related Session's
+  `session-detail` `matches[]` entry) and LPR reads whose plate review is
+  `pending` or `rejected` refuse `issue` with 409 `violation-not-issuable`.
+- `sourceSystem` / `sourceRecordId` filters on `GET /v1/violations`, and
+  `POST /v1/violations:search` with the same filters. `until` is now
+  exclusive, as declared.
+- Vetting scenarios VIO-30 to VIO-34 restored, plus two new ones. VIO-35
+  covers a read in review, a rejected read, and a shadow match on the
+  Session. VIO-36 covers a warning imported at zero, found by its source
+  record, then linked, relinked unchanged, cleared, and relinked after void.
+  The suite now has 386 scenarios, and apx-violations cites Annex A
+  APX-VIO-13 to 17 (17/17). The world adds the fixtures these scenarios
+  read, and `test/violations.test.mjs` adds 21 unit tests.
+
+**Fixed.**
+- Simulator: `PUT /v1/sessions/{id}/assigned-right` refused a right
+  already linked to another open session only when the right carried the
+  reservations extension (RES-13).
+- Simulator: `PUT /v1/sessions/{id}/plate` now applies the decision of
+  the live resolution context that evaluated the plate action
+  (Part 17 §17.3 rule 3): `allowed: false` is 403 `action-not-allowed`,
+  and `requiresApproval` without `approval` is 403 `approval-required`
+  (RES-18).
+- Simulator: world-seeded resolution contexts with no pinned subjects no
+  longer throw on every recompute.
+- Replay stage directions: RES-18 opens its context as `plateUnresolved`,
+  as its prose says. RES-23 restores session `c4…0041` to fixture version 3,
+  which RES-11 had already advanced in the shared replay.
+- Vetting scenario EVT-07: the stream request for the `webhook`
+  subscription `e8…0003` now expects 404 `target-not-found`, not 410.
+  Part 8 §8.4 checks `transport` before state.
+- Vetting scenario RES-05: an undelivered `channel` is 422
+  `request-unprocessable` (Part 13 §13.1a and the operation's 422), not
+  400. The 400 is kept with §13.1a's other case, a body that names
+  nothing to settle.
+
 ## [0.14.0] — 2026-10-12
 
 **Added.**

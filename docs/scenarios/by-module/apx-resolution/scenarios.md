@@ -481,11 +481,12 @@ Two seconds later the bot polls before it speaks:
 anchors the interaction to the `device`. **When** the agent sends a
 payment link for the ticket, the console retries after a timeout with
 the same key, a bug reuses the key with a different body, a client sends
-an unsupported channel, and a read-only token tries. **Then** 201, 200
-with the ORIGINAL link, 409 `idempotency-conflict`, 422
-`request-unprocessable` (Part 13 §13.1a: a `channel` the server does not
-deliver on is 422, not 400), and 403 `insufficient-scope`. The link never carries a
-PAN; `sentTo` is masked.
+an unsupported channel, another sends a body that names nothing to
+settle, and a read-only token tries. **Then** 201, 200 with the ORIGINAL
+link, 409 `idempotency-conflict`, 422 `request-unprocessable` (Part 13
+§13.1a: a `channel` the server does not deliver on is 422, not 400), 400
+`invalid-request` (registered since F-RES-01), and 403
+`insufficient-scope`. The link never carries a PAN; `sentTo` is masked.
 
 <!-- apx:request POST /v1/resolution/contexts -->
 ```json
@@ -687,6 +688,31 @@ Idempotency-Key: ctx-e5-0005-paylink-fax
   "status": 422,
   "detail": "Channel fax is not offered at this place; supported channels are sms and email.",
   "instance": "/v1/payment-links"
+}
+```
+
+```http
+POST /v1/payment-links
+Idempotency-Key: ctx-e5-0005-paylink-empty
+```
+
+<!-- apx:request POST /v1/payment-links -->
+```json
+{
+  "place": { "id": "b1000000-0000-4000-8000-000000000001", "className": "Place" },
+  "channel": "sms"
+}
+```
+
+<!-- apx:response 400 -->
+```json
+{
+  "type": "https://apx-standard.org/problems/invalid-request",
+  "title": "Invalid request",
+  "status": 400,
+  "detail": "A payment link needs an account, a ticketNumber, or a session; the body carries none.",
+  "instance": "/v1/payment-links",
+  "errors": [ { "pointer": "/", "detail": "account, ticketNumber or session required" } ]
 }
 ```
 
