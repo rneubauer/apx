@@ -317,7 +317,8 @@
         "id": "e5000000-0000-4000-8000-000000000043",
         "session": "c4000000-0000-4000-8000-000000000043",
         "correlationId": "ca000000-0000-4000-8000-000000000043",
-        "channel": "voice"
+        "channel": "voice",
+        "issue": "plateUnresolved"
       }
     }
   ],
@@ -370,6 +371,44 @@
           "accessGranted": false,
           "denialReason": "account past due",
           "lastActivity": "2026-09-24T22:05:02Z"
+        }
+      }
+    }
+  ],
+  "RES-23": [
+    {
+      "at": "start",
+      "state": {
+        "collection": "sessions",
+        "id": "c4000000-0000-4000-8000-000000000041",
+        "record": {
+          "id": "c4000000-0000-4000-8000-000000000041",
+          "version": 3,
+          "actualStart": "2026-09-24T14:12:08Z",
+          "initiator": {
+            "id": "a1000000-0000-4000-8000-000000000001",
+            "version": 1,
+            "className": "Organisation"
+          },
+          "hierarchyElement": {
+            "id": "b1000000-0000-4000-8000-000000000001",
+            "version": 7,
+            "className": "Place"
+          },
+          "identifiedCredentials": [],
+          "segments": [],
+          "_place": "b1000000-0000-4000-8000-000000000001",
+          "_entryLane": "b2000000-0000-4000-8000-000000000001",
+          "_entryObservation": "f2000000-0000-4000-8000-000000000041",
+          "_plate": "RVR-8821",
+          "_plateConfidence": 0.58,
+          "_country": "US",
+          "_stateProvince": "IL",
+          "_amountDue": {
+            "currencyType": "USD",
+            "currencyValue": 9
+          },
+          "_modified": "2026-09-24T18:00:00Z"
         }
       }
     }

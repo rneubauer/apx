@@ -29,7 +29,7 @@
  */
 import { parseDuration } from '../kernel/clock.mjs';
 import { fail } from '../kernel/problems.mjs';
-import { paginate, refOf, checkPrecondition, wire } from './common.mjs';
+import { paginate, refOf, checkPrecondition, wire, enforceContextDecision } from './common.mjs';
 import { createModel, READ_KEY, CAMERAS_KEY } from './lpr/model.mjs';
 
 const DEFAULT_DISPUTE_WINDOW = 'PT30M';
@@ -221,6 +221,7 @@ export default {
       checkPrecondition(ctx, s);
       const b = ctx.body;
       refuseClosed(ctx, s, b);
+      enforceContextDecision(sim, 'put-apx-v1-sessions-id-plate', s.id, b.approval);
       const credentials = [m.plateCredential(b.plate), ...(s.identifiedCredentials ?? []).filter((c) => c?.type !== 'licensePlate')];
       const vehicle = b.country || b.stateProvince ? { ...(s.identifiedVehicle ?? {}), ...(b.country ? { country: b.country } : {}), ...(b.stateProvince ? { stateProvince: b.stateProvince } : {}) } : s.identifiedVehicle;
       const cited = b.observation?.id && m.isRead(m.observations().get(b.observation.id)) ? b.observation.id : null;

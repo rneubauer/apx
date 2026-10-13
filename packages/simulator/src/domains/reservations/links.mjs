@@ -66,11 +66,13 @@ export function createLinks(sim, { rewrite }) {
       const since = use?.expiryTime ?? ext.noShowAfter;
       return `Assigned right ${right.id} is in reservationState noShow${since ? ` since ${since}` : ''}; the planned use expired.`;
     }
-    if (ext) {
-      const holder = ext.checkInSession?.id && ext.checkInSession.id !== s.id ? sessions().get(ext.checkInSession.id) : null;
-      const other = holder ?? sessions().first((x) => x.id !== s.id && !x.actualEnd && (x.segments ?? []).some((g) => g?.assignedRight?.id === right.id));
-      if (other) return `Assigned right ${right.id} is already consumed by session ${other.id}${other.actualStart ? ` (checked in ${other.actualStart})` : ''}.`;
-    }
+    // Consumed (§14.1b): the reservation's own check-in session, else any
+    // other open session already carrying the right on a segment. The second
+    // test does not need the reservations extension, so a bare AssignedRight
+    // (no apx-reservations block) is protected from a double link too.
+    const holder = ext?.checkInSession?.id && ext.checkInSession.id !== s.id ? sessions().get(ext.checkInSession.id) : null;
+    const other = holder ?? sessions().first((x) => x.id !== s.id && !x.actualEnd && (x.segments ?? []).some((g) => g?.assignedRight?.id === right.id));
+    if (other) return `Assigned right ${right.id} is already consumed by session ${other.id}${other.actualStart ? ` (checked in ${other.actualStart})` : ''}.`;
     const w = windowOf(right);
     const at = s.actualStart ?? sim.clock.now();
     const t = Date.parse(at);
