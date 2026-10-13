@@ -482,9 +482,9 @@ anchors the interaction to the `device`. **When** the agent sends a
 payment link for the ticket, the console retries after a timeout with
 the same key, a bug reuses the key with a different body, a client sends
 an unsupported channel, and a read-only token tries. **Then** 201, 200
-with the ORIGINAL link, 409 `idempotency-conflict`, 400
-`invalid-request` (registered since F-RES-01), and 403
-`insufficient-scope`. The link never carries a
+with the ORIGINAL link, 409 `idempotency-conflict`, 422
+`request-unprocessable` (Part 13 §13.1a: a `channel` the server does not
+deliver on is 422, not 400), and 403 `insufficient-scope`. The link never carries a
 PAN; `sentTo` is masked.
 
 <!-- apx:request POST /v1/resolution/contexts -->
@@ -679,13 +679,13 @@ Idempotency-Key: ctx-e5-0005-paylink-fax
 }
 ```
 
-<!-- apx:response 400 -->
+<!-- apx:response 422 -->
 ```json
 {
-  "type": "https://apx-standard.org/problems/invalid-request",
-  "title": "Invalid request",
-  "status": 400,
-  "detail": "channel fax is not a supported delivery channel at this place (sms, email).",
+  "type": "https://apx-standard.org/problems/request-unprocessable",
+  "title": "Delivery channel not supported",
+  "status": 422,
+  "detail": "Channel fax is not offered at this place; supported channels are sms and email.",
   "instance": "/v1/payment-links"
 }
 ```
