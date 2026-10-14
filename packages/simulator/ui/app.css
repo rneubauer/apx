@@ -297,6 +297,25 @@ pre.json.tree { padding-left: calc(12px + 1.6ch); }
 .world-chip.active { background: var(--accent-soft); border-color: var(--accent); color: var(--accent); font-weight: 600; }
 .no-demo { margin-top: var(--sp-5); }
 .no-demo .world-desc { font-size: var(--fs-sm); }
+.picker-section { text-align: left; margin-top: var(--sp-5); }
+.picker-section h3 { font-size: 17px; margin: 0; }
+.picker-section .section-note { margin: var(--sp-1) 0 0; max-width: none; font-size: var(--fs-sm); }
+.picker-section .picker { margin-top: var(--sp-3); }
+.world-tiles { display: grid; grid-template-columns: repeat(auto-fill, minmax(240px, 1fr)); gap: var(--sp-2); margin-top: var(--sp-3); }
+.world-tile { display: flex; flex-direction: column; gap: 2px; align-items: flex-start; text-align: left; white-space: normal; background: var(--panel-2); color: var(--text); border: 1px solid var(--border); border-radius: var(--radius-sm); padding: var(--sp-2) var(--sp-3); }
+.world-tile:hover { border-color: var(--accent); filter: none; }
+.world-tile .t { font-family: var(--mono); font-weight: 700; }
+.world-tile .m { font-size: var(--fs-sm); }
+.world-tile .d { font-size: var(--fs-xs); color: var(--muted); }
+.kind-group { margin-top: var(--sp-3); }
+.kind-group h4 { margin: 0 0 var(--sp-1); font-size: var(--fs-sm); color: var(--muted); text-transform: uppercase; letter-spacing: .4px; }
+.vet-rows { display: flex; flex-direction: column; border: 1px solid var(--border); border-radius: var(--radius-sm); overflow: hidden; }
+.vet-row { display: flex; align-items: baseline; gap: var(--sp-3); text-align: left; background: var(--panel); color: var(--text); border: 0; border-bottom: 1px solid var(--border); border-radius: 0; padding: 7px var(--sp-3); }
+.vet-row:last-child { border-bottom: 0; }
+.vet-row:hover { background: var(--accent-soft); filter: none; }
+.vet-row .vid { font-family: var(--mono); font-size: var(--fs-sm); color: var(--muted); min-width: 64px; }
+.vet-row .vt { flex: 1 1 0; min-width: 0; }
+.vet-row .vm { font-size: var(--fs-xs); color: var(--muted); white-space: nowrap; }
 
 /* Expected vs actual: one row per assertion a step makes. */
 .mark-warn { display: inline-flex; align-items: center; justify-content: center; width: 18px; height: 18px; border-radius: 50%; font-size: 11px; font-weight: 700; line-height: 1; flex: none; background: var(--warn-soft); color: var(--warn); }
@@ -375,6 +394,8 @@ table.ops tr.click:hover { background: var(--panel-2); cursor: pointer; }
   .world .world-label { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); }
   .world select { max-width: 150px; }
   .brand { font-size: 15px; }
+  .brand > span:not(.logo):not(.edition) { display: none; } /* the APX mark stays */
+  .clock-buttons button[data-advance="PT15M"] { display: none; }
 }
 /* Projector / large screens: a little larger, so the back of the room can read it. */
 @media (min-width: 1800px) {
@@ -399,3 +420,10 @@ table.ops tr.click:hover { background: var(--panel-2); cursor: pointer; }
 @media (prefers-reduced-motion: reduce) {
   *, *::before { animation: none !important; transition: none !important; }
 }
+
+/* Frozen | Live clock switch (header, next to the clock). */
+.clock-mode { display: inline-flex; border: 1px solid var(--border); border-radius: 999px; padding: 2px; background: var(--panel-2); }
+.clock-mode button { padding: 2px 10px; font-size: var(--fs-xs); font-weight: 600; background: transparent; color: var(--muted); border: 0; border-radius: 999px; }
+.clock-mode button:hover:not(:disabled):not(.active) { color: var(--text); filter: none; }
+.clock-mode button.active { background: var(--accent-soft); color: var(--accent); }
+.clock-mode button[data-realtime="true"].active { background: var(--ok-soft); color: var(--ok); }

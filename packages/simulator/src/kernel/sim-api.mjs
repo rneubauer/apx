@@ -5,7 +5,8 @@
  *   GET  /sim/worlds                   the worlds on disk
  *   POST /sim/reset        {world?}    reload a world (name, path or inline object)
  *   GET  /sim/clock                    the instant the server believes it is
- *   POST /sim/clock        {now} | {advance}   jump or move the clock; due timers fire
+ *   POST /sim/clock        {now} | {advance} | {realtime}   jump or move the clock (due timers fire),
+ *                                      or switch frozen/live keeping the instant
  *   GET  /sim/state                    every collection
  *   GET  /sim/state/:coll[/:id]        one collection or record
  *   PUT  /sim/state/:coll/:id          replace a record verbatim (god mode)
@@ -89,14 +90,18 @@ export async function simApi(sim, { method, path, query, body: raw }) {
     }
     case 'clock': {
       if (method === 'GET') return json(200, { now: sim.clock.now(), realtime: sim.clock.realtime, pending: sim.clock.pending() });
+      const hasMode = body.realtime !== undefined;
+      if (hasMode && typeof body.realtime !== 'boolean') return bad('realtime must be true or false');
+      if (!hasMode && !body.now && body.advance === undefined) return bad('give {now}, {advance} or {realtime}');
       try {
+        // The mode first, so {realtime: true, now} starts the live clock at that instant.
+        if (hasMode) sim.clock.setRealtime(body.realtime);
         if (body.now) sim.clock.set(body.now);
         else if (body.advance !== undefined) sim.clock.advance(body.advance);
-        else return bad('give {now} or {advance}');
       } catch (e) {
         return bad(e.message);
       }
-      return json(200, { now: sim.clock.now(), pending: sim.clock.pending() });
+      return json(200, { now: sim.clock.now(), realtime: sim.clock.realtime, pending: sim.clock.pending() });
     }
     case 'state': {
       if (!a) return json(200, sim.store.snapshot());

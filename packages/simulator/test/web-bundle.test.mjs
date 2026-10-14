@@ -55,6 +55,14 @@ test('every narrated scenario passes in the bundle', async () => {
   }
 });
 
+test('the vetting suite runs in the bundle too', async () => {
+  const { vetting } = (await json('/sim/scenarios')).body;
+  assert.ok(vetting.length > 300, `only ${vetting.length} vetting scenarios`);
+  const scenario = (await json(`/sim/scenarios/${encodeURIComponent('vetting~apx-control~CTL-02')}`)).body;
+  const run = await post('/sim/scenario/run', { scenario });
+  assert.equal(run.body.failed, 0, JSON.stringify(run.body.results.find((r) => !r.ok)));
+});
+
 test('the in-page event stream says hello and reports a clock change', async () => {
   const source = new EventSource('/sim/stream');
   const seen = await new Promise((resolve, reject) => {

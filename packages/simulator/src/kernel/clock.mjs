@@ -3,7 +3,10 @@
  * the sim API, or an `X-Sim-Now` header moves it, and every timer the
  * domains schedule (command dispatch, webhook retries, reservation no-show,
  * alert expiry) fires in order as the clock passes it. `realtime` mode
- * ticks with the wall clock instead, for live demos.
+ * ticks with the wall clock instead, for live demos: the clock runs from an
+ * offset to wall time and an armed setTimeout fires each timer on its own.
+ * The mode can switch at runtime (`setRealtime`); either way the simulated
+ * instant carries over, and `set`/`advance` keep working in both modes.
  */
 
 const ISO_DURATION = /^P(?:(\d+)D)?(?:T(?:(\d+)H)?(?:(\d+)M)?(?:(\d+(?:\.\d+)?)S)?)?$/;
@@ -54,6 +57,30 @@ export class Clock {
     if (this.realtime) this.offset = ms - Date.now();
     else this.frozenMs = ms;
     this.flush();
+    // The jump moved every timer's wall-time distance: re-arm for the new next one.
+    if (this.realtime) this.arm();
+    return this.now();
+  }
+
+  /**
+   * Switch between frozen and realtime, keeping the current simulated
+   * instant. Going live arms the next timer; freezing pins the instant and
+   * disarms. Listeners hear about it at once (the live stream sends `clock`).
+   */
+  setRealtime(on) {
+    const next = Boolean(on);
+    if (next === this.realtime) return this.now();
+    const ms = this.nowMs();
+    if (next) {
+      this.realtime = true;
+      this.offset = ms - Date.now();
+    } else {
+      this.disarm();
+      this.realtime = false;
+      this.frozenMs = ms;
+    }
+    this.flush();
+    if (this.realtime) this.arm();
     return this.now();
   }
 
@@ -115,9 +142,14 @@ export class Clock {
     }
   }
 
-  arm() {
+  disarm() {
     if (this.timerHandle) clearTimeout(this.timerHandle);
-    if (!this.timers.length) return;
+    this.timerHandle = null;
+  }
+
+  arm() {
+    this.disarm();
+    if (!this.realtime || !this.timers.length) return;
     const delay = Math.max(0, this.timers[0].at - this.nowMs());
     this.timerHandle = setTimeout(() => {
       this.timerHandle = null;
@@ -132,9 +164,11 @@ export class Clock {
     return () => this.listeners.delete(fn);
   }
 
+  /** Drop every timer and (optionally) jump to `start`. The mode is kept: a live clock runs on from `start`. */
   reset({ start } = {}) {
     for (const t of this.timers) t.cancelled = true;
     this.timers = [];
+    this.disarm();
     if (start) this.set(start);
   }
 }

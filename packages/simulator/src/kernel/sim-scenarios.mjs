@@ -1,9 +1,11 @@
 /**
  * The /sim routes behind the browser UI's scenario builder and presenter:
  *
- *   GET  /sim/scenarios                 the scenario files on disk
- *   GET  /sim/scenarios/:id             one scenario
+ *   GET  /sim/scenarios                 the scenario files on disk, and the vetting suite's scenarios
+ *   GET  /sim/scenarios/:id             one scenario (a vetting~<module>~<id> id reads the suite)
  *   PUT  /sim/scenarios/:id             save a scenario (scenarios/<id>.json)
+ *   POST /sim/scenario/prepare {module, before}
+ *                                        set the stage for a vetting scenario (src/kernel/vetting.mjs)
  *   POST /sim/scenario/step  {step, vars?, token?, world?}
  *                                        run one step against the live world
  *   POST /sim/scenario/run   {scenario}  reset to its world and run every step
@@ -14,6 +16,7 @@ import { readdirSync, readFileSync, existsSync } from 'node:fs';
 import { join, dirname } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { runStep, tokenOf, listScenarios, readScenario, writeScenario } from './scenario.mjs';
+import { listVetting, vettingScenario, isVettingId, prepareStage } from './vetting.mjs';
 
 const ROOT = join(dirname(fileURLToPath(import.meta.url)), '..', '..');
 const json = (status, body) => ({ status, headers: { 'content-type': 'application/json' }, body });
@@ -52,14 +55,19 @@ export async function scenarioApi(sim, { method, parts, body }) {
   const [head, id] = parts;
   try {
     if (head === 'scenarios') {
-      if (!id) return json(200, { scenarios: listScenarios() });
+      if (!id) return json(200, { scenarios: listScenarios(), vetting: listVetting() });
+      if (method === 'PUT' && isVettingId(id)) return json(400, { error: 'bad_request', detail: 'the vetting suite is read-only here: save a copy under a new name' });
       if (method === 'PUT') return json(200, writeScenario(id, body));
-      const s = readScenario(id);
+      const s = isVettingId(id) ? vettingScenario(id) : readScenario(id);
       return s ? json(200, s) : json(404, { error: 'not_found', detail: `no scenario ${id}` });
     }
     if (head === 'scenario' && method === 'POST' && id === 'step') {
       if (!body.step || typeof body.step !== 'object') return json(400, { error: 'bad_request', detail: 'give {step}' });
       return json(200, await stepWithEffects(sim, body.step, body));
+    }
+    if (head === 'scenario' && method === 'POST' && id === 'prepare') {
+      if (!body.module) return json(400, { error: 'bad_request', detail: 'give {module, before}' });
+      return json(200, await prepareStage(sim, body));
     }
     if (head === 'scenario' && method === 'POST' && id === 'run') {
       if (!Array.isArray(body.scenario?.steps)) return json(400, { error: 'bad_request', detail: 'give {scenario: {steps: [...]}}' });

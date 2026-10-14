@@ -127,6 +127,15 @@ route the subscriber can read.
 - **Someone asks for something off-script.** Use **Explore**: any route,
   as any credential, against the same world. Press R in Present
   afterwards to get back to a clean world.
+- **Someone asks about their own module.** Click that world's chip in
+  Present (apx-lpr, apx-tolling, …). Under its narrated demo, if it has
+  one, are the vetting cases the standard was tested against, grouped as
+  happy path, lifecycle, edge, refusal and security. Any of them runs
+  step by step like a demo.
+- **Someone asks what happens if nobody presses anything.** Switch the
+  header to **Live** and use Explore: commands complete, retries go out
+  and reservations lapse on their own. Switch back to **Frozen** before
+  presenting again.
 
 ## Known limits
 

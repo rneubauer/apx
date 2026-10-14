@@ -2,8 +2,9 @@
  * Scenario steps, shared by the CLI runner (tools/script.mjs) and the
  * browser UI (POST /sim/scenario/step and /sim/scenario/run).
  *
- * A step may carry: name, narration, clock, inject, reset, receiver,
+ * A step may carry: name, narration, prepare, clock, inject, reset, receiver,
  * state, request (+ expect, save), events, deliveries, continueOnFailure.
+ * `prepare` ({module, before}) sets the stage for a vetting-suite scenario.
  * `{var}` in any string substitutes a value saved by an earlier step.
  */
 import { readdirSync, readFileSync, writeFileSync, existsSync, mkdirSync } from 'node:fs';
@@ -39,7 +40,7 @@ export function partialMatch(expected, actual) {
 
 export const tokenOf = (t) => (!t ? 'Bearer …' : t.startsWith('Bearer ') ? t : `Bearer ${t}`);
 
-const STEP_KINDS = ['request', 'inject', 'clock', 'events', 'deliveries', 'state', 'receiver', 'reset'];
+const STEP_KINDS = ['request', 'inject', 'clock', 'events', 'deliveries', 'state', 'receiver', 'reset', 'prepare'];
 
 /** The kind of a step, for display: the first action member it carries. */
 export function stepKind(step) {
@@ -58,6 +59,10 @@ export async function runStep(raw, { io, vars = {}, defaultToken, defaultWorld =
   const nextVars = { ...vars };
   const out = { ok: true, kind: stepKind(step), vars: nextVars };
   try {
+    if (step.prepare) {
+      out.prepare = await io.control('POST', '/sim/scenario/prepare', step.prepare);
+      if (out.prepare?.error) throw new Error(`set the stage: ${out.prepare.detail ?? out.prepare.error}`);
+    }
     if (step.reset) await io.control('POST', '/sim/reset', { world: step.reset === true ? defaultWorld : step.reset });
     if (step.clock) out.clock = await io.control('POST', '/sim/clock', step.clock);
     if (step.inject) {

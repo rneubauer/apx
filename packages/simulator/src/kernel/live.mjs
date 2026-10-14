@@ -7,7 +7,8 @@
  * what it needs.
  *
  *   hello     on connect: world, clock, counts
- *   clock     {now, realtime, pendingTimers}   the clock moved or timers fired
+ *   clock     {now, realtime, pendingTimers}   the clock moved, timers fired, or the mode switched;
+ *                                              once a second while the clock is live
  *   reset     {world, now}                     a world was (re)loaded
  *   event     {count, added, types[]}          envelopes published to the outbox
  *   delivery  {count, subscriptions[]}         the webhook ledger changed
@@ -35,6 +36,7 @@ class LiveMonitor {
     this.dirty = new Map(); // kind → Set of names (or null)
     this.added = { event: 0, request: 0 };
     this.flushTimer = null;
+    this.tickTimer = null; // the once-a-second clock notice while the clock is live
     this.detachers = [];
     this.intervals = [];
   }
@@ -44,7 +46,10 @@ class LiveMonitor {
   attach() {
     const { sim } = this;
     this.detachers = [
-      sim.clock.onTick(() => this.note('clock')),
+      sim.clock.onTick(() => {
+        this.syncTick();
+        this.note('clock');
+      }),
       sim.events.onEvent((envelope) => this.note('event', envelope.type)),
       sim.store.onChange((collection) => {
         if (collection === null) return this.note('reset');
@@ -53,18 +58,37 @@ class LiveMonitor {
       }),
     ];
     const heartbeat = setInterval(() => this.broadcast(': heartbeat\n\n'), HEARTBEAT_MS);
-    // Under --realtime the clock moves without a tick; follow it once a second.
-    const realtime = setInterval(() => sim.clock.realtime && this.note('clock'), REALTIME_TICK_MS);
-    this.intervals = [heartbeat, realtime];
-    for (const t of this.intervals) t.unref?.();
+    heartbeat.unref?.();
+    this.intervals = [heartbeat];
+  }
+
+  /**
+   * A live clock moves without a tick; follow it once a second. Started and
+   * stopped to match the clock's mode, which can switch at runtime (every
+   * switch notifies the clock listeners, which call this).
+   */
+  syncTick() {
+    const want = this.clients.size > 0 && this.sim.clock.realtime;
+    if (want && !this.tickTimer) {
+      this.tickTimer = setInterval(() => {
+        if (this.sim.clock.realtime) this.note('clock');
+        else this.syncTick();
+      }, REALTIME_TICK_MS);
+      this.tickTimer.unref?.();
+    } else if (!want && this.tickTimer) {
+      clearInterval(this.tickTimer);
+      this.tickTimer = null;
+    }
   }
 
   detach() {
     for (const off of this.detachers) off();
     for (const t of this.intervals) clearInterval(t);
+    if (this.tickTimer) clearInterval(this.tickTimer);
     if (this.flushTimer) clearTimeout(this.flushTimer);
     this.detachers = [];
     this.intervals = [];
+    this.tickTimer = null;
     this.flushTimer = null;
     this.dirty.clear();
     this.added = { event: 0, request: 0 };
@@ -150,6 +174,7 @@ class LiveMonitor {
   add(writer) {
     if (!this.clients.size) this.attach();
     this.clients.add(writer);
+    this.syncTick();
     writer.write(`retry: ${RETRY_MS}\n\n${this.frame('hello', this.hello())}`);
   }
 
