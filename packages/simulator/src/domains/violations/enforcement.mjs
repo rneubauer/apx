@@ -58,6 +58,14 @@ export function registerEnforcement(sim) {
     return evaluateEligibility(sim, { credential, placeId: node.id, atMs: atParam(ctx), principal: ctx.principal });
   });
 
+  // Part 9 §9.6 rule 7: the same question with the credential in the body, never a URL. Same answer.
+  sim.on('post-apx-v1-enforcement-eligibility-check', (ctx) => {
+    const b = ctx.body;
+    const node = queryPlace(ctx, b.place);
+    const credential = { credentialType: b.credentialType ?? 'licensePlate', credentialIdentification: b.credential };
+    return evaluateEligibility(sim, { credential, placeId: node.id, atMs: b.at ? toMs(b.at) : ctx.clock.nowMs(), principal: ctx.principal });
+  });
+
   // ---------- policies (§19.10) ----------
 
   sim.view('enforcementPolicies', (r) => wire(r));

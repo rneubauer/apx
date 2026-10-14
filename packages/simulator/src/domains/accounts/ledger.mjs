@@ -123,8 +123,10 @@ export function createLedger(sim) {
       sessions().update(s.id, (x) => ({ ...x, _amountDue: money(Math.max(0, x._amountDue.currencyValue - delta), x._amountDue.currencyType) }), { bump: false });
     }
     const lanes = sim.control?.lanes?.();
-    if (!lanes || !rec.ticketNumber) return;
-    for (const l of lanes.find((x) => x.current?.ticketNumber === rec.ticketNumber && x.current.amountDue)) {
+    if (!lanes || (!rec.ticketNumber && !rec._session)) return;
+    // The lane showing that ticket, or holding that session (a lost ticket paid by link has no ticket number, Part 17 §17.3).
+    const showsIt = (c) => (rec.ticketNumber && c.ticketNumber === rec.ticketNumber) || (rec._session && c.session?.id === rec._session);
+    for (const l of lanes.find((x) => x.current?.amountDue && showsIt(x.current))) {
       lanes.update(
         l.id,
         (x) => {

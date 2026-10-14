@@ -95,9 +95,9 @@ that opens an object or array to fold it, and use Copy or Expand at the
 block's top right. The UI is plain HTML, CSS and JavaScript with no external
 assets, so it works offline. Browser zoom (Ctrl/Cmd and +) scales it
 for the back of a room; above 1800 px wide it already sets larger type.
-`scenarios/` holds nineteen narrated demos: the core story, everyday
+`scenarios/` holds twenty narrated demos: the core story, everyday
 operations (card in/out, monthly fobs and permit pools, find-and-book,
-lost ticket, valet, tolling), and analytics in the `analytics-lakeside`
+lost ticket, valet, tolling, plate lists), and analytics in the `analytics-lakeside`
 world (transient transactions, monthly parkers, plate reads, occupancy,
 change-feed sync); [DEMO.md](DEMO.md) is the runbook for showing
 them on a call (checks to run first, which demos for which slot, talking

@@ -81,6 +81,7 @@ Pick the world in Present (or the header) and its demos are listed first.
 | 12 | `lost-ticket-found-by-plate.json` | apx-resolution | Part 17: the session found by plate, a payment link for the true fare, no lost-ticket fee | 8 |
 | 13 | `valet-drop-off-and-retrieval.json` | apx-valet | Part 22: drop-off with condition report, "bring my car" by text, a wrong claim code refused, verified handback | 11 |
 | 14 | `toll-passage-and-dispute.json` | apx-tolling | Part 15: transponder and plate-fallback passages, nightly billing, a wrong-vehicle dispute refunded | 11 |
+| 20 | `plate-lists-watch-and-allow.json` | apx-plate-lists | Part 24: watch, scofflaw, allow and enforcement-fleet lists; an idempotent re-add; per-place flags; an edge camera keeping its copy current by change feed (a removal arrives as a tombstone); a listed car's arrival raising the alert | 14 |
 
 ### Analytics (world `analytics-lakeside`)
 
@@ -113,8 +114,8 @@ stay attributable. Finish with two minutes of the Fabric view.
 ### A 45-minute slot
 
 1, 2, 3, then the Fabric view (5 minutes), then one analytics demo (15
-or 19), then 5 or 6. Keep 7 in reserve for EV charging, and 8–14 for
-whichever module a vendor in the room cares about.
+or 19), then 5 or 6. Keep 7 in reserve for EV charging, and 8–14 and 20
+for whichever module a vendor in the room cares about.
 
 ## The Fabric view
 
@@ -191,6 +192,13 @@ key, so a BI tool cannot turn the LPR route into an export. Expect the
 question "where are the reports?": APX has no aggregate endpoints today.
 That is a fair item for the committee to decide on purpose.
 
+**Plate lists (20).** The list owner (the operator, or the city for
+scofflaws) maintains the lists centrally; the lane decides locally from a
+copy it keeps current with the change feed, so a plate check at the gate
+never waits on the network. A plate added twice is updated, not
+duplicated, so a nightly reload is safe to repeat. Good moment to raise the
+scale question: today entries are added one request at a time.
+
 **Fabric view.** Make the endpoint fail while traffic is running and let
 the room watch the retries count down, then recover it and watch every
 event arrive. The point is that a subscriber that goes down for a deploy
@@ -227,23 +235,13 @@ hosted copy, traffic in the Fabric view runs only while the tab is open,
 and SSE subscribers are simulated (a real SSE client cannot connect to a
 page).
 
-- The simulator implements 165 of the bundle's operations.
-  `node bin/apx-sim.mjs ops` lists the rest. Three LPR read routes are
-  among them (`GET /v1/lpr/reads/{observation}`, `POST
-  /v1/lpr/reads:search`, `PUT /v1/lpr/reads/{observation}/plate`).
-- Plate lists (Part 24) are not implemented yet, so there is no demo
-  for them; nor are the body-search routes (`payments:search`,
-  `accounts:search`).
-- APX list routes (`/v1/payments`, `/v1/accounts`, `/v1/alerts`, …) do
-  not yet offer the §5.2 change feed in the simulator; the APDS-native
-  routes do, which is what demo 19 uses.
-- A stock APDS lane lookup by plate (`GET /rights/assigned?credential_type=licensePlate`)
-  does not yet find a permit whose plate is held as a credential record
-  (§14.2b), so the permit demos do not show a lane honouring a permit by
-  plate.
-- Quotes carry the time window but no price, and paying a lost-ticket
-  link does not settle the session's amount due.
-- Occupancy history (§5.5a) is not implemented.
+- The simulator implements every operation in the bundle (181 of 181;
+  `node bin/apx-sim.mjs ops`). Where the standard leaves a choice open
+  (how a rate table prices a quote, which place a multi-place plate list's
+  event is bound to), the simulator makes one and it is not normative.
+- Plate lists hold the lists and raise the arrival alert (§24.4); refusing
+  service at the lane stays with the implementation, as the standard says,
+  so the simulator does not gate on it.
 - New violation cases get random ids, so those paths look long on screen.
 - The violation demo's payment record is a reference only; it does not
   run the Part 13 payment flow.

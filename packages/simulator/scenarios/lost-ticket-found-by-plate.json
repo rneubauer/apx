@@ -292,6 +292,43 @@
           ]
         }
       }
+    },
+    {
+      "name": "She drives out: nothing owing at the exit",
+      "narration": "Four minutes later she pulls up to exit lane 2. The lane reads her plate and binds the session, and the payment link already settled what it owed: the lane shows $0.00 due and paid in full, so the lane has nothing to collect and lets her out. No ticket, no lost-ticket fee, no call to the intercom. The /sim/inject call stands in for the car at the lane.",
+      "clock": {
+        "advance": "PT4M"
+      },
+      "inject": {
+        "kind": "vehicleArrives",
+        "lane": "b2…0002",
+        "session": "c4…0034",
+        "plate": "SYN-7781",
+        "confidence": 0.95,
+        "observation": "f2…0031"
+      },
+      "request": {
+        "method": "GET",
+        "path": "/v1/lanes/b2…0002/current"
+      },
+      "expect": {
+        "status": 200,
+        "body": {
+          "currentTicket": {
+            "session": {
+              "id": "c4000000-0000-4000-8000-000000000034"
+            },
+            "amountDue": {
+              "currencyType": "USD",
+              "currencyValue": 0
+            },
+            "paidInFull": true,
+            "lpr": {
+              "plate": "SYN-7781"
+            }
+          }
+        }
+      }
     }
   ]
 }

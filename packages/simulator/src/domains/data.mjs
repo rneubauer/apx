@@ -25,8 +25,11 @@ import { CLASSES, plain, classNameOfType, route, refuse, ok } from './data/model
 import { createEngine } from './data/engine.mjs';
 import { createFeed } from './data/feed.mjs';
 import { createOccupancy } from './data/occupancy.mjs';
+import { priceTable } from './data/pricing.mjs';
 import { createRoutes } from './data/routes.mjs';
 
+/** How long a quoted price holds (the RSV-01 option expires thirty minutes after the response). */
+const QUOTE_TTL_MS = 30 * 60_000;
 const SEED_ORDER = ['rightSpecs', 'rateTables', 'assignedRights', 'sessions', 'observations', 'contacts'];
 const HIERARCHY_TYPES = new Set(['campus', 'identifiedArea', 'place', 'space', 'subplaceElement', 'specificArea', 'vehicularAccess', 'electricChargingEquipment', 'supplementalEquipment', 'supplementalServiceFacility']);
 
@@ -96,6 +99,7 @@ export default {
     sim.seed((world) => {
       engine.reset();
       feed.reset();
+      occupancy.reset();
       directoryDown = false;
       const byId = new Map((world.places ?? []).map((p) => [p.id, p]));
       for (const p of world.places ?? []) engine.seed(CLASSES.places, apdsPlace(world, p, byId));
@@ -134,7 +138,14 @@ export default {
         return true;
       };
     };
-    const credentialsOf = (list) => (list ?? []).map((c) => ({ id: c?.identifier?.id, type: c?.type }));
+    // §14.2b: credential_id resolves against the identification string the lane reads, whichever
+    // identifier form was materialized — the string itself, or a Reference to a CredentialRecord (Part 21).
+    const identificationOf = (c) => {
+      const ref = c?.identifier;
+      if (ref?.className !== 'CredentialRecord') return ref?.id;
+      return sim.credentials?.records?.().get(ref.id)?.credentialIdentification ?? ref.id;
+    };
+    const credentialsOf = (list) => (list ?? []).map((c) => ({ ids: [identificationOf(c), c?.identifier?.id], type: c?.type }));
     const anyIn = (values, wanted) => !wanted.length || values.some((v) => wanted.includes(v));
 
     function listFilter(collection, ctx) {
@@ -149,7 +160,7 @@ export default {
       }
       if (collection === 'sessions' || collection === 'assignedRights') {
         const creds = (r) => credentialsOf(collection === 'sessions' ? r.identifiedCredentials : r.rightHolder?.credentials);
-        if (has('credential_id')) tests.push((r) => anyIn(creds(r).map((c) => c.id), q.list('credential_id')));
+        if (has('credential_id')) tests.push((r) => anyIn(creds(r).flatMap((c) => c.ids), q.list('credential_id')));
         if (has('credential_type')) tests.push((r) => anyIn(creds(r).map((c) => c.type), q.list('credential_type')));
         const specOf = (r) => (collection === 'assignedRights' ? [r.rightSpecification?.id] : (r.segments ?? []).map((g) => engine.coll('assignedRights').get(g?.assignedRight?.id)?.rightSpecification?.id));
         if (has('right_spec')) tests.push((r) => anyIn(specOf(r), q.list('right_spec')));
@@ -216,7 +227,41 @@ export default {
       const start = req.periodStart ?? now;
       const span = req.timePeriods?.[0] ? parseDuration(req.timePeriods[0]) : 3_600_000;
       const end = req.periodEnd ?? new Date(Date.parse(start) + span).toISOString().replace(/\.\d{3}Z$/, 'Z');
-      return { id: uuid(), version: 1, quoteRequestId: requestRef('QuoteRightRequest'), requestTime: req.requestTime ?? now, responseTime: now, start, end, _quoteType: 'QuoteRightResponse' };
+      const options = (req.referencedRightSpecifications ?? []).map((ref) => quoteOption(ref, start, end, now)).filter(Boolean);
+      return { id: uuid(), version: 1, quoteRequestId: requestRef('QuoteRightRequest'), requestTime: req.requestTime ?? now, responseTime: now, start, end, ...(options.length ? { options } : {}), _quoteType: 'QuoteRightResponse' };
+    }
+
+    /** The rate tables that price a referenced spec: its native rateEligibility, else those bound to the element. */
+    function tablesFor(ref) {
+      const spec = engine.coll('rightSpecs').get(ref?.rightSpecificationId?.id);
+      const eligible = (spec?.rateEligibility ?? []).map((e) => engine.coll('rateTables').get(e?.rateTable?.id)).filter(Boolean);
+      if (eligible.length) return { spec, tables: eligible };
+      const element = ref?.elementId?.id ?? spec?.hierarchyElements?.[0]?.id;
+      return { spec, tables: element ? engine.coll('rateTables').find((t) => engine.placesOf('rateTables', t).includes(element)) : [] };
+    }
+
+    /** One APDS Option for a referenced spec, priced from its rate tables (§14.1 step 1); null when nothing prices it. */
+    function quoteOption(ref, start, end, now) {
+      const { spec, tables } = tablesFor(ref);
+      for (const table of tables) {
+        const price = priceTable(table, start, end);
+        if (!price) continue;
+        const provider = table.rateResponsibleParty ?? spec?.issuer;
+        const expires = new Date(Date.parse(now) + QUOTE_TTL_MS).toISOString().replace(/\.\d{3}Z$/, 'Z');
+        return {
+          id: uuid(),
+          version: 1,
+          ...(ref?.elementId ? { elementId: ref.elementId } : {}),
+          exact: true,
+          quoteExpiration: { expiresDateTime: expires, firstComeFirstServe: false },
+          financialQuote: {
+            ...(provider ? { serviceProvider: { id: provider.id, version: provider.version ?? 1, className: provider.className ?? 'Organisation' } } : {}),
+            taxIncluded: price.taxIncluded,
+            value: { currencyType: price.currencyType, currencyValue: price.currencyValue },
+          },
+        };
+      }
+      return null;
     }
 
     sim.on(
@@ -268,6 +313,19 @@ export default {
         if (!rec) fail('target-not-found', `No HierarchyElement ${ctx.params.id} visible to this credential.`);
         if (!ctx.principal.hasGrant || !sim.hierarchy.covers(ctx.principal.places, rec.id)) fail('insufficient-grant', `Place ${rec.id} is not in the token's apx_places grant.`);
         return occupancy.snapshot(rec);
+      })
+    );
+
+    // ---------- §5.5a occupancy history ----------
+
+    sim.on(
+      'get-apx-v1-places-id-occupancy-history',
+      route((ctx) => {
+        const rec = engine.coll('places').get(ctx.params.id);
+        if (!rec) fail('target-not-found', `No HierarchyElement ${ctx.params.id} visible to this credential.`);
+        if (!ctx.principal.hasGrant || !sim.hierarchy.covers(ctx.principal.places, rec.id)) fail('insufficient-grant', `Place ${rec.id} is not in the token's apx_places grant.`);
+        const q = ctx.query;
+        return occupancy.history(rec, { from: q.get('from'), to: q.get('to'), interval: q.get('interval') ?? undefined });
       })
     );
 

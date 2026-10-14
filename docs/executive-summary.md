@@ -52,6 +52,8 @@ The result: every PARCS, LPR, tolling, permitting, and reservations vendor still
 
 All automated spec checks pass: vendor integrity, linting, bundling, style conventions, and example validation.
 
+**See it run.** A [simulator](https://rneubauer.github.io/apx/simulator/) runs the whole standard in a web browser — nothing to install. Narrated demos walk through everyday operations (a monthly parker at the gate, a lost ticket, valet, tolling, plate lists), analytics (transient transactions, monthly parkers, plate reads, occupancy), and live event delivery, and every scenario the standard was tested against can be stepped through the same way.
+
 > **Want the full picture?** The companion [APX API Overview](apx-overview.md)
 > walks every route in plain language with the design rationale — written so
 > a reader who has never opened the APDS standard needs nothing else.

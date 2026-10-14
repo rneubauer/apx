@@ -40,6 +40,21 @@
     { "id": "a3…0305", "name": "Nadia" },
     { "id": "a3…0306", "name": "Sam" }
   ],
+  "rateTables": [
+    {
+      "id": "d5…0701", "version": 1, "rateTableName": [ { "language": "en", "string": "Lakeside evening reservation" } ],
+      "availability": "public",
+      "rateResponsibleParty": { "id": "a1…0001", "version": 1, "className": "Organisation" },
+      "rateLineCollections": [
+        {
+          "id": "d5…0711", "version": 1, "collectionSequence": 1, "applicableCurrency": "USD", "resetTime": "00:00:00",
+          "validStart": "2026-01-01T00:00:00Z", "relativeTimes": true, "taxIncluded": true,
+          "rateLines": [ { "id": "d5…0721", "version": 1, "sequence": 1, "rateLineType": "flatRate", "description": [ { "language": "en", "string": "evening reservation, flat" } ], "value": 24 } ]
+        }
+      ],
+      "_place": "b1…0001"
+    }
+  ],
   "rightSpecs": [
     {
       "id": "e1…0001", "version": 1, "type": "oneTimeUseParking",

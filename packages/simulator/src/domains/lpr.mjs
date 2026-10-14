@@ -26,11 +26,16 @@
  * { session, plate, observation }.
  *
  * Injectors: plateRead, purgeImagery, purgeReads.
+ *
+ * The read routes (lookup GET/POST, read-back, plate review) live in
+ * ./lpr/reads.mjs; a plate review emits `lpr.plateReviewed`
+ * { observation, decision }.
  */
 import { parseDuration } from '../kernel/clock.mjs';
 import { fail } from '../kernel/problems.mjs';
 import { paginate, refOf, checkPrecondition, wire } from './common.mjs';
 import { createModel, READ_KEY, CAMERAS_KEY } from './lpr/model.mjs';
+import { registerReadRoutes } from './lpr/reads.mjs';
 
 const PLATE_OP = 'put-apx-v1-sessions-id-plate';
 const DEFAULT_DISPUTE_WINDOW = 'PT30M';
@@ -130,37 +135,13 @@ export default {
       sim.hooks.emit('lpr.read', { observation: o, lane: laneId ?? null, place: m.placeOf(o) ?? null, session: session ?? null });
     });
 
-    // ---------- GET /v1/lpr/reads ----------
+    // ---------- reads: GET/POST lookup, read-back, plate review (./lpr/reads.mjs) ----------
+
+    registerReadRoutes(sim, m);
 
     const requireGrantOn = (ctx, id, what) => {
       if (!m.covered(ctx.principal, id)) fail('insufficient-grant', `${what} is not in the token's apx_places grant.`);
     };
-
-    sim.on('get-apx-v1-lpr-reads', (ctx) => {
-      m.sweep();
-      const q = ctx.query;
-      const [plate, ticket, observation, sessionId, place] = ['plate', 'ticket', 'observation', 'session', 'place'].map((n) => q.get(n));
-      if (!plate && !ticket && !observation && !sessionId) {
-        fail('invalid-request', 'GET /v1/lpr/reads requires plate, ticket, observation, or session.', { errors: [{ pointer: '?plate', detail: 'one of plate, ticket, observation, session is required' }] });
-      }
-      if (place) requireGrantOn(ctx, place, `Place ${place}`);
-      const session = sessionId ? m.sessions().get(sessionId) : null;
-      if (session) requireGrantOn(ctx, session._place, `Session ${session.id} at place ${session._place}`);
-      if (!ctx.principal.hasGrant || (sessionId && !session)) return paginate(ctx, []);
-      const rows = m
-        .reads()
-        .filter((o) => {
-          if (!m.covered(ctx.principal, m.bindingOf(o))) return false;
-          if (observation && o.id !== observation) return false;
-          if (plate && !m.plateMatches(o, plate)) return false;
-          if (ticket && m.sessionOf(o)?._ticketNumber !== ticket) return false;
-          if (session && m.sessionOf(o)?.id !== session.id) return false;
-          if (place && !sim.hierarchy.within(m.bindingOf(o), place)) return false;
-          return true;
-        })
-        .sort(m.newestFirst);
-      return paginate(ctx, rows.map(m.projectRead));
-    });
 
     // ---------- GET /v1/lpr/candidates ----------
 

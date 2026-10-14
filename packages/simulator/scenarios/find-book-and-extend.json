@@ -61,7 +61,7 @@
     },
     {
       "name": "A quote for 18:30 to 22:00 local",
-      "narration": "The app asks for a native APDS quote for the window Sam wants. The response confirms the window against the right specification.",
+      "narration": "The app asks for a native APDS quote for the window Sam wants. The response confirms the window against the right specification and prices it from the garage's evening rate table: one option at USD 24.00, tax included, held for thirty minutes.",
       "request": {
         "method": "POST",
         "path": "/quotes",
@@ -97,7 +97,19 @@
                 "id": "d2000000-0000-4000-8000-000000000451"
               },
               "start": "2026-09-25T23:30:00Z",
-              "end": "2026-09-26T03:00:00Z"
+              "end": "2026-09-26T03:00:00Z",
+              "options": [
+                {
+                  "exact": true,
+                  "financialQuote": {
+                    "taxIncluded": true,
+                    "value": {
+                      "currencyType": "USD",
+                      "currencyValue": 24
+                    }
+                  }
+                }
+              ]
             }
           ]
         }

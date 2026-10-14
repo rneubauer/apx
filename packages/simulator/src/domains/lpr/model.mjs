@@ -298,7 +298,8 @@ export function createModel(sim) {
    */
   function pair(o) {
     const placeId = placeOf(o);
-    if (!pairingAt(placeId) || sessionOf(o)) return null;
+    // §13.3a(4a): a read a reviewer rejected is unusable for pairing.
+    if (!pairingAt(placeId) || sessionOf(o) || detailOf(o)?.review?.state === 'rejected') return null;
     const event = detailOf(o)?.accessEvent;
     if (event === 'entry') return openVisit(o, placeId);
     if (event !== 'exit') return null;

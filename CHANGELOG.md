@@ -10,9 +10,28 @@ The machine-readable spec (`spec/openapi/apx.yaml`, bundled as
 
 No change to the spec or the bundle. The reference simulator now covers the
 Part 19 behaviour adopted in 0.14.0, and the vetting suite cites every
-APX-VIO row.
+APX-VIO row. Part 12's problem-type table loses a stray merge-conflict
+marker (editorial; no row changed).
 
 **Added.**
+- `packages/simulator` now implements every operation in the bundle
+  (181/181): Part 24 plate lists (lists, entries, the change feed on both,
+  `apx.platelists.changed.v1`, arrival alerts), the LPR read routes
+  (`GET /v1/lpr/reads/{observation}`, `POST /v1/lpr/reads:search`,
+  `PUT /v1/lpr/reads/{observation}/plate`), `GET /v1/digest-keys`,
+  `POST /v1/enforcement/eligibility:check`, `POST /v1/accounts:search`,
+  `POST /v1/payments:search`, and `GET /v1/places/{id}/occupancy/history`.
+  It also fixes the stock APDS plate lookup on `/rights/assigned` for
+  rights held through a CredentialRecord (§14.2b), prices quotes from the
+  rate tables, offers the §5.2 change feed on the APX list routes, and
+  raises `occupancyThresholdExceeded` on a threshold crossing.
+- Simulator UI: a **Fabric** view showing Part 8 delivery live, with a
+  traffic generator (`/sim/traffic`), endpoint fail and recover, and SSE
+  drop and reconnect. There are now twenty narrated demos, including five
+  analytics demos in a new `analytics-lakeside` world and a plate-list
+  demo. The README, quickstart, overview, executive summary and scenarios
+  index link to the hosted simulator at
+  <https://rneubauer.github.io/apx/simulator/>.
 - `packages/simulator`, apx-violations: `POST /v1/enforcement/violation-imports`
   (Part 19 §19.13 rules 1–4). It is keyed on the source's `system` +
   `recordId`. A higher `sourceRevision` (else a later `sourceUpdatedTime`)
