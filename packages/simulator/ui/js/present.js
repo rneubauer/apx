@@ -14,6 +14,7 @@ let presenting = false;
 let viaFullscreen = false; // presenter mode took the browser full screen, so leaving full screen leaves it too
 let viewIsActive = () => false;
 let shownStep = -1; // the step the last presenter render showed, so a new step starts at the top of the screen
+let worldFilter = null; // the picker shows this world's demos; null shows them all
 const rerender = () => rootEl && renderPresent(rootEl);
 
 export function mountPresent(root, { isActive }) {
@@ -24,6 +25,11 @@ export function mountPresent(root, { isActive }) {
     if (what === 'scenario' && !state.scenario) exitPresenter();
     if (what === 'status' && presenting) updatePresenterClock();
     if (['scenario', 'run', 'scenarios'].includes(what) && isActive()) rerender();
+  });
+  // Picking a world in the header filters the demo list to that world's demos.
+  document.getElementById('world-select')?.addEventListener('change', (e) => {
+    worldFilter = e.target.value;
+    if (!state.scenario && isActive()) rerender();
   });
   document.addEventListener('keydown', onKey);
   document.addEventListener('fullscreenchange', () => {
@@ -130,17 +136,59 @@ function presenterBar(s) {
 
 // ---------- the picker and the timeline ----------
 
+/** Load a world through the header picker, so the header, the simulator and this filter agree. */
+function pickWorld(name) {
+  const sel = document.getElementById('world-select');
+  if (!sel || sel.value === name) {
+    worldFilter = name;
+    rerender();
+    return;
+  }
+  sel.value = name;
+  sel.dispatchEvent(new Event('change'));
+}
+
+/** All, then one chip per world a scenario is written for, plus the picked world when none is. */
+function worldChips() {
+  const counts = new Map();
+  for (const s of state.scenarios) counts.set(s.world, (counts.get(s.world) ?? 0) + 1);
+  const names = [...counts.keys()].sort();
+  if (worldFilter && !counts.has(worldFilter)) names.push(worldFilter);
+  const chip = (label, active, onclick, title) => h('button', { class: `world-chip${active ? ' active' : ''}`, 'aria-pressed': String(active), onclick, title }, label);
+  return h('div', { class: 'world-chips', role: 'group', 'aria-label': 'Show the demos for a world' },
+    chip(`All demos (${state.scenarios.length})`, !worldFilter, () => {
+      worldFilter = null;
+      rerender();
+    }),
+    names.map((n) => chip(`${n} (${counts.get(n) ?? 0})`, worldFilter === n, () => pickWorld(n), state.worlds.find((w) => w.name === n)?.description ?? '')));
+}
+
+/** A world nobody has written a demo for yet: say so, and offer the two ways in. */
+function noDemoFor(name) {
+  const world = state.worlds.find((w) => w.name === name);
+  return h('div', { class: 'no-demo' },
+    h('p', {}, h('b', {}, `No narrated demo uses ${name} yet.`), ' It is loaded now, so you can try it by hand.'),
+    world?.description ? h('p', { class: 'world-desc' }, world.description) : null,
+    h('div', { class: 'row', style: 'justify-content:center' },
+      h('button', { onclick: () => (location.hash = 'explore') }, `Explore ${name}`),
+      h('button', { class: 'ghost', onclick: () => (location.hash = 'build') }, 'Build a demo for it')));
+}
+
 function picker() {
   const open = (id) => () => openScenario(id).then(restart).catch((e) => toast(e.message, 'bad'));
+  const shown = worldFilter ? state.scenarios.filter((s) => s.world === worldFilter) : state.scenarios;
   return h('div', { class: 'panel empty' },
     h('h2', {}, 'Present a scenario'),
-    h('p', {}, 'Pick a scenario to walk an audience through it. Each step runs live against the simulator: who acts, what they send, what the server answers, and which events go out to subscribers.'),
-    state.scenarios.length
-      ? h('div', { class: 'picker' }, state.scenarios.map((s) => h('button', { class: 'scenario-card', onclick: open(s.id) },
+    h('p', {}, 'Each demo is written for one world: the garages, lanes, devices and companies it acts on. Pick a world to see its demos, or open a demo and it loads its own world. Each step runs live: who acts, what they send, what the server answers, and which events go out.'),
+    state.scenarios.length ? worldChips() : null,
+    shown.length
+      ? h('div', { class: 'picker' }, shown.map((s) => h('button', { class: 'scenario-card', onclick: open(s.id) },
         h('span', { class: 't' }, s.name),
         s.description ? h('span', { class: 'd' }, s.description) : null,
         h('span', { class: 'm' }, `${s.steps} steps · world ${s.world}`))))
-      : h('p', {}, 'No scenarios yet. Build one first, or save one into packages/simulator/scenarios/.'));
+      : worldFilter
+        ? noDemoFor(worldFilter)
+        : h('p', {}, 'No scenarios yet. Build one first, or save one into packages/simulator/scenarios/.'));
 }
 
 /** A round pass / fail / next mark with a name screen readers can read. */
