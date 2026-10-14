@@ -8,12 +8,21 @@ The machine-readable spec (`spec/openapi/apx.yaml`, bundled as
 
 ## [Unreleased]
 
-No change to the spec or the bundle. The reference simulator now covers the
-Part 19 behaviour adopted in 0.14.0, and the vetting suite cites every
-APX-VIO row. Part 12's problem-type table loses a stray merge-conflict
-marker (editorial; no row changed).
+No normative change. The only bundle edit is editorial: the `DeviceStatus`
+description no longer cites an APDS `RefillPointStatusEnum`, which APDS 4.1
+does not define. The reference simulator now covers the Part 19 behaviour
+adopted in 0.14.0, and the vetting suite cites every APX-VIO row. Part 12's
+problem-type table loses a stray merge-conflict marker (editorial; no row
+changed).
 
 **Added.**
+- `docs/data-model-by-domain.md`: every APX schema placed on the APDS
+  high-level data map (APDS, extension, new element, or API-only), with
+  exact required fields, plus a proposed Tier 1 shortlist of data elements
+  for ISO TS 5206-1 with required and optional attributes.
+- APDS change requests, Part B: a suggestion to add lane equipment
+  (`gate`, `barrier`, `lprCamera`, `ticketDispenser`, `intercom`) to
+  `EquipmentTypeEnum`.
 - `packages/simulator` now implements every operation in the bundle
   (181/181): Part 24 plate lists (lists, entries, the change feed on both,
   `apx.platelists.changed.v1`, arrival alerts), the LPR read routes
@@ -68,6 +77,10 @@ marker (editorial; no row changed).
   read, and `test/violations.test.mjs` adds 24 unit tests.
 
 **Fixed.**
+- `DeviceStatus` (spec), Part 6 §6.4, Part 11 and the `apx-device-states`
+  registry said device states mirror an APDS `RefillPointStatusEnum`. No
+  such enum exists in APDS 4.1. They now say that APDS defines no equipment
+  status list and the values are APX's own. No value changed.
 - Simulator: `PUT /v1/sessions/{id}/assigned-right` refused a right
   already linked to another open session only when the right carried the
   reservations extension (RES-13).

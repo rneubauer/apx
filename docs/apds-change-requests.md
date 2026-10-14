@@ -50,9 +50,11 @@ Full reports: [APX errata folder](errata/README.md).
 
 ## Part B — Additions APDS could consider
 
-Ten suggestions, not filed as errata, where APX currently fills a gap in
+Eleven suggestions, not filed as errata, where APX currently fills a gap in
 its own namespace. If APDS covered any of them natively, APX would move to
-the APDS form and retire its own.
+the APDS form and retire its own. For every APX data element placed on the
+APDS data map, with required and optional attributes, see
+[APX data elements by APDS domain](data-model-by-domain.md).
 
 | Suggestion | Why it helps | APX today |
 | --- | --- | --- |
@@ -65,6 +67,7 @@ the APDS form and retire its own.
 | **`country` optional in `VehicleAncillaryIdentification`** | A read whose plate country the engine could not place could still carry make, model, and colour — often the reads that most need them | The attributes ride in the APX `detail` decoration and the APDS object is omitted (Part 13 §13.3a(1)) |
 | **A Session end reason** | Consumers could tell an exit read from a stale closure or an exit with no observed entry, and compute the same dwell and occupancy figures from the same Sessions | `apds-ext:apx:session-detail@1.0` with registry `apx-session-end-reasons` (Part 5 §5.8) |
 | **Payment detail**: a shared code list for `PaymentLine.idCode` (or a fee value in `PaymentTypeEnum`), and a member on `Payment` naming the rate sold | `idCode` is bilateral, so two parties cannot tell a price line from a fee or a tax, and nothing says which rate a payment bought | Registry `apx-payment-line-codes` for `idCode`, and decoration `apds-ext:apx:payment-detail@1.0` with `rateSold` (Part 13 §13.6a) |
+| **Lane equipment in `EquipmentTypeEnum`**: perhaps `gate`, `barrier`, `lprCamera`, `ticketDispenser` and `intercom` | Off-street sites could type their access equipment with APDS names; today the closest fits are `paymentMachine`, `tollTerminal`, `dsrcReceiver` and `other` | Device references (`DeviceStatus.device`, `Command.target`, `Alert.source.device`) point at `SupplementalEquipment` without setting an equipment type (Part 6 §6.4) |
 | **An identifiable holder** (see Part A, 014) | Rights, permits, accounts, and payments for one customer can be grouped | `className: "RightHolder"`, local id (Part 1 §1.3 item 14) |
 
 APX also defines surfaces APDS does not yet cover — alerts, lane control,

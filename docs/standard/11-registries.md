@@ -8,7 +8,7 @@ APX open vocabularies are published as **APDS UserDefinedCodeList documents**
 |---|---|---|
 | `apx-command-types` | Command plane verbs | `Command.commandType` |
 | `apx-alert-types` | Alert taxonomies (seeded from APDS Use Case C.2.2 exceptions/space statuses) | `Alert.alertType` |
-| `apx-device-states` | Device state values (RefillPointStatusEnum style) | `DeviceStatus.deviceState` |
+| `apx-device-states` | Device state values (APDS 4.1 has no equipment status list) | `DeviceStatus.deviceState` |
 | `apx-topics` | APX event topics | `EventEnvelope.type`, subscriptions |
 | `apx-conformance-classes` | Conformance classes | `.well-known/apx-configuration` |
 | `apx-issue-types` | Resolution issue classification | `ResolutionIssue.code` (Part 17) |

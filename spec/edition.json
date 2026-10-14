@@ -16,8 +16,8 @@
   },
   "normativeArtifacts": {
     "bundle": {
-      "spec/dist/apx-v1.yaml": "9b49a9b41de4c63d288f905eb44e65951a27a4c090a5b06ea65ad3e1fa0b403a",
-      "spec/dist/apx-v1.json": "e8ab144ceceb1bd9590fbc794174b7188d38a78405873b59e4b934a39fbdfc90"
+      "spec/dist/apx-v1.yaml": "14522b61ca8fc957e6af832053c638c53a058bdab7d0921e2ec766da14c5e5f2",
+      "spec/dist/apx-v1.json": "34e20f7f88f58d9991275ea02b4a05ecd7dc3162f2da4192247e9dde319e4ab0"
     },
     "overlays": {
       "spec/openapi/overlays/apx-data-overlay.yaml": "6aa202c41600074d2806482d55a984316f03268c56b28850043f86682b445492",
@@ -53,7 +53,7 @@
         "version": 1,
         "entries": 6,
         "locator": "https://apx-standard.org/registries/apx-device-states.json",
-        "sha256": "519c36043fcd7512782b02fe5444dc89c8f1dc05c7c0f6001624fe1b2ab7eaa9"
+        "sha256": "099cd844f42672d827ea7a8f144fcfb8a04a70cb5387d40ae61eb13b28b6dd78"
       },
       "apx-features": {
         "version": 2,

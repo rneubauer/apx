@@ -12925,8 +12925,9 @@ components:
       title: DeviceStatus
       description: |-
         Live state overlay keyed by Reference to an APDS SupplementalEquipment —
-        never duplicates its descriptive fields. deviceState values mirror the
-        RefillPointStatusEnum style (registry apx-device-states). Attachable to
+        never duplicates its descriptive fields. APDS 4.1 defines no equipment
+        status code list, so deviceState values come from the APX registry
+        apx-device-states. Attachable to
         APDS payloads as apds-ext:apx:devicestatus@1.0.
       type: object
       required:

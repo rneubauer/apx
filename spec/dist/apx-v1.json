@@ -18569,7 +18569,7 @@
       },
       "DeviceStatus": {
         "title": "DeviceStatus",
-        "description": "Live state overlay keyed by Reference to an APDS SupplementalEquipment —\nnever duplicates its descriptive fields. deviceState values mirror the\nRefillPointStatusEnum style (registry apx-device-states). Attachable to\nAPDS payloads as apds-ext:apx:devicestatus@1.0.",
+        "description": "Live state overlay keyed by Reference to an APDS SupplementalEquipment —\nnever duplicates its descriptive fields. APDS 4.1 defines no equipment\nstatus code list, so deviceState values come from the APX registry\napx-device-states. Attachable to\nAPDS payloads as apds-ext:apx:devicestatus@1.0.",
         "type": "object",
         "required": [
           "device",
