@@ -118,6 +118,9 @@ route the subscriber can read.
 - **A step fails on screen.** Press R and run the scenario again from its
   world. If it fails again, move to the next demo and say you will
   follow up. Do not debug live.
+- **The laptop or the local server misbehaves.** Open the hosted copy,
+  https://rneubauer.github.io/apx/simulator/. It is the same simulator
+  running in the browser, with the same demos.
 - **The page stops updating.** The header clock shows *offline* if the
   server stopped. Restart `node bin/apx-sim.mjs serve` and reload the
   page.

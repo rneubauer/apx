@@ -31,6 +31,8 @@ jobs:
         run: npm run spec:bundle && npm run spec:profile
       - name: Render API reference docs
         run: npm run docs:build
+      - name: Build the in-browser simulator (site/simulator/)
+        run: npm run sim:web
       - uses: actions/configure-pages@v5
         with:
           enablement: true
