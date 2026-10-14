@@ -8,7 +8,7 @@
  * The page answers its own requests (web/browser.mjs); there is no server.
  */
 import { build } from 'esbuild';
-import { cpSync, mkdirSync, readdirSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
+import { cpSync, existsSync, mkdirSync, readdirSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
 import { dirname, join, relative, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
@@ -27,7 +27,13 @@ const posix = (p) => p.split('\\').join('/');
 const vfsPath = (file) => `${VFS_ROOT}/${posix(relative(REPO, file))}`;
 const jsonIn = (dir) => readdirSync(dir).filter((f) => f.endsWith('.json')).map((f) => join(dir, f));
 
-/** Every file the kernel reads at run time (spec.mjs, problems.mjs, world.mjs, scenario.mjs, sim-scenarios.mjs). */
+/** The vetting suite's scenario files (src/kernel/vetting.mjs). */
+const vettingFiles = () => {
+  const suite = join(REPO, 'docs', 'scenarios', 'by-module');
+  return readdirSync(suite).map((d) => join(suite, d, 'scenarios.md')).filter((f) => existsSync(f));
+};
+
+/** Every file the kernel reads at run time (spec.mjs, problems.mjs, world.mjs, scenario.mjs, sim-scenarios.mjs, vetting.mjs). */
 const vfsFiles = () => [
   join(REPO, 'spec', 'dist', 'apx-v1.json'),
   join(REPO, 'spec', 'edition.json'),
@@ -36,6 +42,7 @@ const vfsFiles = () => [
   ...jsonIn(join(SIM, 'worlds')),
   ...jsonIn(join(SIM, 'scenarios')),
   ...jsonIn(join(SIM, 'tools', 'directions')),
+  ...vettingFiles(),
 ];
 
 /** domains/index.mjs discovers modules with readdir + dynamic import; the bundle needs them static, in the same order. */

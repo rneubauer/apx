@@ -210,6 +210,7 @@ export const state = {
   injectors: [],
   topics: [],
   scenarios: [],
+  vetting: [], // the vetting suite's scenarios, read-only: docs/scenarios/by-module
   scenario: null, // the scenario being built or presented
   scenarioId: null, // its file id, once saved or loaded
   dirty: false,
@@ -230,14 +231,16 @@ export async function refreshStatus() {
 }
 
 export async function refreshScenarios() {
-  state.scenarios = (await sim.get('/scenarios')).scenarios;
+  const listed = await sim.get('/scenarios');
+  state.scenarios = listed.scenarios;
+  state.vetting = listed.vetting ?? [];
   emit('scenarios');
 }
 
 // ---------- scenarios ----------
 
 export function stepKind(step) {
-  return ['request', 'inject', 'clock', 'events', 'deliveries', 'state', 'receiver', 'reset'].find((k) => step[k] !== undefined) ?? 'note';
+  return ['request', 'inject', 'clock', 'events', 'deliveries', 'state', 'receiver', 'reset', 'prepare'].find((k) => step[k] !== undefined) ?? 'note';
 }
 
 export function newScenario() {
@@ -362,11 +365,15 @@ export function stepSummary(step) {
     const n = e.exactly !== undefined ? `exactly ${e.exactly}` : e.min !== undefined ? `at least ${e.min}` : e.max !== undefined ? `at most ${e.max}` : 'any';
     return `${n} × ${e.type ?? 'any event'}`;
   }
+  if (kind === 'prepare') return `set the stage: ${step.prepare.module}, up to ${step.prepare.before}`;
   if (kind === 'note') return (step.narration ?? '').slice(0, 90);
   return JSON.stringify(step[kind]).slice(0, 90);
 }
 
 /** Who acts in a request step: its token, or the scenario's. */
 export function actorOf(step) {
-  return step.request?.noAuth ? 'anonymous' : step.request?.token ?? state.scenario?.token ?? 'default';
+  if (step.request?.noAuth) return 'anonymous';
+  const token = String(step.request?.token ?? state.scenario?.token ?? 'default');
+  const bare = token.startsWith('Bearer ') ? token.slice(7) : token;
+  return bare === '…' ? 'default' : bare;
 }

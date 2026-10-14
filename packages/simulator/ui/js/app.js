@@ -50,10 +50,22 @@ function renderRunState() {
   let title = 'The clock only moves when you advance it or a step does';
   if (offline) [label, cls, title] = ['offline', 'offline', 'The simulator is not answering'];
   else if (run.busy) [label, cls, title] = ['running', 'busy', 'A scenario step is running'];
-  else if (s?.clock?.realtime) [label, cls, title] = ['live', 'live', 'The clock follows real time (--realtime)'];
+  else if (s?.clock?.realtime) [label, cls, title] = ['live', 'live', 'The clock follows real time; timers fire on their own'];
   el.replaceChildren(h('span', { class: 'label' }, label));
   el.className = `run-state ${cls}`;
   el.title = title;
+  renderClockMode();
+}
+
+/** The Frozen | Live switch reflects the server's clock mode. */
+function renderClockMode() {
+  const live = Boolean(state.status?.clock?.realtime);
+  for (const b of document.querySelectorAll('#clock-mode [data-realtime]')) {
+    const on = (b.dataset.realtime === 'true') === live;
+    b.classList.toggle('active', on);
+    b.setAttribute('aria-pressed', String(on));
+    b.disabled = offline || !state.status;
+  }
 }
 
 function renderHeader() {
@@ -223,6 +235,16 @@ function wireHeader() {
   });
   const clock = (body) => sim.post('/clock', body).then(refreshStatus).catch((e) => toast(e.message, 'bad'));
   for (const b of document.querySelectorAll('[data-advance]')) b.addEventListener('click', () => clock({ advance: b.dataset.advance }));
+  for (const b of document.querySelectorAll('#clock-mode [data-realtime]')) {
+    b.addEventListener('click', () => {
+      const realtime = b.dataset.realtime === 'true';
+      if (Boolean(state.status?.clock?.realtime) === realtime) return;
+      sim.post('/clock', { realtime })
+        .then(refreshStatus)
+        .then(() => toast(realtime ? 'Clock is live: time runs on its own' : 'Clock frozen'))
+        .catch((e) => toast(e.message, 'bad'));
+    });
+  }
   document.getElementById('clock-set').addEventListener('click', () => {
     const v = window.prompt('Set the clock to (ISO 8601, UTC):', state.status?.clock?.now ?? '');
     if (v) clock({ now: v.trim() });

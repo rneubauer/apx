@@ -35,6 +35,10 @@
         <span id="run-state" class="run-state" role="status">connecting</span>
         <time id="clock-now" class="clock-now">—</time>
       </div>
+      <div class="clock-mode" id="clock-mode" role="group" aria-label="Clock mode">
+        <button type="button" data-realtime="false" aria-pressed="true" title="Time moves only when a step or the buttons move it. Use this to present: every run is the same.">Frozen</button>
+        <button type="button" data-realtime="true" aria-pressed="false" title="The clock runs in real time from here and scheduled things happen on their own: commands complete, webhook retries, no-shows, idle charging.">Live</button>
+      </div>
       <div class="clock-buttons">
         <button data-advance="PT1M" title="Advance the clock one minute">+1m</button>
         <button data-advance="PT5M" title="Advance the clock five minutes">+5m</button>

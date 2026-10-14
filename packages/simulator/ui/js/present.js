@@ -5,7 +5,7 @@
 // R rewinds, F enters presenter mode (full screen, no app chrome), Esc leaves it.
 import {
   h, mount, jsonView, toast, statusBadge, fmtClock,
-  state, on, openScenario, run, rewind, runNext, stepKind, stepSummary, actorOf, eventLine,
+  state, on, openScenario, run, rewind, runNext, stepKind, stepSummary, actorOf, eventLine, sim,
 } from './core.js';
 
 let viewing = 0; // the step on stage (may lag the cursor when browsing back)
@@ -148,47 +148,108 @@ function pickWorld(name) {
   sel.dispatchEvent(new Event('change'));
 }
 
-/** All, then one chip per world a scenario is written for, plus the picked world when none is. */
-function worldChips() {
+/** The vetting suite's scenario kinds, in the order a world lists them. */
+const KINDS = [['happy', 'Happy path'], ['lifecycle', 'Lifecycle'], ['edge', 'Edge cases'], ['refusal', 'Refusals'], ['security', 'Security'], ['other', 'Other']];
+const kindOf = (s) => (KINDS.some(([k]) => k === s.kind) ? s.kind : 'other');
+const describe = (world) => state.worlds.find((w) => w.name === world)?.description ?? '';
+/** Scenarios assume a frozen clock: opening one while Live switches to Frozen first, so no timer fires between steps. */
+async function freezeForWalkthrough() {
+  if (!state.status?.clock?.realtime) return;
+  await sim.post('/clock', { realtime: false });
+  toast('Clock set to Frozen for the walkthrough');
+}
+const openIt = (id) => () => freezeForWalkthrough().then(() => openScenario(id)).then(restart).catch((e) => toast(e.message, 'bad'));
+
+/** How many narrated demos and vetting scenarios each world has. */
+function worldCounts() {
   const counts = new Map();
-  for (const s of state.scenarios) counts.set(s.world, (counts.get(s.world) ?? 0) + 1);
+  const bump = (world, key) => counts.set(world, { demos: 0, vetting: 0, ...counts.get(world), [key]: (counts.get(world)?.[key] ?? 0) + 1 });
+  state.scenarios.forEach((s) => bump(s.world, 'demos'));
+  state.vetting.forEach((s) => bump(s.world, 'vetting'));
+  return counts;
+}
+
+/** All worlds, then one chip per world something is written for, plus the picked world when nothing is. */
+function worldChips(counts) {
   const names = [...counts.keys()].sort();
   if (worldFilter && !counts.has(worldFilter)) names.push(worldFilter);
+  const total = (n) => (counts.get(n)?.demos ?? 0) + (counts.get(n)?.vetting ?? 0);
   const chip = (label, active, onclick, title) => h('button', { class: `world-chip${active ? ' active' : ''}`, 'aria-pressed': String(active), onclick, title }, label);
-  return h('div', { class: 'world-chips', role: 'group', 'aria-label': 'Show the demos for a world' },
-    chip(`All demos (${state.scenarios.length})`, !worldFilter, () => {
+  return h('div', { class: 'world-chips', role: 'group', 'aria-label': 'Show the scenarios for a world' },
+    chip('All worlds', !worldFilter, () => {
       worldFilter = null;
       rerender();
     }),
-    names.map((n) => chip(`${n} (${counts.get(n) ?? 0})`, worldFilter === n, () => pickWorld(n), state.worlds.find((w) => w.name === n)?.description ?? '')));
+    names.map((n) => chip(`${n} · ${total(n)}`, worldFilter === n, () => pickWorld(n), describe(n))));
 }
 
-/** A world nobody has written a demo for yet: say so, and offer the two ways in. */
-function noDemoFor(name) {
-  const world = state.worlds.find((w) => w.name === name);
+/** A world nothing is written for yet: say so, and offer the two ways in. */
+function emptyWorld(name) {
   return h('div', { class: 'no-demo' },
-    h('p', {}, h('b', {}, `No narrated demo uses ${name} yet.`), ' It is loaded now, so you can try it by hand.'),
-    world?.description ? h('p', { class: 'world-desc' }, world.description) : null,
+    h('p', {}, h('b', {}, `No scenario uses ${name} yet.`), ' It is loaded now, so you can try it by hand.'),
+    describe(name) ? h('p', { class: 'world-desc' }, describe(name)) : null,
     h('div', { class: 'row', style: 'justify-content:center' },
       h('button', { onclick: () => (location.hash = 'explore') }, `Explore ${name}`),
       h('button', { class: 'ghost', onclick: () => (location.hash = 'build') }, 'Build a demo for it')));
 }
 
+const section = (title, note, ...kids) => h('section', { class: 'picker-section' }, h('h3', {}, title), note ? h('p', { class: 'section-note' }, note) : null, ...kids);
+
+function demoCards(list) {
+  return h('div', { class: 'picker' }, list.map((s) => h('button', { class: 'scenario-card', onclick: openIt(s.id) },
+    h('span', { class: 't' }, s.name),
+    s.description ? h('span', { class: 'd' }, s.description) : null,
+    h('span', { class: 'm' }, `${s.steps} steps · world ${s.world}`))));
+}
+
+/** All worlds: a tile per world with vetting scenarios, counted by kind. */
+function vettingTiles(counts) {
+  const worlds = [...new Set(state.vetting.map((s) => s.world))].sort();
+  return h('div', { class: 'world-tiles' }, worlds.map((w) => {
+    const mine = state.vetting.filter((s) => s.world === w);
+    const demos = counts.get(w)?.demos ?? 0;
+    const byKind = KINDS.map(([k, label]) => [label, mine.filter((s) => kindOf(s) === k).length]).filter(([, n]) => n);
+    return h('button', { class: 'world-tile', onclick: () => pickWorld(w), title: describe(w) },
+      h('span', { class: 't' }, w),
+      h('span', { class: 'm' }, `${mine.length} scenarios${demos ? ` · ${demos} narrated` : ''}`),
+      h('span', { class: 'd' }, byKind.map(([label, n]) => `${n} ${label.toLowerCase()}`).join(' · ')));
+  }));
+}
+
+/** One world's vetting scenarios as compact rows, grouped by kind. */
+function vettingRows(list) {
+  return KINDS.map(([k, label]) => {
+    const rows = list.filter((s) => kindOf(s) === k);
+    if (!rows.length) return null;
+    return h('div', { class: 'kind-group' }, h('h4', {}, `${label} (${rows.length})`),
+      h('div', { class: 'vet-rows' }, rows.map((s) => {
+        const [id, ...title] = s.name.split(' — ');
+        return h('button', { class: 'vet-row', onclick: openIt(s.id), title: s.description ?? '' },
+          h('span', { class: 'vid' }, id), h('span', { class: 'vt' }, title.join(' — ') || s.name), h('span', { class: 'vm' }, `${s.steps} steps`));
+      })));
+  });
+}
+
+const DEMOS_NOTE = 'Stories written to be told: narration at every step.';
+const VETTING_NOTE = 'The cases the standard was tested against, one request at a time. Each sets its stage first by replaying the cases before it in its module, as the suite does.';
+
 function picker() {
-  const open = (id) => () => openScenario(id).then(restart).catch((e) => toast(e.message, 'bad'));
-  const shown = worldFilter ? state.scenarios.filter((s) => s.world === worldFilter) : state.scenarios;
+  const counts = worldCounts();
+  const demos = worldFilter ? state.scenarios.filter((s) => s.world === worldFilter) : state.scenarios;
+  const vetting = worldFilter ? state.vetting.filter((s) => s.world === worldFilter) : state.vetting;
+  const anything = state.scenarios.length + state.vetting.length > 0;
+  const body = worldFilter
+    ? demos.length || vetting.length
+      ? [demos.length ? section(`Narrated demos (${demos.length})`, DEMOS_NOTE, demoCards(demos)) : null,
+        vetting.length ? section(`Vetting suite (${vetting.length})`, VETTING_NOTE, ...vettingRows(vetting)) : null]
+      : [emptyWorld(worldFilter)]
+    : [demos.length ? section(`Narrated demos (${demos.length})`, DEMOS_NOTE, demoCards(demos)) : null,
+      vetting.length ? section(`Vetting suite (${vetting.length})`, `${VETTING_NOTE} Pick a world to walk through its cases.`, vettingTiles(counts)) : null];
   return h('div', { class: 'panel empty' },
     h('h2', {}, 'Present a scenario'),
-    h('p', {}, 'Each demo is written for one world: the garages, lanes, devices and companies it acts on. Pick a world to see its demos, or open a demo and it loads its own world. Each step runs live: who acts, what they send, what the server answers, and which events go out.'),
-    state.scenarios.length ? worldChips() : null,
-    shown.length
-      ? h('div', { class: 'picker' }, shown.map((s) => h('button', { class: 'scenario-card', onclick: open(s.id) },
-        h('span', { class: 't' }, s.name),
-        s.description ? h('span', { class: 'd' }, s.description) : null,
-        h('span', { class: 'm' }, `${s.steps} steps · world ${s.world}`))))
-      : worldFilter
-        ? noDemoFor(worldFilter)
-        : h('p', {}, 'No scenarios yet. Build one first, or save one into packages/simulator/scenarios/.'));
+    h('p', {}, 'Every scenario is written for one world: the garages, lanes, devices and companies it acts on. Pick a world to see what can be walked through in it, or open a scenario and it loads its own world. Each step runs live: who acts, what they send, what the server answers, and which events go out.'),
+    anything ? worldChips(counts) : h('p', {}, 'No scenarios yet. Build one first, or save one into packages/simulator/scenarios/.'),
+    ...body);
 }
 
 /** A round pass / fail / next mark with a name screen readers can read. */
@@ -320,6 +381,12 @@ function action(step, kind, r) {
   if (kind === 'clock') {
     const what = step.clock.now ? `jumps to ${fmtClock(step.clock.now)}` : `moves on ${step.clock.advance}`;
     return card(h('div', { class: 'row' }, h('span', { class: 'actor' }, '⏱ clock'), h('span', { class: 'call' }, what)));
+  }
+  if (kind === 'prepare') {
+    const p = r?.prepare;
+    const n = p?.replayed ?? 0;
+    const what = p ? `loaded ${p.world}${n ? `, replayed ${n} earlier ${n === 1 ? 'case' : 'cases'}` : ''}` : `loads ${step.prepare.module} and replays the cases before ${step.prepare.before}`;
+    return card(h('div', { class: 'row' }, h('span', { class: 'actor' }, '🎬 the stage'), h('span', { class: 'call' }, what)));
   }
   if (kind === 'note') return null;
   return card(h('span', { class: 'call' }, stepSummary(step)), expectations);

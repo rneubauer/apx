@@ -50,6 +50,14 @@ curl -s -X POST http://127.0.0.1:4100/oauth/token -d 'grant_type=client_credenti
   the app header and step list are hidden, the title and narration are set
   large, the request sits beside the answer, and a small step counter and
   progress bar stay at the top. The same keys work there; Esc or F leaves.
+  Present lists two kinds of scenario, by world: the narrated demos in
+  `scenarios/`, and every case of the vetting suite
+  (`docs/scenarios/by-module`, read by `src/kernel/vetting.mjs`), grouped
+  by kind (happy path, lifecycle, edge, refusal, security). Pick a world
+  with the chips or the header picker to see what can be walked through
+  in it. A vetting case opens with a step that sets its stage: it loads
+  the module's world and replays the cases before it, as the suite does,
+  so the records it builds on exist. The suite is read-only here.
   If the browser refuses full screen, the mode still hides the chrome.
 - **Build** creates and edits scenarios: requests (with expected status,
   problem type, partial body, and values saved for later steps), world
@@ -63,7 +71,8 @@ curl -s -X POST http://127.0.0.1:4100/oauth/token -d 'grant_type=client_credenti
   click.
 
 The header carries the APX edition the simulator serves, the world
-picker, the clock with its state (frozen, live under `--realtime`,
+picker, the clock with its state (frozen, live under `--realtime` or the
+Frozen | Live switch,
 running while a step runs, offline if the server stops answering), and
 a theme button: Auto follows the OS, or pin Light (often better on a
 projector) or Dark. The page follows the simulator live over
@@ -98,11 +107,20 @@ scenario saved in Build lasts until then (use Download to keep it).
 
 ## What makes it a simulator
 
-- **The clock is frozen** unless started with `--realtime`. Anything that
+- **The clock is frozen** unless started with `--realtime` or switched to
+  Live (the Frozen | Live switch in the header, or
+  `POST /sim/clock {"realtime": true}`). Anything that
   happens "later" (a command dispatching, a webhook retry, an alert
   expiring, a reservation becoming a no-show, a charging session going
   idle) is scheduled on the simulated clock and fires when the clock
   passes it: `POST /sim/clock {"advance": "PT5M"}` or `{"now": "…"}`.
+  Live runs the clock on from the current instant and fires those
+  timers on their own; switching back to Frozen pins the instant. The
+  advance and set controls, scenario `clock` steps, and world resets
+  work in both modes (a reset keeps the mode and starts from the
+  world's instant), but in Live the time between steps is real, so
+  timers may fire before a step expects them: present in Frozen,
+  where every run is the same.
 - **Worlds** are the fixtures a run starts from: `worlds/<name>.json`
   (organisations, places, lanes, devices, credentials, rate tables,
   sessions, and per-domain seed sections). Ids may be written
