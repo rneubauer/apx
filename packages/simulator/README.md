@@ -86,6 +86,16 @@ To show it to people on other machines, bind to the network with
 can drive the simulator and save scenario files, so do this only on a
 network you trust.
 
+Or send them the hosted copy, https://rneubauer.github.io/apx/simulator/,
+which the docs workflow publishes from main. `npm run sim:web` (from the
+repository root) builds it into `site/simulator/`: `web/build.mjs`
+bundles the kernel and domains for the browser with small stand-ins for
+the Node built-ins (`web/shims/`) and packs the spec, worlds and
+scenarios into the bundle, and `web/browser.mjs` answers the UI's
+requests and event stream inside the page. Each visitor gets their own
+simulator; nothing leaves the browser, a reload starts over, and a
+scenario saved in Build lasts until then (use Download to keep it).
+
 ## What makes it a simulator
 
 - **The clock is frozen** unless started with `--realtime`. Anything that
