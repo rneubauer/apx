@@ -1,0 +1,260 @@
+{
+  "name": "Card in, card out: a ticketless transient stay, paid at the exit",
+  "description": "Lakeside Garage runs ticketless credit-card-in/card-out on lane 1. A driver taps a card at entry; the lane holds $50.00. At the exit it captures the real fee, after a mis-keyed amount is refused. A cleanup script cannot void a captured payment, and a partial refund for a validation that was missed needs a supervisor. One PaymentRecord carries the whole story (Part 13 §13.1, §13.1a).",
+  "world": "apx-accounts",
+  "token": "default",
+  "steps": [
+    {
+      "name": "Lane 1, 10:10: a card instead of a ticket",
+      "narration": "Card-in/card-out is the most common ticketless transient flow: the card is the ticket. At entry the lane authorizes a hold; at exit it captures what the stay actually cost. APX models both as one PaymentRecord with a capture status (Part 13).",
+      "clock": {
+        "now": "2026-09-24T15:10:02Z"
+      }
+    },
+    {
+      "name": "Entry: the lane holds $50.00",
+      "narration": "The lane controller records the authorization with captureLater: true. The record is approved but only authorized: no money has been collected yet. The Idempotency-Key is built from the lane, the time and the card, so a retry cannot place a second hold.",
+      "request": {
+        "method": "POST",
+        "path": "/v1/payments",
+        "headers": {
+          "Idempotency-Key": "lane1-entry-20260924-151002-2201"
+        },
+        "body": {
+          "ticketNumber": "T-61200",
+          "place": {
+            "id": "b1…0001",
+            "className": "Place"
+          },
+          "amount": {
+            "currencyType": "USD",
+            "currencyValue": 50
+          },
+          "meansOfPayment": "paymentCreditCard",
+          "cardLast4": "2201",
+          "captureLater": true
+        }
+      },
+      "expect": {
+        "status": 201,
+        "body": {
+          "ticketNumber": "T-61200",
+          "amount": {
+            "currencyValue": 50
+          },
+          "paymentStatus": "approved",
+          "captureStatus": "authorized",
+          "captureLater": true,
+          "cardLast4": "2201"
+        }
+      },
+      "save": {
+        "pay": "$.id"
+      }
+    },
+    {
+      "name": "The supervisor's list of open holds",
+      "narration": "At any time the night supervisor can list holds that have not been captured. This is how a garage finds cars that are still inside on a card.",
+      "request": {
+        "method": "GET",
+        "path": "/v1/payments?ticketNumber=T-61200&captureStatus=authorized"
+      },
+      "expect": {
+        "status": 200,
+        "body": {
+          "meta": {
+            "total": 1
+          },
+          "data": [
+            {
+              "id": "{pay}",
+              "captureStatus": "authorized"
+            }
+          ]
+        }
+      }
+    },
+    {
+      "name": "An older console sees nothing collected",
+      "narration": "A console written before capture status existed looks the ticket up and finds no payment. That is the rule, not an accident: a hold is invisible unless the query asks for captureStatus=authorized, so an older client cannot count it as revenue (§13.1a).",
+      "request": {
+        "method": "GET",
+        "path": "/v1/payments?ticketNumber=T-61200"
+      },
+      "expect": {
+        "status": 200,
+        "body": {
+          "meta": {
+            "total": 0
+          },
+          "data": []
+        }
+      }
+    },
+    {
+      "name": "16:15: exit, and a mis-keyed fee",
+      "narration": "Six hours later the car reaches the exit. The fee is mis-keyed as $125.00, more than the hold. The server refuses the capture with 422 and says why, rather than taking an amount the driver never authorized.",
+      "clock": {
+        "now": "2026-09-24T21:15:11Z"
+      },
+      "request": {
+        "method": "POST",
+        "path": "/v1/payments/{pay}/capture",
+        "headers": {
+          "Idempotency-Key": "lane2-exit-20260924-211511-2201"
+        },
+        "body": {
+          "amount": {
+            "currencyType": "USD",
+            "currencyValue": 125
+          }
+        }
+      },
+      "expect": {
+        "status": 422,
+        "problem": "request-unprocessable"
+      }
+    },
+    {
+      "name": "The real fee is captured: $12.50",
+      "narration": "The corrected capture takes $12.50 and releases the rest of the hold. The same record is now captured, with the collected amount and time.",
+      "clock": {
+        "now": "2026-09-24T21:15:30Z"
+      },
+      "request": {
+        "method": "POST",
+        "path": "/v1/payments/{pay}/capture",
+        "headers": {
+          "Idempotency-Key": "lane2-exit-20260924-211530-2201"
+        },
+        "body": {
+          "amount": {
+            "currencyType": "USD",
+            "currencyValue": 12.5
+          }
+        }
+      },
+      "expect": {
+        "status": 200,
+        "body": {
+          "id": "{pay}",
+          "amount": {
+            "currencyValue": 12.5
+          },
+          "captureStatus": "captured",
+          "dateCollected": "2026-09-24T21:15:30Z"
+        }
+      }
+    },
+    {
+      "name": "A cleanup script tries to void it",
+      "narration": "A nightly script that voids stale holds picks this one up by mistake. A captured payment cannot be voided; it can only be refunded. The 409 payment-state-illegal problem says so, and the money stays where it is.",
+      "request": {
+        "method": "POST",
+        "path": "/v1/payments/{pay}/void",
+        "headers": {
+          "Idempotency-Key": "cleanup-20260924-t61200"
+        }
+      },
+      "expect": {
+        "status": 409,
+        "problem": "payment-state-illegal"
+      }
+    },
+    {
+      "name": "Now the console sees the payment",
+      "narration": "The plain ticket lookup that saw nothing at noon now finds the captured $12.50.",
+      "request": {
+        "method": "GET",
+        "path": "/v1/payments?ticketNumber=T-61200"
+      },
+      "expect": {
+        "status": 200,
+        "body": {
+          "meta": {
+            "total": 1
+          },
+          "data": [
+            {
+              "id": "{pay}",
+              "captureStatus": "captured",
+              "amount": {
+                "currencyValue": 12.5
+              }
+            }
+          ]
+        }
+      }
+    },
+    {
+      "name": "The driver calls: a validation was missed",
+      "narration": "The driver had a $4.00 restaurant validation the lane never applied. The agent tries to refund it. At this garage refunds need a supervisor, and a request with no approval evidence is refused with 403 approval-required (§13.1a).",
+      "clock": {
+        "now": "2026-09-24T21:40:00Z"
+      },
+      "request": {
+        "method": "POST",
+        "path": "/v1/payments/{pay}/refund",
+        "headers": {
+          "Idempotency-Key": "cc-t61200-refund-1"
+        },
+        "body": {
+          "amount": {
+            "currencyType": "USD",
+            "currencyValue": 4
+          },
+          "reason": "restaurant validation not applied at the exit lane"
+        }
+      },
+      "expect": {
+        "status": 403,
+        "problem": "approval-required"
+      }
+    },
+    {
+      "name": "With the supervisor's approval, refunded",
+      "narration": "The agent gets the shift supervisor's approval and sends it with the refund. The record keeps the original $12.50 and adds refundedAmount $4.00, so the books show both the charge and the correction. It stays approved; it would become reversed only if the whole amount were refunded (§13.1a).",
+      "request": {
+        "method": "POST",
+        "path": "/v1/payments/{pay}/refund",
+        "headers": {
+          "Idempotency-Key": "cc-t61200-refund-2"
+        },
+        "body": {
+          "amount": {
+            "currencyType": "USD",
+            "currencyValue": 4
+          },
+          "reason": "restaurant validation not applied at the exit lane",
+          "approval": {
+            "approvedBy": "supervisor:m.okafor",
+            "approvedAt": "2026-09-24T21:41:30Z",
+            "note": "validation receipt photographed by the driver"
+          }
+        }
+      },
+      "expect": {
+        "status": 200,
+        "body": {
+          "id": "{pay}",
+          "amount": {
+            "currencyValue": 12.5
+          },
+          "refundedAmount": {
+            "currencyType": "USD",
+            "currencyValue": 4
+          },
+          "paymentStatus": "approved"
+        }
+      }
+    },
+    {
+      "name": "What subscribers were told",
+      "narration": "Two events, not three. apx.accounts.payment.recorded.v1 is never published for a hold: it goes out first at capture, then again when the refund changed refundedAmount, each time with the full current record (§13.1a, §13.4). The accounting system never sees the $50.00 that was only held.",
+      "events": {
+        "type": "apx.accounts.payment.recorded.v1",
+        "exactly": 2
+      }
+    }
+  ]
+}

@@ -62,7 +62,6 @@ table below.
 | `valet-transition-illegal` | 409 | Valet ticket transition requested from a state that does not allow it (Part 22 §22.1) |
 | `valet-vehicle-not-located` | 409 | `retrieve` on a ticket still in `dropped` — no parked position recorded yet (Part 22 §22.1) |
 | `valet-verification-failed` | 403 | Handback claimant verification failed; the attempt is recorded in `statusHistory` (Part 22 §22.4) |
-<<<<<<< HEAD
 | `agent-required` | 400 | `pushNegotiatedRate` or `matchTicket` without `agent` — the selecting or matching principal is mandatory (Part 6 §6.6–6.7) |
 | `rate-not-negotiable` | 422 | `pushNegotiatedRate` names a RateTable not flagged negotiable for the target's place, or one that does not apply there, or states an `amount` on a host that does not offer the `negotiatedAmounts` feature (Part 6 §6.6) |
 | `lane-no-current-transaction` | 409 | `pushNegotiatedRate` or `matchTicket` at a lane with no vehicle transaction in progress (Part 6 §6.6–6.7) |

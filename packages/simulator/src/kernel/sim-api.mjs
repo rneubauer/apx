@@ -21,6 +21,8 @@
  *   GET  /sim/contract                 responses that failed the bundle's own schema
  *   GET  /sim/ops                      every operation and whether it is implemented
  *   GET  /sim/stream                   text/event-stream of change notices for the UI (live.mjs)
+ *   GET|POST /sim/traffic  {running?, ratePerMinute?, mix?}   the background traffic generator (traffic.mjs)
+ *   GET  /sim/fabric, POST /sim/fabric/{subscribers,sse}      the delivery fabric at a glance (fabric.mjs)
  *   /sim/scenarios, /sim/scenario/*, /sim/injectors/catalog   see sim-scenarios.mjs
  */
 import { OPS, EDITION } from './spec.mjs';
@@ -28,6 +30,8 @@ import { encodeToken } from './auth.mjs';
 import { listWorlds, loadWorld } from './world.mjs';
 import { scenarioApi, injectorCatalog, topics } from './sim-scenarios.mjs';
 import { liveStream } from './live.mjs';
+import { trafficApi } from './traffic.mjs';
+import { fabricApi } from './fabric.mjs';
 
 const json = (status, body, headers = {}) => ({ status, headers: { 'content-type': 'application/json', ...headers }, body });
 const bad = (detail) => json(400, { error: 'bad_request', detail });
@@ -55,6 +59,7 @@ export async function simApi(sim, { method, path, query, body: raw }) {
   } catch (e) {
     return bad(`invalid JSON: ${e.message}`);
   }
+  if (body === null || typeof body !== 'object') return bad('the body must be a JSON object');
   const [head, a, b] = parts;
 
   if (!head) {
@@ -184,6 +189,10 @@ export async function simApi(sim, { method, path, query, body: raw }) {
     case 'stream':
       if (method !== 'GET') return bad('GET');
       return liveStream(sim);
+    case 'traffic':
+      return trafficApi(sim, { method, body });
+    case 'fabric':
+      return fabricApi(sim, { method, parts, body });
     default:
       return json(404, { error: 'not_found', detail: `no sim route ${path}` });
   }

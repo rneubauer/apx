@@ -1,0 +1,418 @@
+{
+  "name": "Monthly permits: a pooled sale, a renewal, a sell-out and a slot coming back",
+  "description": "Lakeside Garage sells 120 monthly permits from one pool, and three are left. The front desk sells Priya Natarajan an annual permit for her two cars, renews it a year ahead, sells the last slot, is refused a sale from the empty pool, and gets a slot back when the bakery cancels. Each permit is an ordinary APDS AssignedRight; APX adds the pool count, the issue call and the refusals (Part 14 §14.2).",
+  "world": "apx-permits",
+  "token": "default",
+  "steps": [
+    {
+      "name": "Lakeside Garage front desk, Thursday 09:05",
+      "narration": "Monthly permits are a pooled APDS RightSpecification: one RightPool, so many rights issued, so many left. A permit is an ordinary APDS AssignedRight, so a stock APDS lane or enforcement handheld honours it without knowing APX.",
+      "clock": {
+        "now": "2026-09-24T14:05:00Z"
+      }
+    },
+    {
+      "name": "How many permits are left?",
+      "narration": "The desk asks the pool first. APX profiles the APDS RightPool as capacity, issued and available, and names the pool it chose (§14.2). Three slots are left.",
+      "request": {
+        "method": "GET",
+        "path": "/v1/permits/pools/e1…0010/availability"
+      },
+      "expect": {
+        "status": 200,
+        "body": {
+          "pool": {
+            "id": "e4000000-0000-4000-8000-000000000101"
+          },
+          "capacity": 120,
+          "issued": 117,
+          "available": 3
+        }
+      }
+    },
+    {
+      "name": "Priya buys an annual permit for two cars",
+      "narration": "One issue call: the RightSpecification, the holder, both plates and the year. The answer is a native AssignedRight: a CustomerCredential for Priya, one VehicleCredential per plate, and the year as a PlannedUse plus expiry (§14.2b). One right, many vehicles: the APDS annual-permit pattern.",
+      "request": {
+        "method": "POST",
+        "path": "/v1/permits/issue",
+        "headers": {
+          "Idempotency-Key": "desk-20260924-natarajan-annual"
+        },
+        "body": {
+          "rightSpecification": {
+            "id": "e1…0010",
+            "version": 3,
+            "className": "RightSpecification"
+          },
+          "holder": {
+            "id": "c1…0201",
+            "className": "RightHolder"
+          },
+          "credentials": [
+            {
+              "credentialType": "licensePlate",
+              "credentialIdentification": "PRY-2201"
+            },
+            {
+              "credentialType": "licensePlate",
+              "credentialIdentification": "PRY-2202"
+            }
+          ],
+          "validity": {
+            "start": "2026-09-24T00:00:00Z",
+            "end": "2027-09-23T23:59:59Z"
+          }
+        }
+      },
+      "expect": {
+        "status": 201,
+        "body": {
+          "issueMethod": "permit",
+          "rightHolder": {
+            "credentials": [
+              {
+                "credentialAssignedType": "customer",
+                "type": "permit",
+                "identifier": {
+                  "id": "c1000000-0000-4000-8000-000000000201"
+                }
+              },
+              {
+                "credentialAssignedType": "vehicle",
+                "type": "licensePlate"
+              },
+              {
+                "credentialAssignedType": "vehicle",
+                "type": "licensePlate"
+              }
+            ]
+          },
+          "plannedUses": [
+            {
+              "startTime": "2026-09-24T00:00:00Z",
+              "endTime": "2027-09-23T23:59:59Z"
+            }
+          ],
+          "expiry": "2027-09-23T23:59:59Z"
+        }
+      },
+      "save": {
+        "permit": "$.id"
+      }
+    },
+    {
+      "name": "The card terminal timed out: the desk retries",
+      "narration": "The console never saw the 201 and sends the same call again with the same Idempotency-Key. The server returns the permit it already issued, with 200, and takes no second slot from the pool (Part 4 §4.2a).",
+      "request": {
+        "method": "POST",
+        "path": "/v1/permits/issue",
+        "headers": {
+          "Idempotency-Key": "desk-20260924-natarajan-annual"
+        },
+        "body": {
+          "rightSpecification": {
+            "id": "e1…0010",
+            "version": 3,
+            "className": "RightSpecification"
+          },
+          "holder": {
+            "id": "c1…0201",
+            "className": "RightHolder"
+          },
+          "credentials": [
+            {
+              "credentialType": "licensePlate",
+              "credentialIdentification": "PRY-2201"
+            },
+            {
+              "credentialType": "licensePlate",
+              "credentialIdentification": "PRY-2202"
+            }
+          ],
+          "validity": {
+            "start": "2026-09-24T00:00:00Z",
+            "end": "2027-09-23T23:59:59Z"
+          }
+        }
+      },
+      "expect": {
+        "status": 200,
+        "body": {
+          "id": "{permit}",
+          "version": 1
+        }
+      }
+    },
+    {
+      "name": "The same permit, read as stock APDS",
+      "narration": "Any APDS client reads the permit on the native route. Nothing on it needs APX to be understood.",
+      "request": {
+        "method": "GET",
+        "path": "/rights/assigned/{permit}"
+      },
+      "expect": {
+        "status": 200,
+        "body": {
+          "id": "{permit}",
+          "issueMethod": "permit",
+          "rightSpecification": {
+            "id": "e1000000-0000-4000-8000-000000000010"
+          },
+          "expiry": "2027-09-23T23:59:59Z"
+        }
+      }
+    },
+    {
+      "name": "Each plate is a credential record",
+      "narration": "Because this server also claims apx-credentials, each plate became a CredentialRecord: active, tied to Priya and to the permit (§14.2b rule 3, Part 21). That is what lets a lane log say which permit a plate came in on. Two records, one per plate; the second car is shown here.",
+      "request": {
+        "method": "GET",
+        "path": "/v1/credentials?holder=c1…0201&identification=PRY-2202"
+      },
+      "expect": {
+        "status": 200,
+        "body": {
+          "meta": {
+            "total": 1
+          },
+          "data": [
+            {
+              "credentialType": "licensePlate",
+              "credentialIdentification": "PRY-2202",
+              "credentialAssignedType": "vehicle",
+              "credentialStatus": "active",
+              "assignedRights": [
+                {
+                  "id": "{permit}"
+                }
+              ]
+            }
+          ]
+        }
+      }
+    },
+    {
+      "name": "One slot gone, and the portal is told",
+      "narration": "The pool now shows two left: the retry took nothing. The server published apx.permits.pool.availability.v1 once, so a sales portal can stop selling without recounting AssignedRights (§14.2c).",
+      "request": {
+        "method": "GET",
+        "path": "/v1/permits/pools/e1…0010/availability"
+      },
+      "expect": {
+        "status": 200,
+        "body": {
+          "issued": 118,
+          "available": 2
+        }
+      },
+      "events": {
+        "type": "apx.permits.pool.availability.v1",
+        "exactly": 1
+      }
+    },
+    {
+      "name": "Priya renews a year ahead",
+      "narration": "A renewal is a fresh issue for the next window, linked to the old permit through the APX permit extension (§14.2). A key from the operator's own fleet-accounting system rides along untouched: a tolerant reader keeps what it does not know.",
+      "request": {
+        "method": "POST",
+        "path": "/v1/permits/issue",
+        "headers": {
+          "Idempotency-Key": "desk-20260924-natarajan-renew-2027"
+        },
+        "body": {
+          "rightSpecification": {
+            "id": "e1…0010",
+            "version": 3,
+            "className": "RightSpecification"
+          },
+          "holder": {
+            "id": "c1…0201",
+            "className": "RightHolder"
+          },
+          "credentials": [
+            {
+              "credentialType": "licensePlate",
+              "credentialIdentification": "PRY-2201"
+            },
+            {
+              "credentialType": "licensePlate",
+              "credentialIdentification": "PRY-2202"
+            }
+          ],
+          "validity": {
+            "start": "2027-09-24T00:00:00Z",
+            "end": "2028-09-23T23:59:59Z"
+          },
+          "extensions": {
+            "apds-ext:apx:permit@1.0": {
+              "renews": {
+                "id": "{permit}",
+                "className": "AssignedRight"
+              }
+            },
+            "apds-ext:acmecorp:fleet@1.0": {
+              "costCentre": "CC-4471"
+            }
+          }
+        }
+      },
+      "expect": {
+        "status": 201,
+        "body": {
+          "plannedUses": [
+            {
+              "startTime": "2027-09-24T00:00:00Z",
+              "endTime": "2028-09-23T23:59:59Z"
+            }
+          ],
+          "extensions": {
+            "apds-ext:apx:permit@1.0": {
+              "renews": {
+                "id": "{permit}"
+              }
+            },
+            "apds-ext:acmecorp:fleet@1.0": {
+              "costCentre": "CC-4471"
+            }
+          }
+        }
+      },
+      "save": {
+        "renewal": "$.id"
+      }
+    },
+    {
+      "name": "The old permit points forward",
+      "narration": "The server set renewedBy on this year's permit, so either record leads to the other.",
+      "request": {
+        "method": "GET",
+        "path": "/rights/assigned/{permit}"
+      },
+      "expect": {
+        "status": 200,
+        "body": {
+          "extensions": {
+            "apds-ext:apx:permit@1.0": {
+              "renewedBy": {
+                "id": "{renewal}"
+              }
+            }
+          }
+        }
+      }
+    },
+    {
+      "name": "Marcus takes the last slot",
+      "narration": "Marcus Bell comes off the waitlist and buys a permit from 1 October. The pool now has nothing left.",
+      "request": {
+        "method": "POST",
+        "path": "/v1/permits/issue",
+        "headers": {
+          "Idempotency-Key": "desk-20260924-bell-annual"
+        },
+        "body": {
+          "rightSpecification": {
+            "id": "e1…0010",
+            "version": 3,
+            "className": "RightSpecification"
+          },
+          "holder": {
+            "id": "c1…0202",
+            "className": "RightHolder"
+          },
+          "credentials": [
+            {
+              "credentialType": "licensePlate",
+              "credentialIdentification": "MBL-7710"
+            }
+          ],
+          "validity": {
+            "start": "2026-10-01T00:00:00Z",
+            "end": "2027-09-30T23:59:59Z"
+          }
+        }
+      },
+      "expect": {
+        "status": 201,
+        "body": {
+          "issueMethod": "permit",
+          "expiry": "2027-09-30T23:59:59Z"
+        }
+      }
+    },
+    {
+      "name": "Sold out: a clear refusal",
+      "narration": "Marcus asks for a second permit for his other car. The pool is empty, and the server says so with a 409 and the pool-exhausted problem type (§14.2a rule 7). The desk knows why it was refused without reading free text. A waitlist, if the vendor has one, is its own business: APX does not standardize one.",
+      "request": {
+        "method": "POST",
+        "path": "/v1/permits/issue",
+        "headers": {
+          "Idempotency-Key": "desk-20260924-bell-second-car"
+        },
+        "body": {
+          "rightSpecification": {
+            "id": "e1…0010",
+            "version": 3,
+            "className": "RightSpecification"
+          },
+          "holder": {
+            "id": "c1…0202",
+            "className": "RightHolder"
+          },
+          "credentials": [
+            {
+              "credentialType": "licensePlate",
+              "credentialIdentification": "MBL-7711"
+            }
+          ],
+          "validity": {
+            "start": "2026-10-01T00:00:00Z",
+            "end": "2027-09-30T23:59:59Z"
+          }
+        }
+      },
+      "expect": {
+        "status": 409,
+        "problem": "pool-exhausted"
+      }
+    },
+    {
+      "name": "The bakery closes and cancels its fleet permit",
+      "narration": "Cancelling is the native APDS DELETE, answered in the APDS shape. No APX cancel route was added (§14.2c).",
+      "request": {
+        "method": "DELETE",
+        "path": "/rights/assigned/e2…0103"
+      },
+      "expect": {
+        "status": 200,
+        "body": {
+          "status": "ok",
+          "ids": [
+            "e2000000-0000-4000-8000-000000000103"
+          ]
+        }
+      }
+    },
+    {
+      "name": "The slot is back",
+      "narration": "The cancellation returns the slot to the pool from the moment it takes effect, and the portal hears about every change: four availability events today, one for each sale and one for the cancellation. Marcus's second car can now be sold.",
+      "request": {
+        "method": "GET",
+        "path": "/v1/permits/pools/e1…0010/availability"
+      },
+      "expect": {
+        "status": 200,
+        "body": {
+          "capacity": 120,
+          "issued": 119,
+          "available": 1
+        }
+      },
+      "events": {
+        "type": "apx.permits.pool.availability.v1",
+        "exactly": 4
+      }
+    }
+  ]
+}

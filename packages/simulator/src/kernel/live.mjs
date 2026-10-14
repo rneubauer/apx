@@ -14,6 +14,7 @@
  *   delivery  {count, subscriptions[]}         the webhook ledger changed
  *   request   {count, added, latest, contractViolations}   a request was logged
  *   store     {collections[]}                  stored records changed
+ *   traffic   {}                               the traffic generator was started, stopped or retuned (GET /sim/traffic)
  *
  * Changes are coalesced for FLUSH_MS, so a step that touches a hundred
  * records sends one `store` message. The monitor observes the kernel only
@@ -151,7 +152,7 @@ class LiveMonitor {
   flush() {
     this.flushTimer = null;
     // A reset makes every other notice in the batch stale; send it first.
-    const order = ['reset', 'clock', 'event', 'delivery', 'request', 'store'];
+    const order = ['reset', 'clock', 'traffic', 'event', 'delivery', 'request', 'store'];
     const kinds = [...this.dirty.keys()].sort((a, b) => order.indexOf(a) - order.indexOf(b));
     const text = kinds.map((k) => this.frame(k, this.summary(k, this.dirty.get(k)))).join('');
     this.dirty.clear();

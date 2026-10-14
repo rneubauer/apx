@@ -1,0 +1,291 @@
+{
+  "name": "Analytics: monthly parkers, uptake and usage",
+  "description": "The Tower B monthly permit program at Lakeside, seen the way an operator's analyst would see it: how full the pool is, who holds a permit, who parked today, one parker's month, a permit nobody uses, then a new permit issued at the desk and its first visit, and how a warehouse picks that up from the change feed. Parts 5 and 14 (§14.2).",
+  "world": "analytics-lakeside",
+  "token": "citypark-bi",
+  "steps": [
+    {
+      "name": "The Tower B tenant program",
+      "narration": "Lakeside sells a small monthly permit to the office tenants of Tower B: eight slots, six sold. A permit is an APDS AssignedRight on a pooled RightSpecification, and a monthly parker's visit is an ordinary APDS Session whose segment points at that right (Part 14 §14.2).",
+      "clock": {
+        "now": "2026-10-13T23:00:00Z"
+      }
+    },
+    {
+      "name": "How full is the pool",
+      "narration": "Pool availability is an APX read: capacity, issued and available. It needs apx.permits:manage, the scope of the desk that sells permits, so here the desk asks. There is no read-only permits scope for an analyst.",
+      "request": {
+        "method": "GET",
+        "path": "/v1/permits/pools/e1…0810/availability",
+        "token": "desk-lakeside"
+      },
+      "expect": {
+        "status": 200,
+        "body": {
+          "capacity": 8,
+          "issued": 6,
+          "available": 2
+        }
+      }
+    },
+    {
+      "name": "Who holds a permit",
+      "narration": "The analytics vendor lists the assigned rights on the specification with the stock APDS right_spec filter. Each right lists its holder and the plates it covers.",
+      "request": {
+        "method": "GET",
+        "path": "/rights/assigned?right_spec=e1…0810"
+      },
+      "expect": {
+        "status": 200,
+        "body": {
+          "meta": {
+            "total": 6
+          },
+          "data": [
+            {
+              "id": "e2…0801",
+              "issueMethod": "permit",
+              "rightHolder": {
+                "credentials": [
+                  {
+                    "type": "permit"
+                  },
+                  {
+                    "type": "licensePlate",
+                    "identifier": {
+                      "id": "MTH-1101"
+                    }
+                  }
+                ]
+              }
+            }
+          ]
+        }
+      }
+    },
+    {
+      "name": "Who parked today",
+      "narration": "Sessions on that specification that started today: five visits by four parkers, because one came back after lunch. Three have no end time, so they are still inside. That is how the dashboard answers who is in now.",
+      "request": {
+        "method": "GET",
+        "path": "/sessions?right_spec=e1…0810&start_after=1791867600"
+      },
+      "expect": {
+        "status": 200,
+        "body": {
+          "meta": {
+            "total": 5
+          },
+          "data": [
+            {
+              "id": "c4…0801",
+              "actualEnd": "2026-10-13T22:05:00Z"
+            },
+            {
+              "id": "c4…0802",
+              "actualStart": "2026-10-13T13:10:00Z"
+            },
+            {
+              "id": "c4…0803",
+              "actualEnd": "2026-10-13T17:10:00Z"
+            },
+            {
+              "id": "c4…0804",
+              "actualStart": "2026-10-13T18:30:00Z"
+            },
+            {
+              "id": "c4…0805",
+              "actualStart": "2026-10-13T14:15:00Z"
+            }
+          ]
+        }
+      }
+    },
+    {
+      "name": "One parker's month",
+      "narration": "Usage per permit is a credential query. Avery Chen's plate has four visits since October 1. A utilization report is this query for each permit, summed by the consumer.",
+      "request": {
+        "method": "GET",
+        "path": "/sessions?credential_id=MTH-1101&start_after=1790830800"
+      },
+      "expect": {
+        "status": 200,
+        "body": {
+          "meta": {
+            "total": 4
+          }
+        }
+      }
+    },
+    {
+      "name": "A permit nobody uses",
+      "narration": "Farid Haddad's plate has no visit this month. That is useful for renewals and for overselling the pool, and it comes from the same query returning nothing.",
+      "request": {
+        "method": "GET",
+        "path": "/sessions?credential_id=MTH-1106&start_after=1790830800"
+      },
+      "expect": {
+        "status": 200,
+        "body": {
+          "meta": {
+            "total": 0
+          }
+        }
+      }
+    },
+    {
+      "name": "18:10: the desk sells a seventh permit",
+      "narration": "A new tenant buys a month. The desk issues it from the pool; the 201 is a native AssignedRight that any APDS reader understands (§14.2b).",
+      "clock": {
+        "now": "2026-10-13T23:10:00Z"
+      },
+      "request": {
+        "method": "POST",
+        "path": "/v1/permits/issue",
+        "token": "desk-lakeside",
+        "headers": {
+          "Idempotency-Key": "desk-20261013-mbeki-monthly",
+          "X-Sim-Assign-Id": "e2000000-0000-4000-8000-000000000807"
+        },
+        "body": {
+          "rightSpecification": {
+            "id": "e1…0810",
+            "version": 3,
+            "className": "RightSpecification"
+          },
+          "holder": {
+            "id": "c1…0807",
+            "className": "RightHolder"
+          },
+          "credentials": [
+            {
+              "credentialType": "licensePlate",
+              "credentialIdentification": "MTH-1107"
+            }
+          ],
+          "validity": {
+            "start": "2026-10-13T23:10:00Z",
+            "end": "2026-11-13T23:09:59Z"
+          }
+        }
+      },
+      "expect": {
+        "status": 201,
+        "body": {
+          "id": "e2…0807",
+          "rightSpecification": {
+            "id": "e1…0810"
+          }
+        }
+      }
+    },
+    {
+      "name": "The pool moves, and says so",
+      "narration": "Issued goes to seven and available to one. The server publishes apx.permits.pool.availability.v1 for the change, and the native AssignedRightCreated for the new right.",
+      "request": {
+        "method": "GET",
+        "path": "/v1/permits/pools/e1…0810/availability",
+        "token": "desk-lakeside"
+      },
+      "expect": {
+        "status": 200,
+        "body": {
+          "issued": 7,
+          "available": 1
+        }
+      },
+      "events": {
+        "type": "apx.permits.pool.availability.v1",
+        "exactly": 1
+      }
+    },
+    {
+      "name": "The warehouse picks up the new permit",
+      "narration": "The vendor's change feed on /rights/assigned, resumed from its 17:00 cursor, holds exactly the new right (Part 5 §5.2). The warehouse learns about the sale without rereading the whole program.",
+      "request": {
+        "method": "GET",
+        "path": "/rights/assigned?mode=change&cursor=a:00100"
+      },
+      "expect": {
+        "status": 200,
+        "body": {
+          "updateMode": "change",
+          "items": [
+            {
+              "id": "e2…0807",
+              "className": "AssignedRight",
+              "issueMethod": "permit"
+            }
+          ],
+          "next": null
+        }
+      }
+    },
+    {
+      "name": "The new tenant drives in",
+      "narration": "The PARCS reads the plate, finds the permit, and opens a session whose segment points at it.",
+      "clock": {
+        "now": "2026-10-13T23:12:00Z"
+      },
+      "request": {
+        "method": "POST",
+        "path": "/sessions",
+        "token": "lakeside-parcs",
+        "body": {
+          "id": "c4000000-0000-4000-8000-000000000806",
+          "version": 1,
+          "actualStart": "2026-10-13T23:12:00Z",
+          "hierarchyElement": {
+            "id": "b1000000-0000-4000-8000-000000000001",
+            "version": 7,
+            "className": "Place"
+          },
+          "identifiedCredentials": [
+            {
+              "type": "licensePlate",
+              "credentialAssignedType": "vehicle",
+              "identifier": {
+                "id": "MTH-1107",
+                "className": "Credential"
+              }
+            }
+          ],
+          "segments": [
+            {
+              "id": "c5000000-0000-4000-8000-000000000806",
+              "version": 1,
+              "actualStart": "2026-10-13T23:12:00Z",
+              "assignedRight": {
+                "id": "e2000000-0000-4000-8000-000000000807",
+                "version": 1,
+                "className": "AssignedRight"
+              },
+              "validationType": [
+                "licensePlate"
+              ]
+            }
+          ]
+        }
+      },
+      "expect": {
+        "status": 201
+      }
+    },
+    {
+      "name": "Today's monthly visits, again",
+      "narration": "The same query as before now counts six visits. The new permit is used on the day it was sold.",
+      "request": {
+        "method": "GET",
+        "path": "/sessions?right_spec=e1…0810&start_after=1791867600"
+      },
+      "expect": {
+        "status": 200,
+        "body": {
+          "meta": {
+            "total": 6
+          }
+        }
+      }
+    }
+  ]
+}

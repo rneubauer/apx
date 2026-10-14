@@ -1,0 +1,297 @@
+{
+  "name": "Lost ticket: found by plate, paid by link, no lost-ticket fee",
+  "description": "A driver at Lakeside Garage tells the web chat she has lost her ticket and types her plate. The chat platform asks for a resolution context; the entry plate read finds her open session, so the policy offers a payment link for the true amount instead of the flat lost-ticket fee. She pays on her phone, the context updates, and the AI agent records what it did. Part 17 resolution with Part 13 payment links.",
+  "world": "apx-resolution",
+  "token": "default",
+  "steps": [
+    {
+      "name": "Lakeside Garage, 13:02: a chat opens",
+      "narration": "The driver is at her car with no ticket. The chat platform is a third party: it knows the garage, but not which lane she will use. Everything it does goes through the APX resolution surface (Part 17), on its own token.",
+      "clock": {
+        "now": "2026-09-24T18:02:40Z"
+      }
+    },
+    {
+      "name": "The chatbot asks for a resolution context by plate",
+      "narration": "One call with what the bot knows: the channel, the garage and the plate she typed. The server finds her open session from the entry plate read, names the issue lostTicket, and returns the actions the operator's policy allows, with a recommendation (§17.2, §17.3). The stay prices from its real entry time, so the recommended way out is a payment link for what she used, not the flat lost-ticket fee. There is no laneStatus, because no lane is known yet: the context degrades gracefully instead of failing.",
+      "request": {
+        "method": "POST",
+        "path": "/v1/resolution/contexts",
+        "body": {
+          "interactionId": "chat-77412",
+          "correlationId": "ca000000-0000-4000-8000-000000000412",
+          "channel": "chat",
+          "place": {
+            "id": "b1…0001",
+            "className": "Place"
+          },
+          "plate": "SYN-7781"
+        }
+      },
+      "expect": {
+        "status": 201,
+        "body": {
+          "status": "full",
+          "issue": {
+            "code": "lostTicket"
+          },
+          "vehicle": {
+            "plate": "SYN-7781",
+            "stateProvince": "FL"
+          },
+          "session": {
+            "id": "c4000000-0000-4000-8000-000000000034"
+          },
+          "allowedActions": [
+            {
+              "action": "post-apx-v1-payment-links",
+              "allowed": true,
+              "requiresApproval": false,
+              "target": {
+                "id": "c4000000-0000-4000-8000-000000000034"
+              }
+            }
+          ],
+          "recommendedAction": {
+            "action": "post-apx-v1-payment-links"
+          }
+        }
+      },
+      "save": {
+        "ctx": "$.id"
+      }
+    },
+    {
+      "name": "The bot sends a payment link for the session",
+      "narration": "The bot takes the recommended action. With no amount in the request, the link charges what the session owes now: $21.00. The link carries the resolution context and the correlation id, so everything that follows can be traced to this chat (Part 13, §17.7).",
+      "request": {
+        "method": "POST",
+        "path": "/v1/payment-links",
+        "headers": {
+          "Idempotency-Key": "chat-77412-paylink"
+        },
+        "body": {
+          "place": {
+            "id": "b1…0001",
+            "className": "Place"
+          },
+          "session": {
+            "id": "c4…0034",
+            "className": "Session"
+          },
+          "channel": "sms",
+          "resolutionContext": {
+            "id": "{ctx}",
+            "className": "ResolutionContext"
+          },
+          "correlationId": "ca000000-0000-4000-8000-000000000412"
+        }
+      },
+      "expect": {
+        "status": 201,
+        "body": {
+          "session": {
+            "id": "c4000000-0000-4000-8000-000000000034"
+          },
+          "amount": {
+            "currencyType": "USD",
+            "currencyValue": 21
+          },
+          "status": "sent",
+          "resolutionContext": {
+            "id": "{ctx}"
+          }
+        }
+      },
+      "save": {
+        "link": "$.id"
+      }
+    },
+    {
+      "name": "She opens the link",
+      "narration": "Thirty seconds later she taps the text. The bot polls the link and can tell her it sees her on the payment page. The /sim/inject call stands in for the payment page.",
+      "clock": {
+        "advance": "PT30S"
+      },
+      "inject": {
+        "kind": "paymentLinkOpened",
+        "link": "{link}"
+      },
+      "request": {
+        "method": "GET",
+        "path": "/v1/payment-links/{link}"
+      },
+      "expect": {
+        "status": 200,
+        "body": {
+          "status": "opened",
+          "version": 2
+        }
+      }
+    },
+    {
+      "name": "She pays",
+      "narration": "A minute and a half later the payment goes through. The link now points at the PaymentRecord it produced, so an agent never has to guess which payment settled which link.",
+      "clock": {
+        "advance": "PT90S"
+      },
+      "inject": {
+        "kind": "paymentLinkPaid",
+        "link": "{link}",
+        "cardLast4": "7731"
+      },
+      "request": {
+        "method": "GET",
+        "path": "/v1/payment-links/{link}"
+      },
+      "expect": {
+        "status": 200,
+        "body": {
+          "status": "paid",
+          "amount": {
+            "currencyValue": 21
+          },
+          "payment": {
+            "className": "PaymentRecord"
+          }
+        }
+      }
+    },
+    {
+      "name": "The context catches up",
+      "narration": "Re-reading the context shows the approved payment and no actions left to take: the case is settled. The server republishes the context on each material change, so a supervisor's screen follows along without polling (§17.2, §17.7).",
+      "request": {
+        "method": "GET",
+        "path": "/v1/resolution/contexts/{ctx}"
+      },
+      "expect": {
+        "status": 200,
+        "body": {
+          "issue": {
+            "code": "lostTicket"
+          },
+          "payments": [
+            {
+              "paymentStatus": "approved",
+              "amount": {
+                "currencyValue": 21
+              },
+              "cardLast4": "7731"
+            }
+          ],
+          "allowedActions": [],
+          "extensions": {
+            "apds-ext:apx:correlation@1.0": {
+              "correlationId": "ca000000-0000-4000-8000-000000000412",
+              "related": [
+                {
+                  "id": "{link}",
+                  "className": "PaymentLink"
+                }
+              ]
+            }
+          }
+        }
+      },
+      "events": {
+        "type": "apx.resolution.context.created.v1",
+        "min": 2
+      }
+    },
+    {
+      "name": "The AI agent records the interaction",
+      "narration": "The bot closes the chat with a support record: an AI agent, the issue, a summary, the session, the payment link it sent and the correlation id. An AI agent records only what it did; the operator's systems keep the money and the session (§17.6).",
+      "request": {
+        "method": "POST",
+        "path": "/v1/support/interactions",
+        "headers": {
+          "Idempotency-Key": "rec-chat-77412"
+        },
+        "body": {
+          "channel": "chat",
+          "agentType": "ai",
+          "agent": "ai:lakeside-chatbot-01",
+          "startedAt": "2026-09-24T18:02:30Z",
+          "endedAt": "2026-09-24T18:05:10Z",
+          "place": {
+            "id": "b1…0001",
+            "className": "Place"
+          },
+          "issue": {
+            "code": "lostTicket",
+            "display": "Customer cannot present the entry ticket"
+          },
+          "summary": "Lost ticket; session found by plate SYN-7781; payment link sent and paid ($21.00); no lost-ticket fee.",
+          "subjects": {
+            "plate": "SYN-7781",
+            "session": {
+              "id": "c4…0034",
+              "className": "Session"
+            }
+          },
+          "actions": [
+            {
+              "id": "{link}",
+              "className": "PaymentLink"
+            }
+          ],
+          "interactionId": "chat-77412",
+          "resolution": {
+            "code": "resolved",
+            "display": "Paid by link"
+          },
+          "correlationId": "ca000000-0000-4000-8000-000000000412"
+        }
+      },
+      "expect": {
+        "status": 201,
+        "body": {
+          "agentType": "ai",
+          "issue": {
+            "code": "lostTicket"
+          },
+          "resolution": {
+            "code": "resolved"
+          },
+          "actions": [
+            {
+              "id": "{link}"
+            }
+          ]
+        }
+      },
+      "events": {
+        "type": "apx.support.interaction.recorded.v1",
+        "exactly": 1
+      }
+    },
+    {
+      "name": "Next time she calls, the history is there",
+      "narration": "Support history is searchable by plate, holder or session (§17.6). Here, by her session: whoever picks up her next call, human or bot, sees this chat, what was done and how it ended.",
+      "request": {
+        "method": "GET",
+        "path": "/v1/support/interactions?session=c4…0034"
+      },
+      "expect": {
+        "status": 200,
+        "body": {
+          "meta": {
+            "total": 1
+          },
+          "data": [
+            {
+              "interactionId": "chat-77412",
+              "agentType": "ai",
+              "issue": {
+                "code": "lostTicket"
+              },
+              "resolution": {
+                "code": "resolved"
+              }
+            }
+          ]
+        }
+      }
+    }
+  ]
+}

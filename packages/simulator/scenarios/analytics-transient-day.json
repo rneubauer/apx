@@ -1,0 +1,285 @@
+{
+  "name": "Analytics: a day of transient transactions",
+  "description": "An outside BI vendor builds Lakeside's daily transient dashboard: visits from the APDS session list with its time filters, payments by ticket including a declined attempt, the refusal that keeps the payment ledger from being served as a lookup, then one live exit with its payment, the closed session and a refund, each arriving as an event the vendor can count once. Parts 5, 8 and 13 (§13.2, §13.4).",
+  "world": "analytics-lakeside",
+  "token": "citypark-bi",
+  "steps": [
+    {
+      "name": "Lakeside Garage, 18:00 on a Tuesday",
+      "narration": "Ten drivers took a ticket today; eight have paid and left. CityPark Analytics, an outside BI vendor, builds the operator's transient dashboard. It reads only what any APX consumer can read: APDS sessions and APX payment records.",
+      "clock": {
+        "now": "2026-10-13T23:00:00Z"
+      }
+    },
+    {
+      "name": "The vendor subscribes to the analytics feed",
+      "narration": "One subscription mixes the native APDS session topics with the APX payment topic, filtered to the garage (Part 13 §13.4). APDS publishes no payment events; APX adds apx.accounts.payment.recorded.v1, and reading it needs apx.accounts:read.",
+      "request": {
+        "method": "POST",
+        "path": "/webhooks",
+        "headers": {
+          "Prefer": "return=representation"
+        },
+        "body": {
+          "endpoint": "https://ingest.citypark-analytics.example/apx",
+          "topics": [
+            "SessionCreated",
+            "SessionUpdated",
+            "apx.accounts.payment.recorded.v1"
+          ],
+          "filters": {
+            "places": [
+              "b1…0001"
+            ]
+          }
+        }
+      },
+      "expect": {
+        "status": 201,
+        "body": {
+          "status": "active"
+        }
+      },
+      "save": {
+        "sub": "$.id"
+      }
+    },
+    {
+      "name": "Today's transient visits",
+      "narration": "Stock APDS filters do the counting: sessions on a transient right, started between local midnight and the next midnight, in Unix epoch seconds. Ten visits. The yesterday visit and the monthly parkers are left out.",
+      "request": {
+        "method": "GET",
+        "path": "/sessions?right_type=oneTimeUseParking&start_after=1791867600&start_before=1791954000"
+      },
+      "expect": {
+        "status": 200,
+        "body": {
+          "meta": {
+            "total": 10
+          },
+          "data": [
+            {
+              "id": "c4…0701",
+              "actualStart": "2026-10-13T12:42:00Z",
+              "actualEnd": "2026-10-13T14:10:00Z"
+            }
+          ]
+        }
+      }
+    },
+    {
+      "name": "How many have left",
+      "narration": "end_after keeps only sessions that ended today: eight. The other two are still inside. APDS has no filter for open sessions, so the dashboard works out how many are still parked by subtracting the ended visits from the started ones.",
+      "request": {
+        "method": "GET",
+        "path": "/sessions?credential_type=ticket&end_after=1791867600"
+      },
+      "expect": {
+        "status": 200,
+        "body": {
+          "meta": {
+            "total": 8
+          }
+        }
+      }
+    },
+    {
+      "name": "Payments on one ticket",
+      "narration": "Payments are looked up by a key: here the full ticket number (§13.2). Ticket T-7105 shows a declined card at the lane and then a successful payment at the pay station. Declined attempts are recorded too, so the dashboard can report failed payments next to revenue.",
+      "request": {
+        "method": "GET",
+        "path": "/v1/payments?ticketNumber=T-7105"
+      },
+      "expect": {
+        "status": 200,
+        "body": {
+          "meta": {
+            "total": 2
+          },
+          "data": [
+            {
+              "paymentStatus": "approved",
+              "channel": "payStation",
+              "amount": {
+                "currencyValue": 9
+              }
+            },
+            {
+              "paymentStatus": "declined",
+              "channel": "lane"
+            }
+          ]
+        }
+      }
+    },
+    {
+      "name": "The ledger is not served as a lookup",
+      "narration": "Asking for every payment on a date, with no key, is refused (§13.2). Payment history holds truncated card numbers, so the lookup route never returns the whole ledger. A bulk consumer uses the payment event, or the route's change feed with mode=change (Part 5 §5.2 rule 8).",
+      "request": {
+        "method": "GET",
+        "path": "/v1/payments?date=2026-10-13"
+      },
+      "expect": {
+        "status": 400,
+        "problem": "invalid-request"
+      }
+    },
+    {
+      "name": "18:20: ticket T-7109 pays at the exit pay station",
+      "narration": "The pay station takes the card. An Idempotency-Key is required, so a retry cannot charge twice. APX never carries more than the last four card digits.",
+      "clock": {
+        "now": "2026-10-13T23:20:00Z"
+      },
+      "request": {
+        "method": "POST",
+        "path": "/v1/payments",
+        "token": "pay-station-3",
+        "headers": {
+          "Idempotency-Key": "ps3-20261013-T-7109"
+        },
+        "body": {
+          "place": {
+            "id": "b1…0001",
+            "className": "Place"
+          },
+          "ticketNumber": "T-7109",
+          "amount": {
+            "currencyType": "USD",
+            "currencyValue": 9
+          },
+          "meansOfPayment": "paymentCreditCard",
+          "channel": "payStation",
+          "cardLast4": "4242"
+        }
+      },
+      "expect": {
+        "status": 201,
+        "body": {
+          "paymentStatus": "approved",
+          "ticketNumber": "T-7109",
+          "amount": {
+            "currencyValue": 9
+          }
+        }
+      },
+      "save": {
+        "payment": "$.id"
+      }
+    },
+    {
+      "name": "The vendor is told",
+      "narration": "apx.accounts.payment.recorded.v1 goes out with the PaymentRecord as its data, and the vendor's endpoint receives it.",
+      "events": {
+        "type": "apx.accounts.payment.recorded.v1",
+        "exactly": 1
+      },
+      "deliveries": {
+        "subscription": "{sub}",
+        "status": "delivered"
+      }
+    },
+    {
+      "name": "The car leaves and the PARCS closes the session",
+      "narration": "A change-mode write sends only what changed: the end time, on the session and on its segment (Part 5 §5.1).",
+      "clock": {
+        "now": "2026-10-13T23:21:30Z"
+      },
+      "request": {
+        "method": "PUT",
+        "path": "/sessions/c4000000-0000-4000-8000-000000000709",
+        "token": "lakeside-parcs",
+        "headers": {
+          "APX-Update-Mode": "change"
+        },
+        "body": {
+          "id": "c4000000-0000-4000-8000-000000000709",
+          "version": 1,
+          "actualEnd": "2026-10-13T23:21:30Z",
+          "segments": [
+            {
+              "id": "c5000000-0000-4000-8000-000000000709",
+              "actualEnd": "2026-10-13T23:21:30Z"
+            }
+          ]
+        }
+      },
+      "expect": {
+        "status": 200
+      }
+    },
+    {
+      "name": "SessionUpdated reaches the vendor too",
+      "narration": "The native APDS event carries the session as it now stands. The dashboard's count of cars still inside drops to one.",
+      "events": {
+        "type": "SessionUpdated",
+        "exactly": 1
+      }
+    },
+    {
+      "name": "A partial refund at the service desk",
+      "narration": "The driver waited at the exit, and the desk refunds three dollars with a supervisor's approval. A refund is a financial action on the payment, not a new payment.",
+      "request": {
+        "method": "POST",
+        "path": "/v1/payments/{payment}/refund",
+        "token": "service-desk",
+        "headers": {
+          "Idempotency-Key": "desk-20261013-T-7109-refund"
+        },
+        "body": {
+          "amount": {
+            "currencyType": "USD",
+            "currencyValue": 3
+          },
+          "approval": {
+            "approvedBy": "supervisor-okafor",
+            "note": "Exit queue delay"
+          }
+        }
+      },
+      "expect": {
+        "status": 200,
+        "body": {
+          "paymentStatus": "approved",
+          "refundedAmount": {
+            "currencyValue": 3
+          }
+        }
+      }
+    },
+    {
+      "name": "The same payment, published again",
+      "narration": "The payment topic fires again with the full current record (§13.4). The vendor keys on the payment id and keeps the latest, so the refund reduces the day's revenue and the payment is not counted twice.",
+      "events": {
+        "type": "apx.accounts.payment.recorded.v1",
+        "exactly": 2
+      }
+    },
+    {
+      "name": "The ticket's record, net of the refund",
+      "narration": "A keyed read returns the same record: nine dollars collected, three refunded, six net. Totals are left to the consumer; APX supplies the records they are built from.",
+      "request": {
+        "method": "GET",
+        "path": "/v1/payments?ticketNumber=T-7109"
+      },
+      "expect": {
+        "status": 200,
+        "body": {
+          "meta": {
+            "total": 1
+          },
+          "data": [
+            {
+              "id": "{payment}",
+              "amount": {
+                "currencyValue": 9
+              },
+              "refundedAmount": {
+                "currencyValue": 3
+              }
+            }
+          ]
+        }
+      }
+    }
+  ]
+}

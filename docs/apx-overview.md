@@ -496,6 +496,9 @@ conformance requirements make the claim testable rather than aspirational.
 
 ## Explore it in five minutes
 
+- See it run: the [simulator](https://rneubauer.github.io/apx/simulator/), in
+  the browser, with narrated demos of the stories above
+  ([`packages/simulator`](../packages/simulator/README.md))
 - Postman / Swagger UI: import `spec/dist/apx-v1.yaml`
 - PARCS vendors: the slim profile subset `spec/dist/apx-parcs.json`
 - The deep dives: the written standard (Parts 0–22 + Annex A) in `docs/standard/`

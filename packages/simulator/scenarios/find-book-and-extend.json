@@ -1,0 +1,460 @@
+{
+  "name": "Find, book and extend: an evening reservation from search to overstay",
+  "description": "Sam finds Lakeside Garage through the ParkAhead app, gets a quote for a concert evening and books it. Dinner runs late, so he moves the booking before he arrives. The entry camera reads his plate and the PARCS checks him in with no APX call. The concert overruns, and ParkAhead extends the reservation mid-stay with the stock APDS session-extension quote. Native APDS places, quotes, AssignedRights and Sessions, with the APX reservation lifecycle on top (Part 14 §14.1).",
+  "world": "apx-reservations",
+  "token": "default",
+  "steps": [
+    {
+      "name": "Friday 10:00: Sam opens ParkAhead",
+      "narration": "ParkAhead is a reservation platform with its own token for Lakeside Garage. Everything it does in this demo uses native APDS routes; the APX reservation extension adds the lifecycle states and the no-show rule.",
+      "clock": {
+        "now": "2026-09-25T15:00:00Z"
+      }
+    },
+    {
+      "name": "Find: the garage",
+      "narration": "The app reads the place it will offer: the name, the time zone and the 420-space supply, from the native APDS place route.",
+      "request": {
+        "method": "GET",
+        "path": "/places/b1…0001"
+      },
+      "expect": {
+        "status": 200,
+        "body": {
+          "name": [
+            {
+              "string": "Lakeside Garage"
+            }
+          ],
+          "timeZone": "America/Chicago",
+          "hierarchyElementReference": {
+            "supply": [
+              {
+                "supplyQuantity": 420
+              }
+            ]
+          }
+        }
+      }
+    },
+    {
+      "name": "What can be booked there",
+      "narration": "The bookable product is an APDS RightSpecification: the evening reservation, which uses the plate as the credential. That one fact is what lets the entry camera check Sam in later.",
+      "request": {
+        "method": "GET",
+        "path": "/rights/specs/e1…0001"
+      },
+      "expect": {
+        "status": 200,
+        "body": {
+          "type": "oneTimeUseParking",
+          "credentials": [
+            "licensePlate"
+          ],
+          "hierarchyElements": [
+            {
+              "id": "b1000000-0000-4000-8000-000000000001"
+            }
+          ]
+        }
+      }
+    },
+    {
+      "name": "A quote for 18:30 to 22:00 local",
+      "narration": "The app asks for a native APDS quote for the window Sam wants. The response confirms the window against the right specification.",
+      "request": {
+        "method": "POST",
+        "path": "/quotes",
+        "body": {
+          "id": "d2…0451",
+          "version": 1,
+          "requestTime": "2026-09-25T15:00:00Z",
+          "periodStart": "2026-09-25T23:30:00Z",
+          "periodEnd": "2026-09-26T03:00:00Z",
+          "referencedRightSpecifications": [
+            {
+              "elementId": {
+                "id": "b1…0001",
+                "version": 3,
+                "className": "Place"
+              },
+              "rightSpecificationId": {
+                "id": "e1…0001",
+                "version": 1,
+                "className": "RightSpecification"
+              }
+            }
+          ]
+        }
+      },
+      "expect": {
+        "status": 200,
+        "body": {
+          "total": 1,
+          "data": [
+            {
+              "quoteRequestId": {
+                "id": "d2000000-0000-4000-8000-000000000451"
+              },
+              "start": "2026-09-25T23:30:00Z",
+              "end": "2026-09-26T03:00:00Z"
+            }
+          ]
+        }
+      }
+    },
+    {
+      "name": "Sam books it",
+      "narration": "The booking is a native APDS AssignedRight with Sam's plate on file and the APX reservation extension in state confirmed. A plain APDS client sees an ordinary assigned right.",
+      "request": {
+        "method": "POST",
+        "path": "/rights/assigned",
+        "body": {
+          "id": "e2…0451",
+          "version": 1,
+          "rightSpecification": {
+            "id": "e1…0001",
+            "version": 1,
+            "className": "RightSpecification"
+          },
+          "rightHolder": {
+            "credentials": [
+              {
+                "type": "licensePlate",
+                "credentialAssignedType": "vehicle",
+                "identifier": {
+                  "id": "SAM-4512",
+                  "className": "USNumberPlate"
+                }
+              }
+            ]
+          },
+          "issueMethod": "electronic",
+          "issuanceTime": "2026-09-25T15:00:00Z",
+          "plannedUses": [
+            {
+              "startTime": "2026-09-25T23:30:00Z",
+              "endTime": "2026-09-26T03:00:00Z"
+            }
+          ],
+          "extensions": {
+            "apds-ext:apx:reservation@1.0": {
+              "reservationState": "confirmed",
+              "plannedStart": "2026-09-25T23:30:00Z",
+              "plannedEnd": "2026-09-26T03:00:00Z"
+            }
+          }
+        }
+      },
+      "expect": {
+        "status": 201,
+        "body": {
+          "status": "ok",
+          "ids": [
+            "e2000000-0000-4000-8000-000000000451"
+          ]
+        }
+      }
+    },
+    {
+      "name": "The no-show instant is on the record",
+      "narration": "The server stamps noShowAfter: planned start plus the garage's sixty-minute grace. If Sam never comes, the reservation lapses at 19:30 local on its own; nobody has to argue about when the grace ended (§14.1).",
+      "request": {
+        "method": "GET",
+        "path": "/rights/assigned/e2…0451"
+      },
+      "expect": {
+        "status": 200,
+        "body": {
+          "version": 1,
+          "extensions": {
+            "apds-ext:apx:reservation@1.0": {
+              "reservationState": "confirmed",
+              "plannedStart": "2026-09-25T23:30:00Z",
+              "noShowAfter": "2026-09-26T00:30:00Z"
+            }
+          }
+        }
+      }
+    },
+    {
+      "name": "17:10: dinner runs long, Sam moves the booking",
+      "narration": "Before he arrives, Sam moves his start to 19:00. ParkAhead sends a change-mode PUT on the native route: the new window, still confirmed (§14.1, Part 5 change mode).",
+      "clock": {
+        "now": "2026-09-25T22:10:00Z"
+      },
+      "request": {
+        "method": "PUT",
+        "path": "/rights/assigned/e2…0451",
+        "headers": {
+          "APX-Update-Mode": "change"
+        },
+        "body": {
+          "id": "e2…0451",
+          "version": 1,
+          "rightSpecification": {
+            "id": "e1…0001",
+            "version": 1,
+            "className": "RightSpecification"
+          },
+          "rightHolder": {
+            "credentials": [
+              {
+                "type": "licensePlate",
+                "credentialAssignedType": "vehicle",
+                "identifier": {
+                  "id": "SAM-4512",
+                  "className": "USNumberPlate"
+                }
+              }
+            ]
+          },
+          "plannedUses": [
+            {
+              "startTime": "2026-09-26T00:00:00Z",
+              "endTime": "2026-09-26T03:00:00Z"
+            }
+          ],
+          "extensions": {
+            "apds-ext:apx:reservation@1.0": {
+              "reservationState": "confirmed",
+              "plannedStart": "2026-09-26T00:00:00Z",
+              "plannedEnd": "2026-09-26T03:00:00Z"
+            }
+          }
+        }
+      },
+      "expect": {
+        "status": 200,
+        "body": {
+          "status": "ok",
+          "ids": [
+            "e2000000-0000-4000-8000-000000000451"
+          ]
+        }
+      }
+    },
+    {
+      "name": "The grace moves with it",
+      "narration": "The server recomputes noShowAfter from the new start. The version went up, so a stale second edit would be refused rather than silently win.",
+      "request": {
+        "method": "GET",
+        "path": "/rights/assigned/e2…0451"
+      },
+      "expect": {
+        "status": 200,
+        "body": {
+          "version": 2,
+          "extensions": {
+            "apds-ext:apx:reservation@1.0": {
+              "reservationState": "confirmed",
+              "plannedStart": "2026-09-26T00:00:00Z",
+              "noShowAfter": "2026-09-26T01:00:00Z"
+            }
+          }
+        }
+      }
+    },
+    {
+      "name": "19:04: the entry camera reads SAM-4512",
+      "narration": "The PARCS matches the plate to the reservation, opens the gate and creates the native Session, with a segment that references the AssignedRight. No APX call is needed: the reference itself checks the reservation in.",
+      "clock": {
+        "now": "2026-09-26T00:04:10Z"
+      },
+      "request": {
+        "method": "POST",
+        "path": "/sessions",
+        "token": "lakeside-parcs",
+        "body": {
+          "id": "f1…0451",
+          "version": 1,
+          "actualStart": "2026-09-26T00:04:10Z",
+          "hierarchyElement": {
+            "id": "b1…0001",
+            "version": 3,
+            "className": "Place"
+          },
+          "identifiedCredentials": [
+            {
+              "type": "licensePlate",
+              "credentialAssignedType": "vehicle",
+              "identifier": {
+                "id": "SAM-4512",
+                "className": "USNumberPlate"
+              }
+            }
+          ],
+          "segments": [
+            {
+              "id": "f3…0451",
+              "version": 1,
+              "actualStart": "2026-09-26T00:04:10Z",
+              "assignedRight": {
+                "id": "e2…0451",
+                "version": 2,
+                "className": "AssignedRight"
+              },
+              "validationType": [
+                "licensePlate"
+              ]
+            }
+          ]
+        }
+      },
+      "expect": {
+        "status": 201,
+        "body": {
+          "status": "ok",
+          "ids": [
+            "f1000000-0000-4000-8000-000000000451"
+          ]
+        }
+      }
+    },
+    {
+      "name": "Checked in, linked to the session",
+      "narration": "The reservation is now checkedIn, with checkInSession pointing at the Session the PARCS opened (§14.1 rule 5). ParkAhead learns this from its AssignedRightUpdated subscription, not by polling the garage.",
+      "request": {
+        "method": "GET",
+        "path": "/rights/assigned/e2…0451"
+      },
+      "expect": {
+        "status": 200,
+        "body": {
+          "extensions": {
+            "apds-ext:apx:reservation@1.0": {
+              "reservationState": "checkedIn",
+              "checkInSession": {
+                "id": "f1000000-0000-4000-8000-000000000451"
+              }
+            }
+          }
+        }
+      },
+      "events": {
+        "type": "AssignedRightUpdated",
+        "min": 2
+      }
+    },
+    {
+      "name": "21:40: the encore. A quote for one more hour",
+      "narration": "Sam is still inside at 21:40 and wants until 23:00. ParkAhead asks for the stock APDS session-extension quote against his Session. The server honours the new end time.",
+      "clock": {
+        "now": "2026-09-26T02:40:00Z"
+      },
+      "request": {
+        "method": "POST",
+        "path": "/quotes",
+        "body": {
+          "id": "d2…0452",
+          "version": 1,
+          "requestTime": "2026-09-26T02:40:00Z",
+          "requestedEndTime": "2026-09-26T04:00:00Z",
+          "sessionId": {
+            "id": "f1…0451",
+            "version": 1,
+            "className": "Session"
+          },
+          "suppliedCredential": {
+            "id": "e3…0451",
+            "version": 1,
+            "className": "Credential"
+          }
+        }
+      },
+      "expect": {
+        "status": 200,
+        "body": {
+          "data": [
+            {
+              "sessionId": {
+                "id": "f1000000-0000-4000-8000-000000000451"
+              },
+              "revisedEndTime": "2026-09-26T04:00:00Z"
+            }
+          ]
+        }
+      }
+    },
+    {
+      "name": "The reservation is extended mid-stay",
+      "narration": "ParkAhead moves plannedEnd with a change-mode PUT. After check-in only the planned times may change, so the reservation stays checkedIn and stays linked to the Session (§14.1).",
+      "request": {
+        "method": "PUT",
+        "path": "/rights/assigned/e2…0451",
+        "headers": {
+          "APX-Update-Mode": "change"
+        },
+        "body": {
+          "id": "e2…0451",
+          "version": 3,
+          "rightSpecification": {
+            "id": "e1…0001",
+            "version": 1,
+            "className": "RightSpecification"
+          },
+          "rightHolder": {
+            "credentials": [
+              {
+                "type": "licensePlate",
+                "credentialAssignedType": "vehicle",
+                "identifier": {
+                  "id": "SAM-4512",
+                  "className": "USNumberPlate"
+                }
+              }
+            ]
+          },
+          "plannedUses": [
+            {
+              "startTime": "2026-09-26T00:00:00Z",
+              "endTime": "2026-09-26T04:00:00Z"
+            }
+          ],
+          "extensions": {
+            "apds-ext:apx:reservation@1.0": {
+              "reservationState": "checkedIn",
+              "plannedStart": "2026-09-26T00:00:00Z",
+              "plannedEnd": "2026-09-26T04:00:00Z",
+              "checkInSession": {
+                "id": "f1…0451",
+                "className": "Session"
+              }
+            }
+          }
+        }
+      },
+      "expect": {
+        "status": 200,
+        "body": {
+          "status": "ok",
+          "ids": [
+            "e2000000-0000-4000-8000-000000000451"
+          ]
+        }
+      }
+    },
+    {
+      "name": "The call centre sees the same booking",
+      "narration": "If Sam calls the garage, the agent's screen-pop finds his reservation by plate with the recent-reservations lookup: checked in, ending at 23:00 local. ParkAhead and the operator are looking at one record.",
+      "request": {
+        "method": "GET",
+        "path": "/v1/reservations/recent?plate=SAM-4512"
+      },
+      "expect": {
+        "status": 200,
+        "body": {
+          "data": [
+            {
+              "reservation": {
+                "id": "e2000000-0000-4000-8000-000000000451"
+              },
+              "reservationState": "checkedIn",
+              "plannedEnd": "2026-09-26T04:00:00Z"
+            }
+          ]
+        }
+      }
+    }
+  ]
+}

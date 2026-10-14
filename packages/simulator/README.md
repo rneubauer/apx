@@ -37,7 +37,7 @@ curl -s -X POST http://127.0.0.1:4100/oauth/token -d 'grant_type=client_credenti
 ## The browser UI
 
 `node bin/apx-sim.mjs serve` also serves a UI at http://127.0.0.1:4100/
-(the root redirects to `/ui/`). It has three views:
+(the root redirects to `/ui/`). It has four views:
 
 - **Present** walks an audience through a scenario one step at a time:
   the step's title and narration, who acts and what they send, the
@@ -69,6 +69,15 @@ curl -s -X POST http://127.0.0.1:4100/oauth/token -d 'grant_type=client_credenti
   and the request log. The outbox can be filtered by event type. Any
   request or world event can be added to the open scenario with one
   click.
+- **Fabric** shows the Part 8 delivery fabric live: events as they are
+  published (and which subscribers each went to), every subscriber with
+  its endpoint health, and each delivery attempt with its status code
+  and a countdown to the next retry on the §8.3 schedule. Start traffic
+  (rate and mix adjustable; it switches the clock to Live), add a
+  webhook or SSE subscriber, make an endpoint fail and recover to watch
+  retries land, or drop and reconnect an SSE client to watch it catch up
+  from `Last-Event-ID`. If the world has no subscribers it offers to
+  load `apx-events`.
 
 The header carries the APX edition the simulator serves, the world
 picker, the clock with its state (frozen, live under `--realtime` or the
@@ -86,7 +95,11 @@ that opens an object or array to fold it, and use Copy or Expand at the
 block's top right. The UI is plain HTML, CSS and JavaScript with no external
 assets, so it works offline. Browser zoom (Ctrl/Cmd and +) scales it
 for the back of a room; above 1800 px wide it already sets larger type.
-`scenarios/` holds seven narrated demos; [DEMO.md](DEMO.md) is the runbook for showing
+`scenarios/` holds nineteen narrated demos: the core story, everyday
+operations (card in/out, monthly fobs and permit pools, find-and-book,
+lost ticket, valet, tolling), and analytics in the `analytics-lakeside`
+world (transient transactions, monthly parkers, plate reads, occupancy,
+change-feed sync); [DEMO.md](DEMO.md) is the runbook for showing
 them on a call (checks to run first, which demos for which slot, talking
 points, and what to do if a step fails).
 
@@ -134,6 +147,15 @@ scenario saved in Build lasts until then (use Download to keep it).
   (`PUT /sim/receivers {"endpoint": "…", "codes": [500, 500, 200]}`), so
   the retry schedule and the failure cascade can be watched without a
   network. `--network` posts to real endpoints instead.
+- **Traffic** keeps the fabric busy on its own: `POST /sim/traffic
+  {"running": true, "ratePerMinute": 60, "mix": ["vehicles", "devices",
+  "occupancy", "payments"]}` injects a steady mix of world events while
+  the clock is Live (nothing while Frozen). `GET /sim/fabric` summarises
+  subscribers, endpoint health, recent attempts and next retries, and
+  the latest events with who received them; `POST /sim/fabric/subscribers
+  {"transport": "webhook" | "sse"}` adds a demo subscriber, and `POST
+  /sim/fabric/sse {"subscription": "…", "connected": false}` drops or
+  reconnects a simulated SSE client. The Fabric view drives all of this.
 - **Tokens** can be minted (`POST /sim/token`, `POST /oauth/token`), named
   (`Bearer lakeside-parcs`), or *descriptive*, the way the vetting suite
   writes them: `Bearer <apx.data:read only>`, `Bearer <expired>`,
