@@ -1,7 +1,8 @@
 // The Present view: walk an audience through a scenario one step at a
 // time. Each step shows its title and narration, who acts and what they
-// send, what came back, and the events the step caused. Keys: → or Space
-// runs the next step, ← browses back, R rewinds.
+// send, what came back next to what the standard expected, and the events
+// the step caused. Keys: → or Space runs the next step, ← browses back,
+// R rewinds, F enters presenter mode (full screen, no app chrome), Esc leaves it.
 import {
   h, mount, jsonView, toast, statusBadge, fmtClock,
   state, on, openScenario, run, rewind, runNext, stepKind, stepSummary, actorOf, eventLine,
@@ -9,25 +10,45 @@ import {
 
 let viewing = 0; // the step on stage (may lag the cursor when browsing back)
 let rootEl = null;
+let presenting = false;
+let viaFullscreen = false; // presenter mode took the browser full screen, so leaving full screen leaves it too
+let viewIsActive = () => false;
+let shownStep = -1; // the step the last presenter render showed, so a new step starts at the top of the screen
 const rerender = () => rootEl && renderPresent(rootEl);
 
 export function mountPresent(root, { isActive }) {
   rootEl = root;
+  viewIsActive = isActive;
   on((what) => {
     if (what === 'scenario') viewing = 0;
+    if (what === 'scenario' && !state.scenario) exitPresenter();
+    if (what === 'status' && presenting) updatePresenterClock();
     if (['scenario', 'run', 'scenarios'].includes(what) && isActive()) rerender();
   });
-  document.addEventListener('keydown', (e) => {
-    if (!isActive() || ['INPUT', 'TEXTAREA', 'SELECT'].includes(document.activeElement?.tagName)) return;
-    if (e.key === 'ArrowRight' || e.key === ' ') {
-      e.preventDefault();
-      advance();
-    } else if (e.key === 'ArrowLeft') {
-      viewing = Math.max(0, viewing - 1);
-      rerender();
-    } else if (e.key === 'r' || e.key === 'R') restart();
+  document.addEventListener('keydown', onKey);
+  document.addEventListener('fullscreenchange', () => {
+    if (!document.fullscreenElement && presenting && viaFullscreen) exitPresenter();
+  });
+  // Presenter mode belongs to this view; following a link to another view leaves it.
+  window.addEventListener('hashchange', () => {
+    if (presenting && location.hash !== '#present') exitPresenter();
   });
   return rerender;
+}
+
+function onKey(e) {
+  if (!viewIsActive() || ['INPUT', 'TEXTAREA', 'SELECT'].includes(document.activeElement?.tagName)) return;
+  if (e.ctrlKey || e.metaKey || e.altKey) return; // leave Ctrl+F, Ctrl+R and friends to the browser
+  if (e.key === 'ArrowRight' || e.key === ' ') {
+    e.preventDefault();
+    advance();
+  } else if (e.key === 'ArrowLeft') back();
+  else if (e.key === 'r' || e.key === 'R') restart();
+  else if (e.key === 'f' || e.key === 'F') {
+    e.preventDefault();
+    if (presenting) exitPresenter();
+    else enterPresenter();
+  } else if (e.key === 'Escape' && presenting) exitPresenter();
 }
 
 async function advance() {
@@ -43,6 +64,11 @@ async function advance() {
   await runNext();
 }
 
+function back() {
+  viewing = Math.max(0, viewing - 1);
+  rerender();
+}
+
 async function restart() {
   try {
     await rewind();
@@ -52,6 +78,57 @@ async function restart() {
     toast(e.message, 'bad');
   }
 }
+
+// ---------- presenter mode ----------
+
+function enterPresenter() {
+  if (presenting || !state.scenario?.steps.length) return;
+  presenting = true;
+  shownStep = -1;
+  document.documentElement.classList.add('presenting');
+  rerender();
+  const el = document.documentElement;
+  if (!el.requestFullscreen || document.fullscreenElement) return;
+  // Full screen is a nicety: when the browser refuses (an iframe, a policy), the
+  // mode still hides the app chrome and enlarges the stage.
+  el.requestFullscreen({ navigationUI: 'hide' })
+    .then(() => (viaFullscreen = true))
+    .catch(() => (viaFullscreen = false));
+}
+
+function exitPresenter() {
+  if (!presenting) return;
+  presenting = false;
+  viaFullscreen = false;
+  document.documentElement.classList.remove('presenting');
+  if (document.fullscreenElement && document.exitFullscreen) document.exitFullscreen().catch(() => {});
+  rerender();
+}
+
+function updatePresenterClock() {
+  const el = rootEl?.querySelector('.pbar-clock');
+  if (el) el.textContent = fmtClock(state.status?.clock?.now);
+}
+
+function presenterBar(s) {
+  const n = s.steps.length;
+  const atEnd = run.cursor >= n && viewing >= run.cursor - 1;
+  return h('div', { class: 'pbar' },
+    h('div', { class: 'pbar-row' },
+      h('span', { class: 'logo' }, 'APX'),
+      h('span', { class: 'pbar-name' }, s.name),
+      h('span', { class: 'grow' }),
+      h('span', { class: 'pbar-clock', title: 'The simulated clock' }, fmtClock(state.status?.clock?.now)),
+      h('span', { class: 'pbar-nav' },
+        h('button', { class: 'ghost small', onclick: back, disabled: viewing === 0, 'aria-label': 'Previous step', title: 'Previous step (←)' }, '◂'),
+        h('span', { class: 'pbar-count', role: 'status', 'aria-label': `Step ${viewing + 1} of ${n}` }, run.busy ? 'running…' : `${viewing + 1} / ${n}`),
+        h('button', { class: 'ghost small', onclick: advance, disabled: run.busy || atEnd, 'aria-label': 'Next step', title: 'Next step (→ or Space)' }, '▸')),
+      h('button', { class: 'ghost small', onclick: exitPresenter, title: 'Leave presenter mode (Esc or F)' }, 'Exit ✕')),
+    h('div', { class: 'progress pbar-progress', role: 'progressbar', 'aria-valuemin': 0, 'aria-valuemax': n, 'aria-valuenow': viewing + 1 },
+      h('div', { style: `width:${(100 * (viewing + 1)) / n}%` })));
+}
+
+// ---------- the picker and the timeline ----------
 
 function picker() {
   const open = (id) => () => openScenario(id).then(restart).catch((e) => toast(e.message, 'bad'));
@@ -76,11 +153,16 @@ function stepMark(r, isNext) {
 export function renderPresent(root) {
   const s = state.scenario;
   if (!s || !s.steps.length) {
+    if (presenting) exitPresenter();
     mount(root, picker());
     return;
   }
   viewing = Math.min(viewing, s.steps.length - 1);
-  mount(root, h('div', { class: 'present' }, timeline(s), stage(s)));
+  if (presenting) {
+    mount(root, h('div', { class: 'present presenter' }, presenterBar(s), stage(s)));
+    if (shownStep !== viewing) window.scrollTo(0, 0);
+    shownStep = viewing;
+  } else mount(root, h('div', { class: 'present' }, timeline(s), stage(s)));
 }
 
 function timeline(s) {
@@ -109,6 +191,7 @@ function timeline(s) {
 
 function finishedBanner(s) {
   if (run.cursor < s.steps.length || run.busy) return null;
+  if (presenting && viewing < s.steps.length - 1) return null; // on stage, the verdict waits for the last step
   const done = run.results.filter(Boolean);
   const failed = done.filter((r) => !r.ok).length;
   return h('div', { class: `finished ${failed ? 'bad' : 'ok'}`, role: 'status' },
@@ -126,13 +209,12 @@ function controls(s) {
   else if (done) label = 'Finished';
   return h('div', { class: 'row' },
     h('button', { class: 'ghost', onclick: restart, disabled: run.busy, title: 'Reload the world and start again (R)' }, '⟲ Restart'),
-    h('button', { class: 'ghost', disabled: viewing === 0, onclick: () => {
-      viewing -= 1;
-      rerender();
-    } }, '◂ Back'),
+    h('button', { class: 'ghost', disabled: viewing === 0, onclick: back }, '◂ Back'),
     h('button', { onclick: advance, disabled: run.busy || (done && !browsing) }, label),
     h('span', { class: 'muted' }, h('span', { class: 'kbd' }, '→'), ' or ', h('span', { class: 'kbd' }, 'Space'), ' next · ',
-      h('span', { class: 'kbd' }, '←'), ' back · ', h('span', { class: 'kbd' }, 'R'), ' restart'));
+      h('span', { class: 'kbd' }, '←'), ' back · ', h('span', { class: 'kbd' }, 'R'), ' restart · ', h('span', { class: 'kbd' }, 'F'), ' presenter'),
+    h('span', { class: 'grow' }),
+    h('button', { class: 'ghost', onclick: enterPresenter, title: 'Full screen, large type, no app chrome (F; Esc leaves)' }, '⛶ Presenter mode'));
 }
 
 function stage(s) {
@@ -140,30 +222,46 @@ function stage(s) {
   const r = run.results[viewing];
   const kind = stepKind(step);
   const pending = viewing === run.cursor ? 'Not run yet. Press Run to play this step live.' : 'Not run.';
+  const pendingHint = presenting && viewing === run.cursor ? 'Not run yet. Press → or Space to play this step live.' : pending;
   return h('div', { class: 'stage' },
-    controls(s),
+    presenting ? null : controls(s),
     finishedBanner(s),
-    h('div', { class: 'panel' }, h('div', { class: 'panel-body', style: 'display:flex;flex-direction:column;gap:10px' },
+    h('div', { class: 'panel' }, h('div', { class: 'panel-body stage-intro' },
       h('div', { class: 'stage-head' },
         h('span', { class: 'muted' }, `Step ${viewing + 1} of ${s.steps.length}`),
         h('span', { class: `badge k-${kind}` }, kindLabel(kind)),
         r?.now ? h('span', { class: 'muted mono' }, fmtClock(r.now)) : null),
       h('div', { class: 'stage-title' }, step.name ?? stepSummary(step)),
       step.narration ? h('p', { class: 'narration' }, step.narration) : null)),
-    action(step, kind),
-    r ? outcome(r) : h('div', { class: 'panel' }, h('div', { class: 'panel-body muted' }, pending)));
+    ...exchange(action(step, kind, r), r ? outcome(r) : null, pendingHint));
+}
+
+/**
+ * What the step sends and what came back. In presenter mode the request and
+ * its events sit beside the server's answer, so one screen holds the exchange.
+ */
+function exchange(act, out, pendingHint) {
+  const waiting = h('div', { class: 'panel' }, h('div', { class: 'panel-body muted' }, pendingHint));
+  if (!out) return [act, waiting];
+  const [answer, events] = out;
+  // Presenter: what was sent and what it caused on the left, the answer on the right.
+  if (presenting) return [h('div', { class: 'p-exchange' }, h('div', { class: 'p-col' }, act, events), answer)];
+  return [act, h('div', { class: 'cards' }, answer, events)];
 }
 
 const KIND_LABELS = { request: 'API call', inject: 'in the garage', clock: 'time passes', events: 'check: events', deliveries: 'check: webhooks', note: 'narration' };
 const kindLabel = (k) => KIND_LABELS[k] ?? k;
 
-function action(step, kind) {
+function action(step, kind, r) {
   const card = (...kids) => h('div', { class: 'panel' }, h('div', { class: 'panel-body', style: 'display:flex;flex-direction:column;gap:8px' }, ...kids));
+  // Before the step runs, say what the standard expects; afterwards the outcome shows it beside the answer.
+  const expected = r ? [] : expectedChecks(step);
+  const expectations = expected.length ? checklist(expected, 'The standard says') : null;
   if (kind === 'request') {
     const rq = step.request;
     return card(
       h('div', { class: 'row' }, h('span', { class: 'actor' }, '👤 ', actorOf(step)), h('span', { class: 'call' }, `${rq.method ?? 'GET'} ${rq.path}`)),
-      step.expect?.status ? h('div', { class: 'muted' }, `The standard says the answer is ${step.expect.status}${step.expect.problem ? ` (${step.expect.problem})` : ''}.`) : null,
+      expectations,
       rq.body !== undefined ? h('details', { open: true }, h('summary', {}, 'Request body'), jsonView(rq.body)) : null);
   }
   if (kind === 'inject') {
@@ -176,8 +274,84 @@ function action(step, kind) {
     return card(h('div', { class: 'row' }, h('span', { class: 'actor' }, '⏱ clock'), h('span', { class: 'call' }, what)));
   }
   if (kind === 'note') return null;
-  return card(h('span', { class: 'call' }, stepSummary(step)));
+  return card(h('span', { class: 'call' }, stepSummary(step)), expectations);
 }
+
+// ---------- expected vs actual ----------
+
+const MAX_VALUE_CHARS = 80;
+const BOUND_WORDS = { min: 'at least', max: 'at most', exactly: 'exactly' };
+const EVENT_BOUNDS = ['min', 'max', 'exactly'];
+
+/** The leaves of a partial body, as [path, value]: the same walk the server makes. */
+function bodyLeaves(v, path = '') {
+  const entries = v !== null && typeof v === 'object' ? (Array.isArray(v) ? v.map((x, i) => [i, x]) : Object.entries(v)) : [];
+  if (!entries.length) return [[path, v]];
+  return entries.flatMap(([k, x]) => bodyLeaves(x, typeof k === 'number' ? `${path}[${k}]` : path ? `${path}.${k}` : k));
+}
+
+/** What a step asserts, before it runs (the same shape as the server's checks, with no verdict). */
+function expectedChecks(step) {
+  const ex = step.expect ?? {};
+  const out = [];
+  if (step.request && ex.status !== undefined) out.push({ check: 'status', expected: ex.status });
+  if (step.request && ex.problem) out.push({ check: 'problem', expected: ex.problem });
+  if (step.request && ex.body !== undefined) out.push(...bodyLeaves(ex.body).map(([path, expected]) => ({ check: 'body', path, expected })));
+  for (const bound of EVENT_BOUNDS) {
+    if (step.events?.[bound] !== undefined) out.push({ check: 'events', type: step.events.type ?? null, bound, expected: step.events[bound] });
+  }
+  if (step.deliveries?.status) out.push({ check: 'delivery', expected: step.deliveries.status });
+  return out;
+}
+
+function fmtValue(v) {
+  const t = JSON.stringify(v) ?? String(v);
+  return t.length > MAX_VALUE_CHARS ? `${t.slice(0, MAX_VALUE_CHARS - 1)}…` : t;
+}
+
+/** [what was expected, what came back] for one check, in words. */
+function checkWords(c) {
+  switch (c.check) {
+    case 'status': return [`status ${c.expected}`, String(c.actual)];
+    case 'problem': return [`problem ${c.expected}`, c.actual ?? 'no problem type'];
+    case 'body': {
+      if (!c.path) return ['body matches', fmtValue(c.actual)];
+      const at = c.path.startsWith('[') ? `body${c.path}` : `body.${c.path}`;
+      return [`${at} = ${fmtValue(c.expected)}`, c.missing ? 'missing' : fmtValue(c.actual)];
+    }
+    case 'contract': return ['response valid against the APX bundle', String(c.actual)];
+    case 'events': return [`${BOUND_WORDS[c.bound] ?? c.bound} ${c.expected} × ${c.type ?? 'any event'}`, String(c.actual)];
+    case 'delivery': return [`a webhook delivery in status ${c.expected}`, c.actual?.length ? c.actual.join(', ') : 'no deliveries'];
+    default: return [`${c.check} ${fmtValue(c.expected)}`, fmtValue(c.actual)];
+  }
+}
+
+function checkRow(c) {
+  const [want, got] = checkWords(c);
+  const verdict = c.ok === undefined ? 'pending' : c.ok ? 'ok' : 'bad';
+  const allowed = c.check === 'contract' && c.allowed;
+  const mark = {
+    pending: h('span', { class: 'mark-none', role: 'img', 'aria-label': 'expected' }),
+    ok: h('span', { class: allowed ? 'mark-warn' : 'mark-ok', role: 'img', 'aria-label': allowed ? 'allowed' : 'passed' }, allowed ? '!' : '✓'),
+    bad: h('span', { class: 'mark-bad', role: 'img', 'aria-label': 'failed' }, '✗'),
+  }[verdict];
+  let note = null;
+  if (verdict === 'bad') note = h('span', { class: 'got', title: got }, 'got ', h('b', {}, got));
+  else if (allowed) note = h('span', { class: 'got allowed', title: got }, 'violation allowed by this step');
+  return h('li', { class: `check ${verdict}` }, mark, h('span', { class: 'want' }, want), note);
+}
+
+function checklist(checks, title) {
+  const judged = checks.filter((c) => c.ok !== undefined);
+  const failed = judged.filter((c) => !c.ok).length;
+  let tally = null;
+  if (judged.length) tally = h('span', { class: failed ? 'verdict-bad' : 'verdict-ok' }, failed ? `${failed} of ${judged.length} failed` : `${judged.length} of ${judged.length} passed`);
+  return h('div', { class: 'checks-box' },
+    h('div', { class: 'checks-title' }, h('span', { class: 'grow' }, title), tally),
+    h('ul', { class: 'checks' }, checks.map(checkRow)));
+}
+
+// ---------- outcome ----------
 
 function eventCard(ev) {
   const n = ev._deliveredTo?.length ?? 0;
@@ -188,15 +362,20 @@ function eventCard(ev) {
     jsonView(ev.data ?? ev));
 }
 
+/** The server's answer (with expected vs actual) and the events the step published, as two panels. */
 function outcome(r) {
   const body = r.response?.body;
+  const checks = r.checks ?? [];
+  // A failed assertion is already spelled out in the checklist; repeat the error only when it says something else.
+  const errorShown = r.error && !(checks.some((c) => !c.ok) && /^(expected |body mismatch|response violates)/.test(r.error));
   const left = h('div', { class: 'panel' },
     h('div', { class: 'panel-head' }, h('b', { class: 'grow' }, 'What happened'),
       h('span', { class: `big-status ${r.ok ? 'verdict-ok' : 'verdict-bad'}` }, r.ok ? '✓ as the standard says' : '✗ not as expected')),
     h('div', { class: 'panel-body', style: 'display:flex;flex-direction:column;gap:8px' },
-      r.error ? h('div', { class: 'verdict-bad' }, r.error) : null,
+      errorShown ? h('div', { class: 'verdict-bad' }, r.error) : null,
       r.response ? h('div', { class: 'row' }, statusBadge(r.response.status), r.response.problem ? h('code', {}, r.response.problem) : null, body?.title ? h('span', {}, body.title) : null) : null,
       body?.detail ? h('div', { class: 'muted' }, body.detail) : null,
+      checks.length ? checklist(checks, 'Expected vs actual') : null,
       r.response ? jsonView(body) : null,
       r.inject?.result ? jsonView(r.inject.result) : null,
       r.eventCount !== undefined ? h('div', {}, `${r.eventCount} matching event${r.eventCount === 1 ? '' : 's'} in the outbox.`) : null,
@@ -205,5 +384,5 @@ function outcome(r) {
   const right = h('div', { class: 'panel' },
     h('div', { class: 'panel-head' }, h('b', { class: 'grow' }, 'Events published'), h('span', { class: 'muted' }, evs.length)),
     h('div', { class: 'panel-body' }, evs.length ? evs.map(eventCard) : h('div', { class: 'muted' }, 'This step published no events.')));
-  return h('div', { class: 'cards' }, left, right);
+  return [left, right];
 }

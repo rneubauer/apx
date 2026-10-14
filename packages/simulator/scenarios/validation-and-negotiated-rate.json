@@ -1,0 +1,431 @@
+{
+  "name": "Dinner validation, then a negotiated amount at the exit",
+  "description": "A driver parks at Lakeside Garage and dines at Harbor Bistro. The bistro validates the ticket from its own iPad and the amount due drops. At exit lane 2 a help-desk agent states a lower amount for the rest, with a reason, and the driver pays it at the lane. Every change on the ticket stays attributable: who validated, who set the amount, and why.",
+  "world": "apx-validations",
+  "token": "default",
+  "steps": [
+    {
+      "name": "Lakeside Garage, 19:30 on a Thursday",
+      "narration": "Ticket T-1001 has been in the garage since 08:02 and owes $9.00. The driver is at dinner in Harbor Bistro next door. Every answer that follows comes from the simulator, checked against the APX bundle.",
+      "clock": {
+        "now": "2026-09-24T19:30:00Z"
+      },
+      "inject": {
+        "kind": "vehicleLeaves",
+        "lane": "b2…0002"
+      }
+    },
+    {
+      "name": "The operator enrols the bistro",
+      "narration": "Validation programs belong to the operator, not the merchant. The back office sets the benefit (first two hours comped), the closed rule set (one per ticket, not stackable), and who pays: the bistro, $4.00 per validation, billed monthly.",
+      "request": {
+        "method": "POST",
+        "path": "/v1/validations/programs",
+        "headers": {
+          "Idempotency-Key": "bo-enrol-harbor-bistro-2026-09"
+        },
+        "body": {
+          "place": {
+            "id": "b1…0001",
+            "className": "Place"
+          },
+          "provider": {
+            "id": "a2…0077",
+            "className": "Organisation"
+          },
+          "name": "Harbor Bistro",
+          "validationType": "twoHourComp",
+          "programStatus": "active",
+          "benefit": {
+            "description": "First two hours comped",
+            "duration": "PT2H"
+          },
+          "rules": {
+            "maxPerTicket": 1,
+            "maxPerDay": 200,
+            "stackable": false
+          },
+          "billing": {
+            "model": "merchantPays",
+            "unitPrice": {
+              "currencyType": "USD",
+              "currencyValue": 4
+            },
+            "billingCycle": "monthly"
+          },
+          "issuanceMethods": [
+            "api"
+          ]
+        }
+      },
+      "expect": {
+        "status": 201,
+        "body": {
+          "name": "Harbor Bistro",
+          "provider": {
+            "id": "a2…0077"
+          },
+          "programStatus": "active",
+          "rules": {
+            "maxPerTicket": 1,
+            "stackable": false
+          },
+          "billing": {
+            "model": "merchantPays"
+          }
+        }
+      },
+      "save": {
+        "program": "$.id"
+      }
+    },
+    {
+      "name": "The bistro validates the ticket from its iPad",
+      "narration": "The host keys in T-1001. The bistro's token carries only the merchant scope. The server answers with the actual effect on the ticket (two hours at $3.00, so $6.00 off, not the nominal benefit), a validationId for the APDS Payment record, and who applied it.",
+      "request": {
+        "method": "POST",
+        "path": "/v1/validations/redemptions",
+        "token": "harbor-bistro-ipad",
+        "headers": {
+          "Idempotency-Key": "hb-ipad-foh-20260924-193200"
+        },
+        "body": {
+          "program": {
+            "id": "{program}",
+            "className": "ValidationProgram"
+          },
+          "place": {
+            "id": "b1…0001",
+            "className": "Place"
+          },
+          "ticketNumber": "T-1001",
+          "appliedTime": "2026-09-24T19:30:00Z",
+          "channel": "merchantApp",
+          "appliedBy": "hb-ipad-foh"
+        }
+      },
+      "expect": {
+        "status": 201,
+        "body": {
+          "ticketNumber": "T-1001",
+          "channel": "merchantApp",
+          "appliedBy": "hb-ipad-foh",
+          "amountReduced": {
+            "currencyType": "USD",
+            "currencyValue": 6
+          },
+          "durationComped": "PT2H",
+          "redemptionStatus": "applied",
+          "statusHistory": [
+            {
+              "state": "applied",
+              "actor": "hb-ipad-foh"
+            }
+          ]
+        }
+      },
+      "save": {
+        "redemption": "$.id",
+        "validationId": "$.validationId"
+      },
+      "events": {
+        "type": "apx.validations.redeemed.v1",
+        "exactly": 1
+      }
+    },
+    {
+      "name": "The bistro cannot see another merchant's program",
+      "narration": "A merchant token is confined to its own programs. Asked for the gym's program, the server answers 404, exactly as if it did not exist, so one merchant learns nothing about another's terms.",
+      "request": {
+        "method": "GET",
+        "path": "/v1/validations/programs/e5…0004",
+        "token": "harbor-bistro-ipad"
+      },
+      "expect": {
+        "status": 404,
+        "problem": "target-not-found"
+      }
+    },
+    {
+      "name": "21:05, the car reaches exit lane 2",
+      "narration": "After dinner the driver puts ticket T-1001 into the exit lane reader. The lane picks up what has happened to the ticket so far.",
+      "clock": {
+        "now": "2026-09-24T21:05:00Z"
+      },
+      "inject": {
+        "kind": "vehicleArrives",
+        "lane": "b2…0002",
+        "ticketNumber": "T-1001"
+      }
+    },
+    {
+      "name": "The agent looks at the lane",
+      "narration": "The driver presses the intercom. One call shows the agent the ticket, what it owes after the bistro's validation ($3.00), and the validation itself: which merchant, how much, and its validationId. The driver says they were held twenty minutes behind a stalled car at this lane.",
+      "request": {
+        "method": "GET",
+        "path": "/v1/lanes/b2…0002/current",
+        "token": "console-lakeside"
+      },
+      "expect": {
+        "status": 200,
+        "body": {
+          "currentTicket": {
+            "ticketNumber": "T-1001",
+            "amountDue": {
+              "currencyType": "USD",
+              "currencyValue": 3
+            },
+            "paidInFull": false,
+            "validations": [
+              {
+                "providerName": "Harbor Bistro",
+                "provider": {
+                  "id": "a2…0077"
+                },
+                "validationId": "{validationId}",
+                "amountReduced": {
+                  "currencyType": "USD",
+                  "currencyValue": 6
+                }
+              }
+            ]
+          }
+        }
+      }
+    },
+    {
+      "name": "A stated amount without a reason is refused",
+      "narration": "The agent tries to set the amount without saying why. With a stated amount there is no rate table to explain the figure, so the standard requires a reason as well as the agent, and the server refuses the command with 400.",
+      "request": {
+        "method": "POST",
+        "path": "/v1/commands",
+        "token": "console-lakeside",
+        "headers": {
+          "Idempotency-Key": "agent-7-amount-T-1001-a"
+        },
+        "body": {
+          "commandType": "pushNegotiatedRate",
+          "target": {
+            "id": "b2…0002",
+            "className": "VehicularAccess"
+          },
+          "parameters": {
+            "amount": {
+              "currencyType": "USD",
+              "currencyValue": 1.5
+            }
+          },
+          "agent": "agent:t.vance",
+          "agentType": "human"
+        }
+      },
+      "expect": {
+        "status": 400,
+        "problem": "invalid-request"
+      }
+    },
+    {
+      "name": "The agent states $1.50, with the reason",
+      "narration": "The same command, now with a reason. It is a command like a gate vend: 202 with a record the agent can follow. The amount replaces what the ticket owes; APX sets no floor or ceiling, only that someone is named and the reason is stated.",
+      "request": {
+        "method": "POST",
+        "path": "/v1/commands",
+        "token": "console-lakeside",
+        "headers": {
+          "Idempotency-Key": "agent-7-amount-T-1001-b"
+        },
+        "body": {
+          "commandType": "pushNegotiatedRate",
+          "target": {
+            "id": "b2…0002",
+            "className": "VehicularAccess"
+          },
+          "parameters": {
+            "amount": {
+              "currencyType": "USD",
+              "currencyValue": 1.5
+            }
+          },
+          "agent": "agent:t.vance",
+          "agentType": "human",
+          "reason": "driver held 20 minutes at exit lane 2 behind a stalled vehicle; goodwill per site policy"
+        }
+      },
+      "expect": {
+        "status": 202,
+        "body": {
+          "commandType": "pushNegotiatedRate",
+          "agent": "agent:t.vance",
+          "status": "accepted"
+        }
+      },
+      "save": {
+        "cmd": "$.id"
+      }
+    },
+    {
+      "name": "The lane shows the stated amount, who set it and why",
+      "narration": "Two seconds later the PARCS has applied it. The ticket now owes $1.50 and carries the amount, the agent, the reason and the command. The bistro's validation is still on the ticket: a stated amount is not a further discount, and the bistro is still billed for its validation.",
+      "clock": {
+        "advance": "PT2S"
+      },
+      "request": {
+        "method": "GET",
+        "path": "/v1/lanes/b2…0002/current",
+        "token": "console-lakeside"
+      },
+      "expect": {
+        "status": 200,
+        "body": {
+          "currentTicket": {
+            "ticketNumber": "T-1001",
+            "amountDue": {
+              "currencyType": "USD",
+              "currencyValue": 1.5
+            },
+            "paidInFull": false,
+            "negotiatedAmount": {
+              "amount": {
+                "currencyType": "USD",
+                "currencyValue": 1.5
+              },
+              "agent": "agent:t.vance",
+              "reason": "driver held 20 minutes at exit lane 2 behind a stalled vehicle; goodwill per site policy",
+              "command": {
+                "id": "{cmd}"
+              }
+            },
+            "validations": [
+              {
+                "validationId": "{validationId}"
+              }
+            ]
+          }
+        }
+      }
+    },
+    {
+      "name": "The driver pays $1.50 at the lane",
+      "narration": "The lane's card reader takes the payment against the ticket number. No card number crosses APX, only the last four digits.",
+      "request": {
+        "method": "POST",
+        "path": "/v1/payments",
+        "token": "ops-lakeside",
+        "headers": {
+          "Idempotency-Key": "lane-b2-0002-T-1001-pay"
+        },
+        "body": {
+          "ticketNumber": "T-1001",
+          "place": {
+            "id": "b1…0001",
+            "className": "Place"
+          },
+          "amount": {
+            "currencyType": "USD",
+            "currencyValue": 1.5
+          },
+          "meansOfPayment": "paymentCreditCard",
+          "cardLast4": "4242"
+        }
+      },
+      "expect": {
+        "status": 201,
+        "body": {
+          "ticketNumber": "T-1001",
+          "amount": {
+            "currencyType": "USD",
+            "currencyValue": 1.5
+          }
+        }
+      }
+    },
+    {
+      "name": "Paid in full; the gate can open",
+      "narration": "The lane now shows nothing owed. The ticket's history is on the ticket itself: the merchant's validation and the agent's stated amount.",
+      "request": {
+        "method": "GET",
+        "path": "/v1/lanes/b2…0002/current",
+        "token": "console-lakeside"
+      },
+      "expect": {
+        "status": 200,
+        "body": {
+          "currentTicket": {
+            "ticketNumber": "T-1001",
+            "amountDue": {
+              "currencyType": "USD",
+              "currencyValue": 0
+            },
+            "paidInFull": true,
+            "negotiatedAmount": {
+              "agent": "agent:t.vance"
+            },
+            "validations": [
+              {
+                "validationId": "{validationId}"
+              }
+            ]
+          }
+        }
+      }
+    },
+    {
+      "name": "Audit: the command record says who and why",
+      "narration": "Weeks later, in a dispute or a revenue review, the command is still there: the agent, the reason, the requesting organisation, and every state change with its time and actor.",
+      "request": {
+        "method": "GET",
+        "path": "/v1/commands/{cmd}",
+        "token": "console-lakeside"
+      },
+      "expect": {
+        "status": 200,
+        "body": {
+          "commandType": "pushNegotiatedRate",
+          "agent": "agent:t.vance",
+          "agentType": "human",
+          "reason": "driver held 20 minutes at exit lane 2 behind a stalled vehicle; goodwill per site policy",
+          "status": "succeeded",
+          "result": {
+            "amountDue": {
+              "currencyType": "USD",
+              "currencyValue": 1.5
+            }
+          }
+        }
+      }
+    },
+    {
+      "name": "Audit: the validation ledger says who validated",
+      "narration": "The operator's back office finds the bistro's validation by ticket number: the program, the channel, the device that applied it, the actual amount, and the validationId that ties it to the APDS Payment. This is the line the bistro's monthly statement bills from.",
+      "request": {
+        "method": "GET",
+        "path": "/v1/validations/redemptions?ticket=T-1001"
+      },
+      "expect": {
+        "status": 200,
+        "body": {
+          "meta": {
+            "total": 1
+          },
+          "data": [
+            {
+              "id": "{redemption}",
+              "program": {
+                "id": "{program}"
+              },
+              "ticketNumber": "T-1001",
+              "channel": "merchantApp",
+              "appliedBy": "hb-ipad-foh",
+              "validationId": "{validationId}",
+              "amountReduced": {
+                "currencyType": "USD",
+                "currencyValue": 6
+              },
+              "redemptionStatus": "applied"
+            }
+          ]
+        }
+      }
+    }
+  ]
+}

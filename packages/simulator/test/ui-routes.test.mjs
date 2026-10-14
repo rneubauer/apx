@@ -95,3 +95,43 @@ test('the HTTP server serves the UI and nothing outside it', async () => {
     server.close();
   }
 });
+
+test('a request step reports each assertion with expected and actual', async () => {
+  await call('POST', '/sim/reset', { world: 'apx-control' });
+  await call('POST', '/sim/inject', { kind: 'vehicleArrives', lane: 'b2…0002', ticketNumber: 'T-1001', plate: 'SYN-1234' });
+  const step = {
+    request: { method: 'GET', path: '/v1/lanes/b2…0002/current' },
+    expect: { status: 200, body: { currentTicket: { ticketNumber: 'T-1001', paidInFull: true } } },
+  };
+  const r = await call('POST', '/sim/scenario/step', { step });
+  assert.equal(r.ok, false);
+  assert.match(r.error, /body mismatch/);
+  assert.deepEqual(r.checks.map((c) => [c.check, c.path ?? null, c.ok]), [
+    ['status', null, true],
+    ['body', 'currentTicket.ticketNumber', true],
+    ['body', 'currentTicket.paidInFull', false],
+  ]);
+  assert.equal(r.checks[2].actual, false);
+  assert.equal(r.checks[2].expected, true);
+});
+
+test('a failed status still reports the problem check alongside it', async () => {
+  const step = { request: { method: 'POST', path: '/v1/commands', token: '<apx.data:read only>', body: { commandType: 'vendGate', target: { id: 'b2…0002', className: 'VehicularAccess' } } }, expect: { status: 202, problem: 'insufficient-scope' } };
+  const r = await call('POST', '/sim/scenario/step', { step });
+  assert.equal(r.ok, false);
+  const status = r.checks.find((c) => c.check === 'status');
+  assert.equal(status.ok, false);
+  assert.equal(status.actual, 403);
+  assert.deepEqual(r.checks.find((c) => c.check === 'problem'), { check: 'problem', expected: 'insufficient-scope', actual: 'insufficient-scope', ok: true });
+});
+
+test('an events step reports its count bound as a check', async () => {
+  const r = await call('POST', '/sim/scenario/step', { step: { events: { min: 0, exactly: 100000 } } });
+  const [min, exactly] = r.checks;
+  assert.equal(min.bound, 'min');
+  assert.equal(min.ok, true);
+  assert.equal(exactly.bound, 'exactly');
+  assert.equal(exactly.ok, false);
+  assert.equal(exactly.actual, r.eventCount);
+  assert.match(r.error, /expected exactly 100000/);
+});

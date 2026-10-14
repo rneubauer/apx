@@ -264,6 +264,7 @@ pre.json.tree { padding-left: calc(12px + 1.6ch); }
 .timeline .tl.current { background: var(--accent-soft); box-shadow: inset 3px 0 0 var(--accent); color: var(--text); }
 .timeline .tl .n { color: var(--muted); font-family: var(--mono); width: 22px; flex: none; text-align: right; padding-top: 1px; }
 .stage { display: flex; flex-direction: column; gap: 14px; min-width: 0; }
+.stage-intro { display: flex; flex-direction: column; gap: 10px; }
 .stage-head { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
 .stage-title { font-size: var(--fs-2xl); font-weight: 700; line-height: 1.2; }
 .narration { font-size: var(--fs-lg); line-height: 1.55; max-width: 900px; margin: 0; }
@@ -286,6 +287,56 @@ pre.json.tree { padding-left: calc(12px + 1.6ch); }
 .scenario-card .t { font-weight: 700; font-size: 15px; line-height: 1.3; }
 .scenario-card .d { color: var(--muted); font-size: var(--fs-sm); display: -webkit-box; -webkit-line-clamp: 3; -webkit-box-orient: vertical; overflow: hidden; }
 .scenario-card .m { font-size: var(--fs-xs); color: var(--muted); font-family: var(--mono); }
+
+/* Expected vs actual: one row per assertion a step makes. */
+.mark-warn { display: inline-flex; align-items: center; justify-content: center; width: 18px; height: 18px; border-radius: 50%; font-size: 11px; font-weight: 700; line-height: 1; flex: none; background: var(--warn-soft); color: var(--warn); }
+.checks-box { border: 1px solid var(--border); border-radius: var(--radius-sm); background: var(--panel-2); padding: var(--sp-2) var(--sp-3); }
+.checks-title { display: flex; align-items: center; gap: var(--sp-2); font-size: var(--fs-xs); font-weight: 600; color: var(--muted); text-transform: uppercase; letter-spacing: .4px; margin-bottom: var(--sp-1); }
+.checks-title .verdict-ok, .checks-title .verdict-bad { text-transform: none; letter-spacing: 0; }
+.checks { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 2px; }
+.check { display: flex; align-items: baseline; gap: var(--sp-2); flex-wrap: wrap; padding: 3px 6px; border-radius: 4px; font-family: var(--mono); font-size: 13px; }
+.check > [role="img"], .check > .mark-none { align-self: center; }
+.check .want { overflow-wrap: anywhere; min-width: 0; }
+.check.pending .want { color: var(--text); }
+.check.bad { background: var(--bad-soft); }
+.check.bad .want { color: var(--text); }
+.check .got { color: var(--bad); overflow-wrap: anywhere; min-width: 0; }
+.check .got b { font-weight: 700; }
+.check .got.allowed { color: var(--warn); font-family: var(--sans); font-size: var(--fs-xs); }
+
+/* ---------- presenter mode ----------
+   F in Present: the app chrome goes, the stage takes the screen, and type is
+   sized for a shared screen at 1280-1920 px. Toggled by .presenting on <html>. */
+.presenting .topbar { display: none; }
+.presenting main { padding: 0 clamp(16px, 3vw, 56px) var(--sp-5); max-width: 1680px; }
+.present.presenter { display: flex; flex-direction: column; align-items: stretch; gap: var(--sp-4); }
+.pbar { position: sticky; top: 0; z-index: 10; background: var(--bg); padding-top: var(--sp-3); }
+.pbar-row { display: flex; align-items: center; gap: var(--sp-3); flex-wrap: wrap; padding-bottom: var(--sp-2); }
+.pbar .logo { font-size: var(--fs-sm); }
+.pbar-name { color: var(--muted); font-weight: 600; font-size: var(--fs-md); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; min-width: 0; max-width: 60vw; }
+.pbar-clock { color: var(--muted); font-family: var(--mono); font-size: var(--fs-sm); font-variant-numeric: tabular-nums; }
+.pbar-nav { display: inline-flex; align-items: center; gap: var(--sp-1); }
+.pbar-count { font-family: var(--mono); font-size: var(--fs-md); font-weight: 600; color: var(--muted); font-variant-numeric: tabular-nums; min-width: 5ch; text-align: center; }
+.pbar .ghost { opacity: .7; }
+.pbar .ghost:hover:not(:disabled), .pbar .ghost:focus-visible { opacity: 1; }
+.pbar-progress { height: 3px; }
+.presenter .stage { gap: var(--sp-4); }
+.presenter .stage-intro { padding: var(--sp-4) clamp(16px, 2.5vw, 40px) var(--sp-5); gap: var(--sp-3); }
+.presenter .stage-title { font-size: clamp(30px, 3.1vw, 54px); line-height: 1.15; letter-spacing: -.01em; }
+.presenter .narration { font-size: clamp(19px, 1.65vw, 29px); line-height: 1.5; max-width: 70ch; }
+.presenter .stage-head { font-size: var(--fs-md); }
+.presenter .call { font-size: clamp(17px, 1.4vw, 24px); }
+.presenter .actor { font-size: var(--fs-md); padding: 3px 12px; }
+.presenter .panel-head b { font-size: var(--fs-lg); }
+.presenter .big-status { font-size: clamp(18px, 1.4vw, 24px); }
+.presenter .status { font-size: 16px; }
+.presenter pre.json { font-size: clamp(13px, .95vw, 16px); max-height: 46vh; }
+.presenter .check { font-size: clamp(14px, 1.05vw, 18px); padding: 4px 8px; }
+.presenter .checks-title { font-size: var(--fs-sm); }
+.presenter .event-type, .presenter .ev .mono { font-size: clamp(13px, .95vw, 16px); }
+.presenter .finished { font-size: var(--fs-lg); }
+.p-col { display: flex; flex-direction: column; gap: var(--sp-4); min-width: 0; }
+.p-exchange { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 520px), 1fr)); gap: var(--sp-4); align-items: start; }
 
 /* ---------- explore ---------- */
 .explore { display: flex; flex-direction: column; gap: var(--sp-3); }

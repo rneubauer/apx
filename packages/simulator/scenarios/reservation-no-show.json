@@ -1,0 +1,480 @@
+{
+  "name": "Reservation no-show: the clock runs out, and subscribers are told",
+  "description": "ParkAhead books two evening reservations at Lakeside Garage. One driver arrives and the PARCS checks the reservation in with the session it opens. The other never comes: when the simulated clock passes the server-set noShowAfter instant, the reservation lapses to noShow on its own, apx.reservation.noshow.v1 goes out, and ParkAhead's webhook receives it. When that driver turns up late, the expired reservation cannot be linked to his session.",
+  "world": "apx-reservations",
+  "token": "default",
+  "steps": [
+    {
+      "name": "Lakeside Garage, 18:00 on a Thursday",
+      "narration": "ParkAhead, a reservation platform, sells spaces at Lakeside Garage. It books over APDS's native assigned-rights route; APX adds the reservation lifecycle on top. The simulated clock is frozen at 18:00 and moves only when a step moves it.",
+      "clock": {
+        "now": "2026-09-24T18:00:00Z"
+      }
+    },
+    {
+      "name": "ParkAhead subscribes to no-show events",
+      "narration": "A webhook subscription for the no-show topic and the native AssignedRight updates. The server returns the signing secret once, at creation; every delivery after this is signed with it.",
+      "request": {
+        "method": "POST",
+        "path": "/webhooks",
+        "token": "<apx.subscriptions:manage apx.reservations:manage apx.data:read>",
+        "headers": {
+          "Prefer": "return=representation",
+          "Idempotency-Key": "parkahead-sub-noshow-1"
+        },
+        "body": {
+          "endpoint": "https://hooks.parkahead.example/apx/reservations",
+          "topics": [
+            "apx.reservation.noshow.v1",
+            "AssignedRightUpdated"
+          ],
+          "transport": "webhook"
+        }
+      },
+      "expect": {
+        "status": 201,
+        "body": {
+          "endpoint": "https://hooks.parkahead.example/apx/reservations",
+          "transport": "webhook",
+          "status": "active"
+        }
+      },
+      "save": {
+        "sub": "$.id"
+      }
+    },
+    {
+      "name": "Theo books 19:00 to 22:00",
+      "narration": "A native APDS AssignedRight with his plate on file, a planned use, and the APX reservation extension in state confirmed. A plain APDS client sees an ordinary assigned right.",
+      "request": {
+        "method": "POST",
+        "path": "/rights/assigned",
+        "body": {
+          "id": "e2…0201",
+          "version": 1,
+          "rightSpecification": {
+            "id": "e1…0001",
+            "version": 1,
+            "className": "RightSpecification"
+          },
+          "rightHolder": {
+            "credentials": [
+              {
+                "type": "licensePlate",
+                "credentialAssignedType": "vehicle",
+                "identifier": {
+                  "id": "SYN-7701",
+                  "className": "USNumberPlate"
+                }
+              }
+            ]
+          },
+          "issueMethod": "electronic",
+          "issuanceTime": "2026-09-24T18:00:00Z",
+          "plannedUses": [
+            {
+              "startTime": "2026-09-24T19:00:00Z",
+              "endTime": "2026-09-24T22:00:00Z"
+            }
+          ],
+          "extensions": {
+            "apds-ext:apx:reservation@1.0": {
+              "reservationState": "confirmed",
+              "plannedStart": "2026-09-24T19:00:00Z",
+              "plannedEnd": "2026-09-24T22:00:00Z"
+            }
+          }
+        }
+      },
+      "expect": {
+        "status": 201,
+        "body": {
+          "status": "ok",
+          "ids": [
+            "e2000000-0000-4000-8000-000000000201"
+          ]
+        }
+      }
+    },
+    {
+      "name": "Priya books the same window",
+      "request": {
+        "method": "POST",
+        "path": "/rights/assigned",
+        "body": {
+          "id": "e2…0202",
+          "version": 1,
+          "rightSpecification": {
+            "id": "e1…0001",
+            "version": 1,
+            "className": "RightSpecification"
+          },
+          "rightHolder": {
+            "credentials": [
+              {
+                "type": "licensePlate",
+                "credentialAssignedType": "vehicle",
+                "identifier": {
+                  "id": "SYN-1234",
+                  "className": "USNumberPlate"
+                }
+              }
+            ]
+          },
+          "issueMethod": "electronic",
+          "issuanceTime": "2026-09-24T18:00:00Z",
+          "plannedUses": [
+            {
+              "startTime": "2026-09-24T19:00:00Z",
+              "endTime": "2026-09-24T22:00:00Z"
+            }
+          ],
+          "extensions": {
+            "apds-ext:apx:reservation@1.0": {
+              "reservationState": "confirmed",
+              "plannedStart": "2026-09-24T19:00:00Z",
+              "plannedEnd": "2026-09-24T22:00:00Z"
+            }
+          }
+        }
+      },
+      "expect": {
+        "status": 201,
+        "body": {
+          "status": "ok",
+          "ids": [
+            "e2000000-0000-4000-8000-000000000202"
+          ]
+        }
+      }
+    },
+    {
+      "name": "The lapse instant is visible from the start",
+      "narration": "The server stamps noShowAfter on the reservation: planned start plus the garage's sixty-minute grace period. Nobody has to guess when a reservation will lapse; it is on the record from the moment it is booked.",
+      "request": {
+        "method": "GET",
+        "path": "/rights/assigned/e2…0201"
+      },
+      "expect": {
+        "status": 200,
+        "body": {
+          "extensions": {
+            "apds-ext:apx:reservation@1.0": {
+              "reservationState": "confirmed",
+              "plannedStart": "2026-09-24T19:00:00Z",
+              "noShowAfter": "2026-09-24T20:00:00Z"
+            }
+          }
+        }
+      }
+    },
+    {
+      "name": "19:12: Priya arrives and the PARCS opens her session",
+      "narration": "The entry camera reads SYN-1234 and the PARCS creates the native Session, with a segment that references her assigned right. No APX call is needed: the reference itself checks the reservation in.",
+      "clock": {
+        "now": "2026-09-24T19:12:00Z"
+      },
+      "request": {
+        "method": "POST",
+        "path": "/sessions",
+        "token": "lakeside-parcs",
+        "body": {
+          "id": "f1…0301",
+          "version": 1,
+          "actualStart": "2026-09-24T19:12:00Z",
+          "hierarchyElement": {
+            "id": "b1…0001",
+            "version": 3,
+            "className": "Place"
+          },
+          "identifiedCredentials": [
+            {
+              "type": "licensePlate",
+              "credentialAssignedType": "vehicle",
+              "identifier": {
+                "id": "SYN-1234",
+                "className": "USNumberPlate"
+              }
+            }
+          ],
+          "segments": [
+            {
+              "id": "f3…0301",
+              "version": 1,
+              "actualStart": "2026-09-24T19:12:00Z",
+              "assignedRight": {
+                "id": "e2…0202",
+                "version": 1,
+                "className": "AssignedRight"
+              },
+              "validationType": [
+                "licensePlate"
+              ]
+            }
+          ]
+        }
+      },
+      "expect": {
+        "status": 201,
+        "body": {
+          "status": "ok",
+          "ids": [
+            "f1000000-0000-4000-8000-000000000301"
+          ]
+        }
+      }
+    },
+    {
+      "name": "Priya's reservation is checked in",
+      "narration": "The reservation moves to checkedIn and names the session that consumed it. It will never lapse: the no-show timer applies only before check-in.",
+      "request": {
+        "method": "GET",
+        "path": "/rights/assigned/e2…0202"
+      },
+      "expect": {
+        "status": 200,
+        "body": {
+          "extensions": {
+            "apds-ext:apx:reservation@1.0": {
+              "reservationState": "checkedIn",
+              "checkInSession": {
+                "id": "f1000000-0000-4000-8000-000000000301",
+                "className": "Session"
+              }
+            }
+          }
+        }
+      }
+    },
+    {
+      "name": "19:59: Theo has not come",
+      "narration": "One minute before the lapse instant his reservation is still confirmed. Nothing has happened yet because nothing is due yet.",
+      "clock": {
+        "now": "2026-09-24T19:59:00Z"
+      },
+      "events": {
+        "type": "apx.reservation.noshow.v1",
+        "exactly": 0
+      }
+    },
+    {
+      "name": "20:00: the clock passes noShowAfter",
+      "narration": "No request is made. The server's own timer fires at the stamped instant, moves the reservation to noShow, and publishes apx.reservation.noshow.v1 with a ReservationSummary as its data.",
+      "clock": {
+        "advance": "PT1M"
+      },
+      "request": {
+        "method": "GET",
+        "path": "/sim/events?type=apx.reservation.noshow.v1"
+      },
+      "expect": {
+        "status": 200,
+        "body": {
+          "count": 1,
+          "events": [
+            {
+              "type": "apx.reservation.noshow.v1",
+              "time": "2026-09-24T20:00:00Z",
+              "subject": {
+                "id": "e2000000-0000-4000-8000-000000000201",
+                "className": "AssignedRight"
+              },
+              "data": {
+                "reservation": {
+                  "id": "e2000000-0000-4000-8000-000000000201",
+                  "className": "AssignedRight"
+                },
+                "reservationState": "noShow",
+                "noShowAfter": "2026-09-24T20:00:00Z"
+              }
+            }
+          ]
+        }
+      },
+      "save": {
+        "evt": "$.events.0.id"
+      }
+    },
+    {
+      "name": "The record says so too",
+      "narration": "A plain APDS read shows the same thing: state noShow, and the planned use now carries an expiryTime equal to the lapse instant.",
+      "request": {
+        "method": "GET",
+        "path": "/rights/assigned/e2…0201"
+      },
+      "expect": {
+        "status": 200,
+        "body": {
+          "plannedUses": [
+            {
+              "startTime": "2026-09-24T19:00:00Z",
+              "expiryTime": "2026-09-24T20:00:00Z"
+            }
+          ],
+          "extensions": {
+            "apds-ext:apx:reservation@1.0": {
+              "reservationState": "noShow",
+              "noShowAfter": "2026-09-24T20:00:00Z"
+            }
+          }
+        }
+      }
+    },
+    {
+      "name": "ParkAhead's webhook received it",
+      "narration": "The delivery ledger for ParkAhead's subscription shows the no-show event delivered on the first attempt. ParkAhead can release the space or charge its no-show fee without polling.",
+      "request": {
+        "method": "GET",
+        "path": "/webhooks/{sub}/deliveries?eventId={evt}",
+        "token": "<apx.subscriptions:manage apx.reservations:manage apx.data:read>"
+      },
+      "expect": {
+        "status": 200,
+        "body": {
+          "data": [
+            {
+              "eventId": "{evt}",
+              "status": "delivered",
+              "attempts": 1,
+              "lastCode": 200
+            }
+          ]
+        }
+      }
+    },
+    {
+      "name": "20:25: Theo turns up late",
+      "narration": "He takes ticket T-0924-2025 at the entry lane. The PARCS issues the lane's drive-up right for the ticket and opens an ordinary session on it, with his plate read alongside.",
+      "clock": {
+        "now": "2026-09-24T20:25:00Z"
+      },
+      "inject": {
+        "kind": "dataWrite",
+        "collection": "assignedRights",
+        "op": "create",
+        "record": {
+          "id": "e2…0203",
+          "version": 1,
+          "rightSpecification": {
+            "id": "e1…0009",
+            "version": 1,
+            "className": "RightSpecification"
+          },
+          "rightHolder": {
+            "credentials": [
+              {
+                "type": "ticket",
+                "credentialAssignedType": "other",
+                "identifier": {
+                  "id": "T-0924-2025",
+                  "className": "Ticket"
+                }
+              }
+            ]
+          },
+          "issueMethod": "ticket",
+          "issuanceTime": "2026-09-24T20:25:00Z"
+        }
+      },
+      "request": {
+        "method": "POST",
+        "path": "/sessions",
+        "token": "lakeside-parcs",
+        "body": {
+          "id": "f1…0302",
+          "version": 1,
+          "actualStart": "2026-09-24T20:25:00Z",
+          "hierarchyElement": {
+            "id": "b1…0001",
+            "version": 3,
+            "className": "Place"
+          },
+          "identifiedCredentials": [
+            {
+              "type": "ticket",
+              "credentialAssignedType": "other",
+              "identifier": {
+                "id": "T-0924-2025",
+                "className": "Ticket"
+              }
+            },
+            {
+              "type": "licensePlate",
+              "credentialAssignedType": "vehicle",
+              "identifier": {
+                "id": "SYN-7701",
+                "className": "USNumberPlate"
+              }
+            }
+          ],
+          "segments": [
+            {
+              "id": "f3…0302",
+              "version": 1,
+              "actualStart": "2026-09-24T20:25:00Z",
+              "assignedRight": {
+                "id": "e2…0203",
+                "version": 1,
+                "className": "AssignedRight"
+              },
+              "validationType": [
+                "ticket"
+              ]
+            }
+          ]
+        }
+      },
+      "expect": {
+        "status": 201,
+        "body": {
+          "status": "ok",
+          "ids": [
+            "f1000000-0000-4000-8000-000000000302"
+          ]
+        }
+      }
+    },
+    {
+      "name": "The expired reservation cannot be linked",
+      "narration": "The agent tries to attach Theo's reservation to his session. The server refuses with right-not-linkable and says why: the reservation is noShow and its planned use has expired. The rule is the same for every client.",
+      "request": {
+        "method": "PUT",
+        "path": "/v1/sessions/f1…0302/assigned-right",
+        "body": {
+          "assignedRight": {
+            "id": "e2…0201",
+            "className": "AssignedRight"
+          },
+          "reason": "customer arrived 20:25 with the confirmation email"
+        }
+      },
+      "expect": {
+        "status": 409,
+        "problem": "right-not-linkable"
+      }
+    },
+    {
+      "name": "The evening at a glance",
+      "narration": "ParkAhead's support screen looks up Theo's plate and sees one reservation, noShow, with the instant it lapsed. Priya's went the other way and is checkedIn against her session. The same rules produced both outcomes: one by an arrival, one by the clock.",
+      "request": {
+        "method": "GET",
+        "path": "/v1/reservations/recent?plate=SYN-7701"
+      },
+      "expect": {
+        "status": 200,
+        "body": {
+          "data": [
+            {
+              "reservation": {
+                "id": "e2000000-0000-4000-8000-000000000201",
+                "className": "AssignedRight"
+              },
+              "reservationState": "noShow",
+              "noShowAfter": "2026-09-24T20:00:00Z"
+            }
+          ]
+        }
+      }
+    }
+  ]
+}

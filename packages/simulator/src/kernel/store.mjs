@@ -71,6 +71,7 @@ export class Collection {
     }
     this.rows.set(id, stored);
     this.logChange(id, stored.version, now, false);
+    this.store.changed(this.name, id);
     return stored;
   }
 
@@ -87,12 +88,14 @@ export class Collection {
     }
     this.rows.set(id, stored);
     if (bump) this.logChange(id, stored.version, now, false);
+    this.store.changed(this.name, id);
     return stored;
   }
 
   /** Store a record verbatim (seeding, god mode). */
   put(record) {
     this.rows.set(record.id, record);
+    this.store.changed(this.name, record.id);
     return record;
   }
 
@@ -101,6 +104,7 @@ export class Collection {
     if (!current) return null;
     this.rows.delete(id);
     this.logChange(id, current.version, this.store.clock.now(), true);
+    this.store.changed(this.name, id);
     return current;
   }
 
@@ -126,6 +130,23 @@ export class Store {
     this.changeSeq = 0;
     this.idempotency = new Map();
     this.counters = new Map();
+    this.listeners = new Set(); // observers of any change (the UI's live stream); none in replay
+  }
+
+  /** Observe every change: fn(collection, id), or fn(null, null) when the store is reset. */
+  onChange(fn) {
+    this.listeners.add(fn);
+    return () => this.listeners.delete(fn);
+  }
+
+  changed(collection, id) {
+    for (const l of this.listeners) {
+      try {
+        l(collection, id);
+      } catch (e) {
+        console.error(`[sim store] change listener threw: ${e.stack ?? e}`);
+      }
+    }
   }
 
   collection(name) {
@@ -157,6 +178,7 @@ export class Store {
     this.changeSeq = 0;
     this.idempotency.clear();
     this.counters.clear();
+    this.changed(null, null);
   }
 
   snapshot() {

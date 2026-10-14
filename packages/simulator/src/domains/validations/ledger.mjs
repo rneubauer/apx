@@ -162,6 +162,9 @@ export function createLedger(sim) {
     );
   }
 
+  /** One entry of the Part 6 lane view's currentTicket.validations[]. */
+  const laneEntry = (rec, program) => ({ provider: program.provider, ...(program.name ? { providerName: program.name } : {}), ...(program.validationType ? { validationType: program.validationType } : {}), validationId: rec.validationId, amountReduced: rec.amountReduced, appliedTime: rec.appliedTime });
+
   /** The Part 6 lane view: currentTicket.validations[] and amountDue. */
   function applyToLane(lane, rec, program, delta) {
     if (!lane?.current) return;
@@ -170,12 +173,26 @@ export function createLedger(sim) {
       (l) => {
         const due = l.current.amountDue ? money(l.current.amountDue.currencyValue + delta, l.current.amountDue.currencyType) : undefined;
         const validations = delta < 0
-          ? [...(l.current.validations ?? []), { provider: program.provider, ...(program.name ? { providerName: program.name } : {}), ...(program.validationType ? { validationType: program.validationType } : {}), validationId: rec.validationId, amountReduced: rec.amountReduced, appliedTime: rec.appliedTime }]
+          ? [...(l.current.validations ?? []), laneEntry(rec, program)]
           : (l.current.validations ?? []).filter((v) => v.validationId !== rec.validationId);
         return { ...l, current: { ...l.current, ...(due ? { amountDue: due, paidInFull: due.currencyValue === 0 } : {}), validations } };
       },
       { bump: false }
     );
+  }
+
+  /**
+   * A vehicle reaching a lane carries the redemptions already applied to its
+   * ticket (§20.3: the lane's currentTicket.validations[] reflects them). The
+   * amount due already includes them, from the session.
+   */
+  function syncLaneOnArrival(lane) {
+    const ticket = lane?.current;
+    if (!ticket || ticket.validations?.length) return;
+    const applied = redemptions().find((r) => r.redemptionStatus === 'applied' && sameTicket(r, ticket.session?.id, ticket.ticketNumber));
+    if (!applied.length) return;
+    const validations = applied.map((r) => laneEntry(r, programs().get(r._program) ?? {}));
+    sim.control.lanes().update(lane.id, (l) => ({ ...l, current: { ...l.current, validations } }), { bump: false });
   }
 
   function publish(rec) {
@@ -303,5 +320,5 @@ export function createLedger(sim) {
     return rec;
   }
 
-  return { redeem, reverse, fromCommand, instrumentView, instrumentStatus, publish, rateTableOf };
+  return { redeem, reverse, fromCommand, syncLaneOnArrival, instrumentView, instrumentStatus, publish, rateTableOf };
 }

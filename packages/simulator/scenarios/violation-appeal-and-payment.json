@@ -1,0 +1,290 @@
+{
+  "name": "Violation notice: issued, appealed, reduced, paid",
+  "description": "A pay-by-plate stay in Lakeside's Lot C runs past its end. The LPR van's read becomes a violation with its evidence, a $35 notice is mailed under the Lot C enforcement policy, and a second case resting on a lenient plate match is refused. The motorist appeals, the reviewer reduces the notice to the $18 parking fee, the motorist pays, and the notice ends paid, with each lifecycle event published.",
+  "world": "apx-violations",
+  "token": "default",
+  "steps": [
+    {
+      "name": "Lot C, 24 September, 09:31",
+      "narration": "Lakeside's Lot C is pay-by-plate. SYN-4471 paid until 09:05; the lot allows 15 minutes' grace. The enforcement policy for Lot C is on file over APX: notices by mail within 14 days, with at least one plate read, one image and a position, and a cap of twice the unpaid parking fee.",
+      "clock": {
+        "now": "2026-09-24T09:31:05Z"
+      }
+    },
+    {
+      "name": "The LPR van records an overstay",
+      "narration": "The van's 09:31 read is already an Observation. The pipeline records the violation with that read, the plate image and the location. The server runs the eligibility check itself and stores it on the record: the session expired, grace elapsed, not entitled.",
+      "request": {
+        "method": "POST",
+        "path": "/v1/violations",
+        "headers": {
+          "Idempotency-Key": "lprvan-07-20260924-093104-SYN-4471"
+        },
+        "body": {
+          "violationType": "expiredRight",
+          "place": { "id": "b1…0004", "className": "Place" },
+          "detection": {
+            "mode": "automated",
+            "detectedTime": "2026-09-24T09:31:04Z",
+            "detector": { "id": "b2…0031", "className": "SupplementalEquipment" },
+            "principal": "lpr-pipeline-lot-c",
+            "confidence": 0.94,
+            "rule": "paybyplate-expiry-15m"
+          },
+          "vehicle": { "credentialType": "licensePlate", "credentialIdentification": "SYN-4471", "jurisdiction": "US-IL" },
+          "observations": [{ "id": "f2…0041", "className": "Observation" }],
+          "evidence": [
+            {
+              "imageLink": "https://api.lakeside-garage.example/lpr/f2000000-0041.jpg",
+              "imageType": "plate",
+              "capturedTime": "2026-09-24T09:31:04Z",
+              "device": { "id": "b2…0031", "className": "SupplementalEquipment" }
+            }
+          ],
+          "location": {
+            "observedLocation": { "type": "Point", "coordinates": [-87.6209, 41.8831] },
+            "observerLocation": { "type": "Point", "coordinates": [-87.6212, 41.8829] },
+            "accuracyMetres": 2.5
+          }
+        }
+      },
+      "expect": {
+        "status": 201,
+        "body": {
+          "violationType": "expiredRight",
+          "violationStatus": "detected",
+          "eligibilityCheck": {
+            "entitled": false,
+            "basis": [{ "session": { "id": "f1…0044" }, "rightType": "payByPlate", "status": "expired" }],
+            "suggestedViolationType": "expiredRight",
+            "graceUntil": "2026-09-24T09:20:00Z"
+          },
+          "relatedSession": { "id": "f1…0044", "className": "Session" }
+        }
+      },
+      "save": {
+        "vio": "$.id"
+      }
+    },
+    {
+      "name": "The detection is published",
+      "narration": "Subscribers (the back office, an appeals portal) receive the new Violation as an event at once.",
+      "events": {
+        "type": "apx.violations.detected.v1",
+        "exactly": 1
+      }
+    },
+    {
+      "name": "A $35 notice is mailed",
+      "narration": "The policy permits unreviewed automated issuance at confidence 0.9 or above, so the pipeline issues directly. The server checks the request against the policy in force when the car was seen, then freezes onto the notice the policy version, the sign that was posted, the unpaid fee ($18) and the resulting cap ($36).",
+      "request": {
+        "method": "POST",
+        "path": "/v1/violations/{vio}/issue",
+        "headers": {
+          "Idempotency-Key": "lprvan-07-issue-SYN-4471"
+        },
+        "body": {
+          "noticeKind": "notice",
+          "amount": { "currencyType": "USD", "currencyValue": 35.0 },
+          "dueTime": "2026-10-24T23:59:59Z",
+          "deliveryMethod": "mail"
+        }
+      },
+      "expect": {
+        "status": 200,
+        "body": {
+          "violationStatus": "issued",
+          "policy": { "id": "d4…0001", "version": 1, "className": "EnforcementPolicy" },
+          "signage": [{ "id": "d5…0001", "version": 1, "className": "Signage" }],
+          "notice": { "noticeKind": "notice", "deliveryMethod": "mail" },
+          "amount": { "currencyType": "USD", "currencyValue": 35 },
+          "unpaidAmount": { "currencyType": "USD", "currencyValue": 18 },
+          "capAmount": { "currencyType": "USD", "currencyValue": 36 },
+          "amountHistory": [{ "reason": "issued" }]
+        }
+      },
+      "save": {
+        "notice": "$.notice.noticeNumber"
+      }
+    },
+    {
+      "name": "The issuance is published",
+      "events": {
+        "type": "apx.violations.issued.v1",
+        "exactly": 1
+      }
+    },
+    {
+      "name": "Next morning: a case the server will not issue",
+      "narration": "Another Lot C case, SYN-5528, was linked to a paid session only by a lenient plate match, one character apart. Edition 0.14.0 says lenient or unapplied match evidence may excuse a stay but never accuse one, so the server refuses the notice (Part 19 §19.4 rule 5).",
+      "clock": {
+        "now": "2026-09-25T11:10:00Z"
+      },
+      "request": {
+        "method": "POST",
+        "path": "/v1/violations/d3…0030/issue",
+        "headers": {
+          "Idempotency-Key": "lprvan-07-issue-SYN-5528"
+        },
+        "body": {
+          "noticeKind": "notice",
+          "amount": { "currencyType": "USD", "currencyValue": 35.0 },
+          "deliveryMethod": "mail"
+        }
+      },
+      "expect": {
+        "status": 409,
+        "problem": "violation-not-issuable"
+      }
+    },
+    {
+      "name": "The motorist finds the notice by its number",
+      "narration": "Two days later the letter arrives. The appeals portal looks the case up by the notice number printed on it.",
+      "clock": {
+        "now": "2026-09-26T16:05:00Z"
+      },
+      "request": {
+        "method": "GET",
+        "path": "/v1/violations?noticeNumber={notice}"
+      },
+      "expect": {
+        "status": 200,
+        "body": {
+          "meta": { "total": 1 },
+          "data": [{ "id": "{vio}", "violationStatus": "issued", "vehicle": { "credentialIdentification": "SYN-4471" } }]
+        }
+      }
+    },
+    {
+      "name": "The motorist appeals",
+      "narration": "Inside the 21-day appeal window, the motorist says the app showed an extension that never charged, and uploads a screenshot. The notice moves to appealed and the escalation clock pauses; the upload is held as untrusted until scanned.",
+      "request": {
+        "method": "POST",
+        "path": "/v1/violations/{vio}/appeals",
+        "headers": {
+          "Idempotency-Key": "portal-appeal-SYN-4471"
+        },
+        "body": {
+          "reason": "paymentFailed",
+          "detail": "The app showed my extension to 10:00 at 09:02 but never charged my card.",
+          "appellant": { "id": "c1…0044", "className": "Contact" },
+          "evidenceLinks": ["https://appeals.lakeside-garage.example/uploads/9c21-extension.png"]
+        }
+      },
+      "expect": {
+        "status": 200,
+        "body": {
+          "violationStatus": "appealed",
+          "appeal": { "reason": "paymentFailed", "openedFrom": "issued" },
+          "amount": { "currencyValue": 35 }
+        }
+      }
+    },
+    {
+      "name": "The reviewer reduces the notice to the parking fee",
+      "narration": "The app log confirms an attempted extension. The reviewer waives the penalty and keeps the $18 parking fee that was never paid. The amount change is recorded with its reason, and the notice returns to issued.",
+      "clock": {
+        "now": "2026-09-29T10:00:00Z"
+      },
+      "request": {
+        "method": "POST",
+        "path": "/v1/violations/{vio}/appeals/resolve",
+        "headers": {
+          "Idempotency-Key": "review-0212-resolve-SYN-4471"
+        },
+        "body": {
+          "resolution": "reduced",
+          "adjustedAmount": { "currencyType": "USD", "currencyValue": 18.0 },
+          "note": "App log shows a failed extension at 09:02. Penalty waived; unpaid parking fee stands."
+        }
+      },
+      "expect": {
+        "status": 200,
+        "body": {
+          "violationStatus": "issued",
+          "amount": { "currencyType": "USD", "currencyValue": 18 },
+          "appeal": { "resolution": "reduced" },
+          "amountHistory": [{ "reason": "issued" }, { "reason": "appealReduced", "amount": { "currencyValue": 18 } }]
+        }
+      }
+    },
+    {
+      "name": "The motorist pays $18",
+      "narration": "The money moves through the ordinary payment flow (Part 13); the portal then attaches the PaymentRecord to the violation. The amount paid covers the amount owed, so the notice is paid.",
+      "clock": {
+        "now": "2026-09-29T18:20:00Z"
+      },
+      "request": {
+        "method": "POST",
+        "path": "/v1/violations/{vio}/payment",
+        "headers": {
+          "Idempotency-Key": "portal-pay-SYN-4471"
+        },
+        "body": {
+          "payment": { "id": "d9…0011", "className": "PaymentRecord" },
+          "note": "portal card payment, reference {notice}"
+        }
+      },
+      "expect": {
+        "status": 200,
+        "body": {
+          "violationStatus": "paid",
+          "amountPaid": { "currencyType": "USD", "currencyValue": 18 },
+          "payment": { "id": "d9…0011", "className": "PaymentRecord" }
+        }
+      }
+    },
+    {
+      "name": "Every change of state was published",
+      "narration": "Appealed, back to issued at the reduced amount, and paid: three status events, each carrying the Violation as it stood.",
+      "events": {
+        "type": "apx.violations.status.v1",
+        "exactly": 3
+      }
+    },
+    {
+      "name": "One appeal per notice",
+      "narration": "The case has had its appeal. A second one is refused with the reason, so the outcome is final and both sides know it.",
+      "request": {
+        "method": "POST",
+        "path": "/v1/violations/{vio}/appeals",
+        "headers": {
+          "Idempotency-Key": "portal-appeal-2-SYN-4471"
+        },
+        "body": {
+          "reason": "paidUnderProtest",
+          "detail": "I would still like the $18 back."
+        }
+      },
+      "expect": {
+        "status": 409,
+        "problem": "appeal-closed"
+      }
+    },
+    {
+      "name": "The record tells the whole story",
+      "narration": "One read gives the full history: who moved the case, when, and why, with every amount it has carried. An auditor or a court sees the same record the operator does.",
+      "request": {
+        "method": "GET",
+        "path": "/v1/violations/{vio}"
+      },
+      "expect": {
+        "status": 200,
+        "body": {
+          "violationStatus": "paid",
+          "statusHistory": [
+            { "state": "detected" },
+            { "state": "issued" },
+            { "state": "appealed" },
+            { "state": "issued" },
+            { "state": "paid" }
+          ],
+          "amountHistory": [
+            { "amount": { "currencyValue": 35 }, "reason": "issued" },
+            { "amount": { "currencyValue": 18 }, "reason": "appealReduced" }
+          ]
+        }
+      }
+    }
+  ]
+}

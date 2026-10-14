@@ -41,8 +41,16 @@ curl -s -X POST http://127.0.0.1:4100/oauth/token -d 'grant_type=client_credenti
 
 - **Present** walks an audience through a scenario one step at a time:
   the step's title and narration, who acts and what they send, the
-  server's answer, and the events the step published. Arrow keys or Space
-  advance, R restarts from the scenario's world.
+  server's answer, and the events the step published. Next to the answer,
+  an "Expected vs actual" checklist shows each assertion the step makes
+  (status, problem type, each field of the partial body, event counts) with
+  a pass mark, or the value that actually came back when it failed. Arrow
+  keys or Space advance, R restarts from the scenario's world. F (or the
+  Presenter mode button) goes full screen for a talk or a screen share:
+  the app header and step list are hidden, the title and narration are set
+  large, the request sits beside the answer, and a small step counter and
+  progress bar stay at the top. The same keys work there; Esc or F leaves.
+  If the browser refuses full screen, the mode still hides the chrome.
 - **Build** creates and edits scenarios: requests (with expected status,
   problem type, partial body, and values saved for later steps), world
   events with worked examples, clock steps, and event checks. Steps run
@@ -58,12 +66,20 @@ The header carries the APX edition the simulator serves, the world
 picker, the clock with its state (frozen, live under `--realtime`,
 running while a step runs, offline if the server stops answering), and
 a theme button: Auto follows the OS, or pin Light (often better on a
-projector) or Dark. JSON blocks are formatted and tinted; click the line
+projector) or Dark. The page follows the simulator live over
+`GET /sim/stream`, a simulator-internal `text/event-stream` of small
+change notices (`clock`, `reset`, `event`, `delivery`, `request`,
+`store`; a heartbeat comment every 15 s) that is separate from the APX
+SSE subscription transport, so the clock, outbox, log and state update
+the moment anything changes them, from this page or any other client; if
+the stream is unavailable it falls back to polling `GET /sim` every 2 s. JSON blocks are formatted and tinted; click the line
 that opens an object or array to fold it, and use Copy or Expand at the
 block's top right. The UI is plain HTML, CSS and JavaScript with no external
 assets, so it works offline. Browser zoom (Ctrl/Cmd and +) scales it
 for the back of a room; above 1800 px wide it already sets larger type.
-`scenarios/exit-lane-help-call.json` is a narrated demo to start from.
+`scenarios/` holds seven narrated demos; [DEMO.md](DEMO.md) is the runbook for showing
+them on a call (checks to run first, which demos for which slot, talking
+points, and what to do if a step fails).
 
 To show it to people on other machines, bind to the network with
 `--host 0.0.0.0` and share the address. Anyone who can reach the port

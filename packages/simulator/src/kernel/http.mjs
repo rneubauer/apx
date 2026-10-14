@@ -18,6 +18,7 @@ import { authenticate, encodeToken, Principal } from './auth.mjs';
 import { requireGrant, requireGrantForPlaces } from './places.mjs';
 import { hashBody } from './store.mjs';
 import { simApi } from './sim-api.mjs';
+import { notifyLive } from './live.mjs';
 
 const JSON_CT = 'application/json';
 const PROBLEM_CT = 'application/problem+json';
@@ -266,6 +267,7 @@ export async function dispatch(sim, request) {
   }
   sim.log.push({ time: started, method, path, status: result.status });
   if (sim.log.length > 2000) sim.log.shift();
+  notifyLive(sim, 'request');
   return result;
 }
 
@@ -312,7 +314,9 @@ export function createHttpServer(sim) {
     };
     if (out.stream) {
       res.writeHead(out.status, { ...headers, 'content-type': 'text/event-stream', 'cache-control': 'no-cache', connection: 'keep-alive' });
-      out.stream({ write: (s) => res.write(s), end: () => res.end(), onClose: (fn) => req.on('close', fn) });
+      // The response's 'close' marks the client going away; the request's has already fired once its body was read.
+      // A client that left while the request was dispatched has already closed: clean up at once.
+      out.stream({ write: (s) => res.write(s), end: () => res.end(), onClose: (fn) => (res.destroyed ? queueMicrotask(fn) : res.once('close', fn)) });
       return;
     }
     const payload = out.body === undefined ? undefined : typeof out.body === 'string' ? out.body : JSON.stringify(out.body, null, 2);

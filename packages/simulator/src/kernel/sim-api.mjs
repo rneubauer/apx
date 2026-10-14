@@ -19,12 +19,14 @@
  *   GET  /sim/log                      recent requests
  *   GET  /sim/contract                 responses that failed the bundle's own schema
  *   GET  /sim/ops                      every operation and whether it is implemented
+ *   GET  /sim/stream                   text/event-stream of change notices for the UI (live.mjs)
  *   /sim/scenarios, /sim/scenario/*, /sim/injectors/catalog   see sim-scenarios.mjs
  */
 import { OPS, EDITION } from './spec.mjs';
 import { encodeToken } from './auth.mjs';
 import { listWorlds, loadWorld } from './world.mjs';
 import { scenarioApi, injectorCatalog, topics } from './sim-scenarios.mjs';
+import { liveStream } from './live.mjs';
 
 const json = (status, body, headers = {}) => ({ status, headers: { 'content-type': 'application/json', ...headers }, body });
 const bad = (detail) => json(400, { error: 'bad_request', detail });
@@ -174,6 +176,9 @@ export async function simApi(sim, { method, path, query, body: raw }) {
       });
     case 'hierarchy':
       return json(200, { nodes: sim.hierarchy.all() });
+    case 'stream':
+      if (method !== 'GET') return bad('GET');
+      return liveStream(sim);
     default:
       return json(404, { error: 'not_found', detail: `no sim route ${path}` });
   }
