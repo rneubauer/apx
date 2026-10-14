@@ -1,0 +1,78 @@
+{
+  "extends": "base-lakeside",
+  "name": "apx-plate-lists",
+  "description": "Part 24 plate lists at Lakeside Garage and Harbor Deck: Lakeside Parking's watch list (e7…0001) and its service-and-exempt allow list (e7…0003), the City of Lakeside's scofflaw list (e7…0002, refuses service at Lakeside, alerts at both) and its enforcement fleet (e7…0004). Credentials: the Lakeside back office (default), the city's parking authority, a read-only edge LPR vendor that keeps a local copy, and Lakeside's LPR system on entry lane 1.",
+  "conformanceClasses": ["apx-data", "apx-events", "apx-events-sse", "apx-control", "apx-alerts", "apx-discovery", "apx-accounts", "apx-payment-history", "apx-lpr", "apx-reservations", "apx-permits", "apx-tolling", "apx-resolution", "apx-violations", "apx-validations", "apx-credentials", "apx-valet", "apx-plate-lists"],
+  "organisations": [
+    { "id": "a3…0001", "name": "City of Lakeside Parking Authority" },
+    { "id": "a3…0002", "name": "Northgate Vision (edge LPR)" }
+  ],
+  "lanes": [
+    { "id": "b2…0001", "placeId": "b1…0001", "name": "entry lane 1", "accessType": "entry" },
+    { "id": "b2…0002", "placeId": "b1…0002", "name": "Harbor entry", "accessType": "entry" }
+  ],
+  "credentials": {
+    "default": { "scopes": ["apx.platelists:read", "apx.platelists:manage", "apx.alerts:read", "apx.subscriptions:manage", "apx.lpr:read", "apx.data:read"], "apx_org": { "id": "a1…0001", "className": "Organisation" }, "apx_places": ["b1…0001"], "user": "backoffice-mreyes" },
+    "city-parking-authority": { "scopes": ["apx.platelists:read", "apx.platelists:manage", "apx.subscriptions:manage"], "apx_org": { "id": "a3…0001", "className": "Organisation" }, "apx_places": ["b1…0001", "b1…0002"], "user": "city-scofflaw-loader" },
+    "edge-lpr-vendor": { "scopes": ["apx.platelists:read", "apx.subscriptions:manage"], "apx_org": { "id": "a3…0002", "className": "Organisation" }, "apx_places": ["b1…0001"], "user": "northgate-edge-01" },
+    "harbor-plate-desk": { "scopes": ["apx.platelists:read", "apx.platelists:manage"], "apx_org": { "id": "a1…0002", "className": "Organisation" }, "apx_places": ["b1…0002"] }
+  },
+  "plateLists": [
+    {
+      "id": "e7…0001",
+      "name": "Lakeside watch list",
+      "category": "watch",
+      "owner": { "id": "a1…0001", "className": "Organisation" },
+      "status": "active",
+      "description": "Plates Lakeside security wants to know about on arrival.",
+      "places": [{ "place": { "id": "b1…0001", "className": "Place" }, "enforced": true, "alertOnArrival": true }],
+      "entries": [
+        { "id": "e8…0101", "credential": { "credentialType": "licensePlate", "credentialIdentification": "WTC4471", "jurisdiction": "IL" }, "details": { "reference": "SEC-2026-118", "note": "Damage dispute; call the duty manager." }, "vehicle": { "description": "Grey pickup" } },
+        { "id": "e8…0102", "credential": { "credentialType": "licensePlate", "credentialIdentification": "LKS0920", "jurisdiction": "IL" }, "validity": { "end": "2026-12-31T23:59:59Z" }, "details": { "reference": "SEC-2026-131" } }
+      ]
+    },
+    {
+      "id": "e7…0002",
+      "name": "City of Lakeside scofflaw list",
+      "category": "scofflaw",
+      "owner": { "id": "a3…0001", "className": "Organisation" },
+      "status": "active",
+      "description": "Plates with three or more unpaid city citations. Entries are retained 90 days after removal.",
+      "places": [
+        { "place": { "id": "b1…0001", "className": "Place" }, "enforced": true, "alertOnArrival": true, "refuseService": true },
+        { "place": { "id": "b1…0002", "className": "Place" }, "enforced": true, "alertOnArrival": true }
+      ],
+      "entries": [
+        { "id": "e8…0201", "credential": { "credentialType": "licensePlate", "credentialIdentification": "BRT7781", "jurisdiction": "IL" }, "details": { "amountOwed": { "currencyType": "USD", "currencyValue": 340 }, "noticeCount": 5, "reference": "CITY-SC-40211" } },
+        { "id": "e8…0202", "credential": { "credentialType": "licensePlate", "credentialIdentification": "MNQ3305", "jurisdiction": "IL" }, "details": { "amountOwed": { "currencyType": "USD", "currencyValue": 185 }, "noticeCount": 3, "reference": "CITY-SC-40377" } },
+        { "id": "e8…0203", "credential": { "credentialType": "licensePlate", "credentialIdentification": "PLX6102", "jurisdiction": "WI" }, "details": { "amountOwed": { "currencyType": "USD", "currencyValue": 220 }, "noticeCount": 4, "reference": "CITY-SC-40398" } }
+      ]
+    },
+    {
+      "id": "e7…0003",
+      "name": "Service and exempt vehicles",
+      "category": "allow",
+      "owner": { "id": "a1…0001", "className": "Organisation" },
+      "status": "active",
+      "description": "Vendors and contractors who park without a right of their own.",
+      "places": [{ "place": { "id": "b1…0001", "className": "Place" }, "enforced": true }],
+      "entries": [
+        { "id": "e8…0301", "credential": { "credentialType": "licensePlate", "credentialIdentification": "ELV2200", "jurisdiction": "IL" }, "details": { "note": "Elevator maintenance contractor" } },
+        { "id": "e8…0302", "credential": { "credentialType": "licensePlate", "credentialIdentification": "FDS9014", "jurisdiction": "IL" }, "validity": { "start": "2026-09-01T00:00:00Z", "end": "2026-11-30T23:59:59Z" }, "details": { "note": "Food-service delivery, autumn contract" } }
+      ]
+    },
+    {
+      "id": "e7…0004",
+      "name": "City enforcement fleet",
+      "category": "enforcementVehicle",
+      "owner": { "id": "a3…0001", "className": "Organisation" },
+      "status": "active",
+      "description": "City enforcement and service vehicles: visits recorded, never enforced.",
+      "places": [{ "place": { "id": "b1…0001", "className": "Place" } }, { "place": { "id": "b1…0002", "className": "Place" } }],
+      "entries": [
+        { "id": "e8…0401", "credential": { "credentialType": "licensePlate", "credentialIdentification": "CITY1042", "jurisdiction": "IL" }, "vehicle": { "description": "White compact, city decals" } },
+        { "id": "e8…0402", "credential": { "credentialType": "licensePlate", "credentialIdentification": "CITY1077", "jurisdiction": "IL" }, "vehicle": { "description": "Enforcement scooter" } }
+      ]
+    }
+  ]
+}

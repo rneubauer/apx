@@ -9,7 +9,7 @@ Standards / ISO TS 5206-1). One API that PARCS, LPR, tolling, permitting, and
 reservations vendors implement — adding what APDS deliberately leaves out,
 while reusing everything it defines.
 
-**New here?** Read the [executive summary](docs/executive-summary.md) (shareable, non-technical), the [complete API overview](docs/apx-overview.md) (every route + the reasoning, no APDS knowledge needed), the [sample scenarios](docs/scenarios/README.md) (real wire exchanges, story first), or the [quickstart](docs/quickstart.md). **PARCS vendor?** Start with the [PARCS Starter Profile](docs/parcs-starter-profile.md) — the minimum 26-endpoint surface, with a slim importable spec (`spec/dist/apx-parcs.json`).
+**New here?** Read the [executive summary](docs/executive-summary.md) (shareable, non-technical), the [complete API overview](docs/apx-overview.md) (every route + the reasoning, no APDS knowledge needed), the [sample scenarios](docs/scenarios/README.md) (real wire exchanges, story first), or the [quickstart](docs/quickstart.md). **Want to see it run?** Open the [simulator](https://rneubauer.github.io/apx/simulator/) in your browser — every APX route, narrated demos, and the full vetting suite, nothing to install ([about the simulator](packages/simulator/README.md)). **PARCS vendor?** Start with the [PARCS Starter Profile](docs/parcs-starter-profile.md) — the minimum 26-endpoint surface, with a slim importable spec (`spec/dist/apx-parcs.json`).
 
 ## Prime directive: APDS-first
 
@@ -50,6 +50,7 @@ Extension identity follows the official APDS convention (Use Case §C.2.5):
 | `docs/standard/` | The written standard (normative, RFC 2119) |
 | `docs/scenarios/` | End-to-end sample scenarios with spec-validated wire payloads |
 | `tools/` | Spec tooling — lint/bundle configs, vendor integrity check, registry + example + scenario validators |
+| `packages/simulator/` | The APX simulator (non-normative) — a stateful server for every route in the bundle, with a browser UI, narrated demos, and the vetting suite; see [its README](packages/simulator/README.md) and the [demo runbook](packages/simulator/DEMO.md) |
 
 ## Development
 
@@ -62,6 +63,8 @@ npm run spec:style     # Spectral APX conventions (bundled artifact)
 npm test               # all of the above + registry, profile, and example validation
 npm run mock           # Prism mock server on :4010 — schema-valid fake responses
 npm run docs:build     # assemble the documentation site into site/
+npm run sim            # the APX simulator with its UI on http://127.0.0.1:4100
+npm run sim:web        # build the in-browser simulator into site/simulator/
 ```
 
 Requires Node 20+. No Docker, no native modules.
@@ -74,7 +77,9 @@ profile, and `/apx-standard.md` the whole written standard compiled into one
 document. Served alongside them: the bundles at `/apx-v1.yaml`,
 `/apx-v1.json`, and `/apx-parcs.json`, the code-list registries under
 `/registries/`, and `/edition.json`, which pins by checksum exactly what
-this edition comprises.
+this edition comprises. `/simulator/` is the
+[simulator](https://rneubauer.github.io/apx/simulator/), running entirely
+in the browser: each visitor gets their own copy, and a reload starts over.
 CI validates every push and PR; pull requests are additionally gated by an
 oasdiff breaking-change check against the base branch's bundle.
 
@@ -88,8 +93,9 @@ Version history: [CHANGELOG.md](CHANGELOG.md).
 **v0.14.0 — complete v1 draft, vetted.** All domains specified: data profile,
 delivery fabric, control, alerts, discovery, accounts & payments, LPR,
 reservations, permits, tolling, customer service & resolution, violations
-(enforcement), validation programs, credential lifecycle, valet. This repository contains the specification
-and written standard only — implementations live elsewhere.
+(enforcement), validation programs, credential lifecycle, valet. This repository contains the specification,
+the written standard, and a non-normative simulator for trying them out;
+production implementations live elsewhere.
 
 ## License
 

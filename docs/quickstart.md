@@ -15,6 +15,26 @@ from the documentation site, so a viewer can load one straight from
 `main`: the landing page at <https://rneubauer.github.io/apx/>, the full
 reference at `/reference.html`, and the PARCS profile at `/parcs.html`.
 
+## Watch it run in the simulator (no install)
+
+Open <https://rneubauer.github.io/apx/simulator/>. The simulator answers
+every APX route statefully, in your browser: pick a world (a garage,
+permits, LPR, events, …), then walk through a narrated demo or any case of
+the vetting suite in **Present**, script your own in **Build**, or send any
+request as any credential in **Explore**. Nothing leaves the page, and a
+reload starts over.
+
+To run it locally (so curl, Postman, or your own client can call it):
+
+```powershell
+npm run sim     # http://127.0.0.1:4100 — UI at /, API at /v1/…
+```
+
+[`packages/simulator/README.md`](../packages/simulator/README.md) covers
+tokens, the simulated clock, worlds, and scripting;
+[`DEMO.md`](../packages/simulator/DEMO.md) is the runbook for showing it on
+a call.
+
 ## Try it against a mock server
 
 ```powershell

@@ -1,0 +1,168 @@
+{
+  "name": "Plate lists: a watch list, a scofflaw list, and an edge camera that keeps up",
+  "description": "Lakeside Garage starts a watch list for concert night, adds a plate twice without creating a duplicate, and turns on arrival alerts. The city's scofflaw list changes and an edge LPR vendor catches up by cursor, removal included. Refusals show the grant and scope rules, and a listed car arriving raises the alert. Part 24.",
+  "world": "apx-plate-lists",
+  "token": "default",
+  "steps": [
+    {
+      "name": "The lists that apply at Lakeside",
+      "narration": "A plate list is kept by someone other than the driver: a city's scofflaw list, an operator's watch list, the vendors allowed to park, the city's own enforcement cars. Each list says, place by place, what a match means: enforced, alert on arrival, refuse service (§24.1 rule 2). Lakeside's back office sees four lists. Two belong to Lakeside, and two belong to the city but apply here (§24.1 rule 3).",
+      "request": { "method": "GET", "path": "/v1/plate-lists" },
+      "expect": {
+        "status": 200,
+        "body": {
+          "meta": { "total": 4 },
+          "data": [
+            { "name": "Lakeside watch list", "category": "watch", "places": [{ "enforced": true, "alertOnArrival": true }], "entryCount": 2 },
+            { "name": "City of Lakeside scofflaw list", "category": "scofflaw", "places": [{ "refuseService": true }, { "alertOnArrival": true }], "entryCount": 3 }
+          ]
+        }
+      }
+    },
+    {
+      "name": "Lakeside creates a concert-night watch list",
+      "narration": "The back office creates a watch list for tonight's concert. It applies at Lakeside Garage, but alerts are off for now. The list belongs to the organisation that created it (§24.1 rule 3), and the server publishes apx.platelists.changed.v1 (§24.3 rule 2).",
+      "request": {
+        "method": "POST",
+        "path": "/v1/plate-lists",
+        "headers": { "Idempotency-Key": "concert-watch-create" },
+        "body": {
+          "name": "Concert-night watch list",
+          "category": "watch",
+          "status": "active",
+          "places": [{ "place": { "id": "b1…0001", "className": "Place" }, "enforced": true, "alertOnArrival": false }]
+        }
+      },
+      "expect": { "status": 201, "body": { "version": 1, "owner": { "id": "a1…0001" }, "entryCount": 0 } },
+      "save": { "list": "$.id" },
+      "events": { "type": "apx.platelists.changed.v1", "exactly": 1 }
+    },
+    {
+      "name": "A plate goes on the list",
+      "narration": "An entry is one plate with its state, an optional validity window and the owner's reason (§24.2 rules 1 and 3). The reason here is a case reference and a note. No personal data goes beyond the plate itself.",
+      "request": {
+        "method": "POST",
+        "path": "/v1/plate-lists/{list}/entries",
+        "body": {
+          "credential": { "credentialType": "licensePlate", "credentialIdentification": "KTR2210", "jurisdiction": "IL" },
+          "validity": { "start": "2026-09-24T17:00:00Z", "end": "2026-09-25T06:00:00Z" },
+          "details": { "reference": "SEC-2026-140", "note": "Ticket reseller banned from the venue" }
+        }
+      },
+      "expect": { "status": 201, "body": { "version": 1, "credential": { "credentialIdentification": "KTR2210" } } },
+      "save": { "entry": "$.id" }
+    },
+    {
+      "name": "The same plate again updates, it does not duplicate",
+      "narration": "The security desk's spreadsheet is loaded a second time with a new note. The plate is already on the list for an overlapping time, so the server updates that entry and returns 200 with the same id, now version 2 (§24.2 rule 2). Loading the same file every night is safe.",
+      "request": {
+        "method": "POST",
+        "path": "/v1/plate-lists/{list}/entries",
+        "body": {
+          "credential": { "credentialType": "licensePlate", "credentialIdentification": "KTR2210", "jurisdiction": "IL" },
+          "validity": { "start": "2026-09-24T17:00:00Z", "end": "2026-09-25T06:00:00Z" },
+          "details": { "reference": "SEC-2026-140", "note": "Ticket reseller; notify the venue duty manager" }
+        }
+      },
+      "expect": { "status": 200, "body": { "id": "{entry}", "version": 2, "details": { "note": "Ticket reseller; notify the venue duty manager" } } }
+    },
+    {
+      "name": "Turning alerts on: the per-place flags",
+      "narration": "Doors open, so the back office turns on alertOnArrival at Lakeside. A list update replaces the whole policy and names the version it last read in If-Match, so two editors cannot overwrite each other (§24.1 rule 5). Entries are not part of this body. The list keeps its one entry.",
+      "request": {
+        "method": "PUT",
+        "path": "/v1/plate-lists/{list}",
+        "headers": { "If-Match": "\"1\"" },
+        "body": {
+          "name": "Concert-night watch list",
+          "category": "watch",
+          "status": "active",
+          "places": [{ "place": { "id": "b1…0001", "className": "Place" }, "enforced": true, "alertOnArrival": true }]
+        }
+      },
+      "expect": { "status": 200, "body": { "version": 2, "places": [{ "alertOnArrival": true }], "entryCount": 1 } }
+    },
+    {
+      "name": "Refused: a list at a place outside the grant",
+      "narration": "Lakeside's token is granted Lakeside Garage only. A list that names Harbor Deck is refused: every place a writer names must be inside its grant (§24.1 rule 3).",
+      "request": {
+        "method": "POST",
+        "path": "/v1/plate-lists",
+        "body": { "name": "Harbor watch", "category": "watch", "status": "active", "places": [{ "place": { "id": "b1…0002", "className": "Place" }, "alertOnArrival": true }] }
+      },
+      "expect": { "status": 403, "problem": "insufficient-grant" }
+    },
+    {
+      "name": "The edge LPR vendor takes its place in the feed",
+      "narration": "Northgate Vision runs cameras at the edge and keeps a local copy of the city's scofflaw list, so screening keeps working if the link drops. It has read access only. It first asks for the change feed with no cursor and gets an empty page holding the current head cursor (§24.3 rule 1, Part 5 §5.2 rule 8).",
+      "request": { "method": "GET", "path": "/v1/plate-lists/e7…0002/entries?mode=change", "token": "edge-lpr-vendor" },
+      "expect": { "status": 200, "body": { "updateMode": "change", "data": [], "next": null } },
+      "save": { "cursor": "$.cursor" }
+    },
+    {
+      "name": "Then it loads the whole list",
+      "narration": "With the cursor saved, the vendor loads the full list: three plates, each with what the city records about it. If a change lands between the two calls, the vendor sees it twice but never misses it.",
+      "request": { "method": "GET", "path": "/v1/plate-lists/e7…0002/entries", "token": "edge-lpr-vendor" },
+      "expect": { "status": 200, "body": { "meta": { "total": 3 }, "data": [{ "credential": { "credentialIdentification": "BRT7781" }, "details": { "noticeCount": 5 } }] } }
+    },
+    {
+      "name": "Meanwhile, the city adds a plate",
+      "narration": "The city's evening load adds a plate with a third unpaid notice. The list owner decides why a plate is listed and for how long it keeps the record (§24.2 rules 3 and 5).",
+      "request": {
+        "method": "POST",
+        "path": "/v1/plate-lists/e7…0002/entries",
+        "token": "city-parking-authority",
+        "body": {
+          "credential": { "credentialType": "licensePlate", "credentialIdentification": "GHN5528", "jurisdiction": "IL" },
+          "details": { "amountOwed": { "currencyType": "USD", "currencyValue": 150 }, "noticeCount": 3, "reference": "CITY-SC-40452" }
+        }
+      },
+      "expect": { "status": 201, "body": { "list": { "id": "e7…0002" } } },
+      "save": { "added": "$.id" }
+    },
+    {
+      "name": "And removes a plate that paid",
+      "narration": "MNQ3305 paid its fines, so the city removes the entry. A removal is a delete, and the entry feed records a tombstone for it (§24.2 rule 4).",
+      "request": { "method": "DELETE", "path": "/v1/plate-lists/e7…0002/entries/e8…0202", "token": "city-parking-authority" },
+      "expect": { "status": 204 }
+    },
+    {
+      "name": "The edge catches up by cursor",
+      "narration": "On its next sync the vendor follows its cursor. A link outage of hours or days changes nothing, as long as the cursor is used within seven days. It gets the new plate whole and the removed one as a tombstone in deleted[], so it can drop MNQ3305 from its local copy (§24.3 rule 1, Part 5 §5.2 rule 8.5). Nothing was missed, and the vendor saves the new cursor.",
+      "request": { "method": "GET", "path": "/v1/plate-lists/e7…0002/entries?mode=change&cursor={cursor}", "token": "edge-lpr-vendor" },
+      "expect": {
+        "status": 200,
+        "body": {
+          "updateMode": "change",
+          "data": [{ "id": "{added}", "credential": { "credentialIdentification": "GHN5528" } }],
+          "deleted": [{ "id": "e8…0202", "className": "PlateListEntry" }],
+          "next": null
+        }
+      }
+    },
+    {
+      "name": "Refused: a read-only vendor cannot change the list",
+      "narration": "The vendor holds apx.platelists:read but not :manage. When it tries to add a plate, the request is refused. Plate values reach only tokens that hold a plate-list scope (§24.2 rule 5, Part 9 §9.6).",
+      "request": {
+        "method": "POST",
+        "path": "/v1/plate-lists/e7…0002/entries",
+        "token": "edge-lpr-vendor",
+        "body": { "credential": { "credentialType": "licensePlate", "credentialIdentification": "XXX0000" } }
+      },
+      "expect": { "status": 403, "problem": "insufficient-scope" }
+    },
+    {
+      "name": "The listed car arrives",
+      "narration": "At 19:10, entry lane 1's camera reads KTR2210. The concert-night list has alertOnArrival at Lakeside, so a watchListArrival alert is raised. It points at the list entry and carries the read as evidence (§24.4, Part 7 §7.6). How a plate is matched, and whether the gate opens, is up to the operator. APX records only the facts.",
+      "clock": { "now": "2026-09-24T19:10:00Z" },
+      "inject": { "kind": "plateRead", "lane": "b2…0001", "plate": "KTR2210" },
+      "events": { "type": "apx.alert.raised.v1", "exactly": 1 }
+    },
+    {
+      "name": "The alert, as the security desk sees it",
+      "narration": "The alert names the list entry, not the plate. A desk that reads alerts can follow the entry only if it also holds a plate-list scope. The event about list changes carries no plate values either (§24.3 rule 2).",
+      "request": { "method": "GET", "path": "/v1/alerts" },
+      "expect": { "status": 200, "body": { "data": [{ "alertType": "watchListArrival", "relatedEntity": { "id": "{entry}", "className": "PlateListEntry" } }] } }
+    }
+  ]
+}

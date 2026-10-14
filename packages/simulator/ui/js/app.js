@@ -5,7 +5,7 @@
 // when the simulator goes away.
 //
 // The live link is GET /sim/stream (src/kernel/live.mjs), an EventSource of
-// small typed notices: hello, clock, reset, event, delivery, request, store.
+// small typed notices: hello, clock, reset, event, delivery, request, store, traffic.
 // Bursts are coalesced for LIVE_COALESCE_MS, the status is refreshed once,
 // and then a 'sim:change' CustomEvent is dispatched on window with
 // detail { kinds: [...], messages: { kind: data } } so any view can refresh
@@ -15,13 +15,14 @@ import { h, mount, toast, fmtClock, state, on, emit, sim, refreshStatus, refresh
 import { mountBuilder } from './builder.js';
 import { mountPresent } from './present.js';
 import { mountExplore } from './explore.js';
+import { mountFabric } from './fabric.js';
 
 const POLL_MS = 2000;
 const LIVE_COALESCE_MS = 100;
 const LIVE_MAX_ERRORS = 3; // consecutive stream failures before falling back to the poll
 const LIVE_RETRY_MS = 30000; // while polling, how often to try the stream again
-const LIVE_KINDS = ['hello', 'clock', 'reset', 'event', 'delivery', 'request', 'store'];
-const VIEWS = ['present', 'build', 'explore'];
+const LIVE_KINDS = ['hello', 'clock', 'reset', 'event', 'delivery', 'request', 'store', 'traffic'];
+const VIEWS = ['present', 'build', 'explore', 'fabric'];
 const THEMES = ['auto', 'light', 'dark'];
 const THEME_KEY = 'apx-sim-theme';
 let current = 'present';
@@ -277,6 +278,7 @@ async function boot() {
   mountBuilder(document.getElementById('view-build'), { goPresent });
   renderers.present = mountPresent(document.getElementById('view-present'), { isActive: isActive('present') });
   renderers.explore = mountExplore(document.getElementById('view-explore'), { isActive: isActive('explore') });
+  renderers.fabric = mountFabric(document.getElementById('view-fabric'), { isActive: isActive('fabric') });
   document.getElementById('boot').remove();
   show(location.hash.slice(1) || 'present');
   connectLive();

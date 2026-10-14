@@ -82,3 +82,18 @@ test('the in-page event stream says hello and reports a clock change', async () 
   assert.deepEqual(seen.kinds, ['hello', 'clock']);
   assert.ok(seen.data.now);
 });
+
+test('the Fabric view ships, and traffic and the fabric read answer in the page', async () => {
+  assert.match(readFileSync(join(OUT, 'index.html'), 'utf8'), /data-view="fabric"/);
+  assert.match(readFileSync(join(OUT, 'js', 'fabric.js'), 'utf8'), /export function mountFabric/);
+  await post('/sim/reset', { world: 'apx-events' });
+  const on = await post('/sim/traffic', { running: true, ratePerMinute: 60 });
+  assert.equal(on.status, 200);
+  assert.equal(on.body.running, true);
+  await post('/sim/traffic', { running: false });
+  const added = await post('/sim/fabric/subscribers', { transport: 'sse' });
+  assert.equal(added.status, 201);
+  const fabric = await json('/sim/fabric');
+  assert.equal(fabric.status, 200);
+  assert.ok(fabric.body.subscriptions.some((s) => s.id === added.body.subscription && s.sse.simulated.connected));
+});

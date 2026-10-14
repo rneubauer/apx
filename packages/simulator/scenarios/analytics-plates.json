@@ -1,0 +1,374 @@
+{
+  "name": "Analytics: plate reads, repeat visits and privacy",
+  "description": "Riverside Lot is paid by plate, so its plate reads are its visits. An analytics vendor without the LPR scope is kept away from plates; an LPR analyst with apx.lpr:read finds a repeat visitor, counts one vehicle seen by two cameras once, follows the observation change feed, receives a live read by webhook, and sees a purged read disappear from lookups and leave as a tombstone on the feed. Parts 9 (§9.6) and 13 (§13.3–13.4).",
+  "world": "analytics-lakeside",
+  "token": "citypark-lpr",
+  "steps": [
+    {
+      "name": "Riverside Lot, 18:00",
+      "narration": "A gateless surface lot paid by plate. Cameras on the entry and exit lanes post plain APDS Observations, and the platform pairs an entry read with an exit read into a Session. Plate reads are personal data, so APX limits who sees them (Part 9 §9.6).",
+      "clock": {
+        "now": "2026-10-13T23:00:00Z"
+      }
+    },
+    {
+      "name": "No LPR scope, no plates",
+      "narration": "The general BI credential holds apx.data:read but not apx.lpr:read. A plate lookup is refused with 403 insufficient-scope. Plates are served only under the LPR, tolling, violations, accounts and charging scopes (§9.6 rule 1).",
+      "request": {
+        "method": "GET",
+        "path": "/v1/lpr/reads?plate=RVR-2201",
+        "token": "citypark-bi"
+      },
+      "expect": {
+        "status": 403,
+        "problem": "insufficient-scope"
+      }
+    },
+    {
+      "name": "And no plate feed by webhook either",
+      "narration": "A subscription cannot deliver what the credential could not read directly. Subscribing to the observation topic without apx.lpr:read is refused when it is created, and the refusal names the topic and the missing scope (Part 8 §8.1, §9.6 rule 4).",
+      "request": {
+        "method": "POST",
+        "path": "/webhooks",
+        "token": "citypark-bi",
+        "body": {
+          "endpoint": "https://ingest.citypark-analytics.example/apx",
+          "topics": [
+            "apx.data.observation.created.v1"
+          ]
+        }
+      },
+      "expect": {
+        "status": 403,
+        "problem": "insufficient-scope"
+      }
+    },
+    {
+      "name": "Even with the scope, no bulk export",
+      "narration": "The LPR analyst holds apx.lpr:read. The lookup route still needs a key: a plate, ticket, observation or session. A call with none is 400, never a dump of every plate (§13.3).",
+      "request": {
+        "method": "GET",
+        "path": "/v1/lpr/reads"
+      },
+      "expect": {
+        "status": 400,
+        "problem": "invalid-request"
+      }
+    },
+    {
+      "name": "A repeat visitor",
+      "narration": "Plate RVR-2201 has four reads today, newest first: two visits, a morning one and a lunchtime one. Each read carries its lane, camera, access event and the Session it belongs to, so visit counts and dwell times come straight from the reads.",
+      "request": {
+        "method": "GET",
+        "path": "/v1/lpr/reads?plate=RVR-2201"
+      },
+      "expect": {
+        "status": 200,
+        "body": {
+          "meta": {
+            "total": 4
+          },
+          "data": [
+            {
+              "observation": {
+                "id": "f2…0904"
+              },
+              "detail": {
+                "accessEvent": "exit"
+              },
+              "session": {
+                "id": "f1…0903"
+              }
+            },
+            {},
+            {},
+            {
+              "observation": {
+                "id": "f2…0901"
+              },
+              "detail": {
+                "accessEvent": "entry"
+              },
+              "session": {
+                "id": "f1…0901"
+              }
+            }
+          ]
+        }
+      }
+    },
+    {
+      "name": "One vehicle, two reads",
+      "narration": "At 17:10 the entry lane's two cameras both read RVR-4403, rear plate and front plate. They are two Observations with one captureGroup. A consumer counting vehicles collapses reads by captureGroup, so this is one arrival, not two (§13.3a rule 6).",
+      "request": {
+        "method": "GET",
+        "path": "/v1/lpr/reads?session=f1…0907"
+      },
+      "expect": {
+        "status": 200,
+        "body": {
+          "meta": {
+            "total": 2
+          },
+          "data": [
+            {
+              "cameraId": "cam-in-1f",
+              "detail": {
+                "plateFace": "front",
+                "captureGroup": "cam-in-1/20261013T171000/0230"
+              }
+            },
+            {
+              "cameraId": "cam-in-1",
+              "detail": {
+                "plateFace": "rear",
+                "captureGroup": "cam-in-1/20261013T171000/0230"
+              }
+            }
+          ]
+        }
+      }
+    },
+    {
+      "name": "The exactly-once path is the observation feed",
+      "narration": "For a full copy the analyst does not page through lookups. It follows the change feed on the native /observations route from its 17:00 cursor (Part 5 §5.6, Part 13 §13.4). Since then: the two reads of that one arrival.",
+      "request": {
+        "method": "GET",
+        "path": "/observations?mode=change&cursor=o:00100"
+      },
+      "expect": {
+        "status": 200,
+        "body": {
+          "updateMode": "change",
+          "items": [
+            {
+              "id": "f2…0907",
+              "observedCredentialId": "RVR-4403"
+            },
+            {
+              "id": "f2…0908",
+              "observedCredentialId": "RVR-4403"
+            }
+          ],
+          "next": null
+        }
+      },
+      "save": {
+        "head": "$.cursor"
+      }
+    },
+    {
+      "name": "The analyst subscribes for real time",
+      "narration": "With apx.lpr:read the same subscription is accepted. Events wake the analyst up; the feed stays the record of what happened.",
+      "request": {
+        "method": "POST",
+        "path": "/webhooks",
+        "headers": {
+          "Prefer": "return=representation"
+        },
+        "body": {
+          "endpoint": "https://lpr.citypark-analytics.example/apx",
+          "topics": [
+            "apx.data.observation.created.v1"
+          ],
+          "filters": {
+            "places": [
+              "b1…0006"
+            ]
+          }
+        }
+      },
+      "expect": {
+        "status": 201,
+        "body": {
+          "status": "active"
+        }
+      },
+      "save": {
+        "sub": "$.id"
+      }
+    },
+    {
+      "name": "18:04: a new car enters",
+      "narration": "The entry camera's LPR system posts the read on the native APDS route, with the APX decoration saying what the engine saw and that it was an entry.",
+      "clock": {
+        "now": "2026-10-13T23:04:05Z"
+      },
+      "request": {
+        "method": "POST",
+        "path": "/observations",
+        "token": "riverside-lpr-system",
+        "body": {
+          "id": "f2000000-0000-4000-8000-000000000910",
+          "version": 1,
+          "type": "licensePlate",
+          "method": "anpr",
+          "observedCredentialId": "RVR-5504",
+          "observationStartTime": "2026-10-13T23:04:02Z",
+          "creationDateTime": "2026-10-13T23:04:03Z",
+          "elementIds": {
+            "id": "b2000000-0000-4000-8000-000000000060",
+            "version": 2,
+            "className": "VehicularAccess"
+          },
+          "observerOrganisation": {
+            "id": "a1…0001",
+            "version": 1,
+            "className": "Organisation"
+          },
+          "location": {
+            "observerLocation": {
+              "type": "Point",
+              "coordinates": [
+                -87.6188,
+                41.8827
+              ]
+            }
+          },
+          "vehicleAncillaryIdentification": {
+            "country": "US",
+            "stateProvince": "IL"
+          },
+          "confidence": {
+            "overallConfidence": 0.97
+          },
+          "images": [
+            {
+              "id": "img-0910-plate",
+              "imageType": "plate",
+              "imageLink": "https://api.lakeside-garage.example/v1/media/f2000000-0910/plate.jpg",
+              "cameraID": "cam-in-1"
+            }
+          ],
+          "extensions": {
+            "apds-ext:apx:lpr-read@1.0": {
+              "plate": {
+                "value": "RVR-5504",
+                "confidence": 0.97
+              },
+              "stateProvince": {
+                "value": "IL",
+                "confidence": 0.92
+              },
+              "platesRead": 1,
+              "plateFace": "rear",
+              "movement": "away",
+              "frameReads": 7,
+              "accessEvent": "entry",
+              "captureGroup": "cam-in-1/20261013T180402/0244",
+              "engine": "vendor-x/7.2"
+            }
+          }
+        }
+      },
+      "expect": {
+        "status": 201,
+        "body": {
+          "ids": [
+            "f2000000-0000-4000-8000-000000000910"
+          ]
+        }
+      }
+    },
+    {
+      "name": "The analyst hears about it",
+      "narration": "apx.data.observation.created.v1 goes out with the Observation as its data, and the analyst's webhook receives it.",
+      "events": {
+        "type": "apx.data.observation.created.v1",
+        "exactly": 1
+      },
+      "deliveries": {
+        "subscription": "{sub}",
+        "status": "delivered"
+      }
+    },
+    {
+      "name": "The read opened a visit",
+      "narration": "At a pay-by-plate lot the entry read opens a Session, starting at the capture time. The read links to it.",
+      "request": {
+        "method": "GET",
+        "path": "/v1/lpr/reads?observation=f2000000-0000-4000-8000-000000000910"
+      },
+      "expect": {
+        "status": 200,
+        "body": {
+          "data": [
+            {
+              "plate": "RVR-5504",
+              "detail": {
+                "accessEvent": "entry"
+              },
+              "session": {
+                "id": "f1…0910"
+              }
+            }
+          ]
+        }
+      }
+    },
+    {
+      "name": "The feed has it too",
+      "narration": "From the saved cursor the feed returns exactly the new read, whether or not the webhook got through.",
+      "request": {
+        "method": "GET",
+        "path": "/observations?mode=change&cursor={head}"
+      },
+      "expect": {
+        "status": 200,
+        "body": {
+          "items": [
+            {
+              "id": "f2…0910",
+              "observedCredentialId": "RVR-5504"
+            }
+          ],
+          "next": null
+        }
+      },
+      "save": {
+        "head": "$.cursor"
+      }
+    },
+    {
+      "name": "A read reaches its retention period",
+      "narration": "The operator publishes how long it keeps plate reads, here 90 days, and must purge them on schedule (§9.6 rule 3). The simulator fast-forwards one read past that point: this morning's entry of RVR-2201. It disappears from every lookup, so the plate now shows three reads (§13.3b).",
+      "inject": {
+        "kind": "purgeReads",
+        "observation": "f2000000-0000-4000-8000-000000000901"
+      },
+      "request": {
+        "method": "GET",
+        "path": "/v1/lpr/reads?plate=RVR-2201"
+      },
+      "expect": {
+        "status": 200,
+        "body": {
+          "meta": {
+            "total": 3
+          }
+        }
+      }
+    },
+    {
+      "name": "Downstream copies are told to delete it",
+      "narration": "The purge goes out on the change feed as an APDS deletion, so the analyst's copy is purged too (§13.3b rule 2). The retention rule then applies to the copy as well as to the source.",
+      "request": {
+        "method": "GET",
+        "path": "/observations?mode=change&cursor={head}"
+      },
+      "expect": {
+        "status": 200,
+        "body": {
+          "items": [],
+          "deleted": [
+            {
+              "id": "f2…0901",
+              "className": "Observation"
+            }
+          ],
+          "next": null
+        }
+      }
+    }
+  ]
+}

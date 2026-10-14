@@ -1,0 +1,292 @@
+{
+  "name": "Analytics: an outside vendor keeps its warehouse in sync",
+  "description": "CityPark Analytics mirrors Lakeside's parking sessions into its own warehouse. It catches up from the cursor it saved at its last sync, pages through what changed, sees a deletion, picks up a new visit, has its cursor refused when it is used the wrong way, learns that its grant now covers Harbor Deck, and finds that an old cursor has expired. Part 5 §5.2.",
+  "world": "analytics-lakeside",
+  "token": "citypark-bi",
+  "steps": [
+    {
+      "name": "Lakeside, 18:00 on a Tuesday",
+      "narration": "CityPark Analytics is an outside BI vendor with read access to Lakeside Garage and Riverside Lot. It keeps a copy of every parking session in its own warehouse. It last synced at 17:00 and saved the cursor the server gave it then.",
+      "clock": {
+        "now": "2026-10-13T23:00:00Z"
+      }
+    },
+    {
+      "name": "Without a cursor: stock APDS modified_since",
+      "narration": "A client with no cursor uses the native APDS parameter. It takes Unix epoch seconds, not an RFC 3339 time (§5.2 rule 3). The answer is the stock list plus deletedReferences, the APDS tombstones. Five sessions changed since 17:00 and one was deleted.",
+      "request": {
+        "method": "GET",
+        "path": "/sessions?modified_since=1791928800"
+      },
+      "expect": {
+        "status": 200,
+        "body": {
+          "meta": {
+            "total": 5
+          },
+          "deletedReferences": [
+            {
+              "id": "c4…0799",
+              "className": "Session"
+            }
+          ]
+        }
+      }
+    },
+    {
+      "name": "With the saved cursor: the change feed",
+      "narration": "APX adds mode=change and cursor to the same route (§5.2). The page lists the changes in the order they happened, each carrying only the members that changed. A car that left sends just its actualEnd; a new visit arrives whole. The page holds four sessions here, and next says there is more.",
+      "request": {
+        "method": "GET",
+        "path": "/sessions?mode=change&cursor=c:00100"
+      },
+      "expect": {
+        "status": 200,
+        "body": {
+          "updateMode": "change",
+          "items": [
+            {
+              "id": "c4…0801",
+              "version": 2,
+              "actualEnd": "2026-10-13T22:05:00Z"
+            },
+            {
+              "id": "f1…0907",
+              "version": 1,
+              "actualStart": "2026-10-13T22:10:00Z"
+            },
+            {
+              "id": "c4…0702",
+              "version": 2,
+              "actualEnd": "2026-10-13T22:20:00Z"
+            },
+            {
+              "id": "c4…0710",
+              "version": 1,
+              "actualStart": "2026-10-13T22:25:00Z"
+            }
+          ],
+          "cursor": "c:00101"
+        }
+      },
+      "save": {
+        "next": "$.next"
+      }
+    },
+    {
+      "name": "The next page, with a deletion",
+      "narration": "The client follows next. The last change arrives, and a session the operator deleted at 17:40 comes as a tombstone in deleted[], so the warehouse can drop it too (§5.2 rule 4). next is null: the client is up to date.",
+      "request": {
+        "method": "GET",
+        "path": "{next}"
+      },
+      "expect": {
+        "status": 200,
+        "body": {
+          "items": [
+            {
+              "id": "c4…0708",
+              "actualEnd": "2026-10-13T22:35:00Z"
+            }
+          ],
+          "deleted": [
+            {
+              "id": "c4…0799",
+              "className": "Session",
+              "deleteTimestamp": "2026-10-13T22:40:00Z"
+            }
+          ],
+          "cursor": "c:00102",
+          "next": null
+        }
+      },
+      "save": {
+        "head": "$.cursor"
+      }
+    },
+    {
+      "name": "A retry gets the same page",
+      "narration": "Say the vendor's loader crashed before it saved. It asks again with the same cursor and gets the same page with the same cursor back (§5.2 rule 1). Nothing is skipped and nothing is counted twice.",
+      "request": {
+        "method": "GET",
+        "path": "{next}"
+      },
+      "expect": {
+        "status": 200,
+        "body": {
+          "items": [
+            {
+              "id": "c4…0708"
+            }
+          ],
+          "cursor": "c:00102",
+          "next": null
+        }
+      }
+    },
+    {
+      "name": "A car enters at 18:05",
+      "narration": "The PARCS opens a session on the native APDS route. Nothing here is specific to analytics: it is the same write the PARCS makes for every visit.",
+      "clock": {
+        "now": "2026-10-13T23:05:00Z"
+      },
+      "request": {
+        "method": "POST",
+        "path": "/sessions",
+        "token": "lakeside-parcs",
+        "body": {
+          "id": "c4000000-0000-4000-8000-000000000711",
+          "version": 1,
+          "actualStart": "2026-10-13T23:05:00Z",
+          "hierarchyElement": {
+            "id": "b1000000-0000-4000-8000-000000000001",
+            "version": 7,
+            "className": "Place"
+          },
+          "identifiedCredentials": [
+            {
+              "type": "ticket",
+              "credentialAssignedType": "other",
+              "identifier": {
+                "id": "T-7111",
+                "className": "Credential"
+              }
+            }
+          ],
+          "segments": [
+            {
+              "id": "c5000000-0000-4000-8000-000000000711",
+              "version": 1,
+              "actualStart": "2026-10-13T23:05:00Z",
+              "assignedRight": {
+                "id": "e2000000-0000-4000-8000-000000000711",
+                "version": 1,
+                "className": "AssignedRight"
+              },
+              "validationType": [
+                "ticket"
+              ]
+            }
+          ]
+        }
+      },
+      "expect": {
+        "status": 201
+      }
+    },
+    {
+      "name": "Subscribers get a wake-up",
+      "narration": "The server publishes the native APDS SessionCreated event (§5.4). A subscriber that holds a cursor can treat the event as a wake-up and pull, which is the exactly-once path.",
+      "events": {
+        "type": "SessionCreated",
+        "exactly": 1
+      }
+    },
+    {
+      "name": "The next poll picks it up",
+      "narration": "From the saved head cursor the feed returns exactly the new session.",
+      "request": {
+        "method": "GET",
+        "path": "/sessions?mode=change&cursor={head}"
+      },
+      "expect": {
+        "status": 200,
+        "body": {
+          "updateMode": "change",
+          "items": [
+            {
+              "id": "c4…0711",
+              "version": 1,
+              "actualStart": "2026-10-13T23:05:00Z"
+            }
+          ],
+          "next": null
+        }
+      },
+      "save": {
+        "head": "$.cursor"
+      }
+    },
+    {
+      "name": "A cursor belongs to one filter set",
+      "narration": "The cursor was issued for an unfiltered feed. The same cursor with a place filter is refused with 404 target-not-found, always as a Problem, and the client re-syncs that filter set with mode=full (§5.2 rule 5).",
+      "request": {
+        "method": "GET",
+        "path": "/sessions?place=b1000000-0000-4000-8000-000000000001&mode=change&cursor={head}"
+      },
+      "expect": {
+        "status": 404,
+        "problem": "target-not-found"
+      }
+    },
+    {
+      "name": "And to one credential",
+      "narration": "The garage owner's own BI tool has read access to the same garage. A cursor it did not get is still refused: cursors are scoped to the credential they were issued to.",
+      "request": {
+        "method": "GET",
+        "path": "/sessions?mode=change&cursor={head}",
+        "token": "owner-bi"
+      },
+      "expect": {
+        "status": 404,
+        "problem": "target-not-found"
+      }
+    },
+    {
+      "name": "Harbor Deck joins the deal",
+      "narration": "Harbor Parking signs up with CityPark, so the vendor's grant gains Harbor Deck. The cursor does not replay Harbor Deck's history. Instead, the first page after the change names the new subtree in grantAdditions (§5.2 rule 7).",
+      "inject": {
+        "kind": "grant",
+        "credential": "citypark-bi",
+        "add": [
+          "b1000000-0000-4000-8000-000000000002"
+        ]
+      },
+      "request": {
+        "method": "GET",
+        "path": "/sessions?mode=change&cursor={head}"
+      },
+      "expect": {
+        "status": 200,
+        "body": {
+          "updateMode": "change",
+          "items": [],
+          "grantAdditions": [
+            "b1000000-0000-4000-8000-000000000002"
+          ]
+        }
+      }
+    },
+    {
+      "name": "Backfill the new subtree with mode=full",
+      "narration": "The vendor loads Harbor Deck once with a full list, selected with the place filter, and then relies on the feed for it.",
+      "request": {
+        "method": "GET",
+        "path": "/sessions?place=b1000000-0000-4000-8000-000000000002"
+      },
+      "expect": {
+        "status": 200,
+        "body": {
+          "meta": {
+            "total": 2
+          }
+        }
+      }
+    },
+    {
+      "name": "Eight days later: an old cursor has expired",
+      "narration": "The server keeps at least seven days of change history (§5.2 rule 2). A cursor older than that gets 404 target-not-found, and the client starts again with mode=full. That keeps a long outage from passing silently as a gap in the data.",
+      "clock": {
+        "advance": "P8D"
+      },
+      "request": {
+        "method": "GET",
+        "path": "/sessions?mode=change&cursor=c:00100"
+      },
+      "expect": {
+        "status": 404,
+        "problem": "target-not-found"
+      }
+    }
+  ]
+}

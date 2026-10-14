@@ -16,7 +16,7 @@
  */
 import { fail } from '../kernel/problems.mjs';
 import { validateRequestBody, ajvToErrors, fmtErrors } from '../kernel/spec.mjs';
-import { paginate, wire, refOf, getVisible, placeOfTarget, money } from './common.mjs';
+import { paginate, wire, refOf, getVisible, placeOfTarget, money, installChangeFeeds } from './common.mjs';
 import { createLedger, paymentView, isHold } from './accounts/ledger.mjs';
 import { scanBody, scanQuery, isRawContact } from './accounts/pii.mjs';
 
@@ -117,7 +117,7 @@ export default {
 
     // ---------- accounts ----------
 
-    sim.on('get-apx-v1-accounts', (ctx) => {
+    const listAccounts = (ctx) => {
       refuseCardQuery(ctx);
       const places = narrowing(ctx);
       if (!ctx.principal.hasGrant) return paginate(ctx, []);
@@ -128,7 +128,12 @@ export default {
         .filter((a) => !places.length || !a._places?.length || a._places.some((p) => inPlaces(places, p)))
         .sort((x, y) => x.id.localeCompare(y.id));
       return paginate(ctx, rows);
-    });
+    };
+
+    sim.on('get-apx-v1-accounts', listAccounts);
+
+    // §13.1 "lookup in a body": the same keys, rules and answer as the GET; card data is refused before the schema check.
+    sim.on('post-apx-v1-accounts-search', (ctx) => searchAs(ctx, listAccounts), { skipBodyValidation: true });
 
     sim.on('get-apx-v1-accounts-id', (ctx) => wire(visibleAccount(ctx, ctx.params.id)));
 
@@ -162,20 +167,10 @@ export default {
       { skipBodyValidation: true }
     );
 
-    sim.on('get-apx-v1-payments', (ctx) => {
-      refuseCardQuery(ctx);
+    /** Validation and grant checks shared by the lookup, its body form and the feed; returns the narrowing places. */
+    const checkPaymentQuery = (ctx) => {
       const q = (n) => ctx.query.get(n);
-      if (!HISTORY_KEYS.some((k) => ctx.query.has(k))) {
-        const narrowOnly = ctx.query.has('date') || ctx.query.has('place') || ctx.query.has('captureStatus');
-        fail(
-          'invalid-request',
-          narrowOnly
-            ? 'date, place and captureStatus only narrow a keyed query; give ticketLast4, cardLast4, ticketNumber, or account.'
-            : 'GET /v1/payments needs at least one key: ticketLast4, cardLast4, ticketNumber, or account; an unfiltered payment history is not served.',
-          { errors: [{ pointer: '/query', detail: 'no key parameter given' }] }
-        );
-      }
-      const date = isoDate(q('date'), 'date');
+      isoDate(q('date'), 'date');
       const captureStatus = q('captureStatus');
       if (captureStatus !== undefined && !['authorized', 'captured'].includes(captureStatus)) {
         fail('invalid-request', 'captureStatus must be authorized or captured', { errors: [{ pointer: '?captureStatus', detail: 'enum' }] });
@@ -188,28 +183,99 @@ export default {
       if (account && accounts().has(account) && ctx.principal.hasGrant && !accountVisible(ctx.principal, accounts().get(account))) {
         fail('insufficient-grant', `Account ${account} is valid only at places outside the token's apx_places grant.`);
       }
+      return places;
+    };
+
+    /** The key and narrowing filters every payment answer applies (grant, place, ticket, card, account, date). */
+    const paymentMatcher = (ctx, places) => {
+      const q = (n) => ctx.query.get(n);
+      const date = q('date');
+      return (p) =>
+        covered(ctx.principal, p._place) &&
+        (!places.length || inPlaces(places, p._place)) &&
+        (!q('ticketLast4') || String(p.ticketNumber ?? '').endsWith(q('ticketLast4'))) &&
+        (!q('cardLast4') || String(p.cardLast4 ?? '').endsWith(q('cardLast4'))) &&
+        (!q('ticketNumber') || p.ticketNumber === q('ticketNumber')) &&
+        (!q('account') || p.account?.id === q('account')) &&
+        (!date || localDate(p.dateCollected, p._place) === date);
+    };
+
+    const newestFirst = (x, y) => (x.dateCollected < y.dateCollected ? 1 : x.dateCollected > y.dateCollected ? -1 : 0);
+
+    const listPayments = (ctx) => {
+      refuseCardQuery(ctx);
+      if (!HISTORY_KEYS.some((k) => ctx.query.has(k))) {
+        const narrowOnly = ctx.query.has('date') || ctx.query.has('place') || ctx.query.has('captureStatus');
+        fail(
+          'invalid-request',
+          narrowOnly
+            ? 'date, place and captureStatus only narrow a keyed query; give ticketLast4, cardLast4, ticketNumber, or account.'
+            : 'GET /v1/payments needs at least one key: ticketLast4, cardLast4, ticketNumber, or account; an unfiltered payment history is not served.',
+          { errors: [{ pointer: '/query', detail: 'no key parameter given' }] }
+        );
+      }
+      const places = checkPaymentQuery(ctx);
       if (!ctx.principal.hasGrant) return paginate(ctx, []);
-      const truncatedOnly = (ctx.query.has('ticketLast4') || ctx.query.has('cardLast4')) && !ctx.query.has('ticketNumber') && !account;
-      const windowStart = truncatedOnly && !date ? ctx.clock.nowMs() - WINDOW_MS : null;
+      const captureStatus = ctx.query.get('captureStatus');
+      const truncatedOnly = (ctx.query.has('ticketLast4') || ctx.query.has('cardLast4')) && !ctx.query.has('ticketNumber') && !ctx.query.has('account');
+      const windowStart = truncatedOnly && !ctx.query.has('date') ? ctx.clock.nowMs() - WINDOW_MS : null;
+      const matches = paymentMatcher(ctx, places);
       const rows = payments()
         .find((p) => {
-          if (!covered(ctx.principal, p._place)) return false;
-          if (places.length && !inPlaces(places, p._place)) return false;
-          if (q('ticketLast4') && !String(p.ticketNumber ?? '').endsWith(q('ticketLast4'))) return false;
-          if (q('cardLast4') && !String(p.cardLast4 ?? '').endsWith(q('cardLast4'))) return false;
-          if (q('ticketNumber') && p.ticketNumber !== q('ticketNumber')) return false;
-          if (account && p.account?.id !== account) return false;
-          if (date && localDate(p.dateCollected, p._place) !== date) return false;
+          if (!matches(p)) return false;
           if (windowStart !== null && Date.parse(p.dateCollected) < windowStart) return false;
           if (captureStatus === 'authorized') return p.captureStatus === 'authorized';
           if (isHold(p) || p.captureStatus === 'authorized') return false;
           if (captureStatus === 'captured' && p.paymentStatus === 'declined') return false;
           return true;
         })
-        .sort((x, y) => (x.dateCollected < y.dateCollected ? 1 : x.dateCollected > y.dateCollected ? -1 : 0))
+        .sort(newestFirst)
         .map(paymentView);
       return paginate(ctx, rows);
-    });
+    };
+
+    sim.on('get-apx-v1-payments', listPayments);
+
+    // §13.2: the same keys rule, 8-hour window, hold and grant rules in a PaymentSearch body.
+    sim.on('post-apx-v1-payments-search', (ctx) => searchAs(ctx, listPayments), { skipBodyValidation: true });
+
+    /**
+     * The payments feed (Part 5 §5.2 rule 8 difference 6): what
+     * apx.accounts.payment.recorded.v1 delivers to the credential, so no
+     * key and no 8-hour window; a hold appears at capture, never before,
+     * and a voided hold never appears. Truncated keys are refused.
+     */
+    const paymentFeed = (ctx) => {
+      refuseCardQuery(ctx);
+      for (const k of ['ticketLast4', 'cardLast4']) {
+        if (ctx.query.has(k)) fail('invalid-request', `${k} is not accepted with mode=change; the feed is never a way round the 8-hour window (Part 13 §13.2).`, { errors: [{ pointer: `?${k}`, detail: 'not allowed with mode=change' }] });
+      }
+      const places = checkPaymentQuery(ctx);
+      if (!ctx.principal.hasGrant) return { data: [] };
+      const captureStatus = ctx.query.get('captureStatus');
+      const matches = paymentMatcher(ctx, places);
+      const published = (p) => p.paymentStatus === 'declined' || (p.paymentStatus === 'approved' && p.captureStatus !== 'authorized') || (p.paymentStatus === 'reversed' && !p._voidedAt);
+      const rows = payments()
+        .find((p) => matches(p) && published(p) && (captureStatus !== 'captured' || p.paymentStatus !== 'declined') && captureStatus !== 'authorized')
+        .sort(newestFirst)
+        .map(paymentView);
+      return { data: rows };
+    };
+    installChangeFeeds(sim, { 'get-apx-v1-payments': { handler: paymentFeed } });
+
+    /** A `:search` body as the GET's query: arrays become comma lists; nothing else changes. */
+    const searchAs = (ctx, list) => {
+      const body = ctx.body ?? {};
+      const params = new URLSearchParams();
+      for (const [k, v] of Object.entries(body)) {
+        if (v === undefined || v === null) continue;
+        params.set(k, Array.isArray(v) ? v.join(',') : String(v));
+      }
+      const query = new ctx.query.constructor(params.toString());
+      refuseCardQuery({ query });
+      validateBody(ctx);
+      return list({ ...ctx, query });
+    };
 
     const localDate = (instant, placeId) => {
       const tz = sim.hierarchy.placeOf(placeId)?.timeZone;

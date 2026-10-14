@@ -1,0 +1,381 @@
+{
+  "name": "Monthly parker: a fob at the gate, in and out, lost and replaced",
+  "description": "Ray Delgado is a monthly parker at Lakeside Garage. The front desk issues him a fob and activates it when he collects it. He badges in and out, the lane refuses a passback, he loses the fob, the desk replaces it in one call, and the old fob is refused at the gate with the reason on the record. Part 21 credentials, with the Part 17 passback read.",
+  "world": "apx-credentials",
+  "token": "default",
+  "steps": [
+    {
+      "name": "Lakeside Garage, Monday 08:55",
+      "narration": "Ray has a monthly right at Lakeside Garage. Today the front desk gives him a fob for it. The physical card, fob or tag is a CredentialRecord (Part 21). The right it opens stays a native APDS AssignedRight.",
+      "clock": {
+        "now": "2026-09-28T13:55:00Z"
+      }
+    },
+    {
+      "name": "The desk issues the fob",
+      "narration": "The desk console posts the fob: its number, its holder, his account, the right it opens and the garage it works at. It starts in issued, because Ray has not collected it yet. The Idempotency-Key means a console retry cannot issue a second fob (Part 4 §4.2a).",
+      "request": {
+        "method": "POST",
+        "path": "/v1/credentials",
+        "headers": {
+          "Idempotency-Key": "desk-20260928-delgado-fob"
+        },
+        "body": {
+          "credentialType": "electronicID",
+          "credentialIdentification": "F-2201-0950",
+          "credentialAssignedType": "customer",
+          "holder": {
+            "id": "c1…0103",
+            "className": "RightHolder"
+          },
+          "account": {
+            "id": "a3…0103",
+            "className": "Account"
+          },
+          "assignedRights": [
+            {
+              "id": "e1…0103",
+              "className": "AssignedRight"
+            }
+          ],
+          "places": [
+            {
+              "id": "b1…0001",
+              "className": "Place"
+            }
+          ],
+          "validity": {
+            "start": "2026-09-28T00:00:00Z",
+            "end": "2027-08-31T23:59:59Z"
+          },
+          "media": {
+            "form": "fob",
+            "serialNumber": "LNR-433-018950",
+            "batch": "2026-Q3-F",
+            "deposit": {
+              "currencyType": "USD",
+              "currencyValue": 15
+            }
+          }
+        }
+      },
+      "expect": {
+        "status": 201,
+        "body": {
+          "credentialIdentification": "F-2201-0950",
+          "credentialStatus": "issued",
+          "holder": {
+            "id": "c1000000-0000-4000-8000-000000000103"
+          },
+          "media": {
+            "form": "fob",
+            "depositStatus": "held"
+          }
+        }
+      },
+      "save": {
+        "fob": "$.id"
+      }
+    },
+    {
+      "name": "Ray collects it: the fob goes active",
+      "narration": "Activation is its own step, so a fob that was issued but never handed over cannot open anything. The status history records who did what and when (§21.1).",
+      "request": {
+        "method": "POST",
+        "path": "/v1/credentials/{fob}/activate",
+        "body": {
+          "reason": "collected",
+          "note": "Handed to holder at front desk; ID checked."
+        }
+      },
+      "expect": {
+        "status": 200,
+        "body": {
+          "credentialStatus": "active",
+          "statusHistory": [
+            {
+              "state": "issued"
+            },
+            {
+              "state": "active"
+            }
+          ]
+        }
+      }
+    },
+    {
+      "name": "08:58: Ray badges in at entry lane 1",
+      "narration": "The fob is read at the entry lane. The PARCS decides; the server records the attempt as an access event and publishes apx.credentials.access.v1 (§21.4). The /sim/inject call stands in for the card reader.",
+      "inject": {
+        "kind": "credentialPresented",
+        "credential": "{fob}",
+        "lane": "b2…0001",
+        "time": "2026-09-28T13:58:10Z",
+        "id": "d7…0501"
+      },
+      "events": {
+        "type": "apx.credentials.access.v1",
+        "exactly": 1
+      }
+    },
+    {
+      "name": "Granted, and on the record",
+      "narration": "The fob's access history shows the entry: which lane, which reader, granted. Monthly parkers ask about this all the time, and so do auditors.",
+      "request": {
+        "method": "GET",
+        "path": "/v1/credentials/{fob}/access-events"
+      },
+      "expect": {
+        "status": 200,
+        "body": {
+          "data": [
+            {
+              "id": "d7000000-0000-4000-8000-000000000501",
+              "lane": {
+                "id": "b2000000-0000-4000-8000-000000000001"
+              },
+              "direction": "entry",
+              "outcome": "granted"
+            }
+          ]
+        }
+      }
+    },
+    {
+      "name": "09:03: someone tries to use the same fob again",
+      "narration": "Ray hands the fob back through the window to a colleague, who tries to drive in on it. The fob is already inside, so the lane refuses: passback. The denial is an access event with a denialReason from the apx-access-denial-reasons registry, not a silent no.",
+      "inject": {
+        "kind": "credentialPresented",
+        "credential": "{fob}",
+        "lane": "b2…0001",
+        "time": "2026-09-28T14:03:40Z",
+        "id": "d7…0502"
+      },
+      "request": {
+        "method": "GET",
+        "path": "/v1/credentials/{fob}/access-events?outcome=denied"
+      },
+      "expect": {
+        "status": 200,
+        "body": {
+          "data": [
+            {
+              "id": "d7000000-0000-4000-8000-000000000502",
+              "outcome": "denied",
+              "denialReason": "passback"
+            }
+          ]
+        }
+      }
+    },
+    {
+      "name": "The passback state, as a support agent sees it",
+      "narration": "Part 17 gives the help desk a read of where the system thinks the fob is: recorded inside, and in violation because of the second entry. If Ray calls, the agent can see why he was refused before anyone opens a gate.",
+      "request": {
+        "method": "GET",
+        "path": "/v1/credentials/{fob}/passback"
+      },
+      "expect": {
+        "status": 200,
+        "body": {
+          "state": "violation",
+          "recordedPresence": "inside",
+          "lastAccess": {
+            "direction": "entry"
+          }
+        }
+      }
+    },
+    {
+      "name": "17:40: Ray badges out at exit lane 2",
+      "narration": "The exit read is granted. The fob is now recorded outside again, ready for tomorrow.",
+      "inject": {
+        "kind": "credentialPresented",
+        "credential": "{fob}",
+        "lane": "b2…0002",
+        "time": "2026-09-28T22:40:05Z",
+        "id": "d7…0503"
+      },
+      "request": {
+        "method": "GET",
+        "path": "/v1/credentials/{fob}/passback"
+      },
+      "expect": {
+        "status": 200,
+        "body": {
+          "recordedPresence": "outside",
+          "lastAccess": {
+            "direction": "exit",
+            "lane": {
+              "id": "b2000000-0000-4000-8000-000000000002"
+            }
+          }
+        }
+      }
+    },
+    {
+      "name": "Next morning: Ray reports the fob lost",
+      "narration": "Ray calls the desk. Reporting it lost is a lifecycle transition, active to lost, with the reason and the agent on the history. From this moment the fob opens nothing.",
+      "clock": {
+        "now": "2026-09-29T13:20:00Z"
+      },
+      "request": {
+        "method": "POST",
+        "path": "/v1/credentials/{fob}/report-lost",
+        "body": {
+          "reason": "holderRequest",
+          "note": "Holder reports fob missing since last night."
+        }
+      },
+      "expect": {
+        "status": 200,
+        "body": {
+          "credentialStatus": "lost"
+        }
+      }
+    },
+    {
+      "name": "The desk replaces it in one call",
+      "narration": "Replace issues the successor from pre-encoded stock and retires the old fob together. The new fob inherits the holder, account, right, places and validity, and is active at once. The old deposit is forfeited and a new one is held (§21.3).",
+      "request": {
+        "method": "POST",
+        "path": "/v1/credentials/{fob}/replace",
+        "headers": {
+          "Idempotency-Key": "desk-20260929-delgado-replace"
+        },
+        "body": {
+          "reason": "lost",
+          "credentialIdentification": "F-2201-0951",
+          "media": {
+            "form": "fob",
+            "serialNumber": "LNR-433-018951",
+            "batch": "2026-Q3-F",
+            "deposit": {
+              "currencyType": "USD",
+              "currencyValue": 15
+            }
+          },
+          "oldDepositStatus": "forfeited",
+          "note": "Replacement handed over at the front desk."
+        }
+      },
+      "expect": {
+        "status": 201,
+        "body": {
+          "credentialIdentification": "F-2201-0951",
+          "credentialStatus": "active",
+          "holder": {
+            "id": "c1000000-0000-4000-8000-000000000103"
+          },
+          "assignedRights": [
+            {
+              "id": "e1000000-0000-4000-8000-000000000103"
+            }
+          ]
+        }
+      },
+      "save": {
+        "newFob": "$.id"
+      }
+    },
+    {
+      "name": "The old fob points at its successor",
+      "narration": "The old record is kept, not deleted: status replaced, replacedBy set, deposit forfeited. That is the audit trail a dispute about the deposit needs.",
+      "request": {
+        "method": "GET",
+        "path": "/v1/credentials/{fob}"
+      },
+      "expect": {
+        "status": 200,
+        "body": {
+          "credentialStatus": "replaced",
+          "replacedBy": {
+            "id": "{newFob}"
+          },
+          "media": {
+            "depositStatus": "forfeited"
+          }
+        }
+      }
+    },
+    {
+      "name": "18:02: the old fob turns up at the gate",
+      "narration": "Whoever found the old fob tries it at entry lane 1. It is refused, and the record says exactly why: credentialReplaced. Ray can ask tomorrow whether anyone used his old fob, and get a straight answer.",
+      "inject": {
+        "kind": "credentialPresented",
+        "credential": "{fob}",
+        "lane": "b2…0001",
+        "time": "2026-09-29T23:02:17Z",
+        "id": "d7…0504"
+      },
+      "request": {
+        "method": "GET",
+        "path": "/v1/credentials/{fob}/access-events?outcome=denied&since=2026-09-29T00:00:00Z"
+      },
+      "expect": {
+        "status": 200,
+        "body": {
+          "data": [
+            {
+              "id": "d7000000-0000-4000-8000-000000000504",
+              "direction": "entry",
+              "outcome": "denied",
+              "denialReason": "credentialReplaced"
+            }
+          ]
+        }
+      }
+    },
+    {
+      "name": "The new fob works",
+      "narration": "Ray's new fob is granted at the same lane a minute later. One holder, one right, two fobs over time, and every attempt with either of them on the record.",
+      "inject": {
+        "kind": "credentialPresented",
+        "credential": "{newFob}",
+        "lane": "b2…0001",
+        "time": "2026-09-29T23:03:30Z",
+        "id": "d7…0505"
+      },
+      "request": {
+        "method": "GET",
+        "path": "/v1/credentials/{newFob}/access-events"
+      },
+      "expect": {
+        "status": 200,
+        "body": {
+          "data": [
+            {
+              "id": "d7000000-0000-4000-8000-000000000505",
+              "direction": "entry",
+              "outcome": "granted"
+            }
+          ]
+        }
+      }
+    },
+    {
+      "name": "The lane's night: every refusal at entry lane 1",
+      "narration": "The garage-wide access log can be sliced by lane and outcome. Tonight it holds today's two refusals: the passback and the replaced fob. A night supervisor needs only this one call.",
+      "request": {
+        "method": "GET",
+        "path": "/v1/access-events?lane=b2…0001&outcome=denied&since=2026-09-28T00:00:00Z"
+      },
+      "expect": {
+        "status": 200,
+        "body": {
+          "meta": {
+            "total": 2
+          },
+          "data": [
+            {
+              "denialReason": "credentialReplaced"
+            },
+            {
+              "denialReason": "passback"
+            }
+          ]
+        }
+      }
+    }
+  ]
+}

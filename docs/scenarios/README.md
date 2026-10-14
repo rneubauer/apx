@@ -5,6 +5,12 @@ implementation. Every JSON payload marked with an `<!-- apx:validate … -->`
 comment is machine-validated against the bundled spec by
 `npm run scenarios:check` — the samples cannot drift from the standard.
 
+To watch stories like these run, open the
+[simulator](https://rneubauer.github.io/apx/simulator/): its **Present**
+view plays narrated demos and every case of the by-module vetting suite
+([`by-module/`](by-module/README.md)) step by step, against a live,
+stateful implementation of the standard.
+
 | # | Scenario | Classes exercised |
 |---|---|---|
 | [01](01-lane-status-call-center.md) | Lane status when a call hits the call center | `apx-control` (read) |

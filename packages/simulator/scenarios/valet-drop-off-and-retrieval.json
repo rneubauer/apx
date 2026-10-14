@@ -1,0 +1,362 @@
+{
+  "name": "Valet: drop-off, park, \"bring my car\" by text, handback",
+  "description": "A guest leaves an Audi at the Lakeside Hotel valet stand. The attendant's scanner records the car and a scuff the guest acknowledges, a runner parks it, the guest texts CAR two hours later, and the runner brings it round. A wrong claim code is refused; the right one hands the car back, and the custody record closes when the stay is paid. Part 22 valet over a native APDS Session.",
+  "world": "apx-valet",
+  "token": "default",
+  "steps": [
+    {
+      "name": "The Lakeside Hotel valet stand, 13:30",
+      "narration": "Valet is custody, not just parking: who has the car, where it is and where the keys are. APX models that as a valet ticket with a state machine (Part 22). The stay itself stays an ordinary APDS Session, so billing works as it does for any other car.",
+      "clock": {
+        "now": "2026-09-24T18:30:14Z"
+      }
+    },
+    {
+      "name": "Drop-off, with a condition report",
+      "narration": "The attendant's scanning app photographs the car and notes a 6 cm scuff on the rear bumper, and the guest taps to acknowledge it. The app posts the drop-off. The ticket starts in dropped, references the Session for the stay, and carries a masked contact handle and image links, never the images themselves (§22.2, §22.6).",
+      "request": {
+        "method": "POST",
+        "path": "/v1/valet/tickets",
+        "token": "attendant-0031",
+        "headers": {
+          "Idempotency-Key": "scan-0031-20260924-183014",
+          "X-Sim-Assign-Id": "d8000000-0000-4000-8000-000000000419"
+        },
+        "body": {
+          "place": {
+            "id": "b1…0005",
+            "className": "Place"
+          },
+          "ticketNumber": "V-20419",
+          "vehicle": {
+            "credentialType": "licensePlate",
+            "credentialIdentification": "SYN-7734",
+            "jurisdiction": "US-IL",
+            "make": "Audi",
+            "model": "Q5",
+            "colour": "grey"
+          },
+          "customer": {
+            "displayName": "R. Ortega",
+            "contactChannel": {
+              "type": "sms",
+              "handle": "***-***-4471"
+            }
+          },
+          "dropOff": {
+            "time": "2026-09-24T18:30:14Z",
+            "lane": {
+              "id": "b2…0050",
+              "className": "VehicularAccess"
+            },
+            "attendant": "attendant-0031",
+            "mileage": 41208,
+            "fuelLevelPercent": 60,
+            "keyTag": "K-118",
+            "conditionReport": {
+              "notes": "Scuff on rear bumper, driver side, approx 6 cm. Interior clean.",
+              "damage": [
+                {
+                  "area": "rearBumper",
+                  "description": "6 cm scuff, driver side",
+                  "severity": "minor",
+                  "imageLink": "https://api.lakeside-garage.example/valet/v-20419/in-rear-bumper.jpg"
+                }
+              ],
+              "imageLinks": [
+                "https://api.lakeside-garage.example/valet/v-20419/in-front.jpg",
+                "https://api.lakeside-garage.example/valet/v-20419/in-rear.jpg"
+              ],
+              "recordedTime": "2026-09-24T18:30:02Z",
+              "recordedBy": "scanner-0031",
+              "customerAcknowledged": true
+            }
+          }
+        }
+      },
+      "expect": {
+        "status": 201,
+        "body": {
+          "id": "d8000000-0000-4000-8000-000000000419",
+          "ticketNumber": "V-20419",
+          "valetStatus": "dropped",
+          "customer": {
+            "contactChannel": {
+              "handle": "***-***-4471"
+            }
+          },
+          "dropOff": {
+            "keyTag": "K-118",
+            "conditionReport": {
+              "customerAcknowledged": true
+            }
+          },
+          "session": {
+            "className": "Session"
+          }
+        }
+      }
+    },
+    {
+      "name": "A runner parks it",
+      "narration": "Six minutes later the runner records where the car is and which hook the keys are on. dropped becomes parked, with a history entry naming the runner.",
+      "clock": {
+        "now": "2026-09-24T18:36:40Z"
+      },
+      "request": {
+        "method": "POST",
+        "path": "/v1/valet/tickets/d8…0419/park",
+        "token": "runner-0107",
+        "body": {
+          "zone": "P3 row D",
+          "keyLocation": "board-2 hook 17"
+        }
+      },
+      "expect": {
+        "status": 200,
+        "body": {
+          "valetStatus": "parked",
+          "storage": {
+            "zone": "P3 row D",
+            "keyLocation": "board-2 hook 17",
+            "parkedBy": "runner-0107"
+          },
+          "statusHistory": [
+            {
+              "state": "dropped"
+            },
+            {
+              "state": "parked",
+              "actor": "runner-0107"
+            }
+          ]
+        }
+      }
+    },
+    {
+      "name": "15:41: the guest texts CAR",
+      "narration": "The SMS gateway calls retrieve with the guest's own token, which is bound to this one ticket. The answer is the minimized view of §22.5: an ETA and a promised time, but no parking position, no key hook and no condition report. A claim text is not a master key.",
+      "clock": {
+        "now": "2026-09-24T20:41:03Z"
+      },
+      "request": {
+        "method": "POST",
+        "path": "/v1/valet/tickets/d8…0419/retrieve",
+        "token": "<apx.valet:request, bound to d8…0419>",
+        "body": {
+          "channel": "sms",
+          "note": "reply: CAR"
+        }
+      },
+      "expect": {
+        "status": 200,
+        "body": {
+          "ticketNumber": "V-20419",
+          "valetStatus": "requested",
+          "retrieval": {
+            "channel": "sms",
+            "etaMinutes": 8,
+            "promisedTime": "2026-09-24T20:49:03Z"
+          }
+        }
+      }
+    },
+    {
+      "name": "The runner board shows the request",
+      "narration": "The stand's runner board reads the queue: requested cars in the order they are owed, with the promised time (§22.3). The board and the guest see the same ETA.",
+      "request": {
+        "method": "GET",
+        "path": "/v1/valet/queue?place=b1…0005"
+      },
+      "expect": {
+        "status": 200,
+        "body": {
+          "data": [
+            {
+              "id": "d8000000-0000-4000-8000-000000000419",
+              "valetStatus": "requested"
+            }
+          ]
+        }
+      }
+    },
+    {
+      "name": "The runner picks it up",
+      "narration": "A minute later the runner takes the job: requested becomes retrieving, with the runner's name on it.",
+      "clock": {
+        "now": "2026-09-24T20:42:10Z"
+      },
+      "request": {
+        "method": "POST",
+        "path": "/v1/valet/tickets/d8…0419/pickup",
+        "token": "runner-0107",
+        "body": {
+          "retrievingBy": "runner-0107"
+        }
+      },
+      "expect": {
+        "status": 200,
+        "body": {
+          "valetStatus": "retrieving",
+          "retrieval": {
+            "retrievingBy": "runner-0107"
+          }
+        }
+      }
+    },
+    {
+      "name": "The car is at the front entrance",
+      "narration": "Six minutes later, two inside the promise, the runner stages the car at the front-entrance lane. The ETA drops to zero and the guest's contact channel is told the car is waiting.",
+      "clock": {
+        "now": "2026-09-24T20:48:12Z"
+      },
+      "request": {
+        "method": "POST",
+        "path": "/v1/valet/tickets/d8…0419/stage",
+        "token": "runner-0107",
+        "body": {
+          "stagingLane": {
+            "id": "b2…0051",
+            "className": "VehicularAccess"
+          },
+          "note": "front entrance, bay 2"
+        }
+      },
+      "expect": {
+        "status": 200,
+        "body": {
+          "valetStatus": "staged",
+          "retrieval": {
+            "stagingLane": {
+              "id": "b2000000-0000-4000-8000-000000000051"
+            },
+            "etaMinutes": 0
+          }
+        }
+      }
+    },
+    {
+      "name": "Someone else claims the car",
+      "narration": "A stranger at the stand gives a wrong claim code. The server refuses the handback with 403 valet-verification-failed, records the attempt, and the car stays staged. The code is checked, never stored on the record (§22.4).",
+      "clock": {
+        "now": "2026-09-24T20:49:30Z"
+      },
+      "request": {
+        "method": "POST",
+        "path": "/v1/valet/tickets/d8…0419/handback",
+        "token": "attendant-0031",
+        "body": {
+          "verificationMethod": "code",
+          "verificationValue": "4XXP",
+          "handedTo": "claimant presenting code 4XXP",
+          "mileage": 41209
+        }
+      },
+      "expect": {
+        "status": 403,
+        "problem": "valet-verification-failed"
+      }
+    },
+    {
+      "name": "The guest shows the right code: handed back",
+      "narration": "The guest shows code 7Q2M. The attendant records the handback condition and the mileage: one mile more than at drop-off. Both condition reports now sit on the same record, which is what settles a damage claim later.",
+      "clock": {
+        "now": "2026-09-24T20:50:41Z"
+      },
+      "request": {
+        "method": "POST",
+        "path": "/v1/valet/tickets/d8…0419/handback",
+        "token": "attendant-0031",
+        "body": {
+          "verificationMethod": "code",
+          "verificationValue": "7Q2M",
+          "handedTo": "claimant presenting code 7Q2M",
+          "mileage": 41209,
+          "conditionReport": {
+            "notes": "As received. Rear bumper scuff unchanged.",
+            "imageLinks": [
+              "https://api.lakeside-garage.example/valet/v-20419/out-rear.jpg"
+            ],
+            "recordedTime": "2026-09-24T20:50:30Z",
+            "recordedBy": "scanner-0031",
+            "customerAcknowledged": true
+          }
+        }
+      },
+      "expect": {
+        "status": 200,
+        "body": {
+          "valetStatus": "handedBack",
+          "dropOff": {
+            "mileage": 41208
+          },
+          "handback": {
+            "mileage": 41209,
+            "conditionReport": {
+              "notes": "As received. Rear bumper scuff unchanged."
+            }
+          }
+        }
+      }
+    },
+    {
+      "name": "The stay is paid: the record closes",
+      "narration": "The guest pays for the stay at pay station 3, an ordinary payment against the APDS Session; in this world the PARCS reports the Session settled nine minutes after handback. When it settles, the server closes the custody record on its own (§22.1 rule 3). The history tells the whole story, including the refused claim at 15:49 that left the car where it was.",
+      "clock": {
+        "advance": "PT10M"
+      },
+      "request": {
+        "method": "GET",
+        "path": "/v1/valet/tickets/d8…0419"
+      },
+      "expect": {
+        "status": 200,
+        "body": {
+          "valetStatus": "closed",
+          "statusHistory": [
+            {
+              "state": "dropped",
+              "actor": "attendant-0031"
+            },
+            {
+              "state": "parked",
+              "actor": "runner-0107"
+            },
+            {
+              "state": "requested",
+              "actor": "customer"
+            },
+            {
+              "state": "retrieving",
+              "actor": "runner-0107"
+            },
+            {
+              "state": "staged",
+              "actor": "runner-0107"
+            },
+            {
+              "state": "staged",
+              "actor": "attendant-0031",
+              "detail": "handback attempted; verification by code FAILED; vehicle retained"
+            },
+            {
+              "state": "handedBack",
+              "actor": "attendant-0031"
+            },
+            {
+              "state": "closed"
+            }
+          ]
+        }
+      }
+    },
+    {
+      "name": "Every step was published",
+      "narration": "Each transition went out as apx.valet.ticket.status.v1 (§22.7). A hotel front desk or a guest app can follow the car from drop-off to close without polling.",
+      "events": {
+        "type": "apx.valet.ticket.status.v1",
+        "min": 7
+      }
+    }
+  ]
+}

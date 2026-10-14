@@ -1,0 +1,405 @@
+{
+  "name": "Analytics: occupancy over a concert night",
+  "description": "Lakeside Garage fills for a concert next door. The occupancy snapshot starts unknown rather than guessed, the counting system's readings land in the APDS Place hierarchy, apx.data.occupancy.v1 goes out only on material changes (four thresholds, the full garage, the drop afterwards), and a warehouse that missed the evening recovers it from the stored demand table and the Place change feed. Part 5 (§5.2, §5.3, §5.5).",
+  "world": "analytics-lakeside",
+  "token": "citypark-bi",
+  "steps": [
+    {
+      "name": "Lakeside Garage, 18:00, concert night",
+      "narration": "The arena next door has a concert at 20:00. Lakeside has 420 spaces and a counting system at its lanes. The city's parking-guidance platform and the operator's BI both want to know how full the garage is now, and how it filled over the evening.",
+      "clock": {
+        "now": "2026-10-13T23:00:00Z"
+      }
+    },
+    {
+      "name": "Before any count: unknown, not guessed",
+      "narration": "GET /v1/places/{id}/occupancy is APX's convenience read (Part 5 §5.5). It is derived from the APDS Place hierarchy: the Supply, and the latest DemandType record. No count has been recorded yet, so there is no demand and available is null. A field the server does not know is left out or null, never estimated.",
+      "request": {
+        "method": "GET",
+        "path": "/v1/places/b1…0001/occupancy"
+      },
+      "expect": {
+        "status": 200,
+        "body": {
+          "place": {
+            "id": "b1…0001",
+            "className": "Place"
+          },
+          "supply": {
+            "supplyViewType": "spaceView",
+            "supplyQuantity": 420
+          },
+          "available": null
+        }
+      }
+    },
+    {
+      "name": "The guidance platform subscribes",
+      "narration": "One topic, apx.data.occupancy.v1, filtered to the garage. Its data is the same OccupancySnapshot, and it is published on material changes only: a threshold crossing, a large jump in the count, or the garage filling or emptying its last space (§5.5).",
+      "request": {
+        "method": "POST",
+        "path": "/webhooks",
+        "token": "city-platform",
+        "headers": {
+          "Prefer": "return=representation"
+        },
+        "body": {
+          "endpoint": "https://guidance.city.example/apx/occupancy",
+          "topics": [
+            "apx.data.occupancy.v1"
+          ],
+          "filters": {
+            "places": [
+              "b1…0001"
+            ]
+          }
+        }
+      },
+      "expect": {
+        "status": 201,
+        "body": {
+          "status": "active",
+          "topics": [
+            "apx.data.occupancy.v1"
+          ]
+        }
+      },
+      "save": {
+        "sub": "$.id"
+      }
+    },
+    {
+      "name": "18:00: the first count, 250",
+      "narration": "The counting system reports 250 cars. In APX that is a write to the Place hierarchy: a DemandType record on the garage (§5.3). The snapshot now has a count, a percentage and 170 spaces available, and the first reading is published.",
+      "clock": {
+        "now": "2026-10-13T23:00:00Z"
+      },
+      "inject": {
+        "kind": "occupancy",
+        "place": "b1…0001",
+        "count": 250
+      },
+      "request": {
+        "method": "GET",
+        "path": "/v1/places/b1…0001/occupancy"
+      },
+      "expect": {
+        "status": 200,
+        "body": {
+          "demand": {
+            "count": 250,
+            "percentage": 59.5,
+            "occupancyCalculation": "counted",
+            "recordDateTime": "2026-10-13T23:00:00Z"
+          },
+          "available": 170
+        }
+      },
+      "events": {
+        "type": "apx.data.occupancy.v1",
+        "exactly": 1
+      }
+    },
+    {
+      "name": "18:15: 262, nothing to report",
+      "narration": "Twelve more cars. No threshold crossed and no large jump, so the snapshot changes but no event goes out. Subscribers are not flooded with every count.",
+      "clock": {
+        "now": "2026-10-13T23:15:00Z"
+      },
+      "inject": {
+        "kind": "occupancy",
+        "place": "b1…0001",
+        "count": 262
+      },
+      "request": {
+        "method": "GET",
+        "path": "/v1/places/b1…0001/occupancy"
+      },
+      "expect": {
+        "status": 200,
+        "body": {
+          "demand": {
+            "count": 262,
+            "percentage": 62.4,
+            "occupancyCalculation": "counted",
+            "recordDateTime": "2026-10-13T23:15:00Z"
+          },
+          "available": 158
+        }
+      },
+      "events": {
+        "type": "apx.data.occupancy.v1",
+        "exactly": 1
+      }
+    },
+    {
+      "name": "18:45: 360, past 85 percent",
+      "narration": "The concert crowd arrives. The count crosses the 85 percent threshold this operator configured, and the change is published.",
+      "clock": {
+        "now": "2026-10-13T23:45:00Z"
+      },
+      "inject": {
+        "kind": "occupancy",
+        "place": "b1…0001",
+        "count": 360
+      },
+      "request": {
+        "method": "GET",
+        "path": "/v1/places/b1…0001/occupancy"
+      },
+      "expect": {
+        "status": 200,
+        "body": {
+          "demand": {
+            "count": 360,
+            "percentage": 85.7,
+            "occupancyCalculation": "counted",
+            "recordDateTime": "2026-10-13T23:45:00Z"
+          },
+          "available": 60
+        }
+      },
+      "events": {
+        "type": "apx.data.occupancy.v1",
+        "exactly": 2
+      }
+    },
+    {
+      "name": "19:05: 380, past 90 percent",
+      "narration": "Another threshold, another event. A guidance sign can start sending drivers to the next garage.",
+      "clock": {
+        "now": "2026-10-14T00:05:00Z"
+      },
+      "inject": {
+        "kind": "occupancy",
+        "place": "b1…0001",
+        "count": 380
+      },
+      "request": {
+        "method": "GET",
+        "path": "/v1/places/b1…0001/occupancy"
+      },
+      "expect": {
+        "status": 200,
+        "body": {
+          "demand": {
+            "count": 380,
+            "percentage": 90.5,
+            "occupancyCalculation": "counted",
+            "recordDateTime": "2026-10-14T00:05:00Z"
+          },
+          "available": 40
+        }
+      },
+      "events": {
+        "type": "apx.data.occupancy.v1",
+        "exactly": 3
+      }
+    },
+    {
+      "name": "19:20: 401, past 95 percent",
+      "narration": "Nineteen spaces left.",
+      "clock": {
+        "now": "2026-10-14T00:20:00Z"
+      },
+      "inject": {
+        "kind": "occupancy",
+        "place": "b1…0001",
+        "count": 401
+      },
+      "request": {
+        "method": "GET",
+        "path": "/v1/places/b1…0001/occupancy"
+      },
+      "expect": {
+        "status": 200,
+        "body": {
+          "demand": {
+            "count": 401,
+            "percentage": 95.5,
+            "occupancyCalculation": "counted",
+            "recordDateTime": "2026-10-14T00:20:00Z"
+          },
+          "available": 19
+        }
+      },
+      "events": {
+        "type": "apx.data.occupancy.v1",
+        "exactly": 4
+      }
+    },
+    {
+      "name": "19:40: full",
+      "narration": "The last space is taken. Available is 0 and the full garage is published; the guidance platform's webhook receives each of these events.",
+      "clock": {
+        "now": "2026-10-14T00:40:00Z"
+      },
+      "inject": {
+        "kind": "occupancy",
+        "place": "b1…0001",
+        "count": 420
+      },
+      "request": {
+        "method": "GET",
+        "path": "/v1/places/b1…0001/occupancy"
+      },
+      "expect": {
+        "status": 200,
+        "body": {
+          "demand": {
+            "count": 420,
+            "percentage": 100,
+            "occupancyCalculation": "counted",
+            "recordDateTime": "2026-10-14T00:40:00Z"
+          },
+          "available": 0
+        }
+      },
+      "events": {
+        "type": "apx.data.occupancy.v1",
+        "exactly": 5
+      },
+      "deliveries": {
+        "subscription": "{sub}",
+        "status": "delivered"
+      }
+    },
+    {
+      "name": "22:30: the show lets out",
+      "narration": "The garage empties to 300, back below every threshold, and that is published too.",
+      "clock": {
+        "now": "2026-10-14T03:30:00Z"
+      },
+      "inject": {
+        "kind": "occupancy",
+        "place": "b1…0001",
+        "count": 300
+      },
+      "request": {
+        "method": "GET",
+        "path": "/v1/places/b1…0001/occupancy"
+      },
+      "expect": {
+        "status": 200,
+        "body": {
+          "demand": {
+            "count": 300,
+            "percentage": 71.4,
+            "occupancyCalculation": "counted",
+            "recordDateTime": "2026-10-14T03:30:00Z"
+          },
+          "available": 120
+        }
+      },
+      "events": {
+        "type": "apx.data.occupancy.v1",
+        "exactly": 6
+      }
+    },
+    {
+      "name": "The evening, as it is stored",
+      "narration": "The snapshot is a read-model, not a resource (§5.5). What the server actually stores is the APDS Place, whose demand table holds each count with its time. An analyst who wants the curve for the evening reads it here.",
+      "request": {
+        "method": "GET",
+        "path": "/places/b1…0001"
+      },
+      "expect": {
+        "status": 200,
+        "body": {
+          "hierarchyElementReference": {
+            "supply": [
+              {
+                "supplyQuantity": 420
+              }
+            ],
+            "demandTable": [
+              {
+                "demandType": [
+                  {
+                    "count": 250,
+                    "recordDateTime": "2026-10-13T23:00:00Z"
+                  }
+                ]
+              },
+              {
+                "demandType": [
+                  {
+                    "count": 262
+                  }
+                ]
+              },
+              {
+                "demandType": [
+                  {
+                    "count": 360
+                  }
+                ]
+              },
+              {
+                "demandType": [
+                  {
+                    "count": 380
+                  }
+                ]
+              },
+              {
+                "demandType": [
+                  {
+                    "count": 401
+                  }
+                ]
+              },
+              {
+                "demandType": [
+                  {
+                    "count": 420
+                  }
+                ]
+              },
+              {
+                "demandType": [
+                  {
+                    "count": 300,
+                    "recordDateTime": "2026-10-14T03:30:00Z"
+                  }
+                ]
+              }
+            ]
+          }
+        }
+      }
+    },
+    {
+      "name": "A warehouse catches up from the Place feed",
+      "narration": "The BI vendor was offline all evening. Its change feed on /places, resumed from its 17:00 cursor, returns the garage once with the demand records it missed. Events are for real time; the feed is how nothing gets lost (Part 5 §5.2, Part 13 §13.4).",
+      "request": {
+        "method": "GET",
+        "path": "/places?mode=change&cursor=p:00100"
+      },
+      "expect": {
+        "status": 200,
+        "body": {
+          "updateMode": "change",
+          "items": [
+            {
+              "id": "b1…0001",
+              "className": "Place",
+              "hierarchyElementReference": {
+                "demandTable": [
+                  {
+                    "demandType": [
+                      {
+                        "count": 250
+                      }
+                    ]
+                  }
+                ]
+              }
+            }
+          ],
+          "next": null
+        }
+      }
+    }
+  ]
+}

@@ -21,6 +21,11 @@ Then start the server and open the UI:
 node bin/apx-sim.mjs serve                      # http://127.0.0.1:4100/
 ```
 
+Or present from the hosted copy, https://rneubauer.github.io/apx/simulator/
+(press Ctrl+Shift+R first so it is the latest build). It is the same
+simulator in the browser and cannot be stopped by the laptop; a reload
+starts it over, so do not reload mid-story.
+
 - Use one browser window, sized to the screen you share. Close other tabs.
 - Pick the theme: **Light** reads better over most screen shares and
   projectors. Use the theme button in the header.
@@ -51,28 +56,94 @@ when one comes up.
 ## The demos
 
 Each runs in 4–7 minutes if you read the narration and add a sentence.
+Pick the world in Present (or the header) and its demos are listed first.
+
+### The core story
+
+| # | File | World | What it shows | Steps |
+|---|---|---|---|---|
+| 1 | `exit-lane-help-call.json` | apx-control | Part 6 control: a remote gate vend as a tracked command, a barrier fault, a refusal with its reason, scopes | 13 |
+| 2 | `lpr-entry-and-exit.json` | apx-lpr | LPR: two camera vendors, one visit; lane cameras, movement and `accessEvent`; the server infers nothing | 14 |
+| 3 | `validation-and-negotiated-rate.json` | apx-validations | Part 20 merchant validation, then a Part 6 negotiated amount at the exit, with the audit trail | 13 |
+| 4 | `reservation-no-show.json` | apx-reservations | Reservations on the simulated clock: a no-show happens on its own, subscribers are told | 14 |
+| 5 | `violation-appeal-and-payment.json` | apx-violations | Part 19 (0.14.0): notice issued, the §19.4 safety gate refusing a weak case, appeal, reduction, payment | 13 |
+| 6 | `webhook-retry.json` | apx-events | Part 8 event delivery: an endpoint that is down, the retry schedule, pause and resume, nothing lost | 13 |
+| 7 | `ev-charging-one-bill.json` | apx-charging | Part 23 EV charging end to end. Long (45 steps); use only if asked | 45 |
+
+### Everyday operations
+
+| # | File | World | What it shows | Steps |
+|---|---|---|---|---|
+| 8 | `card-in-card-out.json` | apx-accounts | §13.1a ticketless transient: a hold at entry, capture at exit, refusals for over-capture, void-after-capture and an unapproved refund | 11 |
+| 9 | `monthly-parker-keycard.json` | apx-credentials | Part 21: a fob issued and activated, in and out, passback refused, reported lost, replaced in one call, the old fob refused | 14 |
+| 10 | `monthly-permit-pool.json` | apx-permits | §14.2 pooled permits: a two-plate sale read back as stock APDS, an idempotent retry, renewal, sell-out (`pool-exhausted`), a slot coming back | 13 |
+| 11 | `find-book-and-extend.json` | apx-reservations | §14.1 search to overstay: quote, book, move the booking, plate check-in, extend while parked, call-centre lookup by plate | 13 |
+| 12 | `lost-ticket-found-by-plate.json` | apx-resolution | Part 17: the session found by plate, a payment link for the true fare, no lost-ticket fee | 8 |
+| 13 | `valet-drop-off-and-retrieval.json` | apx-valet | Part 22: drop-off with condition report, "bring my car" by text, a wrong claim code refused, verified handback | 11 |
+| 14 | `toll-passage-and-dispute.json` | apx-tolling | Part 15: transponder and plate-fallback passages, nightly billing, a wrong-vehicle dispute refunded | 11 |
+| 20 | `plate-lists-watch-and-allow.json` | apx-plate-lists | Part 24: watch, scofflaw, allow and enforcement-fleet lists; an idempotent re-add; per-place flags; an edge camera keeping its copy current by change feed (a removal arrives as a tombstone); a listed car's arrival raising the alert | 14 |
+
+### Analytics (world `analytics-lakeside`)
+
+A Tuesday evening at Lakeside with a day of data already in it: ten
+transient visits and their payments, a Tower B monthly pool with six
+permits sold, a day of plate reads at Riverside, and an outside BI vendor
+(CityPark Analytics) that last synced at 17:00.
 
 | # | File | What it shows | Steps |
 |---|---|---|---|
-| 1 | `exit-lane-help-call.json` | Part 6 control: a remote gate vend as a tracked command, a barrier fault, a refusal with its reason, scopes | 13 |
-| 2 | `lpr-entry-and-exit.json` | LPR: two camera vendors, one visit; lane cameras, movement and `accessEvent`; the server infers nothing | 14 |
-| 3 | `validation-and-negotiated-rate.json` | Part 20 merchant validation, then a Part 6 negotiated amount at the exit, with the audit trail | 13 |
-| 4 | `reservation-no-show.json` | Reservations on the simulated clock: a no-show happens on its own, subscribers are told | 14 |
-| 5 | `violation-appeal-and-payment.json` | Part 19 (0.14.0): notice issued, the §19.4 safety gate refusing a weak case, appeal, reduction, payment | 13 |
-| 6 | `webhook-retry.json` | Part 8 event delivery: an endpoint that is down, the retry schedule, pause and resume, nothing lost | 13 |
-| 7 | `ev-charging-one-bill.json` | Part 23 EV charging end to end. Long (45 steps); use only if asked | 45 |
+| 15 | `analytics-transient-day.json` | A day of transient transactions: sessions and payments by date, a declined attempt kept, a live payment and a refund that is never counted twice (§13.4) | 13 |
+| 16 | `analytics-monthly-parkers.json` | Pool uptake, who holds a permit, who parked today, an unused permit, a new sale reaching the warehouse by change feed | 11 |
+| 17 | `analytics-plates.json` | Plate reads and privacy: refused without `apx.lpr:read`, refused without a key, repeat visits, two cameras counted once, a retention purge as a tombstone (§13.3b) | 14 |
+| 18 | `analytics-occupancy-evening.json` | Occupancy over a concert night: unknown is reported as unknown, events only on material change, a missed evening recovered | 12 |
+| 19 | `analytics-change-feed-sync.json` | An outside vendor's warehouse: APDS `modified_since`, then the §5.2 cursor feed with a deletion, retries, a refused cursor, a new grant backfilled, an expired cursor | 13 |
+
+### The Fabric view (live delivery)
+
+Not a scenario: a live view of Part 8, for when you want the room to see
+events flowing rather than read them step by step. See
+[The Fabric view](#the-fabric-view) below.
 
 ### A 20-minute slot
 
 1, 2, 3. They start from what APDS already covers (lanes, sessions,
 payments) and show what APX adds on top: commands with outcomes,
 vendor-neutral plate reads, and validations and negotiated amounts that
-stay attributable.
+stay attributable. Finish with two minutes of the Fabric view.
 
 ### A 45-minute slot
 
-1, 2, 3, 5, 6, then 4 if there is time. Keep 7 in reserve for questions
-about EV charging.
+1, 2, 3, then the Fabric view (5 minutes), then one analytics demo (15
+or 19), then 5 or 6. Keep 7 in reserve for EV charging, and 8–14 and 20
+for whichever module a vendor in the room cares about.
+
+## The Fabric view
+
+The **Fabric** tab shows the Part 8 delivery fabric live: every event as
+it is published, every subscriber, and each delivery attempt with its
+status code and a countdown to the next retry on the §8.3 schedule (0 s,
+30 s, 2 min, 10 min, 1 h, then hourly up to 24 h).
+
+1. Open **Fabric**. If the world has no subscribers it offers **Load
+   apx-events**: two webhook subscribers, ops-monitor (every `apx.*`
+   topic) and regional-auditor (four topics).
+2. **▶ Start traffic.** The clock switches to Live and a mix of vehicles,
+   device states, occupancy and payments starts flowing. The coloured dots
+   on each event show which subscribers it went to. Set the rate (6–240 a
+   minute) and the mix with the controls.
+3. **+ SSE subscriber** or **+ Webhook subscriber** adds a real
+   subscription through `POST /webhooks`.
+4. On ops-monitor, **Make endpoint fail**. Its deliveries turn amber:
+   `#1 503`, `retry #2 in 0:29`. Then **Recover endpoint**: the retries
+   land on schedule and every event is delivered. Use +1m / +5m in the
+   header rather than waiting.
+5. On an SSE card, **Drop client**, wait, then **Reconnect**: it catches
+   up from `Last-Event-ID` (§8.4) and says how many frames it caught up.
+
+Grey "no match" events are expected: APDS-native `PlaceUpdated` and
+anything at Harbor Deck match nobody's topics or places. That is §8.5
+place binding working; say so. **Frozen** in the header pauses the
+traffic; Reset clears it.
 
 ## Talking points
 
@@ -113,6 +184,26 @@ re-signed each time, on the Part 8 schedule. A paused subscription holds
 events and delivers them on resume. The delivery ledger is a normal APX
 route the subscriber can read.
 
+**Analytics (15–19).** APX gives an analytics consumer the records, kept
+in sync without gaps, not totals. Every count on screen is the consumer
+adding up records it pulled, and the change feed is how it stays current
+without re-downloading. Plates are behind their own scope and a lookup
+key, so a BI tool cannot turn the LPR route into an export. Expect the
+question "where are the reports?": APX has no aggregate endpoints today.
+That is a fair item for the committee to decide on purpose.
+
+**Plate lists (20).** The list owner (the operator, or the city for
+scofflaws) maintains the lists centrally; the lane decides locally from a
+copy it keeps current with the change feed, so a plate check at the gate
+never waits on the network. A plate added twice is updated, not
+duplicated, so a nightly reload is safe to repeat. Good moment to raise the
+scale question: today entries are added one request at a time.
+
+**Fabric view.** Make the endpoint fail while traffic is running and let
+the room watch the retries count down, then recover it and watch every
+event arrive. The point is that a subscriber that goes down for a deploy
+loses nothing, and the schedule is the same for every vendor.
+
 ## If something goes wrong
 
 - **A step fails on screen.** Press R and run the scenario again from its
@@ -139,12 +230,18 @@ route the subscriber can read.
 
 ## Known limits
 
-Say these if they come up; none of them affects the demos above.
+Say these if they come up; none of them affects the demos above. In the
+hosted copy, traffic in the Fabric view runs only while the tab is open,
+and SSE subscribers are simulated (a real SSE client cannot connect to a
+page).
 
-- The simulator implements 165 of the bundle's operations.
-  `node bin/apx-sim.mjs ops` lists the rest. Three LPR read routes are
-  among them (`GET /v1/lpr/reads/{observation}`, `POST
-  /v1/lpr/reads:search`, `PUT /v1/lpr/reads/{observation}/plate`).
+- The simulator implements every operation in the bundle (181 of 181;
+  `node bin/apx-sim.mjs ops`). Where the standard leaves a choice open
+  (how a rate table prices a quote, which place a multi-place plate list's
+  event is bound to), the simulator makes one and it is not normative.
+- Plate lists hold the lists and raise the arrival alert (§24.4); refusing
+  service at the lane stays with the implementation, as the standard says,
+  so the simulator does not gate on it.
 - New violation cases get random ids, so those paths look long on screen.
 - The violation demo's payment record is a reference only; it does not
   run the Part 13 payment flow.

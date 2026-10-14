@@ -1,0 +1,376 @@
+{
+  "name": "Tolling: two gantry passages, a nightly bill, a wrong-vehicle dispute",
+  "description": "Gantry hc-01 at Lakeside Garage charges two passages in one morning: one by transponder, one by a low-confidence plate read when no tag was seen. Both are billed that night. Ten days later the plate's owner disputes hers; the back office reviews the image and refunds it. Every step is a state on one toll transaction, with its audit trail and events (Part 15).",
+  "world": "apx-tolling",
+  "token": "default",
+  "steps": [
+    {
+      "name": "Gantry hc-01, Monday 07:14",
+      "narration": "A toll transaction is APX's record of one charge at a toll point. It points at the APDS Observations behind it (the tag hit and the plate read) and never copies them. Pricing, billing and disputes are states on that one record (Part 15).",
+      "clock": {
+        "now": "2026-09-22T07:14:09Z"
+      }
+    },
+    {
+      "name": "A transponder passes",
+      "narration": "The gantry bridge posts the transaction with both Observations, the tag it read and the flat peak price. The Idempotency-Key is built from the gantry, the read time and its sequence number, so a re-send can never charge twice. The answer comes back already priced, with a two-entry audit trail.",
+      "request": {
+        "method": "POST",
+        "path": "/v1/tolling/transactions",
+        "headers": {
+          "Idempotency-Key": "gantry-hc-01-20260922T071408-0417"
+        },
+        "body": {
+          "tollPoint": {
+            "id": "b4…0001",
+            "className": "SupplementalEquipment"
+          },
+          "observations": [
+            {
+              "id": "f2…0801",
+              "className": "Observation"
+            },
+            {
+              "id": "f2…0802",
+              "className": "Observation"
+            }
+          ],
+          "credential": {
+            "credentialType": "rfid",
+            "credentialIdentification": "TAG-44192"
+          },
+          "pricing": {
+            "currencyType": "USD",
+            "currencyValue": 2.75
+          }
+        }
+      },
+      "expect": {
+        "status": 201,
+        "body": {
+          "transactionStatus": "priced",
+          "credential": {
+            "credentialIdentification": "TAG-44192"
+          },
+          "pricing": {
+            "currencyValue": 2.75
+          },
+          "statusHistory": [
+            {
+              "state": "created",
+              "actor": "gantry-hc-01"
+            },
+            {
+              "state": "priced",
+              "actor": "toll-pricing"
+            }
+          ]
+        }
+      },
+      "save": {
+        "tagTxn": "$.id"
+      }
+    },
+    {
+      "name": "The uplink flapped: the gantry sends it again",
+      "narration": "The gantry did not see the 201 and re-sends the same read under the same key. The server answers 200 with the transaction it already has. One passage, one charge.",
+      "request": {
+        "method": "POST",
+        "path": "/v1/tolling/transactions",
+        "headers": {
+          "Idempotency-Key": "gantry-hc-01-20260922T071408-0417"
+        },
+        "body": {
+          "tollPoint": {
+            "id": "b4…0001",
+            "className": "SupplementalEquipment"
+          },
+          "observations": [
+            {
+              "id": "f2…0801",
+              "className": "Observation"
+            },
+            {
+              "id": "f2…0802",
+              "className": "Observation"
+            }
+          ],
+          "credential": {
+            "credentialType": "rfid",
+            "credentialIdentification": "TAG-44192"
+          },
+          "pricing": {
+            "currencyType": "USD",
+            "currencyValue": 2.75
+          }
+        }
+      },
+      "expect": {
+        "status": 200,
+        "body": {
+          "id": "{tagTxn}",
+          "transactionStatus": "priced"
+        }
+      }
+    },
+    {
+      "name": "07:52: no tag, so the gantry falls back to the plate",
+      "narration": "A car with no transponder passes. The gantry reads plate SYN-9930 at 0.71 confidence and charges the plate. The low confidence is on the audit trail from the first entry. Two passages so far, two apx.tolling.transaction.created.v1 events: the re-send published nothing (§15.3).",
+      "clock": {
+        "now": "2026-09-22T07:52:31Z"
+      },
+      "request": {
+        "method": "POST",
+        "path": "/v1/tolling/transactions",
+        "headers": {
+          "Idempotency-Key": "gantry-hc-01-20260922T075231-0498"
+        },
+        "body": {
+          "tollPoint": {
+            "id": "b4…0001",
+            "className": "SupplementalEquipment"
+          },
+          "observations": [
+            {
+              "id": "f2…0811",
+              "className": "Observation"
+            }
+          ],
+          "credential": {
+            "credentialType": "licensePlate",
+            "credentialIdentification": "SYN-9930"
+          },
+          "pricing": {
+            "currencyType": "USD",
+            "currencyValue": 2.75
+          }
+        }
+      },
+      "expect": {
+        "status": 201,
+        "body": {
+          "transactionStatus": "priced",
+          "credential": {
+            "credentialType": "licensePlate",
+            "credentialIdentification": "SYN-9930"
+          },
+          "statusHistory": [
+            {
+              "state": "created",
+              "detail": "plate fallback, confidence 0.71"
+            },
+            {
+              "state": "priced"
+            }
+          ]
+        }
+      },
+      "save": {
+        "plateTxn": "$.id"
+      },
+      "events": {
+        "type": "apx.tolling.transaction.created.v1",
+        "exactly": 2
+      }
+    },
+    {
+      "name": "That night: the billing run settles the tag passage",
+      "narration": "The nightly billing run charges the account through the Part 13 payment surface and attaches the PaymentRecord to the transaction. The toll record holds a reference to the payment; it never becomes a second ledger.",
+      "clock": {
+        "now": "2026-09-23T02:11:40Z"
+      },
+      "request": {
+        "method": "POST",
+        "path": "/v1/tolling/transactions/{tagTxn}/payment",
+        "headers": {
+          "Idempotency-Key": "autopay-20260922-0417"
+        },
+        "body": {
+          "payment": {
+            "id": "9c0d1e2f-3a4b-4c5d-8e6f-7a8b9c0d1901",
+            "className": "PaymentRecord"
+          },
+          "note": "account autopay, batch 2026-09-22"
+        }
+      },
+      "expect": {
+        "status": 200,
+        "body": {
+          "transactionStatus": "paid",
+          "payment": {
+            "id": "9c0d1e2f-3a4b-4c5d-8e6f-7a8b9c0d1901"
+          },
+          "statusHistory": [
+            {
+              "state": "created"
+            },
+            {
+              "state": "priced"
+            },
+            {
+              "state": "paid",
+              "actor": "billing-batch"
+            }
+          ]
+        }
+      }
+    },
+    {
+      "name": "And the plate passage, billed to the plate's owner",
+      "narration": "The same run bills the plate passage to the monthly holder whose account carries SYN-9930.",
+      "request": {
+        "method": "POST",
+        "path": "/v1/tolling/transactions/{plateTxn}/payment",
+        "headers": {
+          "Idempotency-Key": "autopay-20260922-0498"
+        },
+        "body": {
+          "payment": {
+            "id": "9c0d1e2f-3a4b-4c5d-8e6f-7a8b9c0d1902",
+            "className": "PaymentRecord"
+          },
+          "note": "account autopay, batch 2026-09-22"
+        }
+      },
+      "expect": {
+        "status": 200,
+        "body": {
+          "transactionStatus": "paid",
+          "payment": {
+            "id": "9c0d1e2f-3a4b-4c5d-8e6f-7a8b9c0d1902"
+          }
+        }
+      }
+    },
+    {
+      "name": "Ten days later she calls: \"that wasn't me\"",
+      "narration": "The call centre looks the plate up and finds the paid charge from 07:52 on the 22nd. Toll lookups by plate, tag, toll point or status are one list route.",
+      "clock": {
+        "now": "2026-10-02T15:19:40Z"
+      },
+      "request": {
+        "method": "GET",
+        "path": "/v1/tolling/transactions?plate=SYN-9930"
+      },
+      "expect": {
+        "status": 200,
+        "body": {
+          "data": [
+            {
+              "id": "{plateTxn}",
+              "transactionStatus": "paid",
+              "credential": {
+                "credentialIdentification": "SYN-9930"
+              }
+            }
+          ]
+        }
+      }
+    },
+    {
+      "name": "The agent opens a dispute",
+      "narration": "She was out of state, and her vehicle is a black pickup. The agent opens a dispute with a reason code and names her as disputedBy. The original reads and the payment stay on the record as they were (§15.1).",
+      "clock": {
+        "now": "2026-10-02T15:20:11Z"
+      },
+      "request": {
+        "method": "POST",
+        "path": "/v1/tolling/transactions/{plateTxn}/disputes",
+        "body": {
+          "reason": "wrongVehicle",
+          "detail": "Holder was out of state; gantry image shows a silver sedan, holder's vehicle is a black pickup. Plate read confidence 0.71.",
+          "disputedBy": {
+            "id": "c1…0221",
+            "className": "RightHolder"
+          }
+        }
+      },
+      "expect": {
+        "status": 200,
+        "body": {
+          "transactionStatus": "disputed",
+          "payment": {
+            "id": "9c0d1e2f-3a4b-4c5d-8e6f-7a8b9c0d1902"
+          },
+          "dispute": {
+            "reason": "wrongVehicle",
+            "disputedBy": {
+              "id": "c1000000-0000-4000-8000-000000000221"
+            }
+          }
+        }
+      }
+    },
+    {
+      "name": "Image review agrees: refunded",
+      "narration": "The back office compares the gantry image with the vehicle on her account and resolves the dispute as refunded, one of the base resolution codes (§15.1). A charge is never voided after the fact: it is corrected by a dispute, and the money goes back as a Part 13 refund against the original payment.",
+      "clock": {
+        "now": "2026-10-03T09:41:02Z"
+      },
+      "request": {
+        "method": "POST",
+        "path": "/v1/tolling/transactions/{plateTxn}/disputes/resolve",
+        "headers": {
+          "Idempotency-Key": "backoffice-20261003-0498"
+        },
+        "body": {
+          "resolution": "refunded",
+          "note": "Image review: not the holder's vehicle. Refund issued against the original payment; gantry flagged for recalibration."
+        }
+      },
+      "expect": {
+        "status": 200,
+        "body": {
+          "transactionStatus": "resolved",
+          "dispute": {
+            "resolution": "refunded"
+          }
+        }
+      }
+    },
+    {
+      "name": "The full audit trail",
+      "narration": "One record, every state with who and when: created by the gantry, priced, paid by the billing run, disputed by the agent, resolved by the back office. That trail is what an auditor or a regulator asks for.",
+      "request": {
+        "method": "GET",
+        "path": "/v1/tolling/transactions/{plateTxn}"
+      },
+      "expect": {
+        "status": 200,
+        "body": {
+          "transactionStatus": "resolved",
+          "statusHistory": [
+            {
+              "state": "created",
+              "actor": "gantry-hc-01"
+            },
+            {
+              "state": "priced",
+              "actor": "toll-pricing"
+            },
+            {
+              "state": "paid",
+              "actor": "billing-batch"
+            },
+            {
+              "state": "disputed",
+              "actor": "agent-0219"
+            },
+            {
+              "state": "resolved",
+              "actor": "backoffice-jlee"
+            }
+          ]
+        }
+      }
+    },
+    {
+      "name": "Subscribers saw every change",
+      "narration": "After creation, each transition went out on apx.tolling.transaction.status.v1 (§15.3): two payments, the dispute and its resolution. The account portal and the reconciliation job stay current without polling.",
+      "events": {
+        "type": "apx.tolling.transaction.status.v1",
+        "exactly": 4
+      }
+    }
+  ]
+}

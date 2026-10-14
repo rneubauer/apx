@@ -1,0 +1,3391 @@
+{
+  "extends": "base-lakeside",
+  "name": "analytics-lakeside",
+  "description": "Analytics cast, Tuesday 2026-10-13 at 18:00 Chicago time: Lakeside Garage (420 spaces) with ten transient ticket visits and their pay-station and lane payments (one declined), the Tower B monthly permit pool (8 slots, 6 issued) and its parkers' visits this month, Riverside Lot (pay-by-plate) with a day of plate reads and the visits they made, two Harbor Deck visits outside the first grant, and CityPark Analytics (a1…0003) as the outside BI vendor holding a session cursor from its 17:00 sync.",
+  "clock": {
+    "start": "2026-10-13T23:00:00Z"
+  },
+  "lpr": {
+    "pairing": {
+      "places": [
+        "b1…0006"
+      ]
+    },
+    "retention": {
+      "imagery": "P30D",
+      "reads": "P90D",
+      "holds": []
+    }
+  },
+  "apdsPlaces": {
+    "b1…0001": {
+      "version": 7,
+      "type": "place",
+      "name": [
+        {
+          "language": "en",
+          "string": "Lakeside Garage"
+        }
+      ],
+      "layer": 0,
+      "hierarchyElementRecord": {
+        "creationTime": "2024-03-01T00:00:00Z",
+        "creator": {
+          "id": "a1…0001",
+          "version": 1,
+          "className": "Organisation"
+        }
+      },
+      "timeZone": "America/Chicago",
+      "hierarchyElementReference": {
+        "elementId": {
+          "id": "b1…0001",
+          "version": 7,
+          "className": "Place"
+        },
+        "supply": [
+          {
+            "supplyViewType": "spaceView",
+            "supplyQuantity": 420
+          }
+        ]
+      },
+      "_modified": "2026-09-01T05:00:00Z"
+    }
+  },
+  "places": [
+    {
+      "id": "b1…0006",
+      "name": "Riverside Lot",
+      "type": "Place",
+      "operator": "a1…0001",
+      "timeZone": "America/Chicago",
+      "supplyQuantity": 80,
+      "version": 2
+    }
+  ],
+  "lanes": [
+    {
+      "id": "b2…0001",
+      "placeId": "b1…0001",
+      "name": "entry lane 1",
+      "accessType": "entry",
+      "version": 3
+    },
+    {
+      "id": "b2…0002",
+      "placeId": "b1…0001",
+      "name": "exit lane 2",
+      "accessType": "exit",
+      "version": 2
+    },
+    {
+      "id": "b2…0060",
+      "placeId": "b1…0006",
+      "name": "Riverside: entry lane",
+      "accessType": "entry",
+      "version": 2,
+      "creationTime": "2026-09-01T12:00:00Z",
+      "extensions": {
+        "apds-ext:apx:lane-cameras@1.0": {
+          "cameras": [
+            {
+              "cameraId": "cam-in-1",
+              "faces": "inward"
+            },
+            {
+              "cameraId": "cam-in-1f",
+              "faces": "outward"
+            }
+          ]
+        }
+      }
+    },
+    {
+      "id": "b2…0061",
+      "placeId": "b1…0006",
+      "name": "Riverside: exit lane",
+      "accessType": "exit",
+      "version": 3,
+      "creationTime": "2026-09-01T12:00:00Z",
+      "extensions": {
+        "apds-ext:apx:lane-cameras@1.0": {
+          "cameras": [
+            {
+              "cameraId": "cam-exit-1",
+              "faces": "outward"
+            },
+            {
+              "cameraId": "cam-exit-1f",
+              "faces": "inward"
+            }
+          ]
+        }
+      }
+    }
+  ],
+  "accountsPolicy": {
+    "linkChannels": [
+      "sms",
+      "email"
+    ],
+    "linkTtl": "PT1H",
+    "refundApprovalRole": "supervisor",
+    "arSystem": "paris",
+    "authorizationLifecycle": true,
+    "transactionPrefix": "TXN",
+    "transactionStart": 90150,
+    "confirmationStart": 88214
+  },
+  "permits": {
+    "defaultTermMonths": 1
+  },
+  "rightHolders": [
+    {
+      "id": "c1…0801",
+      "name": "Avery Chen"
+    },
+    {
+      "id": "c1…0802",
+      "name": "Bram Okafor"
+    },
+    {
+      "id": "c1…0803",
+      "name": "Carmen Ruiz"
+    },
+    {
+      "id": "c1…0804",
+      "name": "Dev Patel"
+    },
+    {
+      "id": "c1…0805",
+      "name": "Elin Johansson"
+    },
+    {
+      "id": "c1…0806",
+      "name": "Farid Haddad"
+    },
+    {
+      "id": "c1…0807",
+      "name": "Grace Mbeki"
+    }
+  ],
+  "rightSpecs": [
+    {
+      "id": "e1…0701",
+      "version": 2,
+      "type": "oneTimeUseParking",
+      "description": [
+        {
+          "language": "en",
+          "string": "Lakeside transient (ticket)"
+        }
+      ],
+      "transferable": false,
+      "credentials": [
+        "ticket"
+      ],
+      "validity": {
+        "validityStatus": "active",
+        "validityTimeSpecification": {
+          "overallStartTime": "2024-03-01T00:00:00Z"
+        }
+      },
+      "issuer": {
+        "id": "a1…0001",
+        "version": 1,
+        "className": "Organisation"
+      },
+      "hierarchyElements": [
+        {
+          "id": "b1…0001",
+          "version": 7,
+          "className": "Place"
+        }
+      ]
+    },
+    {
+      "id": "e1…0810",
+      "version": 3,
+      "type": "permitParking",
+      "description": [
+        {
+          "language": "en",
+          "string": "Lakeside monthly: Tower B tenants"
+        }
+      ],
+      "transferable": false,
+      "credentials": [
+        "licensePlate"
+      ],
+      "validity": {
+        "validityStatus": "active",
+        "validityTimeSpecification": {
+          "overallStartTime": "2026-01-01T00:00:00Z"
+        }
+      },
+      "issuer": {
+        "id": "a1…0001",
+        "version": 1,
+        "className": "Organisation"
+      },
+      "hierarchyElements": [
+        {
+          "id": "b1…0001",
+          "version": 7,
+          "className": "Place"
+        }
+      ],
+      "rightPools": [
+        {
+          "id": "e4…0810",
+          "version": 1,
+          "assignedRightsIssuer": {
+            "id": "a1…0001",
+            "version": 1,
+            "className": "Organisation"
+          },
+          "distributedAssignedRights": 6,
+          "availableAssignedRights": 2
+        }
+      ]
+    }
+  ],
+  "assignedRights": [
+    {
+      "id": "e2…0801",
+      "version": 1,
+      "_holder": "c1…0801",
+      "_pool": "e4…0810",
+      "rightSpecification": {
+        "id": "e1…0810",
+        "version": 3,
+        "className": "RightSpecification"
+      },
+      "assignedRightIssuer": {
+        "id": "a1…0001",
+        "version": 1,
+        "className": "Organisation"
+      },
+      "rightHolder": {
+        "credentials": [
+          {
+            "credentialAssignedType": "customer",
+            "type": "permit",
+            "identifier": {
+              "id": "c1…0801",
+              "className": "RightHolder"
+            }
+          },
+          {
+            "credentialAssignedType": "vehicle",
+            "type": "licensePlate",
+            "identifier": {
+              "id": "MTH-1101",
+              "className": "licensePlate"
+            }
+          }
+        ]
+      },
+      "issueMethod": "permit",
+      "issuanceTime": "2026-01-02T15:00:00Z",
+      "plannedUses": [
+        {
+          "startTime": "2026-01-02T00:00:00Z",
+          "endTime": "2026-12-31T23:59:59Z"
+        }
+      ],
+      "expiry": "2026-12-31T23:59:59Z",
+      "_modified": "2026-01-02T15:00:00Z"
+    },
+    {
+      "id": "e2…0802",
+      "version": 1,
+      "_holder": "c1…0802",
+      "_pool": "e4…0810",
+      "rightSpecification": {
+        "id": "e1…0810",
+        "version": 3,
+        "className": "RightSpecification"
+      },
+      "assignedRightIssuer": {
+        "id": "a1…0001",
+        "version": 1,
+        "className": "Organisation"
+      },
+      "rightHolder": {
+        "credentials": [
+          {
+            "credentialAssignedType": "customer",
+            "type": "permit",
+            "identifier": {
+              "id": "c1…0802",
+              "className": "RightHolder"
+            }
+          },
+          {
+            "credentialAssignedType": "vehicle",
+            "type": "licensePlate",
+            "identifier": {
+              "id": "MTH-1102",
+              "className": "licensePlate"
+            }
+          }
+        ]
+      },
+      "issueMethod": "permit",
+      "issuanceTime": "2026-01-02T15:00:00Z",
+      "plannedUses": [
+        {
+          "startTime": "2026-01-02T00:00:00Z",
+          "endTime": "2026-12-31T23:59:59Z"
+        }
+      ],
+      "expiry": "2026-12-31T23:59:59Z",
+      "_modified": "2026-01-02T15:00:00Z"
+    },
+    {
+      "id": "e2…0803",
+      "version": 1,
+      "_holder": "c1…0803",
+      "_pool": "e4…0810",
+      "rightSpecification": {
+        "id": "e1…0810",
+        "version": 3,
+        "className": "RightSpecification"
+      },
+      "assignedRightIssuer": {
+        "id": "a1…0001",
+        "version": 1,
+        "className": "Organisation"
+      },
+      "rightHolder": {
+        "credentials": [
+          {
+            "credentialAssignedType": "customer",
+            "type": "permit",
+            "identifier": {
+              "id": "c1…0803",
+              "className": "RightHolder"
+            }
+          },
+          {
+            "credentialAssignedType": "vehicle",
+            "type": "licensePlate",
+            "identifier": {
+              "id": "MTH-1103",
+              "className": "licensePlate"
+            }
+          }
+        ]
+      },
+      "issueMethod": "permit",
+      "issuanceTime": "2026-01-02T15:00:00Z",
+      "plannedUses": [
+        {
+          "startTime": "2026-01-02T00:00:00Z",
+          "endTime": "2026-12-31T23:59:59Z"
+        }
+      ],
+      "expiry": "2026-12-31T23:59:59Z",
+      "_modified": "2026-01-02T15:00:00Z"
+    },
+    {
+      "id": "e2…0804",
+      "version": 1,
+      "_holder": "c1…0804",
+      "_pool": "e4…0810",
+      "rightSpecification": {
+        "id": "e1…0810",
+        "version": 3,
+        "className": "RightSpecification"
+      },
+      "assignedRightIssuer": {
+        "id": "a1…0001",
+        "version": 1,
+        "className": "Organisation"
+      },
+      "rightHolder": {
+        "credentials": [
+          {
+            "credentialAssignedType": "customer",
+            "type": "permit",
+            "identifier": {
+              "id": "c1…0804",
+              "className": "RightHolder"
+            }
+          },
+          {
+            "credentialAssignedType": "vehicle",
+            "type": "licensePlate",
+            "identifier": {
+              "id": "MTH-1104",
+              "className": "licensePlate"
+            }
+          }
+        ]
+      },
+      "issueMethod": "permit",
+      "issuanceTime": "2026-01-02T15:00:00Z",
+      "plannedUses": [
+        {
+          "startTime": "2026-01-02T00:00:00Z",
+          "endTime": "2026-12-31T23:59:59Z"
+        }
+      ],
+      "expiry": "2026-12-31T23:59:59Z",
+      "_modified": "2026-01-02T15:00:00Z"
+    },
+    {
+      "id": "e2…0805",
+      "version": 1,
+      "_holder": "c1…0805",
+      "_pool": "e4…0810",
+      "rightSpecification": {
+        "id": "e1…0810",
+        "version": 3,
+        "className": "RightSpecification"
+      },
+      "assignedRightIssuer": {
+        "id": "a1…0001",
+        "version": 1,
+        "className": "Organisation"
+      },
+      "rightHolder": {
+        "credentials": [
+          {
+            "credentialAssignedType": "customer",
+            "type": "permit",
+            "identifier": {
+              "id": "c1…0805",
+              "className": "RightHolder"
+            }
+          },
+          {
+            "credentialAssignedType": "vehicle",
+            "type": "licensePlate",
+            "identifier": {
+              "id": "MTH-1105",
+              "className": "licensePlate"
+            }
+          }
+        ]
+      },
+      "issueMethod": "permit",
+      "issuanceTime": "2026-01-02T15:00:00Z",
+      "plannedUses": [
+        {
+          "startTime": "2026-01-02T00:00:00Z",
+          "endTime": "2026-12-31T23:59:59Z"
+        }
+      ],
+      "expiry": "2026-12-31T23:59:59Z",
+      "_modified": "2026-01-02T15:00:00Z"
+    },
+    {
+      "id": "e2…0806",
+      "version": 1,
+      "_holder": "c1…0806",
+      "_pool": "e4…0810",
+      "rightSpecification": {
+        "id": "e1…0810",
+        "version": 3,
+        "className": "RightSpecification"
+      },
+      "assignedRightIssuer": {
+        "id": "a1…0001",
+        "version": 1,
+        "className": "Organisation"
+      },
+      "rightHolder": {
+        "credentials": [
+          {
+            "credentialAssignedType": "customer",
+            "type": "permit",
+            "identifier": {
+              "id": "c1…0806",
+              "className": "RightHolder"
+            }
+          },
+          {
+            "credentialAssignedType": "vehicle",
+            "type": "licensePlate",
+            "identifier": {
+              "id": "MTH-1106",
+              "className": "licensePlate"
+            }
+          }
+        ]
+      },
+      "issueMethod": "permit",
+      "issuanceTime": "2026-01-02T15:00:00Z",
+      "plannedUses": [
+        {
+          "startTime": "2026-01-02T00:00:00Z",
+          "endTime": "2026-12-31T23:59:59Z"
+        }
+      ],
+      "expiry": "2026-12-31T23:59:59Z",
+      "_modified": "2026-01-02T15:00:00Z"
+    },
+    {
+      "id": "e2…0701",
+      "version": 1,
+      "rightSpecification": {
+        "id": "e1…0701",
+        "version": 2,
+        "className": "RightSpecification"
+      },
+      "rightHolder": {
+        "credentials": [
+          {
+            "type": "ticket",
+            "credentialAssignedType": "other",
+            "identifier": {
+              "id": "T-7101",
+              "className": "Credential"
+            }
+          }
+        ]
+      },
+      "assignedRightIssuer": {
+        "id": "a1…0001",
+        "version": 1,
+        "className": "Organisation"
+      },
+      "issueMethod": "ticket",
+      "issuanceTime": "2026-10-13T12:42:00Z",
+      "_modified": "2026-10-13T12:42:00Z"
+    },
+    {
+      "id": "e2…0702",
+      "version": 1,
+      "rightSpecification": {
+        "id": "e1…0701",
+        "version": 2,
+        "className": "RightSpecification"
+      },
+      "rightHolder": {
+        "credentials": [
+          {
+            "type": "ticket",
+            "credentialAssignedType": "other",
+            "identifier": {
+              "id": "T-7102",
+              "className": "Credential"
+            }
+          }
+        ]
+      },
+      "assignedRightIssuer": {
+        "id": "a1…0001",
+        "version": 1,
+        "className": "Organisation"
+      },
+      "issueMethod": "ticket",
+      "issuanceTime": "2026-10-13T13:05:00Z",
+      "_modified": "2026-10-13T13:05:00Z"
+    },
+    {
+      "id": "e2…0703",
+      "version": 1,
+      "rightSpecification": {
+        "id": "e1…0701",
+        "version": 2,
+        "className": "RightSpecification"
+      },
+      "rightHolder": {
+        "credentials": [
+          {
+            "type": "ticket",
+            "credentialAssignedType": "other",
+            "identifier": {
+              "id": "T-7103",
+              "className": "Credential"
+            }
+          }
+        ]
+      },
+      "assignedRightIssuer": {
+        "id": "a1…0001",
+        "version": 1,
+        "className": "Organisation"
+      },
+      "issueMethod": "ticket",
+      "issuanceTime": "2026-10-13T14:30:00Z",
+      "_modified": "2026-10-13T14:30:00Z"
+    },
+    {
+      "id": "e2…0704",
+      "version": 1,
+      "rightSpecification": {
+        "id": "e1…0701",
+        "version": 2,
+        "className": "RightSpecification"
+      },
+      "rightHolder": {
+        "credentials": [
+          {
+            "type": "ticket",
+            "credentialAssignedType": "other",
+            "identifier": {
+              "id": "T-7104",
+              "className": "Credential"
+            }
+          }
+        ]
+      },
+      "assignedRightIssuer": {
+        "id": "a1…0001",
+        "version": 1,
+        "className": "Organisation"
+      },
+      "issueMethod": "ticket",
+      "issuanceTime": "2026-10-13T16:02:00Z",
+      "_modified": "2026-10-13T16:02:00Z"
+    },
+    {
+      "id": "e2…0705",
+      "version": 1,
+      "rightSpecification": {
+        "id": "e1…0701",
+        "version": 2,
+        "className": "RightSpecification"
+      },
+      "rightHolder": {
+        "credentials": [
+          {
+            "type": "ticket",
+            "credentialAssignedType": "other",
+            "identifier": {
+              "id": "T-7105",
+              "className": "Credential"
+            }
+          }
+        ]
+      },
+      "assignedRightIssuer": {
+        "id": "a1…0001",
+        "version": 1,
+        "className": "Organisation"
+      },
+      "issueMethod": "ticket",
+      "issuanceTime": "2026-10-13T16:50:00Z",
+      "_modified": "2026-10-13T16:50:00Z"
+    },
+    {
+      "id": "e2…0706",
+      "version": 1,
+      "rightSpecification": {
+        "id": "e1…0701",
+        "version": 2,
+        "className": "RightSpecification"
+      },
+      "rightHolder": {
+        "credentials": [
+          {
+            "type": "ticket",
+            "credentialAssignedType": "other",
+            "identifier": {
+              "id": "T-7106",
+              "className": "Credential"
+            }
+          }
+        ]
+      },
+      "assignedRightIssuer": {
+        "id": "a1…0001",
+        "version": 1,
+        "className": "Organisation"
+      },
+      "issueMethod": "ticket",
+      "issuanceTime": "2026-10-13T17:15:00Z",
+      "_modified": "2026-10-13T17:15:00Z"
+    },
+    {
+      "id": "e2…0707",
+      "version": 1,
+      "rightSpecification": {
+        "id": "e1…0701",
+        "version": 2,
+        "className": "RightSpecification"
+      },
+      "rightHolder": {
+        "credentials": [
+          {
+            "type": "ticket",
+            "credentialAssignedType": "other",
+            "identifier": {
+              "id": "T-7107",
+              "className": "Credential"
+            }
+          }
+        ]
+      },
+      "assignedRightIssuer": {
+        "id": "a1…0001",
+        "version": 1,
+        "className": "Organisation"
+      },
+      "issueMethod": "ticket",
+      "issuanceTime": "2026-10-13T18:40:00Z",
+      "_modified": "2026-10-13T18:40:00Z"
+    },
+    {
+      "id": "e2…0708",
+      "version": 1,
+      "rightSpecification": {
+        "id": "e1…0701",
+        "version": 2,
+        "className": "RightSpecification"
+      },
+      "rightHolder": {
+        "credentials": [
+          {
+            "type": "ticket",
+            "credentialAssignedType": "other",
+            "identifier": {
+              "id": "T-7108",
+              "className": "Credential"
+            }
+          }
+        ]
+      },
+      "assignedRightIssuer": {
+        "id": "a1…0001",
+        "version": 1,
+        "className": "Organisation"
+      },
+      "issueMethod": "ticket",
+      "issuanceTime": "2026-10-13T19:20:00Z",
+      "_modified": "2026-10-13T19:20:00Z"
+    },
+    {
+      "id": "e2…0709",
+      "version": 1,
+      "rightSpecification": {
+        "id": "e1…0701",
+        "version": 2,
+        "className": "RightSpecification"
+      },
+      "rightHolder": {
+        "credentials": [
+          {
+            "type": "ticket",
+            "credentialAssignedType": "other",
+            "identifier": {
+              "id": "T-7109",
+              "className": "Credential"
+            }
+          }
+        ]
+      },
+      "assignedRightIssuer": {
+        "id": "a1…0001",
+        "version": 1,
+        "className": "Organisation"
+      },
+      "issueMethod": "ticket",
+      "issuanceTime": "2026-10-13T21:10:00Z",
+      "_modified": "2026-10-13T21:10:00Z"
+    },
+    {
+      "id": "e2…0710",
+      "version": 1,
+      "rightSpecification": {
+        "id": "e1…0701",
+        "version": 2,
+        "className": "RightSpecification"
+      },
+      "rightHolder": {
+        "credentials": [
+          {
+            "type": "ticket",
+            "credentialAssignedType": "other",
+            "identifier": {
+              "id": "T-7110",
+              "className": "Credential"
+            }
+          }
+        ]
+      },
+      "assignedRightIssuer": {
+        "id": "a1…0001",
+        "version": 1,
+        "className": "Organisation"
+      },
+      "issueMethod": "ticket",
+      "issuanceTime": "2026-10-13T22:25:00Z",
+      "_modified": "2026-10-13T22:25:00Z"
+    },
+    {
+      "id": "e2…0650",
+      "version": 1,
+      "rightSpecification": {
+        "id": "e1…0701",
+        "version": 2,
+        "className": "RightSpecification"
+      },
+      "rightHolder": {
+        "credentials": [
+          {
+            "type": "ticket",
+            "credentialAssignedType": "other",
+            "identifier": {
+              "id": "T-7050",
+              "className": "Credential"
+            }
+          }
+        ]
+      },
+      "assignedRightIssuer": {
+        "id": "a1…0001",
+        "version": 1,
+        "className": "Organisation"
+      },
+      "issueMethod": "ticket",
+      "issuanceTime": "2026-10-12T20:00:00Z",
+      "_modified": "2026-10-12T20:00:00Z"
+    }
+  ],
+  "sessions": [
+    {
+      "id": "c4…0701",
+      "version": 2,
+      "actualStart": "2026-10-13T12:42:00Z",
+      "actualEnd": "2026-10-13T14:10:00Z",
+      "initiator": {
+        "id": "a1…0001",
+        "version": 1,
+        "className": "Organisation"
+      },
+      "hierarchyElement": {
+        "id": "b1…0001",
+        "version": 7,
+        "className": "Place"
+      },
+      "identifiedCredentials": [
+        {
+          "type": "ticket",
+          "credentialAssignedType": "other",
+          "identifier": {
+            "id": "T-7101",
+            "className": "Credential"
+          }
+        }
+      ],
+      "segments": [
+        {
+          "id": "c5…0701",
+          "version": 2,
+          "actualStart": "2026-10-13T12:42:00Z",
+          "actualEnd": "2026-10-13T14:10:00Z",
+          "assignedRight": {
+            "id": "e2…0701",
+            "version": 1,
+            "className": "AssignedRight"
+          },
+          "validationType": [
+            "ticket"
+          ]
+        }
+      ],
+      "_place": "b1…0001",
+      "_modified": "2026-10-13T14:10:00Z",
+      "_ticketNumber": "T-7101",
+      "_versions": [
+        {
+          "version": 1,
+          "actualStart": "2026-10-13T12:42:00Z",
+          "initiator": {
+            "id": "a1…0001",
+            "version": 1,
+            "className": "Organisation"
+          },
+          "hierarchyElement": {
+            "id": "b1…0001",
+            "version": 7,
+            "className": "Place"
+          },
+          "identifiedCredentials": [
+            {
+              "type": "ticket",
+              "credentialAssignedType": "other",
+              "identifier": {
+                "id": "T-7101",
+                "className": "Credential"
+              }
+            }
+          ],
+          "segments": [
+            {
+              "id": "c5…0701",
+              "version": 1,
+              "actualStart": "2026-10-13T12:42:00Z",
+              "assignedRight": {
+                "id": "e2…0701",
+                "version": 1,
+                "className": "AssignedRight"
+              },
+              "validationType": [
+                "ticket"
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "c4…0702",
+      "version": 2,
+      "actualStart": "2026-10-13T13:05:00Z",
+      "actualEnd": "2026-10-13T22:20:00Z",
+      "initiator": {
+        "id": "a1…0001",
+        "version": 1,
+        "className": "Organisation"
+      },
+      "hierarchyElement": {
+        "id": "b1…0001",
+        "version": 7,
+        "className": "Place"
+      },
+      "identifiedCredentials": [
+        {
+          "type": "ticket",
+          "credentialAssignedType": "other",
+          "identifier": {
+            "id": "T-7102",
+            "className": "Credential"
+          }
+        }
+      ],
+      "segments": [
+        {
+          "id": "c5…0702",
+          "version": 2,
+          "actualStart": "2026-10-13T13:05:00Z",
+          "actualEnd": "2026-10-13T22:20:00Z",
+          "assignedRight": {
+            "id": "e2…0702",
+            "version": 1,
+            "className": "AssignedRight"
+          },
+          "validationType": [
+            "ticket"
+          ]
+        }
+      ],
+      "_place": "b1…0001",
+      "_modified": "2026-10-13T22:20:00Z",
+      "_ticketNumber": "T-7102",
+      "_versions": [
+        {
+          "version": 1,
+          "actualStart": "2026-10-13T13:05:00Z",
+          "initiator": {
+            "id": "a1…0001",
+            "version": 1,
+            "className": "Organisation"
+          },
+          "hierarchyElement": {
+            "id": "b1…0001",
+            "version": 7,
+            "className": "Place"
+          },
+          "identifiedCredentials": [
+            {
+              "type": "ticket",
+              "credentialAssignedType": "other",
+              "identifier": {
+                "id": "T-7102",
+                "className": "Credential"
+              }
+            }
+          ],
+          "segments": [
+            {
+              "id": "c5…0702",
+              "version": 1,
+              "actualStart": "2026-10-13T13:05:00Z",
+              "assignedRight": {
+                "id": "e2…0702",
+                "version": 1,
+                "className": "AssignedRight"
+              },
+              "validationType": [
+                "ticket"
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "c4…0703",
+      "version": 2,
+      "actualStart": "2026-10-13T14:30:00Z",
+      "actualEnd": "2026-10-13T16:45:00Z",
+      "initiator": {
+        "id": "a1…0001",
+        "version": 1,
+        "className": "Organisation"
+      },
+      "hierarchyElement": {
+        "id": "b1…0001",
+        "version": 7,
+        "className": "Place"
+      },
+      "identifiedCredentials": [
+        {
+          "type": "ticket",
+          "credentialAssignedType": "other",
+          "identifier": {
+            "id": "T-7103",
+            "className": "Credential"
+          }
+        }
+      ],
+      "segments": [
+        {
+          "id": "c5…0703",
+          "version": 2,
+          "actualStart": "2026-10-13T14:30:00Z",
+          "actualEnd": "2026-10-13T16:45:00Z",
+          "assignedRight": {
+            "id": "e2…0703",
+            "version": 1,
+            "className": "AssignedRight"
+          },
+          "validationType": [
+            "ticket"
+          ]
+        }
+      ],
+      "_place": "b1…0001",
+      "_modified": "2026-10-13T16:45:00Z",
+      "_ticketNumber": "T-7103",
+      "_versions": [
+        {
+          "version": 1,
+          "actualStart": "2026-10-13T14:30:00Z",
+          "initiator": {
+            "id": "a1…0001",
+            "version": 1,
+            "className": "Organisation"
+          },
+          "hierarchyElement": {
+            "id": "b1…0001",
+            "version": 7,
+            "className": "Place"
+          },
+          "identifiedCredentials": [
+            {
+              "type": "ticket",
+              "credentialAssignedType": "other",
+              "identifier": {
+                "id": "T-7103",
+                "className": "Credential"
+              }
+            }
+          ],
+          "segments": [
+            {
+              "id": "c5…0703",
+              "version": 1,
+              "actualStart": "2026-10-13T14:30:00Z",
+              "assignedRight": {
+                "id": "e2…0703",
+                "version": 1,
+                "className": "AssignedRight"
+              },
+              "validationType": [
+                "ticket"
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "c4…0704",
+      "version": 2,
+      "actualStart": "2026-10-13T16:02:00Z",
+      "actualEnd": "2026-10-13T17:31:00Z",
+      "initiator": {
+        "id": "a1…0001",
+        "version": 1,
+        "className": "Organisation"
+      },
+      "hierarchyElement": {
+        "id": "b1…0001",
+        "version": 7,
+        "className": "Place"
+      },
+      "identifiedCredentials": [
+        {
+          "type": "ticket",
+          "credentialAssignedType": "other",
+          "identifier": {
+            "id": "T-7104",
+            "className": "Credential"
+          }
+        }
+      ],
+      "segments": [
+        {
+          "id": "c5…0704",
+          "version": 2,
+          "actualStart": "2026-10-13T16:02:00Z",
+          "actualEnd": "2026-10-13T17:31:00Z",
+          "assignedRight": {
+            "id": "e2…0704",
+            "version": 1,
+            "className": "AssignedRight"
+          },
+          "validationType": [
+            "ticket"
+          ]
+        }
+      ],
+      "_place": "b1…0001",
+      "_modified": "2026-10-13T17:31:00Z",
+      "_ticketNumber": "T-7104",
+      "_versions": [
+        {
+          "version": 1,
+          "actualStart": "2026-10-13T16:02:00Z",
+          "initiator": {
+            "id": "a1…0001",
+            "version": 1,
+            "className": "Organisation"
+          },
+          "hierarchyElement": {
+            "id": "b1…0001",
+            "version": 7,
+            "className": "Place"
+          },
+          "identifiedCredentials": [
+            {
+              "type": "ticket",
+              "credentialAssignedType": "other",
+              "identifier": {
+                "id": "T-7104",
+                "className": "Credential"
+              }
+            }
+          ],
+          "segments": [
+            {
+              "id": "c5…0704",
+              "version": 1,
+              "actualStart": "2026-10-13T16:02:00Z",
+              "assignedRight": {
+                "id": "e2…0704",
+                "version": 1,
+                "className": "AssignedRight"
+              },
+              "validationType": [
+                "ticket"
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "c4…0705",
+      "version": 2,
+      "actualStart": "2026-10-13T16:50:00Z",
+      "actualEnd": "2026-10-13T19:05:00Z",
+      "initiator": {
+        "id": "a1…0001",
+        "version": 1,
+        "className": "Organisation"
+      },
+      "hierarchyElement": {
+        "id": "b1…0001",
+        "version": 7,
+        "className": "Place"
+      },
+      "identifiedCredentials": [
+        {
+          "type": "ticket",
+          "credentialAssignedType": "other",
+          "identifier": {
+            "id": "T-7105",
+            "className": "Credential"
+          }
+        }
+      ],
+      "segments": [
+        {
+          "id": "c5…0705",
+          "version": 2,
+          "actualStart": "2026-10-13T16:50:00Z",
+          "actualEnd": "2026-10-13T19:05:00Z",
+          "assignedRight": {
+            "id": "e2…0705",
+            "version": 1,
+            "className": "AssignedRight"
+          },
+          "validationType": [
+            "ticket"
+          ]
+        }
+      ],
+      "_place": "b1…0001",
+      "_modified": "2026-10-13T19:05:00Z",
+      "_ticketNumber": "T-7105",
+      "_versions": [
+        {
+          "version": 1,
+          "actualStart": "2026-10-13T16:50:00Z",
+          "initiator": {
+            "id": "a1…0001",
+            "version": 1,
+            "className": "Organisation"
+          },
+          "hierarchyElement": {
+            "id": "b1…0001",
+            "version": 7,
+            "className": "Place"
+          },
+          "identifiedCredentials": [
+            {
+              "type": "ticket",
+              "credentialAssignedType": "other",
+              "identifier": {
+                "id": "T-7105",
+                "className": "Credential"
+              }
+            }
+          ],
+          "segments": [
+            {
+              "id": "c5…0705",
+              "version": 1,
+              "actualStart": "2026-10-13T16:50:00Z",
+              "assignedRight": {
+                "id": "e2…0705",
+                "version": 1,
+                "className": "AssignedRight"
+              },
+              "validationType": [
+                "ticket"
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "c4…0706",
+      "version": 2,
+      "actualStart": "2026-10-13T17:15:00Z",
+      "actualEnd": "2026-10-13T18:00:00Z",
+      "initiator": {
+        "id": "a1…0001",
+        "version": 1,
+        "className": "Organisation"
+      },
+      "hierarchyElement": {
+        "id": "b1…0001",
+        "version": 7,
+        "className": "Place"
+      },
+      "identifiedCredentials": [
+        {
+          "type": "ticket",
+          "credentialAssignedType": "other",
+          "identifier": {
+            "id": "T-7106",
+            "className": "Credential"
+          }
+        }
+      ],
+      "segments": [
+        {
+          "id": "c5…0706",
+          "version": 2,
+          "actualStart": "2026-10-13T17:15:00Z",
+          "actualEnd": "2026-10-13T18:00:00Z",
+          "assignedRight": {
+            "id": "e2…0706",
+            "version": 1,
+            "className": "AssignedRight"
+          },
+          "validationType": [
+            "ticket"
+          ]
+        }
+      ],
+      "_place": "b1…0001",
+      "_modified": "2026-10-13T18:00:00Z",
+      "_ticketNumber": "T-7106",
+      "_versions": [
+        {
+          "version": 1,
+          "actualStart": "2026-10-13T17:15:00Z",
+          "initiator": {
+            "id": "a1…0001",
+            "version": 1,
+            "className": "Organisation"
+          },
+          "hierarchyElement": {
+            "id": "b1…0001",
+            "version": 7,
+            "className": "Place"
+          },
+          "identifiedCredentials": [
+            {
+              "type": "ticket",
+              "credentialAssignedType": "other",
+              "identifier": {
+                "id": "T-7106",
+                "className": "Credential"
+              }
+            }
+          ],
+          "segments": [
+            {
+              "id": "c5…0706",
+              "version": 1,
+              "actualStart": "2026-10-13T17:15:00Z",
+              "assignedRight": {
+                "id": "e2…0706",
+                "version": 1,
+                "className": "AssignedRight"
+              },
+              "validationType": [
+                "ticket"
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "c4…0707",
+      "version": 2,
+      "actualStart": "2026-10-13T18:40:00Z",
+      "actualEnd": "2026-10-13T21:55:00Z",
+      "initiator": {
+        "id": "a1…0001",
+        "version": 1,
+        "className": "Organisation"
+      },
+      "hierarchyElement": {
+        "id": "b1…0001",
+        "version": 7,
+        "className": "Place"
+      },
+      "identifiedCredentials": [
+        {
+          "type": "ticket",
+          "credentialAssignedType": "other",
+          "identifier": {
+            "id": "T-7107",
+            "className": "Credential"
+          }
+        }
+      ],
+      "segments": [
+        {
+          "id": "c5…0707",
+          "version": 2,
+          "actualStart": "2026-10-13T18:40:00Z",
+          "actualEnd": "2026-10-13T21:55:00Z",
+          "assignedRight": {
+            "id": "e2…0707",
+            "version": 1,
+            "className": "AssignedRight"
+          },
+          "validationType": [
+            "ticket"
+          ]
+        }
+      ],
+      "_place": "b1…0001",
+      "_modified": "2026-10-13T21:55:00Z",
+      "_ticketNumber": "T-7107",
+      "_versions": [
+        {
+          "version": 1,
+          "actualStart": "2026-10-13T18:40:00Z",
+          "initiator": {
+            "id": "a1…0001",
+            "version": 1,
+            "className": "Organisation"
+          },
+          "hierarchyElement": {
+            "id": "b1…0001",
+            "version": 7,
+            "className": "Place"
+          },
+          "identifiedCredentials": [
+            {
+              "type": "ticket",
+              "credentialAssignedType": "other",
+              "identifier": {
+                "id": "T-7107",
+                "className": "Credential"
+              }
+            }
+          ],
+          "segments": [
+            {
+              "id": "c5…0707",
+              "version": 1,
+              "actualStart": "2026-10-13T18:40:00Z",
+              "assignedRight": {
+                "id": "e2…0707",
+                "version": 1,
+                "className": "AssignedRight"
+              },
+              "validationType": [
+                "ticket"
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "c4…0708",
+      "version": 2,
+      "actualStart": "2026-10-13T19:20:00Z",
+      "actualEnd": "2026-10-13T22:35:00Z",
+      "initiator": {
+        "id": "a1…0001",
+        "version": 1,
+        "className": "Organisation"
+      },
+      "hierarchyElement": {
+        "id": "b1…0001",
+        "version": 7,
+        "className": "Place"
+      },
+      "identifiedCredentials": [
+        {
+          "type": "ticket",
+          "credentialAssignedType": "other",
+          "identifier": {
+            "id": "T-7108",
+            "className": "Credential"
+          }
+        }
+      ],
+      "segments": [
+        {
+          "id": "c5…0708",
+          "version": 2,
+          "actualStart": "2026-10-13T19:20:00Z",
+          "actualEnd": "2026-10-13T22:35:00Z",
+          "assignedRight": {
+            "id": "e2…0708",
+            "version": 1,
+            "className": "AssignedRight"
+          },
+          "validationType": [
+            "ticket"
+          ]
+        }
+      ],
+      "_place": "b1…0001",
+      "_modified": "2026-10-13T22:35:00Z",
+      "_ticketNumber": "T-7108",
+      "_versions": [
+        {
+          "version": 1,
+          "actualStart": "2026-10-13T19:20:00Z",
+          "initiator": {
+            "id": "a1…0001",
+            "version": 1,
+            "className": "Organisation"
+          },
+          "hierarchyElement": {
+            "id": "b1…0001",
+            "version": 7,
+            "className": "Place"
+          },
+          "identifiedCredentials": [
+            {
+              "type": "ticket",
+              "credentialAssignedType": "other",
+              "identifier": {
+                "id": "T-7108",
+                "className": "Credential"
+              }
+            }
+          ],
+          "segments": [
+            {
+              "id": "c5…0708",
+              "version": 1,
+              "actualStart": "2026-10-13T19:20:00Z",
+              "assignedRight": {
+                "id": "e2…0708",
+                "version": 1,
+                "className": "AssignedRight"
+              },
+              "validationType": [
+                "ticket"
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "c4…0709",
+      "version": 1,
+      "actualStart": "2026-10-13T21:10:00Z",
+      "initiator": {
+        "id": "a1…0001",
+        "version": 1,
+        "className": "Organisation"
+      },
+      "hierarchyElement": {
+        "id": "b1…0001",
+        "version": 7,
+        "className": "Place"
+      },
+      "identifiedCredentials": [
+        {
+          "type": "ticket",
+          "credentialAssignedType": "other",
+          "identifier": {
+            "id": "T-7109",
+            "className": "Credential"
+          }
+        }
+      ],
+      "segments": [
+        {
+          "id": "c5…0709",
+          "version": 1,
+          "actualStart": "2026-10-13T21:10:00Z",
+          "assignedRight": {
+            "id": "e2…0709",
+            "version": 1,
+            "className": "AssignedRight"
+          },
+          "validationType": [
+            "ticket"
+          ]
+        }
+      ],
+      "_place": "b1…0001",
+      "_modified": "2026-10-13T21:10:00Z",
+      "_ticketNumber": "T-7109",
+      "_amountDue": {
+        "currencyType": "USD",
+        "currencyValue": 9
+      }
+    },
+    {
+      "id": "c4…0710",
+      "version": 1,
+      "actualStart": "2026-10-13T22:25:00Z",
+      "initiator": {
+        "id": "a1…0001",
+        "version": 1,
+        "className": "Organisation"
+      },
+      "hierarchyElement": {
+        "id": "b1…0001",
+        "version": 7,
+        "className": "Place"
+      },
+      "identifiedCredentials": [
+        {
+          "type": "ticket",
+          "credentialAssignedType": "other",
+          "identifier": {
+            "id": "T-7110",
+            "className": "Credential"
+          }
+        }
+      ],
+      "segments": [
+        {
+          "id": "c5…0710",
+          "version": 1,
+          "actualStart": "2026-10-13T22:25:00Z",
+          "assignedRight": {
+            "id": "e2…0710",
+            "version": 1,
+            "className": "AssignedRight"
+          },
+          "validationType": [
+            "ticket"
+          ]
+        }
+      ],
+      "_place": "b1…0001",
+      "_modified": "2026-10-13T22:25:00Z",
+      "_ticketNumber": "T-7110",
+      "_amountDue": {
+        "currencyType": "USD",
+        "currencyValue": 9
+      }
+    },
+    {
+      "id": "c4…0650",
+      "version": 2,
+      "actualStart": "2026-10-12T20:00:00Z",
+      "actualEnd": "2026-10-12T21:00:00Z",
+      "initiator": {
+        "id": "a1…0001",
+        "version": 1,
+        "className": "Organisation"
+      },
+      "hierarchyElement": {
+        "id": "b1…0001",
+        "version": 7,
+        "className": "Place"
+      },
+      "identifiedCredentials": [
+        {
+          "type": "ticket",
+          "credentialAssignedType": "other",
+          "identifier": {
+            "id": "T-7050",
+            "className": "Credential"
+          }
+        }
+      ],
+      "segments": [
+        {
+          "id": "c5…0650",
+          "version": 2,
+          "actualStart": "2026-10-12T20:00:00Z",
+          "actualEnd": "2026-10-12T21:00:00Z",
+          "assignedRight": {
+            "id": "e2…0650",
+            "version": 1,
+            "className": "AssignedRight"
+          },
+          "validationType": [
+            "ticket"
+          ]
+        }
+      ],
+      "_place": "b1…0001",
+      "_modified": "2026-10-12T21:00:00Z",
+      "_ticketNumber": "T-7050"
+    },
+    {
+      "id": "c4…0801",
+      "version": 2,
+      "actualStart": "2026-10-13T12:55:00Z",
+      "actualEnd": "2026-10-13T22:05:00Z",
+      "initiator": {
+        "id": "a1…0001",
+        "version": 1,
+        "className": "Organisation"
+      },
+      "hierarchyElement": {
+        "id": "b1…0001",
+        "version": 7,
+        "className": "Place"
+      },
+      "identifiedCredentials": [
+        {
+          "type": "licensePlate",
+          "credentialAssignedType": "vehicle",
+          "identifier": {
+            "id": "MTH-1101",
+            "className": "Credential"
+          }
+        }
+      ],
+      "segments": [
+        {
+          "id": "c5…0801",
+          "version": 2,
+          "actualStart": "2026-10-13T12:55:00Z",
+          "actualEnd": "2026-10-13T22:05:00Z",
+          "assignedRight": {
+            "id": "e2…0801",
+            "version": 1,
+            "className": "AssignedRight"
+          },
+          "validationType": [
+            "licensePlate"
+          ]
+        }
+      ],
+      "_place": "b1…0001",
+      "_modified": "2026-10-13T22:05:00Z",
+      "_plate": "MTH-1101",
+      "_versions": [
+        {
+          "version": 1,
+          "actualStart": "2026-10-13T12:55:00Z",
+          "initiator": {
+            "id": "a1…0001",
+            "version": 1,
+            "className": "Organisation"
+          },
+          "hierarchyElement": {
+            "id": "b1…0001",
+            "version": 7,
+            "className": "Place"
+          },
+          "identifiedCredentials": [
+            {
+              "type": "licensePlate",
+              "credentialAssignedType": "vehicle",
+              "identifier": {
+                "id": "MTH-1101",
+                "className": "Credential"
+              }
+            }
+          ],
+          "segments": [
+            {
+              "id": "c5…0801",
+              "version": 1,
+              "actualStart": "2026-10-13T12:55:00Z",
+              "assignedRight": {
+                "id": "e2…0801",
+                "version": 1,
+                "className": "AssignedRight"
+              },
+              "validationType": [
+                "licensePlate"
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "c4…0802",
+      "version": 1,
+      "actualStart": "2026-10-13T13:10:00Z",
+      "initiator": {
+        "id": "a1…0001",
+        "version": 1,
+        "className": "Organisation"
+      },
+      "hierarchyElement": {
+        "id": "b1…0001",
+        "version": 7,
+        "className": "Place"
+      },
+      "identifiedCredentials": [
+        {
+          "type": "licensePlate",
+          "credentialAssignedType": "vehicle",
+          "identifier": {
+            "id": "MTH-1102",
+            "className": "Credential"
+          }
+        }
+      ],
+      "segments": [
+        {
+          "id": "c5…0802",
+          "version": 1,
+          "actualStart": "2026-10-13T13:10:00Z",
+          "assignedRight": {
+            "id": "e2…0802",
+            "version": 1,
+            "className": "AssignedRight"
+          },
+          "validationType": [
+            "licensePlate"
+          ]
+        }
+      ],
+      "_place": "b1…0001",
+      "_modified": "2026-10-13T13:10:00Z",
+      "_plate": "MTH-1102"
+    },
+    {
+      "id": "c4…0803",
+      "version": 2,
+      "actualStart": "2026-10-13T13:40:00Z",
+      "actualEnd": "2026-10-13T17:10:00Z",
+      "initiator": {
+        "id": "a1…0001",
+        "version": 1,
+        "className": "Organisation"
+      },
+      "hierarchyElement": {
+        "id": "b1…0001",
+        "version": 7,
+        "className": "Place"
+      },
+      "identifiedCredentials": [
+        {
+          "type": "licensePlate",
+          "credentialAssignedType": "vehicle",
+          "identifier": {
+            "id": "MTH-1103",
+            "className": "Credential"
+          }
+        }
+      ],
+      "segments": [
+        {
+          "id": "c5…0803",
+          "version": 2,
+          "actualStart": "2026-10-13T13:40:00Z",
+          "actualEnd": "2026-10-13T17:10:00Z",
+          "assignedRight": {
+            "id": "e2…0803",
+            "version": 1,
+            "className": "AssignedRight"
+          },
+          "validationType": [
+            "licensePlate"
+          ]
+        }
+      ],
+      "_place": "b1…0001",
+      "_modified": "2026-10-13T17:10:00Z",
+      "_plate": "MTH-1103"
+    },
+    {
+      "id": "c4…0804",
+      "version": 1,
+      "actualStart": "2026-10-13T18:30:00Z",
+      "initiator": {
+        "id": "a1…0001",
+        "version": 1,
+        "className": "Organisation"
+      },
+      "hierarchyElement": {
+        "id": "b1…0001",
+        "version": 7,
+        "className": "Place"
+      },
+      "identifiedCredentials": [
+        {
+          "type": "licensePlate",
+          "credentialAssignedType": "vehicle",
+          "identifier": {
+            "id": "MTH-1103",
+            "className": "Credential"
+          }
+        }
+      ],
+      "segments": [
+        {
+          "id": "c5…0804",
+          "version": 1,
+          "actualStart": "2026-10-13T18:30:00Z",
+          "assignedRight": {
+            "id": "e2…0803",
+            "version": 1,
+            "className": "AssignedRight"
+          },
+          "validationType": [
+            "licensePlate"
+          ]
+        }
+      ],
+      "_place": "b1…0001",
+      "_modified": "2026-10-13T18:30:00Z",
+      "_plate": "MTH-1103"
+    },
+    {
+      "id": "c4…0805",
+      "version": 1,
+      "actualStart": "2026-10-13T14:15:00Z",
+      "initiator": {
+        "id": "a1…0001",
+        "version": 1,
+        "className": "Organisation"
+      },
+      "hierarchyElement": {
+        "id": "b1…0001",
+        "version": 7,
+        "className": "Place"
+      },
+      "identifiedCredentials": [
+        {
+          "type": "licensePlate",
+          "credentialAssignedType": "vehicle",
+          "identifier": {
+            "id": "MTH-1104",
+            "className": "Credential"
+          }
+        }
+      ],
+      "segments": [
+        {
+          "id": "c5…0805",
+          "version": 1,
+          "actualStart": "2026-10-13T14:15:00Z",
+          "assignedRight": {
+            "id": "e2…0804",
+            "version": 1,
+            "className": "AssignedRight"
+          },
+          "validationType": [
+            "licensePlate"
+          ]
+        }
+      ],
+      "_place": "b1…0001",
+      "_modified": "2026-10-13T14:15:00Z",
+      "_plate": "MTH-1104"
+    },
+    {
+      "id": "c4…0811",
+      "version": 2,
+      "actualStart": "2026-10-12T12:50:00Z",
+      "actualEnd": "2026-10-12T22:10:00Z",
+      "initiator": {
+        "id": "a1…0001",
+        "version": 1,
+        "className": "Organisation"
+      },
+      "hierarchyElement": {
+        "id": "b1…0001",
+        "version": 7,
+        "className": "Place"
+      },
+      "identifiedCredentials": [
+        {
+          "type": "licensePlate",
+          "credentialAssignedType": "vehicle",
+          "identifier": {
+            "id": "MTH-1101",
+            "className": "Credential"
+          }
+        }
+      ],
+      "segments": [
+        {
+          "id": "c5…0811",
+          "version": 2,
+          "actualStart": "2026-10-12T12:50:00Z",
+          "actualEnd": "2026-10-12T22:10:00Z",
+          "assignedRight": {
+            "id": "e2…0801",
+            "version": 1,
+            "className": "AssignedRight"
+          },
+          "validationType": [
+            "licensePlate"
+          ]
+        }
+      ],
+      "_place": "b1…0001",
+      "_modified": "2026-10-12T22:10:00Z",
+      "_plate": "MTH-1101"
+    },
+    {
+      "id": "c4…0812",
+      "version": 2,
+      "actualStart": "2026-10-09T12:58:00Z",
+      "actualEnd": "2026-10-09T21:45:00Z",
+      "initiator": {
+        "id": "a1…0001",
+        "version": 1,
+        "className": "Organisation"
+      },
+      "hierarchyElement": {
+        "id": "b1…0001",
+        "version": 7,
+        "className": "Place"
+      },
+      "identifiedCredentials": [
+        {
+          "type": "licensePlate",
+          "credentialAssignedType": "vehicle",
+          "identifier": {
+            "id": "MTH-1101",
+            "className": "Credential"
+          }
+        }
+      ],
+      "segments": [
+        {
+          "id": "c5…0812",
+          "version": 2,
+          "actualStart": "2026-10-09T12:58:00Z",
+          "actualEnd": "2026-10-09T21:45:00Z",
+          "assignedRight": {
+            "id": "e2…0801",
+            "version": 1,
+            "className": "AssignedRight"
+          },
+          "validationType": [
+            "licensePlate"
+          ]
+        }
+      ],
+      "_place": "b1…0001",
+      "_modified": "2026-10-09T21:45:00Z",
+      "_plate": "MTH-1101"
+    },
+    {
+      "id": "c4…0813",
+      "version": 2,
+      "actualStart": "2026-10-08T13:02:00Z",
+      "actualEnd": "2026-10-08T22:20:00Z",
+      "initiator": {
+        "id": "a1…0001",
+        "version": 1,
+        "className": "Organisation"
+      },
+      "hierarchyElement": {
+        "id": "b1…0001",
+        "version": 7,
+        "className": "Place"
+      },
+      "identifiedCredentials": [
+        {
+          "type": "licensePlate",
+          "credentialAssignedType": "vehicle",
+          "identifier": {
+            "id": "MTH-1101",
+            "className": "Credential"
+          }
+        }
+      ],
+      "segments": [
+        {
+          "id": "c5…0813",
+          "version": 2,
+          "actualStart": "2026-10-08T13:02:00Z",
+          "actualEnd": "2026-10-08T22:20:00Z",
+          "assignedRight": {
+            "id": "e2…0801",
+            "version": 1,
+            "className": "AssignedRight"
+          },
+          "validationType": [
+            "licensePlate"
+          ]
+        }
+      ],
+      "_place": "b1…0001",
+      "_modified": "2026-10-08T22:20:00Z",
+      "_plate": "MTH-1101"
+    },
+    {
+      "id": "c4…0814",
+      "version": 2,
+      "actualStart": "2026-10-12T15:05:00Z",
+      "actualEnd": "2026-10-12T20:30:00Z",
+      "initiator": {
+        "id": "a1…0001",
+        "version": 1,
+        "className": "Organisation"
+      },
+      "hierarchyElement": {
+        "id": "b1…0001",
+        "version": 7,
+        "className": "Place"
+      },
+      "identifiedCredentials": [
+        {
+          "type": "licensePlate",
+          "credentialAssignedType": "vehicle",
+          "identifier": {
+            "id": "MTH-1105",
+            "className": "Credential"
+          }
+        }
+      ],
+      "segments": [
+        {
+          "id": "c5…0814",
+          "version": 2,
+          "actualStart": "2026-10-12T15:05:00Z",
+          "actualEnd": "2026-10-12T20:30:00Z",
+          "assignedRight": {
+            "id": "e2…0805",
+            "version": 1,
+            "className": "AssignedRight"
+          },
+          "validationType": [
+            "licensePlate"
+          ]
+        }
+      ],
+      "_place": "b1…0001",
+      "_modified": "2026-10-12T20:30:00Z",
+      "_plate": "MTH-1105"
+    },
+    {
+      "id": "c4…0901",
+      "version": 2,
+      "actualStart": "2026-10-13T15:00:00Z",
+      "actualEnd": "2026-10-13T17:30:00Z",
+      "initiator": {
+        "id": "a1…0002",
+        "version": 1,
+        "className": "Organisation"
+      },
+      "hierarchyElement": {
+        "id": "b1…0002",
+        "version": 2,
+        "className": "Place"
+      },
+      "identifiedCredentials": [
+        {
+          "type": "ticket",
+          "credentialAssignedType": "other",
+          "identifier": {
+            "id": "HD-3301",
+            "className": "Credential"
+          }
+        }
+      ],
+      "segments": [
+        {
+          "id": "c5…0901",
+          "version": 2,
+          "actualStart": "2026-10-13T15:00:00Z",
+          "actualEnd": "2026-10-13T17:30:00Z",
+          "assignedRight": {
+            "id": "e2…0901",
+            "version": 1,
+            "className": "AssignedRight"
+          },
+          "validationType": [
+            "ticket"
+          ]
+        }
+      ],
+      "_place": "b1…0002",
+      "_modified": "2026-10-13T17:30:00Z",
+      "_ticketNumber": "HD-3301"
+    },
+    {
+      "id": "c4…0902",
+      "version": 1,
+      "actualStart": "2026-10-13T21:40:00Z",
+      "initiator": {
+        "id": "a1…0002",
+        "version": 1,
+        "className": "Organisation"
+      },
+      "hierarchyElement": {
+        "id": "b1…0002",
+        "version": 2,
+        "className": "Place"
+      },
+      "identifiedCredentials": [
+        {
+          "type": "ticket",
+          "credentialAssignedType": "other",
+          "identifier": {
+            "id": "HD-3302",
+            "className": "Credential"
+          }
+        }
+      ],
+      "segments": [
+        {
+          "id": "c5…0902",
+          "version": 1,
+          "actualStart": "2026-10-13T21:40:00Z",
+          "assignedRight": {
+            "id": "e2…0902",
+            "version": 1,
+            "className": "AssignedRight"
+          },
+          "validationType": [
+            "ticket"
+          ]
+        }
+      ],
+      "_place": "b1…0002",
+      "_modified": "2026-10-13T21:40:00Z",
+      "_ticketNumber": "HD-3302"
+    },
+    {
+      "id": "f1…0901",
+      "version": 2,
+      "actualStart": "2026-10-13T12:30:00Z",
+      "actualEnd": "2026-10-13T14:05:00Z",
+      "initiator": {
+        "id": "a1…0001",
+        "version": 1,
+        "className": "Organisation"
+      },
+      "hierarchyElement": {
+        "id": "b1…0006",
+        "version": 2,
+        "className": "Place"
+      },
+      "identifiedCredentials": [
+        {
+          "type": "licensePlate",
+          "credentialAssignedType": "other",
+          "identifier": {
+            "id": "RVR-2201",
+            "className": "Credential"
+          }
+        }
+      ],
+      "segments": [
+        {
+          "id": "f3…0901",
+          "version": 2,
+          "actualStart": "2026-10-13T12:30:00Z",
+          "actualEnd": "2026-10-13T14:05:00Z",
+          "assignedRight": {
+            "id": "e2…0901",
+            "version": 1,
+            "className": "AssignedRight"
+          },
+          "validationType": [
+            "licensePlate"
+          ]
+        }
+      ],
+      "_place": "b1…0006",
+      "_modified": "2026-10-13T14:05:00Z",
+      "_plate": "RVR-2201",
+      "_entryObservation": "f2…0901",
+      "_entryLane": "b2…0060",
+      "_exitObservation": "f2…0902",
+      "_exitLane": "b2…0061"
+    },
+    {
+      "id": "f1…0903",
+      "version": 2,
+      "actualStart": "2026-10-13T17:10:00Z",
+      "actualEnd": "2026-10-13T18:00:00Z",
+      "initiator": {
+        "id": "a1…0001",
+        "version": 1,
+        "className": "Organisation"
+      },
+      "hierarchyElement": {
+        "id": "b1…0006",
+        "version": 2,
+        "className": "Place"
+      },
+      "identifiedCredentials": [
+        {
+          "type": "licensePlate",
+          "credentialAssignedType": "other",
+          "identifier": {
+            "id": "RVR-2201",
+            "className": "Credential"
+          }
+        }
+      ],
+      "segments": [
+        {
+          "id": "f3…0903",
+          "version": 2,
+          "actualStart": "2026-10-13T17:10:00Z",
+          "actualEnd": "2026-10-13T18:00:00Z",
+          "assignedRight": {
+            "id": "e2…0903",
+            "version": 1,
+            "className": "AssignedRight"
+          },
+          "validationType": [
+            "licensePlate"
+          ]
+        }
+      ],
+      "_place": "b1…0006",
+      "_modified": "2026-10-13T18:00:00Z",
+      "_plate": "RVR-2201",
+      "_entryObservation": "f2…0903",
+      "_entryLane": "b2…0060",
+      "_exitObservation": "f2…0904",
+      "_exitLane": "b2…0061"
+    },
+    {
+      "id": "f1…0905",
+      "version": 2,
+      "actualStart": "2026-10-13T15:15:00Z",
+      "actualEnd": "2026-10-13T20:40:00Z",
+      "initiator": {
+        "id": "a1…0001",
+        "version": 1,
+        "className": "Organisation"
+      },
+      "hierarchyElement": {
+        "id": "b1…0006",
+        "version": 2,
+        "className": "Place"
+      },
+      "identifiedCredentials": [
+        {
+          "type": "licensePlate",
+          "credentialAssignedType": "other",
+          "identifier": {
+            "id": "RVR-3302",
+            "className": "Credential"
+          }
+        }
+      ],
+      "segments": [
+        {
+          "id": "f3…0905",
+          "version": 2,
+          "actualStart": "2026-10-13T15:15:00Z",
+          "actualEnd": "2026-10-13T20:40:00Z",
+          "assignedRight": {
+            "id": "e2…0905",
+            "version": 1,
+            "className": "AssignedRight"
+          },
+          "validationType": [
+            "licensePlate"
+          ]
+        }
+      ],
+      "_place": "b1…0006",
+      "_modified": "2026-10-13T20:40:00Z",
+      "_plate": "RVR-3302",
+      "_entryObservation": "f2…0905",
+      "_entryLane": "b2…0060",
+      "_exitObservation": "f2…0906",
+      "_exitLane": "b2…0061"
+    },
+    {
+      "id": "f1…0907",
+      "version": 1,
+      "actualStart": "2026-10-13T22:10:00Z",
+      "initiator": {
+        "id": "a1…0001",
+        "version": 1,
+        "className": "Organisation"
+      },
+      "hierarchyElement": {
+        "id": "b1…0006",
+        "version": 2,
+        "className": "Place"
+      },
+      "identifiedCredentials": [
+        {
+          "type": "licensePlate",
+          "credentialAssignedType": "other",
+          "identifier": {
+            "id": "RVR-4403",
+            "className": "Credential"
+          }
+        }
+      ],
+      "segments": [
+        {
+          "id": "f3…0907",
+          "version": 1,
+          "actualStart": "2026-10-13T22:10:00Z",
+          "assignedRight": {
+            "id": "e2…0907",
+            "version": 1,
+            "className": "AssignedRight"
+          },
+          "validationType": [
+            "licensePlate"
+          ]
+        }
+      ],
+      "_place": "b1…0006",
+      "_modified": "2026-10-13T22:10:00Z",
+      "_plate": "RVR-4403",
+      "_entryObservation": "f2…0907",
+      "_entryLane": "b2…0060",
+      "_observations": [
+        "f2…0908"
+      ]
+    }
+  ],
+  "observations": [
+    {
+      "id": "f2…0901",
+      "version": 1,
+      "type": "licensePlate",
+      "method": "anpr",
+      "observedCredentialId": "RVR-2201",
+      "observationStartTime": "2026-10-13T12:30:00Z",
+      "creationDateTime": "2026-10-13T12:30:01Z",
+      "elementIds": {
+        "id": "b2…0060",
+        "version": 2,
+        "className": "VehicularAccess"
+      },
+      "observerOrganisation": {
+        "id": "a1…0001",
+        "version": 1,
+        "className": "Organisation"
+      },
+      "location": {
+        "observerLocation": {
+          "type": "Point",
+          "coordinates": [
+            -87.6188,
+            41.8827
+          ]
+        }
+      },
+      "vehicleAncillaryIdentification": {
+        "country": "US",
+        "stateProvince": "IL"
+      },
+      "confidence": {
+        "overallConfidence": 0.95
+      },
+      "images": [
+        {
+          "id": "img-0901-plate",
+          "imageType": "plate",
+          "imageLink": "https://api.lakeside-garage.example/v1/media/f2000000-0901/plate.jpg",
+          "cameraID": "cam-in-1"
+        }
+      ],
+      "extensions": {
+        "apds-ext:apx:lpr-read@1.0": {
+          "plate": {
+            "value": "RVR-2201",
+            "confidence": 0.95
+          },
+          "stateProvince": {
+            "value": "IL",
+            "confidence": 0.9
+          },
+          "platesRead": 1,
+          "plateFace": "rear",
+          "movement": "away",
+          "frameReads": 5,
+          "accessEvent": "entry",
+          "captureGroup": "cam-in-1/20261013T073000/0011",
+          "engine": "vendor-x/7.2"
+        }
+      },
+      "_modified": "2026-10-13T12:30:01Z"
+    },
+    {
+      "id": "f2…0902",
+      "version": 1,
+      "type": "licensePlate",
+      "method": "anpr",
+      "observedCredentialId": "RVR-2201",
+      "observationStartTime": "2026-10-13T14:05:00Z",
+      "creationDateTime": "2026-10-13T14:05:01Z",
+      "elementIds": {
+        "id": "b2…0061",
+        "version": 3,
+        "className": "VehicularAccess"
+      },
+      "observerOrganisation": {
+        "id": "a1…0001",
+        "version": 1,
+        "className": "Organisation"
+      },
+      "location": {
+        "observerLocation": {
+          "type": "Point",
+          "coordinates": [
+            -87.6188,
+            41.8827
+          ]
+        }
+      },
+      "vehicleAncillaryIdentification": {
+        "country": "US",
+        "stateProvince": "IL"
+      },
+      "confidence": {
+        "overallConfidence": 0.95
+      },
+      "images": [
+        {
+          "id": "img-0902-plate",
+          "imageType": "plate",
+          "imageLink": "https://api.lakeside-garage.example/v1/media/f2000000-0902/plate.jpg",
+          "cameraID": "cam-exit-1"
+        }
+      ],
+      "extensions": {
+        "apds-ext:apx:lpr-read@1.0": {
+          "plate": {
+            "value": "RVR-2201",
+            "confidence": 0.95
+          },
+          "stateProvince": {
+            "value": "IL",
+            "confidence": 0.9
+          },
+          "platesRead": 1,
+          "plateFace": "rear",
+          "movement": "away",
+          "frameReads": 5,
+          "accessEvent": "exit",
+          "captureGroup": "cam-exit-1/20261013T090500/0034",
+          "engine": "vendor-x/7.2"
+        }
+      },
+      "_modified": "2026-10-13T14:05:01Z"
+    },
+    {
+      "id": "f2…0903",
+      "version": 1,
+      "type": "licensePlate",
+      "method": "anpr",
+      "observedCredentialId": "RVR-2201",
+      "observationStartTime": "2026-10-13T17:10:00Z",
+      "creationDateTime": "2026-10-13T17:10:01Z",
+      "elementIds": {
+        "id": "b2…0060",
+        "version": 2,
+        "className": "VehicularAccess"
+      },
+      "observerOrganisation": {
+        "id": "a1…0001",
+        "version": 1,
+        "className": "Organisation"
+      },
+      "location": {
+        "observerLocation": {
+          "type": "Point",
+          "coordinates": [
+            -87.6188,
+            41.8827
+          ]
+        }
+      },
+      "vehicleAncillaryIdentification": {
+        "country": "US",
+        "stateProvince": "IL"
+      },
+      "confidence": {
+        "overallConfidence": 0.95
+      },
+      "images": [
+        {
+          "id": "img-0903-plate",
+          "imageType": "plate",
+          "imageLink": "https://api.lakeside-garage.example/v1/media/f2000000-0903/plate.jpg",
+          "cameraID": "cam-in-1"
+        }
+      ],
+      "extensions": {
+        "apds-ext:apx:lpr-read@1.0": {
+          "plate": {
+            "value": "RVR-2201",
+            "confidence": 0.95
+          },
+          "stateProvince": {
+            "value": "IL",
+            "confidence": 0.9
+          },
+          "platesRead": 1,
+          "plateFace": "rear",
+          "movement": "away",
+          "frameReads": 5,
+          "accessEvent": "entry",
+          "captureGroup": "cam-in-1/20261013T121000/0102",
+          "engine": "vendor-x/7.2"
+        }
+      },
+      "_modified": "2026-10-13T17:10:01Z"
+    },
+    {
+      "id": "f2…0904",
+      "version": 1,
+      "type": "licensePlate",
+      "method": "anpr",
+      "observedCredentialId": "RVR-2201",
+      "observationStartTime": "2026-10-13T18:00:00Z",
+      "creationDateTime": "2026-10-13T18:00:01Z",
+      "elementIds": {
+        "id": "b2…0061",
+        "version": 3,
+        "className": "VehicularAccess"
+      },
+      "observerOrganisation": {
+        "id": "a1…0001",
+        "version": 1,
+        "className": "Organisation"
+      },
+      "location": {
+        "observerLocation": {
+          "type": "Point",
+          "coordinates": [
+            -87.6188,
+            41.8827
+          ]
+        }
+      },
+      "vehicleAncillaryIdentification": {
+        "country": "US",
+        "stateProvince": "IL"
+      },
+      "confidence": {
+        "overallConfidence": 0.95
+      },
+      "images": [
+        {
+          "id": "img-0904-plate",
+          "imageType": "plate",
+          "imageLink": "https://api.lakeside-garage.example/v1/media/f2000000-0904/plate.jpg",
+          "cameraID": "cam-exit-1"
+        }
+      ],
+      "extensions": {
+        "apds-ext:apx:lpr-read@1.0": {
+          "plate": {
+            "value": "RVR-2201",
+            "confidence": 0.95
+          },
+          "stateProvince": {
+            "value": "IL",
+            "confidence": 0.9
+          },
+          "platesRead": 1,
+          "plateFace": "rear",
+          "movement": "away",
+          "frameReads": 5,
+          "accessEvent": "exit",
+          "captureGroup": "cam-exit-1/20261013T130000/0121",
+          "engine": "vendor-x/7.2"
+        }
+      },
+      "_modified": "2026-10-13T18:00:01Z"
+    },
+    {
+      "id": "f2…0905",
+      "version": 1,
+      "type": "licensePlate",
+      "method": "anpr",
+      "observedCredentialId": "RVR-3302",
+      "observationStartTime": "2026-10-13T15:15:00Z",
+      "creationDateTime": "2026-10-13T15:15:01Z",
+      "elementIds": {
+        "id": "b2…0060",
+        "version": 2,
+        "className": "VehicularAccess"
+      },
+      "observerOrganisation": {
+        "id": "a1…0001",
+        "version": 1,
+        "className": "Organisation"
+      },
+      "location": {
+        "observerLocation": {
+          "type": "Point",
+          "coordinates": [
+            -87.6188,
+            41.8827
+          ]
+        }
+      },
+      "vehicleAncillaryIdentification": {
+        "country": "US",
+        "stateProvince": "IL"
+      },
+      "confidence": {
+        "overallConfidence": 0.95
+      },
+      "images": [
+        {
+          "id": "img-0905-plate",
+          "imageType": "plate",
+          "imageLink": "https://api.lakeside-garage.example/v1/media/f2000000-0905/plate.jpg",
+          "cameraID": "cam-in-1"
+        }
+      ],
+      "extensions": {
+        "apds-ext:apx:lpr-read@1.0": {
+          "plate": {
+            "value": "RVR-3302",
+            "confidence": 0.95
+          },
+          "stateProvince": {
+            "value": "IL",
+            "confidence": 0.9
+          },
+          "platesRead": 1,
+          "plateFace": "rear",
+          "movement": "away",
+          "frameReads": 5,
+          "accessEvent": "entry",
+          "captureGroup": "cam-in-1/20261013T101500/0057",
+          "engine": "vendor-x/7.2"
+        }
+      },
+      "_modified": "2026-10-13T15:15:01Z"
+    },
+    {
+      "id": "f2…0906",
+      "version": 1,
+      "type": "licensePlate",
+      "method": "anpr",
+      "observedCredentialId": "RVR-3302",
+      "observationStartTime": "2026-10-13T20:40:00Z",
+      "creationDateTime": "2026-10-13T20:40:01Z",
+      "elementIds": {
+        "id": "b2…0061",
+        "version": 3,
+        "className": "VehicularAccess"
+      },
+      "observerOrganisation": {
+        "id": "a1…0001",
+        "version": 1,
+        "className": "Organisation"
+      },
+      "location": {
+        "observerLocation": {
+          "type": "Point",
+          "coordinates": [
+            -87.6188,
+            41.8827
+          ]
+        }
+      },
+      "vehicleAncillaryIdentification": {
+        "country": "US",
+        "stateProvince": "IL"
+      },
+      "confidence": {
+        "overallConfidence": 0.95
+      },
+      "images": [
+        {
+          "id": "img-0906-plate",
+          "imageType": "plate",
+          "imageLink": "https://api.lakeside-garage.example/v1/media/f2000000-0906/plate.jpg",
+          "cameraID": "cam-exit-1"
+        }
+      ],
+      "extensions": {
+        "apds-ext:apx:lpr-read@1.0": {
+          "plate": {
+            "value": "RVR-3302",
+            "confidence": 0.95
+          },
+          "stateProvince": {
+            "value": "IL",
+            "confidence": 0.9
+          },
+          "platesRead": 1,
+          "plateFace": "rear",
+          "movement": "away",
+          "frameReads": 5,
+          "accessEvent": "exit",
+          "captureGroup": "cam-exit-1/20261013T154000/0188",
+          "engine": "vendor-x/7.2"
+        }
+      },
+      "_modified": "2026-10-13T20:40:01Z"
+    },
+    {
+      "id": "f2…0907",
+      "version": 1,
+      "type": "licensePlate",
+      "method": "anpr",
+      "observedCredentialId": "RVR-4403",
+      "observationStartTime": "2026-10-13T22:10:00Z",
+      "creationDateTime": "2026-10-13T22:10:01Z",
+      "elementIds": {
+        "id": "b2…0060",
+        "version": 2,
+        "className": "VehicularAccess"
+      },
+      "observerOrganisation": {
+        "id": "a1…0001",
+        "version": 1,
+        "className": "Organisation"
+      },
+      "location": {
+        "observerLocation": {
+          "type": "Point",
+          "coordinates": [
+            -87.6188,
+            41.8827
+          ]
+        }
+      },
+      "vehicleAncillaryIdentification": {
+        "country": "US",
+        "stateProvince": "IL"
+      },
+      "confidence": {
+        "overallConfidence": 0.95
+      },
+      "images": [
+        {
+          "id": "img-0907-plate",
+          "imageType": "plate",
+          "imageLink": "https://api.lakeside-garage.example/v1/media/f2000000-0907/plate.jpg",
+          "cameraID": "cam-in-1"
+        }
+      ],
+      "extensions": {
+        "apds-ext:apx:lpr-read@1.0": {
+          "plate": {
+            "value": "RVR-4403",
+            "confidence": 0.95
+          },
+          "stateProvince": {
+            "value": "IL",
+            "confidence": 0.9
+          },
+          "platesRead": 1,
+          "plateFace": "rear",
+          "movement": "away",
+          "frameReads": 5,
+          "accessEvent": "entry",
+          "captureGroup": "cam-in-1/20261013T171000/0230",
+          "engine": "vendor-x/7.2"
+        }
+      },
+      "_modified": "2026-10-13T22:10:01Z"
+    },
+    {
+      "id": "f2…0908",
+      "version": 1,
+      "type": "licensePlate",
+      "method": "anpr",
+      "observedCredentialId": "RVR-4403",
+      "observationStartTime": "2026-10-13T22:10:00Z",
+      "creationDateTime": "2026-10-13T22:10:01Z",
+      "elementIds": {
+        "id": "b2…0060",
+        "version": 2,
+        "className": "VehicularAccess"
+      },
+      "observerOrganisation": {
+        "id": "a1…0001",
+        "version": 1,
+        "className": "Organisation"
+      },
+      "location": {
+        "observerLocation": {
+          "type": "Point",
+          "coordinates": [
+            -87.6188,
+            41.8827
+          ]
+        }
+      },
+      "vehicleAncillaryIdentification": {
+        "country": "US",
+        "stateProvince": "IL"
+      },
+      "confidence": {
+        "overallConfidence": 0.88
+      },
+      "images": [
+        {
+          "id": "img-0908-plate",
+          "imageType": "plate",
+          "imageLink": "https://api.lakeside-garage.example/v1/media/f2000000-0908/plate.jpg",
+          "cameraID": "cam-in-1f"
+        }
+      ],
+      "extensions": {
+        "apds-ext:apx:lpr-read@1.0": {
+          "plate": {
+            "value": "RVR-4403",
+            "confidence": 0.88
+          },
+          "stateProvince": {
+            "value": "IL",
+            "confidence": 0.9
+          },
+          "platesRead": 1,
+          "plateFace": "front",
+          "movement": "toward",
+          "frameReads": 5,
+          "accessEvent": "entry",
+          "captureGroup": "cam-in-1/20261013T171000/0230",
+          "engine": "vendor-x/7.2"
+        }
+      },
+      "_modified": "2026-10-13T22:10:01Z"
+    }
+  ],
+  "tickets": [
+    {
+      "ticketNumber": "T-7101",
+      "placeId": "b1…0001",
+      "session": "c4…0701"
+    },
+    {
+      "ticketNumber": "T-7102",
+      "placeId": "b1…0001",
+      "session": "c4…0702"
+    },
+    {
+      "ticketNumber": "T-7103",
+      "placeId": "b1…0001",
+      "session": "c4…0703"
+    },
+    {
+      "ticketNumber": "T-7104",
+      "placeId": "b1…0001",
+      "session": "c4…0704"
+    },
+    {
+      "ticketNumber": "T-7105",
+      "placeId": "b1…0001",
+      "session": "c4…0705"
+    },
+    {
+      "ticketNumber": "T-7106",
+      "placeId": "b1…0001",
+      "session": "c4…0706"
+    },
+    {
+      "ticketNumber": "T-7107",
+      "placeId": "b1…0001",
+      "session": "c4…0707"
+    },
+    {
+      "ticketNumber": "T-7108",
+      "placeId": "b1…0001",
+      "session": "c4…0708"
+    },
+    {
+      "ticketNumber": "T-7109",
+      "placeId": "b1…0001",
+      "session": "c4…0709",
+      "amountDue": {
+        "currencyType": "USD",
+        "currencyValue": 9
+      }
+    },
+    {
+      "ticketNumber": "T-7110",
+      "placeId": "b1…0001",
+      "session": "c4…0710",
+      "amountDue": {
+        "currencyType": "USD",
+        "currencyValue": 9
+      }
+    }
+  ],
+  "payments": [
+    {
+      "id": "e8…0701",
+      "transactionID": "PS1-20261013-0701",
+      "place": {
+        "id": "b1…0001",
+        "className": "Place"
+      },
+      "dateCollected": "2026-10-13T14:09:00Z",
+      "amount": {
+        "currencyType": "USD",
+        "currencyValue": 6
+      },
+      "meansOfPayment": "paymentCreditCard",
+      "channel": "payStation",
+      "paymentStatus": "approved",
+      "ticketNumber": "T-7101",
+      "cardLast4": "1144"
+    },
+    {
+      "id": "e8…0702",
+      "transactionID": "PS1-20261013-0702",
+      "place": {
+        "id": "b1…0001",
+        "className": "Place"
+      },
+      "dateCollected": "2026-10-13T22:19:00Z",
+      "amount": {
+        "currencyType": "USD",
+        "currencyValue": 24
+      },
+      "meansOfPayment": "paymentCreditCard",
+      "channel": "lane",
+      "paymentStatus": "approved",
+      "ticketNumber": "T-7102",
+      "cardLast4": "2207"
+    },
+    {
+      "id": "e8…0703",
+      "transactionID": "PS1-20261013-0703",
+      "place": {
+        "id": "b1…0001",
+        "className": "Place"
+      },
+      "dateCollected": "2026-10-13T16:44:00Z",
+      "amount": {
+        "currencyType": "USD",
+        "currencyValue": 9
+      },
+      "meansOfPayment": "mobileAccount",
+      "channel": "online",
+      "paymentStatus": "approved",
+      "ticketNumber": "T-7103",
+      "cardLast4": "3312"
+    },
+    {
+      "id": "e8…0704",
+      "transactionID": "PS1-20261013-0704",
+      "place": {
+        "id": "b1…0001",
+        "className": "Place"
+      },
+      "dateCollected": "2026-10-13T17:30:00Z",
+      "amount": {
+        "currencyType": "USD",
+        "currencyValue": 6
+      },
+      "meansOfPayment": "paymentCreditCard",
+      "channel": "lane",
+      "paymentStatus": "approved",
+      "ticketNumber": "T-7104",
+      "cardLast4": "4410"
+    },
+    {
+      "id": "e8…0705",
+      "transactionID": "PS1-20261013-0705",
+      "place": {
+        "id": "b1…0001",
+        "className": "Place"
+      },
+      "dateCollected": "2026-10-13T19:03:00Z",
+      "amount": {
+        "currencyType": "USD",
+        "currencyValue": 9
+      },
+      "meansOfPayment": "paymentCreditCard",
+      "channel": "lane",
+      "paymentStatus": "declined",
+      "ticketNumber": "T-7105",
+      "cardLast4": "5521"
+    },
+    {
+      "id": "e8…0715",
+      "transactionID": "PS1-20261013-0715",
+      "place": {
+        "id": "b1…0001",
+        "className": "Place"
+      },
+      "dateCollected": "2026-10-13T19:04:00Z",
+      "amount": {
+        "currencyType": "USD",
+        "currencyValue": 9
+      },
+      "meansOfPayment": "paymentCreditCard",
+      "channel": "payStation",
+      "paymentStatus": "approved",
+      "ticketNumber": "T-7105",
+      "cardLast4": "6630"
+    },
+    {
+      "id": "e8…0706",
+      "transactionID": "PS1-20261013-0706",
+      "place": {
+        "id": "b1…0001",
+        "className": "Place"
+      },
+      "dateCollected": "2026-10-13T17:59:00Z",
+      "amount": {
+        "currencyType": "USD",
+        "currencyValue": 3
+      },
+      "meansOfPayment": "paymentCreditCard",
+      "channel": "payStation",
+      "paymentStatus": "approved",
+      "ticketNumber": "T-7106",
+      "cardLast4": "7741"
+    },
+    {
+      "id": "e8…0707",
+      "transactionID": "PS1-20261013-0707",
+      "place": {
+        "id": "b1…0001",
+        "className": "Place"
+      },
+      "dateCollected": "2026-10-13T21:54:00Z",
+      "amount": {
+        "currencyType": "USD",
+        "currencyValue": 12
+      },
+      "meansOfPayment": "paymentCreditCard",
+      "channel": "lane",
+      "paymentStatus": "approved",
+      "ticketNumber": "T-7107",
+      "cardLast4": "8852"
+    },
+    {
+      "id": "e8…0708",
+      "transactionID": "PS1-20261013-0708",
+      "place": {
+        "id": "b1…0001",
+        "className": "Place"
+      },
+      "dateCollected": "2026-10-13T22:34:00Z",
+      "amount": {
+        "currencyType": "USD",
+        "currencyValue": 12
+      },
+      "meansOfPayment": "paymentCreditCard",
+      "channel": "lane",
+      "paymentStatus": "approved",
+      "ticketNumber": "T-7108",
+      "cardLast4": "9963"
+    },
+    {
+      "id": "e8…0650",
+      "transactionID": "PS1-20261013-0650",
+      "place": {
+        "id": "b1…0001",
+        "className": "Place"
+      },
+      "dateCollected": "2026-10-12T20:59:00Z",
+      "amount": {
+        "currencyType": "USD",
+        "currencyValue": 3
+      },
+      "meansOfPayment": "paymentCreditCard",
+      "channel": "payStation",
+      "paymentStatus": "approved",
+      "ticketNumber": "T-7050",
+      "cardLast4": "1144"
+    },
+    {
+      "id": "e8…0901",
+      "transactionID": "HD-20261013-0077",
+      "place": {
+        "id": "b1…0002",
+        "className": "Place"
+      },
+      "dateCollected": "2026-10-13T17:29:00Z",
+      "amount": {
+        "currencyType": "USD",
+        "currencyValue": 18
+      },
+      "meansOfPayment": "paymentCreditCard",
+      "channel": "agent",
+      "paymentStatus": "approved",
+      "ticketNumber": "HD-3301",
+      "cardLast4": "4410"
+    }
+  ],
+  "occupancy": {
+    "thresholds": [
+      85,
+      90,
+      95,
+      100
+    ],
+    "delta": 25
+  },
+  "dataFeed": {
+    "pageSize": 4,
+    "history": {
+      "sessions": [
+        {
+          "cursor": "c:00100",
+          "credential": "citypark-bi",
+          "issuedAt": "2026-10-13T22:00:00Z"
+        },
+        {
+          "id": "c4…0801",
+          "version": 2,
+          "time": "2026-10-13T22:05:00Z"
+        },
+        {
+          "id": "f1…0907",
+          "version": 1,
+          "time": "2026-10-13T22:10:00Z"
+        },
+        {
+          "id": "c4…0702",
+          "version": 2,
+          "time": "2026-10-13T22:20:00Z"
+        },
+        {
+          "id": "c4…0710",
+          "version": 1,
+          "time": "2026-10-13T22:25:00Z"
+        },
+        {
+          "id": "c4…0708",
+          "version": 2,
+          "time": "2026-10-13T22:35:00Z"
+        },
+        {
+          "id": "c4…0799",
+          "deleted": true,
+          "time": "2026-10-13T22:40:00Z",
+          "className": "Session",
+          "places": [
+            "b1…0001"
+          ]
+        }
+      ],
+      "assignedRights": [
+        {
+          "cursor": "a:00100",
+          "credential": "citypark-bi",
+          "issuedAt": "2026-10-13T22:00:00Z"
+        }
+      ],
+      "places": [
+        {
+          "cursor": "p:00100",
+          "credential": "citypark-bi",
+          "issuedAt": "2026-10-13T22:00:00Z"
+        }
+      ],
+      "observations": [
+        {
+          "cursor": "o:00100",
+          "credential": "citypark-lpr",
+          "issuedAt": "2026-10-13T22:00:00Z"
+        },
+        {
+          "id": "f2…0907",
+          "version": 1,
+          "time": "2026-10-13T22:10:00Z"
+        },
+        {
+          "id": "f2…0908",
+          "version": 1,
+          "time": "2026-10-13T22:10:00Z"
+        }
+      ]
+    }
+  },
+  "credentials": {
+    "default": {
+      "scopes": [
+        "apx.data:read",
+        "apx.subscriptions:manage",
+        "apx.accounts:read"
+      ],
+      "apx_org": {
+        "id": "a1…0003",
+        "className": "Organisation"
+      },
+      "apx_places": [
+        "b1…0001",
+        "b1…0006"
+      ],
+      "client": "citypark-bi",
+      "user": "citypark-bi"
+    },
+    "citypark-bi": {
+      "scopes": [
+        "apx.data:read",
+        "apx.subscriptions:manage",
+        "apx.accounts:read"
+      ],
+      "apx_org": {
+        "id": "a1…0003",
+        "className": "Organisation"
+      },
+      "apx_places": [
+        "b1…0001",
+        "b1…0006"
+      ],
+      "client": "citypark-bi"
+    },
+    "citypark-lpr": {
+      "scopes": [
+        "apx.data:read",
+        "apx.lpr:read",
+        "apx.subscriptions:manage"
+      ],
+      "apx_org": {
+        "id": "a1…0003",
+        "className": "Organisation"
+      },
+      "apx_places": [
+        "b1…0006"
+      ],
+      "client": "citypark-lpr"
+    },
+    "lakeside-parcs": {
+      "scopes": [
+        "apx.data:read",
+        "apx.data:write",
+        "apx.control:read",
+        "apx.control:execute",
+        "apx.alerts:read",
+        "apx.alerts:write",
+        "apx.lpr:read"
+      ],
+      "apx_org": {
+        "id": "a1…0001",
+        "className": "Organisation"
+      },
+      "apx_places": [
+        "b1…0001"
+      ]
+    },
+    "riverside-lpr-system": {
+      "scopes": [
+        "apx.data:write",
+        "apx.lpr:read"
+      ],
+      "apx_org": {
+        "id": "a1…0001",
+        "className": "Organisation"
+      },
+      "apx_places": [
+        "b1…0006"
+      ]
+    },
+    "counting-system": {
+      "scopes": [
+        "apx.data:read",
+        "apx.data:write"
+      ],
+      "apx_org": {
+        "id": "a1…0001",
+        "className": "Organisation"
+      },
+      "apx_places": [
+        "b1…0001"
+      ]
+    },
+    "pay-station-3": {
+      "scopes": [
+        "apx.payments:write",
+        "apx.accounts:read"
+      ],
+      "apx_org": {
+        "id": "a1…0001",
+        "className": "Organisation"
+      },
+      "apx_places": [
+        "b1…0001"
+      ]
+    },
+    "service-desk": {
+      "scopes": [
+        "apx.accounts:read",
+        "apx.payments:write"
+      ],
+      "apx_org": {
+        "id": "a1…0001",
+        "className": "Organisation"
+      },
+      "apx_places": [
+        "b1…0001"
+      ],
+      "user": "agent-ruiz"
+    },
+    "desk-lakeside": {
+      "scopes": [
+        "apx.permits:manage",
+        "apx.data:read",
+        "apx.data:write"
+      ],
+      "apx_org": {
+        "id": "a1…0001",
+        "className": "Organisation"
+      },
+      "apx_places": [
+        "b1…0001"
+      ],
+      "user": "desk-lakeside"
+    }
+  }
+}

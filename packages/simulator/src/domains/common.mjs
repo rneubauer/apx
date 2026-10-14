@@ -1,9 +1,12 @@
 /**
  * Helpers every domain module shares: the APDS pagination envelope,
  * status-history entries, visibility checks under the Part 9 §9.3a rules,
- * reference resolution, and small conveniences.
+ * reference resolution, small conveniences, and the Part 5 §5.2 rule 8
+ * change feed every APX list route shares (installChangeFeeds).
  */
+import { createHash } from 'node:crypto';
 import { fail } from '../kernel/problems.mjs';
+import { BUNDLE } from '../kernel/spec.mjs';
 
 export const PAGE_SIZE = 100;
 
@@ -109,3 +112,176 @@ export function parseInstant(value, name) {
 
 /** The first `string` of a MultilingualString, or the string itself. */
 export const text = (m) => (Array.isArray(m) ? m[0]?.string : typeof m === 'string' ? m : undefined);
+
+// ---------- Part 5 §5.2 rule 8: the change feed on APX list routes ----------
+//
+// Every APX list route the bundle decorates with `ModeParam` (the rule-8
+// table) answers `mode=change&cursor=` here, so no domain module carries
+// its own feed: `installChangeFeeds(sim)` wraps each such handler at world
+// load. A change page is computed from the route's own `mode=full` answer,
+// so grant scoping, the route's filters and its wire view are exactly the
+// list's. A cursor names a snapshot (id → digest of the representation)
+// of what the credential saw under that filter set; the next page carries
+// every resource whose representation differs from the snapshot, whole
+// (difference 2), including those that left the filtered view (difference
+// 4). A resource gone from the unfiltered view is a tombstone (difference
+// 5). A domain that serves its own feed sets `changeFeed: true` on its
+// handler and is left alone.
+
+const FEED_RETENTION_MS = 7 * 86_400_000; // rule 2: honour cursors at least 7 days old
+const FEED_PAGE_SIZE = 100;
+const FEED_RESERVED = new Set(['mode', 'cursor', 'page']);
+const LAST = '￿'; // sorts tombstones (no representation) after dated changes
+
+/** The rule-8 table, read from the bundle: operationId → item schema name (the tombstone `className`). */
+export const APX_FEED_ROUTES = (() => {
+  const out = new Map();
+  for (const [path, item] of Object.entries(BUNDLE.paths)) {
+    const op = item.get;
+    if (!path.startsWith('/v1/') || !op?.parameters?.some((p) => p.$ref === '#/components/parameters/ModeParam')) continue;
+    const ref = op.responses?.['200']?.content?.['application/json']?.schema?.properties?.data?.items?.$ref;
+    out.set(op.operationId, ref ? ref.split('/').pop() : 'Resource');
+  }
+  return out;
+})();
+
+const feedStates = new WeakMap(); // sim → { cursors: Map<name, cursor>, byKey: Map<key, name>, n }
+const freshFeedState = () => ({ cursors: new Map(), byKey: new Map(), n: 0 });
+const feedState = (sim) => feedStates.get(sim) ?? feedStates.set(sim, freshFeedState()).get(sim);
+
+/** True for `mode=change`; `mode=full` or absent is the ordinary list; any other value is 400. */
+export function isChangeMode(ctx) {
+  const mode = ctx.query.get('mode');
+  if (mode === undefined || mode === 'full') return false;
+  if (mode === 'change') return true;
+  return fail('invalid-request', `mode must be full or change, not ${mode}.`, { errors: [{ pointer: '?mode', detail: 'enum: full, change' }] });
+}
+
+const credentialOf = (principal) => principal.raw?.client ?? principal.sub;
+const sortedGrant = (places) => (Array.isArray(places) ? [...places].sort() : null);
+const digest = (value) => createHash('sha256').update(JSON.stringify(value)).digest('hex');
+
+/** Every row of the route's ordinary answer under `entries` ([name, values] pairs), walking its pages. */
+async function listAllRows(handler, ctx, entries) {
+  const rows = [];
+  for (let page = 1; ; page++) {
+    const params = new URLSearchParams();
+    for (const [k, values] of entries) for (const v of values) params.append(k, v);
+    if (page > 1) params.set('page', String(page));
+    let out = await handler({ ...ctx, query: new ctx.query.constructor(params.toString()) });
+    if (out && typeof out.status === 'number' && Object.hasOwn(out, 'body')) out = out.body;
+    const data = Array.isArray(out?.data) ? out.data : [];
+    rows.push(...data);
+    const meta = out?.meta;
+    if (!meta || !data.length || meta.offset + data.length >= meta.total) return rows;
+  }
+}
+
+const byId = (rows) => new Map(rows.filter((r) => r && typeof r.id === 'string').map((r) => [r.id, r]));
+const digestsOf = (rows) => new Map([...rows].map(([id, r]) => [id, digest(r)]));
+
+/** When a representation last changed, for ordering a page (oldest first). */
+const changedAt = (r) => r.recordInfo?.lastUpdate ?? r.statusHistory?.at?.(-1)?.time ?? r.dateCollected ?? r.recordInfo?.creationTime ?? '';
+
+function resolveCursor(sim, ctx, opId, name, filterKey) {
+  const c = feedState(sim).cursors.get(name);
+  if (!c || c.opId !== opId) fail('target-not-found', `Cursor ${name} is not known for this route.`);
+  if (c.credential !== credentialOf(ctx.principal)) fail('target-not-found', `Cursor ${name} is not known for this credential.`);
+  if (c.filterKey !== filterKey) fail('target-not-found', `Cursor ${name} was issued for another filter set; re-sync that filter set with mode=full.`);
+  if (sim.clock.nowMs() - Date.parse(c.issuedAt) > FEED_RETENTION_MS) {
+    fail('target-not-found', `Cursor ${name} was issued ${c.issuedAt}; this server retains 7 days of change history. Re-sync with mode=full.`);
+  }
+  return c;
+}
+
+/** The same position (route, credential, filters, grant, snapshot) re-issues the same cursor (rule 1). */
+function mintCursor(sim, { opId, className, credential, filterKey, grant, snapshot }) {
+  const state = feedState(sim);
+  const key = digest([opId, credential, filterKey, grant, [...snapshot]]);
+  const known = state.byKey.get(key);
+  if (known) return state.cursors.get(known);
+  const name = `${className.charAt(0).toLowerCase()}${className.slice(1)}:${String(++state.n).padStart(5, '0')}`;
+  const cursor = { name, opId, credential, filterKey, grant, snapshot, issuedAt: sim.clock.now() };
+  state.cursors.set(name, cursor);
+  state.byKey.set(key, name);
+  return cursor;
+}
+
+/** What changed since `held`: whole items (entered, updated, or left the filtered view) and tombstones. */
+async function changesSince(held, now, handler, ctx, entries) {
+  const current = digestsOf(now);
+  const updated = [...current].filter(([id, d]) => held.snapshot.get(id) !== d).map(([id]) => ({ id, item: now.get(id) }));
+  const leftIds = [...held.snapshot.keys()].filter((id) => !current.has(id));
+  const unfiltered = leftIds.length && entries.length ? byId(await listAllRows(handler, ctx, [])) : now;
+  const left = leftIds.map((id) => (unfiltered.has(id) ? { id, item: unfiltered.get(id), gone: true } : { id, tombstone: true, gone: true }));
+  const when = (ch) => (ch.item ? changedAt(ch.item) : LAST);
+  return { current, changes: [...updated, ...left].sort((a, b) => when(a).localeCompare(when(b)) || a.id.localeCompare(b.id)) };
+}
+
+/** One rule-8 change page for `opId`, in the route's own list envelope (difference 1: no `meta`). */
+export async function changePage(sim, ctx, { opId, className, handler }) {
+  const entries = ctx.query.keys().filter((k) => !FEED_RESERVED.has(k)).sort().map((k) => [k, ctx.query.all(k)]);
+  const filterKey = JSON.stringify([ctx.params ?? {}, entries]);
+  const credential = credentialOf(ctx.principal);
+  const grant = sortedGrant(ctx.principal.places);
+  const name = ctx.query.get('cursor');
+  const held = name !== undefined ? resolveCursor(sim, ctx, opId, name, filterKey) : null;
+  const now = byId(await listAllRows(handler, ctx, entries));
+  const issue = (snapshot) => mintCursor(sim, { opId, className, credential, filterKey, grant, snapshot });
+  const envelope = (data, deleted, cursor, more) => {
+    const additions = held ? (grant ?? []).filter((g) => g !== '*' && !sim.hierarchy.covers(held.grant ?? [], g)) : [];
+    const qs = entries.flatMap(([k, vs]) => vs.map((v) => `${encodeURIComponent(k)}=${encodeURIComponent(v)}`));
+    return {
+      data,
+      updateMode: 'change',
+      cursor: cursor.name,
+      ...(deleted.length ? { deleted } : {}),
+      ...(additions.length ? { grantAdditions: additions } : {}),
+      next: more ? `${ctx.path}?${[...qs, 'mode=change', `cursor=${encodeURIComponent(cursor.name)}`].join('&')}` : null,
+    };
+  };
+
+  // Difference 3: without a cursor, an empty page holding the feed's current head.
+  if (!held) return envelope([], [], issue(digestsOf(now)), false);
+
+  const { current, changes } = await changesSince(held, now, handler, ctx, entries);
+  const page = changes.slice(0, FEED_PAGE_SIZE);
+  const more = changes.length > page.length;
+  const snapshot = new Map(held.snapshot);
+  for (const ch of page) {
+    if (ch.gone) snapshot.delete(ch.id);
+    else snapshot.set(ch.id, current.get(ch.id));
+  }
+  const deleteTimestamp = sim.clock.now();
+  return envelope(
+    page.filter((ch) => ch.item).map((ch) => ch.item),
+    page.filter((ch) => ch.tombstone).map((ch) => ({ id: ch.id, className, deleteTimestamp })),
+    issue(more ? snapshot : current),
+    more
+  );
+}
+
+/**
+ * Wrap every rule-8 list handler so `mode=change` is served by changePage.
+ * `overrides` maps an operationId to `{ handler }`, the feed's own notion
+ * of the list where the ordinary answer is a keyed lookup (GET
+ * /v1/payments, rule 8 difference 6). The wrap happens once, at the first
+ * world load (every domain has registered by then); the cursor ledger
+ * resets with each world.
+ */
+export function installChangeFeeds(sim, overrides = {}) {
+  let wrapped = false;
+  sim.seed(() => {
+    feedStates.set(sim, freshFeedState());
+    if (wrapped) return;
+    wrapped = true;
+    for (const [opId, className] of APX_FEED_ROUTES) {
+      const inner = sim.handlers.get(opId);
+      if (!inner || inner.changeFeed) continue;
+      const handler = overrides[opId]?.handler ?? inner;
+      const outer = (ctx) => (isChangeMode(ctx) ? changePage(sim, ctx, { opId, className, handler }) : inner(ctx));
+      Object.assign(outer, { allowEmptyBody: inner.allowEmptyBody, skipBodyValidation: inner.skipBodyValidation, changeFeed: true });
+      sim.handlers.set(opId, outer);
+    }
+  });
+}
