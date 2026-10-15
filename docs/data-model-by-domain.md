@@ -59,7 +59,7 @@ three rules:
 | `extensions` on `HierarchyElement` | Ext (erratum 010) | Hierarchy | — | container only |
 | `LaneCameras` (`lane-cameras@1.0` on `VehicularAccess`) | Ext | Layout/Structure/Equipment | `cameras[]` → `cameraId`, `faces` | — |
 | `DeviceStatus` (`devicestatus@1.0`) | New (keyed overlay on equipment) | Layout/Structure/Equipment | `device`, `deviceState` | `lastCommunication`, `stateChangedTime` |
-| `Signage` | New | Layout/Structure/Equipment (or Enforcement) | `id`, `version`, `place`, `text`, `signageStatus`, `effectiveFrom` | `effectiveTo`, `location`, `imageLink`, `signType`, `policy` |
+| `Signage` | New | Layout/Structure/Equipment | `id`, `version`, `place`, `text`, `signageStatus`, `effectiveFrom` | `effectiveTo`, `location`, `imageLink`, `signType`, `policy` |
 | `PlateListPlaceFlags` | New | Hierarchy (scope) | `place` | `enforced`, `alertOnArrival`, `refuseService` |
 | `extensions` on `ContactPoint` | Ext | Contact | — | container only |
 
@@ -267,10 +267,12 @@ charging (experimental).
   APDS defines no equipment status list and that the values are APX's own.
   They are proposed to ISO as a code list (above).
 
+- **Signage sits in Place (2026-10-14),** under Layout/Structure/Equipment,
+  not in Enforcement. It stays in Tier 2.
+
 ### Still open
 
-1. **Signage**: in the Place box or the Enforcement box?
-2. **Proposed-only required attributes.** In the Violation core, the
+1. **Proposed-only required attributes.** In the Violation core, the
    shortlist flattens `detection.detectedTime` to the top level and makes
    `noticeNumber` and `issuedTime` required on every notice. APX itself
    requires them only on import. That is fine for ISO, but APX would
