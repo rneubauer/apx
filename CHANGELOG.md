@@ -9,8 +9,8 @@ The machine-readable spec (`spec/openapi/apx.yaml`, bundled as
 ## [Unreleased]
 
 No normative change. The only bundle edit is editorial: the `DeviceStatus`
-description no longer cites an APDS `RefillPointStatusEnum`, which APDS 4.1
-does not define. The reference simulator now covers the Part 19 behaviour
+description now says exactly how device states relate to APDS
+`RefillPointStatusEnum`, which covers refill points only. The reference simulator now covers the Part 19 behaviour
 adopted in 0.14.0, and the vetting suite cites every APX-VIO row. Part 12's
 problem-type table loses a stray merge-conflict marker (editorial; no row
 changed).
@@ -78,9 +78,11 @@ changed).
 
 **Fixed.**
 - `DeviceStatus` (spec), Part 6 §6.4, Part 11 and the `apx-device-states`
-  registry said device states mirror an APDS `RefillPointStatusEnum`. No
-  such enum exists in APDS 4.1. They now say that APDS defines no equipment
-  status list and the values are APX's own. No value changed.
+  registry said device states mirror an APDS `RefillPointStatusEnum`
+  without saying where it lives. It is in the APDS 4.1 Data Dictionary
+  (A.3.53, on `RefillPoint.status`) but not in `apds-api-4.1.yaml`, and it
+  covers refill points only. They now say so, and that APX device states
+  follow its style and share four of its values. No value changed.
 - Simulator: `PUT /v1/sessions/{id}/assigned-right` refused a right
   already linked to another open session only when the right carried the
   reservations extension (RES-13).

@@ -261,11 +261,13 @@ charging (experimental).
   [Part B of the APDS change requests](apds-change-requests.md#part-b--additions-apds-could-consider).
   Until then, APX device fields keep referencing `SupplementalEquipment`
   without setting an equipment type.
-- **Device-state source (2026-10-14).** `apx-device-states` used to claim
-  that it mirrored an APDS `RefillPointStatusEnum`, which does not exist
-  in APDS 4.1. The spec, Parts 6 and 11, and the registry now say that
-  APDS defines no equipment status list and that the values are APX's own.
-  They are proposed to ISO as a code list (above).
+- **Device-state source (2026-10-15).** APDS 4.1 defines
+  `RefillPointStatusEnum` (Data Dictionary A.3.53, on `RefillPoint.status`)
+  for refill points only, and neither appears in `apds-api-4.1.yaml`.
+  APDS has no general equipment status list. `apx-device-states` follows
+  that enumeration's style and shares four of its values (`available`,
+  `occupied`, `inoperative`, `unknown`); the spec, Parts 6 and 11 say so.
+  The values are proposed to ISO as a code list (above).
 
 - **Signage sits in Place (2026-10-14),** under Layout/Structure/Equipment,
   not in Enforcement. It stays in Tier 2.

@@ -182,9 +182,12 @@ screenshot link — an APDS Observation), and monthly-credential context
 
 - `GET /v1/devices` / `GET /v1/devices/{id}` (scope
   `apx.control:read`) — `DeviceStatus` overlay keyed by Reference to the
-  APDS SupplementalEquipment. APDS 4.1 defines no equipment status code
-  list, so states come from registry `apx-device-states`: `available,
-  occupied, inoperative, outOfService, fault, unknown`.
+  APDS SupplementalEquipment. APDS 4.1 has no general equipment status
+  list: its `RefillPointStatusEnum` (Data Dictionary A.3.53) covers refill
+  points only and is absent from `apds-api-4.1.yaml`. States come from
+  registry `apx-device-states` (`available, occupied, inoperative,
+  outOfService, fault, unknown`), which follows that enumeration's style;
+  `available`, `occupied`, `inoperative` and `unknown` are its own values.
 - The list takes two optional filters: `place` (comma-separated
   HierarchyElement ids, subtree-inclusive, as the APDS `place` filter) and
   `deviceState` (one `apx-device-states` value, e.g. `fault`). A `place`
