@@ -72,7 +72,10 @@ packages:
 
 Rules the generator enforces:
 
-- Every `type` and `target` is `Package.Name`, where `Name` is an APDS 4.1
+- Every `type` and `target` is `Domain.Name`. As in the APDS Data
+  Dictionary, the prefix is the domain (`Place`, `Right`, `Session`,
+  `Observation`, `PkCommon`, … or a proposed domain such as `Enforcement`),
+  not the sub-package. `Name` is an APDS 4.1
   datatype, class or enumeration (per the vocabulary) or something proposed
   in this folder. A reference may name its target class in parentheses, as
   APDS does: `PkCommon.VersionedReference (Right.AssignedRight)`.

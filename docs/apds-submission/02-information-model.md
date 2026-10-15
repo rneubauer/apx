@@ -31,8 +31,14 @@ Additions to existing APDS classes are Level B extensions under the APDS
 rules for extending the model: they add optional content only, never
 change an existing multiplicity, definition or type, and never make an
 existing APDS class the component of a new one. A valid extended instance
-is therefore always a valid APDS 4.1 instance. New classes in new
-domains are marked Level C where they introduce new root concepts.
+is therefore always a valid APDS 4.1 instance. Classes in the two new
+domains, Enforcement and Operations, are marked Level C because they
+introduce new root concepts.
+
+One suggestion does change an existing multiplicity: making
+`VehicleAncillaryIdentification.country` optional. It is not part of
+these additions. It is described in the Observation section and offered
+separately, with the other suggested changes to APDS 4.1.
 
 In the diagrams, classes that already exist in APDS 4.1 are marked
 `<<APDS>>`. Everything else is proposed.
@@ -59,157 +65,141 @@ corrections already filed against the API document.
 
 ## Proposed changes at a glance
 
-135 proposals: 49 new classes, 12 additions to existing APDS classes, 71 new enumerations and 3 sets of new values for existing APDS enumerations. Tier 1: 34, Tier 2: 79, Tier 3: 22.
+119 proposals: 47 new classes, 11 additions to existing APDS classes, 57 new enumerations and 4 sets of new values for existing APDS enumerations. Tier 1: 34, Tier 2: 59, Tier 3: 26.
 
 ### Tier 1: propose now
 
-| Element | Change | Package | Tier | Level | APX source |
-| --- | --- | --- | --- | --- | --- |
-| `EquipmentStatus` | New class | SupplementalFacility | 1 | B | DeviceStatus (APX Part 6 §6.4), registry apx-device-states |
-| `EquipmentStatusEnum` | New enumeration | SupplementalFacility | 1 | — | registry apx-device-states |
-| `EquipmentTypeEnum` | New values for an APDS enumeration | SupplementalFacility | 1 | — | Device references in APX Part 6 §6.4 (DeviceStatus.device, Command.target, Alert.source.device) |
-| `CredentialAssigned` | Additions to an APDS class | Right | 1 | B | CredentialRecord (APX Part 21 §21.1–21.2) |
-| `CredentialMedia` | New class | Right | 1 | B | CredentialRecord.media (APX Part 21 §21.1) |
-| `CredentialSuspension` | New class | Right | 1 | B | CredentialRecord.suspension (APX Part 21 §21.1) |
-| `PresentedCredential` | New class | Right | 1 | B | PresentedCredential (APX Part 21 §21.4) |
-| `CredentialStatusEnum` | New enumeration | Right | 1 | — | CredentialRecord.credentialStatus (APX Part 21 §21.1) |
-| `CredentialMediaFormEnum` | New enumeration | Right | 1 | — | CredentialRecord.media.form (APX Part 21 §21.1) |
-| `Session` | Additions to an APDS class | Session | 1 | B | apds-ext:apx:session-detail@1.0 (APX Part 5 §5.8) |
-| `SessionRead` | New class | Session | 1 | B | SessionReadBinding (APX Part 5 §5.8) |
-| `SessionClosure` | New class | Session | 1 | B | SessionClosure (APX Part 5 §5.8) |
-| `AccessEvent` | New class | Session | 1 | B | AccessEvent / CredentialAccessEvent (APX Part 21 §21.4) |
-| `ValidationRedemption` | New class | Session | 1 | B | ValidationRedemption (APX Part 20); materialized as Segment.validationId |
-| `SessionReadRoleEnum` | New enumeration | Session | 1 | — | SessionReadBinding.role (APX Part 5 §5.8) |
-| `SessionEndReasonEnum` | New enumeration | Session | 1 | — | registry apx-session-end-reasons |
-| `AccessDirectionEnum` | New enumeration | Session | 1 | — | AccessEvent.direction, LprReadDetail.accessEvent |
-| `AccessOutcomeEnum` | New enumeration | Session | 1 | — | AccessEvent.outcome |
-| `AccessDenialReasonEnum` | New enumeration | Session | 1 | — | registry apx-access-denial-reasons |
-| `ValidationChannelEnum` | New enumeration | Session | 1 | — | ValidationRedemption.channel |
-| `ValidationRedemptionStatusEnum` | New enumeration | Session | 1 | — | ValidationRedemption.redemptionStatus |
-| `ObservationElement` | Additions to an APDS class | Observation | 1 | B | apds-ext:apx:lpr-read@1.0 (APX Part 13 §13.3a) |
-| `AttributeRead` | New class | Observation | 1 | B | AttributeRead / LprReadDetail (APX Part 13 §13.3a) |
-| `AlternateRead` | New class | Observation | 1 | B | LprReadDetail.alternateReads (APX Part 13 §13.3a) |
-| `ReadAttributeEnum` | New enumeration | Observation | 1 | — | LprReadDetail members |
-| `VehicleMovementEnum` | New enumeration | Observation | 1 | — | LprReadDetail.movement |
-| `Violation` | New class | Enforcement | 1 | C | Violation (APX Part 19 §19.1) |
-| `ViolationDetection` | New class | Enforcement | 1 | C | ViolationDetection (APX Part 19 §19.4) |
-| `Notice` | New class | Enforcement | 1 | C | Violation.notice (APX Part 19 §19.5) |
-| `ViolationTypeEnum` | New enumeration | Enforcement | 1 | — | registry apx-violation-types |
-| `ViolationStatusEnum` | New enumeration | Enforcement | 1 | — | Violation.violationStatus (APX Part 19 §19.1) |
-| `DetectionModeEnum` | New enumeration | Enforcement | 1 | — | ViolationDetection.mode (APX Part 19 §19.4) |
-| `NoticeKindEnum` | New enumeration | Enforcement | 1 | — | Violation.notice.noticeKind (APX Part 19 §19.5); an implementer code list in APX today, with no registry yet |
-| `NoticeDeliveryMethodEnum` | New enumeration | Enforcement | 1 | — | Violation.notice.deliveryMethod and EnforcementPolicy.deliveryRules (APX Part 19 §19.5, §19.10); an implementer code list in APX today, with no registry yet |
+| Element | Change | Package | Tier | Level |
+| --- | --- | --- | --- | --- |
+| `EquipmentStatus` | New class | SupplementalFacility | 1 | B |
+| `EquipmentStatusEnum` | New enumeration | SupplementalFacility | 1 | — |
+| `EquipmentTypeEnum` | New values for an APDS enumeration | SupplementalFacility | 1 | — |
+| `CredentialAssigned` | Additions to an APDS class | Right | 1 | B |
+| `CredentialMedia` | New class | Right | 1 | B |
+| `CredentialSuspension` | New class | Right | 1 | B |
+| `PresentedCredential` | New class | Right | 1 | B |
+| `CredentialStatusEnum` | New enumeration | Right | 1 | — |
+| `CredentialMediaFormEnum` | New enumeration | Right | 1 | — |
+| `DepositStatusEnum` | New enumeration | Right | 1 | — |
+| `Session` | Additions to an APDS class | Session | 1 | B |
+| `SessionRead` | New class | Session | 1 | B |
+| `SessionClosure` | New class | Session | 1 | B |
+| `AccessEvent` | New class | Session | 1 | B |
+| `ValidationRedemption` | New class | Session | 1 | B |
+| `SessionReadRoleEnum` | New enumeration | Session | 1 | — |
+| `SessionEndReasonEnum` | New enumeration | Session | 1 | — |
+| `AccessOutcomeEnum` | New enumeration | Session | 1 | — |
+| `AccessDenialReasonEnum` | New enumeration | Session | 1 | — |
+| `ValidationRedemptionStatusEnum` | New enumeration | Session | 1 | — |
+| `ObservationElement` | Additions to an APDS class | Observation | 1 | B |
+| `AttributeRead` | New class | Observation | 1 | B |
+| `AlternateRead` | New class | Observation | 1 | B |
+| `ReadAttributeEnum` | New enumeration | Observation | 1 | — |
+| `VehicleMovementEnum` | New enumeration | Observation | 1 | — |
+| `InteractionChannelEnum` | New enumeration | CommonClasses | 1 | — |
+| `Violation` | New class | Enforcement | 1 | C |
+| `ViolationDetection` | New class | Enforcement | 1 | C |
+| `Notice` | New class | Enforcement | 1 | C |
+| `ViolationTypeEnum` | New enumeration | Enforcement | 1 | — |
+| `ViolationStatusEnum` | New enumeration | Enforcement | 1 | — |
+| `DetectionModeEnum` | New enumeration | Enforcement | 1 | — |
+| `NoticeKindEnum` | New enumeration | Enforcement | 1 | — |
+| `NoticeDeliveryMethodEnum` | New enumeration | Enforcement | 1 | — |
 
 ### Tier 2: proven in APX, propose next
 
-| Element | Change | Package | Tier | Level | APX source |
-| --- | --- | --- | --- | --- | --- |
-| `VehicularAccess` | Additions to an APDS class | VehicularAccess | 2 | B | LaneCameras, apds-ext:apx:lane-cameras@1.0 (APX Part 13 §13.3a(5)) |
-| `LaneCamera` | New class | VehicularAccess | 2 | B | LaneCameras.cameras[] (APX Part 13 §13.3a(5)) |
-| `CameraFacingEnum` | New enumeration | VehicularAccess | 2 | — | LaneCameras.cameras[].faces |
-| `Signage` | New class | Signage | 2 | B | Signage (APX Part 19 §19.11) |
-| `SignageStatusEnum` | New enumeration | Signage | 2 | — | Signage.signageStatus |
-| `SignTypeEnum` | New enumeration | Signage | 2 | — | Signage.signType (implementer code list) |
-| `RateTable` | Additions to an APDS class | Rates | 2 | B | RatePolicy, apds-ext:apx:ratepolicy@1.0 (APX Part 6 §6.6) |
-| `ValidationBenefit` | New class | Rates | 2 | B | ValidationBenefit (APX Part 20 §20.1) |
-| `CredentialDigest` | New class | Right | 2 | B | CredentialDigest, apds-ext:apx:credential-digest@1.0 (APX Part 9 §9.6 rule 6) |
-| `AssignedRight` | Additions to an APDS class | Right | 2 | B | ReservationExtension, apds-ext:apx:reservation@1.0 (APX Part 14 §14.1); PermitExtension, apds-ext:apx:permit@1.1 (APX Part 14 §14.2) |
-| `OverageBilling` | New class | Right | 2 | B | PermitExtension.overageBilling (APX Part 14 §14.2d) |
-| `RightHolder` | Additions to an APDS class | Right | 2 | B | Account (APX Part 13 §13.1) |
-| `Payment` | Additions to an APDS class | Right | 2 | B | PaymentRecord (APX Part 13 §13.1a, §13.6); PaymentDetail.rateSold (Part 13 §13.6a) |
-| `PaymentLine` | Additions to an APDS class | Right | 2 | B | registry apx-payment-line-codes (APX Part 13 §13.6a) |
-| `DepositStatusEnum` | New enumeration | Right | 2 | — | CredentialRecord.media.depositStatus (APX Part 21 §21.1) |
-| `DigestAlgorithmEnum` | New enumeration | Right | 2 | — | CredentialDigest.alg (APX Part 9 §9.6 rule 6) |
-| `ReservationStateEnum` | New enumeration | Right | 2 | — | ReservationExtension.reservationState (APX Part 14 §14.1) |
-| `OverageBillingModeEnum` | New enumeration | Right | 2 | — | PermitExtension.overageBilling.mode (APX Part 14 §14.2d) |
-| `AccountStatusEnum` | New enumeration | Right | 2 | — | Account.accountStatus (APX Part 13 §13.1) |
-| `PaymentStatusEnum` | New enumeration | Right | 2 | — | PaymentRecord.paymentStatus (APX Part 13 §13.1a) |
-| `CaptureStatusEnum` | New enumeration | Right | 2 | — | PaymentRecord.captureStatus (APX Part 13 §13.1a) |
-| `PaymentChannelEnum` | New enumeration | Right | 2 | — | PaymentRecord.channel (APX Part 13 §13.1) |
-| `PaymentLineCodeEnum` | New enumeration | Right | 2 | — | registry apx-payment-line-codes (APX Part 11, Part 13 §13.6a) |
-| `RightTypeEnum` | New values for an APDS enumeration | Right | 2 | — | ValetTicket.assignedRight (APX Part 22) |
-| `ValidationProgram` | New class | Validation | 2 | B | ValidationProgram (APX Part 20 §20.1) |
-| `ValidationRules` | New class | Validation | 2 | B | ValidationProgram.rules (APX Part 20 §20.3) |
-| `ValidationIssuance` | New class | Validation | 2 | B | ValidationIssuance (APX Part 20 §20.2) |
-| `ValidationInstrument` | New class | Validation | 2 | B | ValidationInstrument (APX Part 20 §20.2) |
-| `ValidationProgramStatusEnum` | New enumeration | Validation | 2 | — | ValidationProgram.programStatus (APX Part 20 §20.1) |
-| `ValidationIssuanceMethodEnum` | New enumeration | Validation | 2 | — | ValidationIssuance.method (APX Part 20 §20.2) |
-| `ValidationIssuanceStatusEnum` | New enumeration | Validation | 2 | — | ValidationIssuance.issuanceStatus (APX Part 20 §20.2) |
-| `ValidationInstrumentStatusEnum` | New enumeration | Validation | 2 | — | ValidationInstrument.instrumentStatus (APX Part 20 §20.2) |
-| `PlateList` | New class | PlateList | 2 | B | PlateList (APX Part 24 §24.1) |
-| `PlateListPlaceFlags` | New class | PlateList | 2 | B | PlateListPlaceFlags (APX Part 24 §24.1) |
-| `PlateListEntry` | New class | PlateList | 2 | B | PlateListEntry (APX Part 24 §24.2) |
-| `PlateListCategoryEnum` | New enumeration | PlateList | 2 | — | registry apx-plate-list-categories (APX Part 11, Part 24) |
-| `PlateListStatusEnum` | New enumeration | PlateList | 2 | — | PlateList.status (APX Part 24 §24.1) |
-| `MatchEvidence` | New class | Session | 2 | B | MatchEvidence (APX Part 5 §5.8) |
-| `PassbackStatus` | New class | Session | 2 | B | PassbackStatus (APX Part 17) |
-| `ValetTicket` | New class | Session | 2 | B | ValetTicket (APX Part 22) |
-| `SessionLifecycleEnum` | New enumeration | Session | 2 | — | SessionDetail.lifecycle (APX Part 5 §5.8) |
-| `MatchTypeEnum` | New enumeration | Session | 2 | — | MatchEvidence.matchType |
-| `PlateMatchMethodEnum` | New enumeration | Session | 2 | — | MatchEvidence.plate.method |
-| `JurisdictionAgreementEnum` | New enumeration | Session | 2 | — | MatchEvidence.plate.jurisdiction |
-| `VehicleEvidenceLevelEnum` | New enumeration | Session | 2 | — | MatchEvidence.vehicle.level |
-| `MatchDecisionEnum` | New enumeration | Session | 2 | — | MatchEvidence.decidedBy |
-| `PassbackStateEnum` | New enumeration | Session | 2 | — | PassbackStatus.state |
-| `PassbackPresenceEnum` | New enumeration | Session | 2 | — | PassbackStatus.expectedPresence / recordedPresence |
-| `ValetStatusEnum` | New enumeration | Session | 2 | — | ValetTicket.valetStatus |
-| `ValetRetrievalChannelEnum` | New enumeration | Session | 2 | — | ValetTicket.retrieval.channel |
-| `HandbackVerificationEnum` | New enumeration | Session | 2 | — | ValetTicket.handback.verificationMethod |
-| `ReadReview` | New class | Observation | 2 | B | LprReadDetail.review (APX Part 13 §13.3a(4a)) |
-| `Image` | Additions to an APDS class | Observation | 2 | B | LprReadDetail.plateBox (APX Part 13 §13.3a) |
-| `ImageRegion` | New class | Observation | 2 | B | LprReadDetail.plateBox |
-| `ConditionReport` | New class | Observation | 2 | B | ConditionReport (APX Part 22) |
-| `DamageItem` | New class | Observation | 2 | B | ConditionReport.damage[] (APX Part 22) |
-| `ImageTypeEnum` | New values for an APDS enumeration | Observation | 2 | — | LprRead.images[].imageType (APX Part 13 §13.3c) |
-| `PlateFaceEnum` | New enumeration | Observation | 2 | — | LprReadDetail.plateFace |
-| `ReadReviewStateEnum` | New enumeration | Observation | 2 | — | LprReadDetail.review.state |
-| `ReadReviewReasonEnum` | New enumeration | Observation | 2 | — | registry apx-read-review-reasons |
-| `DamageSeverityEnum` | New enumeration | Observation | 2 | — | ConditionReport.damage[].severity |
-| `TollTransaction` | New class | Tolling | 2 | B | TollTransaction (APX Part 15) |
-| `TollDispute` | New class | Tolling | 2 | B | TollTransaction.dispute (APX Part 15 §15.1) |
-| `TollTransactionStatusEnum` | New enumeration | Tolling | 2 | — | TollTransaction.transactionStatus |
-| `TollDisputeReasonEnum` | New enumeration | Tolling | 2 | — | registry apx-toll-dispute-reasons |
-| `TollDisputeResolutionEnum` | New enumeration | Tolling | 2 | — | registry apx-toll-dispute-resolutions |
-| `RecordType` | Additions to an APDS class | CommonClasses | 2 | B | RecordInfo.origin (APX Part 18 §18.6) |
-| `Appeal` | New class | Enforcement | 2 | C | Violation.appeal (APX Part 19 §19.6) |
-| `EnforcementPolicy` | New class | Enforcement | 2 | C | EnforcementPolicy (APX Part 19 §19.10) |
-| `NoticeDeliveryRule` | New class | Enforcement | 2 | C | EnforcementPolicy.deliveryRules (APX Part 19 §19.10) |
-| `PenaltyLimit` | New class | Enforcement | 2 | C | EnforcementPolicy.penaltyCap and overallCeiling (APX Part 19 §19.10) |
-| `EscalationStep` | New class | Enforcement | 2 | C | EnforcementPolicy.escalation (APX Part 19 §19.10) |
-| `AppealReasonEnum` | New enumeration | Enforcement | 2 | — | Violation.appeal.reason (APX Part 19 §19.6); an implementer code list in APX today |
-| `AppealResolutionEnum` | New enumeration | Enforcement | 2 | — | Violation.appeal.resolution (APX Part 19 §19.6) |
-| `PolicyStatusEnum` | New enumeration | Enforcement | 2 | — | EnforcementPolicy.policyStatus (APX Part 19 §19.10) |
-| `Alert` | New class | Operations | 2 | C | Alert (APX Part 7 §7.1) |
-| `AlertTypeEnum` | New enumeration | Operations | 2 | — | registry apx-alert-types, seeded from Use Case C.2.2 transaction exceptions and space statuses |
-| `AlertSeverityEnum` | New enumeration | Operations | 2 | — | Alert.severity (APX Part 7), a closed list |
-| `AlertStatusEnum` | New enumeration | Operations | 2 | — | Alert.status (APX Part 7 §7.2) |
+| Element | Change | Package | Tier | Level |
+| --- | --- | --- | --- | --- |
+| `VehicularAccess` | Additions to an APDS class | VehicularAccess | 2 | B |
+| `LaneCamera` | New class | VehicularAccess | 2 | B |
+| `CameraFacingEnum` | New enumeration | VehicularAccess | 2 | — |
+| `Signage` | New class | Signage | 2 | B |
+| `SignTypeEnum` | New enumeration | Signage | 2 | — |
+| `RateTable` | Additions to an APDS class | Rates | 2 | B |
+| `ValidationBenefit` | New class | Rates | 2 | B |
+| `AssignedRight` | Additions to an APDS class | Right | 2 | B |
+| `OverageBilling` | New class | Right | 2 | B |
+| `RightHolder` | Additions to an APDS class | Right | 2 | B |
+| `Payment` | Additions to an APDS class | Right | 2 | B |
+| `ReservationStateEnum` | New enumeration | Right | 2 | — |
+| `OverageBillingModeEnum` | New enumeration | Right | 2 | — |
+| `AccountStatusEnum` | New enumeration | Right | 2 | — |
+| `PaymentStatusEnum` | New enumeration | Right | 2 | — |
+| `CaptureStatusEnum` | New enumeration | Right | 2 | — |
+| `RightTypeEnum` | New values for an APDS enumeration | Right | 2 | — |
+| `PaymentTypeEnum` | New values for an APDS enumeration | Right | 2 | — |
+| `ValidationProgram` | New class | Validation | 2 | B |
+| `ValidationRules` | New class | Validation | 2 | B |
+| `ValidationIssuance` | New class | Validation | 2 | B |
+| `ValidationInstrument` | New class | Validation | 2 | B |
+| `ValidationIssuanceMethodEnum` | New enumeration | Validation | 2 | — |
+| `ValidationIssuanceStatusEnum` | New enumeration | Validation | 2 | — |
+| `ValidationInstrumentStatusEnum` | New enumeration | Validation | 2 | — |
+| `PlateList` | New class | PlateList | 2 | B |
+| `PlateListPlaceFlags` | New class | PlateList | 2 | B |
+| `PlateListEntry` | New class | PlateList | 2 | B |
+| `PlateListCategoryEnum` | New enumeration | PlateList | 2 | — |
+| `ValetTicket` | New class | Session | 2 | B |
+| `SessionLifecycleEnum` | New enumeration | Session | 2 | — |
+| `ValetStatusEnum` | New enumeration | Session | 2 | — |
+| `HandbackVerificationEnum` | New enumeration | Session | 2 | — |
+| `ReadReview` | New class | Observation | 2 | B |
+| `Image` | Additions to an APDS class | Observation | 2 | B |
+| `ImageRegion` | New class | Observation | 2 | B |
+| `ConditionReport` | New class | Observation | 2 | B |
+| `DamageItem` | New class | Observation | 2 | B |
+| `ImageTypeEnum` | New values for an APDS enumeration | Observation | 2 | — |
+| `PlateFaceEnum` | New enumeration | Observation | 2 | — |
+| `ReadReviewStateEnum` | New enumeration | Observation | 2 | — |
+| `ReadReviewReasonEnum` | New enumeration | Observation | 2 | — |
+| `DamageSeverityEnum` | New enumeration | Observation | 2 | — |
+| `TollTransaction` | New class | Tolling | 2 | B |
+| `TollDispute` | New class | Tolling | 2 | B |
+| `TollTransactionStatusEnum` | New enumeration | Tolling | 2 | — |
+| `TollDisputeReasonEnum` | New enumeration | Tolling | 2 | — |
+| `TollDisputeResolutionEnum` | New enumeration | Tolling | 2 | — |
+| `RecordEndReasonEnum` | New enumeration | CommonClasses | 2 | — |
+| `Appeal` | New class | Enforcement | 2 | C |
+| `EnforcementPolicy` | New class | Enforcement | 2 | C |
+| `NoticeDeliveryRule` | New class | Enforcement | 2 | C |
+| `EscalationStep` | New class | Enforcement | 2 | C |
+| `AppealReasonEnum` | New enumeration | Enforcement | 2 | — |
+| `AppealResolutionEnum` | New enumeration | Enforcement | 2 | — |
+| `Alert` | New class | Operations | 2 | C |
+| `AlertTypeEnum` | New enumeration | Operations | 2 | — |
+| `AlertSeverityEnum` | New enumeration | Operations | 2 | — |
+| `AlertStatusEnum` | New enumeration | Operations | 2 | — |
 
 ### Tier 3: for discussion
 
-| Element | Change | Package | Tier | Level | APX source |
-| --- | --- | --- | --- | --- | --- |
-| `DemandType` | Additions to an APDS class | Demand | 3 | B | OccupancyHistoryPage buckets (APX Part 5 §5.5a) |
-| `RateSold` | New class | Right | 3 | B | PaymentDetail.rateSold, apds-ext:apx:payment-detail@1.0 (APX Part 13 §13.6a) |
-| `RateProductEnum` | New enumeration | Right | 3 | — | PaymentDetail.rateSold.product (APX Part 13 §13.6a) |
-| `RateClassEnum` | New enumeration | Right | 3 | — | PaymentDetail.rateSold.class (APX Part 13 §13.6a) |
-| `ValidationBilling` | New class | Validation | 3 | B | ValidationProgram.billing (APX Part 20 §20.1) |
-| `ValidationBillingModelEnum` | New enumeration | Validation | 3 | — | ValidationProgram.billing.model (APX Part 20 §20.1) |
-| `ValidationBillingCycleEnum` | New enumeration | Validation | 3 | — | ValidationProgram.billing.billingCycle (APX Part 20 §20.1) |
-| `ChargingPointStatus` | New class | EnergyInfrastructure | 3 | C | ChargingPointStatus (APX Part 23 §23.1) |
-| `ConnectorStatus` | New class | EnergyInfrastructure | 3 | C | ChargingPointStatus.connectors[] (APX Part 23 §23.1) |
-| `ChargingBayPresence` | New class | EnergyInfrastructure | 3 | C | ChargingBayPresence (APX Part 23 §23.3) |
-| `ChargingSession` | New class | EnergyInfrastructure | 3 | C | ChargingSession (APX Part 23 §23.2) |
-| `ChargingCost` | New class | EnergyInfrastructure | 3 | C | ChargingSession.cost (APX Part 23 §23.5) |
-| `ChargingIdleTerms` | New class | EnergyInfrastructure | 3 | C | ChargingSession.idlePolicy (APX Part 23 §23.10) |
-| `BayPresenceEnum` | New enumeration | EnergyInfrastructure | 3 | — | ChargingBayPresence.presence (APX Part 23 §23.3) |
-| `BayPresenceSourceEnum` | New enumeration | EnergyInfrastructure | 3 | — | ChargingBayPresence.source (APX Part 23 §23.3) |
-| `ChargingSessionStatusEnum` | New enumeration | EnergyInfrastructure | 3 | — | ChargingSession.chargingStatus (APX Part 23 §23.2), aligned with OCPP 2.0.1 charging states |
-| `ChargingStopReasonEnum` | New enumeration | EnergyInfrastructure | 3 | — | ChargingSession.stopReason (APX Part 23), a subset of OCPP 2.0.1 stopped reasons |
-| `ChargingSettlementModeEnum` | New enumeration | EnergyInfrastructure | 3 | — | ChargingSession.settlement.mode (APX Part 23 §23.5) |
-| `SupportInteraction` | New class | Operations | 3 | C | SupportInteraction (APX Part 17 §17.6) |
-| `SupportChannelEnum` | New enumeration | Operations | 3 | — | SupportInteraction.channel (APX Part 17), an implementer code list in APX today |
-| `SupportAgentTypeEnum` | New enumeration | Operations | 3 | — | SupportInteraction.agentType (APX Part 17) |
-| `SupportIssueTypeEnum` | New enumeration | Operations | 3 | — | registry apx-issue-types |
+| Element | Change | Package | Tier | Level |
+| --- | --- | --- | --- | --- |
+| `DemandType` | Additions to an APDS class | Demand | 3 | B |
+| `RateSold` | New class | Right | 3 | B |
+| `RateProductEnum` | New enumeration | Right | 3 | — |
+| `RateClassEnum` | New enumeration | Right | 3 | — |
+| `ValidationBilling` | New class | Validation | 3 | B |
+| `ValidationBillingModelEnum` | New enumeration | Validation | 3 | — |
+| `ValidationBillingCycleEnum` | New enumeration | Validation | 3 | — |
+| `MatchEvidence` | New class | Session | 3 | B |
+| `MatchTypeEnum` | New enumeration | Session | 3 | — |
+| `MatchDecisionEnum` | New enumeration | Session | 3 | — |
+| `ChargingPointStatus` | New class | EnergyInfrastructure | 3 | B |
+| `ConnectorStatus` | New class | EnergyInfrastructure | 3 | B |
+| `ChargingBayPresence` | New class | EnergyInfrastructure | 3 | B |
+| `ChargingSession` | New class | EnergyInfrastructure | 3 | B |
+| `ChargingCost` | New class | EnergyInfrastructure | 3 | B |
+| `ChargingIdleTerms` | New class | EnergyInfrastructure | 3 | B |
+| `BayPresenceEnum` | New enumeration | EnergyInfrastructure | 3 | — |
+| `BayPresenceSourceEnum` | New enumeration | EnergyInfrastructure | 3 | — |
+| `ChargingSessionStatusEnum` | New enumeration | EnergyInfrastructure | 3 | — |
+| `ChargingStopReasonEnum` | New enumeration | EnergyInfrastructure | 3 | — |
+| `ChargingSettlementModeEnum` | New enumeration | EnergyInfrastructure | 3 | — |
+| `RecordType` | Additions to an APDS class | CommonClasses | 3 | B |
+| `PenaltyLimit` | New class | Enforcement | 3 | C |
+| `SupportInteraction` | New class | Operations | 3 | C |
+| `SupportAgentTypeEnum` | New enumeration | Operations | 3 | — |
+| `SupportIssueTypeEnum` | New enumeration | Operations | 3 | — |
 
 ## Data model
 
@@ -225,39 +215,40 @@ hierarchy.
 classDiagram
     class SupplementalEquipment {
         <<APDS>>
-        equipmentType : EquipmentTypeEnum
     }
     class RefillPoint {
         <<APDS>>
-        status : RefillPointStatusEnum
+        +status : RefillPointStatusEnum [0..1]
     }
     class EquipmentStatus {
-        equipmentId : VersionedReference
-        equipmentStatus : EquipmentStatusEnum
-        otherEquipmentStatus : ReferencedCodeListEntry
-        statusChangeTime : DateTime
-        lastCommunication : DateTime
+        <<proposed>>
+        +equipmentId : Reference [1..1]
+        +equipmentStatus : EquipmentStatusEnum [1..1]
+        +otherEquipmentStatus : ReferencedCodeListEntry [0..1]
+        +statusChangeTime : DateTime [0..1]
+        +lastCommunicationTime : DateTime [0..1]
     }
     class VehicularAccess {
         <<APDS>>
-        flow : AccessTypeEnum
     }
     class LaneCamera {
-        cameraId : String
-        facing : CameraFacingEnum
+        <<proposed>>
+        +cameraId : String [1..1]
+        +facing : CameraFacingEnum [1..1]
     }
     class HierarchyElementGeneral {
         <<APDS>>
     }
     class Signage {
-        elementId : VersionedReference
-        signText : MultilingualString
-        signageStatus : SignageStatusEnum
-        effectiveFrom : DateTime
-        effectiveTo : DateTime
-        signType : SignTypeEnum
-        photoUrl : Url
-        policyId : VersionedReference
+        <<proposed>>
+        +elementId : VersionedReference [1..1]
+        +signText : MultilingualString [1..1]
+        +endReason : RecordEndReasonEnum [0..1]
+        +signType : SignTypeEnum [0..1]
+        +photoUrl : Url [0..1]
+    }
+    class Validity {
+        <<APDS>>
     }
     class PointLocation {
         <<APDS>>
@@ -269,16 +260,20 @@ classDiagram
     SupplementalEquipment "1" o-- "0..*" RefillPoint : refillPoint
     VehicularAccess "1" o-- "0..*" LaneCamera : laneCamera
     HierarchyElementGeneral "1" <.. "0..*" Signage : elementId
+    Signage o-- "1" Validity : validity
     Signage o-- "0..1" PointLocation : location
     EquipmentStatus o-- "0..1" RecordType : recordType
     Signage o-- "0..1" RecordType : recordType
 ```
 
-#### Equipment status
+#### How equipment status attaches
 
-EquipmentStatus refers to a SupplementalEquipment by versioned reference,
-in the same way that DemandTable refers to a hierarchy element through
-elementId. It adds nothing to the equipment description itself.
+EquipmentStatus refers to a SupplementalEquipment by reference, in the
+same way that DemandTable refers to a hierarchy element through
+elementId. A plain reference is used because SupplementalEquipment is a
+component of a versioned SupplementalFacility rather than versioned on
+its own. EquipmentStatus adds nothing to the equipment description
+itself.
 
 APDS 4.1 already gives refill points a status (RefillPoint.status, typed
 RefillPointStatusEnum). EquipmentStatusEnum carries the same idea to all
@@ -289,11 +284,11 @@ outOfStock, reserved) are not repeated. Where an item is a refill point,
 RefillPoint.status continues to apply; EquipmentStatus covers the barrier,
 camera, pay machine or intercom beside it.
 
-APX's current registry (apx-device-states) uses 'fault' and 'inoperative'
-for what this proposal calls faulted and closed. APX would adopt the APDS
-names once agreed.
+APX's current code list uses 'fault' and 'inoperative' for what this
+proposal calls faulted and closed. APX would adopt the APDS names once
+agreed.
 
-#### Lane cameras
+#### How lane cameras attach
 
 LaneCamera is a component of VehicularAccess. It does not repeat the
 camera's equipment description, which can be given as SupplementalEquipment
@@ -302,12 +297,15 @@ to the lane's flow, so it remains correct on a reversible lane. The
 association could equally be placed on AccessLaneSpecific where lanes are
 described one by one; we would welcome the group's view.
 
-#### Signage
+#### How signage is modelled
 
 Signage is versioned identifiable so a receiver can hold every version
-of a sign. Its location uses PointLocation and its photo follows the
-photoUrl convention of SupplementalFacility. The policyId reference points
-to EnforcementPolicy, proposed in the Enforcement domain.
+of a sign. Its period and state use the APDS Validity class, with the
+shared RecordEndReasonEnum (PkCommon) for why it ended. Its location
+uses PointLocation and its photo follows the photoUrl convention of
+SupplementalFacility. Signage does not refer to the Enforcement domain:
+the EnforcementPolicy proposed there points to the signs that give
+notice of it, so these Level B additions stand on their own.
 
 #### Enumerations (for Place)
 
@@ -316,29 +314,28 @@ to EnforcementPolicy, proposed in the Enforcement domain.
 | EquipmentStatusEnum | New | available, occupied, blocked, closed, outOfService, faulted, unknown, other |
 | EquipmentTypeEnum | Add values | barrier, gate, ticketDispenser, intercom |
 | CameraFacingEnum | New | inward, outward |
-| SignageStatusEnum | New | active, superseded, removed |
 | SignTypeEnum | New | entrance, paymentMachine, perSpace, ratesBoard, towAway, other |
+
+Signage also uses the shared RecordEndReasonEnum proposed in PkCommon.
 
 #### External code lists (for Place)
 
 States beyond EquipmentStatusEnum are carried in otherEquipmentStatus as a
 ReferencedCodeListEntry, pointing to a UserDefinedCodeList published by
-the operator or by APX (apx-device-states). No new code list mechanism is
-needed.
+the operator or by APX. No new code list mechanism is needed.
 
 #### Elements proposed for Place
 
-| Element | Change | Package | Tier | Level | APX source |
-| --- | --- | --- | --- | --- | --- |
-| `EquipmentStatus` | New class | SupplementalFacility | 1 | B | DeviceStatus (APX Part 6 §6.4), registry apx-device-states |
-| `EquipmentStatusEnum` | New enumeration | SupplementalFacility | 1 | — | registry apx-device-states |
-| `EquipmentTypeEnum` | New values for an APDS enumeration | SupplementalFacility | 1 | — | Device references in APX Part 6 §6.4 (DeviceStatus.device, Command.target, Alert.source.device) |
-| `VehicularAccess` | Additions to an APDS class | VehicularAccess | 2 | B | LaneCameras, apds-ext:apx:lane-cameras@1.0 (APX Part 13 §13.3a(5)) |
-| `LaneCamera` | New class | VehicularAccess | 2 | B | LaneCameras.cameras[] (APX Part 13 §13.3a(5)) |
-| `CameraFacingEnum` | New enumeration | VehicularAccess | 2 | — | LaneCameras.cameras[].faces |
-| `Signage` | New class | Signage | 2 | B | Signage (APX Part 19 §19.11) |
-| `SignageStatusEnum` | New enumeration | Signage | 2 | — | Signage.signageStatus |
-| `SignTypeEnum` | New enumeration | Signage | 2 | — | Signage.signType (implementer code list) |
+| Element | Change | Package | Tier | Level |
+| --- | --- | --- | --- | --- |
+| `EquipmentStatus` | New class | SupplementalFacility | 1 | B |
+| `EquipmentStatusEnum` | New enumeration | SupplementalFacility | 1 | — |
+| `EquipmentTypeEnum` | New values for an APDS enumeration | SupplementalFacility | 1 | — |
+| `VehicularAccess` | Additions to an APDS class | VehicularAccess | 2 | B |
+| `LaneCamera` | New class | VehicularAccess | 2 | B |
+| `CameraFacingEnum` | New enumeration | VehicularAccess | 2 | — |
+| `Signage` | New class | Signage | 2 | B |
+| `SignTypeEnum` | New enumeration | Signage | 2 | — |
 
 ### Occupancy
 
@@ -352,31 +349,30 @@ current meaning: the count at a moment, given by creationTime.
 classDiagram
     class DemandTable {
         <<APDS>>
-        creationTime : DateTime
-        elementId : VersionedReference
-        frequency : Duration
     }
     class DemandType {
         <<APDS>>
-        count : NonNegativeInteger
-        percentage : Percentage
-        occupancyCalculation : CalculationTypeEnum
-        periodStart : DateTime
-        periodEnd : DateTime
-        maximumCount : NonNegativeInteger
-        averageCount : Float
-        sampleCount : NonNegativeInteger
+    }
+    class DemandTypeAdditions {
+        <<proposed>>
+        +periodStartTime : DateTime [0..1]
+        +periodEndTime : DateTime [0..1]
+        +maximumCount : NonNegativeInteger [0..1]
+        +averageCount : Float [0..1]
+        +sampleCount : NonNegativeInteger [0..1]
     }
     class Supply {
         <<APDS>>
     }
     DemandTable "1" o-- "0..*" DemandType : demandType
+    DemandType .. DemandTypeAdditions : Level B additions
 ```
 
-In the diagram, periodStart, periodEnd, maximumCount, averageCount and
-sampleCount are the proposed attributes; the others exist in APDS 4.1.
+The `<<proposed>>` box holds the five attributes suggested for
+DemandType; the `<<APDS>>` boxes are the existing APDS 4.1 classes,
+unchanged.
 
-When periodStart and periodEnd are present, the record describes the
+When periodStartTime and periodEndTime are present, the record describes the
 period and count, if given, is the count at its end. Periods are
 expected to align with clock boundaries in the Place's time zone (e.g.,
 each hour), but the specification does not need to require it. The
@@ -396,9 +392,9 @@ No new external code lists are proposed in Occupancy.
 
 #### Elements proposed for Occupancy
 
-| Element | Change | Package | Tier | Level | APX source |
-| --- | --- | --- | --- | --- | --- |
-| `DemandType` | Additions to an APDS class | Demand | 3 | B | OccupancyHistoryPage buckets (APX Part 5 §5.5a) |
+| Element | Change | Package | Tier | Level |
+| --- | --- | --- | --- | --- |
+| `DemandType` | Additions to an APDS class | Demand | 3 | B |
 
 ### Rates
 
@@ -429,22 +425,28 @@ class states the nominal value only.
 classDiagram
   class RateTable {
     <<APDS>>
+  }
+  class RateTableAdditions {
+    <<proposed>>
     +negotiable : Boolean [0..1]
     +negotiatedRateLabel : MultilingualString [0..*]
     +negotiationNote : MultilingualString [0..*]
   }
   class RateDiscount {
     <<APDS>>
-    +discountRate : Percentage [0..1]
   }
   class AmountInCurrency {
     <<APDS>>
   }
   class ValidationBenefit {
+    <<proposed>>
     +discountDuration : Duration [0..1]
     +description : MultilingualString [1..*]
   }
-  class ValidationProgram
+  class ValidationProgram {
+    <<proposed>>
+  }
+  RateTable .. RateTableAdditions : Level B additions
   RateDiscount <|-- ValidationBenefit
   RateDiscount --> "0..1" AmountInCurrency : fixedValue
   ValidationProgram --> "1" ValidationBenefit : benefit
@@ -460,10 +462,10 @@ No new external code lists are proposed in `<Rates>`.
 
 #### Elements proposed for Rates
 
-| Element | Change | Package | Tier | Level | APX source |
-| --- | --- | --- | --- | --- | --- |
-| `RateTable` | Additions to an APDS class | Rates | 2 | B | RatePolicy, apds-ext:apx:ratepolicy@1.0 (APX Part 6 §6.6) |
-| `ValidationBenefit` | New class | Rates | 2 | B | ValidationBenefit (APX Part 20 §20.1) |
+| Element | Change | Package | Tier | Level |
+| --- | --- | --- | --- | --- |
+| `RateTable` | Additions to an APDS class | Rates | 2 | B |
+| `ValidationBenefit` | New class | Rates | 2 | B |
 
 ### Right
 
@@ -472,11 +474,12 @@ APDS records who holds a right, which credentials prove it, and what was paid fo
 Most additions sit in the existing `<Right>` namespace
 (D2Payload/Extension/Parking/Right). Two new sub-packages are proposed:
 `<Validation>` (D2Payload/Extension/Parking/Right/Validation) and
-`<PlateList>` (D2Payload/Extension/Parking/Right/PlateList). All
-additions to existing classes are optional and all new classes are
-reached only through optional associations, so every APDS 4.1 instance
-remains valid (Level B in the sense of the Information Model's
-"Extending the APDS Model").
+`<PlateList>` (D2Payload/Extension/Parking/Right/PlateList). As in the
+APDS Data Dictionary, their classes are named with the domain prefix
+(`Right.ValidationProgram`, `Right.PlateList`). All additions to existing
+classes are optional and all new classes are reached only through
+optional associations, so every APDS 4.1 instance remains valid (Level B
+in the sense of the Information Model's "Extending the APDS Model").
 
 **Credential lifecycle.** CredentialAssigned gains `credentialStatus`
 (CredentialStatusEnum) and two references, `replacesCredentialId` and
@@ -490,18 +493,15 @@ expired and replaced are terminal. The status is held on the assigned
 credential, not on Credential, because it describes one credential's
 use for one AssignedRight.
 
-**PresentedCredential** specialises Right.Credential and adds
-`credentialIdentification`. It is the value a reader or officer actually
-read. It is used by the access event proposed in the Session additions
-when no assigned credential matched.
-
-**CredentialDigest** is a keyed digest (algorithm, key identifier, value)
-of a normalised credential identification. It lets a system that only
-screens test "is this the same plate?" without holding the plate. It is
-proposed on PlateListEntry and may be reused wherever a plate appears.
+**PresentedCredential** specialises Right.Credential, inheriting its
+`type`, and adds `credentialIdentification`. It is the single class used
+wherever a credential value is carried without an assigned credential
+record: the access event and the valet ticket in the Session additions,
+the toll transaction in the Observation additions, and the plate list
+entry below.
 
 **Reservations and permits.** AssignedRight gains `reservationState`,
-`checkInSessionId`, `noShowAfter`, `renewsAssignedRightId`,
+`checkInSessionId`, `noShowTime`, `renewsAssignedRightId`,
 `renewedByAssignedRightId`, `maxConcurrentVehicles` and an optional
 `overageBilling` (OverageBilling). The PlannedUse remains authoritative
 for the planned start and end. The existing ReservationTypeEnum (whether
@@ -509,31 +509,33 @@ a Place requires reservations) is unrelated and unchanged.
 
 **Accounts.** Rather than proposing a separate Account class, RightHolder
 gains `accountStatus`, `accountBalance` and `elementId`. In the APDS
-Data Dictionary RightHolder is already a versioned identifiable class.
-APX erratum 014 (no identifiable RightHolder) concerns the API document
-only and is not repeated here.
+Data Dictionary RightHolder is already a versioned identifiable class,
+so nothing more is needed.
 
 **Payments.** Payment gains `paymentStatus`, `captureStatus`,
-`meansOfPayment` (the existing Place.MeansOfPaymentEnum), `paymentChannel`,
-`elementId`, `refundedAmount` and `rateSold` (RateSold). PaymentLine gains
-`lineCode`, a shared counterpart to the bilateral `idCode`, which stays.
-No refund value is proposed for PaymentTypeEnum: the 4.1 Data Dictionary
-already defines `base`, `refund`, `surcharge` and `validation`. (The 4.1
-API document lists only `payment` and `validation`; APX notes this as a
-difference between the two documents.)
+`meansOfPayment` (the existing Place.MeansOfPaymentEnum), `paymentChannel`
+(the shared PkCommon.InteractionChannelEnum), `elementId`,
+`refundedAmount` and `rateSold` (RateSold). PaymentLine already carries a
+payment type, so five values are proposed for the existing
+PaymentTypeEnum (`convenienceFee`, `serviceFee`, `discount`, `energy`,
+`idle`) rather than a new line code. The existing `base`, `refund`,
+`surcharge`, `validation` and `Vat` values are unchanged.
 
 **Validation programmes.** ValidationProgram is versioned identifiable and
-references a Place element and a provider Organisation. It has a
-`benefit` (Rates.ValidationBenefit), optional `validationRules` and
-`validationBilling`, and the instrument forms it may issue.
-ValidationIssuance records a batch of instruments and ValidationInstrument
-one code and its status. The redemption that applies a validation to a
-Session is proposed in the Session additions; its identifier is the
-APDS Segment `validationId`.
+references a Place element and a provider Organisation. Its period and
+state use the APDS Validity class, with the shared RecordEndReasonEnum
+for why it ended. It has a `benefit` (Rates.ValidationBenefit), optional
+`validationRules` and `validationBilling`, and the instrument forms it
+may issue. ValidationIssuance records a batch of instruments and
+ValidationInstrument one code and its status; both carry an optional
+Validity. The redemption that applies a validation to a Session is
+proposed in the Session additions; its identifier is the APDS Segment
+`validationId`.
 
-**Plate lists.** PlateList carries the policy (category, status, owner
+**Plate lists.** PlateList carries the policy (category, owner, Validity
 and per-element flags in PlateListPlaceFlags); PlateListEntry carries one
-credential, kept separately so a list can be maintained entry by entry.
+listed credential, as a PresentedCredential, kept separately so a list
+can be maintained entry by entry.
 
 ```mermaid
 classDiagram
@@ -542,156 +544,190 @@ classDiagram
   }
   class CredentialAssigned {
     <<APDS>>
+  }
+  class CredentialAssignedAdditions {
+    <<proposed>>
     +credentialStatus : CredentialStatusEnum [0..1]
     +replacesCredentialId : Reference [0..1]
     +replacedByCredentialId : Reference [0..1]
   }
   class CredentialMedia {
-    +mediaForm : CredentialMediaFormEnum
-    +serialNumber [0..1]
-    +depositStatus [0..1]
+    <<proposed>>
+    +mediaForm : CredentialMediaFormEnum [1..1]
+    +serialNumber : String [0..1]
+    +depositStatus : DepositStatusEnum [0..1]
   }
   class CredentialSuspension {
-    +suspensionReason [0..1]
-    +suspendedUntil [0..1]
+    <<proposed>>
+    +suspensionReason : String [0..1]
+    +suspendedUntilTime : DateTime [0..1]
   }
   class PresentedCredential {
-    +credentialIdentification : String
+    <<proposed>>
+    +credentialIdentification : String [1..1]
   }
   class AssignedRight {
     <<APDS>>
-    +reservationState [0..1]
-    +checkInSessionId [0..1]
-    +renewsAssignedRightId [0..1]
-    +maxConcurrentVehicles [0..1]
+  }
+  class AssignedRightAdditions {
+    <<proposed>>
+    +reservationState : ReservationStateEnum [0..1]
+    +checkInSessionId : VersionedReference [0..1]
+    +renewsAssignedRightId : VersionedReference [0..1]
+    +maxConcurrentVehicles : NonNegativeInteger [0..1]
   }
   class OverageBilling {
-    +overageBillingMode
+    <<proposed>>
+    +overageBillingMode : OverageBillingModeEnum [1..1]
   }
   class RightHolder {
     <<APDS>>
-    +accountStatus [0..1]
+  }
+  class RightHolderAdditions {
+    <<proposed>>
+    +accountStatus : AccountStatusEnum [0..1]
   }
   class Payment {
     <<APDS>>
-    +paymentStatus [0..1]
-    +captureStatus [0..1]
-    +meansOfPayment [0..1]
-    +paymentChannel [0..1]
   }
-  class PaymentLine {
+  class PaymentAdditions {
+    <<proposed>>
+    +paymentStatus : PaymentStatusEnum [0..1]
+    +captureStatus : CaptureStatusEnum [0..1]
+    +meansOfPayment : MeansOfPaymentEnum [0..1]
+    +paymentChannel : InteractionChannelEnum [0..1]
+  }
+  class RateSold {
+    <<proposed>>
+  }
+  class ValidationProgram {
+    <<proposed>>
+    +elementId : VersionedReference [1..1]
+    +providerId : VersionedReference [1..1]
+    +endReason : RecordEndReasonEnum [0..1]
+  }
+  class ValidationRules {
+    <<proposed>>
+  }
+  class ValidationBilling {
+    <<proposed>>
+  }
+  class ValidationIssuance {
+    <<proposed>>
+  }
+  class ValidationInstrument {
+    <<proposed>>
+  }
+  class ValidationBenefit {
+    <<proposed>>
+  }
+  class Validity {
     <<APDS>>
-    +lineCode [0..1]
   }
-  class RateSold
-  class ValidationProgram
-  class ValidationRules
-  class ValidationBilling
-  class ValidationIssuance
-  class ValidationInstrument
-  class ValidationBenefit
-  class PlateList
-  class PlateListPlaceFlags
-  class PlateListEntry
-  class CredentialDigest
+  class PlateList {
+    <<proposed>>
+    +category : PlateListCategoryEnum [1..1]
+    +endReason : RecordEndReasonEnum [0..1]
+  }
+  class PlateListPlaceFlags {
+    <<proposed>>
+  }
+  class PlateListEntry {
+    <<proposed>>
+  }
   Credential <|-- CredentialAssigned
   Credential <|-- PresentedCredential
+  CredentialAssigned .. CredentialAssignedAdditions : Level B additions
   CredentialAssigned --> "0..1" CredentialMedia : credentialMedia
   CredentialAssigned --> "0..1" CredentialSuspension : credentialSuspension
+  AssignedRight .. AssignedRightAdditions : Level B additions
   AssignedRight --> "0..1" OverageBilling : overageBilling
-  Payment --> "1..*" PaymentLine : paymentLine
+  RightHolder .. RightHolderAdditions : Level B additions
+  Payment .. PaymentAdditions : Level B additions
   Payment --> "0..1" RateSold : rateSold
+  ValidationProgram --> "1" Validity : validity
   ValidationProgram --> "1" ValidationBenefit : benefit
   ValidationProgram --> "0..1" ValidationRules
   ValidationProgram --> "0..1" ValidationBilling
-  ValidationIssuance ..> ValidationProgram : programId
+  ValidationIssuance ..> ValidationProgram : validationProgramId
   ValidationInstrument ..> ValidationIssuance : issuanceId
+  PlateList --> "1" Validity : validity
   PlateList --> "0..*" PlateListPlaceFlags : placeFlags
   PlateListEntry ..> PlateList : plateListId
-  PlateListEntry --> "0..1" CredentialDigest : credentialDigest
+  PlateListEntry --> "1" PresentedCredential : listedCredential
 ```
 
 #### Enumerations (for Right)
 
 The following enumerations are proposed in `<Right>`:
 CredentialStatusEnum, CredentialMediaFormEnum, DepositStatusEnum,
-DigestAlgorithmEnum, ReservationStateEnum, OverageBillingModeEnum,
-AccountStatusEnum, PaymentStatusEnum, CaptureStatusEnum,
-PaymentChannelEnum, RateProductEnum, RateClassEnum and
-PaymentLineCodeEnum. One value, `valet`, is proposed for the existing
-RightTypeEnum (named RightSpecificationTypeEnum in the API document).
+ReservationStateEnum, OverageBillingModeEnum, AccountStatusEnum,
+PaymentStatusEnum, CaptureStatusEnum, RateProductEnum and RateClassEnum.
+Values are proposed for two existing enumerations: `valet` for
+RightTypeEnum, and `convenienceFee`, `serviceFee`, `discount`, `energy`
+and `idle` for PaymentTypeEnum.
 
-In `<Validation>`: ValidationProgramStatusEnum,
-ValidationIssuanceMethodEnum, ValidationIssuanceStatusEnum,
-ValidationInstrumentStatusEnum, ValidationBillingModelEnum and
-ValidationBillingCycleEnum.
+In `<Validation>`: ValidationIssuanceMethodEnum,
+ValidationIssuanceStatusEnum, ValidationInstrumentStatusEnum,
+ValidationBillingModelEnum and ValidationBillingCycleEnum.
 
-In `<PlateList>`: PlateListCategoryEnum and PlateListStatusEnum.
+In `<PlateList>`: PlateListCategoryEnum.
 
-The full values are in the Data Dictionary.
+The payment channel uses the shared InteractionChannelEnum, and
+programmes and lists use the shared RecordEndReasonEnum, both proposed in
+PkCommon. The full values are in the Data Dictionary.
 
 #### External code lists (for Right)
 
-Two of the enumerations are suggested as extensible code lists, where
-APDS would fix the attribute and a starting set of values, and further
-values would be published as user-defined code lists (PkCommon
-UserDefinedCodeList), as APDS already does elsewhere:
-
-- **PaymentLineCodeEnum**: base, convenienceFee, serviceFee, tax,
-  discount, validation, energy, idle. Maintained today in the APX
-  registry `apx-payment-line-codes`.
-- **PlateListCategoryEnum**: allow, watch, scofflaw, enforcementVehicle.
-  Maintained today in the APX registry `apx-plate-list-categories`.
+**PlateListCategoryEnum** (allow, watch, scofflaw, enforcementVehicle) is
+suggested as an extensible code list: APDS would fix the attribute and a
+starting set of values, and further values would be published as
+user-defined code lists (PkCommon UserDefinedCodeList), as APDS already
+does elsewhere. APX uses this starting set today.
 
 #### Elements proposed for Right
 
-| Element | Change | Package | Tier | Level | APX source |
-| --- | --- | --- | --- | --- | --- |
-| `CredentialAssigned` | Additions to an APDS class | Right | 1 | B | CredentialRecord (APX Part 21 §21.1–21.2) |
-| `CredentialMedia` | New class | Right | 1 | B | CredentialRecord.media (APX Part 21 §21.1) |
-| `CredentialSuspension` | New class | Right | 1 | B | CredentialRecord.suspension (APX Part 21 §21.1) |
-| `PresentedCredential` | New class | Right | 1 | B | PresentedCredential (APX Part 21 §21.4) |
-| `CredentialDigest` | New class | Right | 2 | B | CredentialDigest, apds-ext:apx:credential-digest@1.0 (APX Part 9 §9.6 rule 6) |
-| `AssignedRight` | Additions to an APDS class | Right | 2 | B | ReservationExtension, apds-ext:apx:reservation@1.0 (APX Part 14 §14.1); PermitExtension, apds-ext:apx:permit@1.1 (APX Part 14 §14.2) |
-| `OverageBilling` | New class | Right | 2 | B | PermitExtension.overageBilling (APX Part 14 §14.2d) |
-| `RightHolder` | Additions to an APDS class | Right | 2 | B | Account (APX Part 13 §13.1) |
-| `Payment` | Additions to an APDS class | Right | 2 | B | PaymentRecord (APX Part 13 §13.1a, §13.6); PaymentDetail.rateSold (Part 13 §13.6a) |
-| `RateSold` | New class | Right | 3 | B | PaymentDetail.rateSold, apds-ext:apx:payment-detail@1.0 (APX Part 13 §13.6a) |
-| `PaymentLine` | Additions to an APDS class | Right | 2 | B | registry apx-payment-line-codes (APX Part 13 §13.6a) |
-| `CredentialStatusEnum` | New enumeration | Right | 1 | — | CredentialRecord.credentialStatus (APX Part 21 §21.1) |
-| `CredentialMediaFormEnum` | New enumeration | Right | 1 | — | CredentialRecord.media.form (APX Part 21 §21.1) |
-| `DepositStatusEnum` | New enumeration | Right | 2 | — | CredentialRecord.media.depositStatus (APX Part 21 §21.1) |
-| `DigestAlgorithmEnum` | New enumeration | Right | 2 | — | CredentialDigest.alg (APX Part 9 §9.6 rule 6) |
-| `ReservationStateEnum` | New enumeration | Right | 2 | — | ReservationExtension.reservationState (APX Part 14 §14.1) |
-| `OverageBillingModeEnum` | New enumeration | Right | 2 | — | PermitExtension.overageBilling.mode (APX Part 14 §14.2d) |
-| `AccountStatusEnum` | New enumeration | Right | 2 | — | Account.accountStatus (APX Part 13 §13.1) |
-| `PaymentStatusEnum` | New enumeration | Right | 2 | — | PaymentRecord.paymentStatus (APX Part 13 §13.1a) |
-| `CaptureStatusEnum` | New enumeration | Right | 2 | — | PaymentRecord.captureStatus (APX Part 13 §13.1a) |
-| `PaymentChannelEnum` | New enumeration | Right | 2 | — | PaymentRecord.channel (APX Part 13 §13.1) |
-| `RateProductEnum` | New enumeration | Right | 3 | — | PaymentDetail.rateSold.product (APX Part 13 §13.6a) |
-| `RateClassEnum` | New enumeration | Right | 3 | — | PaymentDetail.rateSold.class (APX Part 13 §13.6a) |
-| `PaymentLineCodeEnum` | New enumeration | Right | 2 | — | registry apx-payment-line-codes (APX Part 11, Part 13 §13.6a) |
-| `RightTypeEnum` | New values for an APDS enumeration | Right | 2 | — | ValetTicket.assignedRight (APX Part 22) |
-| `ValidationProgram` | New class | Validation | 2 | B | ValidationProgram (APX Part 20 §20.1) |
-| `ValidationRules` | New class | Validation | 2 | B | ValidationProgram.rules (APX Part 20 §20.3) |
-| `ValidationBilling` | New class | Validation | 3 | B | ValidationProgram.billing (APX Part 20 §20.1) |
-| `ValidationIssuance` | New class | Validation | 2 | B | ValidationIssuance (APX Part 20 §20.2) |
-| `ValidationInstrument` | New class | Validation | 2 | B | ValidationInstrument (APX Part 20 §20.2) |
-| `ValidationProgramStatusEnum` | New enumeration | Validation | 2 | — | ValidationProgram.programStatus (APX Part 20 §20.1) |
-| `ValidationIssuanceMethodEnum` | New enumeration | Validation | 2 | — | ValidationIssuance.method (APX Part 20 §20.2) |
-| `ValidationIssuanceStatusEnum` | New enumeration | Validation | 2 | — | ValidationIssuance.issuanceStatus (APX Part 20 §20.2) |
-| `ValidationInstrumentStatusEnum` | New enumeration | Validation | 2 | — | ValidationInstrument.instrumentStatus (APX Part 20 §20.2) |
-| `ValidationBillingModelEnum` | New enumeration | Validation | 3 | — | ValidationProgram.billing.model (APX Part 20 §20.1) |
-| `ValidationBillingCycleEnum` | New enumeration | Validation | 3 | — | ValidationProgram.billing.billingCycle (APX Part 20 §20.1) |
-| `PlateList` | New class | PlateList | 2 | B | PlateList (APX Part 24 §24.1) |
-| `PlateListPlaceFlags` | New class | PlateList | 2 | B | PlateListPlaceFlags (APX Part 24 §24.1) |
-| `PlateListEntry` | New class | PlateList | 2 | B | PlateListEntry (APX Part 24 §24.2) |
-| `PlateListCategoryEnum` | New enumeration | PlateList | 2 | — | registry apx-plate-list-categories (APX Part 11, Part 24) |
-| `PlateListStatusEnum` | New enumeration | PlateList | 2 | — | PlateList.status (APX Part 24 §24.1) |
+| Element | Change | Package | Tier | Level |
+| --- | --- | --- | --- | --- |
+| `CredentialAssigned` | Additions to an APDS class | Right | 1 | B |
+| `CredentialMedia` | New class | Right | 1 | B |
+| `CredentialSuspension` | New class | Right | 1 | B |
+| `PresentedCredential` | New class | Right | 1 | B |
+| `AssignedRight` | Additions to an APDS class | Right | 2 | B |
+| `OverageBilling` | New class | Right | 2 | B |
+| `RightHolder` | Additions to an APDS class | Right | 2 | B |
+| `Payment` | Additions to an APDS class | Right | 2 | B |
+| `RateSold` | New class | Right | 3 | B |
+| `CredentialStatusEnum` | New enumeration | Right | 1 | — |
+| `CredentialMediaFormEnum` | New enumeration | Right | 1 | — |
+| `DepositStatusEnum` | New enumeration | Right | 1 | — |
+| `ReservationStateEnum` | New enumeration | Right | 2 | — |
+| `OverageBillingModeEnum` | New enumeration | Right | 2 | — |
+| `AccountStatusEnum` | New enumeration | Right | 2 | — |
+| `PaymentStatusEnum` | New enumeration | Right | 2 | — |
+| `CaptureStatusEnum` | New enumeration | Right | 2 | — |
+| `RateProductEnum` | New enumeration | Right | 3 | — |
+| `RateClassEnum` | New enumeration | Right | 3 | — |
+| `RightTypeEnum` | New values for an APDS enumeration | Right | 2 | — |
+| `PaymentTypeEnum` | New values for an APDS enumeration | Right | 2 | — |
+| `ValidationProgram` | New class | Validation | 2 | B |
+| `ValidationRules` | New class | Validation | 2 | B |
+| `ValidationBilling` | New class | Validation | 3 | B |
+| `ValidationIssuance` | New class | Validation | 2 | B |
+| `ValidationInstrument` | New class | Validation | 2 | B |
+| `ValidationIssuanceMethodEnum` | New enumeration | Validation | 2 | — |
+| `ValidationIssuanceStatusEnum` | New enumeration | Validation | 2 | — |
+| `ValidationInstrumentStatusEnum` | New enumeration | Validation | 2 | — |
+| `ValidationBillingModelEnum` | New enumeration | Validation | 3 | — |
+| `ValidationBillingCycleEnum` | New enumeration | Validation | 3 | — |
+| `PlateList` | New class | PlateList | 2 | B |
+| `PlateListPlaceFlags` | New class | PlateList | 2 | B |
+| `PlateListEntry` | New class | PlateList | 2 | B |
+| `PlateListCategoryEnum` | New enumeration | PlateList | 2 | — |
 
 ### Session
 
-APDS 4.1 records a Session with its start, end, Segments and credentials, but not what the Session rests on or how it ended. These additions let two parties exchange the observations a Session was built from, why and how it closed (including a close set by rule rather than observed), each access attempt at a lane whether granted or denied, the evidence behind a match between a Session and a right, the anti-passback state of a credential, each merchant validation applied to a stay, and the custody record of a valeted vehicle. Every addition is optional and compatible with APDS 4.1 (Level B): a receiver that does not know them still reads a valid APDS Session.
+APDS 4.1 records a Session with its start, end, Segments and credentials, but not what the Session rests on or how it ended. These additions let two parties exchange the observations a Session was built from, why and how it closed (including a close set by rule rather than observed), each access attempt at a lane whether granted or denied, which record a Session was matched to, each merchant validation applied to a stay, and the custody record of a valeted vehicle. Every addition is optional and compatible with APDS 4.1 (Level B): a receiver that does not know them still reads a valid APDS Session.
 
 The additions extend the `Session` package
 (`D2Payload/Extension/Parking/Session`). Each one is a Level B extension
@@ -701,43 +737,54 @@ instance, and no core class becomes a component of an extension class.
 
 `Session` gains three optional associations (`sessionRead`,
 `sessionClosure`, `matchEvidence`) and three optional attributes
-(`parentSession`, `lifecycle`, `passThrough`). `SessionRead` points to an
+(`parentSessionId`, `lifecycle`, `passThrough`). `SessionRead` points to an
 existing `ObservationElement`, so the observation itself is still
 exchanged through the Observation domain; the Session only says which
-observations it used and how.
+observations it used and how. `MatchEvidence` is kept small and offered
+for discussion (tier 3): it records what a Session was matched to, but
+not the scoring behind the match, which is left to implementations.
 
 `AccessEvent` is a new identifiable class. It is placed in the Session
 package because a granted access opens or closes a Session, but it stands
 on its own: a refused attempt has no Session. It references the existing
 `CredentialAssigned` when the presented value matched one. When nothing
-matched, it carries the credential type and the value read, in the same
-way `ObservationElement` carries `type` and `observedCredentialId`.
+matched, it carries the value as a `PresentedCredential`, the class
+proposed in the Right domain for every credential value that is not an
+assigned credential. Its direction reuses the existing APDS
+`AccessTypeEnum` with the values `entry` and `exit`; the third value,
+`reversible`, describes an area rather than a single attempt and does not
+apply.
+
+The anti-passback state of a credential is not proposed as a class of its
+own: it follows from the access events of that credential.
 
 `ValidationRedemption` is a new versioned identifiable class. Its
 `validationId` attribute is the value placed in the existing
 `Segment.validationId`, so a receiver that knows only APDS 4.1 still sees
-that a validation was applied. Its `validationProgram` references the
-validation program proposed in the Right domain.
-
-`PassbackStatus` records the anti-passback state of one assigned
-credential and references its most recent `AccessEvent`.
+that a validation was applied. Its optional `validationProgramId`
+references the validation programme proposed in the Right domain; that
+programme is a tier 2 proposal, so a redemption does not depend on it.
+Its channel uses the shared `InteractionChannelEnum` proposed in PkCommon.
 
 `ValetTicket` is a new versioned identifiable class. It references the
 APDS `Session`, `AssignedRight` and `Space`, and uses the existing
-`VehicleAncillaryIdentification` for the vehicle and the proposed
-`ConditionReport` (Observation domain) for its condition.
+`VehicleAncillaryIdentification` for the vehicle, a `PresentedCredential`
+for its plate, and the proposed `ConditionReport` (Observation domain) for
+its condition.
 
 ```mermaid
 classDiagram
     class Session {
         <<APDS>>
-        parentSession
-        lifecycle
-        passThrough
+    }
+    class SessionAdditions {
+        <<proposed>>
+        +parentSessionId : VersionedReference [0..1]
+        +lifecycle : SessionLifecycleEnum [0..1]
+        +passThrough : Boolean [0..1]
     }
     class Segment {
         <<APDS>>
-        validationId
     }
     class ObservationElement {
         <<APDS>>
@@ -748,58 +795,63 @@ classDiagram
     class SupplementalEquipment {
         <<APDS>>
     }
+    class PresentedCredential {
+        <<proposed>>
+    }
     class SessionRead {
-        role
-        representative
+        <<proposed>>
+        +observationId : Reference [1..1]
+        +role : SessionReadRoleEnum [1..1]
+        +representative : Boolean [0..1]
     }
     class SessionClosure {
-        endReason
-        endInferred
-        startObserved
-        closureRule
+        <<proposed>>
+        +endReason : SessionEndReasonEnum [0..1]
+        +endInferred : Boolean [0..1]
+        +startObserved : Boolean [0..1]
+        +closureRule : String [0..1]
     }
     class MatchEvidence {
-        matchType
-        applied
-        plateMatchMethod
-        vehicleEvidenceLevel
+        <<proposed>>
+        +targetId : Reference [1..1]
+        +matchType : MatchTypeEnum [1..1]
+        +applied : Boolean [1..1]
     }
     class AccessEvent {
-        occurredAt
-        direction
-        outcome
-        denialReason
-    }
-    class PassbackStatus {
-        passbackState
-        expectedPresence
-        recordedPresence
+        <<proposed>>
+        +occurredTime : DateTime [1..1]
+        +direction : AccessTypeEnum [1..1]
+        +outcome : AccessOutcomeEnum [1..1]
+        +denialReason : AccessDenialReasonEnum [0..1]
     }
     class ValidationRedemption {
-        appliedTime
-        channel
-        redemptionStatus
-        amountReduced
+        <<proposed>>
+        +elementId : VersionedReference [1..1]
+        +appliedTime : DateTime [1..1]
+        +channel : InteractionChannelEnum [1..1]
+        +redemptionStatus : ValidationRedemptionStatusEnum [1..1]
+        +amountReduced : AmountInCurrency [0..1]
     }
     class ValetTicket {
-        valetStatus
-        dropOffTime
-        keyLocation
-        handbackTime
+        <<proposed>>
+        +valetStatus : ValetStatusEnum [1..1]
+        +dropOffTime : DateTime [1..1]
+        +handbackTime : DateTime [0..1]
     }
+    Session .. SessionAdditions : Level B additions
     Session "1" *-- "0..*" SessionRead
     Session "1" *-- "0..1" SessionClosure
     Session "1" *-- "0..*" MatchEvidence
     Session "1" *-- "1..*" Segment
-    SessionRead --> ObservationElement : observationElement
+    SessionRead --> ObservationElement : observationId
     AccessEvent --> CredentialAssigned : credentialId
+    AccessEvent "1" *-- "0..1" PresentedCredential : presentedCredential
     AccessEvent --> SupplementalEquipment : equipmentId
     AccessEvent --> Session : sessionId
-    PassbackStatus --> CredentialAssigned : credentialId
-    PassbackStatus --> AccessEvent : lastAccessEvent
     ValidationRedemption --> Session : sessionId
     Segment ..> ValidationRedemption : validationId
     ValetTicket --> Session : sessionId
+    ValetTicket "1" *-- "0..1" PresentedCredential : vehicleCredential
 ```
 
 #### Enumerations (for Session)
@@ -812,20 +864,27 @@ values are listed in the Data Dictionary.
 | SessionReadRoleEnum | SessionRead.role | 1 |
 | SessionEndReasonEnum | SessionClosure.endReason | 1 |
 | SessionLifecycleEnum | Session.lifecycle | 2 |
-| AccessDirectionEnum | AccessEvent.direction, ObservationElement.accessDirection | 1 |
 | AccessOutcomeEnum | AccessEvent.outcome | 1 |
 | AccessDenialReasonEnum | AccessEvent.denialReason | 1 |
-| MatchTypeEnum, PlateMatchMethodEnum, JurisdictionAgreementEnum, VehicleEvidenceLevelEnum, MatchDecisionEnum | MatchEvidence | 2 |
-| PassbackStateEnum, PassbackPresenceEnum | PassbackStatus | 2 |
-| ValidationChannelEnum, ValidationRedemptionStatusEnum | ValidationRedemption | 1 |
-| ValetStatusEnum, ValetRetrievalChannelEnum, HandbackVerificationEnum | ValetTicket | 2 |
+| ValidationRedemptionStatusEnum | ValidationRedemption | 1 |
+| MatchTypeEnum, MatchDecisionEnum | MatchEvidence | 3 |
+| ValetStatusEnum, HandbackVerificationEnum | ValetTicket | 2 |
+
+Two existing or shared enumerations are reused rather than repeated: the
+APDS `AccessTypeEnum` for the direction of an access event, and the
+`InteractionChannelEnum` proposed in PkCommon for the channel of a
+validation or a valet retrieval request.
+
+The end reasons are written in plain terms: `exitObserved`,
+`reentryObserved`, `timedOut`, `parentSessionEnded`, `leftArea`,
+`notFoundOnCount`, `valetHandback`, `exitWithoutEntry`,
+`closedByOperator` and `closedAfterReview`.
 
 #### External code lists (for Session)
 
 Two of the lists above are open by nature: new end reasons and denial
 reasons appear as products evolve. APX maintains them today as
-user-defined code lists in the APDS `UserDefinedCodeList` shape
-(`apx-session-end-reasons`, `apx-access-denial-reasons`). We have
+user-defined code lists in the APDS `UserDefinedCodeList` shape. We have
 proposed them as enumerations so the group can see and discuss the
 values, but we would be equally glad to see `endReason` and
 `denialReason` typed as `PkCommon.ReferencedCodeListEntry`, with these
@@ -834,45 +893,36 @@ the group.
 
 #### Elements proposed for Session
 
-| Element | Change | Package | Tier | Level | APX source |
-| --- | --- | --- | --- | --- | --- |
-| `Session` | Additions to an APDS class | Session | 1 | B | apds-ext:apx:session-detail@1.0 (APX Part 5 §5.8) |
-| `SessionRead` | New class | Session | 1 | B | SessionReadBinding (APX Part 5 §5.8) |
-| `SessionClosure` | New class | Session | 1 | B | SessionClosure (APX Part 5 §5.8) |
-| `AccessEvent` | New class | Session | 1 | B | AccessEvent / CredentialAccessEvent (APX Part 21 §21.4) |
-| `MatchEvidence` | New class | Session | 2 | B | MatchEvidence (APX Part 5 §5.8) |
-| `PassbackStatus` | New class | Session | 2 | B | PassbackStatus (APX Part 17) |
-| `ValidationRedemption` | New class | Session | 1 | B | ValidationRedemption (APX Part 20); materialized as Segment.validationId |
-| `ValetTicket` | New class | Session | 2 | B | ValetTicket (APX Part 22) |
-| `SessionReadRoleEnum` | New enumeration | Session | 1 | — | SessionReadBinding.role (APX Part 5 §5.8) |
-| `SessionEndReasonEnum` | New enumeration | Session | 1 | — | registry apx-session-end-reasons |
-| `SessionLifecycleEnum` | New enumeration | Session | 2 | — | SessionDetail.lifecycle (APX Part 5 §5.8) |
-| `AccessDirectionEnum` | New enumeration | Session | 1 | — | AccessEvent.direction, LprReadDetail.accessEvent |
-| `AccessOutcomeEnum` | New enumeration | Session | 1 | — | AccessEvent.outcome |
-| `AccessDenialReasonEnum` | New enumeration | Session | 1 | — | registry apx-access-denial-reasons |
-| `MatchTypeEnum` | New enumeration | Session | 2 | — | MatchEvidence.matchType |
-| `PlateMatchMethodEnum` | New enumeration | Session | 2 | — | MatchEvidence.plate.method |
-| `JurisdictionAgreementEnum` | New enumeration | Session | 2 | — | MatchEvidence.plate.jurisdiction |
-| `VehicleEvidenceLevelEnum` | New enumeration | Session | 2 | — | MatchEvidence.vehicle.level |
-| `MatchDecisionEnum` | New enumeration | Session | 2 | — | MatchEvidence.decidedBy |
-| `PassbackStateEnum` | New enumeration | Session | 2 | — | PassbackStatus.state |
-| `PassbackPresenceEnum` | New enumeration | Session | 2 | — | PassbackStatus.expectedPresence / recordedPresence |
-| `ValidationChannelEnum` | New enumeration | Session | 1 | — | ValidationRedemption.channel |
-| `ValidationRedemptionStatusEnum` | New enumeration | Session | 1 | — | ValidationRedemption.redemptionStatus |
-| `ValetStatusEnum` | New enumeration | Session | 2 | — | ValetTicket.valetStatus |
-| `ValetRetrievalChannelEnum` | New enumeration | Session | 2 | — | ValetTicket.retrieval.channel |
-| `HandbackVerificationEnum` | New enumeration | Session | 2 | — | ValetTicket.handback.verificationMethod |
+| Element | Change | Package | Tier | Level |
+| --- | --- | --- | --- | --- |
+| `Session` | Additions to an APDS class | Session | 1 | B |
+| `SessionRead` | New class | Session | 1 | B |
+| `SessionClosure` | New class | Session | 1 | B |
+| `AccessEvent` | New class | Session | 1 | B |
+| `MatchEvidence` | New class | Session | 3 | B |
+| `ValidationRedemption` | New class | Session | 1 | B |
+| `ValetTicket` | New class | Session | 2 | B |
+| `SessionReadRoleEnum` | New enumeration | Session | 1 | — |
+| `SessionEndReasonEnum` | New enumeration | Session | 1 | — |
+| `SessionLifecycleEnum` | New enumeration | Session | 2 | — |
+| `AccessOutcomeEnum` | New enumeration | Session | 1 | — |
+| `AccessDenialReasonEnum` | New enumeration | Session | 1 | — |
+| `MatchTypeEnum` | New enumeration | Session | 3 | — |
+| `MatchDecisionEnum` | New enumeration | Session | 3 | — |
+| `ValidationRedemptionStatusEnum` | New enumeration | Session | 1 | — |
+| `ValetStatusEnum` | New enumeration | Session | 2 | — |
+| `HandbackVerificationEnum` | New enumeration | Session | 2 | — |
 
 ### Observation
 
 APDS 4.1 records an observation with its method, credential, location, images and an overall and per-character confidence. Modern licence plate recognition knows more: a confidence for each recognised attribute (plate, issuing country and state, make, model, colour), the candidate plates that lost, which plate of the vehicle was read, which way the vehicle moved, which reads belong to one passage, and whether a person has reviewed the read. These additions carry that, add two image kinds, record the condition of a vehicle taken into valet custody, and add a toll transaction built from observations. All are optional and compatible with APDS 4.1 (Level B).
 
 The additions extend the `Observation` package
-(`D2Payload/Extension/Parking/Observation`) and add a new `Tolling`
-package (`D2Payload/Extension/Parking/Tolling`). All are Level B
-extensions.
+(`D2Payload/Extension/Parking/Observation`) and add a `Tolling`
+sub-package within it (`D2Payload/Extension/Parking/Observation/Tolling`).
+All are Level B extensions.
 
-`ObservationElement` gains three optional associations and eight
+`ObservationElement` gains three optional associations and four
 optional attributes. The recognised values themselves stay where APDS
 4.1 puts them: the plate in `observedCredentialId`, and country, state,
 make, model and colour in the associated `VehicleAncillaryIdentification`.
@@ -882,8 +932,9 @@ The existing `Confidence` (overall) and `CharacterConfidence` (per
 character) classes are unchanged and remain the place for those
 measures.
 
-`accessDirection` reuses the `AccessDirectionEnum` proposed in the
-Session domain. It records what the recognition system reported for this
+`accessDirection` reuses the existing APDS `AccessTypeEnum`, using its
+values `entry` and `exit` (`reversible` describes an area, not a single
+passage). It records what the recognition system reported for this
 passage, which may differ from the configured purpose of a reversible
 lane (`AccessLaneTypeEnum`).
 
@@ -895,18 +946,26 @@ and `ImageTypeEnum` gains two values.
 package; the valet ticket in the Session domain references a condition
 report at drop-off and at handback.
 
-`TollTransaction` is a new versioned identifiable class in the new
-`Tolling` package. It references existing `ObservationElement`,
-`SupplementalEquipment` (the toll point) and `Payment` instances.
+`TollTransaction` is a new versioned identifiable class in the
+`Tolling` sub-package. It references existing `ObservationElement`,
+`SupplementalEquipment` (the toll point) and `Payment` instances, and
+carries the credential read as a `PresentedCredential` (proposed in the
+Right domain).
 
 ```mermaid
 classDiagram
     class ObservationElement {
         <<APDS>>
-        accessDirection
-        movement
-        plateFace
-        captureGroup
+    }
+    class ObservationElementAdditions {
+        <<proposed>>
+        +accessDirection : AccessTypeEnum [0..1]
+        +movement : VehicleMovementEnum [0..1]
+        +plateFace : PlateFaceEnum [0..1]
+        +speed : Float [0..1]
+    }
+    class PresentedCredential {
+        <<proposed>>
     }
     class VehicleAncillaryIdentification {
         <<APDS>>
@@ -927,69 +986,80 @@ classDiagram
         <<APDS>>
     }
     class AttributeRead {
-        readAttribute
-        value
-        confidence
+        <<proposed>>
+        +readAttribute : ReadAttributeEnum [1..1]
+        +value : String [1..1]
+        +confidence : Decimal [0..1]
     }
     class AlternateRead {
-        plate
-        stateProvince
-        confidence
+        <<proposed>>
+        +plate : String [1..1]
+        +stateProvince : String [0..1]
+        +confidence : Decimal [0..1]
     }
     class ReadReview {
-        reviewState
-        reviewReason
-        decidedTime
+        <<proposed>>
+        +reviewState : ReadReviewStateEnum [1..1]
+        +reviewReason : ReadReviewReasonEnum [0..*]
+        +decidedTime : DateTime [0..1]
     }
     class ImageRegion {
-        top
-        left
-        bottom
-        right
+        <<proposed>>
+        +top : Decimal [1..1]
+        +left : Decimal [1..1]
+        +bottom : Decimal [1..1]
+        +right : Decimal [1..1]
     }
     class ConditionReport {
-        notes
-        imageLink
-        customerAcknowledged
+        <<proposed>>
+        +notes : MultilingualString [0..1]
+        +imageLink : Url [0..*]
+        +customerAcknowledged : Boolean [0..1]
     }
     class DamageItem {
-        vehicleArea
-        severity
+        <<proposed>>
+        +vehicleArea : String [1..1]
+        +severity : DamageSeverityEnum [0..1]
     }
     class TollTransaction {
-        transactionStatus
-        pricing
+        <<proposed>>
+        +tollPointId : Reference [1..1]
+        +transactionStatus : TollTransactionStatusEnum [1..1]
+        +pricing : AmountInCurrency [0..1]
     }
     class TollDispute {
-        disputeReason
-        disputeResolution
+        <<proposed>>
+        +disputeReason : TollDisputeReasonEnum [1..1]
+        +disputeResolution : TollDisputeResolutionEnum [0..1]
     }
     ObservationElement "1" *-- "0..1" VehicleAncillaryIdentification
     ObservationElement "1" *-- "0..1" Confidence
     ObservationElement "1" *-- "0..*" CharacterConfidence
     ObservationElement "1" *-- "0..*" Image
+    ObservationElement .. ObservationElementAdditions : Level B additions
     ObservationElement "1" *-- "0..*" AttributeRead
     ObservationElement "1" *-- "0..*" AlternateRead
     ObservationElement "1" *-- "0..1" ReadReview
     ReadReview "1" *-- "0..*" AttributeRead : originalRead
     Image "1" *-- "0..1" ImageRegion : plateRegion
     ConditionReport "1" *-- "0..*" DamageItem
-    TollTransaction --> ObservationElement : observationElementId
-    TollTransaction --> SupplementalEquipment : tollPoint
+    TollTransaction --> ObservationElement : observationId
+    TollTransaction --> SupplementalEquipment : tollPointId
     TollTransaction --> Payment : paymentId
+    TollTransaction "1" *-- "0..1" PresentedCredential : vehicleCredential
     TollTransaction "1" *-- "0..1" TollDispute
 ```
 
-#### Change to an existing multiplicity
+#### Suggested change to APDS 4.1 (outside this proposal)
 
-We would also like to suggest one small change that the table format of
-the Data Dictionary cannot show as an addition: making
-`VehicleAncillaryIdentification.country` optional (`0..1` instead of
-`1..1`). A read whose plate country the engine could not place could
-then still carry make, model and colour, and those are often the reads
-that most need them. Today such a read must omit the whole
-`VehicleAncillaryIdentification`. The change relaxes a constraint, so
-every instance valid today stays valid.
+One related suggestion is not an addition and is not part of the Level B
+additions above: making `VehicleAncillaryIdentification.country`
+optional (`0..1` instead of `1..1`). A read whose plate country the
+engine could not place could then still carry make, model and colour,
+and those are often the reads that most need them. Today such a read
+must omit the whole `VehicleAncillaryIdentification`. The change relaxes
+a constraint, so every instance valid today stays valid. It is offered
+separately, with the other suggested changes to APDS 4.1.
 
 #### Enumerations (for Observation)
 
@@ -1008,8 +1078,7 @@ every instance valid today stays valid.
 
 `ReadReviewReasonEnum`, `TollDisputeReasonEnum` and
 `TollDisputeResolutionEnum` are maintained by APX today as user-defined
-code lists (`apx-read-review-reasons`, `apx-toll-dispute-reasons`,
-`apx-toll-dispute-resolutions`). As in the Session domain, they could
+code lists. As in the Session domain, they could
 equally be typed as `PkCommon.ReferencedCodeListEntry` with these values
 as the recommended initial list. `DamageItem.vehicleArea` is left as a
 string from an operator code list; we do not propose standard values for
@@ -1017,28 +1086,28 @@ it yet.
 
 #### Elements proposed for Observation
 
-| Element | Change | Package | Tier | Level | APX source |
-| --- | --- | --- | --- | --- | --- |
-| `ObservationElement` | Additions to an APDS class | Observation | 1 | B | apds-ext:apx:lpr-read@1.0 (APX Part 13 §13.3a) |
-| `AttributeRead` | New class | Observation | 1 | B | AttributeRead / LprReadDetail (APX Part 13 §13.3a) |
-| `AlternateRead` | New class | Observation | 1 | B | LprReadDetail.alternateReads (APX Part 13 §13.3a) |
-| `ReadReview` | New class | Observation | 2 | B | LprReadDetail.review (APX Part 13 §13.3a(4a)) |
-| `Image` | Additions to an APDS class | Observation | 2 | B | LprReadDetail.plateBox (APX Part 13 §13.3a) |
-| `ImageRegion` | New class | Observation | 2 | B | LprReadDetail.plateBox |
-| `ConditionReport` | New class | Observation | 2 | B | ConditionReport (APX Part 22) |
-| `DamageItem` | New class | Observation | 2 | B | ConditionReport.damage[] (APX Part 22) |
-| `ImageTypeEnum` | New values for an APDS enumeration | Observation | 2 | — | LprRead.images[].imageType (APX Part 13 §13.3c) |
-| `ReadAttributeEnum` | New enumeration | Observation | 1 | — | LprReadDetail members |
-| `VehicleMovementEnum` | New enumeration | Observation | 1 | — | LprReadDetail.movement |
-| `PlateFaceEnum` | New enumeration | Observation | 2 | — | LprReadDetail.plateFace |
-| `ReadReviewStateEnum` | New enumeration | Observation | 2 | — | LprReadDetail.review.state |
-| `ReadReviewReasonEnum` | New enumeration | Observation | 2 | — | registry apx-read-review-reasons |
-| `DamageSeverityEnum` | New enumeration | Observation | 2 | — | ConditionReport.damage[].severity |
-| `TollTransaction` | New class | Tolling | 2 | B | TollTransaction (APX Part 15) |
-| `TollDispute` | New class | Tolling | 2 | B | TollTransaction.dispute (APX Part 15 §15.1) |
-| `TollTransactionStatusEnum` | New enumeration | Tolling | 2 | — | TollTransaction.transactionStatus |
-| `TollDisputeReasonEnum` | New enumeration | Tolling | 2 | — | registry apx-toll-dispute-reasons |
-| `TollDisputeResolutionEnum` | New enumeration | Tolling | 2 | — | registry apx-toll-dispute-resolutions |
+| Element | Change | Package | Tier | Level |
+| --- | --- | --- | --- | --- |
+| `ObservationElement` | Additions to an APDS class | Observation | 1 | B |
+| `AttributeRead` | New class | Observation | 1 | B |
+| `AlternateRead` | New class | Observation | 1 | B |
+| `ReadReview` | New class | Observation | 2 | B |
+| `Image` | Additions to an APDS class | Observation | 2 | B |
+| `ImageRegion` | New class | Observation | 2 | B |
+| `ConditionReport` | New class | Observation | 2 | B |
+| `DamageItem` | New class | Observation | 2 | B |
+| `ImageTypeEnum` | New values for an APDS enumeration | Observation | 2 | — |
+| `ReadAttributeEnum` | New enumeration | Observation | 1 | — |
+| `VehicleMovementEnum` | New enumeration | Observation | 1 | — |
+| `PlateFaceEnum` | New enumeration | Observation | 2 | — |
+| `ReadReviewStateEnum` | New enumeration | Observation | 2 | — |
+| `ReadReviewReasonEnum` | New enumeration | Observation | 2 | — |
+| `DamageSeverityEnum` | New enumeration | Observation | 2 | — |
+| `TollTransaction` | New class | Tolling | 2 | B |
+| `TollDispute` | New class | Tolling | 2 | B |
+| `TollTransactionStatusEnum` | New enumeration | Tolling | 2 | — |
+| `TollDisputeReasonEnum` | New enumeration | Tolling | 2 | — |
+| `TollDisputeResolutionEnum` | New enumeration | Tolling | 2 | — |
 
 ### EnergyInfrastructure
 
@@ -1046,7 +1115,8 @@ APDS 4.1 describes charging infrastructure as it is built: the SupplementalEquip
 
 The proposed classes sit in the existing `EnergyInfrastructure` package
 beside RefillPoint, ElectricChargingPoint and Connector. None of them
-changes an existing class. ChargingPointStatus refers to a refill point the
+changes an existing class, so all are Level B additions to an existing
+domain. ChargingPointStatus refers to a refill point the
 same way a dynamic publication is expected to: by the SupplementalEquipment
 that holds it and its `refillPointIndex`. The point and each connector use
 `RefillPointStatusEnum` as it stands. Its values `available`, `occupied`,
@@ -1073,8 +1143,7 @@ classDiagram
   }
   class RefillPoint {
     <<APDS>>
-    refillPointIndex
-    status : RefillPointStatusEnum
+    +status : RefillPointStatusEnum [0..1]
   }
   class ElectricChargingPoint {
     <<APDS>>
@@ -1095,33 +1164,43 @@ classDiagram
     <<APDS>>
   }
   class ChargingPointStatus {
-    refillPointIndex
-    status : RefillPointStatusEnum
+    <<proposed>>
+    +equipmentId : Reference [1..1]
+    +refillPointIndex : Integer [0..1]
+    +status : RefillPointStatusEnum [1..1]
   }
   class ConnectorStatus {
-    connectorIndex
-    status : RefillPointStatusEnum
+    <<proposed>>
+    +connectorIndex : NonNegativeInteger [1..1]
+    +status : RefillPointStatusEnum [1..1]
   }
   class ChargingBayPresence {
-    presence : BayPresenceEnum
+    <<proposed>>
+    +presence : BayPresenceEnum [1..1]
   }
   class ChargingSession {
-    chargingStatus : ChargingSessionStatusEnum
-    energyDelivered
+    <<proposed>>
+    +equipmentId : Reference [1..1]
+    +chargingStatus : ChargingSessionStatusEnum [1..1]
+    +energyDelivered : Decimal [0..1]
   }
-  class ChargingCost
-  class ChargingIdleTerms
+  class ChargingCost {
+    <<proposed>>
+  }
+  class ChargingIdleTerms {
+    <<proposed>>
+  }
   SupplementalEquipment "1" o-- "0..*" RefillPoint
   RefillPoint <|-- ElectricChargingPoint
   ElectricChargingPoint "1" o-- "1..*" Connector
-  ChargingPointStatus ..> SupplementalEquipment : equipment + refillPointIndex
+  ChargingPointStatus ..> SupplementalEquipment : equipmentId
   ChargingPointStatus "1" o-- "0..*" ConnectorStatus
   ChargingPointStatus "1" o-- "0..1" ChargingBayPresence
   ChargingPointStatus ..> Space : spaceId
-  ChargingPointStatus ..> AssignedRight : reservedFor
+  ChargingPointStatus ..> AssignedRight : reservedAssignedRightId
   ChargingBayPresence ..> ObservationElement : observationId
-  ChargingSession ..> SupplementalEquipment : equipment + refillPointIndex
-  ChargingSession ..> Session : parkingSession
+  ChargingSession ..> SupplementalEquipment : equipmentId
+  ChargingSession ..> Session : sessionId
   ChargingSession ..> AssignedRight : assignedRightId
   ChargingSession "1" o-- "0..1" ChargingCost
   ChargingSession "1" o-- "0..1" ChargingIdleTerms
@@ -1145,88 +1224,91 @@ are carried as `ExternalIdentifier` values and are not interpreted.
 
 #### Elements proposed for EnergyInfrastructure
 
-| Element | Change | Package | Tier | Level | APX source |
-| --- | --- | --- | --- | --- | --- |
-| `ChargingPointStatus` | New class | EnergyInfrastructure | 3 | C | ChargingPointStatus (APX Part 23 §23.1) |
-| `ConnectorStatus` | New class | EnergyInfrastructure | 3 | C | ChargingPointStatus.connectors[] (APX Part 23 §23.1) |
-| `ChargingBayPresence` | New class | EnergyInfrastructure | 3 | C | ChargingBayPresence (APX Part 23 §23.3) |
-| `ChargingSession` | New class | EnergyInfrastructure | 3 | C | ChargingSession (APX Part 23 §23.2) |
-| `ChargingCost` | New class | EnergyInfrastructure | 3 | C | ChargingSession.cost (APX Part 23 §23.5) |
-| `ChargingIdleTerms` | New class | EnergyInfrastructure | 3 | C | ChargingSession.idlePolicy (APX Part 23 §23.10) |
-| `BayPresenceEnum` | New enumeration | EnergyInfrastructure | 3 | — | ChargingBayPresence.presence (APX Part 23 §23.3) |
-| `BayPresenceSourceEnum` | New enumeration | EnergyInfrastructure | 3 | — | ChargingBayPresence.source (APX Part 23 §23.3) |
-| `ChargingSessionStatusEnum` | New enumeration | EnergyInfrastructure | 3 | — | ChargingSession.chargingStatus (APX Part 23 §23.2), aligned with OCPP 2.0.1 charging states |
-| `ChargingStopReasonEnum` | New enumeration | EnergyInfrastructure | 3 | — | ChargingSession.stopReason (APX Part 23), a subset of OCPP 2.0.1 stopped reasons |
-| `ChargingSettlementModeEnum` | New enumeration | EnergyInfrastructure | 3 | — | ChargingSession.settlement.mode (APX Part 23 §23.5) |
+| Element | Change | Package | Tier | Level |
+| --- | --- | --- | --- | --- |
+| `ChargingPointStatus` | New class | EnergyInfrastructure | 3 | B |
+| `ConnectorStatus` | New class | EnergyInfrastructure | 3 | B |
+| `ChargingBayPresence` | New class | EnergyInfrastructure | 3 | B |
+| `ChargingSession` | New class | EnergyInfrastructure | 3 | B |
+| `ChargingCost` | New class | EnergyInfrastructure | 3 | B |
+| `ChargingIdleTerms` | New class | EnergyInfrastructure | 3 | B |
+| `BayPresenceEnum` | New enumeration | EnergyInfrastructure | 3 | — |
+| `BayPresenceSourceEnum` | New enumeration | EnergyInfrastructure | 3 | — |
+| `ChargingSessionStatusEnum` | New enumeration | EnergyInfrastructure | 3 | — |
+| `ChargingStopReasonEnum` | New enumeration | EnergyInfrastructure | 3 | — |
+| `ChargingSettlementModeEnum` | New enumeration | EnergyInfrastructure | 3 | — |
 
 ### PkCommon
 
-One addition to RecordType: the system that first created a record, when the record reaches a receiver through another system. Open code lists need no new element, because APDS ReferencedCodeListEntry and UserDefinedCodeList already provide the pattern. The extensions container and GeoJSON coordinates are already raised as errata 010 and 011 and are not repeated here.
+One addition to RecordType: the system that first created a record, when the record reaches a receiver through another system. Open code lists need no new element, because APDS ReferencedCodeListEntry and UserDefinedCodeList already provide the pattern. Two shared enumerations are added: one for the channel through which an action was taken, and one for why a record is no longer in use. Two related gaps in APDS 4.1 common classes are offered in the separate list of suggested corrections and are not repeated here.
 
-The suggestion adds one optional attribute to the existing RecordType
-class in the CommonClasses package.
+The two enumerations are new members of the CommonClasses package. The
+origin suggestion adds one optional attribute to the existing RecordType
+class and is marked for discussion (tier 3).
 
 ```mermaid
 classDiagram
     class RecordType {
         <<APDS>>
-        creationTime : DateTime
-        creationUser : String
-        creator : VersionedReference
-        creatorEmail : String
-        lastUpdate : DateTime
-        lastUpdateUser : String
-        origin : String
+    }
+    class RecordTypeAdditions {
+        <<proposed>>
+        +origin : String [0..1]
+    }
+    class Validity {
+        <<APDS>>
     }
     class UserDefinedCodeList {
         <<APDS>>
-        creator : VersionedReference
-        locator : Url
-        includeNilReasonType : Boolean
     }
     class UserDefinedCodeListEntry {
         <<APDS>>
-        definedValue : String
-        entryDescription : String
-        entryIndex : Integer
     }
     class ReferencedCodeListEntry {
         <<APDS>>
-        codeListId : VersionedReference
-        codeListEntryId : Reference
-        entryDefinedValue : String
     }
+    class InteractionChannelEnum {
+        <<proposed>>
+    }
+    class RecordEndReasonEnum {
+        <<proposed>>
+    }
+    RecordType .. RecordTypeAdditions : Level B additions
     UserDefinedCodeList "1" o-- "1..*" UserDefinedCodeListEntry : userDefinedCodeListEntry
     ReferencedCodeListEntry ..> UserDefinedCodeList : codeListId
+    RecordEndReasonEnum .. Validity : used beside
 ```
 
-Only origin is new; every other attribute shown exists in APDS 4.1.
+origin is a free string so that any identifier scheme can be used. When a
+record is created by the system distributing it, origin is absent.
 
-origin is a free string so that any identifier scheme can be used. APX
-uses the address of the originating system. When a record is created by
-the system distributing it, origin is absent.
-
-Wherever another domain in this submission proposes an "other…" attribute
-typed ReferencedCodeListEntry (for example otherEquipmentStatus in
-Place), the value cites an entry in a UserDefinedCodeList in the usual
-APDS way.
+Wherever another domain proposes an "other…" attribute typed
+ReferencedCodeListEntry (for example otherEquipmentStatus in Place), the
+value cites an entry in a UserDefinedCodeList in the usual APDS way.
 
 #### Enumerations (for PkCommon)
 
-No new enumerations are proposed in PkCommon.
+- **InteractionChannelEnum** (tier 1): `lane`, `payStation`, `kiosk`,
+  `attendant`, `contactCentre`, `automatedVoice`, `mobileApp`, `web`,
+  `textMessage`, `chat`, `email`, `systemInterface`, `other`. Used by
+  ValidationRedemption, Payment, ValetTicket and SupportInteraction.
+- **RecordEndReasonEnum** (tier 2): `superseded`, `retired`. Used by
+  Signage, ValidationProgram, PlateList and EnforcementPolicy beside their
+  Validity.
 
 #### External code lists (for PkCommon)
 
-No new external code lists are proposed in PkCommon. The registries APX
-publishes (for example apx-device-states and apx-session-end-reasons) are
-UserDefinedCodeLists and can be cited through ReferencedCodeListEntry
-without change to APDS.
+No new external code lists are proposed in PkCommon. The code lists APX
+publishes are UserDefinedCodeLists and can be cited through
+ReferencedCodeListEntry without change to APDS.
 
 #### Elements proposed for PkCommon
 
-| Element | Change | Package | Tier | Level | APX source |
-| --- | --- | --- | --- | --- | --- |
-| `RecordType` | Additions to an APDS class | CommonClasses | 2 | B | RecordInfo.origin (APX Part 18 §18.6) |
+| Element | Change | Package | Tier | Level |
+| --- | --- | --- | --- | --- |
+| `RecordType` | Additions to an APDS class | CommonClasses | 3 | B |
+| `RecordEndReasonEnum` | New enumeration | CommonClasses | 2 | — |
+| `InteractionChannelEnum` | New enumeration | CommonClasses | 1 | — |
 
 ### Enforcement
 
@@ -1239,7 +1321,8 @@ built from.
 
 **Violation** is versioned and identifiable, like a Session. The
 attributes a receiver needs to understand the finding are mandatory: type,
-status, the time it was observed and the Place element. Everything else is
+status, the time it was observed, the Place element and how it was
+detected. Everything else is
 optional, so a simple warning and a fully evidenced citation use the same
 class. The credential and vehicle use the existing `Right.Credential` and
 `PkCommon.VehicleAncillaryIdentification` classes, in the same way
@@ -1262,10 +1345,15 @@ courts refer to a violation.
 new amount) or dismissed, with any refund Payment.
 
 **EnforcementPolicy** is versioned and identifiable and applies down the
-Place hierarchy in the way APDS data generally does. Its components are
-**NoticeDeliveryRule**, **PenaltyLimit** and **EscalationStep**. It is a
-summary that systems can check a notice against. It does not replace the
-statute.
+Place hierarchy in the way APDS data generally does. Its period and its
+active, planned or suspended state use the APDS Validity class; only the
+reason it ended (superseded or retired) is a code of its own, shared with
+other records in PkCommon. Its components are **NoticeDeliveryRule**,
+**PenaltyLimit** and **EscalationStep**. It is a summary that systems can
+check a notice against. It does not replace the statute.
+
+The policy points to the Signage that gives notice of it, rather than the
+other way round, so the Place additions do not depend on this new domain.
 
 In APX, a Violation also keeps a full history of its status changes and
 amount changes. That audit detail stays in the APX profile and is not
@@ -1307,50 +1395,64 @@ classDiagram
     <<APDS>>
   }
   class Signage {
-    <<proposed in Place>>
+    <<proposed>>
   }
   class Violation {
-    violationType : ViolationTypeEnum
-    violationStatus : ViolationStatusEnum
-    detectedTime
-    amount
-    dueTime
+    <<proposed>>
+    +violationType : ViolationTypeEnum [1..1]
+    +violationStatus : ViolationStatusEnum [1..1]
+    +detectedTime : DateTime [1..1]
+    +elementId : VersionedReference [1..1]
+    +amount : AmountInCurrency [0..1]
+    +dueTime : DateTime [0..1]
   }
   class ViolationDetection {
-    detectionMode : DetectionModeEnum
+    <<proposed>>
+    +detectionMode : DetectionModeEnum [1..1]
   }
   class Notice {
-    noticeNumber
-    issuedTime
-    noticeKind : NoticeKindEnum
-    deliveryMethod : NoticeDeliveryMethodEnum
+    <<proposed>>
+    +noticeNumber : String [1..1]
+    +issuedTime : DateTime [1..1]
+    +noticeKind : NoticeKindEnum [0..1]
+    +deliveryMethod : NoticeDeliveryMethodEnum [0..1]
   }
   class Appeal {
-    appealReason : AppealReasonEnum
-    resolution : AppealResolutionEnum
+    <<proposed>>
+    +appealReason : AppealReasonEnum [1..1]
+    +resolution : AppealResolutionEnum [0..1]
   }
   class EnforcementPolicy {
-    policyStatus : PolicyStatusEnum
+    <<proposed>>
+    +elementId : VersionedReference [1..1]
+    +endReason : RecordEndReasonEnum [0..1]
   }
-  class NoticeDeliveryRule
-  class PenaltyLimit
-  class EscalationStep
-  Violation ..> HierarchyElementGeneral : place
+  class NoticeDeliveryRule {
+    <<proposed>>
+  }
+  class PenaltyLimit {
+    <<proposed>>
+  }
+  class EscalationStep {
+    <<proposed>>
+  }
+  Violation ..> HierarchyElementGeneral : elementId
   Violation ..> Space : spaceId
   Violation ..> ObservationElement : observationId
-  Violation ..> Session : relatedSession
-  Violation ..> AssignedRight : relatedAssignedRight
+  Violation ..> Session : sessionId
+  Violation ..> AssignedRight : assignedRightId
   Violation ..> Payment : paymentId
-  Violation ..> EnforcementPolicy : policy
-  Violation ..> Signage : signage
-  Violation "1" o-- "0..1" ViolationDetection
+  Violation ..> EnforcementPolicy : policyId
+  Violation ..> Signage : signageId
+  Violation "1" o-- "1" ViolationDetection
   Violation "1" o-- "0..1" Credential : identifiedCredential
   Violation "1" o-- "0..1" VehicleAncillaryIdentification : identifiedVehicle
   Violation "1" o-- "0..*" Image : evidence
   Violation "1" o-- "0..1" Location
   Violation "1" o-- "0..1" Notice
   Violation "1" o-- "0..1" Appeal
-  EnforcementPolicy ..> HierarchyElementGeneral : place
+  EnforcementPolicy ..> HierarchyElementGeneral : elementId
+  EnforcementPolicy ..> Signage : signageId
   EnforcementPolicy "1" o-- "1" Validity
   EnforcementPolicy "1" o-- "0..*" NoticeDeliveryRule
   EnforcementPolicy "1" o-- "0..1" PenaltyLimit
@@ -1361,7 +1463,9 @@ classDiagram
 
 - **ViolationTypeEnum:** `noValidRight`, `expiredRight`, `notYetValidRight`,
   `wrongPlace`, `maximumStayExceeded`, `restrictedSpace`, `permitMisuse`,
-  `noParkingPeriod`, `obstruction`, `chargingBayIdle`, `other`.
+  `noParkingPeriod`, `obstruction`, `other`. A value for a vehicle left
+  in a charging bay after charging ends can be added if the Energy
+  Infrastructure additions, offered for discussion, are taken up.
 - **ViolationStatusEnum:** `detected`, `confirmed`, `dismissed`, `issued`,
   `paid`, `appealed`, `closed`, `voided`.
 - **DetectionModeEnum:** `automated`, `guided`, `manual`.
@@ -1369,37 +1473,39 @@ classDiagram
   group's review. Notices are named differently from one jurisdiction to
   the next, so these lists in particular would benefit from members'
   experience.
-- **AppealReasonEnum** (also a first draft), **AppealResolutionEnum** and
-  **PolicyStatusEnum**.
+- **AppealReasonEnum** (also a first draft) and **AppealResolutionEnum**
+  (`upheld`, `reduced`, `dismissed`; the toll dispute resolutions use the
+  same `reduced`).
+- **Reused from PkCommon:** the proposed `RecordEndReasonEnum` gives why an
+  EnforcementPolicy ended; its active, planned and suspended states come
+  from the APDS `ValidityStatusEnum`.
 
 #### External code lists (for Enforcement)
 
 Violation types, notice kinds and appeal reasons vary by jurisdiction. As
 elsewhere in APDS, an operation that needs a value not on these lists can
 publish it in a `UserDefinedCodeList` and use `other` in the enumeration.
-APX publishes its violation types as such a list today
-(`apx-violation-types`).
+APX publishes its violation types as such a list today.
 
 #### Elements proposed for Enforcement
 
-| Element | Change | Package | Tier | Level | APX source |
-| --- | --- | --- | --- | --- | --- |
-| `Violation` | New class | Enforcement | 1 | C | Violation (APX Part 19 §19.1) |
-| `ViolationDetection` | New class | Enforcement | 1 | C | ViolationDetection (APX Part 19 §19.4) |
-| `Notice` | New class | Enforcement | 1 | C | Violation.notice (APX Part 19 §19.5) |
-| `Appeal` | New class | Enforcement | 2 | C | Violation.appeal (APX Part 19 §19.6) |
-| `EnforcementPolicy` | New class | Enforcement | 2 | C | EnforcementPolicy (APX Part 19 §19.10) |
-| `NoticeDeliveryRule` | New class | Enforcement | 2 | C | EnforcementPolicy.deliveryRules (APX Part 19 §19.10) |
-| `PenaltyLimit` | New class | Enforcement | 2 | C | EnforcementPolicy.penaltyCap and overallCeiling (APX Part 19 §19.10) |
-| `EscalationStep` | New class | Enforcement | 2 | C | EnforcementPolicy.escalation (APX Part 19 §19.10) |
-| `ViolationTypeEnum` | New enumeration | Enforcement | 1 | — | registry apx-violation-types |
-| `ViolationStatusEnum` | New enumeration | Enforcement | 1 | — | Violation.violationStatus (APX Part 19 §19.1) |
-| `DetectionModeEnum` | New enumeration | Enforcement | 1 | — | ViolationDetection.mode (APX Part 19 §19.4) |
-| `NoticeKindEnum` | New enumeration | Enforcement | 1 | — | Violation.notice.noticeKind (APX Part 19 §19.5); an implementer code list in APX today, with no registry yet |
-| `NoticeDeliveryMethodEnum` | New enumeration | Enforcement | 1 | — | Violation.notice.deliveryMethod and EnforcementPolicy.deliveryRules (APX Part 19 §19.5, §19.10); an implementer code list in APX today, with no registry yet |
-| `AppealReasonEnum` | New enumeration | Enforcement | 2 | — | Violation.appeal.reason (APX Part 19 §19.6); an implementer code list in APX today |
-| `AppealResolutionEnum` | New enumeration | Enforcement | 2 | — | Violation.appeal.resolution (APX Part 19 §19.6) |
-| `PolicyStatusEnum` | New enumeration | Enforcement | 2 | — | EnforcementPolicy.policyStatus (APX Part 19 §19.10) |
+| Element | Change | Package | Tier | Level |
+| --- | --- | --- | --- | --- |
+| `Violation` | New class | Enforcement | 1 | C |
+| `ViolationDetection` | New class | Enforcement | 1 | C |
+| `Notice` | New class | Enforcement | 1 | C |
+| `Appeal` | New class | Enforcement | 2 | C |
+| `EnforcementPolicy` | New class | Enforcement | 2 | C |
+| `NoticeDeliveryRule` | New class | Enforcement | 2 | C |
+| `PenaltyLimit` | New class | Enforcement | 3 | C |
+| `EscalationStep` | New class | Enforcement | 2 | C |
+| `ViolationTypeEnum` | New enumeration | Enforcement | 1 | — |
+| `ViolationStatusEnum` | New enumeration | Enforcement | 1 | — |
+| `DetectionModeEnum` | New enumeration | Enforcement | 1 | — |
+| `NoticeKindEnum` | New enumeration | Enforcement | 1 | — |
+| `NoticeDeliveryMethodEnum` | New enumeration | Enforcement | 1 | — |
+| `AppealReasonEnum` | New enumeration | Enforcement | 2 | — |
+| `AppealResolutionEnum` | New enumeration | Enforcement | 2 | — |
 
 ### Operations
 
@@ -1419,8 +1525,9 @@ alert also keeps an append-only history of who changed its status and
 when. That audit detail stays in the APX profile.
 
 **SupportInteraction** is versioned and identifiable and refers only to
-existing APDS records. Its issue types are taken from APX's existing
-registry of customer-service issue types.
+existing APDS records. Its channel uses the shared
+`InteractionChannelEnum` proposed in PkCommon, and its issue types start
+from the customer-service issue types APX uses today.
 
 Device status (whether a barrier, camera or pay station is working) is
 proposed in the Place domain, next to the SupplementalEquipment it
@@ -1451,23 +1558,25 @@ classDiagram
     <<APDS>>
   }
   class Alert {
-    alertType : AlertTypeEnum
-    severity : AlertSeverityEnum
-    alertStatus : AlertStatusEnum
-    detectionTime
-    occurrenceTime
-    expiryTime
+    <<proposed>>
+    +alertType : AlertTypeEnum [1..1]
+    +severity : AlertSeverityEnum [1..1]
+    +alertStatus : AlertStatusEnum [1..1]
+    +detectionTime : DateTime [1..1]
+    +occurrenceTime : DateTime [0..1]
+    +expiryTime : DateTime [0..1]
   }
   class SupportInteraction {
-    channel : SupportChannelEnum
-    agentType : SupportAgentTypeEnum
-    issueType : SupportIssueTypeEnum
-    startTime
+    <<proposed>>
+    +channel : InteractionChannelEnum [1..1]
+    +agentType : SupportAgentTypeEnum [1..1]
+    +issueType : SupportIssueTypeEnum [0..1]
+    +startTime : DateTime [1..1]
   }
-  Alert ..> HierarchyElementGeneral : place
-  Alert ..> SupplementalEquipment : sourceEquipment
-  Alert ..> Reference : relatedEntity
-  SupportInteraction ..> HierarchyElementGeneral : place
+  Alert ..> HierarchyElementGeneral : elementId
+  Alert ..> SupplementalEquipment : equipmentId
+  Alert ..> Reference : relatedEntityId
+  SupportInteraction ..> HierarchyElementGeneral : elementId
   SupportInteraction ..> Session : sessionId
   SupportInteraction ..> AssignedRight : assignedRightId
   SupportInteraction ..> RightHolder : rightHolderId
@@ -1483,34 +1592,33 @@ classDiagram
   `deviceOffline`, `laneBlocked`, `occupancyThresholdExceeded`,
   `paymentException`, `intercomRequest`, `wrongWayTravel`) and plate-list
   arrivals (`watchListArrival`, `scofflawArrival`,
-  `refusedServiceArrival`). APX's own list also has a value for failed
-  message delivery. That value concerns the APX interface rather than the
-  parking operation, so it is not proposed.
+  `refusedServiceArrival`). One further value APX uses concerns its own
+  systems rather than the parking operation, so it is not proposed.
 - **AlertSeverityEnum:** `info`, `warning`, `minor`, `major`, `critical`. A
   closed scale.
 - **AlertStatusEnum:** `raised`, `acknowledged`, `resolved`, `expired`.
-- **SupportChannelEnum**, **SupportAgentTypeEnum** and
-  **SupportIssueTypeEnum:** for discussion, with SupportInteraction.
+- **SupportAgentTypeEnum** and **SupportIssueTypeEnum:** for discussion,
+  with SupportInteraction. Its channel uses the shared
+  `InteractionChannelEnum` (PkCommon).
 
 #### External code lists (for Operations)
 
 Alert types are open in practice: each site has conditions of its own. An
 operation can publish additional types in a `UserDefinedCodeList`, as APX
-does today with `apx-alert-types`. Severity is deliberately closed, so
+does today. Severity is deliberately closed, so
 that every receiver ranks alerts the same way.
 
 #### Elements proposed for Operations
 
-| Element | Change | Package | Tier | Level | APX source |
-| --- | --- | --- | --- | --- | --- |
-| `Alert` | New class | Operations | 2 | C | Alert (APX Part 7 §7.1) |
-| `SupportInteraction` | New class | Operations | 3 | C | SupportInteraction (APX Part 17 §17.6) |
-| `AlertTypeEnum` | New enumeration | Operations | 2 | — | registry apx-alert-types, seeded from Use Case C.2.2 transaction exceptions and space statuses |
-| `AlertSeverityEnum` | New enumeration | Operations | 2 | — | Alert.severity (APX Part 7), a closed list |
-| `AlertStatusEnum` | New enumeration | Operations | 2 | — | Alert.status (APX Part 7 §7.2) |
-| `SupportChannelEnum` | New enumeration | Operations | 3 | — | SupportInteraction.channel (APX Part 17), an implementer code list in APX today |
-| `SupportAgentTypeEnum` | New enumeration | Operations | 3 | — | SupportInteraction.agentType (APX Part 17) |
-| `SupportIssueTypeEnum` | New enumeration | Operations | 3 | — | registry apx-issue-types |
+| Element | Change | Package | Tier | Level |
+| --- | --- | --- | --- | --- |
+| `Alert` | New class | Operations | 2 | C |
+| `SupportInteraction` | New class | Operations | 3 | C |
+| `AlertTypeEnum` | New enumeration | Operations | 2 | — |
+| `AlertSeverityEnum` | New enumeration | Operations | 2 | — |
+| `AlertStatusEnum` | New enumeration | Operations | 2 | — |
+| `SupportAgentTypeEnum` | New enumeration | Operations | 3 | — |
+| `SupportIssueTypeEnum` | New enumeration | Operations | 3 | — |
 
 ## Conformance with the APDS extension rules
 
@@ -1526,6 +1634,9 @@ the APDS Model" in the APDS 4.1 Information Model:
 - Values proposed for existing enumerations are new names only; none
   repeats or redefines an existing value (requirement 10).
 - New domains introduce new root concepts and are marked Level C.
+- The one suggested change to an existing multiplicity
+  (`VehicleAncillaryIdentification.country`) sits outside these additions
+  and is offered separately.
 
 Each proposed type resolves either to an existing APDS 4.1 datatype,
 class or enumeration, or to another proposed element. This is checked
@@ -1555,3 +1666,129 @@ time the documents are built.
   specifications for traffic management and information — Part 1: Context
   and framework
 - APX specification and test scenarios: <https://github.com/rneubauer/apx>
+
+## Annex A (informative) Traceability to APX
+
+Each proposal comes from a data element already used in APX. This annex lists where, for reviewers who want to see it in use.
+
+| Element | Domain | APX source |
+| --- | --- | --- |
+| `EquipmentStatus` | Place | APX Part 6 §6.4 DeviceStatus |
+| `EquipmentStatusEnum` | Place | APX Part 11 code list (device states) |
+| `EquipmentTypeEnum` | Place | APX Part 6 §6.4 device references |
+| `VehicularAccess` | Place | APX Part 13 §13.3a LaneCameras |
+| `LaneCamera` | Place | APX Part 13 §13.3a LaneCameras.cameras |
+| `CameraFacingEnum` | Place | APX Part 13 §13.3a LaneCameras |
+| `Signage` | Place | APX Part 19 §19.11 Signage |
+| `SignTypeEnum` | Place | APX Part 19 §19.11 Signage.signType |
+| `DemandType` | Occupancy | APX Part 5 §5.5a OccupancyHistoryPage |
+| `RateTable` | Rates | APX Part 6 §6.6 RatePolicy |
+| `ValidationBenefit` | Rates | APX Part 20 §20.1 ValidationBenefit |
+| `CredentialAssigned` | Right | APX Part 21 §21.1 CredentialRecord |
+| `CredentialMedia` | Right | APX Part 21 §21.1 CredentialRecord.media |
+| `CredentialSuspension` | Right | APX Part 21 §21.1 CredentialRecord.suspension |
+| `PresentedCredential` | Right | APX Part 21 §21.4 PresentedCredential |
+| `AssignedRight` | Right | APX Part 14 §14.1 ReservationExtension |
+| `OverageBilling` | Right | APX Part 14 §14.2d PermitExtension.overageBilling |
+| `RightHolder` | Right | APX Part 13 §13.1 Account |
+| `Payment` | Right | APX Part 13 §13.1a PaymentRecord |
+| `RateSold` | Right | APX Part 13 §13.6a PaymentDetail.rateSold |
+| `CredentialStatusEnum` | Right | APX Part 21 §21.1 CredentialRecord.credentialStatus |
+| `CredentialMediaFormEnum` | Right | APX Part 21 §21.1 CredentialRecord.media.form |
+| `DepositStatusEnum` | Right | APX Part 21 §21.1 CredentialRecord.media.depositStatus |
+| `ReservationStateEnum` | Right | APX Part 14 §14.1 ReservationExtension.reservationState |
+| `OverageBillingModeEnum` | Right | APX Part 14 §14.2d PermitExtension.overageBilling.mode |
+| `AccountStatusEnum` | Right | APX Part 13 §13.1 Account.accountStatus |
+| `PaymentStatusEnum` | Right | APX Part 13 §13.1a PaymentRecord.paymentStatus |
+| `CaptureStatusEnum` | Right | APX Part 13 §13.1a PaymentRecord.captureStatus |
+| `RateProductEnum` | Right | APX Part 13 §13.6a PaymentDetail.rateSold.product |
+| `RateClassEnum` | Right | APX Part 13 §13.6a PaymentDetail.rateSold.class |
+| `RightTypeEnum` | Right | APX Part 22 ValetTicket.assignedRight |
+| `PaymentTypeEnum` | Right | APX Part 13 §13.6a payment line codes |
+| `ValidationProgram` | Right | APX Part 20 §20.1 ValidationProgram |
+| `ValidationRules` | Right | APX Part 20 §20.3 ValidationProgram.rules |
+| `ValidationBilling` | Right | APX Part 20 §20.1 ValidationProgram.billing |
+| `ValidationIssuance` | Right | APX Part 20 §20.2 ValidationIssuance |
+| `ValidationInstrument` | Right | APX Part 20 §20.2 ValidationInstrument |
+| `ValidationIssuanceMethodEnum` | Right | APX Part 20 §20.2 ValidationIssuance.method |
+| `ValidationIssuanceStatusEnum` | Right | APX Part 20 §20.2 ValidationIssuance.issuanceStatus |
+| `ValidationInstrumentStatusEnum` | Right | APX Part 20 §20.2 ValidationInstrument.instrumentStatus |
+| `ValidationBillingModelEnum` | Right | APX Part 20 §20.1 ValidationProgram.billing.model |
+| `ValidationBillingCycleEnum` | Right | APX Part 20 §20.1 ValidationProgram.billing.billingCycle |
+| `PlateList` | Right | APX Part 24 §24.1 PlateList |
+| `PlateListPlaceFlags` | Right | APX Part 24 §24.1 PlateListPlaceFlags |
+| `PlateListEntry` | Right | APX Part 24 §24.2 PlateListEntry |
+| `PlateListCategoryEnum` | Right | APX Part 11 code list (plate list categories) |
+| `Session` | Session | APX Part 5 §5.8 SessionDetail |
+| `SessionRead` | Session | APX Part 5 §5.8 SessionReadBinding |
+| `SessionClosure` | Session | APX Part 5 §5.8 SessionClosure |
+| `AccessEvent` | Session | APX Part 21 §21.4 AccessEvent |
+| `MatchEvidence` | Session | APX Part 5 §5.8 MatchEvidence |
+| `ValidationRedemption` | Session | APX Part 20 ValidationRedemption |
+| `ValetTicket` | Session | APX Part 22 ValetTicket |
+| `SessionReadRoleEnum` | Session | APX Part 5 §5.8 SessionReadBinding.role |
+| `SessionEndReasonEnum` | Session | APX Part 11 code list (session end reasons) |
+| `SessionLifecycleEnum` | Session | APX Part 5 §5.8 SessionDetail.lifecycle |
+| `AccessOutcomeEnum` | Session | APX Part 21 §21.4 AccessEvent.outcome |
+| `AccessDenialReasonEnum` | Session | APX Part 11 code list (access denial reasons) |
+| `MatchTypeEnum` | Session | APX Part 5 §5.8 MatchEvidence.matchType |
+| `MatchDecisionEnum` | Session | APX Part 5 §5.8 MatchEvidence.decidedBy |
+| `ValidationRedemptionStatusEnum` | Session | APX Part 20 ValidationRedemption.redemptionStatus |
+| `ValetStatusEnum` | Session | APX Part 22 ValetTicket.valetStatus |
+| `HandbackVerificationEnum` | Session | APX Part 22 ValetTicket.handback |
+| `ObservationElement` | Observation | APX Part 13 §13.3a LprReadDetail |
+| `AttributeRead` | Observation | APX Part 13 §13.3a AttributeRead |
+| `AlternateRead` | Observation | APX Part 13 §13.3a LprReadDetail.alternateReads |
+| `ReadReview` | Observation | APX Part 13 §13.3a LprReadDetail.review |
+| `Image` | Observation | APX Part 13 §13.3a LprReadDetail.plateBox |
+| `ImageRegion` | Observation | APX Part 13 §13.3a LprReadDetail.plateBox |
+| `ConditionReport` | Observation | APX Part 22 ConditionReport |
+| `DamageItem` | Observation | APX Part 22 ConditionReport.damage |
+| `ImageTypeEnum` | Observation | APX Part 13 §13.3c LprRead.images[].imageType |
+| `ReadAttributeEnum` | Observation | APX Part 13 §13.3a LprReadDetail |
+| `VehicleMovementEnum` | Observation | APX Part 13 §13.3a LprReadDetail.movement |
+| `PlateFaceEnum` | Observation | APX Part 13 §13.3a LprReadDetail.plateFace |
+| `ReadReviewStateEnum` | Observation | APX Part 13 §13.3a LprReadDetail.review |
+| `ReadReviewReasonEnum` | Observation | APX Part 11 code list (read review reasons) |
+| `DamageSeverityEnum` | Observation | APX Part 22 ConditionReport.damage |
+| `TollTransaction` | Observation | APX Part 15 TollTransaction |
+| `TollDispute` | Observation | APX Part 15 §15.1 TollTransaction.dispute |
+| `TollTransactionStatusEnum` | Observation | APX Part 15 TollTransaction.transactionStatus |
+| `TollDisputeReasonEnum` | Observation | APX Part 11 code list (toll dispute reasons) |
+| `TollDisputeResolutionEnum` | Observation | APX Part 11 code list (toll dispute resolutions) |
+| `ChargingPointStatus` | EnergyInfrastructure | APX Part 23 §23.1 ChargingPointStatus |
+| `ConnectorStatus` | EnergyInfrastructure | APX Part 23 §23.1 ChargingPointStatus.connectors |
+| `ChargingBayPresence` | EnergyInfrastructure | APX Part 23 §23.3 ChargingBayPresence |
+| `ChargingSession` | EnergyInfrastructure | APX Part 23 §23.2 ChargingSession |
+| `ChargingCost` | EnergyInfrastructure | APX Part 23 §23.5 ChargingSession.cost |
+| `ChargingIdleTerms` | EnergyInfrastructure | APX Part 23 §23.10 ChargingSession.idlePolicy |
+| `BayPresenceEnum` | EnergyInfrastructure | APX Part 23 §23.3 ChargingBayPresence.presence |
+| `BayPresenceSourceEnum` | EnergyInfrastructure | APX Part 23 §23.3 ChargingBayPresence.source |
+| `ChargingSessionStatusEnum` | EnergyInfrastructure | APX Part 23 §23.2 ChargingSession.chargingStatus |
+| `ChargingStopReasonEnum` | EnergyInfrastructure | APX Part 23 ChargingSession.stopReason |
+| `ChargingSettlementModeEnum` | EnergyInfrastructure | APX Part 23 §23.5 ChargingSession.settlement.mode |
+| `RecordType` | PkCommon | APX Part 18 §18.6 RecordInfo.origin |
+| `RecordEndReasonEnum` | PkCommon | APX Parts 19, 20 and 24 status values |
+| `InteractionChannelEnum` | PkCommon | APX Parts 13, 17, 20 and 22 channel values |
+| `Violation` | Enforcement | APX Part 19 §19.1 Violation |
+| `ViolationDetection` | Enforcement | APX Part 19 §19.4 ViolationDetection |
+| `Notice` | Enforcement | APX Part 19 §19.5 Violation.notice |
+| `Appeal` | Enforcement | APX Part 19 §19.6 Violation.appeal |
+| `EnforcementPolicy` | Enforcement | APX Part 19 §19.10 EnforcementPolicy |
+| `NoticeDeliveryRule` | Enforcement | APX Part 19 §19.10 EnforcementPolicy.deliveryRules |
+| `PenaltyLimit` | Enforcement | APX Part 19 §19.10 EnforcementPolicy.penaltyCap |
+| `EscalationStep` | Enforcement | APX Part 19 §19.10 EnforcementPolicy.escalation |
+| `ViolationTypeEnum` | Enforcement | APX Part 11 code list (violation types) |
+| `ViolationStatusEnum` | Enforcement | APX Part 19 §19.1 Violation.violationStatus |
+| `DetectionModeEnum` | Enforcement | APX Part 19 §19.4 ViolationDetection.mode |
+| `NoticeKindEnum` | Enforcement | APX Part 19 §19.5 Violation.notice.noticeKind |
+| `NoticeDeliveryMethodEnum` | Enforcement | APX Part 19 §19.5 Violation.notice.deliveryMethod |
+| `AppealReasonEnum` | Enforcement | APX Part 19 §19.6 Violation.appeal.reason |
+| `AppealResolutionEnum` | Enforcement | APX Part 19 §19.6 Violation.appeal.resolution |
+| `Alert` | Operations | APX Part 7 §7.1 Alert |
+| `SupportInteraction` | Operations | APX Part 17 §17.6 SupportInteraction |
+| `AlertTypeEnum` | Operations | APX Part 11 code list (alert types) |
+| `AlertSeverityEnum` | Operations | APX Part 7 Alert.severity |
+| `AlertStatusEnum` | Operations | APX Part 7 §7.2 Alert.status |
+| `SupportAgentTypeEnum` | Operations | APX Part 17 SupportInteraction.agentType |
+| `SupportIssueTypeEnum` | Operations | APX Part 11 code list (issue types) |

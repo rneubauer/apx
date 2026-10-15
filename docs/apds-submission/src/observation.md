@@ -3,8 +3,8 @@
 The Observation data domain documents the observation of an entity in a
 Place performing an action. APDS 4.1 already records the method, the
 credential observed, the location, images, an overall confidence and a
-confidence for each character. The additions proposed here carry what a
-modern licence plate recognition camera reports beyond that, record the
+confidence for each character. The additions proposed here carry what
+recognition systems now also report, record the
 condition of a vehicle, and tie observations at a toll point into a
 charge.
 
@@ -22,9 +22,8 @@ candidates the engine considered. Keeping those alternates lets a
 reviewer or a matching system correct the read without a new capture.
 
 On sites without barriers, whether a vehicle entered or left is decided
-by the direction it moved past the camera. Recording the movement, the
-plate face read and the passage a read belongs to lets several cameras
-and frames be treated as one event.
+by the direction it moved past the camera. Recording the movement and
+the plate face read tells a receiver which way the vehicle passed.
 
 Some jurisdictions require a person to confirm a plate before a penalty
 is issued. Recording the review state and its reasons carries that
@@ -35,14 +34,13 @@ they return it; that report is the evidence a damage claim is answered
 with. Toll operators assemble a charge from one or more observations at
 a toll point and must handle disputes about it.
 
-### Key concepts
+### What the Observation additions hold
 
 Observation element (additions)
 
 - Has a recognised value and confidence for each attribute read (plate, country, state or province, plate category, make, model, colour, body type).
 - Has the alternate plate candidates, best first.
 - Has the vehicle's movement relative to the camera, the plate face read, and the direction of passage as the recognition system reports it.
-- Has a capture group shared by all reads of one passage.
 - Has an optional review state, the reasons for review and the original values before correction.
 
 Image (additions)
@@ -64,11 +62,11 @@ Toll transaction
 ## Information model
 
 The additions extend the `Observation` package
-(`D2Payload/Extension/Parking/Observation`) and add a new `Tolling`
-package (`D2Payload/Extension/Parking/Tolling`). All are Level B
-extensions.
+(`D2Payload/Extension/Parking/Observation`) and add a `Tolling`
+sub-package within it (`D2Payload/Extension/Parking/Observation/Tolling`).
+All are Level B extensions.
 
-`ObservationElement` gains three optional associations and eight
+`ObservationElement` gains three optional associations and four
 optional attributes. The recognised values themselves stay where APDS
 4.1 puts them: the plate in `observedCredentialId`, and country, state,
 make, model and colour in the associated `VehicleAncillaryIdentification`.
@@ -78,8 +76,9 @@ The existing `Confidence` (overall) and `CharacterConfidence` (per
 character) classes are unchanged and remain the place for those
 measures.
 
-`accessDirection` reuses the `AccessDirectionEnum` proposed in the
-Session domain. It records what the recognition system reported for this
+`accessDirection` reuses the existing APDS `AccessTypeEnum`, using its
+values `entry` and `exit` (`reversible` describes an area, not a single
+passage). It records what the recognition system reported for this
 passage, which may differ from the configured purpose of a reversible
 lane (`AccessLaneTypeEnum`).
 
@@ -91,18 +90,26 @@ and `ImageTypeEnum` gains two values.
 package; the valet ticket in the Session domain references a condition
 report at drop-off and at handback.
 
-`TollTransaction` is a new versioned identifiable class in the new
-`Tolling` package. It references existing `ObservationElement`,
-`SupplementalEquipment` (the toll point) and `Payment` instances.
+`TollTransaction` is a new versioned identifiable class in the
+`Tolling` sub-package. It references existing `ObservationElement`,
+`SupplementalEquipment` (the toll point) and `Payment` instances, and
+carries the credential read as a `PresentedCredential` (proposed in the
+Right domain).
 
 ```mermaid
 classDiagram
     class ObservationElement {
         <<APDS>>
-        accessDirection
-        movement
-        plateFace
-        captureGroup
+    }
+    class ObservationElementAdditions {
+        <<proposed>>
+        +accessDirection : AccessTypeEnum [0..1]
+        +movement : VehicleMovementEnum [0..1]
+        +plateFace : PlateFaceEnum [0..1]
+        +speed : Float [0..1]
+    }
+    class PresentedCredential {
+        <<proposed>>
     }
     class VehicleAncillaryIdentification {
         <<APDS>>
@@ -123,69 +130,80 @@ classDiagram
         <<APDS>>
     }
     class AttributeRead {
-        readAttribute
-        value
-        confidence
+        <<proposed>>
+        +readAttribute : ReadAttributeEnum [1..1]
+        +value : String [1..1]
+        +confidence : Decimal [0..1]
     }
     class AlternateRead {
-        plate
-        stateProvince
-        confidence
+        <<proposed>>
+        +plate : String [1..1]
+        +stateProvince : String [0..1]
+        +confidence : Decimal [0..1]
     }
     class ReadReview {
-        reviewState
-        reviewReason
-        decidedTime
+        <<proposed>>
+        +reviewState : ReadReviewStateEnum [1..1]
+        +reviewReason : ReadReviewReasonEnum [0..*]
+        +decidedTime : DateTime [0..1]
     }
     class ImageRegion {
-        top
-        left
-        bottom
-        right
+        <<proposed>>
+        +top : Decimal [1..1]
+        +left : Decimal [1..1]
+        +bottom : Decimal [1..1]
+        +right : Decimal [1..1]
     }
     class ConditionReport {
-        notes
-        imageLink
-        customerAcknowledged
+        <<proposed>>
+        +notes : MultilingualString [0..1]
+        +imageLink : Url [0..*]
+        +customerAcknowledged : Boolean [0..1]
     }
     class DamageItem {
-        vehicleArea
-        severity
+        <<proposed>>
+        +vehicleArea : String [1..1]
+        +severity : DamageSeverityEnum [0..1]
     }
     class TollTransaction {
-        transactionStatus
-        pricing
+        <<proposed>>
+        +tollPointId : Reference [1..1]
+        +transactionStatus : TollTransactionStatusEnum [1..1]
+        +pricing : AmountInCurrency [0..1]
     }
     class TollDispute {
-        disputeReason
-        disputeResolution
+        <<proposed>>
+        +disputeReason : TollDisputeReasonEnum [1..1]
+        +disputeResolution : TollDisputeResolutionEnum [0..1]
     }
     ObservationElement "1" *-- "0..1" VehicleAncillaryIdentification
     ObservationElement "1" *-- "0..1" Confidence
     ObservationElement "1" *-- "0..*" CharacterConfidence
     ObservationElement "1" *-- "0..*" Image
+    ObservationElement .. ObservationElementAdditions : Level B additions
     ObservationElement "1" *-- "0..*" AttributeRead
     ObservationElement "1" *-- "0..*" AlternateRead
     ObservationElement "1" *-- "0..1" ReadReview
     ReadReview "1" *-- "0..*" AttributeRead : originalRead
     Image "1" *-- "0..1" ImageRegion : plateRegion
     ConditionReport "1" *-- "0..*" DamageItem
-    TollTransaction --> ObservationElement : observationElementId
-    TollTransaction --> SupplementalEquipment : tollPoint
+    TollTransaction --> ObservationElement : observationId
+    TollTransaction --> SupplementalEquipment : tollPointId
     TollTransaction --> Payment : paymentId
+    TollTransaction "1" *-- "0..1" PresentedCredential : vehicleCredential
     TollTransaction "1" *-- "0..1" TollDispute
 ```
 
-### Change to an existing multiplicity
+### Suggested change to APDS 4.1 (outside this proposal)
 
-We would also like to suggest one small change that the table format of
-the Data Dictionary cannot show as an addition: making
-`VehicleAncillaryIdentification.country` optional (`0..1` instead of
-`1..1`). A read whose plate country the engine could not place could
-then still carry make, model and colour, and those are often the reads
-that most need them. Today such a read must omit the whole
-`VehicleAncillaryIdentification`. The change relaxes a constraint, so
-every instance valid today stays valid.
+One related suggestion is not an addition and is not part of the Level B
+additions above: making `VehicleAncillaryIdentification.country`
+optional (`0..1` instead of `1..1`). A read whose plate country the
+engine could not place could then still carry make, model and colour,
+and those are often the reads that most need them. Today such a read
+must omit the whole `VehicleAncillaryIdentification`. The change relaxes
+a constraint, so every instance valid today stays valid. It is offered
+separately, with the other suggested changes to APDS 4.1.
 
 ### Enumerations (for Observation)
 
@@ -204,8 +222,7 @@ every instance valid today stays valid.
 
 `ReadReviewReasonEnum`, `TollDisputeReasonEnum` and
 `TollDisputeResolutionEnum` are maintained by APX today as user-defined
-code lists (`apx-read-review-reasons`, `apx-toll-dispute-reasons`,
-`apx-toll-dispute-resolutions`). As in the Session domain, they could
+code lists. As in the Session domain, they could
 equally be typed as `PkCommon.ReferencedCodeListEntry` with these values
 as the recommended initial list. `DamageItem.vehicleArea` is left as a
 string from an operator code list; we do not propose standard values for
@@ -231,8 +248,6 @@ country, the make and the colour, each with its own confidence, and
 `movement` toward or away from the camera. Because the entrance and exit
 share one camera, the movement is what tells the two passages apart; the
 recognition system reports `accessDirection` entry or exit accordingly.
-Several frames of each passage share one `captureGroup` and are treated
-as one event.
 
 **Review.** Because a charge notice will follow, the exit read is sent to
 review with `reviewReason` `enforcementHandoff`. The reviewer sees the

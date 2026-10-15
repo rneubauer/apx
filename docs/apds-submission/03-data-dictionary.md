@@ -97,8 +97,8 @@ There are no proposed associations in the "Demand" package.
 
 | Class name | Attribute name | Designation | Definition | Multiplicity | Type |
 | --- | --- | --- | --- | --- | --- |
-| DemandType | periodStart | Period start | The start of the period this record summarises, when it describes a period rather than a moment. | 0..1 | PkCommon.DateTime |
-| DemandType | periodEnd | Period end | The end of the period this record summarises. | 0..1 | PkCommon.DateTime |
+| DemandType | periodStartTime | Period start | The start of the period this record summarises, when it describes a period rather than a moment. | 0..1 | PkCommon.DateTime |
+| DemandType | periodEndTime | Period end | The end of the period this record summarises. | 0..1 | PkCommon.DateTime |
 | DemandType | maximumCount | Maximum count | The highest number of utilized or occupied spaces recorded during the period. | 0..1 | PkCommon.NonNegativeInteger |
 | DemandType | averageCount | Average count | The time-weighted average number of utilized or occupied spaces during the period. | 0..1 | PkCommon.Float |
 | DemandType | sampleCount | Sample count | The number of individual demand readings the period summary is calculated from. | 0..1 | PkCommon.NonNegativeInteger |
@@ -161,27 +161,27 @@ There are no proposed specializations in the "EnergyInfrastructure" package.
 | ChargingIdleTerms | idleRate | Idle rate | The amount charged per idle time unit. | 0..1 | PkCommon.AmountInCurrency |
 | ChargingIdleTerms | idleRateUnit | Idle rate unit | The time unit the idle rate applies to. | 0..1 | PkCommon.UnitOfTimeEnum |
 | ChargingIdleTerms | maximumIdle | Maximum idle | The idle time after which the vehicle may be subject to enforcement. | 0..1 | PkCommon.Duration |
-| ChargingPointStatus | equipment | Equipment | The SupplementalEquipment that holds the refill point. | 1..1 | PkCommon.VersionedReference (Place.SupplementalEquipment) |
-| ChargingPointStatus | refillPointIndex | Refill point index | The index of the static RefillPoint this status describes, as used to link static and dynamic publications. | 1..1 | PkCommon.Integer |
+| ChargingPointStatus | equipmentId | Equipment | The SupplementalEquipment that holds the refill point. | 1..1 | PkCommon.Reference (Place.SupplementalEquipment) |
+| ChargingPointStatus | refillPointIndex | Refill point index | The index of the static RefillPoint this status describes, as used to link static and dynamic publications. | 0..1 | PkCommon.Integer |
 | ChargingPointStatus | status | Status | The current status of the refill point as a whole; where connectors differ, the busiest connector determines it. | 1..1 | EnergyInfrastructure.RefillPointStatusEnum |
 | ChargingPointStatus | spaceId | Space id | The Space (bay) served by the refill point, where the facility is space-mapped. | 0..1 | PkCommon.VersionedReference (Place.Space) |
-| ChargingPointStatus | reservedFor | Reserved for | The AssignedRight that holds the refill point under a reservation, if any. | 0..1 | PkCommon.VersionedReference (Right.AssignedRight) |
-| ChargingPointStatus | currentChargingSession | Current charging session | The ChargingSession in progress at the refill point, if any. | 0..1 | PkCommon.VersionedReference (EnergyInfrastructure.ChargingSession) |
+| ChargingPointStatus | reservedAssignedRightId | Reserved for | The AssignedRight that holds the refill point under a reservation, if any. | 0..1 | PkCommon.VersionedReference (Right.AssignedRight) |
+| ChargingPointStatus | chargingSessionId | Current charging session | The ChargingSession in progress at the refill point, if any. | 0..1 | PkCommon.VersionedReference (EnergyInfrastructure.ChargingSession) |
 | ChargingPointStatus | statusChangeTime | Status change time | The date/time at which the current status began. | 0..1 | PkCommon.DateTime |
-| ChargingPointStatus | lastCommunication | Last communication | The date/time the refill point was last heard from. | 0..1 | PkCommon.DateTime |
-| ChargingSession | place | Place | The element of the Place hierarchy where the charge took place. | 1..1 | PkCommon.VersionedReference (Place.HierarchyElementGeneral) |
-| ChargingSession | equipment | Equipment | The SupplementalEquipment that holds the refill point used. | 1..1 | PkCommon.VersionedReference (Place.SupplementalEquipment) |
-| ChargingSession | refillPointIndex | Refill point index | The index of the RefillPoint used. | 1..1 | PkCommon.Integer |
+| ChargingPointStatus | lastCommunicationTime | Last communication | The date/time the refill point was last heard from. | 0..1 | PkCommon.DateTime |
+| ChargingSession | elementId | Place | The element of the Place hierarchy where the charge took place. | 1..1 | PkCommon.VersionedReference (Place.HierarchyElementGeneral) |
+| ChargingSession | equipmentId | Equipment | The SupplementalEquipment that holds the refill point used. | 1..1 | PkCommon.Reference (Place.SupplementalEquipment) |
+| ChargingSession | refillPointIndex | Refill point index | The index of the RefillPoint used. | 0..1 | PkCommon.Integer |
 | ChargingSession | connectorIndex | Connector index | The one-based position of the connector used in the ElectricChargingPoint's list of connectors. | 0..1 | PkCommon.NonNegativeInteger |
 | ChargingSession | chargingStatus | Charging status | The current state of the charge. | 1..1 | EnergyInfrastructure.ChargingSessionStatusEnum |
-| ChargingSession | parkingSession | Parking session | The Session for the parking stay during which the charge happened. | 0..1 | PkCommon.VersionedReference (Session.Session) |
+| ChargingSession | sessionId | Parking session | The Session for the parking stay during which the charge happened. | 0..1 | PkCommon.VersionedReference (Session.Session) |
 | ChargingSession | assignedRightId | Assigned right id | The AssignedRight that entitled the charge, such as a charging reservation or a permit. | 0..1 | PkCommon.VersionedReference (Right.AssignedRight) |
 | ChargingSession | authenticationMethod | Authentication method | How the charge was authorized. | 0..1 | EnergyInfrastructure.AuthenticationAndIdentificationEnum |
 | ChargingSession | authorizedTime | Authorized time | The date/time the charge was authorized. | 0..1 | PkCommon.DateTime |
 | ChargingSession | pluggedInTime | Plugged in time | The date/time the vehicle was connected. | 0..1 | PkCommon.DateTime |
-| ChargingSession | chargingStart | Charging start | The date/time energy delivery began. | 0..1 | PkCommon.DateTime |
-| ChargingSession | chargingEnd | Charging end | The date/time energy delivery ended. | 0..1 | PkCommon.DateTime |
-| ChargingSession | idleStart | Idle start | The date/time the vehicle began occupying the charging point without charging, after any grace period. | 0..1 | PkCommon.DateTime |
+| ChargingSession | chargingStartTime | Charging start | The date/time energy delivery began. | 0..1 | PkCommon.DateTime |
+| ChargingSession | chargingEndTime | Charging end | The date/time energy delivery ended. | 0..1 | PkCommon.DateTime |
+| ChargingSession | idleStartTime | Idle start | The date/time the vehicle began occupying the charging point without charging, after any grace period. | 0..1 | PkCommon.DateTime |
 | ChargingSession | unpluggedTime | Unplugged time | The date/time the vehicle was disconnected. | 0..1 | PkCommon.DateTime |
 | ChargingSession | energyDelivered | Energy delivered | The energy delivered, in the delivery unit of the refill point (normally kilowatt-hours). | 0..1 | PkCommon.Decimal |
 | ChargingSession | stateOfCharge | State of charge | The vehicle's state of charge as last reported, as a percentage. | 0..1 | PkCommon.Percentage |
@@ -210,7 +210,7 @@ There are no proposed specializations in the "EnergyInfrastructure" package.
 | EscalationStep | new | Escalation step | One increase to the amount of a violation that applies once a set time has passed since the notice was issued while it remains unpaid. | D2Class | no |
 | Notice | new | Notice | The warning, notice or citation issued to the keeper or driver of a vehicle for a violation. | D2Class | no |
 | NoticeDeliveryRule | new | Notice delivery rule | Which notice delivery methods are lawful for which detection modes, by when, and with what minimum evidence. | D2Class | no |
-| PenaltyLimit | new | Penalty limit | The ceilings on the amount of a violation when the notice is issued and after any escalation; where several bounds are given, the lowest applies. | D2Class | no |
+| PenaltyLimit | new | Penalty limit | The ceiling on the amount payable for a violation, with the basis on which it applies. | D2Class | no |
 | Violation | new | Violation | A finding that a vehicle at an element of a Place, at a given time, was not covered by a valid right or broke an operating restriction. | D2VersionedIdentifiable | no |
 | ViolationDetection | new | Violation detection | How a violation was found and by whom or what. | D2Class | no |
 
@@ -228,7 +228,7 @@ There are no proposed specializations in the "Enforcement" package.
 | EnforcementPolicy | deliveryRule | Delivery rule | Delivery rule for the associated EnforcementPolicy | 0..* | Enforcement.NoticeDeliveryRule |
 | EnforcementPolicy | penaltyLimit | Penalty limit | Penalty limit for the associated EnforcementPolicy | 0..1 | Enforcement.PenaltyLimit |
 | EnforcementPolicy | escalationStep | Escalation step | Escalation step for the associated EnforcementPolicy | 0..* | Enforcement.EscalationStep |
-| Violation | detection | Detection | Detection for the associated Violation | 0..1 | Enforcement.ViolationDetection |
+| Violation | detection | Detection | Detection for the associated Violation | 1..1 | Enforcement.ViolationDetection |
 | Violation | identifiedCredential | Identified credential | Identified credential for the associated Violation | 0..1 | Right.Credential |
 | Violation | identifiedVehicle | Identified vehicle | Identified vehicle for the associated Violation | 0..1 | PkCommon.VehicleAncillaryIdentification |
 | Violation | evidence | Evidence | Evidence for the associated Violation | 0..* | Observation.Image |
@@ -245,15 +245,14 @@ There are no proposed specializations in the "Enforcement" package.
 | Appeal | appealReason | Appeal reason | The grounds on which the appeal was made. | 1..1 | Enforcement.AppealReasonEnum |
 | Appeal | openedTime | Opened time | The date/time the appeal was opened. | 1..1 | PkCommon.DateTime |
 | Appeal | openedFrom | Opened from | The status of the violation when the appeal was opened, which distinguishes an appeal after payment from one before. | 0..1 | Enforcement.ViolationStatusEnum |
-| Appeal | appellant | Appellant | The Contact for the party making the appeal, when identified. | 0..1 | PkCommon.VersionedReference (PkCommon.Contact) |
+| Appeal | appellantId | Appellant | The Contact for the party making the appeal, when identified. | 0..1 | PkCommon.VersionedReference (PkCommon.Contact) |
 | Appeal | details | Details | Free-text statement of the appeal. | 0..1 | PkCommon.MultilingualString |
 | Appeal | resolution | Resolution | The outcome of the appeal. | 0..1 | Enforcement.AppealResolutionEnum |
 | Appeal | resolvedTime | Resolved time | The date/time the appeal was decided. | 0..1 | PkCommon.DateTime |
 | Appeal | adjustedAmount | Adjusted amount | The new amount payable when the appeal reduced it. | 0..1 | PkCommon.AmountInCurrency |
-| Appeal | refundPayment | Refund payment | The Payment that returned money after an appeal following payment was reduced or dismissed. | 0..1 | PkCommon.VersionedReference (Right.Payment) |
-| EnforcementPolicy | place | Place | The element of the Place hierarchy the policy applies to. | 1..1 | PkCommon.VersionedReference (Place.HierarchyElementGeneral) |
+| Appeal | refundPaymentId | Refund payment | The Payment that returned money after an appeal following payment was reduced or dismissed. | 0..1 | PkCommon.VersionedReference (Right.Payment) |
+| EnforcementPolicy | elementId | Place | The element of the Place hierarchy the policy applies to. | 1..1 | PkCommon.VersionedReference (Place.HierarchyElementGeneral) |
 | EnforcementPolicy | name | Name | A name for the policy. | 0..1 | PkCommon.MultilingualString |
-| EnforcementPolicy | policyStatus | Policy status | Whether the policy is in force, replaced or withdrawn. | 1..1 | Enforcement.PolicyStatusEnum |
 | EnforcementPolicy | jurisdiction | Jurisdiction | The legal jurisdiction the rules come from, as an ISO 3166-2 subdivision code. | 0..1 | PkCommon.SubdivisionCode |
 | EnforcementPolicy | legalCitation | Legal citation | The statute, ordinance or regulation the rules summarize. | 0..1 | PkCommon.String |
 | EnforcementPolicy | legalReference | Legal reference | A link to the governing text. | 0..1 | PkCommon.Url |
@@ -261,7 +260,8 @@ There are no proposed specializations in the "Enforcement" package.
 | EnforcementPolicy | paymentGracePeriod | Payment grace period | The period after a notice is issued before any escalation may apply. | 0..1 | PkCommon.Duration |
 | EnforcementPolicy | signageRequired | Signage required | Whether a notice may be issued only where Signage was in force when the violation was observed. | 0..1 | PkCommon.Boolean |
 | EnforcementPolicy | unreviewedIssuancePermitted | Unreviewed issuance permitted | Whether a notice may be issued for an automated finding without review by a person. | 0..1 | PkCommon.Boolean |
-| EnforcementPolicy | unreviewedMinimumConfidence | Unreviewed minimum confidence | The lowest detection confidence, from 0 to 1, at which an automated finding may be issued without review. | 0..1 | PkCommon.Decimal |
+| EnforcementPolicy | endReason | End reason | Why the policy is no longer in use, when it has ended. | 0..1 | PkCommon.RecordEndReasonEnum |
+| EnforcementPolicy | signageId | Signage | The signs posted to give notice of this policy. | 0..* | PkCommon.VersionedReference (Place.Signage) |
 | EscalationStep | stepIdentifier | Step identifier | A stable identifier for the step. | 1..1 | PkCommon.String |
 | EscalationStep | afterPeriod | After period | The time after the notice was issued at which the step applies; time spent under appeal does not count. | 1..1 | PkCommon.Duration |
 | EscalationStep | addAmount | Add amount | A fixed amount added by the step. | 0..1 | PkCommon.AmountInCurrency |
@@ -271,7 +271,7 @@ There are no proposed specializations in the "Enforcement" package.
 | Notice | issuedTime | Issued time | The date/time the notice was issued. | 1..1 | PkCommon.DateTime |
 | Notice | noticeKind | Notice kind | What kind of notice was issued. | 0..1 | Enforcement.NoticeKindEnum |
 | Notice | deliveryMethod | Delivery method | How the notice reached the keeper or driver. | 0..1 | Enforcement.NoticeDeliveryMethodEnum |
-| Notice | issuer | Issuer | The Organisation on whose authority the notice was issued. | 0..1 | PkCommon.VersionedReference (PkCommon.Organisation) |
+| Notice | issuerId | Issuer | The Organisation on whose authority the notice was issued. | 0..1 | PkCommon.VersionedReference (PkCommon.Organisation) |
 | NoticeDeliveryRule | detectionMode | Detection mode | The detection modes the rule applies to. | 1..* | Enforcement.DetectionModeEnum |
 | NoticeDeliveryRule | deliveryMethod | Delivery method | The delivery methods that are lawful for those detection modes. | 1..* | Enforcement.NoticeDeliveryMethodEnum |
 | NoticeDeliveryRule | noticeDeadline | Notice deadline | The latest time after the violation was observed at which a notice by these methods may lawfully be issued. | 0..1 | PkCommon.Duration |
@@ -279,27 +279,24 @@ There are no proposed specializations in the "Enforcement" package.
 | NoticeDeliveryRule | minimumImages | Minimum images | The fewest evidence Images the violation must carry before such a notice is lawful. | 0..1 | PkCommon.NonNegativeInteger |
 | NoticeDeliveryRule | locationRequired | Location required | Whether the violation must carry a location before such a notice is lawful. | 0..1 | PkCommon.Boolean |
 | PenaltyLimit | maximumAmount | Maximum amount | The highest amount that may be set when the notice is issued. | 0..1 | PkCommon.AmountInCurrency |
-| PenaltyLimit | maximumMultipleOfUnpaid | Maximum multiple of unpaid | The highest amount at issue, as a multiple of the unpaid parking fee the violation relates to. | 0..1 | PkCommon.Decimal |
-| PenaltyLimit | maximumPercentageOverUnpaid | Maximum percentage over unpaid | The highest amount at issue, as the unpaid parking fee plus this percentage of it. | 0..1 | PkCommon.Percentage |
-| PenaltyLimit | overallMaximumAmount | Overall maximum amount | The highest amount the violation may reach after any escalation. | 0..1 | PkCommon.AmountInCurrency |
-| PenaltyLimit | maximumMultipleOfIssued | Maximum multiple of issued | The highest amount after escalation, as a multiple of the amount at issue. | 0..1 | PkCommon.Decimal |
+| PenaltyLimit | limitBasis | Limit basis | How the maximum amount applies, for example to the amount at issue or to the total including escalation, and the rule or law that sets it. | 0..1 | PkCommon.MultilingualString |
 | Violation | violationType | Violation type | The kind of violation found. | 1..1 | Enforcement.ViolationTypeEnum |
 | Violation | violationStatus | Violation status | The current state of the violation in its lifecycle. | 1..1 | Enforcement.ViolationStatusEnum |
 | Violation | detectedTime | Detected time | The date/time at which the violation was observed. | 1..1 | PkCommon.DateTime |
-| Violation | place | Place | The element of the Place hierarchy where the violation was observed. | 1..1 | PkCommon.VersionedReference (Place.HierarchyElementGeneral) |
+| Violation | elementId | Place | The element of the Place hierarchy where the violation was observed. | 1..1 | PkCommon.VersionedReference (Place.HierarchyElementGeneral) |
 | Violation | spaceId | Space id | The specific Space, when the finding is resolved to a space. | 0..1 | PkCommon.VersionedReference (Place.Space) |
 | Violation | observationId | Observation id | The Observations the finding is built from, such as plate reads or sensor events. | 0..* | PkCommon.VersionedReference (Observation.ObservationElement) |
-| Violation | relatedSession | Related session | The Session the vehicle was in, when one exists. | 0..1 | PkCommon.VersionedReference (Session.Session) |
-| Violation | relatedAssignedRight | Related assigned right | The AssignedRight that came closest to covering the stay, such as an expired permit or a reservation for another zone. | 0..1 | PkCommon.VersionedReference (Right.AssignedRight) |
+| Violation | sessionId | Related session | The Session the vehicle was in, when one exists. | 0..1 | PkCommon.VersionedReference (Session.Session) |
+| Violation | assignedRightId | Related assigned right | The AssignedRight that came closest to covering the stay, such as an expired permit or a reservation for another zone. | 0..1 | PkCommon.VersionedReference (Right.AssignedRight) |
 | Violation | amount | Amount | The amount payable on the violation, after any escalation or appeal reduction. | 0..1 | PkCommon.AmountInCurrency |
 | Violation | amountPaid | Amount paid | The total received so far against the amount. | 0..1 | PkCommon.AmountInCurrency |
 | Violation | dueTime | Due time | The date/time by which payment falls due. | 0..1 | PkCommon.DateTime |
 | Violation | paymentId | Payment id | The Payments applied to the violation, in order. | 0..* | PkCommon.VersionedReference (Right.Payment) |
-| Violation | policy | Policy | The EnforcementPolicy that governed the notice, at the version in force when it was issued. | 0..1 | PkCommon.VersionedReference (Enforcement.EnforcementPolicy) |
-| Violation | signage | Signage | The Signage in force at the place when the violation was observed, at the versions then in force. | 0..* | PkCommon.VersionedReference (Place.Signage) |
+| Violation | policyId | Policy | The EnforcementPolicy that governed the notice, at the version in force when it was issued. | 0..1 | PkCommon.VersionedReference (Enforcement.EnforcementPolicy) |
+| Violation | signageId | Signage | The Signage in force at the place when the violation was observed, at the versions then in force. | 0..* | PkCommon.VersionedReference (Place.Signage) |
 | ViolationDetection | detectionMode | Detection mode | Whether the violation was found automatically, by an officer guided by a system, or by an officer alone. | 1..1 | Enforcement.DetectionModeEnum |
-| ViolationDetection | detector | Detector | The SupplementalEquipment that detected the violation, such as a camera or a handheld device. | 0..1 | PkCommon.VersionedReference (Place.SupplementalEquipment) |
-| ViolationDetection | officer | Officer | The Contact for the enforcement officer who detected or confirmed the violation. | 0..1 | PkCommon.VersionedReference (PkCommon.Contact) |
+| ViolationDetection | equipmentId | Detector | The SupplementalEquipment that detected the violation, such as a camera or a handheld device. | 0..1 | PkCommon.Reference (Place.SupplementalEquipment) |
+| ViolationDetection | officerId | Officer | The Contact for the enforcement officer who detected or confirmed the violation. | 0..1 | PkCommon.VersionedReference (PkCommon.Contact) |
 | ViolationDetection | confidence | Confidence | The detector's confidence in the finding, from 0 to 1. | 0..1 | PkCommon.Decimal |
 | ViolationDetection | rule | Rule | The identifier of the enforcement rule that produced an automated finding. | 0..1 | PkCommon.String |
 
@@ -367,14 +364,10 @@ There are no proposed specializations in the "Observation" package.
 | ImageRegion | left | Left | The left edge as a fraction of the image width, from 0 to 1. | 1..1 | PkCommon.Decimal |
 | ImageRegion | bottom | Bottom | The bottom edge as a fraction of the image height, from 0 to 1. | 1..1 | PkCommon.Decimal |
 | ImageRegion | right | Right | The right edge as a fraction of the image width, from 0 to 1. | 1..1 | PkCommon.Decimal |
-| ObservationElement | accessDirection | Access direction | Whether the vehicle was entering or leaving the Place, as reported by the recognition system; absent means unknown. | 0..1 | Session.AccessDirectionEnum |
+| ObservationElement | accessDirection | Access direction | Whether the vehicle was entering or leaving the Place, as reported by the recognition system; absent means unknown. | 0..1 | Place.AccessTypeEnum |
 | ObservationElement | movement | Movement | The vehicle's motion relative to the camera. | 0..1 | Observation.VehicleMovementEnum |
 | ObservationElement | plateFace | Plate face | Which plate of the vehicle was read. | 0..1 | Observation.PlateFaceEnum |
-| ObservationElement | captureGroup | Capture group | An identifier shared by all reads of one vehicle passage, across frames and cameras. | 0..1 | PkCommon.String |
-| ObservationElement | frameReads | Frame reads | The number of frames in which the plate was read as the vehicle passed. | 0..1 | PkCommon.NonNegativeInteger |
-| ObservationElement | platesRead | Plates read | The number of distinct plates of the vehicle read in the passage. | 0..1 | PkCommon.NonNegativeInteger |
 | ObservationElement | speed | Speed | The vehicle's speed in kilometres per hour, when measured. | 0..1 | PkCommon.Float |
-| ObservationElement | recognitionEngine | Recognition engine | An identifier of the recognition engine and version, so confidences can be calibrated. | 0..1 | PkCommon.String |
 | ReadReview | reviewState | Review state | Where the observation is in review. | 1..1 | Observation.ReadReviewStateEnum |
 | ReadReview | reviewReason | Review reason | Why the observation was sent to review. | 0..* | Observation.ReadReviewReasonEnum |
 | ReadReview | decidedTime | Decided time | The date/time the reviewer decided. | 0..1 | PkCommon.DateTime |
@@ -419,15 +412,15 @@ There are no proposed specializations in the "Operations" package.
 | Alert | detectionTime | Detection time | The date/time the condition was detected. | 1..1 | PkCommon.DateTime |
 | Alert | occurrenceTime | Occurrence time | The date/time the condition actually began, which may precede its detection. | 0..1 | PkCommon.DateTime |
 | Alert | expiryTime | Expiry time | The date/time after which the alert lapses if it has not been resolved. | 0..1 | PkCommon.DateTime |
-| Alert | place | Place | The element of the Place hierarchy where the condition was detected. | 0..1 | PkCommon.VersionedReference (Place.HierarchyElementGeneral) |
-| Alert | sourceEquipment | Source equipment | The SupplementalEquipment that reported or is affected by the condition. | 0..1 | PkCommon.VersionedReference (Place.SupplementalEquipment) |
-| Alert | relatedEntity | Related entity | The record the condition concerns, such as a Session, an AssignedRight or a Violation. | 0..1 | PkCommon.Reference |
+| Alert | elementId | Place | The element of the Place hierarchy where the condition was detected. | 0..1 | PkCommon.VersionedReference (Place.HierarchyElementGeneral) |
+| Alert | equipmentId | Source equipment | The SupplementalEquipment that reported or is affected by the condition. | 0..1 | PkCommon.Reference (Place.SupplementalEquipment) |
+| Alert | relatedEntityId | Related entity | The record the condition concerns, such as a Session, an AssignedRight or a Violation. | 0..1 | PkCommon.Reference |
 | Alert | description | Description | A human-readable description of the condition. | 0..1 | PkCommon.MultilingualString |
-| SupportInteraction | channel | Channel | How the contact was made. | 1..1 | Operations.SupportChannelEnum |
+| SupportInteraction | channel | Channel | How the contact was made. | 1..1 | PkCommon.InteractionChannelEnum |
 | SupportInteraction | agentType | Agent type | Whether the contact was handled by a person or an automated agent. | 1..1 | Operations.SupportAgentTypeEnum |
 | SupportInteraction | startTime | Start time | The date/time the contact began. | 1..1 | PkCommon.DateTime |
 | SupportInteraction | endTime | End time | The date/time the contact ended. | 0..1 | PkCommon.DateTime |
-| SupportInteraction | place | Place | The element of the Place hierarchy the contact concerned. | 1..1 | PkCommon.VersionedReference (Place.HierarchyElementGeneral) |
+| SupportInteraction | elementId | Place | The element of the Place hierarchy the contact concerned. | 1..1 | PkCommon.VersionedReference (Place.HierarchyElementGeneral) |
 | SupportInteraction | issueType | Issue type | The kind of problem the contact was about. | 0..1 | Operations.SupportIssueTypeEnum |
 | SupportInteraction | summary | Summary | A short summary of the outcome, not a transcript. | 0..1 | PkCommon.MultilingualString |
 | SupportInteraction | sessionId | Session id | The Session the contact concerned, if any. | 0..1 | PkCommon.VersionedReference (Session.Session) |
@@ -462,10 +455,11 @@ There are no proposed specializations in the "PlateList" package.
 
 | Class name | Association end | Designation | Definition | Multiplicity | Target |
 | --- | --- | --- | --- | --- | --- |
-| PlateList | placeFlags | Place flags | Place flags for the associated PlateList | 0..* | PlateList.PlateListPlaceFlags |
+| PlateList | validity | Validity | Validity for the associated PlateList: when it applies and whether it is active, planned or suspended. | 1..1 | PkCommon.Validity |
+| PlateList | placeFlags | Place flags | Place flags for the associated PlateList | 0..* | Right.PlateListPlaceFlags |
+| PlateListEntry | listedCredential | Listed credential | Listed credential for the associated PlateListEntry | 1..1 | Right.PresentedCredential |
 | PlateListEntry | entryValidity | Entry validity | Entry validity for the associated PlateListEntry | 0..1 | PkCommon.OverallPeriod |
 | PlateListEntry | amountOwed | Amount owed | Amount owed for the associated PlateListEntry | 0..1 | PkCommon.AmountInCurrency |
-| PlateListEntry | credentialDigest | Credential digest | Credential digest for the associated PlateListEntry, for parties that screen without holding the plate | 0..1 | Right.CredentialDigest |
 
 **A.1.7.5 Attributes of the "PlateList" package**
 
@@ -474,13 +468,11 @@ There are no proposed specializations in the "PlateList" package.
 | Class name | Attribute name | Designation | Definition | Multiplicity | Type |
 | --- | --- | --- | --- | --- | --- |
 | PlateList | name | Name | Name of the list. | 1..* | PkCommon.MultilingualString |
-| PlateList | category | Category | The category of the list, which states what a match means. | 1..1 | PlateList.PlateListCategoryEnum |
-| PlateList | owner | Owner | The organisation that maintains the list. | 0..1 | PkCommon.VersionedReference (PkCommon.Organisation) |
-| PlateList | listStatus | List status | Whether the list is in force. | 1..1 | PlateList.PlateListStatusEnum |
+| PlateList | category | Category | The category of the list, which states what a match means. | 1..1 | Right.PlateListCategoryEnum |
+| PlateList | ownerId | Owner | The organisation that maintains the list. | 0..1 | PkCommon.VersionedReference (PkCommon.Organisation) |
 | PlateList | description | Description | Free-text description of the list. | 0..* | PkCommon.MultilingualString |
-| PlateListEntry | plateListId | Plate list id | Reference to the PlateList the entry belongs to. | 1..1 | PkCommon.VersionedReference (PlateList.PlateList) |
-| PlateListEntry | type | Type | The type of the listed credential. | 1..1 | Right.CredentialTypeEnum |
-| PlateListEntry | credentialIdentification | Credential identification | The listed plate or other credential value. | 1..1 | PkCommon.String |
+| PlateList | endReason | End reason | Why the list is no longer in use, when it has ended. | 0..1 | PkCommon.RecordEndReasonEnum |
+| PlateListEntry | plateListId | Plate list id | Reference to the PlateList the entry belongs to. | 1..1 | PkCommon.VersionedReference (Right.PlateList) |
 | PlateListEntry | jurisdiction | Jurisdiction | The jurisdiction that issued the plate, such as a state, province or country. | 0..1 | PkCommon.String |
 | PlateListEntry | noticeCount | Notice count | The number of unresolved notices the list owner records against the credential. | 0..1 | PkCommon.NonNegativeInteger |
 | PlateListEntry | ownerReference | Owner reference | The list owner's own case or file reference. | 0..1 | PkCommon.String |
@@ -544,13 +536,11 @@ There are no proposed associations in the "Rates" package.
 | --- | --- | --- | --- | --- | --- |
 | AssignedRight | extends APDS | Assigned right | AssignedRight indicates the granting of a specific RightSpecification to a specific RightHolder (existing APDS class; the attributes and associations below are proposed additions). | D2VersionedIdentifiable | no |
 | CredentialAssigned | extends APDS | Credential assigned | Information concerning a specific credential that is used for verification for one AssignedRight (existing APDS class; the attributes and associations below are proposed additions). | D2VersionedIdentifiable | no |
-| CredentialDigest | new | Credential digest | A keyed digest of a normalised credential identification, such as a plate, that lets a party test whether two credentials are the same without holding the identification itself. | D2Class | no |
 | CredentialMedia | new | Credential media | The physical or virtual item on which a credential was issued, such as a card, fob, transponder or hangtag, distinct from the read technology given by the credential type. | D2Class | no |
 | CredentialSuspension | new | Credential suspension | Details of a temporary suspension of an assigned credential, present while its status is suspended. | D2Class | no |
 | OverageBilling | new | Overage billing | How a vehicle parked beyond the maximum number of concurrent vehicles of an AssignedRight is charged. | D2Class | no |
 | Payment | extends APDS | Payment | Lightweight record of payment for associated AssignedRight (existing APDS class; the attributes and associations below are proposed additions). | D2VersionedIdentifiable | no |
-| PaymentLine | extends APDS | Payment line | Individual line item for a payment for associated AssignedRight (existing APDS class; the attribute below is a proposed addition). | D2VersionedIdentifiable | no |
-| PresentedCredential | new | Presented credential | A credential as it was actually read or presented at a reader or to an officer, whether or not it matches a credential assigned to any AssignedRight. | D2Class | no |
+| PresentedCredential | new | Presented credential | A credential type and identification as read, presented, observed or listed, whether or not it matches a credential assigned to any AssignedRight. The type is inherited from Credential. | D2Class | no |
 | RateSold | new | Rate sold | The rate or product a payment bought, as the seller names it. | D2Class | no |
 | RightHolder | extends APDS | Right holder | Information concerning a specific holder of a granted right (existing APDS class; the attributes and associations below are proposed additions). | D2VersionedIdentifiable | no |
 
@@ -587,31 +577,26 @@ There are no proposed associations in the "Rates" package.
 | --- | --- | --- | --- | --- | --- |
 | AssignedRight | reservationState | Reservation state | The state of an AssignedRight that is a reservation; absent when the AssignedRight is not a reservation. | 0..1 | Right.ReservationStateEnum |
 | AssignedRight | checkInSessionId | Check-in session id | Reference to the Session that used the reservation. | 0..1 | PkCommon.VersionedReference (Session.Session) |
-| AssignedRight | noShowAfter | No show after | The date/time after which a reservation not yet used becomes a no show, as set by the issuer. | 0..1 | PkCommon.DateTime |
+| AssignedRight | noShowTime | No show after | The date/time after which a reservation not yet used becomes a no show, as set by the issuer. | 0..1 | PkCommon.DateTime |
 | AssignedRight | renewsAssignedRightId | Renews assigned right id | Reference to the AssignedRight that this AssignedRight renews. | 0..1 | PkCommon.VersionedReference (Right.AssignedRight) |
 | AssignedRight | renewedByAssignedRightId | Renewed by assigned right id | Reference to the AssignedRight that renewed this AssignedRight. | 0..1 | PkCommon.VersionedReference (Right.AssignedRight) |
 | AssignedRight | maxConcurrentVehicles | Maximum concurrent vehicles | The number of the AssignedRight's vehicles that may be parked at the Place at the same time; absent means all of them. | 0..1 | PkCommon.NonNegativeInteger |
 | CredentialAssigned | credentialStatus | Credential status | The current lifecycle status of the assigned credential. | 0..1 | Right.CredentialStatusEnum |
 | CredentialAssigned | replacesCredentialId | Replaces credential id | Reference to the assigned credential this credential succeeded. | 0..1 | PkCommon.Reference (Right.CredentialAssigned) |
 | CredentialAssigned | replacedByCredentialId | Replaced by credential id | Reference to the assigned credential that succeeded this one, when its status is replaced. | 0..1 | PkCommon.Reference (Right.CredentialAssigned) |
-| CredentialDigest | digestAlgorithm | Digest algorithm | The keyed-digest algorithm used to compute the value. | 1..1 | Right.DigestAlgorithmEnum |
-| CredentialDigest | keyIdentifier | Key identifier | Identifier of the key the digest was computed under, so keys can be rotated. | 1..1 | PkCommon.String |
-| CredentialDigest | digestValue | Digest value | The digest value, base64url encoded without padding. | 1..1 | PkCommon.String |
-| CredentialDigest | type | Type | The type of credential whose identification was digested. | 0..1 | Right.CredentialTypeEnum |
 | CredentialMedia | mediaForm | Media form | The physical or virtual form of the item the credential was issued on. | 1..1 | Right.CredentialMediaFormEnum |
 | CredentialMedia | serialNumber | Serial number | Manufacturer or stock serial number of the physical item, distinct from the identification the reader reads. | 0..1 | PkCommon.String |
 | CredentialMedia | batch | Batch | Stock batch or print run of the physical item. | 0..1 | PkCommon.String |
 | CredentialMedia | issuanceTime | Issuance time | The date/time the item was handed to the holder. | 0..1 | PkCommon.DateTime |
 | CredentialMedia | depositStatus | Deposit status | What has happened to a deposit taken for the physical item. | 0..1 | Right.DepositStatusEnum |
 | CredentialSuspension | suspensionReason | Suspension reason | Free-text or code-list reason the credential was suspended. | 0..1 | PkCommon.String |
-| CredentialSuspension | suspendedUntil | Suspended until | The date/time the suspension ends automatically; absent when the credential stays suspended until resumed. | 0..1 | PkCommon.DateTime |
+| CredentialSuspension | suspendedUntilTime | Suspended until | The date/time the suspension ends automatically; absent when the credential stays suspended until resumed. | 0..1 | PkCommon.DateTime |
 | OverageBilling | overageBillingMode | Overage billing mode | The way an overage vehicle is charged. | 1..1 | Right.OverageBillingModeEnum |
 | Payment | paymentStatus | Payment status | The outcome of the payment as reported by the payment layer. | 0..1 | Right.PaymentStatusEnum |
 | Payment | captureStatus | Capture status | Whether the funds of an approved payment have been collected or are only authorised; absent means captured. | 0..1 | Right.CaptureStatusEnum |
 | Payment | meansOfPayment | Means of payment | How the customer paid, using the means of payment APDS defines for Places. | 0..1 | Place.MeansOfPaymentEnum |
-| Payment | paymentChannel | Payment channel | Where the payment was taken. | 0..1 | Right.PaymentChannelEnum |
+| Payment | paymentChannel | Payment channel | Where the payment was taken. | 0..1 | PkCommon.InteractionChannelEnum |
 | Payment | elementId | Element id | Reference to the element within the Place Hierarchy at which the payment was taken. | 0..1 | PkCommon.VersionedReference (Place.HierarchyElementGeneral) |
-| PaymentLine | lineCode | Line code | The nature of the line item from a shared code list; idCode remains available for bilateral codes. | 0..1 | Right.PaymentLineCodeEnum |
 | PresentedCredential | credentialIdentification | Credential identification | The value read from the credential, such as a card number, tag identifier or plate. | 1..1 | PkCommon.String |
 | RateSold | rateTableId | Rate table id | Reference to the RateTable, at the version applied, when the rate came from the published rate deck. | 0..1 | PkCommon.VersionedReference (Rates.RateTable) |
 | RateSold | sellerRateIdentifier | Seller rate identifier | The seller's own identifier for the rate. | 0..1 | PkCommon.String |
@@ -635,7 +620,6 @@ There are no proposed associations in the "Rates" package.
 | --- | --- | --- | --- | --- | --- |
 | AccessEvent | new | Access event | One presentation of a credential at an entry or exit point of a Place, and whether access was granted. | D2Identifiable | no |
 | MatchEvidence | new | Match evidence | How a link between a Session and another record was established and how strong it is. | D2Class | no |
-| PassbackStatus | new | Passback status | The anti-passback state of one assigned credential at a Place. | D2Class | no |
 | Session | extends APDS | Session | A Session describes the actual act of using a Right Specification, and may contain multiple segments. | D2VersionedIdentifiable | no |
 | SessionClosure | new | Session closure | Why and how a Session ended. | D2Class | no |
 | SessionRead | new | Session read | One observation attached to a Session, with the part it played in the visit. | D2Class | no |
@@ -652,12 +636,14 @@ There are no proposed specializations in the "Session" package.
 
 | Class name | Association end | Designation | Definition | Multiplicity | Target |
 | --- | --- | --- | --- | --- | --- |
+| AccessEvent | presentedCredential | Presented credential | Presented credential for the associated AccessEvent | 0..1 | Right.PresentedCredential |
 | Session | sessionRead | Session read | Session read for the associated Session | 0..* | Session.SessionRead |
 | Session | sessionClosure | Session closure | Session closure for the associated Session | 0..1 | Session.SessionClosure |
 | Session | matchEvidence | Match evidence | Match evidence for the associated Session | 0..* | Session.MatchEvidence |
 | ValetTicket | identifiedVehicle | Identified vehicle | Identified vehicle for the associated ValetTicket | 0..1 | PkCommon.VehicleAncillaryIdentification |
 | ValetTicket | dropOffCondition | Drop off condition | Condition report recorded at drop-off for the associated ValetTicket | 0..1 | Observation.ConditionReport |
 | ValetTicket | handbackCondition | Handback condition | Condition report recorded at handback for the associated ValetTicket | 0..1 | Observation.ConditionReport |
+| ValetTicket | vehicleCredential | Vehicle credential | Vehicle credential for the associated ValetTicket | 0..1 | Right.PresentedCredential |
 
 **A.1.10.5 Attributes of the "Session" package**
 
@@ -665,39 +651,28 @@ There are no proposed specializations in the "Session" package.
 
 | Class name | Attribute name | Designation | Definition | Multiplicity | Type |
 | --- | --- | --- | --- | --- | --- |
-| AccessEvent | occurredAt | Occurred at | The date/time of the access attempt. | 1..1 | PkCommon.DateTime |
-| AccessEvent | direction | Direction | Whether the attempt was to enter or to leave. | 1..1 | Session.AccessDirectionEnum |
+| AccessEvent | occurredTime | Occurred at | The date/time of the access attempt. | 1..1 | PkCommon.DateTime |
+| AccessEvent | direction | Direction | Whether the attempt was to enter or to leave, using the APDS access type values entry and exit. | 1..1 | Place.AccessTypeEnum |
 | AccessEvent | outcome | Outcome | Whether access was granted or denied. | 1..1 | Session.AccessOutcomeEnum |
 | AccessEvent | denialReason | Denial reason | Why access was denied, when it was denied. | 0..1 | Session.AccessDenialReasonEnum |
 | AccessEvent | credentialId | Credential id | The assigned credential the presented value matched, when one matched. | 0..1 | PkCommon.Reference (Right.CredentialAssigned) |
-| AccessEvent | presentedCredentialType | Presented credential type | The type of credential the reader read. | 0..1 | Right.CredentialTypeEnum |
-| AccessEvent | presentedCredentialId | Presented credential id | The value the reader read, carried when it matched no assigned credential. | 0..1 | PkCommon.String |
 | AccessEvent | elementId | Element id | The element of the Place Hierarchy where the attempt occurred. | 0..1 | PkCommon.VersionedReference (Place.HierarchyElementGeneral) |
 | AccessEvent | vehicularAccessId | Vehicular access id | The vehicular access (lane) where the attempt occurred. | 0..1 | PkCommon.VersionedReference (Place.HierarchyElementGeneral) |
 | AccessEvent | equipmentId | Equipment id | The reader or other supplemental equipment that read the credential. | 0..1 | PkCommon.Reference (Place.SupplementalEquipment) |
 | AccessEvent | sessionId | Session id | The Session opened or closed by a granted access. | 0..1 | PkCommon.VersionedReference (Session.Session) |
-| MatchEvidence | target | Target | The record at the other end of the link, such as an AssignedRight or an observation. | 1..1 | PkCommon.Reference |
+| MatchEvidence | targetId | Target | The record at the other end of the link, such as an AssignedRight or an observation. | 1..1 | PkCommon.Reference |
 | MatchEvidence | matchType | Match type | The kind of link. | 1..1 | Session.MatchTypeEnum |
 | MatchEvidence | applied | Applied | Indicates whether the link was acted on; false records a link kept only for evaluation. | 1..1 | PkCommon.Boolean |
-| MatchEvidence | plateMatchMethod | Plate match method | How the plate strings agreed, when the link rests on a plate. | 0..1 | Session.PlateMatchMethodEnum |
-| MatchEvidence | plateEditCost | Plate edit cost | The weighted number of character edits between the two plate strings, for an approximate match. | 0..1 | PkCommon.Float |
-| MatchEvidence | jurisdictionAgreement | Jurisdiction agreement | Whether the plate issuing jurisdictions agree. | 0..1 | Session.JurisdictionAgreementEnum |
-| MatchEvidence | vehicleEvidenceLevel | Vehicle evidence level | How strongly the vehicle attributes (make, model, colour) support the link. | 0..1 | Session.VehicleEvidenceLevelEnum |
 | MatchEvidence | decidedBy | Decided by | Whether software or a person made the link. | 0..1 | Session.MatchDecisionEnum |
 | MatchEvidence | decidedTime | Decided time | The date/time the link was made. | 0..1 | PkCommon.DateTime |
-| PassbackStatus | credentialId | Credential id | The assigned credential the state applies to. | 1..1 | PkCommon.Reference (Right.CredentialAssigned) |
-| PassbackStatus | passbackState | Passback state | Whether the credential is in an anti-passback violation. | 1..1 | Session.PassbackStateEnum |
-| PassbackStatus | expectedPresence | Expected presence | Where the anti-passback rule expects the credential to be. | 0..1 | Session.PassbackPresenceEnum |
-| PassbackStatus | recordedPresence | Recorded presence | Where the last recorded access places the credential. | 0..1 | Session.PassbackPresenceEnum |
-| PassbackStatus | lastAccessEvent | Last access event | The most recent access event for the credential. | 0..1 | PkCommon.Reference (Session.AccessEvent) |
-| Session | parentSession | Parent session | The Session of the wider visit this Session is part of, for a Session kept for an area inside a Place. | 0..1 | PkCommon.VersionedReference (Session.Session) |
+| Session | parentSessionId | Parent session | The Session of the wider visit this Session is part of, for a Session kept for an area inside a Place. | 0..1 | PkCommon.VersionedReference (Session.Session) |
 | Session | lifecycle | Lifecycle | How settled the Session is, from open while the vehicle is present to final when no further revision is expected. | 0..1 | Session.SessionLifecycleEnum |
 | Session | passThrough | Pass through | Indicates a stay in an area shorter than the area's minimum dwell, which is not scored or charged. | 0..1 | PkCommon.Boolean |
 | SessionClosure | endReason | End reason | Why the Session ended. | 0..1 | Session.SessionEndReasonEnum |
 | SessionClosure | endInferred | End inferred | Indicates that the end time was set by a rule rather than observed. | 0..1 | PkCommon.Boolean |
 | SessionClosure | startObserved | Start observed | Indicates whether the start time was observed; false means the start time is a placeholder for a Session whose entry was never seen. | 0..1 | PkCommon.Boolean |
 | SessionClosure | closureRule | Closure rule | The name of the operator rule that closed the Session, when a rule closed it. | 0..1 | PkCommon.String |
-| SessionRead | observationElement | Observation element | The observation attached to the Session. | 1..1 | PkCommon.Reference (Observation.ObservationElement) |
+| SessionRead | observationId | Observation element | The observation attached to the Session. | 1..1 | PkCommon.Reference (Observation.ObservationElement) |
 | SessionRead | role | Role | The part the observation played in the visit. | 1..1 | Session.SessionReadRoleEnum |
 | SessionRead | representative | Representative | Indicates the one observation that stands for the visit when a single image or read is shown. | 0..1 | PkCommon.Boolean |
 | ValetTicket | elementId | Element id | The Place or valet stand that took custody. | 1..1 | PkCommon.VersionedReference (Place.HierarchyElementGeneral) |
@@ -705,30 +680,22 @@ There are no proposed specializations in the "Session" package.
 | ValetTicket | assignedRightId | Assigned right id | The AssignedRight issued for the valet stay, when the operator issues one. | 0..1 | PkCommon.VersionedReference (Right.AssignedRight) |
 | ValetTicket | ticketNumber | Ticket number | The number printed on the claim ticket or shown to the customer. | 0..1 | PkCommon.String |
 | ValetTicket | valetStatus | Valet status | Where the vehicle is in the custody process. | 1..1 | Session.ValetStatusEnum |
-| ValetTicket | vehicleCredentialType | Vehicle credential type | The type of credential identifying the vehicle, usually a licence plate. | 0..1 | Right.CredentialTypeEnum |
-| ValetTicket | vehicleCredentialId | Vehicle credential id | The plate or other credential read at drop-off. | 0..1 | PkCommon.String |
-| ValetTicket | customerContact | Customer contact | The contact point used to verify the customer and tell them when the vehicle is ready. | 0..1 | PkCommon.Reference (PkCommon.ContactPoint) |
+| ValetTicket | customerContactPointId | Customer contact | The contact point used to verify the customer and tell them when the vehicle is ready. | 0..1 | PkCommon.Reference (PkCommon.ContactPoint) |
 | ValetTicket | dropOffTime | Drop off time | The date/time the valet took custody of the vehicle. | 1..1 | PkCommon.DateTime |
-| ValetTicket | dropOffVehicularAccess | Drop off vehicular access | The lane or stand where custody was taken. | 0..1 | PkCommon.VersionedReference (Place.HierarchyElementGeneral) |
-| ValetTicket | mileageAtDropOff | Mileage at drop off | The odometer reading recorded at drop-off. | 0..1 | PkCommon.NonNegativeInteger |
-| ValetTicket | fuelLevelAtDropOff | Fuel level at drop off | The fuel or charge level recorded at drop-off, as a percentage. | 0..1 | PkCommon.Percentage |
-| ValetTicket | keyTag | Key tag | The identifier of the tag attached to the vehicle's keys. | 0..1 | PkCommon.String |
 | ValetTicket | spaceId | Space id | The Space where the vehicle is parked, when the Place is mapped by space. | 0..1 | PkCommon.VersionedReference (Place.Space) |
-| ValetTicket | storageZone | Storage zone | Free-text level, row or zone where the vehicle is parked, for Places not mapped by space. | 0..1 | PkCommon.String |
-| ValetTicket | keyLocation | Key location | Where the keys are kept, such as a key board and hook. | 0..1 | PkCommon.String |
 | ValetTicket | parkedTime | Parked time | The date/time the vehicle was parked. | 0..1 | PkCommon.DateTime |
 | ValetTicket | retrievalRequestedTime | Retrieval requested time | The date/time the customer asked for the vehicle. | 0..1 | PkCommon.DateTime |
-| ValetTicket | retrievalScheduledFor | Retrieval scheduled for | The date/time the customer asked the vehicle to be ready, for a scheduled pickup. | 0..1 | PkCommon.DateTime |
-| ValetTicket | retrievalChannel | Retrieval channel | How the customer asked for the vehicle. | 0..1 | Session.ValetRetrievalChannelEnum |
+| ValetTicket | retrievalScheduledTime | Retrieval scheduled for | The date/time the customer asked the vehicle to be ready, for a scheduled pickup. | 0..1 | PkCommon.DateTime |
+| ValetTicket | retrievalChannel | Retrieval channel | How the customer asked for the vehicle. | 0..1 | PkCommon.InteractionChannelEnum |
 | ValetTicket | promisedTime | Promised time | The date/time the vehicle is promised at the pickup point. | 0..1 | PkCommon.DateTime |
 | ValetTicket | stagedTime | Staged time | The date/time the vehicle reached the pickup point. | 0..1 | PkCommon.DateTime |
 | ValetTicket | handbackTime | Handback time | The date/time the vehicle was handed back. | 0..1 | PkCommon.DateTime |
 | ValetTicket | handbackVerification | Handback verification | How the person collecting the vehicle was verified. | 0..1 | Session.HandbackVerificationEnum |
-| ValidationRedemption | validationProgram | Validation program | The validation program the redemption draws on. | 1..1 | PkCommon.VersionedReference (Right.ValidationProgram) |
+| ValidationRedemption | validationProgramId | Validation program | The validation program the redemption draws on. | 0..1 | PkCommon.VersionedReference (Right.ValidationProgram) |
 | ValidationRedemption | sessionId | Session id | The Session the validation was applied to. | 0..1 | PkCommon.VersionedReference (Session.Session) |
-| ValidationRedemption | elementId | Element id | The element of the Place Hierarchy where the validation was applied. | 0..1 | PkCommon.VersionedReference (Place.HierarchyElementGeneral) |
+| ValidationRedemption | elementId | Element id | The element of the Place Hierarchy where the validation was applied. | 1..1 | PkCommon.VersionedReference (Place.HierarchyElementGeneral) |
 | ValidationRedemption | appliedTime | Applied time | The date/time the validation was applied. | 1..1 | PkCommon.DateTime |
-| ValidationRedemption | channel | Channel | The channel through which the validation was applied. | 0..1 | Session.ValidationChannelEnum |
+| ValidationRedemption | channel | Channel | The channel through which the validation was applied. | 1..1 | PkCommon.InteractionChannelEnum |
 | ValidationRedemption | redemptionStatus | Redemption status | Whether the redemption stands or has been reversed. | 1..1 | Session.ValidationRedemptionStatusEnum |
 | ValidationRedemption | validationId | Validation id | The identification carried in Segment.validationId for this redemption. | 0..1 | PkCommon.String |
 | ValidationRedemption | instrumentCode | Instrument code | The validation code, coupon or ticket number redeemed, when the channel used one. | 0..1 | PkCommon.String |
@@ -762,6 +729,7 @@ There are no proposed specializations in the "Signage" package.
 
 | Class name | Association end | Designation | Definition | Multiplicity | Target |
 | --- | --- | --- | --- | --- | --- |
+| Signage | validity | Validity | Validity for the associated Signage: when it applies and whether it is active, planned or suspended. | 1..1 | PkCommon.Validity |
 | Signage | location | Location | Location for the associated Signage | 0..1 | PkCommon.PointLocation |
 | Signage | recordType | Record type | Record type for the associated Signage | 0..1 | PkCommon.RecordType |
 
@@ -773,13 +741,10 @@ There are no proposed specializations in the "Signage" package.
 | --- | --- | --- | --- | --- | --- |
 | Signage | elementId | Element id | Reference to the element within the Place hierarchy that the sign governs; the sign applies to that element and the elements below it. | 1..1 | PkCommon.VersionedReference (Place.HierarchyElementGeneral) |
 | Signage | signText | Sign text | The wording posted on the sign, verbatim, in each language shown. | 1..1 | PkCommon.MultilingualString |
-| Signage | signageStatus | Signage status | Whether the sign is in force, has been replaced or has been taken down. | 1..1 | Place.SignageStatusEnum |
-| Signage | effectiveFrom | Effective from | The date/time from which the sign was in force. | 1..1 | PkCommon.DateTime |
-| Signage | effectiveTo | Effective to | The date/time at which the sign stopped being in force, if it has. | 0..1 | PkCommon.DateTime |
 | Signage | signType | Sign type | The kind of sign. | 0..1 | Place.SignTypeEnum |
 | Signage | otherSignType | Other sign type | Any other kind of sign, if enumeration literal 'other' is used. | 0..1 | PkCommon.MultilingualString |
 | Signage | photoUrl | Photo URL | Specifies a Universal resource locator (URL) at which a photo of the sign as posted can be found. | 0..1 | PkCommon.Url |
-| Signage | policyId | Policy id | Reference to the enforcement policy whose notice requirements the sign meets, if any. | 0..1 | PkCommon.VersionedReference (Enforcement.EnforcementPolicy) |
+| Signage | endReason | End reason | Why the sign is no longer in use, when it has ended. | 0..1 | PkCommon.RecordEndReasonEnum |
 
 ### A.1.12 "SupplementalFacility" package
 
@@ -813,17 +778,17 @@ There are no proposed specializations in the "SupplementalFacility" package.
 
 | Class name | Attribute name | Designation | Definition | Multiplicity | Type |
 | --- | --- | --- | --- | --- | --- |
-| EquipmentStatus | equipmentId | Equipment id | Reference to the supplemental equipment whose state is reported. | 1..1 | PkCommon.VersionedReference (Place.SupplementalEquipment) |
+| EquipmentStatus | equipmentId | Equipment id | Reference to the supplemental equipment whose state is reported. | 1..1 | PkCommon.Reference (Place.SupplementalEquipment) |
 | EquipmentStatus | equipmentStatus | Equipment status | The operational state of the equipment. | 1..1 | Place.EquipmentStatusEnum |
 | EquipmentStatus | otherEquipmentStatus | Other equipment status | A state taken from a user-defined code list, used when equipmentStatus is 'other'. | 0..1 | PkCommon.ReferencedCodeListEntry |
 | EquipmentStatus | statusChangeTime | Status change time | The date/time at which the equipment entered the reported state. | 0..1 | PkCommon.DateTime |
-| EquipmentStatus | lastCommunication | Last communication | The date/time at which the equipment was last heard from by the reporting system. | 0..1 | PkCommon.DateTime |
+| EquipmentStatus | lastCommunicationTime | Last communication | The date/time at which the equipment was last heard from by the reporting system. | 0..1 | PkCommon.DateTime |
 
 ### A.1.13 "Tolling" package (new)
 
 **A.1.13.1 Location of "Tolling" package.** The location of the "Tolling" package is:
 
-`-- D2Payload/Extension/Parking/Tolling`
+`-- D2Payload/Extension/Parking/Observation/Tolling`
 
 **A.1.13.2 Classes of the "Tolling" package**
 
@@ -844,7 +809,8 @@ There are no proposed specializations in the "Tolling" package.
 
 | Class name | Association end | Designation | Definition | Multiplicity | Target |
 | --- | --- | --- | --- | --- | --- |
-| TollTransaction | tollDispute | Toll dispute | Toll dispute for the associated TollTransaction | 0..1 | Tolling.TollDispute |
+| TollTransaction | tollDispute | Toll dispute | Toll dispute for the associated TollTransaction | 0..1 | Observation.TollDispute |
+| TollTransaction | vehicleCredential | Vehicle credential | Vehicle credential for the associated TollTransaction | 0..1 | Right.PresentedCredential |
 
 **A.1.13.5 Attributes of the "Tolling" package**
 
@@ -852,19 +818,17 @@ There are no proposed specializations in the "Tolling" package.
 
 | Class name | Attribute name | Designation | Definition | Multiplicity | Type |
 | --- | --- | --- | --- | --- | --- |
-| TollDispute | disputeReason | Dispute reason | Why the charge was challenged. | 1..1 | Tolling.TollDisputeReasonEnum |
+| TollDispute | disputeReason | Dispute reason | Why the charge was challenged. | 1..1 | Observation.TollDisputeReasonEnum |
 | TollDispute | openedTime | Opened time | The date/time the dispute was opened. | 0..1 | PkCommon.DateTime |
 | TollDispute | resolvedTime | Resolved time | The date/time the dispute was resolved. | 0..1 | PkCommon.DateTime |
-| TollDispute | disputeResolution | Dispute resolution | How the dispute was resolved. | 0..1 | Tolling.TollDisputeResolutionEnum |
-| TollDispute | disputedBy | Disputed by | The party on whose behalf the dispute was raised; absent when the operator raised it. | 0..1 | PkCommon.Reference |
+| TollDispute | disputeResolution | Dispute resolution | How the dispute was resolved. | 0..1 | Observation.TollDisputeResolutionEnum |
+| TollDispute | disputedById | Disputed by | The party on whose behalf the dispute was raised; absent when the operator raised it. | 0..1 | PkCommon.Reference |
 | TollDispute | originalPricing | Original pricing | The amount charged before an adjusting resolution changed it. | 0..1 | PkCommon.AmountInCurrency |
-| TollTransaction | tollPoint | Toll point | The supplemental equipment where the vehicle was charged. | 1..1 | PkCommon.Reference (Place.SupplementalEquipment) |
-| TollTransaction | observationElementId | Observation element id | The observations the charge is built from. | 0..* | PkCommon.Reference (Observation.ObservationElement) |
-| TollTransaction | credentialType | Credential type | The type of credential observed, such as a licence plate or transponder. | 0..1 | Right.CredentialTypeEnum |
-| TollTransaction | credentialIdentification | Credential identification | The plate string or transponder identifier as read. | 0..1 | PkCommon.String |
+| TollTransaction | tollPointId | Toll point | The supplemental equipment where the vehicle was charged. | 1..1 | PkCommon.Reference (Place.SupplementalEquipment) |
+| TollTransaction | observationId | Observation element id | The observations the charge is built from. | 0..* | PkCommon.Reference (Observation.ObservationElement) |
 | TollTransaction | pricing | Pricing | The amount charged. | 0..1 | PkCommon.AmountInCurrency |
 | TollTransaction | paymentId | Payment id | The payment that settles the charge. | 0..1 | PkCommon.Reference (Right.Payment) |
-| TollTransaction | transactionStatus | Transaction status | Where the charge is in its lifecycle. | 1..1 | Tolling.TollTransactionStatusEnum |
+| TollTransaction | transactionStatus | Transaction status | Where the charge is in its lifecycle. | 1..1 | Observation.TollTransactionStatusEnum |
 
 ### A.1.14 "Validation" package (new)
 
@@ -895,9 +859,12 @@ There are no proposed specializations in the "Validation" package.
 | Class name | Association end | Designation | Definition | Multiplicity | Target |
 | --- | --- | --- | --- | --- | --- |
 | ValidationBilling | unitPrice | Unit price | Unit price for the associated ValidationBilling: what the provider pays per validation; absent means billed at the amount actually reduced | 0..1 | PkCommon.AmountInCurrency |
+| ValidationInstrument | validity | Validity | Validity for the associated ValidationInstrument: when it applies and whether it is active, planned or suspended. | 0..1 | PkCommon.Validity |
+| ValidationIssuance | validity | Validity | Validity for the associated ValidationIssuance: when it applies and whether it is active, planned or suspended. | 0..1 | PkCommon.Validity |
+| ValidationProgram | validity | Validity | Validity for the associated ValidationProgram: when it applies and whether it is active, planned or suspended. | 1..1 | PkCommon.Validity |
 | ValidationProgram | benefit | Benefit | Benefit for the associated ValidationProgram | 1..1 | Rates.ValidationBenefit |
-| ValidationProgram | validationRules | Validation rules | Validation rules for the associated ValidationProgram | 0..1 | Validation.ValidationRules |
-| ValidationProgram | validationBilling | Validation billing | Validation billing for the associated ValidationProgram | 0..1 | Validation.ValidationBilling |
+| ValidationProgram | validationRules | Validation rules | Validation rules for the associated ValidationProgram | 0..1 | Right.ValidationRules |
+| ValidationProgram | validationBilling | Validation billing | Validation billing for the associated ValidationProgram | 0..1 | Right.ValidationBilling |
 
 **A.1.14.5 Attributes of the "Validation" package**
 
@@ -905,29 +872,25 @@ There are no proposed specializations in the "Validation" package.
 
 | Class name | Attribute name | Designation | Definition | Multiplicity | Type |
 | --- | --- | --- | --- | --- | --- |
-| ValidationBilling | billingModel | Billing model | Who bears the cost of validations under the program. | 1..1 | Validation.ValidationBillingModelEnum |
+| ValidationBilling | billingModel | Billing model | Who bears the cost of validations under the program. | 1..1 | Right.ValidationBillingModelEnum |
 | ValidationBilling | merchantShare | Merchant share | The percentage of the amount reduced that the provider pays under a split model. | 0..1 | PkCommon.Percentage |
-| ValidationBilling | billingCycle | Billing cycle | How often the provider is billed. | 0..1 | Validation.ValidationBillingCycleEnum |
+| ValidationBilling | billingCycle | Billing cycle | How often the provider is billed. | 0..1 | Right.ValidationBillingCycleEnum |
 | ValidationInstrument | instrumentCode | Instrument code | The code printed on or carried by the instrument. | 1..1 | PkCommon.String |
-| ValidationInstrument | programId | Program id | Reference to the ValidationProgram the instrument belongs to. | 1..1 | PkCommon.VersionedReference (Validation.ValidationProgram) |
-| ValidationInstrument | issuanceId | Issuance id | Reference to the ValidationIssuance the instrument was issued in. | 0..1 | PkCommon.VersionedReference (Validation.ValidationIssuance) |
-| ValidationInstrument | instrumentStatus | Instrument status | The current status of the instrument. | 1..1 | Validation.ValidationInstrumentStatusEnum |
-| ValidationInstrument | validFrom | Valid from | The date/time from which the instrument may be redeemed. | 0..1 | PkCommon.DateTime |
-| ValidationInstrument | validTo | Valid to | The date/time after which the instrument may no longer be redeemed. | 0..1 | PkCommon.DateTime |
+| ValidationInstrument | validationProgramId | Program id | Reference to the ValidationProgram the instrument belongs to. | 1..1 | PkCommon.VersionedReference (Right.ValidationProgram) |
+| ValidationInstrument | issuanceId | Issuance id | Reference to the ValidationIssuance the instrument was issued in. | 0..1 | PkCommon.VersionedReference (Right.ValidationIssuance) |
+| ValidationInstrument | instrumentStatus | Instrument status | The current status of the instrument. | 1..1 | Right.ValidationInstrumentStatusEnum |
 | ValidationInstrument | redemptionId | Redemption id | Reference to the validation redemption that consumed the instrument, when redeemed. | 0..1 | PkCommon.VersionedReference (Session.ValidationRedemption) |
-| ValidationIssuance | programId | Program id | Reference to the ValidationProgram the instruments were issued under. | 1..1 | PkCommon.VersionedReference (Validation.ValidationProgram) |
+| ValidationIssuance | validationProgramId | Program id | Reference to the ValidationProgram the instruments were issued under. | 1..1 | PkCommon.VersionedReference (Right.ValidationProgram) |
 | ValidationIssuance | quantity | Quantity | The number of instruments in the batch. | 1..1 | PkCommon.NonNegativeInteger |
-| ValidationIssuance | issuanceMethod | Issuance method | The form of the instruments in the batch. | 1..1 | Validation.ValidationIssuanceMethodEnum |
-| ValidationIssuance | validFrom | Valid from | The date/time from which the instruments may be redeemed. | 0..1 | PkCommon.DateTime |
-| ValidationIssuance | validTo | Valid to | The date/time after which the instruments may no longer be redeemed. | 0..1 | PkCommon.DateTime |
+| ValidationIssuance | issuanceMethod | Issuance method | The form of the instruments in the batch. | 1..1 | Right.ValidationIssuanceMethodEnum |
 | ValidationIssuance | issuedTo | Issued to | Free-text identification of the person or outlet the stock was handed to. | 0..1 | PkCommon.String |
-| ValidationIssuance | issuanceStatus | Issuance status | Whether the batch is in force or has been voided. | 1..1 | Validation.ValidationIssuanceStatusEnum |
+| ValidationIssuance | issuanceStatus | Issuance status | Whether the batch is in force or has been voided. | 1..1 | Right.ValidationIssuanceStatusEnum |
 | ValidationProgram | elementId | Element id | Reference to the element within the Place Hierarchy at which the program validates parking. | 1..1 | PkCommon.VersionedReference (Place.HierarchyElementGeneral) |
-| ValidationProgram | provider | Provider | The merchant or other organisation that provides the validation. | 1..1 | PkCommon.VersionedReference (PkCommon.Organisation) |
+| ValidationProgram | providerId | Provider | The merchant or other organisation that provides the validation. | 1..1 | PkCommon.VersionedReference (PkCommon.Organisation) |
 | ValidationProgram | name | Name | Name of the program shown on receipts and to agents. | 0..* | PkCommon.MultilingualString |
 | ValidationProgram | validationProduct | Validation product | Provider-defined code naming the validation product. | 0..1 | PkCommon.String |
-| ValidationProgram | programStatus | Program status | The current status of the program. | 1..1 | Validation.ValidationProgramStatusEnum |
-| ValidationProgram | issuanceMethod | Issuance method | The forms of instrument the program may issue. | 0..* | Validation.ValidationIssuanceMethodEnum |
+| ValidationProgram | issuanceMethod | Issuance method | The forms of instrument the program may issue. | 0..* | Right.ValidationIssuanceMethodEnum |
+| ValidationProgram | endReason | End reason | Why the programme is no longer in use, when it has ended. | 0..1 | PkCommon.RecordEndReasonEnum |
 | ValidationRules | maxPerSession | Maximum per session | The number of validations of the program that may be applied to one Session. | 0..1 | PkCommon.NonNegativeInteger |
 | ValidationRules | maxPerDay | Maximum per day | The number of validations of the program that may be applied per calendar day at the Place. | 0..1 | PkCommon.NonNegativeInteger |
 | ValidationRules | validityWindow | Validity window | How long after issuance an instrument of the program may be redeemed. | 0..1 | PkCommon.Duration |
@@ -1000,44 +963,33 @@ Why an access attempt was refused.
 | outsidePlace | Outside place | The credential is valid, but not at this Place. |
 | outsideValidity | Outside validity | The credential is valid at this Place, but not at this time. |
 
-### A.3.2 The <<D2Enumeration>> "AccessDirectionEnum"
-
-Whether a vehicle or person was entering or leaving.
-
-*Table A.47 -- Values contained in the enumeration "AccessDirectionEnum"*
-
-| Enumerated value name | Designation | Definition |
-| --- | --- | --- |
-| entry | Entry | Entering the Place. |
-| exit | Exit | Leaving the Place. |
-
-### A.3.3 The <<D2Enumeration>> "AccessOutcomeEnum"
+### A.3.2 The <<D2Enumeration>> "AccessOutcomeEnum"
 
 The result of an access attempt.
 
-*Table A.48 -- Values contained in the enumeration "AccessOutcomeEnum"*
+*Table A.47 -- Values contained in the enumeration "AccessOutcomeEnum"*
 
 | Enumerated value name | Designation | Definition |
 | --- | --- | --- |
 | granted | Granted | Access was granted. |
 | denied | Denied | Access was refused. |
 
-### A.3.4 The <<D2Enumeration>> "AccountStatusEnum"
+### A.3.3 The <<D2Enumeration>> "AccountStatusEnum"
 
 Whether a RightHolder's account is enabled for use.
 
-*Table A.49 -- Values contained in the enumeration "AccountStatusEnum"*
+*Table A.48 -- Values contained in the enumeration "AccountStatusEnum"*
 
 | Enumerated value name | Designation | Definition |
 | --- | --- | --- |
 | enabled | Enabled | The account may be used. |
 | disabled | Disabled | The account may not be used. |
 
-### A.3.5 The <<D2Enumeration>> "AlertSeverityEnum"
+### A.3.4 The <<D2Enumeration>> "AlertSeverityEnum"
 
 How serious an operational condition is.
 
-*Table A.50 -- Values contained in the enumeration "AlertSeverityEnum"*
+*Table A.49 -- Values contained in the enumeration "AlertSeverityEnum"*
 
 | Enumerated value name | Designation | Definition |
 | --- | --- | --- |
@@ -1047,11 +999,11 @@ How serious an operational condition is.
 | major | Major | A condition that affects service and needs prompt action. |
 | critical | Critical | A condition that stops service or affects safety and needs immediate action. |
 
-### A.3.6 The <<D2Enumeration>> "AlertStatusEnum"
+### A.3.5 The <<D2Enumeration>> "AlertStatusEnum"
 
 The states of an alert.
 
-*Table A.51 -- Values contained in the enumeration "AlertStatusEnum"*
+*Table A.50 -- Values contained in the enumeration "AlertStatusEnum"*
 
 | Enumerated value name | Designation | Definition |
 | --- | --- | --- |
@@ -1060,11 +1012,11 @@ The states of an alert.
 | resolved | Resolved | The condition has been dealt with. |
 | expired | Expired | The alert lapsed at its expiry time without being resolved. |
 
-### A.3.7 The <<D2Enumeration>> "AlertTypeEnum"
+### A.3.6 The <<D2Enumeration>> "AlertTypeEnum"
 
 The kinds of operational condition that need attention.
 
-*Table A.52 -- Values contained in the enumeration "AlertTypeEnum"*
+*Table A.51 -- Values contained in the enumeration "AlertTypeEnum"*
 
 | Enumerated value name | Designation | Definition |
 | --- | --- | --- |
@@ -1086,11 +1038,11 @@ The kinds of operational condition that need attention.
 | scofflawArrival | Scofflaw arrival | A credential on a list of persistent non-payers was observed at a place where arrival is to be reported. |
 | refusedServiceArrival | Refused service arrival | A credential on a list with service refused arrived at a lane and service was refused. |
 
-### A.3.8 The <<D2Enumeration>> "AppealReasonEnum"
+### A.3.7 The <<D2Enumeration>> "AppealReasonEnum"
 
 The grounds on which a violation is appealed.
 
-*Table A.53 -- Values contained in the enumeration "AppealReasonEnum"*
+*Table A.52 -- Values contained in the enumeration "AppealReasonEnum"*
 
 | Enumerated value name | Designation | Definition |
 | --- | --- | --- |
@@ -1103,11 +1055,11 @@ The grounds on which a violation is appealed.
 | procedural | Procedural | The notice was not issued or delivered as the rules require. |
 | other | Other | Some other grounds. |
 
-### A.3.9 The <<D2Enumeration>> "AppealResolutionEnum"
+### A.3.8 The <<D2Enumeration>> "AppealResolutionEnum"
 
 The outcomes of an appeal.
 
-*Table A.54 -- Values contained in the enumeration "AppealResolutionEnum"*
+*Table A.53 -- Values contained in the enumeration "AppealResolutionEnum"*
 
 | Enumerated value name | Designation | Definition |
 | --- | --- | --- |
@@ -1115,11 +1067,11 @@ The outcomes of an appeal.
 | reduced | Reduced | The violation stands with a lower amount payable. |
 | dismissed | Dismissed | The violation is cancelled. |
 
-### A.3.10 The <<D2Enumeration>> "BayPresenceEnum"
+### A.3.9 The <<D2Enumeration>> "BayPresenceEnum"
 
 What a charging bay physically contains.
 
-*Table A.55 -- Values contained in the enumeration "BayPresenceEnum"*
+*Table A.54 -- Values contained in the enumeration "BayPresenceEnum"*
 
 | Enumerated value name | Designation | Definition |
 | --- | --- | --- |
@@ -1129,11 +1081,11 @@ What a charging bay physically contains.
 | blocked | Blocked | The bay is obstructed by something other than a correctly parked vehicle, such as cones, debris or a vehicle straddling two bays. |
 | unknown | Unknown | What the bay contains is not known. |
 
-### A.3.11 The <<D2Enumeration>> "BayPresenceSourceEnum"
+### A.3.10 The <<D2Enumeration>> "BayPresenceSourceEnum"
 
 The kind of evidence a bay presence was derived from.
 
-*Table A.56 -- Values contained in the enumeration "BayPresenceSourceEnum"*
+*Table A.55 -- Values contained in the enumeration "BayPresenceSourceEnum"*
 
 | Enumerated value name | Designation | Definition |
 | --- | --- | --- |
@@ -1143,33 +1095,33 @@ The kind of evidence a bay presence was derived from.
 | attendant | Attendant | A member of staff on site. |
 | inferred | Inferred | Derived from other data without a direct observation of the bay. |
 
-### A.3.12 The <<D2Enumeration>> "CameraFacingEnum"
+### A.3.11 The <<D2Enumeration>> "CameraFacingEnum"
 
 The direction a lane camera faces relative to the Place it serves.
 
-*Table A.57 -- Values contained in the enumeration "CameraFacingEnum"*
+*Table A.56 -- Values contained in the enumeration "CameraFacingEnum"*
 
 | Enumerated value name | Designation | Definition |
 | --- | --- | --- |
 | inward | Inward | The camera looks into the Place, the way entering traffic travels. |
 | outward | Outward | The camera looks out of the Place, the way exiting traffic travels. |
 
-### A.3.13 The <<D2Enumeration>> "CaptureStatusEnum"
+### A.3.12 The <<D2Enumeration>> "CaptureStatusEnum"
 
 Whether the funds of an approved payment have been collected.
 
-*Table A.58 -- Values contained in the enumeration "CaptureStatusEnum"*
+*Table A.57 -- Values contained in the enumeration "CaptureStatusEnum"*
 
 | Enumerated value name | Designation | Definition |
 | --- | --- | --- |
 | authorized | Authorized | Funds are held but not yet collected. |
 | captured | Captured | Funds have been collected. |
 
-### A.3.14 The <<D2Enumeration>> "ChargingSessionStatusEnum"
+### A.3.13 The <<D2Enumeration>> "ChargingSessionStatusEnum"
 
 The states of one charge, from authorization to closure.
 
-*Table A.59 -- Values contained in the enumeration "ChargingSessionStatusEnum"*
+*Table A.58 -- Values contained in the enumeration "ChargingSessionStatusEnum"*
 
 | Enumerated value name | Designation | Definition |
 | --- | --- | --- |
@@ -1184,11 +1136,11 @@ The states of one charge, from authorization to closure.
 | cancelled | Cancelled | The authorization was never used. |
 | faulted | Faulted | A fault interrupted the charge. |
 
-### A.3.15 The <<D2Enumeration>> "ChargingSettlementModeEnum"
+### A.3.14 The <<D2Enumeration>> "ChargingSettlementModeEnum"
 
 How the cost of a charge is collected.
 
-*Table A.60 -- Values contained in the enumeration "ChargingSettlementModeEnum"*
+*Table A.59 -- Values contained in the enumeration "ChargingSettlementModeEnum"*
 
 | Enumerated value name | Designation | Definition |
 | --- | --- | --- |
@@ -1196,11 +1148,11 @@ How the cost of a charge is collected.
 | directPayment | Direct payment | The cost is paid by its own Payment. |
 | chargingNetwork | Charging network | The cost is billed by the charging network or a roaming partner; the parking side records energy and time but not money. |
 
-### A.3.16 The <<D2Enumeration>> "ChargingStopReasonEnum"
+### A.3.15 The <<D2Enumeration>> "ChargingStopReasonEnum"
 
 Why energy delivery ended.
 
-*Table A.61 -- Values contained in the enumeration "ChargingStopReasonEnum"*
+*Table A.60 -- Values contained in the enumeration "ChargingStopReasonEnum"*
 
 | Enumerated value name | Designation | Definition |
 | --- | --- | --- |
@@ -1216,11 +1168,11 @@ Why energy delivery ended.
 | powerLoss | Power loss | Power to the charger was lost. |
 | other | Other | Some other reason. |
 
-### A.3.17 The <<D2Enumeration>> "CredentialMediaFormEnum"
+### A.3.16 The <<D2Enumeration>> "CredentialMediaFormEnum"
 
 The physical or virtual form of the item a credential was issued on.
 
-*Table A.62 -- Values contained in the enumeration "CredentialMediaFormEnum"*
+*Table A.61 -- Values contained in the enumeration "CredentialMediaFormEnum"*
 
 | Enumerated value name | Designation | Definition |
 | --- | --- | --- |
@@ -1233,11 +1185,11 @@ The physical or virtual form of the item a credential was issued on.
 | ticket | Ticket | A ticket issued for the stay. |
 | virtual | Virtual | A credential with no physical item, such as an account number. |
 
-### A.3.18 The <<D2Enumeration>> "CredentialStatusEnum"
+### A.3.17 The <<D2Enumeration>> "CredentialStatusEnum"
 
 The lifecycle status of an assigned credential.
 
-*Table A.63 -- Values contained in the enumeration "CredentialStatusEnum"*
+*Table A.62 -- Values contained in the enumeration "CredentialStatusEnum"*
 
 | Enumerated value name | Designation | Definition |
 | --- | --- | --- |
@@ -1249,11 +1201,11 @@ The lifecycle status of an assigned credential.
 | expired | Expired | The credential's validity period has ended. |
 | replaced | Replaced | The credential has been succeeded by another credential. |
 
-### A.3.19 The <<D2Enumeration>> "DamageSeverityEnum"
+### A.3.18 The <<D2Enumeration>> "DamageSeverityEnum"
 
 How serious a damage finding is.
 
-*Table A.64 -- Values contained in the enumeration "DamageSeverityEnum"*
+*Table A.63 -- Values contained in the enumeration "DamageSeverityEnum"*
 
 | Enumerated value name | Designation | Definition |
 | --- | --- | --- |
@@ -1261,11 +1213,11 @@ How serious a damage finding is.
 | moderate | Moderate | Damage needing repair. |
 | major | Major | Serious damage. |
 
-### A.3.20 The <<D2Enumeration>> "DepositStatusEnum"
+### A.3.19 The <<D2Enumeration>> "DepositStatusEnum"
 
 What has happened to a deposit taken for a physical credential item.
 
-*Table A.65 -- Values contained in the enumeration "DepositStatusEnum"*
+*Table A.64 -- Values contained in the enumeration "DepositStatusEnum"*
 
 | Enumerated value name | Designation | Definition |
 | --- | --- | --- |
@@ -1273,11 +1225,11 @@ What has happened to a deposit taken for a physical credential item.
 | refunded | Refunded | The deposit has been returned to the holder. |
 | forfeited | Forfeited | The deposit has been kept by the issuer. |
 
-### A.3.21 The <<D2Enumeration>> "DetectionModeEnum"
+### A.3.20 The <<D2Enumeration>> "DetectionModeEnum"
 
 How a violation was found.
 
-*Table A.66 -- Values contained in the enumeration "DetectionModeEnum"*
+*Table A.65 -- Values contained in the enumeration "DetectionModeEnum"*
 
 | Enumerated value name | Designation | Definition |
 | --- | --- | --- |
@@ -1285,21 +1237,11 @@ How a violation was found.
 | guided | Guided | A system proposed the violation and an officer confirmed it on site. |
 | manual | Manual | An officer found the violation directly. |
 
-### A.3.22 The <<D2Enumeration>> "DigestAlgorithmEnum"
-
-The keyed-digest algorithm used to compute a credential digest.
-
-*Table A.67 -- Values contained in the enumeration "DigestAlgorithmEnum"*
-
-| Enumerated value name | Designation | Definition |
-| --- | --- | --- |
-| hs256 | HMAC SHA-256 | HMAC using SHA-256. |
-
-### A.3.23 The <<D2Enumeration>> "EquipmentStatusEnum"
+### A.3.21 The <<D2Enumeration>> "EquipmentStatusEnum"
 
 The operational state of an item of supplemental equipment.
 
-*Table A.68 -- Values contained in the enumeration "EquipmentStatusEnum"*
+*Table A.66 -- Values contained in the enumeration "EquipmentStatusEnum"*
 
 | Enumerated value name | Designation | Definition |
 | --- | --- | --- |
@@ -1312,11 +1254,11 @@ The operational state of an item of supplemental equipment.
 | unknown | Unknown | The state of the equipment cannot be determined, e.g. because communication with it has been lost. |
 | other | Other | Some other state. Use 'otherEquipmentStatus' to specify it. |
 
-### A.3.24 The <<D2Enumeration>> "EquipmentTypeEnum" (values proposed for addition)
+### A.3.22 The <<D2Enumeration>> "EquipmentTypeEnum" (values proposed for addition)
 
 Types of equipment.
 
-*Table A.69 -- Values proposed for the enumeration "EquipmentTypeEnum"*
+*Table A.67 -- Values proposed for the enumeration "EquipmentTypeEnum"*
 
 | Enumerated value name | Designation | Definition |
 | --- | --- | --- |
@@ -1325,11 +1267,11 @@ Types of equipment.
 | ticketDispenser | Ticket dispenser | A machine at an entry lane that issues a ticket or other credential to start a Session. |
 | intercom | Intercom | A call point at a lane or machine that connects a customer with an attendant by voice or video. |
 
-### A.3.25 The <<D2Enumeration>> "HandbackVerificationEnum"
+### A.3.23 The <<D2Enumeration>> "HandbackVerificationEnum"
 
 How the person collecting a valeted vehicle was verified.
 
-*Table A.70 -- Values contained in the enumeration "HandbackVerificationEnum"*
+*Table A.68 -- Values contained in the enumeration "HandbackVerificationEnum"*
 
 | Enumerated value name | Designation | Definition |
 | --- | --- | --- |
@@ -1339,61 +1281,70 @@ How the person collecting a valeted vehicle was verified.
 | id | Identity document | An identity document was checked. |
 | attendant | Attendant | An attendant recognised the customer. |
 
-### A.3.26 The <<D2Enumeration>> "ImageTypeEnum" (values proposed for addition)
+### A.3.24 The <<D2Enumeration>> "ImageTypeEnum" (values proposed for addition)
 
 The nature of the captured image.
 
-*Table A.71 -- Values proposed for the enumeration "ImageTypeEnum"*
+*Table A.69 -- Values proposed for the enumeration "ImageTypeEnum"*
 
 | Enumerated value name | Designation | Definition |
 | --- | --- | --- |
 | plateExtended | Plate extended | A crop around the plate wider than the plate itself, showing the surrounding bodywork. |
 | context | Context | A wide view of the scene around the vehicle, wider than the overview. |
 
-### A.3.27 The <<D2Enumeration>> "JurisdictionAgreementEnum"
+### A.3.25 The <<D2Enumeration>> "InteractionChannelEnum"
 
-Whether the issuing jurisdictions of two plates agree.
+The channel through which a customer, merchant, member of staff or system carried out an action such as a payment, a validation, a request or a contact.
 
-*Table A.72 -- Values contained in the enumeration "JurisdictionAgreementEnum"*
+*Table A.70 -- Values contained in the enumeration "InteractionChannelEnum"*
 
 | Enumerated value name | Designation | Definition |
 | --- | --- | --- |
-| agrees | Agrees | The jurisdictions are the same. |
-| differs | Differs | The jurisdictions are different. |
-| unknown | Unknown | At least one jurisdiction is not known. |
+| lane | Lane | At equipment in an entry or exit lane. |
+| payStation | Pay station | At a payment machine. |
+| kiosk | Kiosk | At a self-service kiosk other than a payment machine. |
+| attendant | Attendant | In person with a member of staff on site. |
+| contactCentre | Contact centre | With a person at a remote contact centre, by phone or other means. |
+| automatedVoice | Automated voice | With an automated voice service. |
+| mobileApp | Mobile app | In a mobile application, including a merchant application. |
+| web | Web | On a website. |
+| textMessage | Text message | By text message. |
+| chat | Chat | By online chat. |
+| email | Email | By email. |
+| systemInterface | System interface | By one system acting directly on another, without a person at a channel. |
+| other | Other | Any other channel. |
 
-### A.3.28 The <<D2Enumeration>> "MatchDecisionEnum"
+### A.3.26 The <<D2Enumeration>> "MatchDecisionEnum"
 
 Who made a link.
 
-*Table A.73 -- Values contained in the enumeration "MatchDecisionEnum"*
+*Table A.71 -- Values contained in the enumeration "MatchDecisionEnum"*
 
 | Enumerated value name | Designation | Definition |
 | --- | --- | --- |
 | system | System | Software made the link. |
 | person | Person | A person made the link. |
 
-### A.3.29 The <<D2Enumeration>> "MatchTypeEnum"
+### A.3.27 The <<D2Enumeration>> "MatchTypeEnum"
 
 The kind of link between a Session and another record.
 
-*Table A.74 -- Values contained in the enumeration "MatchTypeEnum"*
+*Table A.72 -- Values contained in the enumeration "MatchTypeEnum"*
 
 | Enumerated value name | Designation | Definition |
 | --- | --- | --- |
-| right | Right | An AssignedRight covers the stay. |
-| valet | Valet | A valet ticket covers the stay. |
+| assignedRight | Assigned right | An AssignedRight covers the stay. |
+| valetTicket | Valet ticket | A valet ticket covers the stay. |
 | violation | Violation | A violation concerns the stay. |
-| list | List | An entry on a plate list matched the vehicle. |
-| exitPairing | Exit pairing | An exit observation was paired to the Session's entry. |
-| sweep | Sweep | The vehicle was seen during a patrol or inventory sweep tied to the Session. |
+| plateList | Plate list | An entry on a plate list matched the vehicle. |
+| entryExitPair | Entry and exit pair | An exit observation was paired to the Session's entry observation. |
 | other | Other | Any other kind of link. |
 
-### A.3.30 The <<D2Enumeration>> "NoticeDeliveryMethodEnum"
+### A.3.28 The <<D2Enumeration>> "NoticeDeliveryMethodEnum"
 
 How a notice reaches the keeper or driver of a vehicle.
 
-*Table A.75 -- Values contained in the enumeration "NoticeDeliveryMethodEnum"*
+*Table A.73 -- Values contained in the enumeration "NoticeDeliveryMethodEnum"*
 
 | Enumerated value name | Designation | Definition |
 | --- | --- | --- |
@@ -1403,11 +1354,11 @@ How a notice reaches the keeper or driver of a vehicle.
 | electronic | Electronic | Sent by e-mail, text message or an application. |
 | other | Other | Some other method. |
 
-### A.3.31 The <<D2Enumeration>> "NoticeKindEnum"
+### A.3.29 The <<D2Enumeration>> "NoticeKindEnum"
 
 The kinds of notice that may be issued for a violation.
 
-*Table A.76 -- Values contained in the enumeration "NoticeKindEnum"*
+*Table A.74 -- Values contained in the enumeration "NoticeKindEnum"*
 
 | Enumerated value name | Designation | Definition |
 | --- | --- | --- |
@@ -1419,11 +1370,11 @@ The kinds of notice that may be issued for a violation.
 | reminder | Reminder | A follow-up notice for a violation that is still unpaid. |
 | other | Other | Some other kind of notice. |
 
-### A.3.32 The <<D2Enumeration>> "OverageBillingModeEnum"
+### A.3.30 The <<D2Enumeration>> "OverageBillingModeEnum"
 
 The way a vehicle beyond an AssignedRight's concurrent-vehicle limit is charged.
 
-*Table A.77 -- Values contained in the enumeration "OverageBillingModeEnum"*
+*Table A.75 -- Values contained in the enumeration "OverageBillingModeEnum"*
 
 | Enumerated value name | Designation | Definition |
 | --- | --- | --- |
@@ -1431,67 +1382,11 @@ The way a vehicle beyond an AssignedRight's concurrent-vehicle limit is charged.
 | dayRate | Day rate | Charged a flat day rate. |
 | none | None | Recorded but not charged. |
 
-### A.3.33 The <<D2Enumeration>> "PassbackPresenceEnum"
-
-Where a credential is expected or recorded to be.
-
-*Table A.78 -- Values contained in the enumeration "PassbackPresenceEnum"*
-
-| Enumerated value name | Designation | Definition |
-| --- | --- | --- |
-| inside | Inside | Inside the Place. |
-| outside | Outside | Outside the Place. |
-| unknown | Unknown | Not known. |
-
-### A.3.34 The <<D2Enumeration>> "PassbackStateEnum"
-
-The anti-passback state of a credential.
-
-*Table A.79 -- Values contained in the enumeration "PassbackStateEnum"*
-
-| Enumerated value name | Designation | Definition |
-| --- | --- | --- |
-| normal | Normal | The credential is not in violation. |
-| violation | Violation | The credential is in an anti-passback violation. |
-| unknown | Unknown | The state cannot be determined. |
-
-### A.3.35 The <<D2Enumeration>> "PaymentChannelEnum"
-
-Where a payment was taken.
-
-*Table A.80 -- Values contained in the enumeration "PaymentChannelEnum"*
-
-| Enumerated value name | Designation | Definition |
-| --- | --- | --- |
-| lane | Lane | A device in an entry or exit lane. |
-| payStation | Pay station | A pay station or pay-on-foot machine. |
-| agent | Agent | A person using the operator's own payment terminal. |
-| autoAttendant | Auto attendant | An automated telephone system that captures the card out of band. |
-| online | Online | A web site or mobile application. |
-| other | Other | Some other channel. |
-
-### A.3.36 The <<D2Enumeration>> "PaymentLineCodeEnum"
-
-The nature of a payment line item. Suggested as an extensible code list; the values below are a starting set maintained today in the APX registry apx-payment-line-codes.
-
-*Table A.81 -- Values contained in the enumeration "PaymentLineCodeEnum"*
-
-| Enumerated value name | Designation | Definition |
-| --- | --- | --- |
-| base | Base | The parking charge before fees, taxes and discounts. |
-| convenienceFee | Convenience fee | A per-transaction fee added by the payment channel. |
-| serviceFee | Service fee | A service fee added by the operator, such as for valet or a reservation. |
-| tax | Tax | Tax on the charge, when itemised. |
-| discount | Discount | A reduction other than a validation, carried as a negative value. |
-| validation | Validation | The value offset by a merchant validation. |
-| energy | Energy | A charge for energy delivered to an electric vehicle. |
-| idle | Idle | A charge for occupying a charging point after charging finished. |
-
-### A.3.37 The <<D2Enumeration>> "PaymentStatusEnum"
+### A.3.31 The <<D2Enumeration>> "PaymentStatusEnum"
 
 The outcome of a payment as reported by the payment layer.
 
-*Table A.82 -- Values contained in the enumeration "PaymentStatusEnum"*
+*Table A.76 -- Values contained in the enumeration "PaymentStatusEnum"*
 
 | Enumerated value name | Designation | Definition |
 | --- | --- | --- |
@@ -1499,11 +1394,25 @@ The outcome of a payment as reported by the payment layer.
 | declined | Declined | The payment was refused by the payment layer. |
 | reversed | Reversed | An authorisation was voided, or the payment was refunded in full. |
 
-### A.3.38 The <<D2Enumeration>> "PlateFaceEnum"
+### A.3.32 The <<D2Enumeration>> "PaymentTypeEnum" (values proposed for addition)
+
+Indicates the list of acceptable payment types against an AssignedRight. Values proposed for addition, so payment lines can tell a fee or a discount from the base charge.
+
+*Table A.77 -- Values proposed for the enumeration "PaymentTypeEnum"*
+
+| Enumerated value name | Designation | Definition |
+| --- | --- | --- |
+| convenienceFee | Convenience fee | A fee for the convenience of the channel used to pay. |
+| serviceFee | Service fee | A fee for a service other than the right itself. |
+| discount | Discount | A reduction in the amount charged, other than a validation. |
+| energy | Energy | A charge for energy delivered to the vehicle. |
+| idle | Idle | A charge for occupying a charging bay after charging ended. |
+
+### A.3.33 The <<D2Enumeration>> "PlateFaceEnum"
 
 Which plate of a vehicle was read.
 
-*Table A.83 -- Values contained in the enumeration "PlateFaceEnum"*
+*Table A.78 -- Values contained in the enumeration "PlateFaceEnum"*
 
 | Enumerated value name | Designation | Definition |
 | --- | --- | --- |
@@ -1511,11 +1420,11 @@ Which plate of a vehicle was read.
 | rear | Rear | The rear plate. |
 | unknown | Unknown | The engine cannot tell. |
 
-### A.3.39 The <<D2Enumeration>> "PlateListCategoryEnum"
+### A.3.34 The <<D2Enumeration>> "PlateListCategoryEnum"
 
-The category of a plate list. Suggested as an extensible code list; the values below are a starting set maintained today in the APX registry apx-plate-list-categories.
+The category of a plate list. Suggested as an extensible code list; the values below are a starting set used by APX today.
 
-*Table A.84 -- Values contained in the enumeration "PlateListCategoryEnum"*
+*Table A.79 -- Values contained in the enumeration "PlateListCategoryEnum"*
 
 | Enumerated value name | Designation | Definition |
 | --- | --- | --- |
@@ -1524,50 +1433,11 @@ The category of a plate list. Suggested as an extensible code list; the values b
 | scofflaw | Scofflaw | Credentials with unpaid notices or a standing refusal from the list owner. |
 | enforcementVehicle | Enforcement vehicle | The list owner's own enforcement and service vehicles, recorded but never enforced. |
 
-### A.3.40 The <<D2Enumeration>> "PlateListStatusEnum"
-
-Whether a plate list is in force.
-
-*Table A.85 -- Values contained in the enumeration "PlateListStatusEnum"*
-
-| Enumerated value name | Designation | Definition |
-| --- | --- | --- |
-| active | Active | The list is in force. |
-| suspended | Suspended | The list is temporarily not applied. |
-| retired | Retired | The list is no longer used. |
-
-### A.3.41 The <<D2Enumeration>> "PlateMatchMethodEnum"
-
-How two plate strings were judged to agree.
-
-*Table A.86 -- Values contained in the enumeration "PlateMatchMethodEnum"*
-
-| Enumerated value name | Designation | Definition |
-| --- | --- | --- |
-| exact | Exact | The same characters. |
-| alias | Alias | A plate the right or account lists for the same vehicle. |
-| fold | Fold | Equal after folding characters that look alike, such as O and 0. |
-| fuzzy | Fuzzy | Within the implementation's threshold of character edits. |
-| lenient | Lenient | Accepted under a relaxed rule that may excuse a stay but is never used to penalise one. |
-| reviewer | Reviewer | A person judged the plates to match. |
-
-### A.3.42 The <<D2Enumeration>> "PolicyStatusEnum"
-
-Whether an enforcement policy is in force.
-
-*Table A.87 -- Values contained in the enumeration "PolicyStatusEnum"*
-
-| Enumerated value name | Designation | Definition |
-| --- | --- | --- |
-| active | Active | The policy is in force. |
-| superseded | Superseded | The policy has been replaced by a later version. |
-| retired | Retired | The policy has been withdrawn without replacement. |
-
-### A.3.43 The <<D2Enumeration>> "RateClassEnum"
+### A.3.35 The <<D2Enumeration>> "RateClassEnum"
 
 How the price of a sold rate was arrived at.
 
-*Table A.88 -- Values contained in the enumeration "RateClassEnum"*
+*Table A.80 -- Values contained in the enumeration "RateClassEnum"*
 
 | Enumerated value name | Designation | Definition |
 | --- | --- | --- |
@@ -1577,11 +1447,11 @@ How the price of a sold rate was arrived at.
 | zeroed | Zeroed | The charge was reduced to zero. |
 | other | Other | Some other pricing. |
 
-### A.3.44 The <<D2Enumeration>> "RateProductEnum"
+### A.3.36 The <<D2Enumeration>> "RateProductEnum"
 
 The kind of product a rate sold.
 
-*Table A.89 -- Values contained in the enumeration "RateProductEnum"*
+*Table A.81 -- Values contained in the enumeration "RateProductEnum"*
 
 | Enumerated value name | Designation | Definition |
 | --- | --- | --- |
@@ -1589,11 +1459,11 @@ The kind of product a rate sold.
 | pass | Pass | A pass covering more than one stay or a period. |
 | other | Other | Some other product. |
 
-### A.3.45 The <<D2Enumeration>> "ReadAttributeEnum"
+### A.3.37 The <<D2Enumeration>> "ReadAttributeEnum"
 
 The attributes of a vehicle a recognition engine can recognise.
 
-*Table A.90 -- Values contained in the enumeration "ReadAttributeEnum"*
+*Table A.82 -- Values contained in the enumeration "ReadAttributeEnum"*
 
 | Enumerated value name | Designation | Definition |
 | --- | --- | --- |
@@ -1603,14 +1473,14 @@ The attributes of a vehicle a recognition engine can recognise.
 | plateCategory | Plate category | The plate category, where the issuing country uses one. |
 | make | Make | The vehicle manufacturer. |
 | model | Model | The vehicle model. |
-| color | Colour | The predominant colour of the vehicle. |
+| colour | Colour | The predominant colour of the vehicle. |
 | bodyType | Body type | The vehicle body type as the engine reports it, such as sedan or bus. |
 
-### A.3.46 The <<D2Enumeration>> "ReadReviewReasonEnum"
+### A.3.38 The <<D2Enumeration>> "ReadReviewReasonEnum"
 
 Why an observation was sent to human review.
 
-*Table A.91 -- Values contained in the enumeration "ReadReviewReasonEnum"*
+*Table A.83 -- Values contained in the enumeration "ReadReviewReasonEnum"*
 
 | Enumerated value name | Designation | Definition |
 | --- | --- | --- |
@@ -1621,11 +1491,11 @@ Why an observation was sent to human review.
 | enforcementHandoff | Enforcement handoff | The read is about to be passed to an enforcement system that requires reviewed evidence. |
 | conflictingReads | Conflicting reads | Reads of the same passage disagree on the plate, country or state. |
 
-### A.3.47 The <<D2Enumeration>> "ReadReviewStateEnum"
+### A.3.39 The <<D2Enumeration>> "ReadReviewStateEnum"
 
 Where an observation is in human review.
 
-*Table A.92 -- Values contained in the enumeration "ReadReviewStateEnum"*
+*Table A.84 -- Values contained in the enumeration "ReadReviewStateEnum"*
 
 | Enumerated value name | Designation | Definition |
 | --- | --- | --- |
@@ -1635,11 +1505,22 @@ Where an observation is in human review.
 | rejected | Rejected | A reviewer rejected the read as unusable. |
 | notRequired | Not required | No rule sent the read to review. |
 
-### A.3.48 The <<D2Enumeration>> "ReservationStateEnum"
+### A.3.40 The <<D2Enumeration>> "RecordEndReasonEnum"
+
+Why a record that was in use is no longer in use, beyond what its Validity already says.
+
+*Table A.85 -- Values contained in the enumeration "RecordEndReasonEnum"*
+
+| Enumerated value name | Designation | Definition |
+| --- | --- | --- |
+| superseded | Superseded | Replaced by a newer record that now applies. |
+| retired | Retired | Withdrawn from use, or physically removed, without a replacement. |
+
+### A.3.41 The <<D2Enumeration>> "ReservationStateEnum"
 
 The state of an AssignedRight that is a reservation.
 
-*Table A.93 -- Values contained in the enumeration "ReservationStateEnum"*
+*Table A.86 -- Values contained in the enumeration "ReservationStateEnum"*
 
 | Enumerated value name | Designation | Definition |
 | --- | --- | --- |
@@ -1649,40 +1530,40 @@ The state of an AssignedRight that is a reservation.
 | checkedIn | Checked in | A Session has used the reservation. |
 | noShow | No show | The reservation was not used before its no-show time. |
 
-### A.3.49 The <<D2Enumeration>> "RightTypeEnum" (values proposed for addition)
+### A.3.42 The <<D2Enumeration>> "RightTypeEnum" (values proposed for addition)
 
 Defines the type of Right Specification (existing APDS enumeration; the value below is a proposed addition).
 
-*Table A.94 -- Values proposed for the enumeration "RightTypeEnum"*
+*Table A.87 -- Values proposed for the enumeration "RightTypeEnum"*
 
 | Enumerated value name | Designation | Definition |
 | --- | --- | --- |
 | valet | Valet | Intended for a vehicle placed in valet custody, valid from drop-off to handback. |
 
-### A.3.50 The <<D2Enumeration>> "SessionEndReasonEnum"
+### A.3.43 The <<D2Enumeration>> "SessionEndReasonEnum"
 
 Why a Session ended.
 
-*Table A.95 -- Values contained in the enumeration "SessionEndReasonEnum"*
+*Table A.88 -- Values contained in the enumeration "SessionEndReasonEnum"*
 
 | Enumerated value name | Designation | Definition |
 | --- | --- | --- |
-| exitRead | Exit read | An exit observation of the vehicle closed the Session. |
-| reentry | Reentry | The same vehicle entered again and the earlier Session was closed at the new entry. |
-| stale | Stale | Closed by rule after no observation for the Place's maximum stay. |
-| parentExit | Parent exit | An area Session closed because the wider visit it belongs to ended. |
-| areaLeft | Area left | An area Session closed because the vehicle was seen leaving the area. |
-| inventorySweep | Inventory sweep | A sweep of the Place found the vehicle gone. |
-| valetHandback | Valet handback | The valet service handed the vehicle back. |
-| exitOnly | Exit only | An exit with no observed entry; the start time is a placeholder. |
-| operator | Operator | A person closed the Session. |
-| review | Review | A reviewer paired the exit observation that closed the Session. |
+| exitObserved | Exit observed | An exit observation of the vehicle closed the Session. |
+| reentryObserved | Re-entry observed | The same vehicle entered again and the earlier Session was closed at the new entry. |
+| timedOut | Timed out | Closed by rule after no observation of the vehicle for the Place's maximum stay. |
+| parentSessionEnded | Parent session ended | A Session kept for an area inside a Place closed because the visit to the Place ended. |
+| leftArea | Left area | A Session kept for an area inside a Place closed because the vehicle was seen leaving the area. |
+| notFoundOnCount | Not found on count | A count or patrol of the vehicles present found the vehicle gone. |
+| valetHandback | Valet handback | The valet service handed the vehicle back to the customer. |
+| exitWithoutEntry | Exit without entry | An exit was observed with no observed entry; the start time is an estimate. |
+| closedByOperator | Closed by operator | A member of staff closed the Session. |
+| closedAfterReview | Closed after review | A person reviewing the observations paired an exit with the Session and closed it. |
 
-### A.3.51 The <<D2Enumeration>> "SessionLifecycleEnum"
+### A.3.44 The <<D2Enumeration>> "SessionLifecycleEnum"
 
 How settled a Session is.
 
-*Table A.96 -- Values contained in the enumeration "SessionLifecycleEnum"*
+*Table A.89 -- Values contained in the enumeration "SessionLifecycleEnum"*
 
 | Enumerated value name | Designation | Definition |
 | --- | --- | --- |
@@ -1691,11 +1572,11 @@ How settled a Session is.
 | final | Final | The Session has ended and no further revision is expected. |
 | disputed | Disputed | The Session is under review. |
 
-### A.3.52 The <<D2Enumeration>> "SessionReadRoleEnum"
+### A.3.45 The <<D2Enumeration>> "SessionReadRoleEnum"
 
 The part an observation played in a Session.
 
-*Table A.97 -- Values contained in the enumeration "SessionReadRoleEnum"*
+*Table A.90 -- Values contained in the enumeration "SessionReadRoleEnum"*
 
 | Enumerated value name | Designation | Definition |
 | --- | --- | --- |
@@ -1704,11 +1585,11 @@ The part an observation played in a Session.
 | duplicate | Duplicate | The same passage seen by another camera or in another frame. |
 | activity | Activity | The vehicle seen inside the Place, for example during a patrol or by a bay camera. |
 
-### A.3.53 The <<D2Enumeration>> "SignTypeEnum"
+### A.3.46 The <<D2Enumeration>> "SignTypeEnum"
 
 The kind of sign posted at a Place.
 
-*Table A.98 -- Values contained in the enumeration "SignTypeEnum"*
+*Table A.91 -- Values contained in the enumeration "SignTypeEnum"*
 
 | Enumerated value name | Designation | Definition |
 | --- | --- | --- |
@@ -1719,53 +1600,26 @@ The kind of sign posted at a Place.
 | towAway | Tow away | A sign warning that vehicles may be removed. |
 | other | Other | Some other kind of sign. |
 
-### A.3.54 The <<D2Enumeration>> "SignageStatusEnum"
-
-The state of a posted sign.
-
-*Table A.99 -- Values contained in the enumeration "SignageStatusEnum"*
-
-| Enumerated value name | Designation | Definition |
-| --- | --- | --- |
-| active | Active | The sign is posted and in force. |
-| superseded | Superseded | The sign has been replaced by another sign. |
-| removed | Removed | The sign has been taken down and not replaced. |
-
-### A.3.55 The <<D2Enumeration>> "SupportAgentTypeEnum"
+### A.3.47 The <<D2Enumeration>> "SupportAgentTypeEnum"
 
 Who handled a customer-service contact.
 
-*Table A.100 -- Values contained in the enumeration "SupportAgentTypeEnum"*
+*Table A.92 -- Values contained in the enumeration "SupportAgentTypeEnum"*
 
 | Enumerated value name | Designation | Definition |
 | --- | --- | --- |
 | human | Human | A person. |
 | automated | Automated | An automated agent, such as a voice or chat assistant. |
 
-### A.3.56 The <<D2Enumeration>> "SupportChannelEnum"
-
-How a customer-service contact was made.
-
-*Table A.101 -- Values contained in the enumeration "SupportChannelEnum"*
-
-| Enumerated value name | Designation | Definition |
-| --- | --- | --- |
-| voice | Voice | A telephone or intercom call. |
-| chat | Chat | A text conversation in an application or web page. |
-| email | E-mail | E-mail. |
-| sms | SMS | Text messages. |
-| inPerson | In person | Face to face with staff. |
-| other | Other | Some other channel. |
-
-### A.3.57 The <<D2Enumeration>> "SupportIssueTypeEnum"
+### A.3.48 The <<D2Enumeration>> "SupportIssueTypeEnum"
 
 The kinds of problem a customer-service contact is about.
 
-*Table A.102 -- Values contained in the enumeration "SupportIssueTypeEnum"*
+*Table A.93 -- Values contained in the enumeration "SupportIssueTypeEnum"*
 
 | Enumerated value name | Designation | Definition |
 | --- | --- | --- |
-| gateVendFailed | Gate vend failed | A barrier did not open when it should have. |
+| barrierOpenFailed | Barrier open failed | The barrier did not open for a customer entitled to pass. |
 | paymentDeclined | Payment declined | A payment was declined. |
 | validationMissing | Validation missing | An expected validation was not applied. |
 | rateDispute | Rate dispute | The customer disputes the amount charged. |
@@ -1777,11 +1631,11 @@ The kinds of problem a customer-service contact is about.
 | equipmentFault | Equipment fault | A piece of equipment is not working. |
 | unknown | Unknown | The problem has not been classified. |
 
-### A.3.58 The <<D2Enumeration>> "TollDisputeReasonEnum"
+### A.3.49 The <<D2Enumeration>> "TollDisputeReasonEnum"
 
 Why a toll charge was challenged.
 
-*Table A.103 -- Values contained in the enumeration "TollDisputeReasonEnum"*
+*Table A.94 -- Values contained in the enumeration "TollDisputeReasonEnum"*
 
 | Enumerated value name | Designation | Definition |
 | --- | --- | --- |
@@ -1791,24 +1645,24 @@ Why a toll charge was challenged.
 | notLiable | Not liable | The party is not liable for the passage, for example an exempt, sold or stolen vehicle. |
 | other | Other | Any other reason. |
 
-### A.3.59 The <<D2Enumeration>> "TollDisputeResolutionEnum"
+### A.3.50 The <<D2Enumeration>> "TollDisputeResolutionEnum"
 
 How a toll dispute was resolved.
 
-*Table A.104 -- Values contained in the enumeration "TollDisputeResolutionEnum"*
+*Table A.95 -- Values contained in the enumeration "TollDisputeResolutionEnum"*
 
 | Enumerated value name | Designation | Definition |
 | --- | --- | --- |
 | upheld | Upheld | The charge stands as priced. |
 | refunded | Refunded | The money is returned. |
-| adjusted | Adjusted | A new amount is owed. |
+| reduced | Reduced | The charge stands with a lower amount owed. |
 | withdrawn | Withdrawn | The disputing party abandoned the dispute and the charge stands. |
 
-### A.3.60 The <<D2Enumeration>> "TollTransactionStatusEnum"
+### A.3.51 The <<D2Enumeration>> "TollTransactionStatusEnum"
 
 The lifecycle stage of a toll charge.
 
-*Table A.105 -- Values contained in the enumeration "TollTransactionStatusEnum"*
+*Table A.96 -- Values contained in the enumeration "TollTransactionStatusEnum"*
 
 | Enumerated value name | Designation | Definition |
 | --- | --- | --- |
@@ -1819,27 +1673,11 @@ The lifecycle stage of a toll charge.
 | resolved | Resolved | A dispute has been resolved. |
 | voided | Voided | Cancelled by the operator. |
 
-### A.3.61 The <<D2Enumeration>> "ValetRetrievalChannelEnum"
-
-How a customer asked for a valeted vehicle.
-
-*Table A.106 -- Values contained in the enumeration "ValetRetrievalChannelEnum"*
-
-| Enumerated value name | Designation | Definition |
-| --- | --- | --- |
-| sms | SMS | By text message. |
-| app | App | By mobile application. |
-| web | Web | By web page. |
-| voiceBot | Voice bot | By an automated voice service. |
-| kiosk | Kiosk | At a kiosk. |
-| attendant | Attendant | In person, to an attendant. |
-| callCenter | Call center | Through a call center agent. |
-
-### A.3.62 The <<D2Enumeration>> "ValetStatusEnum"
+### A.3.52 The <<D2Enumeration>> "ValetStatusEnum"
 
 The stage of a vehicle in valet custody.
 
-*Table A.107 -- Values contained in the enumeration "ValetStatusEnum"*
+*Table A.97 -- Values contained in the enumeration "ValetStatusEnum"*
 
 | Enumerated value name | Designation | Definition |
 | --- | --- | --- |
@@ -1852,11 +1690,11 @@ The stage of a vehicle in valet custody.
 | closed | Closed | The stay is settled. |
 | cancelled | Cancelled | The ticket was cancelled before custody was taken. |
 
-### A.3.63 The <<D2Enumeration>> "ValidationBillingCycleEnum"
+### A.3.53 The <<D2Enumeration>> "ValidationBillingCycleEnum"
 
 How often a validation provider is billed.
 
-*Table A.108 -- Values contained in the enumeration "ValidationBillingCycleEnum"*
+*Table A.98 -- Values contained in the enumeration "ValidationBillingCycleEnum"*
 
 | Enumerated value name | Designation | Definition |
 | --- | --- | --- |
@@ -1864,11 +1702,11 @@ How often a validation provider is billed.
 | weekly | Weekly | Billed once a week. |
 | perValidation | Per validation | Billed for each validation as it is applied. |
 
-### A.3.64 The <<D2Enumeration>> "ValidationBillingModelEnum"
+### A.3.54 The <<D2Enumeration>> "ValidationBillingModelEnum"
 
 Who bears the cost of validations under a program.
 
-*Table A.109 -- Values contained in the enumeration "ValidationBillingModelEnum"*
+*Table A.99 -- Values contained in the enumeration "ValidationBillingModelEnum"*
 
 | Enumerated value name | Designation | Definition |
 | --- | --- | --- |
@@ -1876,38 +1714,23 @@ Who bears the cost of validations under a program.
 | operatorAbsorbs | Operator absorbs | The operator bears the cost. |
 | split | Split | The provider pays a share of the amount reduced. |
 
-### A.3.65 The <<D2Enumeration>> "ValidationChannelEnum"
+### A.3.55 The <<D2Enumeration>> "ValidationInstrumentStatusEnum"
 
-The channel through which a validation was applied.
+The status of one validation instrument. Expiry follows the instrument Validity.
 
-*Table A.110 -- Values contained in the enumeration "ValidationChannelEnum"*
-
-| Enumerated value name | Designation | Definition |
-| --- | --- | --- |
-| lane | Lane | Applied by lane equipment at entry or exit. |
-| payStation | Pay station | Applied at a payment machine, for example by scanning a code. |
-| merchantApp | Merchant app | Applied by the merchant through its own application. |
-| callCenter | Call center | Applied by an agent on the customer's behalf. |
-| api | System interface | Applied by another system through an interface. |
-
-### A.3.66 The <<D2Enumeration>> "ValidationInstrumentStatusEnum"
-
-The status of one validation instrument.
-
-*Table A.111 -- Values contained in the enumeration "ValidationInstrumentStatusEnum"*
+*Table A.100 -- Values contained in the enumeration "ValidationInstrumentStatusEnum"*
 
 | Enumerated value name | Designation | Definition |
 | --- | --- | --- |
 | valid | Valid | The instrument may be redeemed. |
 | redeemed | Redeemed | The instrument has been applied to a Session. |
 | void | Void | The instrument has been withdrawn. |
-| expired | Expired | The instrument's validity has ended. |
 
-### A.3.67 The <<D2Enumeration>> "ValidationIssuanceMethodEnum"
+### A.3.56 The <<D2Enumeration>> "ValidationIssuanceMethodEnum"
 
 The form of a validation instrument.
 
-*Table A.112 -- Values contained in the enumeration "ValidationIssuanceMethodEnum"*
+*Table A.101 -- Values contained in the enumeration "ValidationIssuanceMethodEnum"*
 
 | Enumerated value name | Designation | Definition |
 | --- | --- | --- |
@@ -1917,60 +1740,33 @@ The form of a validation instrument.
 | digital | Digital | A digital token held in an application. |
 | system | System | Applied directly by a connected system, with no instrument handed out. |
 
-### A.3.68 The <<D2Enumeration>> "ValidationIssuanceStatusEnum"
+### A.3.57 The <<D2Enumeration>> "ValidationIssuanceStatusEnum"
 
 Whether a batch of validation instruments is in force.
 
-*Table A.113 -- Values contained in the enumeration "ValidationIssuanceStatusEnum"*
+*Table A.102 -- Values contained in the enumeration "ValidationIssuanceStatusEnum"*
 
 | Enumerated value name | Designation | Definition |
 | --- | --- | --- |
 | issued | Issued | The batch is in force. |
 | void | Void | The batch has been withdrawn; unredeemed instruments may not be used. |
 
-### A.3.69 The <<D2Enumeration>> "ValidationProgramStatusEnum"
-
-The status of a validation program.
-
-*Table A.114 -- Values contained in the enumeration "ValidationProgramStatusEnum"*
-
-| Enumerated value name | Designation | Definition |
-| --- | --- | --- |
-| active | Active | Validations of the program may be applied. |
-| suspended | Suspended | Validations of the program are temporarily not accepted. |
-| ended | Ended | The program has ended permanently. |
-
-### A.3.70 The <<D2Enumeration>> "ValidationRedemptionStatusEnum"
+### A.3.58 The <<D2Enumeration>> "ValidationRedemptionStatusEnum"
 
 Whether a validation redemption stands.
 
-*Table A.115 -- Values contained in the enumeration "ValidationRedemptionStatusEnum"*
+*Table A.103 -- Values contained in the enumeration "ValidationRedemptionStatusEnum"*
 
 | Enumerated value name | Designation | Definition |
 | --- | --- | --- |
 | applied | Applied | The validation is applied to the Session. |
 | reversed | Reversed | The validation was reversed. |
 
-### A.3.71 The <<D2Enumeration>> "VehicleEvidenceLevelEnum"
-
-How strongly the vehicle attributes support a match.
-
-*Table A.116 -- Values contained in the enumeration "VehicleEvidenceLevelEnum"*
-
-| Enumerated value name | Designation | Definition |
-| --- | --- | --- |
-| unknown | Unknown | The attributes were not compared. |
-| mismatch | Mismatch | The attributes contradict the match. |
-| inconclusive | Inconclusive | The attributes were compared and give no signal. |
-| weak | Weak | The attributes give weak support. |
-| good | Good | The attributes give good support. |
-| strong | Strong | The attributes give strong support. |
-
-### A.3.72 The <<D2Enumeration>> "VehicleMovementEnum"
+### A.3.59 The <<D2Enumeration>> "VehicleMovementEnum"
 
 The motion of a vehicle relative to the camera that observed it.
 
-*Table A.117 -- Values contained in the enumeration "VehicleMovementEnum"*
+*Table A.104 -- Values contained in the enumeration "VehicleMovementEnum"*
 
 | Enumerated value name | Designation | Definition |
 | --- | --- | --- |
@@ -1979,11 +1775,11 @@ The motion of a vehicle relative to the camera that observed it.
 | stopped | Stopped | The vehicle was stationary. |
 | unknown | Unknown | The motion could not be determined. |
 
-### A.3.73 The <<D2Enumeration>> "ViolationStatusEnum"
+### A.3.60 The <<D2Enumeration>> "ViolationStatusEnum"
 
 The states of a violation from detection to closure.
 
-*Table A.118 -- Values contained in the enumeration "ViolationStatusEnum"*
+*Table A.105 -- Values contained in the enumeration "ViolationStatusEnum"*
 
 | Enumerated value name | Designation | Definition |
 | --- | --- | --- |
@@ -1996,11 +1792,11 @@ The states of a violation from detection to closure.
 | closed | Closed | The violation is finished, after payment or a successful appeal; this is final. |
 | voided | Voided | The violation was withdrawn, for example as issued in error or a duplicate; this is final. |
 
-### A.3.74 The <<D2Enumeration>> "ViolationTypeEnum"
+### A.3.61 The <<D2Enumeration>> "ViolationTypeEnum"
 
 The kinds of parking violation.
 
-*Table A.119 -- Values contained in the enumeration "ViolationTypeEnum"*
+*Table A.106 -- Values contained in the enumeration "ViolationTypeEnum"*
 
 | Enumerated value name | Designation | Definition |
 | --- | --- | --- |
@@ -2013,5 +1809,4 @@ The kinds of parking violation.
 | permitMisuse | Permit misuse | A permit or credential is used by a vehicle it was not issued to, or is suspended, copied or otherwise invalid. |
 | noParkingPeriod | No parking period | The vehicle is parked while the place is closed to parking, such as for street cleaning or an event. |
 | obstruction | Obstruction | The vehicle obstructs a lane, access, exit, hydrant or another space. |
-| chargingBayIdle | Charging bay idle | A vehicle stayed connected in an EV charging bay after charging ended, beyond the posted idle limit. |
 | other | Other | A violation not otherwise listed; the notice carries the specifics. |

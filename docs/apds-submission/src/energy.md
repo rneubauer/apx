@@ -21,7 +21,7 @@ and AssignedRights.
 All of these additions are experimental in APX and are offered for
 discussion rather than for immediate adoption.
 
-### Charging point status
+### What a charging point status holds
 
 A ChargingPointStatus:
 
@@ -35,7 +35,7 @@ A ChargingPointStatus:
 - May reference the Space it serves, the AssignedRight that has reserved it,
   and the ChargingSession in progress.
 
-### Charging session
+### What a charging session holds
 
 A ChargingSession:
 
@@ -56,7 +56,8 @@ A ChargingSession:
 
 The proposed classes sit in the existing `EnergyInfrastructure` package
 beside RefillPoint, ElectricChargingPoint and Connector. None of them
-changes an existing class. ChargingPointStatus refers to a refill point the
+changes an existing class, so all are Level B additions to an existing
+domain. ChargingPointStatus refers to a refill point the
 same way a dynamic publication is expected to: by the SupplementalEquipment
 that holds it and its `refillPointIndex`. The point and each connector use
 `RefillPointStatusEnum` as it stands. Its values `available`, `occupied`,
@@ -83,8 +84,7 @@ classDiagram
   }
   class RefillPoint {
     <<APDS>>
-    refillPointIndex
-    status : RefillPointStatusEnum
+    +status : RefillPointStatusEnum [0..1]
   }
   class ElectricChargingPoint {
     <<APDS>>
@@ -105,33 +105,43 @@ classDiagram
     <<APDS>>
   }
   class ChargingPointStatus {
-    refillPointIndex
-    status : RefillPointStatusEnum
+    <<proposed>>
+    +equipmentId : Reference [1..1]
+    +refillPointIndex : Integer [0..1]
+    +status : RefillPointStatusEnum [1..1]
   }
   class ConnectorStatus {
-    connectorIndex
-    status : RefillPointStatusEnum
+    <<proposed>>
+    +connectorIndex : NonNegativeInteger [1..1]
+    +status : RefillPointStatusEnum [1..1]
   }
   class ChargingBayPresence {
-    presence : BayPresenceEnum
+    <<proposed>>
+    +presence : BayPresenceEnum [1..1]
   }
   class ChargingSession {
-    chargingStatus : ChargingSessionStatusEnum
-    energyDelivered
+    <<proposed>>
+    +equipmentId : Reference [1..1]
+    +chargingStatus : ChargingSessionStatusEnum [1..1]
+    +energyDelivered : Decimal [0..1]
   }
-  class ChargingCost
-  class ChargingIdleTerms
+  class ChargingCost {
+    <<proposed>>
+  }
+  class ChargingIdleTerms {
+    <<proposed>>
+  }
   SupplementalEquipment "1" o-- "0..*" RefillPoint
   RefillPoint <|-- ElectricChargingPoint
   ElectricChargingPoint "1" o-- "1..*" Connector
-  ChargingPointStatus ..> SupplementalEquipment : equipment + refillPointIndex
+  ChargingPointStatus ..> SupplementalEquipment : equipmentId
   ChargingPointStatus "1" o-- "0..*" ConnectorStatus
   ChargingPointStatus "1" o-- "0..1" ChargingBayPresence
   ChargingPointStatus ..> Space : spaceId
-  ChargingPointStatus ..> AssignedRight : reservedFor
+  ChargingPointStatus ..> AssignedRight : reservedAssignedRightId
   ChargingBayPresence ..> ObservationElement : observationId
-  ChargingSession ..> SupplementalEquipment : equipment + refillPointIndex
-  ChargingSession ..> Session : parkingSession
+  ChargingSession ..> SupplementalEquipment : equipmentId
+  ChargingSession ..> Session : sessionId
   ChargingSession ..> AssignedRight : assignedRightId
   ChargingSession "1" o-- "0..1" ChargingCost
   ChargingSession "1" o-- "0..1" ChargingIdleTerms

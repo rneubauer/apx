@@ -32,9 +32,8 @@ information in APDS terms rather than in private extensions.
 
 APX (APDS Parking eXtensions) began as an open, additive companion to
 APDS 4.1. It reuses every APDS construct as published and adds only what
-APDS leaves out. In September 2026 APDS accepted APX into the standards
-process. Following discussion with the committee, the work is now split
-in two:
+APDS leaves out. APX has been shared with the APDS committee and,
+following discussion with the committee, the work is now split in two:
 
 - **Data elements, proposed to APDS (this document set).** The classes,
   attributes and enumerations that describe what is exchanged. If
@@ -46,8 +45,7 @@ in two:
   is informative here and is not proposed for the data model.
 
 Every element proposed here is already exercised in the APX reference
-implementation and its published test scenarios, so each one has been
-shaped by real exchanges rather than drawn up in the abstract.
+implementation and its published test scenarios.
 
 ### Guiding principles
 
@@ -199,14 +197,14 @@ A Signage record:
 - Has a reference to the element of the Place hierarchy it governs, and
   applies to the elements below it.
 - Has the wording of the sign, in each language shown.
-- Has a status (active, superseded or removed) and the period it was in
-  force.
-- May have a sign type, a location, a photo, and a reference to the
-  enforcement policy it gives notice of.
+- Has an APDS Validity giving the period it was in force and whether it is
+  active, planned or suspended, and an end reason once it is superseded or
+  retired.
+- May have a sign type, a location and a photo.
 
-A replaced sign is never edited. It is marked superseded and a new
-record, or a new version, carries the new wording, so the history is
-kept.
+A replaced sign is never edited. Its Validity is closed with end reason
+superseded, and a new record, or a new version, carries the new wording,
+so the history is kept.
 
 ### Occupancy Data Specification
 
@@ -281,7 +279,7 @@ merchant gives away time rather than money, which is the most common
 form ("first two hours free"). Extending RateDiscount with a duration
 closes that gap using the class APDS already has.
 
-#### Key concepts
+#### What the Rate additions hold
 
 A RateTable (additions):
 
@@ -337,7 +335,7 @@ operators share lists of plates (watch, scofflaw, allow, their own
 enforcement vehicles) with every system that screens arrivals; a list
 says what to do when a plate is seen, which is different from a right.
 
-#### Key concepts
+#### What the Right additions hold
 
 A CredentialAssigned (additions):
 
@@ -350,7 +348,8 @@ A CredentialAssigned (additions):
 A PresentedCredential:
 
 - Is a Credential (type and additional information, as in APDS).
-- Has the identification actually read, whether or not it matches an assigned credential.
+- Has the identification as read, presented, observed or listed, whether or not it matches an assigned credential.
+- Is the one way access events, toll transactions, valet tickets and plate lists carry a credential value.
 
 An AssignedRight (additions):
 
@@ -374,21 +373,23 @@ A Payment (additions):
 A ValidationProgram:
 
 - Has a unique identification and version.
-- Has a Place element, a provider (an Organisation) and a status.
+- Has a Place element and a provider (an Organisation).
+- Has an APDS Validity, giving its period and whether it is active, planned or suspended, and an end reason once it has ended.
 - Has a benefit (see ValidationBenefit in the Rate additions).
 - Has optional rules (per-Session and per-day limits, validity window, stacking, applicable RateTables) and optional billing terms.
 - Has issuances of instruments, each instrument with its own status.
 
 A PlateList:
 
-- Has a unique identification and version, a name, a category and a status.
+- Has a unique identification and version, a name and a category.
+- Has an APDS Validity and an end reason once it is superseded or retired.
 - Has an owner (an Organisation).
 - Has, per Place element, whether a match is enforced, raises an alert on arrival, or refuses service.
-- Has entries, each with a credential type and identification, a validity period and the reason for listing.
+- Has entries, each with the listed credential, a validity period and the reason for listing.
 
 ### Session Data Specification
 
-APDS 4.1 records a Session with its start, end, Segments and credentials, but not what the Session rests on or how it ended. These additions let two parties exchange the observations a Session was built from, why and how it closed (including a close set by rule rather than observed), each access attempt at a lane whether granted or denied, the evidence behind a match between a Session and a right, the anti-passback state of a credential, each merchant validation applied to a stay, and the custody record of a valeted vehicle. Every addition is optional and compatible with APDS 4.1 (Level B): a receiver that does not know them still reads a valid APDS Session.
+APDS 4.1 records a Session with its start, end, Segments and credentials, but not what the Session rests on or how it ended. These additions let two parties exchange the observations a Session was built from, why and how it closed (including a close set by rule rather than observed), each access attempt at a lane whether granted or denied, which record a Session was matched to, each merchant validation applied to a stay, and the custody record of a valeted vehicle. Every addition is optional and compatible with APDS 4.1 (Level B): a receiver that does not know them still reads a valid APDS Session.
 
 The Session data domain documents the actual use of an AssignedRight. APDS
 4.1 records when a Session started and ended, its Segments, and the
@@ -417,30 +418,30 @@ to. Adding one lets a merchant, an operator and an auditor see the same
 redemption and the actual amount it removed.
 
 Valet operations are mentioned in APDS only as an operating restriction.
-A valet ticket records custody of the vehicle, where it and its keys are,
-and how it was returned, while the stay and the money remain on the APDS
+A valet ticket records custody of the vehicle, where it is parked, and
+how it was returned, while the stay and the money remain on the APDS
 Session.
 
-#### Key concepts
+#### What the Session additions hold
 
 Session (additions)
 
 - Has the observations it was built from, each with the part it played (entry, exit, duplicate, activity).
 - Has a closure: why it ended, whether the end was inferred by rule, and whether the start was observed.
 - Has an optional parent Session, for a Session kept for an area inside a wider visit.
-- Has optional evidence for each match it rests on.
+- Has, for discussion, a record of each match it rests on (which right, valet ticket or violation it was linked to, and who decided).
 
 Access event
 
 - Has a date/time, a direction (entry or exit) and an outcome (granted or denied).
 - Has a denial reason when access was refused.
-- Has the assigned credential it matched, or the value read when nothing matched.
+- Has the assigned credential it matched, or the credential presented when nothing matched.
 - Has the Place element, the vehicular access (lane) and the equipment where it occurred.
 - Has the Session it opened or closed, when access was granted.
 
 Validation redemption
 
-- Has the validation program it draws on and the Session it was applied to.
+- Has the Place element where it was applied, the Session it was applied to and, optionally, the validation programme it draws on.
 - Has the date/time and channel of application, and whether it stands or was reversed.
 - Has the actual amount reduced or time given free, which may be less than the nominal benefit.
 - Is the record that `Segment.validationId` identifies.
@@ -449,7 +450,7 @@ Valet ticket
 
 - Has the Place that took custody, the Session for the stay and an optional AssignedRight.
 - Has a status from drop-off to handback, with the time of each step.
-- Has where the vehicle is parked and where its keys are kept.
+- Has the Space where the vehicle is parked and how the customer asked for it back.
 - Has condition reports at drop-off and handback (see Observation).
 
 ### Observation Data Specification
@@ -459,8 +460,8 @@ APDS 4.1 records an observation with its method, credential, location, images an
 The Observation data domain documents the observation of an entity in a
 Place performing an action. APDS 4.1 already records the method, the
 credential observed, the location, images, an overall confidence and a
-confidence for each character. The additions proposed here carry what a
-modern licence plate recognition camera reports beyond that, record the
+confidence for each character. The additions proposed here carry what
+recognition systems now also report, record the
 condition of a vehicle, and tie observations at a toll point into a
 charge.
 
@@ -478,9 +479,8 @@ candidates the engine considered. Keeping those alternates lets a
 reviewer or a matching system correct the read without a new capture.
 
 On sites without barriers, whether a vehicle entered or left is decided
-by the direction it moved past the camera. Recording the movement, the
-plate face read and the passage a read belongs to lets several cameras
-and frames be treated as one event.
+by the direction it moved past the camera. Recording the movement and
+the plate face read tells a receiver which way the vehicle passed.
 
 Some jurisdictions require a person to confirm a plate before a penalty
 is issued. Recording the review state and its reasons carries that
@@ -491,14 +491,13 @@ they return it; that report is the evidence a damage claim is answered
 with. Toll operators assemble a charge from one or more observations at
 a toll point and must handle disputes about it.
 
-#### Key concepts
+#### What the Observation additions hold
 
 Observation element (additions)
 
 - Has a recognised value and confidence for each attribute read (plate, country, state or province, plate category, make, model, colour, body type).
 - Has the alternate plate candidates, best first.
 - Has the vehicle's movement relative to the camera, the plate face read, and the direction of passage as the recognition system reports it.
-- Has a capture group shared by all reads of one passage.
 - Has an optional review state, the reasons for review and the original values before correction.
 
 Image (additions)
@@ -542,7 +541,7 @@ and AssignedRights.
 All of these additions are experimental in APX and are offered for
 discussion rather than for immediate adoption.
 
-#### Charging point status
+#### What a charging point status holds
 
 A ChargingPointStatus:
 
@@ -556,7 +555,7 @@ A ChargingPointStatus:
 - May reference the Space it serves, the AssignedRight that has reserved it,
   and the ChargingSession in progress.
 
-#### Charging session
+#### What a charging session holds
 
 A ChargingSession:
 
@@ -575,19 +574,35 @@ A ChargingSession:
 
 ### PkCommon Data Specification
 
-One addition to RecordType: the system that first created a record, when the record reaches a receiver through another system. Open code lists need no new element, because APDS ReferencedCodeListEntry and UserDefinedCodeList already provide the pattern. The extensions container and GeoJSON coordinates are already raised as errata 010 and 011 and are not repeated here.
+One addition to RecordType: the system that first created a record, when the record reaches a receiver through another system. Open code lists need no new element, because APDS ReferencedCodeListEntry and UserDefinedCodeList already provide the pattern. Two shared enumerations are added: one for the channel through which an action was taken, and one for why a record is no longer in use. Two related gaps in APDS 4.1 common classes are offered in the separate list of suggested corrections and are not repeated here.
 
 The PkCommon domain holds the classes, datatypes and code list mechanism
-shared by every other domain. APX needs very little here. One attribute
-is suggested for RecordType; everything else APX relies on is already in
-APDS or has been raised separately as an erratum.
+shared by every other domain. APX needs little here: two shared
+enumerations that several domains use, and, for discussion, one attribute
+for RecordType. Everything else APX relies on is already in APDS.
+
+#### Benefits of shared enumerations
+
+Several proposals record the channel through which something was done:
+a payment, a merchant validation, a valet retrieval request, a customer
+contact. If each had its own list, the same channel would carry
+different codes in different records, and a report across them would
+need a mapping table. One shared `InteractionChannelEnum` gives a pay
+station, a contact centre or a mobile app the same code wherever it
+appears.
+
+In the same way, signage, validation programmes, plate lists and
+enforcement policies all have a period of use and an active, planned or
+suspended state. APDS already models both with the Validity class. The
+only thing Validity cannot say is why a record stopped being used, so a
+single small `RecordEndReasonEnum` (superseded or retired) is shared by
+all of them instead of a separate status list for each.
 
 #### Benefits of a record origin
 
 Parking data increasingly passes through more than one system before it
 reaches its user. A city may receive Place and Session data from a
-regional hub that collects it from several operators. A site system may
-hold records created at another site and copied to it.
+regional hub that collects it from several operators.
 
 RecordType already says who created a record and when it was last
 updated. It cannot say which system first created it when that differs
@@ -595,27 +610,25 @@ from the system now distributing it. Without that, a receiver that gets
 the same record by two routes cannot easily tell they are the same, or
 which source to ask when a record is wrong.
 
-A Record Type may additionally:
+#### What the PkCommon additions hold
 
-- Have an origin: the identifier of the system that first created the
-  record, when it differs from the system distributing it.
+- An interaction channel enumeration, shared by Right, Session and
+  Operations.
+- A record end reason enumeration, used beside the APDS Validity class.
+- For discussion, a Record Type origin: the identifier of the system that
+  first created the record, when it differs from the system distributing
+  it.
 
 #### Open code lists
 
-Several APX proposals in other domains add an attribute whose values come
+Several proposals in other domains add an attribute whose values come
 from a list that each region or operator may extend. APDS already has
 the right mechanism for this: UserDefinedCodeList, with
-ReferencedCodeListEntry used to cite one entry. APX uses these classes
-as they are and proposes no new code list element.
+ReferencedCodeListEntry used to cite one entry. These proposals use those
+classes as they are and add no new code list element.
 
-#### Already raised as errata
-
-Two changes in this area are already with the group as errata and are
-not repeated here:
-
-- **Erratum 010**: the extensions container described in the Use Case
-  Document (C.2.5) is not declared on the entities that need it.
-- **Erratum 011**: GeoJSON objects have no coordinates attribute.
+Two related gaps in the APDS 4.1 common classes are offered in the
+separate list of suggested corrections and are not repeated here.
 
 ### Enforcement Data Specification
 
@@ -685,8 +698,10 @@ An EnforcementPolicy:
 - Has a unique identification and a version.
 - Applies to an element of the Place and everything below it, unless a
   lower element has its own policy.
-- Has a validity period and a status.
+- Has an APDS Validity, which gives its period and whether it is active,
+  planned or suspended, and an end reason once it is superseded or retired.
 - Has the jurisdiction and legal text it summarizes.
+- May reference the Signage posted to give notice of it.
 - Has which notice delivery methods are lawful for which detection modes,
   by when, and with what minimum evidence.
 - Has limits on the penalty, a schedule of increases for late payment, and
@@ -708,7 +723,7 @@ domain adds the Alert.
 
 #### Benefits of the Operations domain
 
-Modern parking sites are monitored from many places: the equipment
+Parking sites are often monitored from many places: the equipment
 supplier's service desk, a remote monitoring centre, the operator's
 control room, and enforcement and charging partners. Each needs to know
 when a barrier faults, a lane is blocked, a charging bay is taken by a

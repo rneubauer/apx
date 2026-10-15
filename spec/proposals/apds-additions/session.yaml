@@ -1,16 +1,12 @@
 domain: Session
 order: 5
 summary: >-
-  APDS 4.1 records a Session with its start, end, Segments and credentials,
-  but not what the Session rests on or how it ended. These additions let
-  two parties exchange the observations a Session was built from, why and
-  how it closed (including a close set by rule rather than observed), each
-  access attempt at a lane whether granted or denied, the evidence behind a
-  match between a Session and a right, the anti-passback state of a
-  credential, each merchant validation applied to a stay, and the custody
-  record of a valeted vehicle. Every addition is optional and compatible
-  with APDS 4.1 (Level B): a receiver that does not know them still reads
-  a valid APDS Session.
+  APDS 4.1 records a Session with its start, end, Segments and credentials, but not what the Session
+  rests on or how it ended. These additions let two parties exchange the observations a Session was
+  built from, why and how it closed (including a close set by rule rather than observed), each
+  access attempt at a lane whether granted or denied, which record a Session was matched to, each merchant validation applied to a stay,
+  and the custody record of a valeted vehicle. Every addition is optional and compatible with APDS
+  4.1 (Level B): a receiver that does not know them still reads a valid APDS Session.
 packages:
   - name: Session
     location: D2Payload/Extension/Parking/Session
@@ -19,33 +15,40 @@ packages:
       - name: Session
         change: extend
         designation: Session
-        definition: A Session describes the actual act of using a Right Specification, and may contain multiple segments.
+        definition: >-
+          A Session describes the actual act of using a Right Specification, and may contain
+          multiple segments.
         stereotype: D2VersionedIdentifiable
         abstract: false
         parent: null
         level: B
         tier: 1
-        apx: apds-ext:apx:session-detail@1.0 (APX Part 5 §5.8)
+        apx: APX Part 5 §5.8 SessionDetail
         rationale: >-
-          Lets a receiver see which observations opened and closed a visit,
-          why it ended, and which visit an area Session belongs to, so two
-          parties compute the same dwell and occupancy figures from the same
-          Sessions. The lifecycle, passThrough and matchEvidence members
-          follow the tier 2 classes they describe.
+          Lets a receiver see which observations opened and closed a visit, why it ended, and which
+          visit an area Session belongs to, so two parties compute the same dwell and occupancy
+          figures from the same Sessions. The lifecycle and passThrough members are offered at
+          tier 2 and matchEvidence at tier 3, with the classes they describe.
         attributes:
-          - name: parentSession
+          - name: parentSessionId
             designation: Parent session
-            definition: The Session of the wider visit this Session is part of, for a Session kept for an area inside a Place.
+            definition: >-
+              The Session of the wider visit this Session is part of, for a Session kept for an area
+              inside a Place.
             multiplicity: 0..1
             type: PkCommon.VersionedReference (Session.Session)
           - name: lifecycle
             designation: Lifecycle
-            definition: How settled the Session is, from open while the vehicle is present to final when no further revision is expected.
+            definition: >-
+              How settled the Session is, from open while the vehicle is present to final when no
+              further revision is expected.
             multiplicity: 0..1
             type: Session.SessionLifecycleEnum
           - name: passThrough
             designation: Pass through
-            definition: Indicates a stay in an area shorter than the area's minimum dwell, which is not scored or charged.
+            definition: >-
+              Indicates a stay in an area shorter than the area's minimum dwell, which is not scored
+              or charged.
             multiplicity: 0..1
             type: PkCommon.Boolean
         associations:
@@ -64,7 +67,6 @@ packages:
             definition: Match evidence for the associated Session
             multiplicity: 0..*
             target: Session.MatchEvidence
-
       - name: SessionRead
         change: new
         designation: Session read
@@ -74,13 +76,12 @@ packages:
         parent: null
         level: B
         tier: 1
-        apx: SessionReadBinding (APX Part 5 §5.8)
+        apx: APX Part 5 §5.8 SessionReadBinding
         rationale: >-
-          Ties a Session to the observations it was built from, so a receiver
-          can tell the entry and exit passages from duplicate frames and
-          sightings inside the Place.
+          Ties a Session to the observations it was built from, so a receiver can tell the entry and
+          exit passages from duplicate frames and sightings inside the Place.
         attributes:
-          - name: observationElement
+          - name: observationId
             designation: Observation element
             definition: The observation attached to the Session.
             multiplicity: 1..1
@@ -92,10 +93,11 @@ packages:
             type: Session.SessionReadRoleEnum
           - name: representative
             designation: Representative
-            definition: Indicates the one observation that stands for the visit when a single image or read is shown.
+            definition: >-
+              Indicates the one observation that stands for the visit when a single image or read is
+              shown.
             multiplicity: 0..1
             type: PkCommon.Boolean
-
       - name: SessionClosure
         change: new
         designation: Session closure
@@ -105,11 +107,10 @@ packages:
         parent: null
         level: B
         tier: 1
-        apx: SessionClosure (APX Part 5 §5.8)
+        apx: APX Part 5 §5.8 SessionClosure
         rationale: >-
-          Lets a receiver tell an exit that was seen from a Session closed by
-          rule or an exit whose entry was never observed, and leave the
-          latter out of dwell and occupancy statistics.
+          Lets a receiver tell an exit that was seen from a Session closed by rule or an exit whose
+          entry was never observed, and leave the latter out of dwell and occupancy statistics.
         attributes:
           - name: endReason
             designation: End reason
@@ -123,7 +124,9 @@ packages:
             type: PkCommon.Boolean
           - name: startObserved
             designation: Start observed
-            definition: Indicates whether the start time was observed; false means the start time is a placeholder for a Session whose entry was never seen.
+            definition: >-
+              Indicates whether the start time was observed; false means the start time is a
+              placeholder for a Session whose entry was never seen.
             multiplicity: 0..1
             type: PkCommon.Boolean
           - name: closureRule
@@ -131,32 +134,34 @@ packages:
             definition: The name of the operator rule that closed the Session, when a rule closed it.
             multiplicity: 0..1
             type: PkCommon.String
-
       - name: AccessEvent
         change: new
         designation: Access event
-        definition: One presentation of a credential at an entry or exit point of a Place, and whether access was granted.
+        definition: >-
+          One presentation of a credential at an entry or exit point of a Place, and whether access
+          was granted.
         stereotype: D2Identifiable
         abstract: false
         parent: null
         level: B
         tier: 1
-        apx: AccessEvent / CredentialAccessEvent (APX Part 21 §21.4)
+        apx: APX Part 21 §21.4 AccessEvent
         rationale: >-
-          Lets every party hear the same account of what happened at a lane,
-          including refusals, which today leave no trace in APDS because no
-          Session is opened.
+          Lets every party hear the same account of what happened at a lane, including refusals,
+          which today leave no trace in APDS because no Session is opened.
         attributes:
-          - name: occurredAt
+          - name: occurredTime
             designation: Occurred at
             definition: The date/time of the access attempt.
             multiplicity: 1..1
             type: PkCommon.DateTime
           - name: direction
             designation: Direction
-            definition: Whether the attempt was to enter or to leave.
+            definition: >-
+              Whether the attempt was to enter or to leave, using the APDS access type values entry
+              and exit.
             multiplicity: 1..1
-            type: Session.AccessDirectionEnum
+            type: Place.AccessTypeEnum
           - name: outcome
             designation: Outcome
             definition: Whether access was granted or denied.
@@ -172,16 +177,6 @@ packages:
             definition: The assigned credential the presented value matched, when one matched.
             multiplicity: 0..1
             type: PkCommon.Reference (Right.CredentialAssigned)
-          - name: presentedCredentialType
-            designation: Presented credential type
-            definition: The type of credential the reader read.
-            multiplicity: 0..1
-            type: Right.CredentialTypeEnum
-          - name: presentedCredentialId
-            designation: Presented credential id
-            definition: The value the reader read, carried when it matched no assigned credential.
-            multiplicity: 0..1
-            type: PkCommon.String
           - name: elementId
             designation: Element id
             definition: The element of the Place Hierarchy where the attempt occurred.
@@ -202,7 +197,12 @@ packages:
             definition: The Session opened or closed by a granted access.
             multiplicity: 0..1
             type: PkCommon.VersionedReference (Session.Session)
-
+        associations:
+          - end: presentedCredential
+            designation: Presented credential
+            definition: Presented credential for the associated AccessEvent
+            multiplicity: 0..1
+            target: Right.PresentedCredential
       - name: MatchEvidence
         change: new
         designation: Match evidence
@@ -211,14 +211,14 @@ packages:
         abstract: false
         parent: null
         level: B
-        tier: 2
-        apx: MatchEvidence (APX Part 5 §5.8)
+        tier: 3
+        apx: APX Part 5 §5.8 MatchEvidence
         rationale: >-
-          Lets a receiver judge whether a link (for example an exit paired to
-          an entry, or a plate matched to a permit) is strong enough to act
-          on, without exchanging plate characters or vehicle attribute values.
+          Records which record a Session was matched to, whether the match was applied, and who
+          decided, so a receiver can see why a stay was linked to a right, valet ticket or
+          violation. The scoring detail behind a match is left to implementations.
         attributes:
-          - name: target
+          - name: targetId
             designation: Target
             definition: The record at the other end of the link, such as an AssignedRight or an observation.
             multiplicity: 1..1
@@ -230,29 +230,11 @@ packages:
             type: Session.MatchTypeEnum
           - name: applied
             designation: Applied
-            definition: Indicates whether the link was acted on; false records a link kept only for evaluation.
+            definition: >-
+              Indicates whether the link was acted on; false records a link kept only for
+              evaluation.
             multiplicity: 1..1
             type: PkCommon.Boolean
-          - name: plateMatchMethod
-            designation: Plate match method
-            definition: How the plate strings agreed, when the link rests on a plate.
-            multiplicity: 0..1
-            type: Session.PlateMatchMethodEnum
-          - name: plateEditCost
-            designation: Plate edit cost
-            definition: The weighted number of character edits between the two plate strings, for an approximate match.
-            multiplicity: 0..1
-            type: PkCommon.Float
-          - name: jurisdictionAgreement
-            designation: Jurisdiction agreement
-            definition: Whether the plate issuing jurisdictions agree.
-            multiplicity: 0..1
-            type: Session.JurisdictionAgreementEnum
-          - name: vehicleEvidenceLevel
-            designation: Vehicle evidence level
-            definition: How strongly the vehicle attributes (make, model, colour) support the link.
-            multiplicity: 0..1
-            type: Session.VehicleEvidenceLevelEnum
           - name: decidedBy
             designation: Decided by
             definition: Whether software or a person made the link.
@@ -263,48 +245,6 @@ packages:
             definition: The date/time the link was made.
             multiplicity: 0..1
             type: PkCommon.DateTime
-
-      - name: PassbackStatus
-        change: new
-        designation: Passback status
-        definition: The anti-passback state of one assigned credential at a Place.
-        stereotype: D2Class
-        abstract: false
-        parent: null
-        level: B
-        tier: 2
-        apx: PassbackStatus (APX Part 17)
-        rationale: >-
-          Lets a help desk and a lane controller agree on whether a credential
-          is expected inside or outside, and correct it when a vehicle
-          tailgated or a gate was raised by hand.
-        attributes:
-          - name: credentialId
-            designation: Credential id
-            definition: The assigned credential the state applies to.
-            multiplicity: 1..1
-            type: PkCommon.Reference (Right.CredentialAssigned)
-          - name: passbackState
-            designation: Passback state
-            definition: Whether the credential is in an anti-passback violation.
-            multiplicity: 1..1
-            type: Session.PassbackStateEnum
-          - name: expectedPresence
-            designation: Expected presence
-            definition: Where the anti-passback rule expects the credential to be.
-            multiplicity: 0..1
-            type: Session.PassbackPresenceEnum
-          - name: recordedPresence
-            designation: Recorded presence
-            definition: Where the last recorded access places the credential.
-            multiplicity: 0..1
-            type: Session.PassbackPresenceEnum
-          - name: lastAccessEvent
-            designation: Last access event
-            definition: The most recent access event for the credential.
-            multiplicity: 0..1
-            type: PkCommon.Reference (Session.AccessEvent)
-
       - name: ValidationRedemption
         change: new
         designation: Validation redemption
@@ -314,16 +254,16 @@ packages:
         parent: null
         level: B
         tier: 1
-        apx: ValidationRedemption (APX Part 20); materialized as Segment.validationId
+        apx: APX Part 20 ValidationRedemption
         rationale: >-
-          Gives the existing Segment.validationId something to point to, so a
-          merchant, an operator and an auditor see the same redemption and the
-          actual amount it removed.
+          Gives the existing Segment.validationId something to point to, so a merchant, an operator
+          and an auditor see the same redemption and the actual amount it removed. The programme it
+          belongs to is itself a Tier 2 proposal, so the link is optional here.
         attributes:
-          - name: validationProgram
+          - name: validationProgramId
             designation: Validation program
             definition: The validation program the redemption draws on.
-            multiplicity: 1..1
+            multiplicity: 0..1
             type: PkCommon.VersionedReference (Right.ValidationProgram)
           - name: sessionId
             designation: Session id
@@ -333,7 +273,7 @@ packages:
           - name: elementId
             designation: Element id
             definition: The element of the Place Hierarchy where the validation was applied.
-            multiplicity: 0..1
+            multiplicity: 1..1
             type: PkCommon.VersionedReference (Place.HierarchyElementGeneral)
           - name: appliedTime
             designation: Applied time
@@ -343,8 +283,8 @@ packages:
           - name: channel
             designation: Channel
             definition: The channel through which the validation was applied.
-            multiplicity: 0..1
-            type: Session.ValidationChannelEnum
+            multiplicity: 1..1
+            type: PkCommon.InteractionChannelEnum
           - name: redemptionStatus
             designation: Redemption status
             definition: Whether the redemption stands or has been reversed.
@@ -367,7 +307,9 @@ packages:
             type: PkCommon.String
           - name: amountReduced
             designation: Amount reduced
-            definition: The actual reduction of the amount due, which may be less than the program's nominal benefit.
+            definition: >-
+              The actual reduction of the amount due, which may be less than the program's nominal
+              benefit.
             multiplicity: 0..1
             type: PkCommon.AmountInCurrency
           - name: durationComped
@@ -385,7 +327,6 @@ packages:
             definition: Free-text reason the redemption was reversed.
             multiplicity: 0..1
             type: PkCommon.MultilingualString
-
       - name: ValetTicket
         change: new
         designation: Valet ticket
@@ -395,11 +336,11 @@ packages:
         parent: null
         level: B
         tier: 2
-        apx: ValetTicket (APX Part 22)
+        apx: APX Part 22 ValetTicket
         rationale: >-
-          APDS mentions valet only as an operating restriction; this records
-          custody, where the vehicle and keys are, the retrieval request and
-          the handback, while the stay and the money stay on the APDS Session.
+          APDS mentions valet only as an operating restriction; this records custody, where the
+          vehicle and keys are, the retrieval request and the handback, while the stay and the money
+          stay on the APDS Session.
         attributes:
           - name: elementId
             designation: Element id
@@ -426,17 +367,7 @@ packages:
             definition: Where the vehicle is in the custody process.
             multiplicity: 1..1
             type: Session.ValetStatusEnum
-          - name: vehicleCredentialType
-            designation: Vehicle credential type
-            definition: The type of credential identifying the vehicle, usually a licence plate.
-            multiplicity: 0..1
-            type: Right.CredentialTypeEnum
-          - name: vehicleCredentialId
-            designation: Vehicle credential id
-            definition: The plate or other credential read at drop-off.
-            multiplicity: 0..1
-            type: PkCommon.String
-          - name: customerContact
+          - name: customerContactPointId
             designation: Customer contact
             definition: The contact point used to verify the customer and tell them when the vehicle is ready.
             multiplicity: 0..1
@@ -446,41 +377,11 @@ packages:
             definition: The date/time the valet took custody of the vehicle.
             multiplicity: 1..1
             type: PkCommon.DateTime
-          - name: dropOffVehicularAccess
-            designation: Drop off vehicular access
-            definition: The lane or stand where custody was taken.
-            multiplicity: 0..1
-            type: PkCommon.VersionedReference (Place.HierarchyElementGeneral)
-          - name: mileageAtDropOff
-            designation: Mileage at drop off
-            definition: The odometer reading recorded at drop-off.
-            multiplicity: 0..1
-            type: PkCommon.NonNegativeInteger
-          - name: fuelLevelAtDropOff
-            designation: Fuel level at drop off
-            definition: The fuel or charge level recorded at drop-off, as a percentage.
-            multiplicity: 0..1
-            type: PkCommon.Percentage
-          - name: keyTag
-            designation: Key tag
-            definition: The identifier of the tag attached to the vehicle's keys.
-            multiplicity: 0..1
-            type: PkCommon.String
           - name: spaceId
             designation: Space id
             definition: The Space where the vehicle is parked, when the Place is mapped by space.
             multiplicity: 0..1
             type: PkCommon.VersionedReference (Place.Space)
-          - name: storageZone
-            designation: Storage zone
-            definition: Free-text level, row or zone where the vehicle is parked, for Places not mapped by space.
-            multiplicity: 0..1
-            type: PkCommon.String
-          - name: keyLocation
-            designation: Key location
-            definition: Where the keys are kept, such as a key board and hook.
-            multiplicity: 0..1
-            type: PkCommon.String
           - name: parkedTime
             designation: Parked time
             definition: The date/time the vehicle was parked.
@@ -491,7 +392,7 @@ packages:
             definition: The date/time the customer asked for the vehicle.
             multiplicity: 0..1
             type: PkCommon.DateTime
-          - name: retrievalScheduledFor
+          - name: retrievalScheduledTime
             designation: Retrieval scheduled for
             definition: The date/time the customer asked the vehicle to be ready, for a scheduled pickup.
             multiplicity: 0..1
@@ -500,7 +401,7 @@ packages:
             designation: Retrieval channel
             definition: How the customer asked for the vehicle.
             multiplicity: 0..1
-            type: Session.ValetRetrievalChannelEnum
+            type: PkCommon.InteractionChannelEnum
           - name: promisedTime
             designation: Promised time
             definition: The date/time the vehicle is promised at the pickup point.
@@ -537,14 +438,18 @@ packages:
             definition: Condition report recorded at handback for the associated ValetTicket
             multiplicity: 0..1
             target: Observation.ConditionReport
-
+          - end: vehicleCredential
+            designation: Vehicle credential
+            definition: Vehicle credential for the associated ValetTicket
+            multiplicity: 0..1
+            target: Right.PresentedCredential
     enumerations:
       - name: SessionReadRoleEnum
         change: new
         designation: Session read role
         definition: The part an observation played in a Session.
         tier: 1
-        apx: SessionReadBinding.role (APX Part 5 §5.8)
+        apx: APX Part 5 §5.8 SessionReadBinding.role
         rationale: Separates the passages that opened and closed a visit from repeated and inside sightings.
         values:
           - name: entry
@@ -559,56 +464,55 @@ packages:
           - name: activity
             designation: Activity
             definition: The vehicle seen inside the Place, for example during a patrol or by a bay camera.
-
       - name: SessionEndReasonEnum
         change: new
         designation: Session end reason
         definition: Why a Session ended.
         tier: 1
-        apx: registry apx-session-end-reasons
+        apx: APX Part 11 code list (session end reasons)
         rationale: >-
-          Lets consumers treat observed exits, rule-based closures and exits
-          with no observed entry differently. If the group prefers to keep
-          these values out of the standard, an external code list
-          (PkCommon.ReferencedCodeListEntry) seeded with them works equally well.
+          Lets consumers treat observed exits, rule-based closures and exits with no observed entry
+          differently. If the group prefers to keep these values out of the standard, an external
+          code list (PkCommon.ReferencedCodeListEntry) seeded with them works equally well.
         values:
-          - name: exitRead
-            designation: Exit read
+          - name: exitObserved
+            designation: Exit observed
             definition: An exit observation of the vehicle closed the Session.
-          - name: reentry
-            designation: Reentry
+          - name: reentryObserved
+            designation: Re-entry observed
             definition: The same vehicle entered again and the earlier Session was closed at the new entry.
-          - name: stale
-            designation: Stale
-            definition: Closed by rule after no observation for the Place's maximum stay.
-          - name: parentExit
-            designation: Parent exit
-            definition: An area Session closed because the wider visit it belongs to ended.
-          - name: areaLeft
-            designation: Area left
-            definition: An area Session closed because the vehicle was seen leaving the area.
-          - name: inventorySweep
-            designation: Inventory sweep
-            definition: A sweep of the Place found the vehicle gone.
+          - name: timedOut
+            designation: Timed out
+            definition: Closed by rule after no observation of the vehicle for the Place's maximum stay.
+          - name: parentSessionEnded
+            designation: Parent session ended
+            definition: A Session kept for an area inside a Place closed because the visit to the Place ended.
+          - name: leftArea
+            designation: Left area
+            definition: >-
+              A Session kept for an area inside a Place closed because the vehicle was seen leaving
+              the area.
+          - name: notFoundOnCount
+            designation: Not found on count
+            definition: A count or patrol of the vehicles present found the vehicle gone.
           - name: valetHandback
             designation: Valet handback
-            definition: The valet service handed the vehicle back.
-          - name: exitOnly
-            designation: Exit only
-            definition: An exit with no observed entry; the start time is a placeholder.
-          - name: operator
-            designation: Operator
-            definition: A person closed the Session.
-          - name: review
-            designation: Review
-            definition: A reviewer paired the exit observation that closed the Session.
-
+            definition: The valet service handed the vehicle back to the customer.
+          - name: exitWithoutEntry
+            designation: Exit without entry
+            definition: An exit was observed with no observed entry; the start time is an estimate.
+          - name: closedByOperator
+            designation: Closed by operator
+            definition: A member of staff closed the Session.
+          - name: closedAfterReview
+            designation: Closed after review
+            definition: A person reviewing the observations paired an exit with the Session and closed it.
       - name: SessionLifecycleEnum
         change: new
         designation: Session lifecycle
         definition: How settled a Session is.
         tier: 2
-        apx: SessionDetail.lifecycle (APX Part 5 §5.8)
+        apx: APX Part 5 §5.8 SessionDetail.lifecycle
         rationale: Tells a receiver whether a closed Session may still be revised.
         values:
           - name: open
@@ -623,28 +527,12 @@ packages:
           - name: disputed
             designation: Disputed
             definition: The Session is under review.
-
-      - name: AccessDirectionEnum
-        change: new
-        designation: Access direction
-        definition: Whether a vehicle or person was entering or leaving.
-        tier: 1
-        apx: AccessEvent.direction, LprReadDetail.accessEvent
-        rationale: Records the direction of a passage, which can differ from the configured purpose of a reversible lane.
-        values:
-          - name: entry
-            designation: Entry
-            definition: Entering the Place.
-          - name: exit
-            designation: Exit
-            definition: Leaving the Place.
-
       - name: AccessOutcomeEnum
         change: new
         designation: Access outcome
         definition: The result of an access attempt.
         tier: 1
-        apx: AccessEvent.outcome
+        apx: APX Part 21 §21.4 AccessEvent.outcome
         rationale: Distinguishes granted from refused access attempts.
         values:
           - name: granted
@@ -653,17 +541,16 @@ packages:
           - name: denied
             designation: Denied
             definition: Access was refused.
-
       - name: AccessDenialReasonEnum
         change: new
         designation: Access denial reason
         definition: Why an access attempt was refused.
         tier: 1
-        apx: registry apx-access-denial-reasons
+        apx: APX Part 11 code list (access denial reasons)
         rationale: >-
-          Lets an operator, a help desk and a credential issuer read the same
-          reason for a refusal. As with session end reasons, an external code
-          list seeded with these values is an equally good home.
+          Lets an operator, a help desk and a credential issuer read the same reason for a refusal.
+          As with session end reasons, an external code list seeded with these values is an equally
+          good home.
         values:
           - name: credentialSuspended
             designation: Credential suspended
@@ -676,19 +563,25 @@ packages:
             definition: The presented credential matched an assigned credential that is revoked.
           - name: credentialReplaced
             designation: Credential replaced
-            definition: The presented credential matched an assigned credential that has been replaced by another.
+            definition: >-
+              The presented credential matched an assigned credential that has been replaced by
+              another.
           - name: credentialExpired
             designation: Credential expired
             definition: The presented credential matched an assigned credential that has expired.
           - name: credentialNotYetActive
             designation: Credential not yet active
-            definition: The presented credential matched an assigned credential that is issued but not yet active.
+            definition: >-
+              The presented credential matched an assigned credential that is issued but not yet
+              active.
           - name: unknownCredential
             designation: Unknown credential
             definition: The presented value matched no assigned credential.
           - name: passback
             designation: Passback
-            definition: Refused by the anti-passback rule because the credential is already inside or already outside.
+            definition: >-
+              Refused by the anti-passback rule because the credential is already inside or already
+              outside.
           - name: accountBalance
             designation: Account balance
             definition: Refused because of the holder's outstanding balance or account standing.
@@ -698,115 +591,38 @@ packages:
           - name: outsideValidity
             designation: Outside validity
             definition: The credential is valid at this Place, but not at this time.
-
       - name: MatchTypeEnum
         change: new
         designation: Match type
         definition: The kind of link between a Session and another record.
-        tier: 2
-        apx: MatchEvidence.matchType
+        tier: 3
+        apx: APX Part 5 §5.8 MatchEvidence.matchType
         rationale: Names what a match connects, so a receiver can weigh it.
         values:
-          - name: right
-            designation: Right
+          - name: assignedRight
+            designation: Assigned right
             definition: An AssignedRight covers the stay.
-          - name: valet
-            designation: Valet
+          - name: valetTicket
+            designation: Valet ticket
             definition: A valet ticket covers the stay.
           - name: violation
             designation: Violation
             definition: A violation concerns the stay.
-          - name: list
-            designation: List
+          - name: plateList
+            designation: Plate list
             definition: An entry on a plate list matched the vehicle.
-          - name: exitPairing
-            designation: Exit pairing
-            definition: An exit observation was paired to the Session's entry.
-          - name: sweep
-            designation: Sweep
-            definition: The vehicle was seen during a patrol or inventory sweep tied to the Session.
+          - name: entryExitPair
+            designation: Entry and exit pair
+            definition: An exit observation was paired to the Session's entry observation.
           - name: other
             designation: Other
             definition: Any other kind of link.
-
-      - name: PlateMatchMethodEnum
-        change: new
-        designation: Plate match method
-        definition: How two plate strings were judged to agree.
-        tier: 2
-        apx: MatchEvidence.plate.method
-        rationale: Lets a receiver refuse to act on approximate matches where only an exact match is acceptable.
-        values:
-          - name: exact
-            designation: Exact
-            definition: The same characters.
-          - name: alias
-            designation: Alias
-            definition: A plate the right or account lists for the same vehicle.
-          - name: fold
-            designation: Fold
-            definition: Equal after folding characters that look alike, such as O and 0.
-          - name: fuzzy
-            designation: Fuzzy
-            definition: Within the implementation's threshold of character edits.
-          - name: lenient
-            designation: Lenient
-            definition: Accepted under a relaxed rule that may excuse a stay but is never used to penalise one.
-          - name: reviewer
-            designation: Reviewer
-            definition: A person judged the plates to match.
-
-      - name: JurisdictionAgreementEnum
-        change: new
-        designation: Jurisdiction agreement
-        definition: Whether the issuing jurisdictions of two plates agree.
-        tier: 2
-        apx: MatchEvidence.plate.jurisdiction
-        rationale: Separates a true match from the same characters on a plate from another jurisdiction.
-        values:
-          - name: agrees
-            designation: Agrees
-            definition: The jurisdictions are the same.
-          - name: differs
-            designation: Differs
-            definition: The jurisdictions are different.
-          - name: unknown
-            designation: Unknown
-            definition: At least one jurisdiction is not known.
-
-      - name: VehicleEvidenceLevelEnum
-        change: new
-        designation: Vehicle evidence level
-        definition: How strongly the vehicle attributes support a match.
-        tier: 2
-        apx: MatchEvidence.vehicle.level
-        rationale: Records the strength of make, model and colour evidence without exchanging the values themselves.
-        values:
-          - name: unknown
-            designation: Unknown
-            definition: The attributes were not compared.
-          - name: mismatch
-            designation: Mismatch
-            definition: The attributes contradict the match.
-          - name: inconclusive
-            designation: Inconclusive
-            definition: The attributes were compared and give no signal.
-          - name: weak
-            designation: Weak
-            definition: The attributes give weak support.
-          - name: good
-            designation: Good
-            definition: The attributes give good support.
-          - name: strong
-            designation: Strong
-            definition: The attributes give strong support.
-
       - name: MatchDecisionEnum
         change: new
         designation: Match decision
         definition: Who made a link.
-        tier: 2
-        apx: MatchEvidence.decidedBy
+        tier: 3
+        apx: APX Part 5 §5.8 MatchEvidence.decidedBy
         rationale: Separates automatic links from links a person made.
         values:
           - name: system
@@ -815,73 +631,12 @@ packages:
           - name: person
             designation: Person
             definition: A person made the link.
-
-      - name: PassbackStateEnum
-        change: new
-        designation: Passback state
-        definition: The anti-passback state of a credential.
-        tier: 2
-        apx: PassbackStatus.state
-        rationale: Records whether a credential is currently refused by the anti-passback rule.
-        values:
-          - name: normal
-            designation: Normal
-            definition: The credential is not in violation.
-          - name: violation
-            designation: Violation
-            definition: The credential is in an anti-passback violation.
-          - name: unknown
-            designation: Unknown
-            definition: The state cannot be determined.
-
-      - name: PassbackPresenceEnum
-        change: new
-        designation: Passback presence
-        definition: Where a credential is expected or recorded to be.
-        tier: 2
-        apx: PassbackStatus.expectedPresence / recordedPresence
-        rationale: Supports comparing the expected with the recorded presence of a credential.
-        values:
-          - name: inside
-            designation: Inside
-            definition: Inside the Place.
-          - name: outside
-            designation: Outside
-            definition: Outside the Place.
-          - name: unknown
-            designation: Unknown
-            definition: Not known.
-
-      - name: ValidationChannelEnum
-        change: new
-        designation: Validation channel
-        definition: The channel through which a validation was applied.
-        tier: 1
-        apx: ValidationRedemption.channel
-        rationale: Lets a merchant and an operator reconcile redemptions by where they were made.
-        values:
-          - name: lane
-            designation: Lane
-            definition: Applied by lane equipment at entry or exit.
-          - name: payStation
-            designation: Pay station
-            definition: Applied at a payment machine, for example by scanning a code.
-          - name: merchantApp
-            designation: Merchant app
-            definition: Applied by the merchant through its own application.
-          - name: callCenter
-            designation: Call center
-            definition: Applied by an agent on the customer's behalf.
-          - name: api
-            designation: System interface
-            definition: Applied by another system through an interface.
-
       - name: ValidationRedemptionStatusEnum
         change: new
         designation: Validation redemption status
         definition: Whether a validation redemption stands.
         tier: 1
-        apx: ValidationRedemption.redemptionStatus
+        apx: APX Part 20 ValidationRedemption.redemptionStatus
         rationale: Lets a reversed validation be kept for audit rather than deleted.
         values:
           - name: applied
@@ -890,13 +645,12 @@ packages:
           - name: reversed
             designation: Reversed
             definition: The validation was reversed.
-
       - name: ValetStatusEnum
         change: new
         designation: Valet status
         definition: The stage of a vehicle in valet custody.
         tier: 2
-        apx: ValetTicket.valetStatus
+        apx: APX Part 22 ValetTicket.valetStatus
         rationale: Gives attendants, customers and operators one shared view of where a valeted vehicle is.
         values:
           - name: dropped
@@ -923,43 +677,12 @@ packages:
           - name: cancelled
             designation: Cancelled
             definition: The ticket was cancelled before custody was taken.
-
-      - name: ValetRetrievalChannelEnum
-        change: new
-        designation: Valet retrieval channel
-        definition: How a customer asked for a valeted vehicle.
-        tier: 2
-        apx: ValetTicket.retrieval.channel
-        rationale: Records the channel of a retrieval request for service and reporting.
-        values:
-          - name: sms
-            designation: SMS
-            definition: By text message.
-          - name: app
-            designation: App
-            definition: By mobile application.
-          - name: web
-            designation: Web
-            definition: By web page.
-          - name: voiceBot
-            designation: Voice bot
-            definition: By an automated voice service.
-          - name: kiosk
-            designation: Kiosk
-            definition: At a kiosk.
-          - name: attendant
-            designation: Attendant
-            definition: In person, to an attendant.
-          - name: callCenter
-            designation: Call center
-            definition: Through a call center agent.
-
       - name: HandbackVerificationEnum
         change: new
         designation: Handback verification
         definition: How the person collecting a valeted vehicle was verified.
         tier: 2
-        apx: ValetTicket.handback.verificationMethod
+        apx: APX Part 22 ValetTicket.handback
         rationale: Records the evidence that the vehicle went to the right person.
         values:
           - name: ticket

@@ -52,31 +52,30 @@ current meaning: the count at a moment, given by creationTime.
 classDiagram
     class DemandTable {
         <<APDS>>
-        creationTime : DateTime
-        elementId : VersionedReference
-        frequency : Duration
     }
     class DemandType {
         <<APDS>>
-        count : NonNegativeInteger
-        percentage : Percentage
-        occupancyCalculation : CalculationTypeEnum
-        periodStart : DateTime
-        periodEnd : DateTime
-        maximumCount : NonNegativeInteger
-        averageCount : Float
-        sampleCount : NonNegativeInteger
+    }
+    class DemandTypeAdditions {
+        <<proposed>>
+        +periodStartTime : DateTime [0..1]
+        +periodEndTime : DateTime [0..1]
+        +maximumCount : NonNegativeInteger [0..1]
+        +averageCount : Float [0..1]
+        +sampleCount : NonNegativeInteger [0..1]
     }
     class Supply {
         <<APDS>>
     }
     DemandTable "1" o-- "0..*" DemandType : demandType
+    DemandType .. DemandTypeAdditions : Level B additions
 ```
 
-In the diagram, periodStart, periodEnd, maximumCount, averageCount and
-sampleCount are the proposed attributes; the others exist in APDS 4.1.
+The `<<proposed>>` box holds the five attributes suggested for
+DemandType; the `<<APDS>>` boxes are the existing APDS 4.1 classes,
+unchanged.
 
-When periodStart and periodEnd are present, the record describes the
+When periodStartTime and periodEndTime are present, the record describes the
 period and count, if given, is the count at its end. Periods are
 expected to align with clock boundaries in the Place's time zone (e.g.,
 each hour), but the specification does not need to require it. The
@@ -111,7 +110,7 @@ These specifications support this use case in a number of ways:
 today.
 
 **Occupancy.** For each hour the operator sends one DemandType inside a
-DemandTable for the garage. Each carries periodStart and periodEnd for
+DemandTable for the garage. Each carries periodStartTime and periodEndTime for
 the hour, maximumCount and averageCount, and sampleCount (normally 30).
 An hour in which the counting system was offline carries a sampleCount
 of 0 and no counts, so the city can see the gap rather than mistake it

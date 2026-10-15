@@ -27,30 +27,30 @@ to. Adding one lets a merchant, an operator and an auditor see the same
 redemption and the actual amount it removed.
 
 Valet operations are mentioned in APDS only as an operating restriction.
-A valet ticket records custody of the vehicle, where it and its keys are,
-and how it was returned, while the stay and the money remain on the APDS
+A valet ticket records custody of the vehicle, where it is parked, and
+how it was returned, while the stay and the money remain on the APDS
 Session.
 
-### Key concepts
+### What the Session additions hold
 
 Session (additions)
 
 - Has the observations it was built from, each with the part it played (entry, exit, duplicate, activity).
 - Has a closure: why it ended, whether the end was inferred by rule, and whether the start was observed.
 - Has an optional parent Session, for a Session kept for an area inside a wider visit.
-- Has optional evidence for each match it rests on.
+- Has, for discussion, a record of each match it rests on (which right, valet ticket or violation it was linked to, and who decided).
 
 Access event
 
 - Has a date/time, a direction (entry or exit) and an outcome (granted or denied).
 - Has a denial reason when access was refused.
-- Has the assigned credential it matched, or the value read when nothing matched.
+- Has the assigned credential it matched, or the credential presented when nothing matched.
 - Has the Place element, the vehicular access (lane) and the equipment where it occurred.
 - Has the Session it opened or closed, when access was granted.
 
 Validation redemption
 
-- Has the validation program it draws on and the Session it was applied to.
+- Has the Place element where it was applied, the Session it was applied to and, optionally, the validation programme it draws on.
 - Has the date/time and channel of application, and whether it stands or was reversed.
 - Has the actual amount reduced or time given free, which may be less than the nominal benefit.
 - Is the record that `Segment.validationId` identifies.
@@ -59,7 +59,7 @@ Valet ticket
 
 - Has the Place that took custody, the Session for the stay and an optional AssignedRight.
 - Has a status from drop-off to handback, with the time of each step.
-- Has where the vehicle is parked and where its keys are kept.
+- Has the Space where the vehicle is parked and how the customer asked for it back.
 - Has condition reports at drop-off and handback (see Observation).
 
 ## Information model
@@ -72,43 +72,54 @@ instance, and no core class becomes a component of an extension class.
 
 `Session` gains three optional associations (`sessionRead`,
 `sessionClosure`, `matchEvidence`) and three optional attributes
-(`parentSession`, `lifecycle`, `passThrough`). `SessionRead` points to an
+(`parentSessionId`, `lifecycle`, `passThrough`). `SessionRead` points to an
 existing `ObservationElement`, so the observation itself is still
 exchanged through the Observation domain; the Session only says which
-observations it used and how.
+observations it used and how. `MatchEvidence` is kept small and offered
+for discussion (tier 3): it records what a Session was matched to, but
+not the scoring behind the match, which is left to implementations.
 
 `AccessEvent` is a new identifiable class. It is placed in the Session
 package because a granted access opens or closes a Session, but it stands
 on its own: a refused attempt has no Session. It references the existing
 `CredentialAssigned` when the presented value matched one. When nothing
-matched, it carries the credential type and the value read, in the same
-way `ObservationElement` carries `type` and `observedCredentialId`.
+matched, it carries the value as a `PresentedCredential`, the class
+proposed in the Right domain for every credential value that is not an
+assigned credential. Its direction reuses the existing APDS
+`AccessTypeEnum` with the values `entry` and `exit`; the third value,
+`reversible`, describes an area rather than a single attempt and does not
+apply.
+
+The anti-passback state of a credential is not proposed as a class of its
+own: it follows from the access events of that credential.
 
 `ValidationRedemption` is a new versioned identifiable class. Its
 `validationId` attribute is the value placed in the existing
 `Segment.validationId`, so a receiver that knows only APDS 4.1 still sees
-that a validation was applied. Its `validationProgram` references the
-validation program proposed in the Right domain.
-
-`PassbackStatus` records the anti-passback state of one assigned
-credential and references its most recent `AccessEvent`.
+that a validation was applied. Its optional `validationProgramId`
+references the validation programme proposed in the Right domain; that
+programme is a tier 2 proposal, so a redemption does not depend on it.
+Its channel uses the shared `InteractionChannelEnum` proposed in PkCommon.
 
 `ValetTicket` is a new versioned identifiable class. It references the
 APDS `Session`, `AssignedRight` and `Space`, and uses the existing
-`VehicleAncillaryIdentification` for the vehicle and the proposed
-`ConditionReport` (Observation domain) for its condition.
+`VehicleAncillaryIdentification` for the vehicle, a `PresentedCredential`
+for its plate, and the proposed `ConditionReport` (Observation domain) for
+its condition.
 
 ```mermaid
 classDiagram
     class Session {
         <<APDS>>
-        parentSession
-        lifecycle
-        passThrough
+    }
+    class SessionAdditions {
+        <<proposed>>
+        +parentSessionId : VersionedReference [0..1]
+        +lifecycle : SessionLifecycleEnum [0..1]
+        +passThrough : Boolean [0..1]
     }
     class Segment {
         <<APDS>>
-        validationId
     }
     class ObservationElement {
         <<APDS>>
@@ -119,58 +130,63 @@ classDiagram
     class SupplementalEquipment {
         <<APDS>>
     }
+    class PresentedCredential {
+        <<proposed>>
+    }
     class SessionRead {
-        role
-        representative
+        <<proposed>>
+        +observationId : Reference [1..1]
+        +role : SessionReadRoleEnum [1..1]
+        +representative : Boolean [0..1]
     }
     class SessionClosure {
-        endReason
-        endInferred
-        startObserved
-        closureRule
+        <<proposed>>
+        +endReason : SessionEndReasonEnum [0..1]
+        +endInferred : Boolean [0..1]
+        +startObserved : Boolean [0..1]
+        +closureRule : String [0..1]
     }
     class MatchEvidence {
-        matchType
-        applied
-        plateMatchMethod
-        vehicleEvidenceLevel
+        <<proposed>>
+        +targetId : Reference [1..1]
+        +matchType : MatchTypeEnum [1..1]
+        +applied : Boolean [1..1]
     }
     class AccessEvent {
-        occurredAt
-        direction
-        outcome
-        denialReason
-    }
-    class PassbackStatus {
-        passbackState
-        expectedPresence
-        recordedPresence
+        <<proposed>>
+        +occurredTime : DateTime [1..1]
+        +direction : AccessTypeEnum [1..1]
+        +outcome : AccessOutcomeEnum [1..1]
+        +denialReason : AccessDenialReasonEnum [0..1]
     }
     class ValidationRedemption {
-        appliedTime
-        channel
-        redemptionStatus
-        amountReduced
+        <<proposed>>
+        +elementId : VersionedReference [1..1]
+        +appliedTime : DateTime [1..1]
+        +channel : InteractionChannelEnum [1..1]
+        +redemptionStatus : ValidationRedemptionStatusEnum [1..1]
+        +amountReduced : AmountInCurrency [0..1]
     }
     class ValetTicket {
-        valetStatus
-        dropOffTime
-        keyLocation
-        handbackTime
+        <<proposed>>
+        +valetStatus : ValetStatusEnum [1..1]
+        +dropOffTime : DateTime [1..1]
+        +handbackTime : DateTime [0..1]
     }
+    Session .. SessionAdditions : Level B additions
     Session "1" *-- "0..*" SessionRead
     Session "1" *-- "0..1" SessionClosure
     Session "1" *-- "0..*" MatchEvidence
     Session "1" *-- "1..*" Segment
-    SessionRead --> ObservationElement : observationElement
+    SessionRead --> ObservationElement : observationId
     AccessEvent --> CredentialAssigned : credentialId
+    AccessEvent "1" *-- "0..1" PresentedCredential : presentedCredential
     AccessEvent --> SupplementalEquipment : equipmentId
     AccessEvent --> Session : sessionId
-    PassbackStatus --> CredentialAssigned : credentialId
-    PassbackStatus --> AccessEvent : lastAccessEvent
     ValidationRedemption --> Session : sessionId
     Segment ..> ValidationRedemption : validationId
     ValetTicket --> Session : sessionId
+    ValetTicket "1" *-- "0..1" PresentedCredential : vehicleCredential
 ```
 
 ### Enumerations (for Session)
@@ -183,20 +199,27 @@ values are listed in the Data Dictionary.
 | SessionReadRoleEnum | SessionRead.role | 1 |
 | SessionEndReasonEnum | SessionClosure.endReason | 1 |
 | SessionLifecycleEnum | Session.lifecycle | 2 |
-| AccessDirectionEnum | AccessEvent.direction, ObservationElement.accessDirection | 1 |
 | AccessOutcomeEnum | AccessEvent.outcome | 1 |
 | AccessDenialReasonEnum | AccessEvent.denialReason | 1 |
-| MatchTypeEnum, PlateMatchMethodEnum, JurisdictionAgreementEnum, VehicleEvidenceLevelEnum, MatchDecisionEnum | MatchEvidence | 2 |
-| PassbackStateEnum, PassbackPresenceEnum | PassbackStatus | 2 |
-| ValidationChannelEnum, ValidationRedemptionStatusEnum | ValidationRedemption | 1 |
-| ValetStatusEnum, ValetRetrievalChannelEnum, HandbackVerificationEnum | ValetTicket | 2 |
+| ValidationRedemptionStatusEnum | ValidationRedemption | 1 |
+| MatchTypeEnum, MatchDecisionEnum | MatchEvidence | 3 |
+| ValetStatusEnum, HandbackVerificationEnum | ValetTicket | 2 |
+
+Two existing or shared enumerations are reused rather than repeated: the
+APDS `AccessTypeEnum` for the direction of an access event, and the
+`InteractionChannelEnum` proposed in PkCommon for the channel of a
+validation or a valet retrieval request.
+
+The end reasons are written in plain terms: `exitObserved`,
+`reentryObserved`, `timedOut`, `parentSessionEnded`, `leftArea`,
+`notFoundOnCount`, `valetHandback`, `exitWithoutEntry`,
+`closedByOperator` and `closedAfterReview`.
 
 ### External code lists (for Session)
 
 Two of the lists above are open by nature: new end reasons and denial
 reasons appear as products evolve. APX maintains them today as
-user-defined code lists in the APDS `UserDefinedCodeList` shape
-(`apx-session-end-reasons`, `apx-access-denial-reasons`). We have
+user-defined code lists in the APDS `UserDefinedCodeList` shape. We have
 proposed them as enumerations so the group can see and discuss the
 values, but we would be equally glad to see `endReason` and
 `denialReason` typed as `PkCommon.ReferencedCodeListEntry`, with these
@@ -229,12 +252,12 @@ intercom, the card issuer and the operator all see the same record,
 although no Session was opened.
 
 **Sessions.** The transient exit produces a Session whose
-`SessionClosure` has `endReason` `exitOnly` and `startObserved` false; its
-start time is a placeholder. The analytics provider leaves it out of
-dwell statistics and occupancy instead of counting a visit of zero
+`SessionClosure` has `endReason` `exitWithoutEntry` and `startObserved`
+false; its start time is an estimate. The analytics provider leaves it
+out of dwell statistics and occupancy instead of counting a visit of zero
 minutes. The Saturday vehicle's Session is closed by the operator's rule
-with `endReason` `stale`, `endInferred` true and `closureRule` naming the
-rule, so it is not mistaken for an observed exit.
+with `endReason` `timedOut`, `endInferred` true and `closureRule` naming
+the rule, so it is not mistaken for an observed exit.
 
 **Observations.** Each Session lists its `SessionRead` entries: the entry
 and exit observations, and any duplicate frames from a second camera
@@ -249,10 +272,11 @@ cinema monthly.
 These specifications support this use case in a number of ways:
 
 **Validation redemption.** Each validation applied is a
-`ValidationRedemption` referencing the cinema's validation program, the
-Session, the time, the channel (`payStation` or `merchantApp`) and the
-amount actually removed. A customer who stayed 20 minutes and was charged
-nothing records the 20 minutes' fee, not the nominal three hours.
+`ValidationRedemption` referencing the Place element, the cinema's
+validation programme, the Session, the time, the channel (`payStation` or
+`mobileApp`) and the amount actually removed. A customer who stayed 20
+minutes and was charged nothing records the 20 minutes' fee, not the
+nominal three hours.
 
 **Sessions.** The redemption's `validationId` is written to the Segment's
 existing `validationId`, so a receiver that knows only APDS 4.1 still sees

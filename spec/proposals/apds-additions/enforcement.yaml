@@ -1,16 +1,13 @@
 domain: Enforcement
 order: 9
 summary: >-
-  APDS 4.1 already carries everything an enforcement finding is built from:
-  the Observation and its Images, the Session, the AssignedRight and the
-  Payment. Use Case C.2.2 describes transaction exceptions becoming
-  violation notices, but the model has no class for the violation or the
-  notice itself. This new domain adds them: the Violation (a finding that a
-  vehicle at a place was not covered by a valid right), how it was
-  detected, the Notice issued for it, the Appeal against it, and the
-  EnforcementPolicy that governs notices and penalties at a place. Every
-  class reuses APDS types for places, credentials, vehicles, evidence,
-  locations, money and payments.
+  APDS 4.1 already carries everything an enforcement finding is built from: the Observation and its
+  Images, the Session, the AssignedRight and the Payment. Use Case C.2.2 describes transaction
+  exceptions becoming violation notices, but the model has no class for the violation or the notice
+  itself. This new domain adds them: the Violation (a finding that a vehicle at a place was not
+  covered by a valid right), how it was detected, the Notice issued for it, the Appeal against it,
+  and the EnforcementPolicy that governs notices and penalties at a place. Every class reuses APDS
+  types for places, credentials, vehicles, evidence, locations, money and payments.
 packages:
   - name: Enforcement
     location: D2Payload/Extension/Parking/Enforcement
@@ -19,14 +16,18 @@ packages:
       - name: Violation
         change: new
         designation: Violation
-        definition: A finding that a vehicle at an element of a Place, at a given time, was not covered by a valid right or broke an operating restriction.
+        definition: >-
+          A finding that a vehicle at an element of a Place, at a given time, was not covered by a
+          valid right or broke an operating restriction.
         stereotype: D2VersionedIdentifiable
         abstract: false
         parent: null
         level: C
         tier: 1
-        apx: Violation (APX Part 19 §19.1)
-        rationale: Lets an operator, an enforcement provider and a processing agency exchange the same finding, with its evidence and outcome, instead of each keeping its own.
+        apx: APX Part 19 §19.1 Violation
+        rationale: >-
+          Lets an operator, an enforcement provider and a processing agency exchange the same
+          finding, with its evidence and outcome, instead of each keeping its own.
         attributes:
           - name: violationType
             designation: Violation type
@@ -43,7 +44,7 @@ packages:
             definition: The date/time at which the violation was observed.
             multiplicity: 1..1
             type: PkCommon.DateTime
-          - name: place
+          - name: elementId
             designation: Place
             definition: The element of the Place hierarchy where the violation was observed.
             multiplicity: 1..1
@@ -58,14 +59,16 @@ packages:
             definition: The Observations the finding is built from, such as plate reads or sensor events.
             multiplicity: 0..*
             type: PkCommon.VersionedReference (Observation.ObservationElement)
-          - name: relatedSession
+          - name: sessionId
             designation: Related session
             definition: The Session the vehicle was in, when one exists.
             multiplicity: 0..1
             type: PkCommon.VersionedReference (Session.Session)
-          - name: relatedAssignedRight
+          - name: assignedRightId
             designation: Related assigned right
-            definition: The AssignedRight that came closest to covering the stay, such as an expired permit or a reservation for another zone.
+            definition: >-
+              The AssignedRight that came closest to covering the stay, such as an expired permit or
+              a reservation for another zone.
             multiplicity: 0..1
             type: PkCommon.VersionedReference (Right.AssignedRight)
           - name: amount
@@ -88,21 +91,25 @@ packages:
             definition: The Payments applied to the violation, in order.
             multiplicity: 0..*
             type: PkCommon.VersionedReference (Right.Payment)
-          - name: policy
+          - name: policyId
             designation: Policy
-            definition: The EnforcementPolicy that governed the notice, at the version in force when it was issued.
+            definition: >-
+              The EnforcementPolicy that governed the notice, at the version in force when it was
+              issued.
             multiplicity: 0..1
             type: PkCommon.VersionedReference (Enforcement.EnforcementPolicy)
-          - name: signage
+          - name: signageId
             designation: Signage
-            definition: The Signage in force at the place when the violation was observed, at the versions then in force.
+            definition: >-
+              The Signage in force at the place when the violation was observed, at the versions
+              then in force.
             multiplicity: 0..*
             type: PkCommon.VersionedReference (Place.Signage)
         associations:
           - end: detection
             designation: Detection
             definition: Detection for the associated Violation
-            multiplicity: 0..1
+            multiplicity: 1..1
             target: Enforcement.ViolationDetection
           - end: identifiedCredential
             designation: Identified credential
@@ -134,7 +141,6 @@ packages:
             definition: Appeal for the associated Violation
             multiplicity: 0..1
             target: Enforcement.Appeal
-
       - name: ViolationDetection
         change: new
         designation: Violation detection
@@ -144,20 +150,26 @@ packages:
         parent: null
         level: C
         tier: 1
-        apx: ViolationDetection (APX Part 19 §19.4)
-        rationale: Many jurisdictions treat an automated finding differently from one an officer made on site, so receivers need to know which it was.
+        apx: APX Part 19 §19.4 ViolationDetection
+        rationale: >-
+          Many jurisdictions treat an automated finding differently from one an officer made on
+          site, so receivers need to know which it was.
         attributes:
           - name: detectionMode
             designation: Detection mode
-            definition: Whether the violation was found automatically, by an officer guided by a system, or by an officer alone.
+            definition: >-
+              Whether the violation was found automatically, by an officer guided by a system, or by
+              an officer alone.
             multiplicity: 1..1
             type: Enforcement.DetectionModeEnum
-          - name: detector
+          - name: equipmentId
             designation: Detector
-            definition: The SupplementalEquipment that detected the violation, such as a camera or a handheld device.
+            definition: >-
+              The SupplementalEquipment that detected the violation, such as a camera or a handheld
+              device.
             multiplicity: 0..1
-            type: PkCommon.VersionedReference (Place.SupplementalEquipment)
-          - name: officer
+            type: PkCommon.Reference (Place.SupplementalEquipment)
+          - name: officerId
             designation: Officer
             definition: The Contact for the enforcement officer who detected or confirmed the violation.
             multiplicity: 0..1
@@ -172,18 +184,21 @@ packages:
             definition: The identifier of the enforcement rule that produced an automated finding.
             multiplicity: 0..1
             type: PkCommon.String
-
       - name: Notice
         change: new
         designation: Notice
-        definition: The warning, notice or citation issued to the keeper or driver of a vehicle for a violation.
+        definition: >-
+          The warning, notice or citation issued to the keeper or driver of a vehicle for a
+          violation.
         stereotype: D2Class
         abstract: false
         parent: null
         level: C
         tier: 1
-        apx: Violation.notice (APX Part 19 §19.5)
-        rationale: The notice number is how drivers, processing agencies and courts refer to a violation, so it must travel with it.
+        apx: APX Part 19 §19.5 Violation.notice
+        rationale: >-
+          The notice number is how drivers, processing agencies and courts refer to a violation, so
+          it must travel with it.
         attributes:
           - name: noticeNumber
             designation: Notice number
@@ -205,12 +220,11 @@ packages:
             definition: How the notice reached the keeper or driver.
             multiplicity: 0..1
             type: Enforcement.NoticeDeliveryMethodEnum
-          - name: issuer
+          - name: issuerId
             designation: Issuer
             definition: The Organisation on whose authority the notice was issued.
             multiplicity: 0..1
             type: PkCommon.VersionedReference (PkCommon.Organisation)
-
       - name: Appeal
         change: new
         designation: Appeal
@@ -220,8 +234,10 @@ packages:
         parent: null
         level: C
         tier: 2
-        apx: Violation.appeal (APX Part 19 §19.6)
-        rationale: Lets the party handling appeals and the party collecting payment share the outcome, including any reduction or refund.
+        apx: APX Part 19 §19.6 Violation.appeal
+        rationale: >-
+          Lets the party handling appeals and the party collecting payment share the outcome,
+          including any reduction or refund.
         attributes:
           - name: appealReason
             designation: Appeal reason
@@ -235,10 +251,12 @@ packages:
             type: PkCommon.DateTime
           - name: openedFrom
             designation: Opened from
-            definition: The status of the violation when the appeal was opened, which distinguishes an appeal after payment from one before.
+            definition: >-
+              The status of the violation when the appeal was opened, which distinguishes an appeal
+              after payment from one before.
             multiplicity: 0..1
             type: Enforcement.ViolationStatusEnum
-          - name: appellant
+          - name: appellantId
             designation: Appellant
             definition: The Contact for the party making the appeal, when identified.
             multiplicity: 0..1
@@ -263,25 +281,31 @@ packages:
             definition: The new amount payable when the appeal reduced it.
             multiplicity: 0..1
             type: PkCommon.AmountInCurrency
-          - name: refundPayment
+          - name: refundPaymentId
             designation: Refund payment
-            definition: The Payment that returned money after an appeal following payment was reduced or dismissed.
+            definition: >-
+              The Payment that returned money after an appeal following payment was reduced or
+              dismissed.
             multiplicity: 0..1
             type: PkCommon.VersionedReference (Right.Payment)
-
       - name: EnforcementPolicy
         change: new
         designation: Enforcement policy
-        definition: A machine-readable summary of the rules that govern issuing notices and setting penalties at an element of a Place, applying to that element and everything below it unless overridden.
+        definition: >-
+          A machine-readable summary of the rules that govern issuing notices and setting penalties
+          at an element of a Place, applying to that element and everything below it unless
+          overridden.
         stereotype: D2VersionedIdentifiable
         abstract: false
         parent: null
         level: C
         tier: 2
-        apx: EnforcementPolicy (APX Part 19 §19.10)
-        rationale: Lets every party check a notice against the same lawful delivery methods, deadlines, caps and escalation schedule, rather than reading the statute separately.
+        apx: APX Part 19 §19.10 EnforcementPolicy
+        rationale: >-
+          Lets every party check a notice against the same lawful delivery methods, deadlines, caps
+          and escalation schedule, rather than reading the statute separately.
         attributes:
-          - name: place
+          - name: elementId
             designation: Place
             definition: The element of the Place hierarchy the policy applies to.
             multiplicity: 1..1
@@ -291,11 +315,6 @@ packages:
             definition: A name for the policy.
             multiplicity: 0..1
             type: PkCommon.MultilingualString
-          - name: policyStatus
-            designation: Policy status
-            definition: Whether the policy is in force, replaced or withdrawn.
-            multiplicity: 1..1
-            type: Enforcement.PolicyStatusEnum
           - name: jurisdiction
             designation: Jurisdiction
             definition: The legal jurisdiction the rules come from, as an ISO 3166-2 subdivision code.
@@ -323,7 +342,9 @@ packages:
             type: PkCommon.Duration
           - name: signageRequired
             designation: Signage required
-            definition: Whether a notice may be issued only where Signage was in force when the violation was observed.
+            definition: >-
+              Whether a notice may be issued only where Signage was in force when the violation was
+              observed.
             multiplicity: 0..1
             type: PkCommon.Boolean
           - name: unreviewedIssuancePermitted
@@ -331,11 +352,16 @@ packages:
             definition: Whether a notice may be issued for an automated finding without review by a person.
             multiplicity: 0..1
             type: PkCommon.Boolean
-          - name: unreviewedMinimumConfidence
-            designation: Unreviewed minimum confidence
-            definition: The lowest detection confidence, from 0 to 1, at which an automated finding may be issued without review.
+          - name: endReason
+            designation: End reason
+            definition: Why the policy is no longer in use, when it has ended.
             multiplicity: 0..1
-            type: PkCommon.Decimal
+            type: PkCommon.RecordEndReasonEnum
+          - name: signageId
+            designation: Signage
+            definition: The signs posted to give notice of this policy.
+            multiplicity: 0..*
+            type: PkCommon.VersionedReference (Place.Signage)
         associations:
           - end: validity
             designation: Validity
@@ -357,18 +383,21 @@ packages:
             definition: Escalation step for the associated EnforcementPolicy
             multiplicity: 0..*
             target: Enforcement.EscalationStep
-
       - name: NoticeDeliveryRule
         change: new
         designation: Notice delivery rule
-        definition: Which notice delivery methods are lawful for which detection modes, by when, and with what minimum evidence.
+        definition: >-
+          Which notice delivery methods are lawful for which detection modes, by when, and with what
+          minimum evidence.
         stereotype: D2Class
         abstract: false
         parent: null
         level: C
         tier: 2
-        apx: EnforcementPolicy.deliveryRules (APX Part 19 §19.10)
-        rationale: Many jurisdictions allow mailed notices only for certain detection modes and within a deadline.
+        apx: APX Part 19 §19.10 EnforcementPolicy.deliveryRules
+        rationale: >-
+          Many jurisdictions allow mailed notices only for certain detection modes and within a
+          deadline.
         attributes:
           - name: detectionMode
             designation: Detection mode
@@ -382,7 +411,9 @@ packages:
             type: Enforcement.NoticeDeliveryMethodEnum
           - name: noticeDeadline
             designation: Notice deadline
-            definition: The latest time after the violation was observed at which a notice by these methods may lawfully be issued.
+            definition: >-
+              The latest time after the violation was observed at which a notice by these methods
+              may lawfully be issued.
             multiplicity: 0..1
             type: PkCommon.Duration
           - name: minimumObservations
@@ -400,55 +431,44 @@ packages:
             definition: Whether the violation must carry a location before such a notice is lawful.
             multiplicity: 0..1
             type: PkCommon.Boolean
-
       - name: PenaltyLimit
         change: new
         designation: Penalty limit
-        definition: The ceilings on the amount of a violation when the notice is issued and after any escalation; where several bounds are given, the lowest applies.
+        definition: The ceiling on the amount payable for a violation, with the basis on which it applies.
         stereotype: D2Class
         abstract: false
         parent: null
         level: C
-        tier: 2
-        apx: EnforcementPolicy.penaltyCap and overallCeiling (APX Part 19 §19.10)
-        rationale: Lets a receiver confirm that a penalty respects the lawful cap without recomputing it from the statute.
+        tier: 3
+        apx: APX Part 19 §19.10 EnforcementPolicy.penaltyCap
+        rationale: >-
+          Lets a receiver confirm that a penalty respects the lawful cap without recomputing it from
+          the statute.
         attributes:
           - name: maximumAmount
             designation: Maximum amount
             definition: The highest amount that may be set when the notice is issued.
             multiplicity: 0..1
             type: PkCommon.AmountInCurrency
-          - name: maximumMultipleOfUnpaid
-            designation: Maximum multiple of unpaid
-            definition: The highest amount at issue, as a multiple of the unpaid parking fee the violation relates to.
+          - name: limitBasis
+            designation: Limit basis
+            definition: >-
+              How the maximum amount applies, for example to the amount at issue or to the total
+              including escalation, and the rule or law that sets it.
             multiplicity: 0..1
-            type: PkCommon.Decimal
-          - name: maximumPercentageOverUnpaid
-            designation: Maximum percentage over unpaid
-            definition: The highest amount at issue, as the unpaid parking fee plus this percentage of it.
-            multiplicity: 0..1
-            type: PkCommon.Percentage
-          - name: overallMaximumAmount
-            designation: Overall maximum amount
-            definition: The highest amount the violation may reach after any escalation.
-            multiplicity: 0..1
-            type: PkCommon.AmountInCurrency
-          - name: maximumMultipleOfIssued
-            designation: Maximum multiple of issued
-            definition: The highest amount after escalation, as a multiple of the amount at issue.
-            multiplicity: 0..1
-            type: PkCommon.Decimal
-
+            type: PkCommon.MultilingualString
       - name: EscalationStep
         change: new
         designation: Escalation step
-        definition: One increase to the amount of a violation that applies once a set time has passed since the notice was issued while it remains unpaid.
+        definition: >-
+          One increase to the amount of a violation that applies once a set time has passed since
+          the notice was issued while it remains unpaid.
         stereotype: D2Class
         abstract: false
         parent: null
         level: C
         tier: 2
-        apx: EnforcementPolicy.escalation (APX Part 19 §19.10)
+        apx: APX Part 19 §19.10 EnforcementPolicy.escalation
         rationale: Lets every party apply and explain the same late-payment increases.
         attributes:
           - name: stepIdentifier
@@ -458,7 +478,9 @@ packages:
             type: PkCommon.String
           - name: afterPeriod
             designation: After period
-            definition: The time after the notice was issued at which the step applies; time spent under appeal does not count.
+            definition: >-
+              The time after the notice was issued at which the step applies; time spent under
+              appeal does not count.
             multiplicity: 1..1
             type: PkCommon.Duration
           - name: addAmount
@@ -476,15 +498,16 @@ packages:
             definition: A description of the step.
             multiplicity: 0..1
             type: PkCommon.MultilingualString
-
     enumerations:
       - name: ViolationTypeEnum
         change: new
         designation: Violation type
         definition: The kinds of parking violation.
         tier: 1
-        apx: registry apx-violation-types
-        rationale: A shared list lets enforcement, processing and reporting systems count and treat violations alike; local kinds can still be added through a user-defined code list.
+        apx: APX Part 11 code list (violation types)
+        rationale: >-
+          A shared list lets enforcement, processing and reporting systems count and treat
+          violations alike; local kinds can still be added through a user-defined code list.
         values:
           - name: noValidRight
             designation: No valid right
@@ -497,36 +520,42 @@ packages:
             definition: The vehicle's right exists but its validity has not started.
           - name: wrongPlace
             designation: Wrong place
-            definition: The vehicle holds a right for a different element of the Place hierarchy, such as another zone, level, lot or space.
+            definition: >-
+              The vehicle holds a right for a different element of the Place hierarchy, such as
+              another zone, level, lot or space.
           - name: maximumStayExceeded
             designation: Maximum stay exceeded
             definition: The stay exceeds the place's maximum-stay restriction regardless of payment.
           - name: restrictedSpace
             designation: Restricted space
-            definition: The vehicle occupies a space it is not eligible for, such as an accessible, EV charging, loading, reserved or permit-only space.
+            definition: >-
+              The vehicle occupies a space it is not eligible for, such as an accessible, EV
+              charging, loading, reserved or permit-only space.
           - name: permitMisuse
             designation: Permit misuse
-            definition: A permit or credential is used by a vehicle it was not issued to, or is suspended, copied or otherwise invalid.
+            definition: >-
+              A permit or credential is used by a vehicle it was not issued to, or is suspended,
+              copied or otherwise invalid.
           - name: noParkingPeriod
             designation: No parking period
-            definition: The vehicle is parked while the place is closed to parking, such as for street cleaning or an event.
+            definition: >-
+              The vehicle is parked while the place is closed to parking, such as for street
+              cleaning or an event.
           - name: obstruction
             designation: Obstruction
             definition: The vehicle obstructs a lane, access, exit, hydrant or another space.
-          - name: chargingBayIdle
-            designation: Charging bay idle
-            definition: A vehicle stayed connected in an EV charging bay after charging ended, beyond the posted idle limit.
           - name: other
             designation: Other
             definition: A violation not otherwise listed; the notice carries the specifics.
-
       - name: ViolationStatusEnum
         change: new
         designation: Violation status
         definition: The states of a violation from detection to closure.
         tier: 1
-        apx: Violation.violationStatus (APX Part 19 §19.1)
-        rationale: Lets parties that hand a violation between them know whether it is still a candidate, has been issued, is under appeal or is finished.
+        apx: APX Part 19 §19.1 Violation.violationStatus
+        rationale: >-
+          Lets parties that hand a violation between them know whether it is still a candidate, has
+          been issued, is under appeal or is finished.
         values:
           - name: detected
             designation: Detected
@@ -551,14 +580,15 @@ packages:
             definition: The violation is finished, after payment or a successful appeal; this is final.
           - name: voided
             designation: Voided
-            definition: The violation was withdrawn, for example as issued in error or a duplicate; this is final.
-
+            definition: >-
+              The violation was withdrawn, for example as issued in error or a duplicate; this is
+              final.
       - name: DetectionModeEnum
         change: new
         designation: Detection mode
         definition: How a violation was found.
         tier: 1
-        apx: ViolationDetection.mode (APX Part 19 §19.4)
+        apx: APX Part 19 §19.4 ViolationDetection.mode
         rationale: Jurisdictions often set different review and notice rules for each mode.
         values:
           - name: automated
@@ -570,14 +600,16 @@ packages:
           - name: manual
             designation: Manual
             definition: An officer found the violation directly.
-
       - name: NoticeKindEnum
         change: new
         designation: Notice kind
         definition: The kinds of notice that may be issued for a violation.
         tier: 1
-        apx: Violation.notice.noticeKind (APX Part 19 §19.5); an implementer code list in APX today, with no registry yet
-        rationale: Receivers need to tell a warning with nothing to pay from a payable notice or a statutory citation. These values are a first draft for the group's review; the names of notices differ between jurisdictions.
+        apx: APX Part 19 §19.5 Violation.notice.noticeKind
+        rationale: >-
+          Receivers need to tell a warning with nothing to pay from a payable notice or a statutory
+          citation. These values are a first draft for the group's review; the names of notices
+          differ between jurisdictions.
         values:
           - name: warning
             designation: Warning
@@ -590,24 +622,29 @@ packages:
             definition: A civil penalty issued under public authority.
           - name: citation
             designation: Citation
-            definition: A ticket issued under traffic or parking law that may be contested before a court or tribunal.
+            definition: >-
+              A ticket issued under traffic or parking law that may be contested before a court or
+              tribunal.
           - name: noticeToKeeper
             designation: Notice to keeper
-            definition: A notice sent to the registered keeper or owner of the vehicle when the driver was not served.
+            definition: >-
+              A notice sent to the registered keeper or owner of the vehicle when the driver was not
+              served.
           - name: reminder
             designation: Reminder
             definition: A follow-up notice for a violation that is still unpaid.
           - name: other
             designation: Other
             definition: Some other kind of notice.
-
       - name: NoticeDeliveryMethodEnum
         change: new
         designation: Notice delivery method
         definition: How a notice reaches the keeper or driver of a vehicle.
         tier: 1
-        apx: Violation.notice.deliveryMethod and EnforcementPolicy.deliveryRules (APX Part 19 §19.5, §19.10); an implementer code list in APX today, with no registry yet
-        rationale: Jurisdictions often allow some methods only for some detection modes, so the method must be recorded. These values are a first draft for the group's review.
+        apx: APX Part 19 §19.5 Violation.notice.deliveryMethod
+        rationale: >-
+          Jurisdictions often allow some methods only for some detection modes, so the method must
+          be recorded. These values are a first draft for the group's review.
         values:
           - name: affixedToVehicle
             designation: Affixed to vehicle
@@ -624,14 +661,15 @@ packages:
           - name: other
             designation: Other
             definition: Some other method.
-
       - name: AppealReasonEnum
         change: new
         designation: Appeal reason
         definition: The grounds on which a violation is appealed.
         tier: 2
-        apx: Violation.appeal.reason (APX Part 19 §19.6); an implementer code list in APX today
-        rationale: A shared list lets appeal outcomes be compared across operators. These values are a first draft for the group's review.
+        apx: APX Part 19 §19.6 Violation.appeal.reason
+        rationale: >-
+          A shared list lets appeal outcomes be compared across operators. These values are a first
+          draft for the group's review.
         values:
           - name: notTheVehicle
             designation: Not the vehicle
@@ -657,13 +695,12 @@ packages:
           - name: other
             designation: Other
             definition: Some other grounds.
-
       - name: AppealResolutionEnum
         change: new
         designation: Appeal resolution
         definition: The outcomes of an appeal.
         tier: 2
-        apx: Violation.appeal.resolution (APX Part 19 §19.6)
+        apx: APX Part 19 §19.6 Violation.appeal.resolution
         rationale: Each outcome has a different effect on the amount payable.
         values:
           - name: upheld
@@ -675,21 +712,3 @@ packages:
           - name: dismissed
             designation: Dismissed
             definition: The violation is cancelled.
-
-      - name: PolicyStatusEnum
-        change: new
-        designation: Policy status
-        definition: Whether an enforcement policy is in force.
-        tier: 2
-        apx: EnforcementPolicy.policyStatus (APX Part 19 §19.10)
-        rationale: Earlier policy versions must stay readable so a past notice can be checked against the rules that applied.
-        values:
-          - name: active
-            designation: Active
-            definition: The policy is in force.
-          - name: superseded
-            designation: Superseded
-            definition: The policy has been replaced by a later version.
-          - name: retired
-            designation: Retired
-            definition: The policy has been withdrawn without replacement.

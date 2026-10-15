@@ -12,6 +12,9 @@ the APDS Model" in the APDS 4.1 Information Model:
 - Values proposed for existing enumerations are new names only; none
   repeats or redefines an existing value (requirement 10).
 - New domains introduce new root concepts and are marked Level C.
+- The one suggested change to an existing multiplicity
+  (`VehicleAncillaryIdentification.country`) sits outside these additions
+  and is offered separately.
 
 Each proposed type resolves either to an existing APDS 4.1 datatype,
 class or enumeration, or to another proposed element. This is checked

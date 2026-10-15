@@ -1,14 +1,12 @@
 domain: Operations
 order: 10
 summary: >-
-  Use Case C.2.2 lists transaction exceptions and space statuses that an
-  operation must act on, and APDS 4.1 describes the places, equipment,
-  sessions and rights they concern, but it has no class for the operational
-  condition itself. This new domain adds the Alert: a condition at a place
-  or piece of equipment that needs attention, with its type, severity and
-  lifecycle. It also offers, for discussion only, a SupportInteraction
-  record of one customer-service contact, which may sit outside the scope
-  APDS sets itself.
+  Use Case C.2.2 lists transaction exceptions and space statuses that an operation must act on, and
+  APDS 4.1 describes the places, equipment, sessions and rights they concern, but it has no class
+  for the operational condition itself. This new domain adds the Alert: a condition at a place or
+  piece of equipment that needs attention, with its type, severity and lifecycle. It also offers,
+  for discussion only, a SupportInteraction record of one customer-service contact, which may sit
+  outside the scope APDS sets itself.
 packages:
   - name: Operations
     location: D2Payload/Extension/Parking/Operations
@@ -17,14 +15,19 @@ packages:
       - name: Alert
         change: new
         designation: Alert
-        definition: An operational condition at an element of a Place or a piece of equipment that needs attention.
+        definition: >-
+          An operational condition at an element of a Place or a piece of equipment that needs
+          attention.
         stereotype: D2VersionedIdentifiable
         abstract: false
         parent: null
         level: C
         tier: 2
-        apx: Alert (APX Part 7 §7.1)
-        rationale: Lets equipment, operators, enforcement providers and monitoring centres share the same conditions, such as a device fault or a vehicle in the wrong space, and see when each was dealt with.
+        apx: APX Part 7 §7.1 Alert
+        rationale: >-
+          Lets equipment, operators, enforcement providers and monitoring centres share the same
+          conditions, such as a device fault or a vehicle in the wrong space, and see when each was
+          dealt with.
         attributes:
           - name: alertType
             designation: Alert type
@@ -56,17 +59,17 @@ packages:
             definition: The date/time after which the alert lapses if it has not been resolved.
             multiplicity: 0..1
             type: PkCommon.DateTime
-          - name: place
+          - name: elementId
             designation: Place
             definition: The element of the Place hierarchy where the condition was detected.
             multiplicity: 0..1
             type: PkCommon.VersionedReference (Place.HierarchyElementGeneral)
-          - name: sourceEquipment
+          - name: equipmentId
             designation: Source equipment
             definition: The SupplementalEquipment that reported or is affected by the condition.
             multiplicity: 0..1
-            type: PkCommon.VersionedReference (Place.SupplementalEquipment)
-          - name: relatedEntity
+            type: PkCommon.Reference (Place.SupplementalEquipment)
+          - name: relatedEntityId
             designation: Related entity
             definition: The record the condition concerns, such as a Session, an AssignedRight or a Violation.
             multiplicity: 0..1
@@ -76,7 +79,6 @@ packages:
             definition: A human-readable description of the condition.
             multiplicity: 0..1
             type: PkCommon.MultilingualString
-
       - name: SupportInteraction
         change: new
         designation: Support interaction
@@ -86,14 +88,16 @@ packages:
         parent: null
         level: C
         tier: 3
-        apx: SupportInteraction (APX Part 17 §17.6)
-        rationale: Lets a help desk, an intercom service and an operator see earlier contacts about the same session or customer; offered for discussion, as it may lie outside parking data.
+        apx: APX Part 17 §17.6 SupportInteraction
+        rationale: >-
+          Lets a help desk, an intercom service and an operator see earlier contacts about the same
+          session or customer; offered for discussion, as it may lie outside parking data.
         attributes:
           - name: channel
             designation: Channel
             definition: How the contact was made.
             multiplicity: 1..1
-            type: Operations.SupportChannelEnum
+            type: PkCommon.InteractionChannelEnum
           - name: agentType
             designation: Agent type
             definition: Whether the contact was handled by a person or an automated agent.
@@ -109,7 +113,7 @@ packages:
             definition: The date/time the contact ended.
             multiplicity: 0..1
             type: PkCommon.DateTime
-          - name: place
+          - name: elementId
             designation: Place
             definition: The element of the Place hierarchy the contact concerned.
             multiplicity: 1..1
@@ -155,15 +159,16 @@ packages:
             definition: Identified credential for the associated SupportInteraction
             multiplicity: 0..1
             target: Right.Credential
-
     enumerations:
       - name: AlertTypeEnum
         change: new
         designation: Alert type
         definition: The kinds of operational condition that need attention.
         tier: 2
-        apx: registry apx-alert-types, seeded from Use Case C.2.2 transaction exceptions and space statuses
-        rationale: A shared list lets monitoring systems route and count conditions alike; local kinds can still be added through a user-defined code list.
+        apx: APX Part 11 code list (alert types)
+        rationale: >-
+          A shared list lets monitoring systems route and count conditions alike; local kinds can
+          still be added through a user-defined code list.
         values:
           - name: noCheckOut
             designation: No check-out
@@ -179,7 +184,9 @@ packages:
             definition: A vehicle that cannot charge occupies an EV charging space.
           - name: evBayNotCharging
             designation: EV bay not charging
-            definition: A vehicle has occupied an EV charging bay without connecting beyond the place's grace period.
+            definition: >-
+              A vehicle has occupied an EV charging bay without connecting beyond the place's grace
+              period.
           - name: evBayBlocked
             designation: EV bay blocked
             definition: An EV charging bay is obstructed by something other than a parked vehicle.
@@ -206,23 +213,26 @@ packages:
             definition: A customer asked for help at an intercom.
           - name: wrongWayTravel
             designation: Wrong-way travel
-            definition: A vehicle travelled against the configured purpose of a lane, as defined by the operator.
+            definition: >-
+              A vehicle travelled against the configured purpose of a lane, as defined by the
+              operator.
           - name: watchListArrival
             designation: Watch list arrival
             definition: A credential on a watch list was observed at a place where arrival is to be reported.
           - name: scofflawArrival
             designation: Scofflaw arrival
-            definition: A credential on a list of persistent non-payers was observed at a place where arrival is to be reported.
+            definition: >-
+              A credential on a list of persistent non-payers was observed at a place where arrival
+              is to be reported.
           - name: refusedServiceArrival
             designation: Refused service arrival
             definition: A credential on a list with service refused arrived at a lane and service was refused.
-
       - name: AlertSeverityEnum
         change: new
         designation: Alert severity
         definition: How serious an operational condition is.
         tier: 2
-        apx: Alert.severity (APX Part 7), a closed list
+        apx: APX Part 7 Alert.severity
         rationale: A fixed scale lets every receiver prioritise alerts the same way.
         values:
           - name: info
@@ -240,13 +250,12 @@ packages:
           - name: critical
             designation: Critical
             definition: A condition that stops service or affects safety and needs immediate action.
-
       - name: AlertStatusEnum
         change: new
         designation: Alert status
         definition: The states of an alert.
         tier: 2
-        apx: Alert.status (APX Part 7 §7.2)
+        apx: APX Part 7 §7.2 Alert.status
         rationale: Lets every party see whether someone has taken a condition in hand.
         values:
           - name: raised
@@ -261,40 +270,12 @@ packages:
           - name: expired
             designation: Expired
             definition: The alert lapsed at its expiry time without being resolved.
-
-      - name: SupportChannelEnum
-        change: new
-        designation: Support channel
-        definition: How a customer-service contact was made.
-        tier: 3
-        apx: SupportInteraction.channel (APX Part 17), an implementer code list in APX today
-        rationale: Offered for discussion with SupportInteraction.
-        values:
-          - name: voice
-            designation: Voice
-            definition: A telephone or intercom call.
-          - name: chat
-            designation: Chat
-            definition: A text conversation in an application or web page.
-          - name: email
-            designation: E-mail
-            definition: E-mail.
-          - name: sms
-            designation: SMS
-            definition: Text messages.
-          - name: inPerson
-            designation: In person
-            definition: Face to face with staff.
-          - name: other
-            designation: Other
-            definition: Some other channel.
-
       - name: SupportAgentTypeEnum
         change: new
         designation: Support agent type
         definition: Who handled a customer-service contact.
         tier: 3
-        apx: SupportInteraction.agentType (APX Part 17)
+        apx: APX Part 17 SupportInteraction.agentType
         rationale: Offered for discussion with SupportInteraction.
         values:
           - name: human
@@ -303,18 +284,17 @@ packages:
           - name: automated
             designation: Automated
             definition: An automated agent, such as a voice or chat assistant.
-
       - name: SupportIssueTypeEnum
         change: new
         designation: Support issue type
         definition: The kinds of problem a customer-service contact is about.
         tier: 3
-        apx: registry apx-issue-types
+        apx: APX Part 11 code list (issue types)
         rationale: Offered for discussion with SupportInteraction.
         values:
-          - name: gateVendFailed
-            designation: Gate vend failed
-            definition: A barrier did not open when it should have.
+          - name: barrierOpenFailed
+            designation: Barrier open failed
+            definition: The barrier did not open for a customer entitled to pass.
           - name: paymentDeclined
             designation: Payment declined
             definition: A payment was declined.

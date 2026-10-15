@@ -64,8 +64,10 @@ An EnforcementPolicy:
 - Has a unique identification and a version.
 - Applies to an element of the Place and everything below it, unless a
   lower element has its own policy.
-- Has a validity period and a status.
+- Has an APDS Validity, which gives its period and whether it is active,
+  planned or suspended, and an end reason once it is superseded or retired.
 - Has the jurisdiction and legal text it summarizes.
+- May reference the Signage posted to give notice of it.
 - Has which notice delivery methods are lawful for which detection modes,
   by when, and with what minimum evidence.
 - Has limits on the penalty, a schedule of increases for late payment, and
@@ -82,7 +84,8 @@ built from.
 
 **Violation** is versioned and identifiable, like a Session. The
 attributes a receiver needs to understand the finding are mandatory: type,
-status, the time it was observed and the Place element. Everything else is
+status, the time it was observed, the Place element and how it was
+detected. Everything else is
 optional, so a simple warning and a fully evidenced citation use the same
 class. The credential and vehicle use the existing `Right.Credential` and
 `PkCommon.VehicleAncillaryIdentification` classes, in the same way
@@ -105,10 +108,15 @@ courts refer to a violation.
 new amount) or dismissed, with any refund Payment.
 
 **EnforcementPolicy** is versioned and identifiable and applies down the
-Place hierarchy in the way APDS data generally does. Its components are
-**NoticeDeliveryRule**, **PenaltyLimit** and **EscalationStep**. It is a
-summary that systems can check a notice against. It does not replace the
-statute.
+Place hierarchy in the way APDS data generally does. Its period and its
+active, planned or suspended state use the APDS Validity class; only the
+reason it ended (superseded or retired) is a code of its own, shared with
+other records in PkCommon. Its components are **NoticeDeliveryRule**,
+**PenaltyLimit** and **EscalationStep**. It is a summary that systems can
+check a notice against. It does not replace the statute.
+
+The policy points to the Signage that gives notice of it, rather than the
+other way round, so the Place additions do not depend on this new domain.
 
 In APX, a Violation also keeps a full history of its status changes and
 amount changes. That audit detail stays in the APX profile and is not
@@ -150,50 +158,64 @@ classDiagram
     <<APDS>>
   }
   class Signage {
-    <<proposed in Place>>
+    <<proposed>>
   }
   class Violation {
-    violationType : ViolationTypeEnum
-    violationStatus : ViolationStatusEnum
-    detectedTime
-    amount
-    dueTime
+    <<proposed>>
+    +violationType : ViolationTypeEnum [1..1]
+    +violationStatus : ViolationStatusEnum [1..1]
+    +detectedTime : DateTime [1..1]
+    +elementId : VersionedReference [1..1]
+    +amount : AmountInCurrency [0..1]
+    +dueTime : DateTime [0..1]
   }
   class ViolationDetection {
-    detectionMode : DetectionModeEnum
+    <<proposed>>
+    +detectionMode : DetectionModeEnum [1..1]
   }
   class Notice {
-    noticeNumber
-    issuedTime
-    noticeKind : NoticeKindEnum
-    deliveryMethod : NoticeDeliveryMethodEnum
+    <<proposed>>
+    +noticeNumber : String [1..1]
+    +issuedTime : DateTime [1..1]
+    +noticeKind : NoticeKindEnum [0..1]
+    +deliveryMethod : NoticeDeliveryMethodEnum [0..1]
   }
   class Appeal {
-    appealReason : AppealReasonEnum
-    resolution : AppealResolutionEnum
+    <<proposed>>
+    +appealReason : AppealReasonEnum [1..1]
+    +resolution : AppealResolutionEnum [0..1]
   }
   class EnforcementPolicy {
-    policyStatus : PolicyStatusEnum
+    <<proposed>>
+    +elementId : VersionedReference [1..1]
+    +endReason : RecordEndReasonEnum [0..1]
   }
-  class NoticeDeliveryRule
-  class PenaltyLimit
-  class EscalationStep
-  Violation ..> HierarchyElementGeneral : place
+  class NoticeDeliveryRule {
+    <<proposed>>
+  }
+  class PenaltyLimit {
+    <<proposed>>
+  }
+  class EscalationStep {
+    <<proposed>>
+  }
+  Violation ..> HierarchyElementGeneral : elementId
   Violation ..> Space : spaceId
   Violation ..> ObservationElement : observationId
-  Violation ..> Session : relatedSession
-  Violation ..> AssignedRight : relatedAssignedRight
+  Violation ..> Session : sessionId
+  Violation ..> AssignedRight : assignedRightId
   Violation ..> Payment : paymentId
-  Violation ..> EnforcementPolicy : policy
-  Violation ..> Signage : signage
-  Violation "1" o-- "0..1" ViolationDetection
+  Violation ..> EnforcementPolicy : policyId
+  Violation ..> Signage : signageId
+  Violation "1" o-- "1" ViolationDetection
   Violation "1" o-- "0..1" Credential : identifiedCredential
   Violation "1" o-- "0..1" VehicleAncillaryIdentification : identifiedVehicle
   Violation "1" o-- "0..*" Image : evidence
   Violation "1" o-- "0..1" Location
   Violation "1" o-- "0..1" Notice
   Violation "1" o-- "0..1" Appeal
-  EnforcementPolicy ..> HierarchyElementGeneral : place
+  EnforcementPolicy ..> HierarchyElementGeneral : elementId
+  EnforcementPolicy ..> Signage : signageId
   EnforcementPolicy "1" o-- "1" Validity
   EnforcementPolicy "1" o-- "0..*" NoticeDeliveryRule
   EnforcementPolicy "1" o-- "0..1" PenaltyLimit
@@ -204,7 +226,9 @@ classDiagram
 
 - **ViolationTypeEnum:** `noValidRight`, `expiredRight`, `notYetValidRight`,
   `wrongPlace`, `maximumStayExceeded`, `restrictedSpace`, `permitMisuse`,
-  `noParkingPeriod`, `obstruction`, `chargingBayIdle`, `other`.
+  `noParkingPeriod`, `obstruction`, `other`. A value for a vehicle left
+  in a charging bay after charging ends can be added if the Energy
+  Infrastructure additions, offered for discussion, are taken up.
 - **ViolationStatusEnum:** `detected`, `confirmed`, `dismissed`, `issued`,
   `paid`, `appealed`, `closed`, `voided`.
 - **DetectionModeEnum:** `automated`, `guided`, `manual`.
@@ -212,16 +236,19 @@ classDiagram
   group's review. Notices are named differently from one jurisdiction to
   the next, so these lists in particular would benefit from members'
   experience.
-- **AppealReasonEnum** (also a first draft), **AppealResolutionEnum** and
-  **PolicyStatusEnum**.
+- **AppealReasonEnum** (also a first draft) and **AppealResolutionEnum**
+  (`upheld`, `reduced`, `dismissed`; the toll dispute resolutions use the
+  same `reduced`).
+- **Reused from PkCommon:** the proposed `RecordEndReasonEnum` gives why an
+  EnforcementPolicy ended; its active, planned and suspended states come
+  from the APDS `ValidityStatusEnum`.
 
 ### External code lists (for Enforcement)
 
 Violation types, notice kinds and appeal reasons vary by jurisdiction. As
 elsewhere in APDS, an operation that needs a value not on these lists can
 publish it in a `UserDefinedCodeList` and use `other` in the enumeration.
-APX publishes its violation types as such a list today
-(`apx-violation-types`).
+APX publishes its violation types as such a list today.
 
 ## Use cases
 
@@ -289,8 +316,8 @@ the Place hierarchy.
 
 A city issues a penalty charge notice for an on-street overstay. Its
 EnforcementPolicy sets a payment grace period of 14 days, an EscalationStep
-adding 50% after 28 days, and a PenaltyLimit capping the total at twice the
-amount at issue.
+adding 50% after 28 days, and a PenaltyLimit whose maximum amount is twice
+the amount at issue, with a basis saying the cap includes escalation.
 
 These specifications support this use case in a number of ways:
 

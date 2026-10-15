@@ -23,7 +23,7 @@ merchant gives away time rather than money, which is the most common
 form ("first two hours free"). Extending RateDiscount with a duration
 closes that gap using the class APDS already has.
 
-### Key concepts
+### What the Rate additions hold
 
 A RateTable (additions):
 
@@ -64,22 +64,28 @@ class states the nominal value only.
 classDiagram
   class RateTable {
     <<APDS>>
+  }
+  class RateTableAdditions {
+    <<proposed>>
     +negotiable : Boolean [0..1]
     +negotiatedRateLabel : MultilingualString [0..*]
     +negotiationNote : MultilingualString [0..*]
   }
   class RateDiscount {
     <<APDS>>
-    +discountRate : Percentage [0..1]
   }
   class AmountInCurrency {
     <<APDS>>
   }
   class ValidationBenefit {
+    <<proposed>>
     +discountDuration : Duration [0..1]
     +description : MultilingualString [1..*]
   }
-  class ValidationProgram
+  class ValidationProgram {
+    <<proposed>>
+  }
+  RateTable .. RateTableAdditions : Level B additions
   RateDiscount <|-- ValidationBenefit
   RateDiscount --> "0..1" AmountInCurrency : fixedValue
   ValidationProgram --> "1" ValidationBenefit : benefit

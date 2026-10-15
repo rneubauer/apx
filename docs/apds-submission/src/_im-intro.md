@@ -25,8 +25,14 @@ Additions to existing APDS classes are Level B extensions under the APDS
 rules for extending the model: they add optional content only, never
 change an existing multiplicity, definition or type, and never make an
 existing APDS class the component of a new one. A valid extended instance
-is therefore always a valid APDS 4.1 instance. New classes in new
-domains are marked Level C where they introduce new root concepts.
+is therefore always a valid APDS 4.1 instance. Classes in the two new
+domains, Enforcement and Operations, are marked Level C because they
+introduce new root concepts.
+
+One suggestion does change an existing multiplicity: making
+`VehicleAncillaryIdentification.country` optional. It is not part of
+these additions. It is described in the Observation section and offered
+separately, with the other suggested changes to APDS 4.1.
 
 In the diagrams, classes that already exist in APDS 4.1 are marked
 `<<APDS>>`. Everything else is proposed.

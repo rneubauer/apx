@@ -1,16 +1,13 @@
 domain: EnergyInfrastructure
 order: 7
 summary: >-
-  APDS 4.1 describes charging infrastructure as it is built: the
-  SupplementalEquipment, its RefillPoints and ElectricChargingPoints, the
-  Connectors, and a RefillPointStatusEnum for the point as a whole. APX adds
-  only the live, parking-side view that operators exchange every day: the
-  status of each connector, what is physically in the bay in front of a
-  charging point, and one charge of one vehicle (a ChargingSession) linked
-  to the parking Session it happened inside. Status values reuse
-  RefillPointStatusEnum; nothing here restates the static description or
-  the charging network's own protocols. All of it is experimental in APX
-  (Part 23) and is offered for discussion.
+  APDS 4.1 describes charging infrastructure as it is built: the SupplementalEquipment, its
+  RefillPoints and ElectricChargingPoints, the Connectors, and a RefillPointStatusEnum for the point
+  as a whole. APX adds only the live, parking-side view that operators exchange every day: the
+  status of each connector, what is physically in the bay in front of a charging point, and one
+  charge of one vehicle (a ChargingSession) linked to the parking Session it happened inside. Status
+  values reuse RefillPointStatusEnum; nothing here restates the static description or the charging
+  network's own protocols. All of it is experimental in APX (Part 23) and is offered for discussion.
 packages:
   - name: EnergyInfrastructure
     location: D2Payload/Extension/Parking/EnergyInfrastructure/Classes
@@ -19,28 +16,36 @@ packages:
       - name: ChargingPointStatus
         change: new
         designation: Charging point status
-        definition: The live status of one refill point, the dynamic counterpart of the static RefillPoint publication it is linked to by refillPointIndex.
+        definition: >-
+          The live status of one refill point, the dynamic counterpart of the static RefillPoint
+          publication it is linked to by refillPointIndex.
         stereotype: D2Class
         abstract: false
         parent: null
-        level: C
+        level: B
         tier: 3
-        apx: ChargingPointStatus (APX Part 23 §23.1)
-        rationale: Lets a parking system and a charging network share whether each charging point and connector can be used now, using the APDS status vocabulary.
+        apx: APX Part 23 §23.1 ChargingPointStatus
+        rationale: >-
+          Lets a parking system and a charging network share whether each charging point and
+          connector can be used now, using the APDS status vocabulary.
         attributes:
-          - name: equipment
+          - name: equipmentId
             designation: Equipment
             definition: The SupplementalEquipment that holds the refill point.
             multiplicity: 1..1
-            type: PkCommon.VersionedReference (Place.SupplementalEquipment)
+            type: PkCommon.Reference (Place.SupplementalEquipment)
           - name: refillPointIndex
             designation: Refill point index
-            definition: The index of the static RefillPoint this status describes, as used to link static and dynamic publications.
-            multiplicity: 1..1
+            definition: >-
+              The index of the static RefillPoint this status describes, as used to link static and
+              dynamic publications.
+            multiplicity: 0..1
             type: PkCommon.Integer
           - name: status
             designation: Status
-            definition: The current status of the refill point as a whole; where connectors differ, the busiest connector determines it.
+            definition: >-
+              The current status of the refill point as a whole; where connectors differ, the
+              busiest connector determines it.
             multiplicity: 1..1
             type: EnergyInfrastructure.RefillPointStatusEnum
           - name: spaceId
@@ -48,12 +53,12 @@ packages:
             definition: The Space (bay) served by the refill point, where the facility is space-mapped.
             multiplicity: 0..1
             type: PkCommon.VersionedReference (Place.Space)
-          - name: reservedFor
+          - name: reservedAssignedRightId
             designation: Reserved for
             definition: The AssignedRight that holds the refill point under a reservation, if any.
             multiplicity: 0..1
             type: PkCommon.VersionedReference (Right.AssignedRight)
-          - name: currentChargingSession
+          - name: chargingSessionId
             designation: Current charging session
             definition: The ChargingSession in progress at the refill point, if any.
             multiplicity: 0..1
@@ -63,7 +68,7 @@ packages:
             definition: The date/time at which the current status began.
             multiplicity: 0..1
             type: PkCommon.DateTime
-          - name: lastCommunication
+          - name: lastCommunicationTime
             designation: Last communication
             definition: The date/time the refill point was last heard from.
             multiplicity: 0..1
@@ -79,7 +84,6 @@ packages:
             definition: Bay presence for the associated ChargingPointStatus
             multiplicity: 0..1
             target: EnergyInfrastructure.ChargingBayPresence
-
       - name: ConnectorStatus
         change: new
         designation: Connector status
@@ -87,14 +91,18 @@ packages:
         stereotype: D2Class
         abstract: false
         parent: null
-        level: C
+        level: B
         tier: 3
-        apx: ChargingPointStatus.connectors[] (APX Part 23 §23.1)
-        rationale: A point with two connectors can have one charging and one free; drivers and apps need to know which.
+        apx: APX Part 23 §23.1 ChargingPointStatus.connectors
+        rationale: >-
+          A point with two connectors can have one charging and one free; drivers and apps need to
+          know which.
         attributes:
           - name: connectorIndex
             designation: Connector index
-            definition: The one-based position of the connector in the static ElectricChargingPoint's list of connectors.
+            definition: >-
+              The one-based position of the connector in the static ElectricChargingPoint's list of
+              connectors.
             multiplicity: 1..1
             type: PkCommon.NonNegativeInteger
           - name: status
@@ -107,18 +115,21 @@ packages:
             definition: The power in Watts being delivered through the connector at the time of the status.
             multiplicity: 0..1
             type: EnergyInfrastructure.Watt
-
       - name: ChargingBayPresence
         change: new
         designation: Charging bay presence
-        definition: What is physically in the bay in front of a charging point, as observed by a camera, a ground sensor, the charger itself or an attendant.
+        definition: >-
+          What is physically in the bay in front of a charging point, as observed by a camera, a
+          ground sensor, the charger itself or an attendant.
         stereotype: D2Class
         abstract: false
         parent: null
-        level: C
+        level: B
         tier: 3
-        apx: ChargingBayPresence (APX Part 23 §23.3)
-        rationale: Distinguishes cases a charger cannot report on its own, such as a vehicle parked in the bay but not plugged in, or a bay blocked by an obstruction.
+        apx: APX Part 23 §23.3 ChargingBayPresence
+        rationale: >-
+          Distinguishes cases a charger cannot report on its own, such as a vehicle parked in the
+          bay but not plugged in, or a bay blocked by an obstruction.
         attributes:
           - name: presence
             designation: Presence
@@ -127,7 +138,9 @@ packages:
             type: EnergyInfrastructure.BayPresenceEnum
           - name: presenceSource
             designation: Presence source
-            definition: The source of evidence the presence was derived from; the strongest source when several are combined.
+            definition: >-
+              The source of evidence the presence was derived from; the strongest source when
+              several are combined.
             multiplicity: 0..1
             type: EnergyInfrastructure.BayPresenceSourceEnum
           - name: observedTime
@@ -147,7 +160,9 @@ packages:
             type: PkCommon.Decimal
           - name: evCapable
             designation: EV capable
-            definition: Whether the vehicle in the bay appears able to charge, where the observing system can tell.
+            definition: >-
+              Whether the vehicle in the bay appears able to charge, where the observing system can
+              tell.
             multiplicity: 0..1
             type: PkCommon.Boolean
           - name: observationId
@@ -155,37 +170,42 @@ packages:
             definition: The Observation that carries the camera or sensor evidence for the presence.
             multiplicity: 0..1
             type: PkCommon.VersionedReference (Observation.ObservationElement)
-
       - name: ChargingSession
         change: new
         designation: Charging session
-        definition: One charge of one vehicle at one charging point, from authorization to unplugging, as the parking operation sees it.
+        definition: >-
+          One charge of one vehicle at one charging point, from authorization to unplugging, as the
+          parking operation sees it.
         stereotype: D2VersionedIdentifiable
         abstract: false
         parent: null
-        level: C
+        level: B
         tier: 3
-        apx: ChargingSession (APX Part 23 §23.2)
-        rationale: Links a charge to the parking Session it happened inside, so energy, idle time and cost can be settled with the parking stay.
+        apx: APX Part 23 §23.2 ChargingSession
+        rationale: >-
+          Links a charge to the parking Session it happened inside, so energy, idle time and cost
+          can be settled with the parking stay.
         attributes:
-          - name: place
+          - name: elementId
             designation: Place
             definition: The element of the Place hierarchy where the charge took place.
             multiplicity: 1..1
             type: PkCommon.VersionedReference (Place.HierarchyElementGeneral)
-          - name: equipment
+          - name: equipmentId
             designation: Equipment
             definition: The SupplementalEquipment that holds the refill point used.
             multiplicity: 1..1
-            type: PkCommon.VersionedReference (Place.SupplementalEquipment)
+            type: PkCommon.Reference (Place.SupplementalEquipment)
           - name: refillPointIndex
             designation: Refill point index
             definition: The index of the RefillPoint used.
-            multiplicity: 1..1
+            multiplicity: 0..1
             type: PkCommon.Integer
           - name: connectorIndex
             designation: Connector index
-            definition: The one-based position of the connector used in the ElectricChargingPoint's list of connectors.
+            definition: >-
+              The one-based position of the connector used in the ElectricChargingPoint's list of
+              connectors.
             multiplicity: 0..1
             type: PkCommon.NonNegativeInteger
           - name: chargingStatus
@@ -193,14 +213,16 @@ packages:
             definition: The current state of the charge.
             multiplicity: 1..1
             type: EnergyInfrastructure.ChargingSessionStatusEnum
-          - name: parkingSession
+          - name: sessionId
             designation: Parking session
             definition: The Session for the parking stay during which the charge happened.
             multiplicity: 0..1
             type: PkCommon.VersionedReference (Session.Session)
           - name: assignedRightId
             designation: Assigned right id
-            definition: The AssignedRight that entitled the charge, such as a charging reservation or a permit.
+            definition: >-
+              The AssignedRight that entitled the charge, such as a charging reservation or a
+              permit.
             multiplicity: 0..1
             type: PkCommon.VersionedReference (Right.AssignedRight)
           - name: authenticationMethod
@@ -218,19 +240,21 @@ packages:
             definition: The date/time the vehicle was connected.
             multiplicity: 0..1
             type: PkCommon.DateTime
-          - name: chargingStart
+          - name: chargingStartTime
             designation: Charging start
             definition: The date/time energy delivery began.
             multiplicity: 0..1
             type: PkCommon.DateTime
-          - name: chargingEnd
+          - name: chargingEndTime
             designation: Charging end
             definition: The date/time energy delivery ended.
             multiplicity: 0..1
             type: PkCommon.DateTime
-          - name: idleStart
+          - name: idleStartTime
             designation: Idle start
-            definition: The date/time the vehicle began occupying the charging point without charging, after any grace period.
+            definition: >-
+              The date/time the vehicle began occupying the charging point without charging, after
+              any grace period.
             multiplicity: 0..1
             type: PkCommon.DateTime
           - name: unpluggedTime
@@ -240,7 +264,9 @@ packages:
             type: PkCommon.DateTime
           - name: energyDelivered
             designation: Energy delivered
-            definition: The energy delivered, in the delivery unit of the refill point (normally kilowatt-hours).
+            definition: >-
+              The energy delivered, in the delivery unit of the refill point (normally
+              kilowatt-hours).
             multiplicity: 0..1
             type: PkCommon.Decimal
           - name: stateOfCharge
@@ -265,7 +291,9 @@ packages:
             type: PkCommon.VersionedReference (Right.Payment)
           - name: externalIdentifier
             designation: External identifier
-            definition: Identifiers the charging network uses for the same charge, such as a charger transaction id or a roaming session id, carried without interpretation.
+            definition: >-
+              Identifiers the charging network uses for the same charge, such as a charger
+              transaction id or a roaming session id, carried without interpretation.
             multiplicity: 0..*
             type: PkCommon.ExternalIdentifier
         associations:
@@ -284,18 +312,21 @@ packages:
             definition: Idle terms for the associated ChargingSession
             multiplicity: 0..1
             target: EnergyInfrastructure.ChargingIdleTerms
-
       - name: ChargingCost
         change: new
         designation: Charging cost
-        definition: The cost of a charge as known to the parking operation, by component; an absent component is unknown rather than zero.
+        definition: >-
+          The cost of a charge as known to the parking operation, by component; an absent component
+          is unknown rather than zero.
         stereotype: D2Class
         abstract: false
         parent: null
-        level: C
+        level: B
         tier: 3
-        apx: ChargingSession.cost (APX Part 23 §23.5)
-        rationale: Lets the charge appear as lines on one bill at exit when it is settled with the parking stay.
+        apx: APX Part 23 §23.5 ChargingSession.cost
+        rationale: >-
+          Lets the charge appear as lines on one bill at exit when it is settled with the parking
+          stay.
         attributes:
           - name: energyCost
             designation: Energy cost
@@ -327,18 +358,21 @@ packages:
             definition: The date/time the cost was calculated.
             multiplicity: 0..1
             type: PkCommon.DateTime
-
       - name: ChargingIdleTerms
         change: new
         designation: Charging idle terms
-        definition: The idle rule that applied to a charge, recorded when the charge was authorized so that a later change of rule does not re-price it.
+        definition: >-
+          The idle rule that applied to a charge, recorded when the charge was authorized so that a
+          later change of rule does not re-price it.
         stereotype: D2Class
         abstract: false
         parent: null
-        level: C
+        level: B
         tier: 3
-        apx: ChargingSession.idlePolicy (APX Part 23 §23.10)
-        rationale: Lets a driver be told, and later shown, the grace period and idle rate that applied to their charge.
+        apx: APX Part 23 §23.10 ChargingSession.idlePolicy
+        rationale: >-
+          Lets a driver be told, and later shown, the grace period and idle rate that applied to
+          their charge.
         attributes:
           - name: gracePeriod
             designation: Grace period
@@ -360,14 +394,13 @@ packages:
             definition: The idle time after which the vehicle may be subject to enforcement.
             multiplicity: 0..1
             type: PkCommon.Duration
-
     enumerations:
       - name: BayPresenceEnum
         change: new
         designation: Bay presence
         definition: What a charging bay physically contains.
         tier: 3
-        apx: ChargingBayPresence.presence (APX Part 23 §23.3)
+        apx: APX Part 23 §23.3 ChargingBayPresence.presence
         rationale: These are the cases a charger alone cannot distinguish.
         values:
           - name: empty
@@ -381,17 +414,18 @@ packages:
             definition: A vehicle is in the bay and no cable is connected.
           - name: blocked
             designation: Blocked
-            definition: The bay is obstructed by something other than a correctly parked vehicle, such as cones, debris or a vehicle straddling two bays.
+            definition: >-
+              The bay is obstructed by something other than a correctly parked vehicle, such as
+              cones, debris or a vehicle straddling two bays.
           - name: unknown
             designation: Unknown
             definition: What the bay contains is not known.
-
       - name: BayPresenceSourceEnum
         change: new
         designation: Bay presence source
         definition: The kind of evidence a bay presence was derived from.
         tier: 3
-        apx: ChargingBayPresence.source (APX Part 23 §23.3)
+        apx: APX Part 23 §23.3 ChargingBayPresence.source
         rationale: Receivers weigh a camera observation differently from an inference.
         values:
           - name: overheadCamera
@@ -409,14 +443,15 @@ packages:
           - name: inferred
             designation: Inferred
             definition: Derived from other data without a direct observation of the bay.
-
       - name: ChargingSessionStatusEnum
         change: new
         designation: Charging session status
         definition: The states of one charge, from authorization to closure.
         tier: 3
-        apx: ChargingSession.chargingStatus (APX Part 23 §23.2), aligned with OCPP 2.0.1 charging states
-        rationale: Lets the parking side and the charging network agree on where a charge is, including idle time after charging ends.
+        apx: APX Part 23 §23.2 ChargingSession.chargingStatus
+        rationale: >-
+          Lets the parking side and the charging network agree on where a charge is, including idle
+          time after charging ends.
         values:
           - name: authorized
             designation: Authorized
@@ -448,14 +483,15 @@ packages:
           - name: faulted
             designation: Faulted
             definition: A fault interrupted the charge.
-
       - name: ChargingStopReasonEnum
         change: new
         designation: Charging stop reason
         definition: Why energy delivery ended.
         tier: 3
-        apx: ChargingSession.stopReason (APX Part 23), a subset of OCPP 2.0.1 stopped reasons
-        rationale: Separates a full battery from a fault or an early disconnect, which matters for disputes and idle charging.
+        apx: APX Part 23 ChargingSession.stopReason
+        rationale: >-
+          Separates a full battery from a fault or an early disconnect, which matters for disputes
+          and idle charging.
         values:
           - name: evDisconnected
             designation: EV disconnected
@@ -490,14 +526,15 @@ packages:
           - name: other
             designation: Other
             definition: Some other reason.
-
       - name: ChargingSettlementModeEnum
         change: new
         designation: Charging settlement mode
         definition: How the cost of a charge is collected.
         tier: 3
-        apx: ChargingSession.settlement.mode (APX Part 23 §23.5)
-        rationale: Tells every party whether the charge is on the parking bill, paid on its own, or billed by the charging network.
+        apx: APX Part 23 §23.5 ChargingSession.settlement.mode
+        rationale: >-
+          Tells every party whether the charge is on the parking bill, paid on its own, or billed by
+          the charging network.
         values:
           - name: parkingSession
             designation: Parking session
@@ -507,4 +544,6 @@ packages:
             definition: The cost is paid by its own Payment.
           - name: chargingNetwork
             designation: Charging network
-            definition: The cost is billed by the charging network or a roaming partner; the parking side records energy and time but not money.
+            definition: >-
+              The cost is billed by the charging network or a roaming partner; the parking side
+              records energy and time but not money.

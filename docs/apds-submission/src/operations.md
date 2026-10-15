@@ -10,7 +10,7 @@ domain adds the Alert.
 
 ### Benefits of the Operations domain
 
-Modern parking sites are monitored from many places: the equipment
+Parking sites are often monitored from many places: the equipment
 supplier's service desk, a remote monitoring centre, the operator's
 control room, and enforcement and charging partners. Each needs to know
 when a barrier faults, a lane is blocked, a charging bay is taken by a
@@ -68,8 +68,9 @@ alert also keeps an append-only history of who changed its status and
 when. That audit detail stays in the APX profile.
 
 **SupportInteraction** is versioned and identifiable and refers only to
-existing APDS records. Its issue types are taken from APX's existing
-registry of customer-service issue types.
+existing APDS records. Its channel uses the shared
+`InteractionChannelEnum` proposed in PkCommon, and its issue types start
+from the customer-service issue types APX uses today.
 
 Device status (whether a barrier, camera or pay station is working) is
 proposed in the Place domain, next to the SupplementalEquipment it
@@ -100,23 +101,25 @@ classDiagram
     <<APDS>>
   }
   class Alert {
-    alertType : AlertTypeEnum
-    severity : AlertSeverityEnum
-    alertStatus : AlertStatusEnum
-    detectionTime
-    occurrenceTime
-    expiryTime
+    <<proposed>>
+    +alertType : AlertTypeEnum [1..1]
+    +severity : AlertSeverityEnum [1..1]
+    +alertStatus : AlertStatusEnum [1..1]
+    +detectionTime : DateTime [1..1]
+    +occurrenceTime : DateTime [0..1]
+    +expiryTime : DateTime [0..1]
   }
   class SupportInteraction {
-    channel : SupportChannelEnum
-    agentType : SupportAgentTypeEnum
-    issueType : SupportIssueTypeEnum
-    startTime
+    <<proposed>>
+    +channel : InteractionChannelEnum [1..1]
+    +agentType : SupportAgentTypeEnum [1..1]
+    +issueType : SupportIssueTypeEnum [0..1]
+    +startTime : DateTime [1..1]
   }
-  Alert ..> HierarchyElementGeneral : place
-  Alert ..> SupplementalEquipment : sourceEquipment
-  Alert ..> Reference : relatedEntity
-  SupportInteraction ..> HierarchyElementGeneral : place
+  Alert ..> HierarchyElementGeneral : elementId
+  Alert ..> SupplementalEquipment : equipmentId
+  Alert ..> Reference : relatedEntityId
+  SupportInteraction ..> HierarchyElementGeneral : elementId
   SupportInteraction ..> Session : sessionId
   SupportInteraction ..> AssignedRight : assignedRightId
   SupportInteraction ..> RightHolder : rightHolderId
@@ -132,20 +135,20 @@ classDiagram
   `deviceOffline`, `laneBlocked`, `occupancyThresholdExceeded`,
   `paymentException`, `intercomRequest`, `wrongWayTravel`) and plate-list
   arrivals (`watchListArrival`, `scofflawArrival`,
-  `refusedServiceArrival`). APX's own list also has a value for failed
-  message delivery. That value concerns the APX interface rather than the
-  parking operation, so it is not proposed.
+  `refusedServiceArrival`). One further value APX uses concerns its own
+  systems rather than the parking operation, so it is not proposed.
 - **AlertSeverityEnum:** `info`, `warning`, `minor`, `major`, `critical`. A
   closed scale.
 - **AlertStatusEnum:** `raised`, `acknowledged`, `resolved`, `expired`.
-- **SupportChannelEnum**, **SupportAgentTypeEnum** and
-  **SupportIssueTypeEnum:** for discussion, with SupportInteraction.
+- **SupportAgentTypeEnum** and **SupportIssueTypeEnum:** for discussion,
+  with SupportInteraction. Its channel uses the shared
+  `InteractionChannelEnum` (PkCommon).
 
 ### External code lists (for Operations)
 
 Alert types are open in practice: each site has conditions of its own. An
 operation can publish additional types in a `UserDefinedCodeList`, as APX
-does today with `apx-alert-types`. Severity is deliberately closed, so
+does today. Severity is deliberately closed, so
 that every receiver ranks alerts the same way.
 
 ## Use cases
@@ -161,7 +164,7 @@ These specifications support this use case in a number of ways:
 
 **Place.** The lane is a VehicularAccess element and the barrier is
 SupplementalEquipment in the Place hierarchy. Its status changes to
-`fault` through the device status proposed in the Place domain.
+`faulted` through the equipment status proposed in the Place domain.
 
 **Operations.** The lane controller raises an Alert of type `deviceFault`,
 severity `major`, referencing the barrier and the lane. A second Alert of

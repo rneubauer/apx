@@ -1,18 +1,14 @@
 domain: Right
 order: 4
 summary: >-
-  APDS records who holds a right, which credentials prove it, and what was
-  paid for it. APX asks for the lifecycle and context that operators
-  exchange every day around those same classes: the status of an assigned
-  credential and the physical medium it was issued on, a credential as it
-  was actually presented at a reader, the state of a reservation and the
-  renewal chain of a permit, the outcome of a payment and how it was
-  taken, an account status and balance on the RightHolder, merchant
-  validation programmes with their instrument stock, and lists of plates
-  (watch, scofflaw, allow) that tell a site what to do when a plate is
-  seen. Every addition is optional and attaches to an existing APDS class,
-  so every APDS 4.1 instance stays valid.
-
+  APDS records who holds a right, which credentials prove it, and what was paid for it. APX asks for
+  the lifecycle and context that operators exchange every day around those same classes: the status
+  of an assigned credential and the physical medium it was issued on, a credential as it was
+  actually presented at a reader, the state of a reservation and the renewal chain of a permit, the
+  outcome of a payment and how it was taken, an account status and balance on the RightHolder,
+  merchant validation programmes with their instrument stock, and lists of plates (watch, scofflaw,
+  allow) that tell a site what to do when a plate is seen. Every addition is optional and attaches
+  to an existing APDS class, so every APDS 4.1 instance stays valid.
 packages:
   - name: Right
     location: D2Payload/Extension/Parking/Right
@@ -22,19 +18,18 @@ packages:
         change: extend
         designation: Credential assigned
         definition: >-
-          Information concerning a specific credential that is used for
-          verification for one AssignedRight (existing APDS class; the
-          attributes and associations below are proposed additions).
+          Information concerning a specific credential that is used for verification for one
+          AssignedRight (existing APDS class; the attributes and associations below are proposed
+          additions).
         stereotype: D2VersionedIdentifiable
         abstract: false
         parent: Right.Credential
         level: B
         tier: 1
-        apx: CredentialRecord (APX Part 21 §21.1–21.2)
+        apx: APX Part 21 §21.1 CredentialRecord
         rationale: >-
-          Lets a lane, an enforcement device and a back office agree whether a
-          keycard, fob, tag or plate is currently usable, and which credential
-          replaced a lost one.
+          Lets a lane, an enforcement device and a back office agree whether a keycard, fob, tag or
+          plate is currently usable, and which credential replaced a lost one.
         attributes:
           - name: credentialStatus
             designation: Credential status
@@ -49,8 +44,8 @@ packages:
           - name: replacedByCredentialId
             designation: Replaced by credential id
             definition: >-
-              Reference to the assigned credential that succeeded this one,
-              when its status is replaced.
+              Reference to the assigned credential that succeeded this one, when its status is
+              replaced.
             multiplicity: 0..1
             type: PkCommon.Reference (Right.CredentialAssigned)
         associations:
@@ -69,24 +64,21 @@ packages:
             definition: Credential suspension for the associated CredentialAssigned
             multiplicity: 0..1
             target: Right.CredentialSuspension
-
       - name: CredentialMedia
         change: new
         designation: Credential media
         definition: >-
-          The physical or virtual item on which a credential was issued, such
-          as a card, fob, transponder or hangtag, distinct from the read
-          technology given by the credential type.
+          The physical or virtual item on which a credential was issued, such as a card, fob,
+          transponder or hangtag, distinct from the read technology given by the credential type.
         stereotype: D2Class
         abstract: false
         parent: null
         level: B
         tier: 1
-        apx: CredentialRecord.media (APX Part 21 §21.1)
+        apx: APX Part 21 §21.1 CredentialRecord.media
         rationale: >-
-          Lets parties tell a card from a fob that share the same read
-          technology, and track the serial number and deposit of physical
-          stock handed to a customer.
+          Lets parties tell a card from a fob that share the same read technology, and track the
+          serial number and deposit of physical stock handed to a customer.
         attributes:
           - name: mediaForm
             designation: Media form
@@ -96,8 +88,8 @@ packages:
           - name: serialNumber
             designation: Serial number
             definition: >-
-              Manufacturer or stock serial number of the physical item, distinct
-              from the identification the reader reads.
+              Manufacturer or stock serial number of the physical item, distinct from the
+              identification the reader reads.
             multiplicity: 0..1
             type: PkCommon.String
           - name: batch
@@ -121,122 +113,78 @@ packages:
             definition: Deposit for the associated CredentialMedia
             multiplicity: 0..1
             target: PkCommon.AmountInCurrency
-
       - name: CredentialSuspension
         change: new
         designation: Credential suspension
         definition: >-
-          Details of a temporary suspension of an assigned credential, present
-          while its status is suspended.
+          Details of a temporary suspension of an assigned credential, present while its status is
+          suspended.
         stereotype: D2Class
         abstract: false
         parent: null
         level: B
         tier: 1
-        apx: CredentialRecord.suspension (APX Part 21 §21.1)
+        apx: APX Part 21 §21.1 CredentialRecord.suspension
         rationale: >-
-          Lets a reader or enforcement device know a credential is suspended
-          rather than revoked, and when it resumes.
+          Lets a reader or enforcement device know a credential is suspended rather than revoked,
+          and when it resumes.
         attributes:
           - name: suspensionReason
             designation: Suspension reason
             definition: Free-text or code-list reason the credential was suspended.
             multiplicity: 0..1
             type: PkCommon.String
-          - name: suspendedUntil
+          - name: suspendedUntilTime
             designation: Suspended until
             definition: >-
-              The date/time the suspension ends automatically; absent when the
-              credential stays suspended until resumed.
+              The date/time the suspension ends automatically; absent when the credential stays
+              suspended until resumed.
             multiplicity: 0..1
             type: PkCommon.DateTime
-
       - name: PresentedCredential
         change: new
         designation: Presented credential
         definition: >-
-          A credential as it was actually read or presented at a reader or to
-          an officer, whether or not it matches a credential assigned to any
-          AssignedRight.
+          A credential type and identification as read, presented, observed or listed, whether or
+          not it matches a credential assigned to any AssignedRight. The type is inherited from
+          Credential.
         stereotype: D2Class
         abstract: false
         parent: Right.Credential
         level: B
         tier: 1
-        apx: PresentedCredential (APX Part 21 §21.4)
+        apx: APX Part 21 §21.4 PresentedCredential
         rationale: >-
-          Gives an access event or a refused entry a place to record the value
-          that was read when no assigned credential matched it.
+          Gives access events, toll transactions, valet tickets and plate lists one way to carry a
+          credential value that is not an assigned credential record.
         attributes:
           - name: credentialIdentification
             designation: Credential identification
             definition: The value read from the credential, such as a card number, tag identifier or plate.
             multiplicity: 1..1
             type: PkCommon.String
-
-      - name: CredentialDigest
-        change: new
-        designation: Credential digest
-        definition: >-
-          A keyed digest of a normalised credential identification, such as a
-          plate, that lets a party test whether two credentials are the same
-          without holding the identification itself.
-        stereotype: D2Class
-        abstract: false
-        parent: null
-        level: B
-        tier: 2
-        apx: CredentialDigest, apds-ext:apx:credential-digest@1.0 (APX Part 9 §9.6 rule 6)
-        rationale: >-
-          Supports data minimisation: a screening system can match plates
-          against a list without receiving the plates.
-        attributes:
-          - name: digestAlgorithm
-            designation: Digest algorithm
-            definition: The keyed-digest algorithm used to compute the value.
-            multiplicity: 1..1
-            type: Right.DigestAlgorithmEnum
-          - name: keyIdentifier
-            designation: Key identifier
-            definition: Identifier of the key the digest was computed under, so keys can be rotated.
-            multiplicity: 1..1
-            type: PkCommon.String
-          - name: digestValue
-            designation: Digest value
-            definition: The digest value, base64url encoded without padding.
-            multiplicity: 1..1
-            type: PkCommon.String
-          - name: type
-            designation: Type
-            definition: The type of credential whose identification was digested.
-            multiplicity: 0..1
-            type: Right.CredentialTypeEnum
-
       - name: AssignedRight
         change: extend
         designation: Assigned right
         definition: >-
-          AssignedRight indicates the granting of a specific RightSpecification
-          to a specific RightHolder (existing APDS class; the attributes and
-          associations below are proposed additions).
+          AssignedRight indicates the granting of a specific RightSpecification to a specific
+          RightHolder (existing APDS class; the attributes and associations below are proposed
+          additions).
         stereotype: D2VersionedIdentifiable
         abstract: false
         parent: null
         level: B
         tier: 2
-        apx: >-
-          ReservationExtension, apds-ext:apx:reservation@1.0 (APX Part 14
-          §14.1); PermitExtension, apds-ext:apx:permit@1.1 (APX Part 14 §14.2)
+        apx: APX Part 14 §14.1 ReservationExtension
         rationale: >-
-          Lets a booking platform and a site agree on the state of a
-          reservation, and lets a permit portal follow a renewal chain and
-          state how many of a permit's vehicles may park at once.
+          Lets a booking platform and a site agree on the state of a reservation, and lets a permit
+          portal follow a renewal chain and state how many of a permit's vehicles may park at once.
         attributes:
           - name: reservationState
             designation: Reservation state
             definition: >-
-              The state of an AssignedRight that is a reservation; absent when
-              the AssignedRight is not a reservation.
+              The state of an AssignedRight that is a reservation; absent when the AssignedRight is
+              not a reservation.
             multiplicity: 0..1
             type: Right.ReservationStateEnum
           - name: checkInSessionId
@@ -244,11 +192,11 @@ packages:
             definition: Reference to the Session that used the reservation.
             multiplicity: 0..1
             type: PkCommon.VersionedReference (Session.Session)
-          - name: noShowAfter
+          - name: noShowTime
             designation: No show after
             definition: >-
-              The date/time after which a reservation not yet used becomes a no
-              show, as set by the issuer.
+              The date/time after which a reservation not yet used becomes a no show, as set by the
+              issuer.
             multiplicity: 0..1
             type: PkCommon.DateTime
           - name: renewsAssignedRightId
@@ -264,8 +212,8 @@ packages:
           - name: maxConcurrentVehicles
             designation: Maximum concurrent vehicles
             definition: >-
-              The number of the AssignedRight's vehicles that may be parked at
-              the Place at the same time; absent means all of them.
+              The number of the AssignedRight's vehicles that may be parked at the Place at the same
+              time; absent means all of them.
             multiplicity: 0..1
             type: PkCommon.NonNegativeInteger
         associations:
@@ -274,22 +222,21 @@ packages:
             definition: Overage billing for the associated AssignedRight
             multiplicity: 0..1
             target: Right.OverageBilling
-
       - name: OverageBilling
         change: new
         designation: Overage billing
         definition: >-
-          How a vehicle parked beyond the maximum number of concurrent vehicles
-          of an AssignedRight is charged.
+          How a vehicle parked beyond the maximum number of concurrent vehicles of an AssignedRight
+          is charged.
         stereotype: D2Class
         abstract: false
         parent: null
         level: B
         tier: 2
-        apx: PermitExtension.overageBilling (APX Part 14 §14.2d)
+        apx: APX Part 14 §14.2d PermitExtension.overageBilling
         rationale: >-
-          Lets a multi-vehicle permit state what an extra vehicle costs, so the
-          site and the permit issuer bill it the same way.
+          Lets a multi-vehicle permit state what an extra vehicle costs, so the site and the permit
+          issuer bill it the same way.
         attributes:
           - name: overageBillingMode
             designation: Overage billing mode
@@ -302,24 +249,21 @@ packages:
             definition: Day rate for the associated OverageBilling
             multiplicity: 0..1
             target: PkCommon.AmountInCurrency
-
       - name: RightHolder
         change: extend
         designation: Right holder
         definition: >-
-          Information concerning a specific holder of a granted right (existing
-          APDS class; the attributes and associations below are proposed
-          additions).
+          Information concerning a specific holder of a granted right (existing APDS class; the
+          attributes and associations below are proposed additions).
         stereotype: D2VersionedIdentifiable
         abstract: false
         parent: null
         level: B
         tier: 2
-        apx: Account (APX Part 13 §13.1)
+        apx: APX Part 13 §13.1 Account
         rationale: >-
-          Lets a RightHolder that is a billable account (a monthly parker, a
-          fleet) carry whether it is enabled and what it owes, without a second
-          parallel holder record.
+          Lets a RightHolder that is a billable account (a monthly parker, a fleet) carry whether it
+          is enabled and what it owes, without a second parallel holder record.
         attributes:
           - name: accountStatus
             designation: Account status
@@ -337,24 +281,21 @@ packages:
             definition: Account balance for the associated RightHolder
             multiplicity: 0..1
             target: PkCommon.AmountInCurrency
-
       - name: Payment
         change: extend
         designation: Payment
         definition: >-
-          Lightweight record of payment for associated AssignedRight (existing
-          APDS class; the attributes and associations below are proposed
-          additions).
+          Lightweight record of payment for associated AssignedRight (existing APDS class; the
+          attributes and associations below are proposed additions).
         stereotype: D2VersionedIdentifiable
         abstract: false
         parent: null
         level: B
         tier: 2
-        apx: PaymentRecord (APX Part 13 §13.1a, §13.6); PaymentDetail.rateSold (Part 13 §13.6a)
+        apx: APX Part 13 §13.1a PaymentRecord
         rationale: >-
-          Lets parties exchange declined and reversed payments, authorisations
-          not yet captured, partial refunds, how and where a customer paid,
-          and which rate a payment bought.
+          Lets parties exchange declined and reversed payments, authorisations not yet captured,
+          partial refunds, how and where a customer paid, and which rate a payment bought.
         attributes:
           - name: paymentStatus
             designation: Payment status
@@ -364,8 +305,8 @@ packages:
           - name: captureStatus
             designation: Capture status
             definition: >-
-              Whether the funds of an approved payment have been collected or
-              are only authorised; absent means captured.
+              Whether the funds of an approved payment have been collected or are only authorised;
+              absent means captured.
             multiplicity: 0..1
             type: Right.CaptureStatusEnum
           - name: meansOfPayment
@@ -377,7 +318,7 @@ packages:
             designation: Payment channel
             definition: Where the payment was taken.
             multiplicity: 0..1
-            type: Right.PaymentChannelEnum
+            type: PkCommon.InteractionChannelEnum
           - name: elementId
             designation: Element id
             definition: Reference to the element within the Place Hierarchy at which the payment was taken.
@@ -386,9 +327,7 @@ packages:
         associations:
           - end: refundedAmount
             designation: Refunded amount
-            definition: >-
-              Refunded amount for the associated Payment: the cumulative amount
-              given back so far
+            definition: "Refunded amount for the associated Payment: the cumulative amount given back so far"
             multiplicity: 0..1
             target: PkCommon.AmountInCurrency
           - end: rateSold
@@ -396,7 +335,6 @@ packages:
             definition: Rate sold for the associated Payment
             multiplicity: 0..1
             target: Right.RateSold
-
       - name: RateSold
         change: new
         designation: Rate sold
@@ -406,14 +344,16 @@ packages:
         parent: null
         level: B
         tier: 3
-        apx: PaymentDetail.rateSold, apds-ext:apx:payment-detail@1.0 (APX Part 13 §13.6a)
+        apx: APX Part 13 §13.6a PaymentDetail.rateSold
         rationale: >-
-          Lets revenue reports and price checks see which RateTable or product
-          a payment was for without a bilateral code.
+          Lets revenue reports and price checks see which RateTable or product a payment was for
+          without a bilateral code.
         attributes:
           - name: rateTableId
             designation: Rate table id
-            definition: Reference to the RateTable, at the version applied, when the rate came from the published rate deck.
+            definition: >-
+              Reference to the RateTable, at the version applied, when the rate came from the
+              published rate deck.
             multiplicity: 0..1
             type: PkCommon.VersionedReference (Rates.RateTable)
           - name: sellerRateIdentifier
@@ -436,41 +376,16 @@ packages:
             definition: How the price of the rate was arrived at.
             multiplicity: 0..1
             type: Right.RateClassEnum
-
-      - name: PaymentLine
-        change: extend
-        designation: Payment line
-        definition: >-
-          Individual line item for a payment for associated AssignedRight
-          (existing APDS class; the attribute below is a proposed addition).
-        stereotype: D2VersionedIdentifiable
-        abstract: false
-        parent: null
-        level: B
-        tier: 2
-        apx: registry apx-payment-line-codes (APX Part 13 §13.6a)
-        rationale: >-
-          Gives idCode a shared counterpart, so two parties can tell a base
-          charge from a fee, a tax or a discount without a bilateral agreement.
-        attributes:
-          - name: lineCode
-            designation: Line code
-            definition: >-
-              The nature of the line item from a shared code list; idCode
-              remains available for bilateral codes.
-            multiplicity: 0..1
-            type: Right.PaymentLineCodeEnum
-
     enumerations:
       - name: CredentialStatusEnum
         change: new
         designation: Credential status
         definition: The lifecycle status of an assigned credential.
         tier: 1
-        apx: CredentialRecord.credentialStatus (APX Part 21 §21.1)
+        apx: APX Part 21 §21.1 CredentialRecord.credentialStatus
         rationale: >-
-          A small fixed set every access-control vendor already keeps, so a lane
-          can refuse a lost or revoked card for the right reason.
+          A small fixed set every access-control vendor already keeps, so a lane can refuse a lost
+          or revoked card for the right reason.
         values:
           - name: issued
             designation: Issued
@@ -493,13 +408,12 @@ packages:
           - name: replaced
             designation: Replaced
             definition: The credential has been succeeded by another credential.
-
       - name: CredentialMediaFormEnum
         change: new
         designation: Credential media form
         definition: The physical or virtual form of the item a credential was issued on.
         tier: 1
-        apx: CredentialRecord.media.form (APX Part 21 §21.1)
+        apx: APX Part 21 §21.1 CredentialRecord.media.form
         rationale: Separates the item a customer holds from the read technology in CredentialTypeEnum.
         values:
           - name: physicalCard
@@ -526,13 +440,12 @@ packages:
           - name: virtual
             designation: Virtual
             definition: A credential with no physical item, such as an account number.
-
       - name: DepositStatusEnum
         change: new
         designation: Deposit status
         definition: What has happened to a deposit taken for a physical credential item.
-        tier: 2
-        apx: CredentialRecord.media.depositStatus (APX Part 21 §21.1)
+        tier: 1
+        apx: APX Part 21 §21.1 CredentialRecord.media.depositStatus
         rationale: Lets the issuer and the site agree whether a deposit is still owed back.
         values:
           - name: held
@@ -544,28 +457,15 @@ packages:
           - name: forfeited
             designation: Forfeited
             definition: The deposit has been kept by the issuer.
-
-      - name: DigestAlgorithmEnum
-        change: new
-        designation: Digest algorithm
-        definition: The keyed-digest algorithm used to compute a credential digest.
-        tier: 2
-        apx: CredentialDigest.alg (APX Part 9 §9.6 rule 6)
-        rationale: Names the algorithm so new ones can be added without changing the class.
-        values:
-          - name: hs256
-            designation: HMAC SHA-256
-            definition: HMAC using SHA-256.
-
       - name: ReservationStateEnum
         change: new
         designation: Reservation state
         definition: The state of an AssignedRight that is a reservation.
         tier: 2
-        apx: ReservationExtension.reservationState (APX Part 14 §14.1)
+        apx: APX Part 14 §14.1 ReservationExtension.reservationState
         rationale: >-
-          Lets a booking platform and a site agree whether a booking is still
-          live, was used, or lapsed.
+          Lets a booking platform and a site agree whether a booking is still live, was used, or
+          lapsed.
         values:
           - name: confirmed
             designation: Confirmed
@@ -582,13 +482,12 @@ packages:
           - name: noShow
             designation: No show
             definition: The reservation was not used before its no-show time.
-
       - name: OverageBillingModeEnum
         change: new
         designation: Overage billing mode
         definition: The way a vehicle beyond an AssignedRight's concurrent-vehicle limit is charged.
         tier: 2
-        apx: PermitExtension.overageBilling.mode (APX Part 14 §14.2d)
+        apx: APX Part 14 §14.2d PermitExtension.overageBilling.mode
         rationale: Lets the site and the permit issuer bill an extra vehicle the same way.
         values:
           - name: rack
@@ -600,13 +499,12 @@ packages:
           - name: none
             designation: None
             definition: Recorded but not charged.
-
       - name: AccountStatusEnum
         change: new
         designation: Account status
         definition: Whether a RightHolder's account is enabled for use.
         tier: 2
-        apx: Account.accountStatus (APX Part 13 §13.1)
+        apx: APX Part 13 §13.1 Account.accountStatus
         rationale: Lets a lane or agent know an account is disabled without a separate system.
         values:
           - name: enabled
@@ -615,16 +513,13 @@ packages:
           - name: disabled
             designation: Disabled
             definition: The account may not be used.
-
       - name: PaymentStatusEnum
         change: new
         designation: Payment status
         definition: The outcome of a payment as reported by the payment layer.
         tier: 2
-        apx: PaymentRecord.paymentStatus (APX Part 13 §13.1a)
-        rationale: >-
-          APDS Payment records only money collected; declines and reversals
-          have no home today.
+        apx: APX Part 13 §13.1a PaymentRecord.paymentStatus
+        rationale: APDS Payment records only money collected; declines and reversals have no home today.
         values:
           - name: approved
             designation: Approved
@@ -635,13 +530,12 @@ packages:
           - name: reversed
             designation: Reversed
             definition: An authorisation was voided, or the payment was refunded in full.
-
       - name: CaptureStatusEnum
         change: new
         designation: Capture status
         definition: Whether the funds of an approved payment have been collected.
         tier: 2
-        apx: PaymentRecord.captureStatus (APX Part 13 §13.1a)
+        apx: APX Part 13 §13.1a PaymentRecord.captureStatus
         rationale: Distinguishes a held authorisation from a completed sale.
         values:
           - name: authorized
@@ -650,40 +544,12 @@ packages:
           - name: captured
             designation: Captured
             definition: Funds have been collected.
-
-      - name: PaymentChannelEnum
-        change: new
-        designation: Payment channel
-        definition: Where a payment was taken.
-        tier: 2
-        apx: PaymentRecord.channel (APX Part 13 §13.1)
-        rationale: Lets revenue be attributed to the lane, pay station, agent or app that took it.
-        values:
-          - name: lane
-            designation: Lane
-            definition: A device in an entry or exit lane.
-          - name: payStation
-            designation: Pay station
-            definition: A pay station or pay-on-foot machine.
-          - name: agent
-            designation: Agent
-            definition: A person using the operator's own payment terminal.
-          - name: autoAttendant
-            designation: Auto attendant
-            definition: An automated telephone system that captures the card out of band.
-          - name: online
-            designation: Online
-            definition: A web site or mobile application.
-          - name: other
-            designation: Other
-            definition: Some other channel.
-
       - name: RateProductEnum
         change: new
         designation: Rate product
         definition: The kind of product a rate sold.
         tier: 3
-        apx: PaymentDetail.rateSold.product (APX Part 13 §13.6a)
+        apx: APX Part 13 §13.6a PaymentDetail.rateSold.product
         rationale: Separates a single stay from a pass in revenue reporting.
         values:
           - name: standard
@@ -695,13 +561,12 @@ packages:
           - name: other
             designation: Other
             definition: Some other product.
-
       - name: RateClassEnum
         change: new
         designation: Rate class
         definition: How the price of a sold rate was arrived at.
         tier: 3
-        apx: PaymentDetail.rateSold.class (APX Part 13 §13.6a)
+        apx: APX Part 13 §13.6a PaymentDetail.rateSold.class
         rationale: Lets reports separate full-price sales from validated, discounted and zeroed ones.
         values:
           - name: standard
@@ -719,63 +584,48 @@ packages:
           - name: other
             designation: Other
             definition: Some other pricing.
-
-      - name: PaymentLineCodeEnum
-        change: new
-        designation: Payment line code
-        definition: >-
-          The nature of a payment line item. Suggested as an extensible code
-          list; the values below are a starting set maintained today in the
-          APX registry apx-payment-line-codes.
-        tier: 2
-        apx: registry apx-payment-line-codes (APX Part 11, Part 13 §13.6a)
-        rationale: >-
-          Today idCode is bilateral, so two parties cannot tell a price line
-          from a fee or a tax.
-        values:
-          - name: base
-            designation: Base
-            definition: The parking charge before fees, taxes and discounts.
-          - name: convenienceFee
-            designation: Convenience fee
-            definition: A per-transaction fee added by the payment channel.
-          - name: serviceFee
-            designation: Service fee
-            definition: A service fee added by the operator, such as for valet or a reservation.
-          - name: tax
-            designation: Tax
-            definition: Tax on the charge, when itemised.
-          - name: discount
-            designation: Discount
-            definition: A reduction other than a validation, carried as a negative value.
-          - name: validation
-            designation: Validation
-            definition: The value offset by a merchant validation.
-          - name: energy
-            designation: Energy
-            definition: A charge for energy delivered to an electric vehicle.
-          - name: idle
-            designation: Idle
-            definition: A charge for occupying a charging point after charging finished.
-
       - name: RightTypeEnum
         change: extend
         designation: Right type
         definition: >-
-          Defines the type of Right Specification (existing APDS enumeration;
-          the value below is a proposed addition).
+          Defines the type of Right Specification (existing APDS enumeration; the value below is a
+          proposed addition).
         tier: 2
-        apx: ValetTicket.assignedRight (APX Part 22)
+        apx: APX Part 22 ValetTicket.assignedRight
         rationale: >-
-          Lets any APDS consumer, such as an enforcement vendor, tell a vehicle
-          in valet custody from a transient parker.
+          Lets any APDS consumer, such as an enforcement vendor, tell a vehicle in valet custody
+          from a transient parker.
         values:
           - name: valet
             designation: Valet
-            definition: >-
-              Intended for a vehicle placed in valet custody, valid from
-              drop-off to handback.
-
+            definition: Intended for a vehicle placed in valet custody, valid from drop-off to handback.
+      - name: PaymentTypeEnum
+        change: extend
+        designation: Payment type
+        definition: >-
+          Indicates the list of acceptable payment types against an AssignedRight. Values proposed
+          for addition, so payment lines can tell a fee or a discount from the base charge.
+        tier: 2
+        apx: APX Part 13 §13.6a payment line codes
+        rationale: >-
+          PaymentLine already carries a payment type; these values let two parties tell fees,
+          discounts and charging costs apart without a bilateral code list.
+        values:
+          - name: convenienceFee
+            designation: Convenience fee
+            definition: A fee for the convenience of the channel used to pay.
+          - name: serviceFee
+            designation: Service fee
+            definition: A fee for a service other than the right itself.
+          - name: discount
+            designation: Discount
+            definition: A reduction in the amount charged, other than a validation.
+          - name: energy
+            designation: Energy
+            definition: A charge for energy delivered to the vehicle.
+          - name: idle
+            designation: Idle
+            definition: A charge for occupying a charging bay after charging ended.
   - name: Validation
     location: D2Payload/Extension/Parking/Right/Validation
     status: new
@@ -784,26 +634,27 @@ packages:
         change: new
         designation: Validation program
         definition: >-
-          A merchant's enrolment to validate parking at a Place: who the
-          provider is, what each validation is worth, the rules that bound it
-          and how the merchant is billed.
+          A merchant's enrolment to validate parking at a Place: who the provider is, what each
+          validation is worth, the rules that bound it and how the merchant is billed.
         stereotype: D2VersionedIdentifiable
         abstract: false
         parent: null
         level: B
         tier: 2
-        apx: ValidationProgram (APX Part 20 §20.1)
+        apx: APX Part 20 §20.1 ValidationProgram
         rationale: >-
-          APDS records that a validation happened (PaymentTypeEnum validation,
-          Segment.validationId) but not the programme behind it; this lets a
-          site, a merchant and a pay station agree on what a validation is.
+          APDS records that a validation happened (PaymentTypeEnum validation, Segment.validationId)
+          but not the programme behind it; this lets a site, a merchant and a pay station agree on
+          what a validation is.
         attributes:
           - name: elementId
             designation: Element id
-            definition: Reference to the element within the Place Hierarchy at which the program validates parking.
+            definition: >-
+              Reference to the element within the Place Hierarchy at which the program validates
+              parking.
             multiplicity: 1..1
             type: PkCommon.VersionedReference (Place.HierarchyElementGeneral)
-          - name: provider
+          - name: providerId
             designation: Provider
             definition: The merchant or other organisation that provides the validation.
             multiplicity: 1..1
@@ -818,17 +669,24 @@ packages:
             definition: Provider-defined code naming the validation product.
             multiplicity: 0..1
             type: PkCommon.String
-          - name: programStatus
-            designation: Program status
-            definition: The current status of the program.
-            multiplicity: 1..1
-            type: Validation.ValidationProgramStatusEnum
           - name: issuanceMethod
             designation: Issuance method
             definition: The forms of instrument the program may issue.
             multiplicity: 0..*
-            type: Validation.ValidationIssuanceMethodEnum
+            type: Right.ValidationIssuanceMethodEnum
+          - name: endReason
+            designation: End reason
+            definition: Why the programme is no longer in use, when it has ended.
+            multiplicity: 0..1
+            type: PkCommon.RecordEndReasonEnum
         associations:
+          - end: validity
+            designation: Validity
+            definition: >-
+              Validity for the associated ValidationProgram: when it applies and whether it is
+              active, planned or suspended.
+            multiplicity: 1..1
+            target: PkCommon.Validity
           - end: benefit
             designation: Benefit
             definition: Benefit for the associated ValidationProgram
@@ -838,13 +696,12 @@ packages:
             designation: Validation rules
             definition: Validation rules for the associated ValidationProgram
             multiplicity: 0..1
-            target: Validation.ValidationRules
+            target: Right.ValidationRules
           - end: validationBilling
             designation: Validation billing
             definition: Validation billing for the associated ValidationProgram
             multiplicity: 0..1
-            target: Validation.ValidationBilling
-
+            target: Right.ValidationBilling
       - name: ValidationRules
         change: new
         designation: Validation rules
@@ -854,7 +711,7 @@ packages:
         parent: null
         level: B
         tier: 2
-        apx: ValidationProgram.rules (APX Part 20 §20.3)
+        apx: APX Part 20 §20.3 ValidationProgram.rules
         rationale: Lets every channel that applies a validation enforce the same limits.
         attributes:
           - name: maxPerSession
@@ -864,7 +721,9 @@ packages:
             type: PkCommon.NonNegativeInteger
           - name: maxPerDay
             designation: Maximum per day
-            definition: The number of validations of the program that may be applied per calendar day at the Place.
+            definition: >-
+              The number of validations of the program that may be applied per calendar day at the
+              Place.
             multiplicity: 0..1
             type: PkCommon.NonNegativeInteger
           - name: validityWindow
@@ -875,18 +734,17 @@ packages:
           - name: stackable
             designation: Stackable
             definition: >-
-              Indicates whether the program may be combined with other programs
-              on the same Session, if yes (TRUE), if not (FALSE).
+              Indicates whether the program may be combined with other programs on the same Session,
+              if yes (TRUE), if not (FALSE).
             multiplicity: 0..1
             type: PkCommon.Boolean
           - name: rateTableId
             designation: Rate table id
             definition: >-
-              Reference to a RateTable the program applies to; absent means all
-              RateTables at the Place that accept validations.
+              Reference to a RateTable the program applies to; absent means all RateTables at the
+              Place that accept validations.
             multiplicity: 0..*
             type: PkCommon.VersionedReference (Rates.RateTable)
-
       - name: ValidationBilling
         change: new
         designation: Validation billing
@@ -896,14 +754,14 @@ packages:
         parent: null
         level: B
         tier: 3
-        apx: ValidationProgram.billing (APX Part 20 §20.1)
+        apx: APX Part 20 §20.1 ValidationProgram.billing
         rationale: Lets the operator and the merchant agree on the basis of the merchant's invoice.
         attributes:
           - name: billingModel
             designation: Billing model
             definition: Who bears the cost of validations under the program.
             multiplicity: 1..1
-            type: Validation.ValidationBillingModelEnum
+            type: Right.ValidationBillingModelEnum
           - name: merchantShare
             designation: Merchant share
             definition: The percentage of the amount reduced that the provider pays under a split model.
@@ -913,36 +771,34 @@ packages:
             designation: Billing cycle
             definition: How often the provider is billed.
             multiplicity: 0..1
-            type: Validation.ValidationBillingCycleEnum
+            type: Right.ValidationBillingCycleEnum
         associations:
           - end: unitPrice
             designation: Unit price
             definition: >-
-              Unit price for the associated ValidationBilling: what the
-              provider pays per validation; absent means billed at the amount
-              actually reduced
+              Unit price for the associated ValidationBilling: what the provider pays per
+              validation; absent means billed at the amount actually reduced
             multiplicity: 0..1
             target: PkCommon.AmountInCurrency
-
       - name: ValidationIssuance
         change: new
         designation: Validation issuance
         definition: >-
-          A batch of validation instruments, such as printed codes, QR codes,
-          stamps or digital tokens, issued under a program.
+          A batch of validation instruments, such as printed codes, QR codes, stamps or digital
+          tokens, issued under a program.
         stereotype: D2VersionedIdentifiable
         abstract: false
         parent: null
         level: B
         tier: 2
-        apx: ValidationIssuance (APX Part 20 §20.2)
+        apx: APX Part 20 §20.2 ValidationIssuance
         rationale: Lets a site and a merchant agree what validation stock exists and whether it was voided.
         attributes:
-          - name: programId
+          - name: validationProgramId
             designation: Program id
             definition: Reference to the ValidationProgram the instruments were issued under.
             multiplicity: 1..1
-            type: PkCommon.VersionedReference (Validation.ValidationProgram)
+            type: PkCommon.VersionedReference (Right.ValidationProgram)
           - name: quantity
             designation: Quantity
             definition: The number of instruments in the batch.
@@ -952,17 +808,7 @@ packages:
             designation: Issuance method
             definition: The form of the instruments in the batch.
             multiplicity: 1..1
-            type: Validation.ValidationIssuanceMethodEnum
-          - name: validFrom
-            designation: Valid from
-            definition: The date/time from which the instruments may be redeemed.
-            multiplicity: 0..1
-            type: PkCommon.DateTime
-          - name: validTo
-            designation: Valid to
-            definition: The date/time after which the instruments may no longer be redeemed.
-            multiplicity: 0..1
-            type: PkCommon.DateTime
+            type: Right.ValidationIssuanceMethodEnum
           - name: issuedTo
             designation: Issued to
             definition: Free-text identification of the person or outlet the stock was handed to.
@@ -972,8 +818,15 @@ packages:
             designation: Issuance status
             definition: Whether the batch is in force or has been voided.
             multiplicity: 1..1
-            type: Validation.ValidationIssuanceStatusEnum
-
+            type: Right.ValidationIssuanceStatusEnum
+        associations:
+          - end: validity
+            designation: Validity
+            definition: >-
+              Validity for the associated ValidationIssuance: when it applies and whether it is
+              active, planned or suspended.
+            multiplicity: 0..1
+            target: PkCommon.Validity
       - name: ValidationInstrument
         change: new
         designation: Validation instrument
@@ -983,70 +836,51 @@ packages:
         parent: null
         level: B
         tier: 2
-        apx: ValidationInstrument (APX Part 20 §20.2)
-        rationale: Lets a pay station or merchant application check whether a code is still good before applying it.
+        apx: APX Part 20 §20.2 ValidationInstrument
+        rationale: >-
+          Lets a pay station or merchant application check whether a code is still good before
+          applying it.
         attributes:
           - name: instrumentCode
             designation: Instrument code
             definition: The code printed on or carried by the instrument.
             multiplicity: 1..1
             type: PkCommon.String
-          - name: programId
+          - name: validationProgramId
             designation: Program id
             definition: Reference to the ValidationProgram the instrument belongs to.
             multiplicity: 1..1
-            type: PkCommon.VersionedReference (Validation.ValidationProgram)
+            type: PkCommon.VersionedReference (Right.ValidationProgram)
           - name: issuanceId
             designation: Issuance id
             definition: Reference to the ValidationIssuance the instrument was issued in.
             multiplicity: 0..1
-            type: PkCommon.VersionedReference (Validation.ValidationIssuance)
+            type: PkCommon.VersionedReference (Right.ValidationIssuance)
           - name: instrumentStatus
             designation: Instrument status
             definition: The current status of the instrument.
             multiplicity: 1..1
-            type: Validation.ValidationInstrumentStatusEnum
-          - name: validFrom
-            designation: Valid from
-            definition: The date/time from which the instrument may be redeemed.
-            multiplicity: 0..1
-            type: PkCommon.DateTime
-          - name: validTo
-            designation: Valid to
-            definition: The date/time after which the instrument may no longer be redeemed.
-            multiplicity: 0..1
-            type: PkCommon.DateTime
+            type: Right.ValidationInstrumentStatusEnum
           - name: redemptionId
             designation: Redemption id
             definition: Reference to the validation redemption that consumed the instrument, when redeemed.
             multiplicity: 0..1
             type: PkCommon.VersionedReference (Session.ValidationRedemption)
-
+        associations:
+          - end: validity
+            designation: Validity
+            definition: >-
+              Validity for the associated ValidationInstrument: when it applies and whether it is
+              active, planned or suspended.
+            multiplicity: 0..1
+            target: PkCommon.Validity
     enumerations:
-      - name: ValidationProgramStatusEnum
-        change: new
-        designation: Validation program status
-        definition: The status of a validation program.
-        tier: 2
-        apx: ValidationProgram.programStatus (APX Part 20 §20.1)
-        rationale: Lets channels stop accepting validations of a suspended or ended program.
-        values:
-          - name: active
-            designation: Active
-            definition: Validations of the program may be applied.
-          - name: suspended
-            designation: Suspended
-            definition: Validations of the program are temporarily not accepted.
-          - name: ended
-            designation: Ended
-            definition: The program has ended permanently.
-
       - name: ValidationIssuanceMethodEnum
         change: new
         designation: Validation issuance method
         definition: The form of a validation instrument.
         tier: 2
-        apx: ValidationIssuance.method (APX Part 20 §20.2)
+        apx: APX Part 20 §20.2 ValidationIssuance.method
         rationale: Lets a channel know how a validation is presented.
         values:
           - name: code
@@ -1064,13 +898,12 @@ packages:
           - name: system
             designation: System
             definition: Applied directly by a connected system, with no instrument handed out.
-
       - name: ValidationIssuanceStatusEnum
         change: new
         designation: Validation issuance status
         definition: Whether a batch of validation instruments is in force.
         tier: 2
-        apx: ValidationIssuance.issuanceStatus (APX Part 20 §20.2)
+        apx: APX Part 20 §20.2 ValidationIssuance.issuanceStatus
         rationale: Lets a stolen or misprinted batch be withdrawn everywhere at once.
         values:
           - name: issued
@@ -1079,13 +912,12 @@ packages:
           - name: void
             designation: Void
             definition: The batch has been withdrawn; unredeemed instruments may not be used.
-
       - name: ValidationInstrumentStatusEnum
         change: new
         designation: Validation instrument status
-        definition: The status of one validation instrument.
+        definition: The status of one validation instrument. Expiry follows the instrument Validity.
         tier: 2
-        apx: ValidationInstrument.instrumentStatus (APX Part 20 §20.2)
+        apx: APX Part 20 §20.2 ValidationInstrument.instrumentStatus
         rationale: Lets a pay station refuse a code already used, voided or expired.
         values:
           - name: valid
@@ -1097,16 +929,12 @@ packages:
           - name: void
             designation: Void
             definition: The instrument has been withdrawn.
-          - name: expired
-            designation: Expired
-            definition: The instrument's validity has ended.
-
       - name: ValidationBillingModelEnum
         change: new
         designation: Validation billing model
         definition: Who bears the cost of validations under a program.
         tier: 3
-        apx: ValidationProgram.billing.model (APX Part 20 §20.1)
+        apx: APX Part 20 §20.1 ValidationProgram.billing.model
         rationale: Lets the operator and the merchant agree on the basis of billing.
         values:
           - name: merchantPays
@@ -1118,13 +946,12 @@ packages:
           - name: split
             designation: Split
             definition: The provider pays a share of the amount reduced.
-
       - name: ValidationBillingCycleEnum
         change: new
         designation: Validation billing cycle
         definition: How often a validation provider is billed.
         tier: 3
-        apx: ValidationProgram.billing.billingCycle (APX Part 20 §20.1)
+        apx: APX Part 20 §20.1 ValidationProgram.billing.billingCycle
         rationale: Lets statements be produced on the agreed cycle.
         values:
           - name: monthly
@@ -1136,7 +963,6 @@ packages:
           - name: perValidation
             designation: Per validation
             definition: Billed for each validation as it is applied.
-
   - name: PlateList
     location: D2Payload/Extension/Parking/Right/PlateList
     status: new
@@ -1145,18 +971,17 @@ packages:
         change: new
         designation: Plate list
         definition: >-
-          A list of credentials, typically licence plates, kept by an operator
-          or authority, with a category and the behaviour that applies when a
-          listed credential is seen at each Place.
+          A list of credentials, typically licence plates, kept by an operator or authority, with a
+          category and the behaviour that applies when a listed credential is seen at each Place.
         stereotype: D2VersionedIdentifiable
         abstract: false
         parent: null
         level: B
         tier: 2
-        apx: PlateList (APX Part 24 §24.1)
+        apx: APX Part 24 §24.1 PlateList
         rationale: >-
-          Lets a city or operator share watch, scofflaw, allow and
-          enforcement-vehicle lists with every system that screens arrivals.
+          Lets a city or operator share watch, scofflaw, allow and enforcement-vehicle lists with
+          every system that screens arrivals.
         attributes:
           - name: name
             designation: Name
@@ -1167,29 +992,35 @@ packages:
             designation: Category
             definition: The category of the list, which states what a match means.
             multiplicity: 1..1
-            type: PlateList.PlateListCategoryEnum
-          - name: owner
+            type: Right.PlateListCategoryEnum
+          - name: ownerId
             designation: Owner
             definition: The organisation that maintains the list.
             multiplicity: 0..1
             type: PkCommon.VersionedReference (PkCommon.Organisation)
-          - name: listStatus
-            designation: List status
-            definition: Whether the list is in force.
-            multiplicity: 1..1
-            type: PlateList.PlateListStatusEnum
           - name: description
             designation: Description
             definition: Free-text description of the list.
             multiplicity: 0..*
             type: PkCommon.MultilingualString
+          - name: endReason
+            designation: End reason
+            definition: Why the list is no longer in use, when it has ended.
+            multiplicity: 0..1
+            type: PkCommon.RecordEndReasonEnum
         associations:
+          - end: validity
+            designation: Validity
+            definition: >-
+              Validity for the associated PlateList: when it applies and whether it is active,
+              planned or suspended.
+            multiplicity: 1..1
+            target: PkCommon.Validity
           - end: placeFlags
             designation: Place flags
             definition: Place flags for the associated PlateList
             multiplicity: 0..*
-            target: PlateList.PlateListPlaceFlags
-
+            target: Right.PlateListPlaceFlags
       - name: PlateListPlaceFlags
         change: new
         designation: Plate list place flags
@@ -1199,7 +1030,7 @@ packages:
         parent: null
         level: B
         tier: 2
-        apx: PlateListPlaceFlags (APX Part 24 §24.1)
+        apx: APX Part 24 §24.1 PlateListPlaceFlags
         rationale: Lets one list be enforced at some Places and only watched at others.
         attributes:
           - name: elementId
@@ -1210,25 +1041,24 @@ packages:
           - name: enforced
             designation: Enforced
             definition: >-
-              Indicates whether a match counts for compliance or enforcement at
-              the element, if yes (TRUE), if not (FALSE).
+              Indicates whether a match counts for compliance or enforcement at the element, if yes
+              (TRUE), if not (FALSE).
             multiplicity: 0..1
             type: PkCommon.Boolean
           - name: alertOnArrival
             designation: Alert on arrival
             definition: >-
-              Indicates whether a match raises an alert when the vehicle
-              arrives, if yes (TRUE), if not (FALSE).
+              Indicates whether a match raises an alert when the vehicle arrives, if yes (TRUE), if
+              not (FALSE).
             multiplicity: 0..1
             type: PkCommon.Boolean
           - name: refuseService
             designation: Refuse service
             definition: >-
-              Indicates whether a match refuses service at the element, if yes
-              (TRUE), if not (FALSE).
+              Indicates whether a match refuses service at the element, if yes (TRUE), if not
+              (FALSE).
             multiplicity: 0..1
             type: PkCommon.Boolean
-
       - name: PlateListEntry
         change: new
         designation: Plate list entry
@@ -1238,24 +1068,14 @@ packages:
         parent: null
         level: B
         tier: 2
-        apx: PlateListEntry (APX Part 24 §24.2)
+        apx: APX Part 24 §24.2 PlateListEntry
         rationale: Lets a list be kept current entry by entry rather than resent in full.
         attributes:
           - name: plateListId
             designation: Plate list id
             definition: Reference to the PlateList the entry belongs to.
             multiplicity: 1..1
-            type: PkCommon.VersionedReference (PlateList.PlateList)
-          - name: type
-            designation: Type
-            definition: The type of the listed credential.
-            multiplicity: 1..1
-            type: Right.CredentialTypeEnum
-          - name: credentialIdentification
-            designation: Credential identification
-            definition: The listed plate or other credential value.
-            multiplicity: 1..1
-            type: PkCommon.String
+            type: PkCommon.VersionedReference (Right.PlateList)
           - name: jurisdiction
             designation: Jurisdiction
             definition: The jurisdiction that issued the plate, such as a state, province or country.
@@ -1282,6 +1102,11 @@ packages:
             multiplicity: 0..*
             type: PkCommon.MultilingualString
         associations:
+          - end: listedCredential
+            designation: Listed credential
+            definition: Listed credential for the associated PlateListEntry
+            multiplicity: 1..1
+            target: Right.PresentedCredential
           - end: entryValidity
             designation: Entry validity
             definition: Entry validity for the associated PlateListEntry
@@ -1292,29 +1117,22 @@ packages:
             definition: Amount owed for the associated PlateListEntry
             multiplicity: 0..1
             target: PkCommon.AmountInCurrency
-          - end: credentialDigest
-            designation: Credential digest
-            definition: >-
-              Credential digest for the associated PlateListEntry, for parties
-              that screen without holding the plate
-            multiplicity: 0..1
-            target: Right.CredentialDigest
-
     enumerations:
       - name: PlateListCategoryEnum
         change: new
         designation: Plate list category
         definition: >-
-          The category of a plate list. Suggested as an extensible code list;
-          the values below are a starting set maintained today in the APX
-          registry apx-plate-list-categories.
+          The category of a plate list. Suggested as an extensible code list; the values below are a
+          starting set used by APX today.
         tier: 2
-        apx: registry apx-plate-list-categories (APX Part 11, Part 24)
+        apx: APX Part 11 code list (plate list categories)
         rationale: Gives screening systems a shared meaning for a match.
         values:
           - name: allow
             designation: Allow
-            definition: Credentials entitled at the listed Places without a right of their own, such as service or exempt vehicles.
+            definition: >-
+              Credentials entitled at the listed Places without a right of their own, such as
+              service or exempt vehicles.
           - name: watch
             designation: Watch
             definition: Credentials whose arrival the list owner wants to know about.
@@ -1324,21 +1142,3 @@ packages:
           - name: enforcementVehicle
             designation: Enforcement vehicle
             definition: The list owner's own enforcement and service vehicles, recorded but never enforced.
-
-      - name: PlateListStatusEnum
-        change: new
-        designation: Plate list status
-        definition: Whether a plate list is in force.
-        tier: 2
-        apx: PlateList.status (APX Part 24 §24.1)
-        rationale: Lets a list be paused or retired without deleting its history.
-        values:
-          - name: active
-            designation: Active
-            definition: The list is in force.
-          - name: suspended
-            designation: Suspended
-            definition: The list is temporarily not applied.
-          - name: retired
-            designation: Retired
-            definition: The list is no longer used.

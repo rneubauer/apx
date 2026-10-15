@@ -38,7 +38,7 @@ operators share lists of plates (watch, scofflaw, allow, their own
 enforcement vehicles) with every system that screens arrivals; a list
 says what to do when a plate is seen, which is different from a right.
 
-### Key concepts
+### What the Right additions hold
 
 A CredentialAssigned (additions):
 
@@ -51,7 +51,8 @@ A CredentialAssigned (additions):
 A PresentedCredential:
 
 - Is a Credential (type and additional information, as in APDS).
-- Has the identification actually read, whether or not it matches an assigned credential.
+- Has the identification as read, presented, observed or listed, whether or not it matches an assigned credential.
+- Is the one way access events, toll transactions, valet tickets and plate lists carry a credential value.
 
 An AssignedRight (additions):
 
@@ -75,28 +76,31 @@ A Payment (additions):
 A ValidationProgram:
 
 - Has a unique identification and version.
-- Has a Place element, a provider (an Organisation) and a status.
+- Has a Place element and a provider (an Organisation).
+- Has an APDS Validity, giving its period and whether it is active, planned or suspended, and an end reason once it has ended.
 - Has a benefit (see ValidationBenefit in the Rate additions).
 - Has optional rules (per-Session and per-day limits, validity window, stacking, applicable RateTables) and optional billing terms.
 - Has issuances of instruments, each instrument with its own status.
 
 A PlateList:
 
-- Has a unique identification and version, a name, a category and a status.
+- Has a unique identification and version, a name and a category.
+- Has an APDS Validity and an end reason once it is superseded or retired.
 - Has an owner (an Organisation).
 - Has, per Place element, whether a match is enforced, raises an alert on arrival, or refuses service.
-- Has entries, each with a credential type and identification, a validity period and the reason for listing.
+- Has entries, each with the listed credential, a validity period and the reason for listing.
 
 ## Information model
 
 Most additions sit in the existing `<Right>` namespace
 (D2Payload/Extension/Parking/Right). Two new sub-packages are proposed:
 `<Validation>` (D2Payload/Extension/Parking/Right/Validation) and
-`<PlateList>` (D2Payload/Extension/Parking/Right/PlateList). All
-additions to existing classes are optional and all new classes are
-reached only through optional associations, so every APDS 4.1 instance
-remains valid (Level B in the sense of the Information Model's
-"Extending the APDS Model").
+`<PlateList>` (D2Payload/Extension/Parking/Right/PlateList). As in the
+APDS Data Dictionary, their classes are named with the domain prefix
+(`Right.ValidationProgram`, `Right.PlateList`). All additions to existing
+classes are optional and all new classes are reached only through
+optional associations, so every APDS 4.1 instance remains valid (Level B
+in the sense of the Information Model's "Extending the APDS Model").
 
 **Credential lifecycle.** CredentialAssigned gains `credentialStatus`
 (CredentialStatusEnum) and two references, `replacesCredentialId` and
@@ -110,18 +114,15 @@ expired and replaced are terminal. The status is held on the assigned
 credential, not on Credential, because it describes one credential's
 use for one AssignedRight.
 
-**PresentedCredential** specialises Right.Credential and adds
-`credentialIdentification`. It is the value a reader or officer actually
-read. It is used by the access event proposed in the Session additions
-when no assigned credential matched.
-
-**CredentialDigest** is a keyed digest (algorithm, key identifier, value)
-of a normalised credential identification. It lets a system that only
-screens test "is this the same plate?" without holding the plate. It is
-proposed on PlateListEntry and may be reused wherever a plate appears.
+**PresentedCredential** specialises Right.Credential, inheriting its
+`type`, and adds `credentialIdentification`. It is the single class used
+wherever a credential value is carried without an assigned credential
+record: the access event and the valet ticket in the Session additions,
+the toll transaction in the Observation additions, and the plate list
+entry below.
 
 **Reservations and permits.** AssignedRight gains `reservationState`,
-`checkInSessionId`, `noShowAfter`, `renewsAssignedRightId`,
+`checkInSessionId`, `noShowTime`, `renewsAssignedRightId`,
 `renewedByAssignedRightId`, `maxConcurrentVehicles` and an optional
 `overageBilling` (OverageBilling). The PlannedUse remains authoritative
 for the planned start and end. The existing ReservationTypeEnum (whether
@@ -129,31 +130,33 @@ a Place requires reservations) is unrelated and unchanged.
 
 **Accounts.** Rather than proposing a separate Account class, RightHolder
 gains `accountStatus`, `accountBalance` and `elementId`. In the APDS
-Data Dictionary RightHolder is already a versioned identifiable class.
-APX erratum 014 (no identifiable RightHolder) concerns the API document
-only and is not repeated here.
+Data Dictionary RightHolder is already a versioned identifiable class,
+so nothing more is needed.
 
 **Payments.** Payment gains `paymentStatus`, `captureStatus`,
-`meansOfPayment` (the existing Place.MeansOfPaymentEnum), `paymentChannel`,
-`elementId`, `refundedAmount` and `rateSold` (RateSold). PaymentLine gains
-`lineCode`, a shared counterpart to the bilateral `idCode`, which stays.
-No refund value is proposed for PaymentTypeEnum: the 4.1 Data Dictionary
-already defines `base`, `refund`, `surcharge` and `validation`. (The 4.1
-API document lists only `payment` and `validation`; APX notes this as a
-difference between the two documents.)
+`meansOfPayment` (the existing Place.MeansOfPaymentEnum), `paymentChannel`
+(the shared PkCommon.InteractionChannelEnum), `elementId`,
+`refundedAmount` and `rateSold` (RateSold). PaymentLine already carries a
+payment type, so five values are proposed for the existing
+PaymentTypeEnum (`convenienceFee`, `serviceFee`, `discount`, `energy`,
+`idle`) rather than a new line code. The existing `base`, `refund`,
+`surcharge`, `validation` and `Vat` values are unchanged.
 
 **Validation programmes.** ValidationProgram is versioned identifiable and
-references a Place element and a provider Organisation. It has a
-`benefit` (Rates.ValidationBenefit), optional `validationRules` and
-`validationBilling`, and the instrument forms it may issue.
-ValidationIssuance records a batch of instruments and ValidationInstrument
-one code and its status. The redemption that applies a validation to a
-Session is proposed in the Session additions; its identifier is the
-APDS Segment `validationId`.
+references a Place element and a provider Organisation. Its period and
+state use the APDS Validity class, with the shared RecordEndReasonEnum
+for why it ended. It has a `benefit` (Rates.ValidationBenefit), optional
+`validationRules` and `validationBilling`, and the instrument forms it
+may issue. ValidationIssuance records a batch of instruments and
+ValidationInstrument one code and its status; both carry an optional
+Validity. The redemption that applies a validation to a Session is
+proposed in the Session additions; its identifier is the APDS Segment
+`validationId`.
 
-**Plate lists.** PlateList carries the policy (category, status, owner
+**Plate lists.** PlateList carries the policy (category, owner, Validity
 and per-element flags in PlateListPlaceFlags); PlateListEntry carries one
-credential, kept separately so a list can be maintained entry by entry.
+listed credential, as a PresentedCredential, kept separately so a list
+can be maintained entry by entry.
 
 ```mermaid
 classDiagram
@@ -162,106 +165,146 @@ classDiagram
   }
   class CredentialAssigned {
     <<APDS>>
+  }
+  class CredentialAssignedAdditions {
+    <<proposed>>
     +credentialStatus : CredentialStatusEnum [0..1]
     +replacesCredentialId : Reference [0..1]
     +replacedByCredentialId : Reference [0..1]
   }
   class CredentialMedia {
-    +mediaForm : CredentialMediaFormEnum
-    +serialNumber [0..1]
-    +depositStatus [0..1]
+    <<proposed>>
+    +mediaForm : CredentialMediaFormEnum [1..1]
+    +serialNumber : String [0..1]
+    +depositStatus : DepositStatusEnum [0..1]
   }
   class CredentialSuspension {
-    +suspensionReason [0..1]
-    +suspendedUntil [0..1]
+    <<proposed>>
+    +suspensionReason : String [0..1]
+    +suspendedUntilTime : DateTime [0..1]
   }
   class PresentedCredential {
-    +credentialIdentification : String
+    <<proposed>>
+    +credentialIdentification : String [1..1]
   }
   class AssignedRight {
     <<APDS>>
-    +reservationState [0..1]
-    +checkInSessionId [0..1]
-    +renewsAssignedRightId [0..1]
-    +maxConcurrentVehicles [0..1]
+  }
+  class AssignedRightAdditions {
+    <<proposed>>
+    +reservationState : ReservationStateEnum [0..1]
+    +checkInSessionId : VersionedReference [0..1]
+    +renewsAssignedRightId : VersionedReference [0..1]
+    +maxConcurrentVehicles : NonNegativeInteger [0..1]
   }
   class OverageBilling {
-    +overageBillingMode
+    <<proposed>>
+    +overageBillingMode : OverageBillingModeEnum [1..1]
   }
   class RightHolder {
     <<APDS>>
-    +accountStatus [0..1]
+  }
+  class RightHolderAdditions {
+    <<proposed>>
+    +accountStatus : AccountStatusEnum [0..1]
   }
   class Payment {
     <<APDS>>
-    +paymentStatus [0..1]
-    +captureStatus [0..1]
-    +meansOfPayment [0..1]
-    +paymentChannel [0..1]
   }
-  class PaymentLine {
+  class PaymentAdditions {
+    <<proposed>>
+    +paymentStatus : PaymentStatusEnum [0..1]
+    +captureStatus : CaptureStatusEnum [0..1]
+    +meansOfPayment : MeansOfPaymentEnum [0..1]
+    +paymentChannel : InteractionChannelEnum [0..1]
+  }
+  class RateSold {
+    <<proposed>>
+  }
+  class ValidationProgram {
+    <<proposed>>
+    +elementId : VersionedReference [1..1]
+    +providerId : VersionedReference [1..1]
+    +endReason : RecordEndReasonEnum [0..1]
+  }
+  class ValidationRules {
+    <<proposed>>
+  }
+  class ValidationBilling {
+    <<proposed>>
+  }
+  class ValidationIssuance {
+    <<proposed>>
+  }
+  class ValidationInstrument {
+    <<proposed>>
+  }
+  class ValidationBenefit {
+    <<proposed>>
+  }
+  class Validity {
     <<APDS>>
-    +lineCode [0..1]
   }
-  class RateSold
-  class ValidationProgram
-  class ValidationRules
-  class ValidationBilling
-  class ValidationIssuance
-  class ValidationInstrument
-  class ValidationBenefit
-  class PlateList
-  class PlateListPlaceFlags
-  class PlateListEntry
-  class CredentialDigest
+  class PlateList {
+    <<proposed>>
+    +category : PlateListCategoryEnum [1..1]
+    +endReason : RecordEndReasonEnum [0..1]
+  }
+  class PlateListPlaceFlags {
+    <<proposed>>
+  }
+  class PlateListEntry {
+    <<proposed>>
+  }
   Credential <|-- CredentialAssigned
   Credential <|-- PresentedCredential
+  CredentialAssigned .. CredentialAssignedAdditions : Level B additions
   CredentialAssigned --> "0..1" CredentialMedia : credentialMedia
   CredentialAssigned --> "0..1" CredentialSuspension : credentialSuspension
+  AssignedRight .. AssignedRightAdditions : Level B additions
   AssignedRight --> "0..1" OverageBilling : overageBilling
-  Payment --> "1..*" PaymentLine : paymentLine
+  RightHolder .. RightHolderAdditions : Level B additions
+  Payment .. PaymentAdditions : Level B additions
   Payment --> "0..1" RateSold : rateSold
+  ValidationProgram --> "1" Validity : validity
   ValidationProgram --> "1" ValidationBenefit : benefit
   ValidationProgram --> "0..1" ValidationRules
   ValidationProgram --> "0..1" ValidationBilling
-  ValidationIssuance ..> ValidationProgram : programId
+  ValidationIssuance ..> ValidationProgram : validationProgramId
   ValidationInstrument ..> ValidationIssuance : issuanceId
+  PlateList --> "1" Validity : validity
   PlateList --> "0..*" PlateListPlaceFlags : placeFlags
   PlateListEntry ..> PlateList : plateListId
-  PlateListEntry --> "0..1" CredentialDigest : credentialDigest
+  PlateListEntry --> "1" PresentedCredential : listedCredential
 ```
 
 ### Enumerations (for Right)
 
 The following enumerations are proposed in `<Right>`:
 CredentialStatusEnum, CredentialMediaFormEnum, DepositStatusEnum,
-DigestAlgorithmEnum, ReservationStateEnum, OverageBillingModeEnum,
-AccountStatusEnum, PaymentStatusEnum, CaptureStatusEnum,
-PaymentChannelEnum, RateProductEnum, RateClassEnum and
-PaymentLineCodeEnum. One value, `valet`, is proposed for the existing
-RightTypeEnum (named RightSpecificationTypeEnum in the API document).
+ReservationStateEnum, OverageBillingModeEnum, AccountStatusEnum,
+PaymentStatusEnum, CaptureStatusEnum, RateProductEnum and RateClassEnum.
+Values are proposed for two existing enumerations: `valet` for
+RightTypeEnum, and `convenienceFee`, `serviceFee`, `discount`, `energy`
+and `idle` for PaymentTypeEnum.
 
-In `<Validation>`: ValidationProgramStatusEnum,
-ValidationIssuanceMethodEnum, ValidationIssuanceStatusEnum,
-ValidationInstrumentStatusEnum, ValidationBillingModelEnum and
-ValidationBillingCycleEnum.
+In `<Validation>`: ValidationIssuanceMethodEnum,
+ValidationIssuanceStatusEnum, ValidationInstrumentStatusEnum,
+ValidationBillingModelEnum and ValidationBillingCycleEnum.
 
-In `<PlateList>`: PlateListCategoryEnum and PlateListStatusEnum.
+In `<PlateList>`: PlateListCategoryEnum.
 
-The full values are in the Data Dictionary.
+The payment channel uses the shared InteractionChannelEnum, and
+programmes and lists use the shared RecordEndReasonEnum, both proposed in
+PkCommon. The full values are in the Data Dictionary.
 
 ### External code lists (for Right)
 
-Two of the enumerations are suggested as extensible code lists, where
-APDS would fix the attribute and a starting set of values, and further
-values would be published as user-defined code lists (PkCommon
-UserDefinedCodeList), as APDS already does elsewhere:
-
-- **PaymentLineCodeEnum**: base, convenienceFee, serviceFee, tax,
-  discount, validation, energy, idle. Maintained today in the APX
-  registry `apx-payment-line-codes`.
-- **PlateListCategoryEnum**: allow, watch, scofflaw, enforcementVehicle.
-  Maintained today in the APX registry `apx-plate-list-categories`.
+**PlateListCategoryEnum** (allow, watch, scofflaw, enforcementVehicle) is
+suggested as an extensible code list: APDS would fix the attribute and a
+starting set of values, and further values would be published as
+user-defined code lists (PkCommon UserDefinedCodeList), as APDS already
+does elsewhere. APX uses this starting set today.
 
 ## Use cases
 
@@ -315,6 +358,5 @@ the day rate, without a separate agreement with the permit vendor.
 
 **Right (plate lists).** The city also shares a scofflaw PlateList with
 the car parks in the zone. PlateListPlaceFlags set `alertOnArrival` at
-every car park and `refuseService` at the city-owned ones only. A car park
-that only screens arrivals holds a CredentialDigest per entry instead of
-the plates themselves.
+every car park and `refuseService` at the city-owned ones only. Each entry
+carries the listed plate as a PresentedCredential with its jurisdiction.

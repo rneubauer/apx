@@ -26,9 +26,8 @@ information in APDS terms rather than in private extensions.
 
 APX (APDS Parking eXtensions) began as an open, additive companion to
 APDS 4.1. It reuses every APDS construct as published and adds only what
-APDS leaves out. In September 2026 APDS accepted APX into the standards
-process. Following discussion with the committee, the work is now split
-in two:
+APDS leaves out. APX has been shared with the APDS committee and,
+following discussion with the committee, the work is now split in two:
 
 - **Data elements, proposed to APDS (this document set).** The classes,
   attributes and enumerations that describe what is exchanged. If
@@ -40,8 +39,7 @@ in two:
   is informative here and is not proposed for the data model.
 
 Every element proposed here is already exercised in the APX reference
-implementation and its published test scenarios, so each one has been
-shaped by real exchanges rather than drawn up in the abstract.
+implementation and its published test scenarios.
 
 ### Guiding principles
 

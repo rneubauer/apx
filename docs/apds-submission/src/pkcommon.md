@@ -1,16 +1,32 @@
 ## Overview
 
 The PkCommon domain holds the classes, datatypes and code list mechanism
-shared by every other domain. APX needs very little here. One attribute
-is suggested for RecordType; everything else APX relies on is already in
-APDS or has been raised separately as an erratum.
+shared by every other domain. APX needs little here: two shared
+enumerations that several domains use, and, for discussion, one attribute
+for RecordType. Everything else APX relies on is already in APDS.
+
+### Benefits of shared enumerations
+
+Several proposals record the channel through which something was done:
+a payment, a merchant validation, a valet retrieval request, a customer
+contact. If each had its own list, the same channel would carry
+different codes in different records, and a report across them would
+need a mapping table. One shared `InteractionChannelEnum` gives a pay
+station, a contact centre or a mobile app the same code wherever it
+appears.
+
+In the same way, signage, validation programmes, plate lists and
+enforcement policies all have a period of use and an active, planned or
+suspended state. APDS already models both with the Validity class. The
+only thing Validity cannot say is why a record stopped being used, so a
+single small `RecordEndReasonEnum` (superseded or retired) is shared by
+all of them instead of a separate status list for each.
 
 ### Benefits of a record origin
 
 Parking data increasingly passes through more than one system before it
 reaches its user. A city may receive Place and Session data from a
-regional hub that collects it from several operators. A site system may
-hold records created at another site and copied to it.
+regional hub that collects it from several operators.
 
 RecordType already says who created a record and when it was last
 updated. It cannot say which system first created it when that differs
@@ -18,88 +34,87 @@ from the system now distributing it. Without that, a receiver that gets
 the same record by two routes cannot easily tell they are the same, or
 which source to ask when a record is wrong.
 
-A Record Type may additionally:
+### What the PkCommon additions hold
 
-- Have an origin: the identifier of the system that first created the
-  record, when it differs from the system distributing it.
+- An interaction channel enumeration, shared by Right, Session and
+  Operations.
+- A record end reason enumeration, used beside the APDS Validity class.
+- For discussion, a Record Type origin: the identifier of the system that
+  first created the record, when it differs from the system distributing
+  it.
 
 ### Open code lists
 
-Several APX proposals in other domains add an attribute whose values come
+Several proposals in other domains add an attribute whose values come
 from a list that each region or operator may extend. APDS already has
 the right mechanism for this: UserDefinedCodeList, with
-ReferencedCodeListEntry used to cite one entry. APX uses these classes
-as they are and proposes no new code list element.
+ReferencedCodeListEntry used to cite one entry. These proposals use those
+classes as they are and add no new code list element.
 
-### Already raised as errata
-
-Two changes in this area are already with the group as errata and are
-not repeated here:
-
-- **Erratum 010**: the extensions container described in the Use Case
-  Document (C.2.5) is not declared on the entities that need it.
-- **Erratum 011**: GeoJSON objects have no coordinates attribute.
+Two related gaps in the APDS 4.1 common classes are offered in the
+separate list of suggested corrections and are not repeated here.
 
 ## Information model
 
-The suggestion adds one optional attribute to the existing RecordType
-class in the CommonClasses package.
+The two enumerations are new members of the CommonClasses package. The
+origin suggestion adds one optional attribute to the existing RecordType
+class and is marked for discussion (tier 3).
 
 ```mermaid
 classDiagram
     class RecordType {
         <<APDS>>
-        creationTime : DateTime
-        creationUser : String
-        creator : VersionedReference
-        creatorEmail : String
-        lastUpdate : DateTime
-        lastUpdateUser : String
-        origin : String
+    }
+    class RecordTypeAdditions {
+        <<proposed>>
+        +origin : String [0..1]
+    }
+    class Validity {
+        <<APDS>>
     }
     class UserDefinedCodeList {
         <<APDS>>
-        creator : VersionedReference
-        locator : Url
-        includeNilReasonType : Boolean
     }
     class UserDefinedCodeListEntry {
         <<APDS>>
-        definedValue : String
-        entryDescription : String
-        entryIndex : Integer
     }
     class ReferencedCodeListEntry {
         <<APDS>>
-        codeListId : VersionedReference
-        codeListEntryId : Reference
-        entryDefinedValue : String
     }
+    class InteractionChannelEnum {
+        <<proposed>>
+    }
+    class RecordEndReasonEnum {
+        <<proposed>>
+    }
+    RecordType .. RecordTypeAdditions : Level B additions
     UserDefinedCodeList "1" o-- "1..*" UserDefinedCodeListEntry : userDefinedCodeListEntry
     ReferencedCodeListEntry ..> UserDefinedCodeList : codeListId
+    RecordEndReasonEnum .. Validity : used beside
 ```
 
-Only origin is new; every other attribute shown exists in APDS 4.1.
+origin is a free string so that any identifier scheme can be used. When a
+record is created by the system distributing it, origin is absent.
 
-origin is a free string so that any identifier scheme can be used. APX
-uses the address of the originating system. When a record is created by
-the system distributing it, origin is absent.
-
-Wherever another domain in this submission proposes an "other…" attribute
-typed ReferencedCodeListEntry (for example otherEquipmentStatus in
-Place), the value cites an entry in a UserDefinedCodeList in the usual
-APDS way.
+Wherever another domain proposes an "other…" attribute typed
+ReferencedCodeListEntry (for example otherEquipmentStatus in Place), the
+value cites an entry in a UserDefinedCodeList in the usual APDS way.
 
 ### Enumerations (for PkCommon)
 
-No new enumerations are proposed in PkCommon.
+- **InteractionChannelEnum** (tier 1): `lane`, `payStation`, `kiosk`,
+  `attendant`, `contactCentre`, `automatedVoice`, `mobileApp`, `web`,
+  `textMessage`, `chat`, `email`, `systemInterface`, `other`. Used by
+  ValidationRedemption, Payment, ValetTicket and SupportInteraction.
+- **RecordEndReasonEnum** (tier 2): `superseded`, `retired`. Used by
+  Signage, ValidationProgram, PlateList and EnforcementPolicy beside their
+  Validity.
 
 ### External code lists (for PkCommon)
 
-No new external code lists are proposed in PkCommon. The registries APX
-publishes (for example apx-device-states and apx-session-end-reasons) are
-UserDefinedCodeLists and can be cited through ReferencedCodeListEntry
-without change to APDS.
+No new external code lists are proposed in PkCommon. The code lists APX
+publishes are UserDefinedCodeLists and can be cited through
+ReferencedCodeListEntry without change to APDS.
 
 ## Use cases
 

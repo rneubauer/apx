@@ -64,10 +64,10 @@ allowed 3 hours.
 These specifications support this use case in a number of ways:
 
 **Place and Signage.** The lot holds two Signage records for the
-entrance. The first, effective from the previous year, says 3 hours and
-is now 'superseded' with effectiveTo 1 March 08:00. The second says
-2 hours, is 'active' and is effective from 1 March 08:00. Each has a
-photo and a location.
+entrance. The first, valid from the previous year, says 3 hours; its
+Validity ends on 1 March 08:00 and its end reason is 'superseded'. The
+second says 2 hours, and its Validity is active from 1 March 08:00. Each
+has a photo and a location.
 
 **Enforcement.** The violation record refers to the Place and the time of
 the event. The appeals body selects the Signage record in force at that
@@ -89,7 +89,7 @@ These specifications support this use case in a number of ways:
 today.
 
 **Occupancy.** For each hour the operator sends one DemandType inside a
-DemandTable for the garage. Each carries periodStart and periodEnd for
+DemandTable for the garage. Each carries periodStartTime and periodEndTime for
 the hour, maximumCount and averageCount, and sampleCount (normally 30).
 An hour in which the counting system was offline carries a sampleCount
 of 0 and no counts, so the city can see the gap rather than mistake it
@@ -185,9 +185,8 @@ the day rate, without a separate agreement with the permit vendor.
 
 **Right (plate lists).** The city also shares a scofflaw PlateList with
 the car parks in the zone. PlateListPlaceFlags set `alertOnArrival` at
-every car park and `refuseService` at the city-owned ones only. A car park
-that only screens arrivals holds a CredentialDigest per entry instead of
-the plates themselves.
+every car park and `refuseService` at the city-owned ones only. Each entry
+carries the listed plate as a PresentedCredential with its jurisdiction.
 
 ### C.3.8 Gated garage with plate recognition at entry and exit
 
@@ -213,12 +212,12 @@ intercom, the card issuer and the operator all see the same record,
 although no Session was opened.
 
 **Sessions.** The transient exit produces a Session whose
-`SessionClosure` has `endReason` `exitOnly` and `startObserved` false; its
-start time is a placeholder. The analytics provider leaves it out of
-dwell statistics and occupancy instead of counting a visit of zero
+`SessionClosure` has `endReason` `exitWithoutEntry` and `startObserved`
+false; its start time is an estimate. The analytics provider leaves it
+out of dwell statistics and occupancy instead of counting a visit of zero
 minutes. The Saturday vehicle's Session is closed by the operator's rule
-with `endReason` `stale`, `endInferred` true and `closureRule` naming the
-rule, so it is not mistaken for an observed exit.
+with `endReason` `timedOut`, `endInferred` true and `closureRule` naming
+the rule, so it is not mistaken for an observed exit.
 
 **Observations.** Each Session lists its `SessionRead` entries: the entry
 and exit observations, and any duplicate frames from a second camera
@@ -233,10 +232,11 @@ cinema monthly.
 These specifications support this use case in a number of ways:
 
 **Validation redemption.** Each validation applied is a
-`ValidationRedemption` referencing the cinema's validation program, the
-Session, the time, the channel (`payStation` or `merchantApp`) and the
-amount actually removed. A customer who stayed 20 minutes and was charged
-nothing records the 20 minutes' fee, not the nominal three hours.
+`ValidationRedemption` referencing the Place element, the cinema's
+validation programme, the Session, the time, the channel (`payStation` or
+`mobileApp`) and the amount actually removed. A customer who stayed 20
+minutes and was charged nothing records the 20 minutes' fee, not the
+nominal three hours.
 
 **Sessions.** The redemption's `validationId` is written to the Segment's
 existing `validationId`, so a receiver that knows only APDS 4.1 still sees
@@ -264,8 +264,6 @@ country, the make and the colour, each with its own confidence, and
 `movement` toward or away from the camera. Because the entrance and exit
 share one camera, the movement is what tells the two passages apart; the
 recognition system reports `accessDirection` entry or exit accordingly.
-Several frames of each passage share one `captureGroup` and are treated
-as one event.
 
 **Review.** Because a charge notice will follow, the exit read is sent to
 review with `reviewReason` `enforcementHandoff`. The reviewer sees the
@@ -436,8 +434,8 @@ the Place hierarchy.
 
 A city issues a penalty charge notice for an on-street overstay. Its
 EnforcementPolicy sets a payment grace period of 14 days, an EscalationStep
-adding 50% after 28 days, and a PenaltyLimit capping the total at twice the
-amount at issue.
+adding 50% after 28 days, and a PenaltyLimit whose maximum amount is twice
+the amount at issue, with a basis saying the cap includes escalation.
 
 These specifications support this use case in a number of ways:
 
@@ -462,7 +460,7 @@ These specifications support this use case in a number of ways:
 
 **Place.** The lane is a VehicularAccess element and the barrier is
 SupplementalEquipment in the Place hierarchy. Its status changes to
-`fault` through the device status proposed in the Place domain.
+`faulted` through the equipment status proposed in the Place domain.
 
 **Operations.** The lane controller raises an Alert of type `deviceFault`,
 severity `major`, referencing the barrier and the lane. A second Alert of
@@ -493,9 +491,10 @@ open alerts.
 creates a Violation that references the same Session and Observations
 (see the Enforcement domain). The Alert is then resolved.
 
-## Annex D (informative) Example external code lists
+## Annex E (informative) Example external code lists
 
-APDS Annex D gives example user-defined code lists. APX publishes the
+Annex D of the APDS 4.1 Use Case Document gives example user-defined code
+lists. APX publishes the
 following lists in the same `UserDefinedCodeList` shape. They show how
 deployments would extend the enumerations proposed in this document, and
 they seeded the proposed values.
@@ -508,7 +507,7 @@ they seeded the proposed values.
 | `apx-read-review-reasons` | Reasons a plate read was sent for review |
 | `apx-violation-types` | Violation types |
 | `apx-plate-list-categories` | Plate list categories |
-| `apx-payment-line-codes` | Payment line codes |
+| `apx-payment-line-codes` | The values proposed for `PaymentTypeEnum` |
 | `apx-alert-types` | Alert types |
 | `apx-issue-types` | Customer service issue types |
 | `apx-toll-dispute-reasons`, `apx-toll-dispute-resolutions` | Toll dispute reasons and resolutions |
