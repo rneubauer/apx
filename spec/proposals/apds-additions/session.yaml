@@ -1,0 +1,702 @@
+domain: Session
+order: 5
+summary: >-
+  APDS 4.1 records a Session with its start, end, Segments and credentials, but not what the Session
+  rests on or how it ended. These additions let two parties exchange the observations a Session was
+  built from, why and how it closed (including a close set by rule rather than observed), each
+  access attempt at a lane whether granted or denied, which record a Session was matched to, each merchant validation applied to a stay,
+  and the custody record of a valeted vehicle. Every addition is optional and compatible with APDS
+  4.1 (Level B): a receiver that does not know them still reads a valid APDS Session.
+packages:
+  - name: Session
+    location: D2Payload/Extension/Parking/Session
+    status: existing
+    classes:
+      - name: Session
+        change: extend
+        designation: Session
+        definition: >-
+          A Session describes the actual act of using a Right Specification, and may contain
+          multiple segments.
+        stereotype: D2VersionedIdentifiable
+        abstract: false
+        parent: null
+        level: B
+        tier: 1
+        apx: APX Part 5 §5.8 SessionDetail
+        rationale: >-
+          Lets a receiver see which observations opened and closed a visit, why it ended, and which
+          visit an area Session belongs to, so two parties compute the same dwell and occupancy
+          figures from the same Sessions. The lifecycle and passThrough members are offered at
+          tier 2 and matchEvidence at tier 3, with the classes they describe.
+        attributes:
+          - name: parentSessionId
+            designation: Parent session
+            definition: >-
+              The Session of the wider visit this Session is part of, for a Session kept for an area
+              inside a Place.
+            multiplicity: 0..1
+            type: PkCommon.VersionedReference (Session.Session)
+          - name: lifecycle
+            designation: Lifecycle
+            definition: >-
+              How settled the Session is, from open while the vehicle is present to final when no
+              further revision is expected.
+            multiplicity: 0..1
+            type: Session.SessionLifecycleEnum
+          - name: passThrough
+            designation: Pass through
+            definition: >-
+              Indicates a stay in an area shorter than the area's minimum dwell, which is not scored
+              or charged.
+            multiplicity: 0..1
+            type: PkCommon.Boolean
+        associations:
+          - end: sessionRead
+            designation: Session read
+            definition: Session read for the associated Session
+            multiplicity: 0..*
+            target: Session.SessionRead
+          - end: sessionClosure
+            designation: Session closure
+            definition: Session closure for the associated Session
+            multiplicity: 0..1
+            target: Session.SessionClosure
+          - end: matchEvidence
+            designation: Match evidence
+            definition: Match evidence for the associated Session
+            multiplicity: 0..*
+            target: Session.MatchEvidence
+      - name: SessionRead
+        change: new
+        designation: Session read
+        definition: One observation attached to a Session, with the part it played in the visit.
+        stereotype: D2Class
+        abstract: false
+        parent: null
+        level: B
+        tier: 1
+        apx: APX Part 5 §5.8 SessionReadBinding
+        rationale: >-
+          Ties a Session to the observations it was built from, so a receiver can tell the entry and
+          exit passages from duplicate frames and sightings inside the Place.
+        attributes:
+          - name: observationId
+            designation: Observation element
+            definition: The observation attached to the Session.
+            multiplicity: 1..1
+            type: PkCommon.Reference (Observation.ObservationElement)
+          - name: role
+            designation: Role
+            definition: The part the observation played in the visit.
+            multiplicity: 1..1
+            type: Session.SessionReadRoleEnum
+          - name: representative
+            designation: Representative
+            definition: >-
+              Indicates the one observation that stands for the visit when a single image or read is
+              shown.
+            multiplicity: 0..1
+            type: PkCommon.Boolean
+      - name: SessionClosure
+        change: new
+        designation: Session closure
+        definition: Why and how a Session ended.
+        stereotype: D2Class
+        abstract: false
+        parent: null
+        level: B
+        tier: 1
+        apx: APX Part 5 §5.8 SessionClosure
+        rationale: >-
+          Lets a receiver tell an exit that was seen from a Session closed by rule or an exit whose
+          entry was never observed, and leave the latter out of dwell and occupancy statistics.
+        attributes:
+          - name: endReason
+            designation: End reason
+            definition: Why the Session ended.
+            multiplicity: 0..1
+            type: Session.SessionEndReasonEnum
+          - name: endInferred
+            designation: End inferred
+            definition: Indicates that the end time was set by a rule rather than observed.
+            multiplicity: 0..1
+            type: PkCommon.Boolean
+          - name: startObserved
+            designation: Start observed
+            definition: >-
+              Indicates whether the start time was observed; false means the start time is a
+              placeholder for a Session whose entry was never seen.
+            multiplicity: 0..1
+            type: PkCommon.Boolean
+          - name: closureRule
+            designation: Closure rule
+            definition: The name of the operator rule that closed the Session, when a rule closed it.
+            multiplicity: 0..1
+            type: PkCommon.String
+      - name: AccessEvent
+        change: new
+        designation: Access event
+        definition: >-
+          One presentation of a credential at an entry or exit point of a Place, and whether access
+          was granted.
+        stereotype: D2Identifiable
+        abstract: false
+        parent: null
+        level: B
+        tier: 1
+        apx: APX Part 21 §21.4 AccessEvent
+        rationale: >-
+          Lets every party hear the same account of what happened at a lane, including refusals,
+          which today leave no trace in APDS because no Session is opened.
+        attributes:
+          - name: occurredTime
+            designation: Occurred at
+            definition: The date/time of the access attempt.
+            multiplicity: 1..1
+            type: PkCommon.DateTime
+          - name: direction
+            designation: Direction
+            definition: >-
+              Whether the attempt was to enter or to leave, using the APDS access type values entry
+              and exit.
+            multiplicity: 1..1
+            type: Place.AccessTypeEnum
+          - name: outcome
+            designation: Outcome
+            definition: Whether access was granted or denied.
+            multiplicity: 1..1
+            type: Session.AccessOutcomeEnum
+          - name: denialReason
+            designation: Denial reason
+            definition: Why access was denied, when it was denied.
+            multiplicity: 0..1
+            type: Session.AccessDenialReasonEnum
+          - name: credentialId
+            designation: Credential id
+            definition: The assigned credential the presented value matched, when one matched.
+            multiplicity: 0..1
+            type: PkCommon.Reference (Right.CredentialAssigned)
+          - name: elementId
+            designation: Element id
+            definition: The element of the Place Hierarchy where the attempt occurred.
+            multiplicity: 0..1
+            type: PkCommon.VersionedReference (Place.HierarchyElementGeneral)
+          - name: vehicularAccessId
+            designation: Vehicular access id
+            definition: The vehicular access (lane) where the attempt occurred.
+            multiplicity: 0..1
+            type: PkCommon.VersionedReference (Place.HierarchyElementGeneral)
+          - name: equipmentId
+            designation: Equipment id
+            definition: The reader or other supplemental equipment that read the credential.
+            multiplicity: 0..1
+            type: PkCommon.Reference (Place.SupplementalEquipment)
+          - name: sessionId
+            designation: Session id
+            definition: The Session opened or closed by a granted access.
+            multiplicity: 0..1
+            type: PkCommon.VersionedReference (Session.Session)
+        associations:
+          - end: presentedCredential
+            designation: Presented credential
+            definition: Presented credential for the associated AccessEvent
+            multiplicity: 0..1
+            target: Right.PresentedCredential
+      - name: MatchEvidence
+        change: new
+        designation: Match evidence
+        definition: How a link between a Session and another record was established and how strong it is.
+        stereotype: D2Class
+        abstract: false
+        parent: null
+        level: B
+        tier: 3
+        apx: APX Part 5 §5.8 MatchEvidence
+        rationale: >-
+          Records which record a Session was matched to, whether the match was applied, and who
+          decided, so a receiver can see why a stay was linked to a right, valet ticket or
+          violation. The scoring detail behind a match is left to implementations.
+        attributes:
+          - name: targetId
+            designation: Target
+            definition: The record at the other end of the link, such as an AssignedRight or an observation.
+            multiplicity: 1..1
+            type: PkCommon.Reference
+          - name: matchType
+            designation: Match type
+            definition: The kind of link.
+            multiplicity: 1..1
+            type: Session.MatchTypeEnum
+          - name: applied
+            designation: Applied
+            definition: >-
+              Indicates whether the link was acted on; false records a link kept only for
+              evaluation.
+            multiplicity: 1..1
+            type: PkCommon.Boolean
+          - name: decidedBy
+            designation: Decided by
+            definition: Whether software or a person made the link.
+            multiplicity: 0..1
+            type: Session.MatchDecisionEnum
+          - name: decidedTime
+            designation: Decided time
+            definition: The date/time the link was made.
+            multiplicity: 0..1
+            type: PkCommon.DateTime
+      - name: ValidationRedemption
+        change: new
+        designation: Validation redemption
+        definition: One validation applied to one Session, as recorded by the channel that applied it.
+        stereotype: D2VersionedIdentifiable
+        abstract: false
+        parent: null
+        level: B
+        tier: 1
+        apx: APX Part 20 ValidationRedemption
+        rationale: >-
+          Gives the existing Segment.validationId something to point to, so a merchant, an operator
+          and an auditor see the same redemption and the actual amount it removed. The programme it
+          belongs to is itself a Tier 2 proposal, so the link is optional here.
+        attributes:
+          - name: validationProgramId
+            designation: Validation program
+            definition: The validation program the redemption draws on.
+            multiplicity: 0..1
+            type: PkCommon.VersionedReference (Right.ValidationProgram)
+          - name: sessionId
+            designation: Session id
+            definition: The Session the validation was applied to.
+            multiplicity: 0..1
+            type: PkCommon.VersionedReference (Session.Session)
+          - name: elementId
+            designation: Element id
+            definition: The element of the Place Hierarchy where the validation was applied.
+            multiplicity: 1..1
+            type: PkCommon.VersionedReference (Place.HierarchyElementGeneral)
+          - name: appliedTime
+            designation: Applied time
+            definition: The date/time the validation was applied.
+            multiplicity: 1..1
+            type: PkCommon.DateTime
+          - name: channel
+            designation: Channel
+            definition: The channel through which the validation was applied.
+            multiplicity: 1..1
+            type: PkCommon.InteractionChannelEnum
+          - name: redemptionStatus
+            designation: Redemption status
+            definition: Whether the redemption stands or has been reversed.
+            multiplicity: 1..1
+            type: Session.ValidationRedemptionStatusEnum
+          - name: validationId
+            designation: Validation id
+            definition: The identification carried in Segment.validationId for this redemption.
+            multiplicity: 0..1
+            type: PkCommon.String
+          - name: instrumentCode
+            designation: Instrument code
+            definition: The validation code, coupon or ticket number redeemed, when the channel used one.
+            multiplicity: 0..1
+            type: PkCommon.String
+          - name: ticketNumber
+            designation: Ticket number
+            definition: The parking ticket number the validation was applied to, when the Session is ticketed.
+            multiplicity: 0..1
+            type: PkCommon.String
+          - name: amountReduced
+            designation: Amount reduced
+            definition: >-
+              The actual reduction of the amount due, which may be less than the program's nominal
+              benefit.
+            multiplicity: 0..1
+            type: PkCommon.AmountInCurrency
+          - name: durationComped
+            designation: Duration comped
+            definition: The parking time given free of charge by the validation.
+            multiplicity: 0..1
+            type: PkCommon.Duration
+          - name: reversalTime
+            designation: Reversal time
+            definition: The date/time the redemption was reversed.
+            multiplicity: 0..1
+            type: PkCommon.DateTime
+          - name: reversalReason
+            designation: Reversal reason
+            definition: Free-text reason the redemption was reversed.
+            multiplicity: 0..1
+            type: PkCommon.MultilingualString
+      - name: ValetTicket
+        change: new
+        designation: Valet ticket
+        definition: The custody record for one vehicle left with a valet service, from drop-off to handback.
+        stereotype: D2VersionedIdentifiable
+        abstract: false
+        parent: null
+        level: B
+        tier: 2
+        apx: APX Part 22 ValetTicket
+        rationale: >-
+          APDS mentions valet only as an operating restriction; this records custody, where the
+          vehicle and keys are, the retrieval request and the handback, while the stay and the money
+          stay on the APDS Session.
+        attributes:
+          - name: elementId
+            designation: Element id
+            definition: The Place or valet stand that took custody.
+            multiplicity: 1..1
+            type: PkCommon.VersionedReference (Place.HierarchyElementGeneral)
+          - name: sessionId
+            designation: Session id
+            definition: The Session for the stay.
+            multiplicity: 0..1
+            type: PkCommon.VersionedReference (Session.Session)
+          - name: assignedRightId
+            designation: Assigned right id
+            definition: The AssignedRight issued for the valet stay, when the operator issues one.
+            multiplicity: 0..1
+            type: PkCommon.VersionedReference (Right.AssignedRight)
+          - name: ticketNumber
+            designation: Ticket number
+            definition: The number printed on the claim ticket or shown to the customer.
+            multiplicity: 0..1
+            type: PkCommon.String
+          - name: valetStatus
+            designation: Valet status
+            definition: Where the vehicle is in the custody process.
+            multiplicity: 1..1
+            type: Session.ValetStatusEnum
+          - name: customerContactPointId
+            designation: Customer contact
+            definition: The contact point used to verify the customer and tell them when the vehicle is ready.
+            multiplicity: 0..1
+            type: PkCommon.Reference (PkCommon.ContactPoint)
+          - name: dropOffTime
+            designation: Drop off time
+            definition: The date/time the valet took custody of the vehicle.
+            multiplicity: 1..1
+            type: PkCommon.DateTime
+          - name: spaceId
+            designation: Space id
+            definition: The Space where the vehicle is parked, when the Place is mapped by space.
+            multiplicity: 0..1
+            type: PkCommon.VersionedReference (Place.Space)
+          - name: parkedTime
+            designation: Parked time
+            definition: The date/time the vehicle was parked.
+            multiplicity: 0..1
+            type: PkCommon.DateTime
+          - name: retrievalRequestedTime
+            designation: Retrieval requested time
+            definition: The date/time the customer asked for the vehicle.
+            multiplicity: 0..1
+            type: PkCommon.DateTime
+          - name: retrievalScheduledTime
+            designation: Retrieval scheduled for
+            definition: The date/time the customer asked the vehicle to be ready, for a scheduled pickup.
+            multiplicity: 0..1
+            type: PkCommon.DateTime
+          - name: retrievalChannel
+            designation: Retrieval channel
+            definition: How the customer asked for the vehicle.
+            multiplicity: 0..1
+            type: PkCommon.InteractionChannelEnum
+          - name: promisedTime
+            designation: Promised time
+            definition: The date/time the vehicle is promised at the pickup point.
+            multiplicity: 0..1
+            type: PkCommon.DateTime
+          - name: stagedTime
+            designation: Staged time
+            definition: The date/time the vehicle reached the pickup point.
+            multiplicity: 0..1
+            type: PkCommon.DateTime
+          - name: handbackTime
+            designation: Handback time
+            definition: The date/time the vehicle was handed back.
+            multiplicity: 0..1
+            type: PkCommon.DateTime
+          - name: handbackVerification
+            designation: Handback verification
+            definition: How the person collecting the vehicle was verified.
+            multiplicity: 0..1
+            type: Session.HandbackVerificationEnum
+        associations:
+          - end: identifiedVehicle
+            designation: Identified vehicle
+            definition: Identified vehicle for the associated ValetTicket
+            multiplicity: 0..1
+            target: PkCommon.VehicleAncillaryIdentification
+          - end: dropOffCondition
+            designation: Drop off condition
+            definition: Condition report recorded at drop-off for the associated ValetTicket
+            multiplicity: 0..1
+            target: Observation.ConditionReport
+          - end: handbackCondition
+            designation: Handback condition
+            definition: Condition report recorded at handback for the associated ValetTicket
+            multiplicity: 0..1
+            target: Observation.ConditionReport
+          - end: vehicleCredential
+            designation: Vehicle credential
+            definition: Vehicle credential for the associated ValetTicket
+            multiplicity: 0..1
+            target: Right.PresentedCredential
+    enumerations:
+      - name: SessionReadRoleEnum
+        change: new
+        designation: Session read role
+        definition: The part an observation played in a Session.
+        tier: 1
+        apx: APX Part 5 §5.8 SessionReadBinding.role
+        rationale: Separates the passages that opened and closed a visit from repeated and inside sightings.
+        values:
+          - name: entry
+            designation: Entry
+            definition: The passage that opened the visit.
+          - name: exit
+            designation: Exit
+            definition: The passage that closed the visit.
+          - name: duplicate
+            designation: Duplicate
+            definition: The same passage seen by another camera or in another frame.
+          - name: activity
+            designation: Activity
+            definition: The vehicle seen inside the Place, for example during a patrol or by a bay camera.
+      - name: SessionEndReasonEnum
+        change: new
+        designation: Session end reason
+        definition: Why a Session ended.
+        tier: 1
+        apx: APX Part 11 code list (session end reasons)
+        rationale: >-
+          Lets consumers treat observed exits, rule-based closures and exits with no observed entry
+          differently. If the group prefers to keep these values out of the standard, an external
+          code list (PkCommon.ReferencedCodeListEntry) seeded with them works equally well.
+        values:
+          - name: exitObserved
+            designation: Exit observed
+            definition: An exit observation of the vehicle closed the Session.
+          - name: reentryObserved
+            designation: Re-entry observed
+            definition: The same vehicle entered again and the earlier Session was closed at the new entry.
+          - name: timedOut
+            designation: Timed out
+            definition: Closed by rule after no observation of the vehicle for the Place's maximum stay.
+          - name: parentSessionEnded
+            designation: Parent session ended
+            definition: A Session kept for an area inside a Place closed because the visit to the Place ended.
+          - name: leftArea
+            designation: Left area
+            definition: >-
+              A Session kept for an area inside a Place closed because the vehicle was seen leaving
+              the area.
+          - name: notFoundOnCount
+            designation: Not found on count
+            definition: A count or patrol of the vehicles present found the vehicle gone.
+          - name: valetHandback
+            designation: Valet handback
+            definition: The valet service handed the vehicle back to the customer.
+          - name: exitWithoutEntry
+            designation: Exit without entry
+            definition: An exit was observed with no observed entry; the start time is an estimate.
+          - name: closedByOperator
+            designation: Closed by operator
+            definition: A member of staff closed the Session.
+          - name: closedAfterReview
+            designation: Closed after review
+            definition: A person reviewing the observations paired an exit with the Session and closed it.
+      - name: SessionLifecycleEnum
+        change: new
+        designation: Session lifecycle
+        definition: How settled a Session is.
+        tier: 2
+        apx: APX Part 5 §5.8 SessionDetail.lifecycle
+        rationale: Tells a receiver whether a closed Session may still be revised.
+        values:
+          - name: open
+            designation: Open
+            definition: The vehicle is in the Place and the Session has no end time.
+          - name: ended
+            designation: Ended
+            definition: The Session has ended but may still be revised.
+          - name: final
+            designation: Final
+            definition: The Session has ended and no further revision is expected.
+          - name: disputed
+            designation: Disputed
+            definition: The Session is under review.
+      - name: AccessOutcomeEnum
+        change: new
+        designation: Access outcome
+        definition: The result of an access attempt.
+        tier: 1
+        apx: APX Part 21 §21.4 AccessEvent.outcome
+        rationale: Distinguishes granted from refused access attempts.
+        values:
+          - name: granted
+            designation: Granted
+            definition: Access was granted.
+          - name: denied
+            designation: Denied
+            definition: Access was refused.
+      - name: AccessDenialReasonEnum
+        change: new
+        designation: Access denial reason
+        definition: Why an access attempt was refused.
+        tier: 1
+        apx: APX Part 11 code list (access denial reasons)
+        rationale: >-
+          Lets an operator, a help desk and a credential issuer read the same reason for a refusal.
+          As with session end reasons, an external code list seeded with these values is an equally
+          good home.
+        values:
+          - name: credentialSuspended
+            designation: Credential suspended
+            definition: The presented credential matched an assigned credential that is suspended.
+          - name: credentialLost
+            designation: Credential lost
+            definition: The presented credential matched an assigned credential reported lost.
+          - name: credentialRevoked
+            designation: Credential revoked
+            definition: The presented credential matched an assigned credential that is revoked.
+          - name: credentialReplaced
+            designation: Credential replaced
+            definition: >-
+              The presented credential matched an assigned credential that has been replaced by
+              another.
+          - name: credentialExpired
+            designation: Credential expired
+            definition: The presented credential matched an assigned credential that has expired.
+          - name: credentialNotYetActive
+            designation: Credential not yet active
+            definition: >-
+              The presented credential matched an assigned credential that is issued but not yet
+              active.
+          - name: unknownCredential
+            designation: Unknown credential
+            definition: The presented value matched no assigned credential.
+          - name: passback
+            designation: Passback
+            definition: >-
+              Refused by the anti-passback rule because the credential is already inside or already
+              outside.
+          - name: accountBalance
+            designation: Account balance
+            definition: Refused because of the holder's outstanding balance or account standing.
+          - name: outsidePlace
+            designation: Outside place
+            definition: The credential is valid, but not at this Place.
+          - name: outsideValidity
+            designation: Outside validity
+            definition: The credential is valid at this Place, but not at this time.
+      - name: MatchTypeEnum
+        change: new
+        designation: Match type
+        definition: The kind of link between a Session and another record.
+        tier: 3
+        apx: APX Part 5 §5.8 MatchEvidence.matchType
+        rationale: Names what a match connects, so a receiver can weigh it.
+        values:
+          - name: assignedRight
+            designation: Assigned right
+            definition: An AssignedRight covers the stay.
+          - name: valetTicket
+            designation: Valet ticket
+            definition: A valet ticket covers the stay.
+          - name: violation
+            designation: Violation
+            definition: A violation concerns the stay.
+          - name: plateList
+            designation: Plate list
+            definition: An entry on a plate list matched the vehicle.
+          - name: entryExitPair
+            designation: Entry and exit pair
+            definition: An exit observation was paired to the Session's entry observation.
+          - name: other
+            designation: Other
+            definition: Any other kind of link.
+      - name: MatchDecisionEnum
+        change: new
+        designation: Match decision
+        definition: Who made a link.
+        tier: 3
+        apx: APX Part 5 §5.8 MatchEvidence.decidedBy
+        rationale: Separates automatic links from links a person made.
+        values:
+          - name: system
+            designation: System
+            definition: Software made the link.
+          - name: person
+            designation: Person
+            definition: A person made the link.
+      - name: ValidationRedemptionStatusEnum
+        change: new
+        designation: Validation redemption status
+        definition: Whether a validation redemption stands.
+        tier: 1
+        apx: APX Part 20 ValidationRedemption.redemptionStatus
+        rationale: Lets a reversed validation be kept for audit rather than deleted.
+        values:
+          - name: applied
+            designation: Applied
+            definition: The validation is applied to the Session.
+          - name: reversed
+            designation: Reversed
+            definition: The validation was reversed.
+      - name: ValetStatusEnum
+        change: new
+        designation: Valet status
+        definition: The stage of a vehicle in valet custody.
+        tier: 2
+        apx: APX Part 22 ValetTicket.valetStatus
+        rationale: Gives attendants, customers and operators one shared view of where a valeted vehicle is.
+        values:
+          - name: dropped
+            designation: Dropped
+            definition: Custody taken; the vehicle has not yet been parked.
+          - name: parked
+            designation: Parked
+            definition: The vehicle is parked.
+          - name: requested
+            designation: Requested
+            definition: The customer has asked for the vehicle.
+          - name: retrieving
+            designation: Retrieving
+            definition: An attendant is fetching the vehicle.
+          - name: staged
+            designation: Staged
+            definition: The vehicle is waiting at the pickup point.
+          - name: handedBack
+            designation: Handed back
+            definition: The vehicle has been handed back.
+          - name: closed
+            designation: Closed
+            definition: The stay is settled.
+          - name: cancelled
+            designation: Cancelled
+            definition: The ticket was cancelled before custody was taken.
+      - name: HandbackVerificationEnum
+        change: new
+        designation: Handback verification
+        definition: How the person collecting a valeted vehicle was verified.
+        tier: 2
+        apx: APX Part 22 ValetTicket.handback
+        rationale: Records the evidence that the vehicle went to the right person.
+        values:
+          - name: ticket
+            designation: Ticket
+            definition: The claim ticket was presented.
+          - name: phone
+            designation: Phone
+            definition: The customer's phone or application was verified.
+          - name: code
+            designation: Code
+            definition: A one-time code was given.
+          - name: id
+            designation: Identity document
+            definition: An identity document was checked.
+          - name: attendant
+            designation: Attendant
+            definition: An attendant recognised the customer.

@@ -23,8 +23,10 @@
     "sim": "node packages/simulator/bin/apx-sim.mjs serve",
     "sim:web": "node packages/simulator/web/build.mjs",
     "scenarios:check": "node tools/validate-scenarios.mjs",
-    "test": "npm run vendor:check && npm run registries:check && npm run spec:lint && npm run spec:bundle && npm run spec:profile && npm run spec:style && npm run spec:smoke && npm run examples:check && npm run scenarios:check",
-    "vetting": "node tools/vetting-scenarios.mjs"
+    "test": "npm run vendor:check && npm run registries:check && npm run spec:lint && npm run spec:bundle && npm run spec:profile && npm run spec:style && npm run spec:smoke && npm run examples:check && npm run scenarios:check && npm run submission:check",
+    "vetting": "node tools/vetting-scenarios.mjs",
+    "submission:build": "node tools/build-apds-submission.mjs",
+    "submission:check": "node tools/build-apds-submission.mjs --check"
   },
   "devDependencies": {
     "@noble/hashes": "^1.6.1",

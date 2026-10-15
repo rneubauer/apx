@@ -16,6 +16,17 @@ problem-type table loses a stray merge-conflict marker (editorial; no row
 changed).
 
 **Added.**
+- `docs/apds-submission/`: the APX Data Specification for the APDS
+  committee, in the form of the APDS 4.1 documents: an Overview, an
+  Information Model, a Data Dictionary in the APDS table format, and a Use
+  Case Document numbered C.3. It covers every data element and enumeration
+  the APX API needs, in three tiers, and no API. The documents are
+  generated from `spec/proposals/apds-additions/*.yaml` and prose in
+  `docs/apds-submission/src/` by `tools/build-apds-submission.mjs`, which
+  checks every type against the names in the APDS 4.1 Data Dictionary and
+  refuses anything APDS already defines. `npm test` and CI run it with
+  `--check`. The README now says the API is APX's preferred implementation
+  specification, kept separate from the data-element proposals.
 - `docs/data-model-by-domain.md`: every APX schema placed on the APDS
   high-level data map (APDS, extension, new element, or API-only), with
   exact required fields, plus a proposed Tier 1 shortlist of data elements

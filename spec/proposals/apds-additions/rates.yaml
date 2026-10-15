@@ -1,0 +1,81 @@
+domain: Rates
+order: 3
+summary: >-
+  APDS models the rate deck completely: RateTables, RateLineCollections, RateLines, taxes,
+  surcharges and discounts. APX asks for two small additions. First, a policy on a RateTable that
+  says whether it may be offered as a negotiated rate, so a customer-service agent or a partner can
+  only offer tables the operator has cleared for that. Second, a validation benefit that extends the
+  existing RateDiscount with comped time and a plain-language description, so a merchant validation
+  can say what it is worth in the same terms APDS already uses for discounts.
+packages:
+  - name: Rates
+    location: D2Payload/Extension/Parking/Rates
+    status: existing
+    classes:
+      - name: RateTable
+        change: extend
+        designation: Rate table
+        definition: >-
+          A specific set of rate charges relating to one or more locations and optionally one set of
+          eligibility criteria (existing APDS class; the attributes below are proposed additions).
+        stereotype: D2VersionedIdentifiable
+        abstract: false
+        parent: null
+        level: B
+        tier: 2
+        apx: APX Part 6 §6.6 RatePolicy
+        rationale: >-
+          Lets an operator mark which RateTables may be offered as a negotiated rate, so every party
+          mirroring the rate deck receives the flag with the table itself.
+        attributes:
+          - name: negotiable
+            designation: Negotiable
+            definition: >-
+              Indicates whether the RateTable may be offered to a specific customer as a negotiated
+              rate, if yes (TRUE), if not (FALSE).
+            multiplicity: 0..1
+            type: PkCommon.Boolean
+          - name: negotiatedRateLabel
+            designation: Negotiated rate label
+            definition: >-
+              Short label shown to an agent or partner when the RateTable is offered as a negotiated
+              rate.
+            multiplicity: 0..*
+            type: PkCommon.MultilingualString
+          - name: negotiationNote
+            designation: Negotiation note
+            definition: >-
+              Free-text guidance for the party offering the RateTable as a negotiated rate;
+              informative only.
+            multiplicity: 0..*
+            type: PkCommon.MultilingualString
+      - name: ValidationBenefit
+        change: new
+        designation: Validation benefit
+        definition: >-
+          What a merchant validation is worth when applied to a Session: a fixed value, a
+          proportionate discount, or an amount of comped time, with a plain-language description.
+        stereotype: D2Class
+        abstract: false
+        parent: Right.RateDiscount
+        level: B
+        tier: 2
+        apx: APX Part 20 §20.1 ValidationBenefit
+        rationale: >-
+          Reuses the APDS RateDiscount (fixedValue, discountRate) and adds the one form merchants
+          use that APDS cannot express today, free time, so a validation's value is exchanged in
+          APDS terms.
+        attributes:
+          - name: discountDuration
+            designation: Discount duration
+            definition: Amount of parking time comped by the validation, valued at the applicable RateTable.
+            multiplicity: 0..1
+            type: PkCommon.Duration
+          - name: description
+            designation: Description
+            definition: >-
+              Plain-language statement of what the validation is worth, for receipts and customer
+              service.
+            multiplicity: 1..*
+            type: PkCommon.MultilingualString
+    enumerations: []
