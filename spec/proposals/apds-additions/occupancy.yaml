@@ -1,0 +1,52 @@
+domain: Occupancy
+order: 2
+summary: >-
+  APDS already models current occupancy fully through Supply and Demand,
+  so nothing is proposed for the present moment. One small addition is
+  suggested for discussion: letting a DemandType record summarise a period
+  (its highest and average count, and how many readings it rests on), so
+  that hourly or daily occupancy history can be exchanged in APDS terms.
+packages:
+  - name: Demand
+    location: D2Payload/Extension/Parking/Occupancy/Demand
+    status: existing
+    classes:
+      - name: DemandType
+        change: extend
+        designation: Demand type
+        definition: Defines occupancy at a hierarchy element without specific space details; an aggregate count of demand activity within the Place hierarchy.
+        stereotype: D2Class
+        abstract: false
+        parent: null
+        level: B
+        tier: 3
+        apx: OccupancyHistoryPage buckets (APX Part 5 §5.5a)
+        rationale: Lets an operator report occupancy history to a city or a partner as period summaries instead of every individual reading.
+        attributes:
+          - name: periodStart
+            designation: Period start
+            definition: The start of the period this record summarises, when it describes a period rather than a moment.
+            multiplicity: 0..1
+            type: PkCommon.DateTime
+          - name: periodEnd
+            designation: Period end
+            definition: The end of the period this record summarises.
+            multiplicity: 0..1
+            type: PkCommon.DateTime
+          - name: maximumCount
+            designation: Maximum count
+            definition: The highest number of utilized or occupied spaces recorded during the period.
+            multiplicity: 0..1
+            type: PkCommon.NonNegativeInteger
+          - name: averageCount
+            designation: Average count
+            definition: The time-weighted average number of utilized or occupied spaces during the period.
+            multiplicity: 0..1
+            type: PkCommon.Float
+          - name: sampleCount
+            designation: Sample count
+            definition: The number of individual demand readings the period summary is calculated from.
+            multiplicity: 0..1
+            type: PkCommon.NonNegativeInteger
+        associations: []
+    enumerations: []

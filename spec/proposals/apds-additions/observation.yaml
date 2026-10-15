@@ -1,0 +1,656 @@
+domain: Observation
+order: 6
+summary: >-
+  APDS 4.1 records an observation with its method, credential, location,
+  images and an overall and per-character confidence. Modern licence plate
+  recognition knows more: a confidence for each recognised attribute (plate,
+  issuing country and state, make, model, colour), the candidate plates that
+  lost, which plate of the vehicle was read, which way the vehicle moved,
+  which reads belong to one passage, and whether a person has reviewed the
+  read. These additions carry that, add two image kinds, record the
+  condition of a vehicle taken into valet custody, and add a toll
+  transaction built from observations. All are optional and compatible with
+  APDS 4.1 (Level B).
+packages:
+  - name: Observation
+    location: D2Payload/Extension/Parking/Observation
+    status: existing
+    classes:
+      - name: ObservationElement
+        change: extend
+        designation: Observation element
+        definition: A specific collection of observation details intended to be used for one specific observation instance.
+        stereotype: D2VersionedIdentifiable
+        abstract: false
+        parent: null
+        level: B
+        tier: 1
+        apx: apds-ext:apx:lpr-read@1.0 (APX Part 13 §13.3a)
+        rationale: >-
+          Lets an LPR read carry a confidence for each recognised attribute,
+          the alternate plates, and the passage geometry, so a receiver can
+          set its own thresholds and correct a misread from the candidates.
+          plateFace, frameReads, platesRead, speed and recognitionEngine
+          follow tier 2.
+        attributes:
+          - name: accessDirection
+            designation: Access direction
+            definition: Whether the vehicle was entering or leaving the Place, as reported by the recognition system; absent means unknown.
+            multiplicity: 0..1
+            type: Session.AccessDirectionEnum
+          - name: movement
+            designation: Movement
+            definition: The vehicle's motion relative to the camera.
+            multiplicity: 0..1
+            type: Observation.VehicleMovementEnum
+          - name: plateFace
+            designation: Plate face
+            definition: Which plate of the vehicle was read.
+            multiplicity: 0..1
+            type: Observation.PlateFaceEnum
+          - name: captureGroup
+            designation: Capture group
+            definition: An identifier shared by all reads of one vehicle passage, across frames and cameras.
+            multiplicity: 0..1
+            type: PkCommon.String
+          - name: frameReads
+            designation: Frame reads
+            definition: The number of frames in which the plate was read as the vehicle passed.
+            multiplicity: 0..1
+            type: PkCommon.NonNegativeInteger
+          - name: platesRead
+            designation: Plates read
+            definition: The number of distinct plates of the vehicle read in the passage.
+            multiplicity: 0..1
+            type: PkCommon.NonNegativeInteger
+          - name: speed
+            designation: Speed
+            definition: The vehicle's speed in kilometres per hour, when measured.
+            multiplicity: 0..1
+            type: PkCommon.Float
+          - name: recognitionEngine
+            designation: Recognition engine
+            definition: An identifier of the recognition engine and version, so confidences can be calibrated.
+            multiplicity: 0..1
+            type: PkCommon.String
+        associations:
+          - end: attributeRead
+            designation: Attribute read
+            definition: Attribute read for the associated ObservationElement
+            multiplicity: 0..*
+            target: Observation.AttributeRead
+          - end: alternateRead
+            designation: Alternate read
+            definition: Alternate read for the associated ObservationElement, best first
+            multiplicity: 0..*
+            target: Observation.AlternateRead
+          - end: readReview
+            designation: Read review
+            definition: Read review for the associated ObservationElement
+            multiplicity: 0..1
+            target: Observation.ReadReview
+
+      - name: AttributeRead
+        change: new
+        designation: Attribute read
+        definition: One recognised attribute of an observed vehicle with its own confidence.
+        stereotype: D2Class
+        abstract: false
+        parent: null
+        level: B
+        tier: 1
+        apx: AttributeRead / LprReadDetail (APX Part 13 §13.3a)
+        rationale: >-
+          APDS gives one overall confidence; a camera can be sure of the plate
+          and unsure of the colour, and enforcement needs to know which.
+        attributes:
+          - name: readAttribute
+            designation: Read attribute
+            definition: Which attribute was recognised.
+            multiplicity: 1..1
+            type: Observation.ReadAttributeEnum
+          - name: value
+            designation: Value
+            definition: The recognised value; for plate, country, state, make, model and colour it equals the value carried in the observed credential or vehicle ancillary identification.
+            multiplicity: 1..1
+            type: PkCommon.String
+          - name: confidence
+            designation: Confidence
+            definition: Confidence of the recognised value, rescaled to a value between 0 and 1, with 1 being greatest confidence.
+            multiplicity: 0..1
+            type: PkCommon.Decimal
+
+      - name: AlternateRead
+        change: new
+        designation: Alternate read
+        definition: Another candidate plate the recognition engine considered for the same capture.
+        stereotype: D2Class
+        abstract: false
+        parent: null
+        level: B
+        tier: 1
+        apx: LprReadDetail.alternateReads (APX Part 13 §13.3a)
+        rationale: Lets a reviewer or a matching system pick a losing candidate when the winning read was wrong.
+        attributes:
+          - name: plate
+            designation: Plate
+            definition: The candidate plate string.
+            multiplicity: 1..1
+            type: PkCommon.String
+          - name: stateProvince
+            designation: State province
+            definition: The candidate issuing state, province or other subdivision.
+            multiplicity: 0..1
+            type: PkCommon.String
+          - name: confidence
+            designation: Confidence
+            definition: Confidence of the candidate, rescaled to a value between 0 and 1, with 1 being greatest confidence.
+            multiplicity: 0..1
+            type: PkCommon.Decimal
+
+      - name: ReadReview
+        change: new
+        designation: Read review
+        definition: The human-review state of an observation.
+        stereotype: D2Class
+        abstract: false
+        parent: null
+        level: B
+        tier: 2
+        apx: LprReadDetail.review (APX Part 13 §13.3a(4a))
+        rationale: >-
+          Lets an enforcement system know whether a person has confirmed or
+          corrected a read, which some jurisdictions require before a penalty.
+        attributes:
+          - name: reviewState
+            designation: Review state
+            definition: Where the observation is in review.
+            multiplicity: 1..1
+            type: Observation.ReadReviewStateEnum
+          - name: reviewReason
+            designation: Review reason
+            definition: Why the observation was sent to review.
+            multiplicity: 0..*
+            type: Observation.ReadReviewReasonEnum
+          - name: decidedTime
+            designation: Decided time
+            definition: The date/time the reviewer decided.
+            multiplicity: 0..1
+            type: PkCommon.DateTime
+          - name: decidedBy
+            designation: Decided by
+            definition: An identifier of the reviewer.
+            multiplicity: 0..1
+            type: PkCommon.String
+        associations:
+          - end: originalRead
+            designation: Original read
+            definition: The engine's values and confidences before the first correction, for the associated ReadReview
+            multiplicity: 0..*
+            target: Observation.AttributeRead
+
+      - name: Image
+        change: extend
+        designation: Image
+        definition: Class containing information relating to still or moving image observation evidence or a reference to such observation evidence.
+        stereotype: D2Class
+        abstract: false
+        parent: null
+        level: B
+        tier: 2
+        apx: LprReadDetail.plateBox (APX Part 13 §13.3a)
+        rationale: Records where the plate is in the image so a receiver can crop or highlight it at any image size.
+        associations:
+          - end: plateRegion
+            designation: Plate region
+            definition: Plate region for the associated Image
+            multiplicity: 0..1
+            target: Observation.ImageRegion
+
+      - name: ImageRegion
+        change: new
+        designation: Image region
+        definition: A rectangle within an image, given as fractions of the image height and width.
+        stereotype: D2Class
+        abstract: false
+        parent: null
+        level: B
+        tier: 2
+        apx: LprReadDetail.plateBox
+        rationale: Fractions survive resizing, so the region stays correct for every copy of the image.
+        attributes:
+          - name: top
+            designation: Top
+            definition: The top edge as a fraction of the image height, from 0 to 1.
+            multiplicity: 1..1
+            type: PkCommon.Decimal
+          - name: left
+            designation: Left
+            definition: The left edge as a fraction of the image width, from 0 to 1.
+            multiplicity: 1..1
+            type: PkCommon.Decimal
+          - name: bottom
+            designation: Bottom
+            definition: The bottom edge as a fraction of the image height, from 0 to 1.
+            multiplicity: 1..1
+            type: PkCommon.Decimal
+          - name: right
+            designation: Right
+            definition: The right edge as a fraction of the image width, from 0 to 1.
+            multiplicity: 1..1
+            type: PkCommon.Decimal
+
+      - name: ConditionReport
+        change: new
+        designation: Condition report
+        definition: The condition of a vehicle as recorded by an attendant or scanning device, for example when taken into or released from valet custody.
+        stereotype: D2Class
+        abstract: false
+        parent: null
+        level: B
+        tier: 2
+        apx: ConditionReport (APX Part 22)
+        rationale: Gives the evidence a damage claim is answered with, in a form both the operator and the claimant can read.
+        attributes:
+          - name: notes
+            designation: Notes
+            definition: Free-text observations of the vehicle's condition.
+            multiplicity: 0..1
+            type: PkCommon.MultilingualString
+          - name: imageLink
+            designation: Image link
+            definition: Resource locator to a photograph or scan of the vehicle.
+            multiplicity: 0..*
+            type: PkCommon.Url
+          - name: recordedTime
+            designation: Recorded time
+            definition: The date/time the report was recorded.
+            multiplicity: 0..1
+            type: PkCommon.DateTime
+          - name: recordedBy
+            designation: Recorded by
+            definition: An identifier of the attendant or device that recorded the report.
+            multiplicity: 0..1
+            type: PkCommon.String
+          - name: customerAcknowledged
+            designation: Customer acknowledged
+            definition: Indicates whether the customer acknowledged the report.
+            multiplicity: 0..1
+            type: PkCommon.Boolean
+        associations:
+          - end: damageItem
+            designation: Damage item
+            definition: Damage item for the associated ConditionReport
+            multiplicity: 0..*
+            target: Observation.DamageItem
+
+      - name: DamageItem
+        change: new
+        designation: Damage item
+        definition: One finding of damage to an area of a vehicle.
+        stereotype: D2Class
+        abstract: false
+        parent: null
+        level: B
+        tier: 2
+        apx: ConditionReport.damage[] (APX Part 22)
+        rationale: Structures damage findings so they can be compared between drop-off and handback.
+        attributes:
+          - name: vehicleArea
+            designation: Vehicle area
+            definition: The area of the vehicle, such as front bumper or driver door, from an operator code list.
+            multiplicity: 1..1
+            type: PkCommon.String
+          - name: description
+            designation: Description
+            definition: Free-text description of the damage.
+            multiplicity: 0..1
+            type: PkCommon.MultilingualString
+          - name: severity
+            designation: Severity
+            definition: How serious the damage is.
+            multiplicity: 0..1
+            type: Observation.DamageSeverityEnum
+          - name: imageLink
+            designation: Image link
+            definition: Resource locator to a photograph of the damage.
+            multiplicity: 0..1
+            type: PkCommon.Url
+          - name: recordedTime
+            designation: Recorded time
+            definition: The date/time the finding was recorded, when added after the report was first made.
+            multiplicity: 0..1
+            type: PkCommon.DateTime
+
+    enumerations:
+      - name: ImageTypeEnum
+        change: extend
+        designation: Image type
+        definition: The nature of the captured image.
+        tier: 2
+        apx: LprRead.images[].imageType (APX Part 13 §13.3c)
+        rationale: Recognition engines keep a wider crop around the plate and a scene wider than the overview; consumers could ask for the still they need.
+        values:
+          - name: plateExtended
+            designation: Plate extended
+            definition: A crop around the plate wider than the plate itself, showing the surrounding bodywork.
+          - name: context
+            designation: Context
+            definition: A wide view of the scene around the vehicle, wider than the overview.
+
+      - name: ReadAttributeEnum
+        change: new
+        designation: Read attribute
+        definition: The attributes of a vehicle a recognition engine can recognise.
+        tier: 1
+        apx: LprReadDetail members
+        rationale: Names each attribute an attribute read applies to.
+        values:
+          - name: plate
+            designation: Plate
+            definition: The plate characters.
+          - name: country
+            designation: Country
+            definition: The plate issuing country.
+          - name: stateProvince
+            designation: State province
+            definition: The plate issuing state, province or other subdivision.
+          - name: plateCategory
+            designation: Plate category
+            definition: The plate category, where the issuing country uses one.
+          - name: make
+            designation: Make
+            definition: The vehicle manufacturer.
+          - name: model
+            designation: Model
+            definition: The vehicle model.
+          - name: color
+            designation: Colour
+            definition: The predominant colour of the vehicle.
+          - name: bodyType
+            designation: Body type
+            definition: The vehicle body type as the engine reports it, such as sedan or bus.
+
+      - name: VehicleMovementEnum
+        change: new
+        designation: Vehicle movement
+        definition: The motion of a vehicle relative to the camera that observed it.
+        tier: 1
+        apx: LprReadDetail.movement
+        rationale: A camera fact that lets a receiver detect wrong-way travel and tell entries from exits on gateless sites.
+        values:
+          - name: toward
+            designation: Toward
+            definition: The vehicle moved toward the camera.
+          - name: away
+            designation: Away
+            definition: The vehicle moved away from the camera.
+          - name: stopped
+            designation: Stopped
+            definition: The vehicle was stationary.
+          - name: unknown
+            designation: Unknown
+            definition: The motion could not be determined.
+
+      - name: PlateFaceEnum
+        change: new
+        designation: Plate face
+        definition: Which plate of a vehicle was read.
+        tier: 2
+        apx: LprReadDetail.plateFace
+        rationale: Lets reads of the front and rear plates of one vehicle be told apart.
+        values:
+          - name: front
+            designation: Front
+            definition: The front plate.
+          - name: rear
+            designation: Rear
+            definition: The rear plate.
+          - name: unknown
+            designation: Unknown
+            definition: The engine cannot tell.
+
+      - name: ReadReviewStateEnum
+        change: new
+        designation: Read review state
+        definition: Where an observation is in human review.
+        tier: 2
+        apx: LprReadDetail.review.state
+        rationale: Records whether a person has confirmed, corrected or rejected a read.
+        values:
+          - name: pending
+            designation: Pending
+            definition: Waiting for a reviewer.
+          - name: confirmed
+            designation: Confirmed
+            definition: A reviewer confirmed the read.
+          - name: corrected
+            designation: Corrected
+            definition: A reviewer corrected the read.
+          - name: rejected
+            designation: Rejected
+            definition: A reviewer rejected the read as unusable.
+          - name: notRequired
+            designation: Not required
+            definition: No rule sent the read to review.
+
+      - name: ReadReviewReasonEnum
+        change: new
+        designation: Read review reason
+        definition: Why an observation was sent to human review.
+        tier: 2
+        apx: registry apx-read-review-reasons
+        rationale: Lets reviewers and auditors see why a read was held. An external code list seeded with these values is an equally good home.
+        values:
+          - name: lowConfidence
+            designation: Low confidence
+            definition: The read's overall or plate confidence is below the Place's review threshold.
+          - name: noConfidence
+            designation: No confidence
+            definition: The engine reported no confidence for the read.
+          - name: jurisdictionRequiresReview
+            designation: Jurisdiction requires review
+            definition: The jurisdiction requires a person to confirm a plate before enforcement.
+          - name: ambiguousCharacters
+            designation: Ambiguous characters
+            definition: The alternate reads differ only in characters that are commonly confused.
+          - name: enforcementHandoff
+            designation: Enforcement handoff
+            definition: The read is about to be passed to an enforcement system that requires reviewed evidence.
+          - name: conflictingReads
+            designation: Conflicting reads
+            definition: Reads of the same passage disagree on the plate, country or state.
+
+      - name: DamageSeverityEnum
+        change: new
+        designation: Damage severity
+        definition: How serious a damage finding is.
+        tier: 2
+        apx: ConditionReport.damage[].severity
+        rationale: Lets damage findings be sorted and compared.
+        values:
+          - name: minor
+            designation: Minor
+            definition: Cosmetic damage.
+          - name: moderate
+            designation: Moderate
+            definition: Damage needing repair.
+          - name: major
+            designation: Major
+            definition: Serious damage.
+
+  - name: Tolling
+    location: D2Payload/Extension/Parking/Tolling
+    status: new
+    classes:
+      - name: TollTransaction
+        change: new
+        designation: Toll transaction
+        definition: A toll charge assembled from one or more observations of a vehicle at a toll point, with its price, settlement and any dispute.
+        stereotype: D2VersionedIdentifiable
+        abstract: false
+        parent: null
+        level: B
+        tier: 2
+        apx: TollTransaction (APX Part 15)
+        rationale: >-
+          APDS has the observation, the price and the payment but nothing that
+          ties them into one charge a customer can dispute; this is the link.
+        attributes:
+          - name: tollPoint
+            designation: Toll point
+            definition: The supplemental equipment where the vehicle was charged.
+            multiplicity: 1..1
+            type: PkCommon.Reference (Place.SupplementalEquipment)
+          - name: observationElementId
+            designation: Observation element id
+            definition: The observations the charge is built from.
+            multiplicity: 0..*
+            type: PkCommon.Reference (Observation.ObservationElement)
+          - name: credentialType
+            designation: Credential type
+            definition: The type of credential observed, such as a licence plate or transponder.
+            multiplicity: 0..1
+            type: Right.CredentialTypeEnum
+          - name: credentialIdentification
+            designation: Credential identification
+            definition: The plate string or transponder identifier as read.
+            multiplicity: 0..1
+            type: PkCommon.String
+          - name: pricing
+            designation: Pricing
+            definition: The amount charged.
+            multiplicity: 0..1
+            type: PkCommon.AmountInCurrency
+          - name: paymentId
+            designation: Payment id
+            definition: The payment that settles the charge.
+            multiplicity: 0..1
+            type: PkCommon.Reference (Right.Payment)
+          - name: transactionStatus
+            designation: Transaction status
+            definition: Where the charge is in its lifecycle.
+            multiplicity: 1..1
+            type: Tolling.TollTransactionStatusEnum
+        associations:
+          - end: tollDispute
+            designation: Toll dispute
+            definition: Toll dispute for the associated TollTransaction
+            multiplicity: 0..1
+            target: Tolling.TollDispute
+
+      - name: TollDispute
+        change: new
+        designation: Toll dispute
+        definition: A challenge to a toll charge and its outcome.
+        stereotype: D2Class
+        abstract: false
+        parent: null
+        level: B
+        tier: 2
+        apx: TollTransaction.dispute (APX Part 15 §15.1)
+        rationale: Records why a charge was challenged and how it was settled, including the price before any adjustment.
+        attributes:
+          - name: disputeReason
+            designation: Dispute reason
+            definition: Why the charge was challenged.
+            multiplicity: 1..1
+            type: Tolling.TollDisputeReasonEnum
+          - name: openedTime
+            designation: Opened time
+            definition: The date/time the dispute was opened.
+            multiplicity: 0..1
+            type: PkCommon.DateTime
+          - name: resolvedTime
+            designation: Resolved time
+            definition: The date/time the dispute was resolved.
+            multiplicity: 0..1
+            type: PkCommon.DateTime
+          - name: disputeResolution
+            designation: Dispute resolution
+            definition: How the dispute was resolved.
+            multiplicity: 0..1
+            type: Tolling.TollDisputeResolutionEnum
+          - name: disputedBy
+            designation: Disputed by
+            definition: The party on whose behalf the dispute was raised; absent when the operator raised it.
+            multiplicity: 0..1
+            type: PkCommon.Reference
+          - name: originalPricing
+            designation: Original pricing
+            definition: The amount charged before an adjusting resolution changed it.
+            multiplicity: 0..1
+            type: PkCommon.AmountInCurrency
+
+    enumerations:
+      - name: TollTransactionStatusEnum
+        change: new
+        designation: Toll transaction status
+        definition: The lifecycle stage of a toll charge.
+        tier: 2
+        apx: TollTransaction.transactionStatus
+        rationale: Gives operator, payer and collection agency one view of a charge's progress.
+        values:
+          - name: created
+            designation: Created
+            definition: Assembled from observations, not yet priced.
+          - name: priced
+            designation: Priced
+            definition: Priced and awaiting payment.
+          - name: paid
+            designation: Paid
+            definition: Settled by a payment.
+          - name: disputed
+            designation: Disputed
+            definition: Under dispute.
+          - name: resolved
+            designation: Resolved
+            definition: A dispute has been resolved.
+          - name: voided
+            designation: Voided
+            definition: Cancelled by the operator.
+
+      - name: TollDisputeReasonEnum
+        change: new
+        designation: Toll dispute reason
+        definition: Why a toll charge was challenged.
+        tier: 2
+        apx: registry apx-toll-dispute-reasons
+        rationale: Lets disputes be reported consistently across operators.
+        values:
+          - name: wrongVehicle
+            designation: Wrong vehicle
+            definition: The charged vehicle is not the disputing party's, for example a misread or cloned plate.
+          - name: duplicateCharge
+            designation: Duplicate charge
+            definition: The same passage was charged more than once.
+          - name: wrongClass
+            designation: Wrong class
+            definition: The vehicle class used for pricing is wrong.
+          - name: notLiable
+            designation: Not liable
+            definition: The party is not liable for the passage, for example an exempt, sold or stolen vehicle.
+          - name: other
+            designation: Other
+            definition: Any other reason.
+
+      - name: TollDisputeResolutionEnum
+        change: new
+        designation: Toll dispute resolution
+        definition: How a toll dispute was resolved.
+        tier: 2
+        apx: registry apx-toll-dispute-resolutions
+        rationale: Lets dispute outcomes be reported consistently across operators.
+        values:
+          - name: upheld
+            designation: Upheld
+            definition: The charge stands as priced.
+          - name: refunded
+            designation: Refunded
+            definition: The money is returned.
+          - name: adjusted
+            designation: Adjusted
+            definition: A new amount is owed.
+          - name: withdrawn
+            designation: Withdrawn
+            definition: The disputing party abandoned the dispute and the charge stands.
