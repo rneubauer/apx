@@ -21,8 +21,11 @@ changed).
   exact required fields, plus a proposed Tier 1 shortlist of data elements
   for ISO TS 5206-1 with required and optional attributes.
 - APDS change requests, Part B: a suggestion to add lane equipment
-  (`gate`, `barrier`, `lprCamera`, `ticketDispenser`, `intercom`) to
-  `EquipmentTypeEnum`.
+  (`gate`, `barrier`, `ticketDispenser`, `intercom`) to
+  `EquipmentTypeEnum`. Part B rows are now checked against the APDS 4.1
+  Data Dictionary as well as the API document: `lprCamera`, a `refund`
+  payment type and an identifiable `RightHolder` are already in the
+  Dictionary, and the rows say so.
 - `packages/simulator` now implements every operation in the bundle
   (181/181): Part 24 plate lists (lists, entries, the change feed on both,
   `apx.platelists.changed.v1`, arrival alerts), the LPR read routes

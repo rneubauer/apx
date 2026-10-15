@@ -63,9 +63,10 @@ three rules:
 | `PlateListPlaceFlags` | New | Hierarchy (scope) | `place` | `enforced`, `alertOnArrival`, `refuseService` |
 | `extensions` on `ContactPoint` | Ext | Contact | — | container only |
 
-Devices use only APDS equipment names. APDS has no gate, barrier,
-camera, ticket dispenser or intercom value, so we are asking for those to
-be added to `EquipmentTypeEnum` (see [Decided](#decided)).
+Devices use only APDS equipment names. The APDS 4.1 Data Dictionary has
+`lprCamera`, `securityCamera` and `occupancySensor` (the API document does
+not yet), but no gate, barrier, ticket dispenser or intercom value, so we
+are asking for those to be added to `EquipmentTypeEnum` (see [Decided](#decided)).
 
 ## Rights Data
 
@@ -253,9 +254,11 @@ charging (experimental).
 
 - **Equipment types (2026-10-14).** Devices use APDS
   `EquipmentTypeEnum` names only, and we do not create an APX device-type
-  registry. That enum has no gate, barrier, LPR camera, ticket dispenser
-  or intercom; its only lane-relevant values are `paymentMachine`,
-  `tollTerminal`, `dsrcReceiver`, `electricChargingStation` and `other`.
+  registry. In the APDS 4.1 Data Dictionary that enum has `lprCamera`,
+  `securityCamera` and `occupancySensor` (missing from the API document),
+  `paymentMachine`, `tollTerminal`, `dsrcReceiver`,
+  `electricChargingStation` and `other`, but no gate, barrier, ticket
+  dispenser or intercom.
   So rather than typing lane devices as `other`, we will ask for the
   missing values to be added to `EquipmentTypeEnum` itself. This is
   [Part B of the APDS change requests](apds-change-requests.md#part-b--additions-apds-could-consider).
