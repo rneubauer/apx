@@ -27,6 +27,23 @@ changed).
   refuses anything APDS already defines. `npm test` and CI run it with
   `--check`. The README now says the API is APX's preferred implementation
   specification, kept separate from the data-element proposals.
+- `docs/apx-specification/`: the APX Specification document set, in the
+  form of the APDS 4.1 documentation, covering everything in the API and
+  everything APX asks of APDS: 01 Overview, 02 Information Model (module
+  narratives with generated class diagrams), 03 Data Dictionary (every
+  class, attribute, association, enumeration and code list, in the APDS
+  table format), 04 Use Case Document (the 32 scenarios), 05 Interface
+  Specification (every operation and webhook) and 06 Requests to APDS
+  (errata, Data Dictionary differences C-015 to C-025 as unfiled
+  candidates, new enumeration values, the proposed data elements and other
+  suggestions). 02, 03, 05 and 06 are built from `spec/dist/apx-v1.yaml`
+  and `docs/apx-specification/src/` by `tools/build-apx-docs.mjs`;
+  `npm test` and CI run it with `--check`. `npm run apxdocs:pdf` renders
+  print-ready PDFs.
+- Docs overlay: the Charging tag joins the "Vehicles and access" group, so
+  the reference navigation shows the charging routes (editorial).
+- APDS change requests: the suggestion to add `GET`/`PUT
+  /observations/{id}` is withdrawn; APDS 4.1 already defines both.
 - `docs/data-model-by-domain.md`: every APX schema placed on the APDS
   high-level data map (APDS, extension, new element, or API-only), with
   exact required fields, plus a proposed Tier 1 shortlist of data elements

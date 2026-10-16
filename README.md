@@ -14,7 +14,9 @@ to APDS for its data model in the [APX Data Specification](docs/apds-submission/
 (Overview, Information Model, Data Dictionary and Use Case Document, in the
 form of the APDS 4.1 documents). The API in this repository is APX's
 preferred implementation specification on top of APDS; it is not proposed
-for the data model.
+for the data model. The [APX Specification documents](docs/apx-specification/README.md)
+describe both tracks in the same form: everything the API defines, and
+everything APX asks APDS to add or change.
 
 **New here?** Read the [executive summary](docs/executive-summary.md) (shareable, non-technical), the [complete API overview](docs/apx-overview.md) (every route + the reasoning, no APDS knowledge needed), the [sample scenarios](docs/scenarios/README.md) (real wire exchanges, story first), or the [quickstart](docs/quickstart.md). **Want to see it run?** Open the [simulator](https://rneubauer.github.io/apx/simulator/) in your browser — every APX route, narrated demos, and the full vetting suite, nothing to install ([about the simulator](packages/simulator/README.md)). **PARCS vendor?** Start with the [PARCS Starter Profile](docs/parcs-starter-profile.md) — the minimum 26-endpoint surface, with a slim importable spec (`spec/dist/apx-parcs.json`).
 

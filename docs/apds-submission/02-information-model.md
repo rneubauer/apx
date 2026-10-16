@@ -1761,7 +1761,7 @@ Each proposal comes from a data element already used in APX. This annex lists wh
 | `ChargingBayPresence` | EnergyInfrastructure | APX Part 23 §23.3 ChargingBayPresence |
 | `ChargingSession` | EnergyInfrastructure | APX Part 23 §23.2 ChargingSession |
 | `ChargingCost` | EnergyInfrastructure | APX Part 23 §23.5 ChargingSession.cost |
-| `ChargingIdleTerms` | EnergyInfrastructure | APX Part 23 §23.10 ChargingSession.idlePolicy |
+| `ChargingIdleTerms` | EnergyInfrastructure | APX Part 23 §23.2, §23.5 ChargingSession.idlePolicy |
 | `BayPresenceEnum` | EnergyInfrastructure | APX Part 23 §23.3 ChargingBayPresence.presence |
 | `BayPresenceSourceEnum` | EnergyInfrastructure | APX Part 23 §23.3 ChargingBayPresence.source |
 | `ChargingSessionStatusEnum` | EnergyInfrastructure | APX Part 23 §23.2 ChargingSession.chargingStatus |
@@ -1772,7 +1772,7 @@ Each proposal comes from a data element already used in APX. This annex lists wh
 | `InteractionChannelEnum` | PkCommon | APX Parts 13, 17, 20 and 22 channel values |
 | `Violation` | Enforcement | APX Part 19 §19.1 Violation |
 | `ViolationDetection` | Enforcement | APX Part 19 §19.4 ViolationDetection |
-| `Notice` | Enforcement | APX Part 19 §19.5 Violation.notice |
+| `Notice` | Enforcement | APX Part 19 §19.1–19.2 Violation.notice |
 | `Appeal` | Enforcement | APX Part 19 §19.6 Violation.appeal |
 | `EnforcementPolicy` | Enforcement | APX Part 19 §19.10 EnforcementPolicy |
 | `NoticeDeliveryRule` | Enforcement | APX Part 19 §19.10 EnforcementPolicy.deliveryRules |
@@ -1781,8 +1781,8 @@ Each proposal comes from a data element already used in APX. This annex lists wh
 | `ViolationTypeEnum` | Enforcement | APX Part 11 code list (violation types) |
 | `ViolationStatusEnum` | Enforcement | APX Part 19 §19.1 Violation.violationStatus |
 | `DetectionModeEnum` | Enforcement | APX Part 19 §19.4 ViolationDetection.mode |
-| `NoticeKindEnum` | Enforcement | APX Part 19 §19.5 Violation.notice.noticeKind |
-| `NoticeDeliveryMethodEnum` | Enforcement | APX Part 19 §19.5 Violation.notice.deliveryMethod |
+| `NoticeKindEnum` | Enforcement | APX Part 19 §19.1–19.2 Violation.notice.noticeKind |
+| `NoticeDeliveryMethodEnum` | Enforcement | APX Part 19 §19.1–19.2 Violation.notice.deliveryMethod |
 | `AppealReasonEnum` | Enforcement | APX Part 19 §19.6 Violation.appeal.reason |
 | `AppealResolutionEnum` | Enforcement | APX Part 19 §19.6 Violation.appeal.resolution |
 | `Alert` | Operations | APX Part 7 §7.1 Alert |

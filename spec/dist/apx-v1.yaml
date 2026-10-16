@@ -24950,6 +24950,7 @@ x-tagGroups:
       - LPR
       - Credentials
       - Valet
+      - Charging
   - name: Enforcement and service
     tags:
       - Violations
