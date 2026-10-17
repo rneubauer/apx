@@ -8,7 +8,9 @@ The machine-readable spec (`spec/openapi/apx.yaml`, bundled as
 
 ## [Unreleased]
 
-No normative change. The only bundle edit is editorial: the `DeviceStatus`
+One additive normative change: the bundle now mounts the APDS 4.1 native
+routes `GET`/`PUT`/`DELETE /observations/{id}` and `GET /quotes/{id}`,
+which it had left out. The other bundle edit is editorial: the `DeviceStatus`
 description now says exactly how device states relate to APDS
 `RefillPointStatusEnum`, which covers refill points only. The reference simulator now covers the Part 19 behaviour
 adopted in 0.14.0, and the vetting suite cites every APX-VIO row. Part 12's
@@ -16,6 +18,19 @@ problem-type table loses a stray merge-conflict marker (editorial; no row
 changed).
 
 **Added.**
+- Native routes `GET`, `PUT` and `DELETE /observations/{id}` and
+  `GET /quotes/{id}`, mounted verbatim from APDS 4.1. Earlier text (LPR
+  findings F-LPR-12 and F-LPR-16, and the `observation` parameter of
+  `GET /v1/lpr/reads`) said APDS lacked them; it does not. The data
+  overlay gives them the shared 401/403/429 and the problem+json
+  alternative, and gives `PUT /observations/{id}` the §5.1 update modes,
+  a request body and a 400, which APDS leaves out (candidate C-026 in
+  `docs/apx-specification/06-apds-requests.md`, not yet filed). A
+  replacement through the native `PUT` publishes
+  `apx.data.observation.updated.v1`. `PUT
+  /v1/lpr/reads/{observation}/access-event` and `?observation=` stay. Both
+  routes join the PARCS Starter Profile, and the simulator implements
+  them.
 - `docs/apds-submission/`: the APX Data Specification for the APDS
   committee, in the form of the APDS 4.1 documents: an Overview, an
   Information Model, a Data Dictionary in the APDS table format, and a Use
@@ -34,7 +49,7 @@ changed).
   class, attribute, association, enumeration and code list, in the APDS
   table format), 04 Use Case Document (the 32 scenarios), 05 Interface
   Specification (every operation and webhook) and 06 Requests to APDS
-  (errata, Data Dictionary differences C-015 to C-025 as unfiled
+  (errata, Data Dictionary differences C-015 to C-026 as unfiled
   candidates, new enumeration values, the proposed data elements and other
   suggestions). 02, 03, 05 and 06 are built from `spec/dist/apx-v1.yaml`
   and `docs/apx-specification/src/` by `tools/build-apx-docs.mjs`;
@@ -55,7 +70,7 @@ changed).
   payment type and an identifiable `RightHolder` are already in the
   Dictionary, and the rows say so.
 - `packages/simulator` now implements every operation in the bundle
-  (181/181): Part 24 plate lists (lists, entries, the change feed on both,
+  (185/185): Part 24 plate lists (lists, entries, the change feed on both,
   `apx.platelists.changed.v1`, arrival alerts), the LPR read routes
   (`GET /v1/lpr/reads/{observation}`, `POST /v1/lpr/reads:search`,
   `PUT /v1/lpr/reads/{observation}/plate`), `GET /v1/digest-keys`,

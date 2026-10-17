@@ -1016,6 +1016,21 @@ classDiagram
     +Reference target
   }
   <<proposed>> MatchEvidence
+  class ObservationElementChangePayload {
+    +String id
+    +Integer version
+    +ObservationTypeEnum method
+    +String observer
+    +CredentialTypeEnum type
+    +String observedCredentialId
+    +DateTime observationStartTime
+    +DateTime observationEndTime
+    +Object[] description
+    +DateTime creationDateTime
+    +Object location
+    +Object[] images
+    +5 more in 03
+  }
   class OccupancyHistoryPage {
     +Duration interval
     +DateTime from
@@ -1097,6 +1112,7 @@ classDiagram
   ChangeFeedTombstones --> "0..*" DeletedReference : item
   ContactPointChangePayload --> "0..1" Extensions : extensions
   HierarchyElementChangePayload --> "0..1" Extensions : extensions
+  ObservationElementChangePayload --> "0..1" Extensions : extensions
   OccupancyHistoryPage --> "0..1" Extensions : extensions
   OccupancySnapshot --> "0..1" Supply : supply
   OccupancySnapshot --> "0..1" DemandType : demand
@@ -1134,6 +1150,7 @@ classDiagram
 | `ContactPointChangePayload` | A change-mode body for native `PUT /contacts/{contactId}` (Part 5 §5.1a): `id` plus only the ContactPoint members that changed; an absent member is unchanged and an explicit `null` clears it. Every member present is checked against the class, and a member the class does not define is refused. Generated at build time (tools/change-payloads.mjs); the generic ChangePayload remains the shape of change-feed items. | 15 | APX only |
 | `HierarchyElementChangePayload` | A change-mode body for native `PUT /places/{id}` (Part 5 §5.1a): `id` plus only the HierarchyElement members that changed; an absent member is unchanged and an explicit `null` clears it. Every member present is checked against the class, and a member the class does not define is refused. Generated at build time (tools/change-payloads.mjs); the generic ChangePayload remains the shape of change-feed items. | 33 | APX only |
 | `MatchEvidence` | How a link to a Session was established and how sure it is (Part 5 §5.8; shared by the `matches[]` member of `apds-ext:apx:session-detail@1.0` and the decoration `apds-ext:apx:match-evidence@1.0` on a Violation or ValetTicket). Carries no plate characters and no vehicle attribute values (Part 9 §9.6). Where both ends of one link carry evidence (the Session's `matches[]` entry and the decoration on the Violation or ValetTicket), the two MUST agree. Evidence with `plate.method: lenient` or `applied: false` may excuse a stay but never accuse one: `issue` on a Violation resting on it is 409 `violation-not-issuable` (Part 19 §19.4 rule 5). | 13 | Proposed: MatchEvidence (Tier 3); Proposed: MatchTypeEnum (Tier 3); Proposed: MatchDecisionEnum (Tier 3) |
+| `ObservationElementChangePayload` | A change-mode body for native `PUT /observations/{id}` (Part 5 §5.1a): `id` plus only the ObservationElement members that changed; an absent member is unchanged and an explicit `null` clears it. Every member present is checked against the class, and a member the class does not define is refused. Generated at build time (tools/change-payloads.mjs); the generic ChangePayload remains the shape of change-feed items. | 18 | APX only |
 | `OccupancyHistoryPage` | Occupancy per clock interval for one HierarchyElement (Part 5 §5.5a): the history behind the §5.5 snapshot, derived from the APDS DemandTable records the implementation holds. Buckets are aligned to the interval boundary in the place's time zone; a bucket with no demand record carries no counts, never a guess. | 11 | Proposed: DemandType (Tier 3) |
 | `OccupancySnapshot` | Current occupancy for one HierarchyElement, computed from the APDS occupancy model (Supply + DemandTable) that natively lives in the Place hierarchy. A convenience READ (Part 5 §5.5): the Place payload remains the source of truth; this answers "how full is it right now" without pulling the hierarchy. Composed entirely of verbatim APDS occupancy classes — APX adds no parallel occupancy datatypes. | 13 | APX only |
 | `RateTableChangePayload` | A change-mode body for native `PUT /rates/{id}` (Part 5 §5.1a): `id` plus only the RateTable members that changed; an absent member is unchanged and an explicit `null` clears it. Every member present is checked against the class, and a member the class does not define is refused. Generated at build time (tools/change-payloads.mjs); the generic ChangePayload remains the shape of change-feed items. | 13 | APX only |

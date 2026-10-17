@@ -44,11 +44,11 @@ committee text for any item the group would like to take up.
 | Part | What it covers | Correction | Omission | Suggestion | Addition | Total |
 | --- | --- | ---: | ---: | ---: | ---: | ---: |
 | A | Corrections to the API document (errata 001–014, filed) | 7 | 4 | 3 | – | 14 |
-| B | Data Dictionary items missing from, or typed differently in, the API document (candidates C-015–C-025, not yet filed) | – | 11 | – | – | 11 |
+| B | Data Dictionary items missing from, or typed differently in, the API document, and one request-body omission (candidates C-015–C-026, not yet filed) | – | 12 | – | – | 12 |
 | C | New values for existing APDS enumerations | – | – | – | 4 | 4 |
 | D | New data elements (classes, attributes, enumerations); the tier tables in Part D also repeat the 4 Part C rows | – | – | – | 115 | 115 |
 | E | Other suggestions | – | – | 5 | – | 5 |
-| | **Total** | **7** | **15** | **8** | **119** | **149** |
+| | **Total** | **7** | **16** | **8** | **119** | **150** |
 
 Notes on the counts:
 
@@ -219,6 +219,7 @@ would like them filed.
 | C-023 | `UnitOfMeasureEnum` (A.3.70, Table A.194) includes `kilogrammes`, `pounds` and `gpmi` | No `kilogrammes` or `pounds`; has `gpm` where the Data Dictionary has `gpmi` | Add `kilogrammes` and `pounds`; align `gpm`/`gpmi` | None needed |
 | C-024 | Accessibility enumeration (A.3.2, `AccessibilityEnum`) has `accessForPersonsWithDisabilities` and `disabledMarked` | `AccessibilityTypeEnum` has `disabledAccessible` and `disabledMarkedThere` instead | Align the two values | None needed |
 | C-025 | `RightSpecification.transferableConditions` reads as `PkCommon.MultilingualString` (tentative; see below) | `boolean` | Confirm the type, and align the API document if a statement was intended | None needed |
+| C-026 | `ObservationElement` has an `observationElementRecordUpdate` association (Table A.46), so an Observation can be updated | `PUT /observations/{id}` declares no request body and no 400 | Declare an `ObservationElement` request body and a 400, as on the other `PUT` operations | The data overlay declares both |
 
 ### C-015 — Refill point status
 
@@ -261,6 +262,16 @@ under which a RightSpecification may be transferred", which reads as
 `transferableConditions` as boolean. The columns of that table are
 misaligned in the PDF, so we would be grateful if the group could
 confirm the intended types before anything is filed.
+
+### C-026 — Request body for `PUT /observations/{id}`
+
+Unlike the other candidates, this one comes from the API document alone.
+`PUT /observations/{id}` is described as "update the given Observation",
+but it declares no request body, so a client cannot tell from the
+document what to send. It also declares no 400, which every other `PUT`
+does. It is the same kind of omission as erratum 007 (`POST /quotes`).
+APX declares an optional `ObservationElement` body and the 400 in its
+data overlay, leaving the vendored document untouched.
 
 ### C-019 to C-024 — Smaller value differences
 
@@ -543,7 +554,7 @@ covered by Part C (`PaymentTypeEnum`) or Part D (`Payment` outcomes).
    happy to keep it in its own profile.
 3. **Tier order.** Do the tiers suit the working groups' calendar, or
    would the group rather take a domain at a time?
-4. **Filing the Part B candidates.** Would the group like C-015 to C-025
+4. **Filing the Part B candidates.** Would the group like C-015 to C-026
    filed as issues on `parkingdata/spec`, as one combined issue, or
    handled within the Data Dictionary process?
 5. **Payment type names.** In C-017, are `payment` (API document) and

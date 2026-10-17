@@ -52,7 +52,7 @@ can be read on its own.
 
 ## Operations at a glance
 
-The APX OpenAPI document declares 181 operations and 6 webhooks. 36 operations are APDS 4.1 native routes that APX carries; the rest are defined by APX.
+The APX OpenAPI document declares 185 operations and 6 webhooks. 40 operations are APDS 4.1 native routes that APX carries; the rest are defined by APX.
 
 | Group | Tag | Operations |
 | --- | --- | --- |
@@ -76,13 +76,13 @@ The APX OpenAPI document declares 181 operations and 6 webhooks. 36 operations a
 | Enforcement and service | Support | 4 |
 | Webhooks (event deliveries) | Webhooks | 6 |
 | APDS 4.1 native routes | Places | 5 |
-| APDS 4.1 native routes | Observation | 2 |
+| APDS 4.1 native routes | Observation | 5 |
 | APDS 4.1 native routes | Organisations | 5 |
 | APDS 4.1 native routes | Right Specifications | 5 |
 | APDS 4.1 native routes | Rate Tables | 5 |
 | APDS 4.1 native routes | Sessions | 5 |
 | APDS 4.1 native routes | Assigned Rights | 5 |
-| APDS 4.1 native routes | Quote | 2 |
+| APDS 4.1 native routes | Quote | 3 |
 
 ## 1 Start here
 
@@ -2081,7 +2081,7 @@ The APX OpenAPI document declares 181 operations and 6 webhooks. 36 operations a
 | --- | --- | --- | --- | --- |
 | `plate` | query | no | string |  |
 | `ticket` | query | no | string |  |
-| `observation` | query | no | string uuid | Lookup by the underlying APDS Observation id — the read-back route for one ingested read (APDS 4.1 has no GET /observations/{id}). |
+| `observation` | query | no | string uuid | Lookup by the underlying APDS Observation id. Returns the LprRead projection of one ingested read; the stored ObservationElement itself is native GET /observations/{id}. |
 | `session` | query | no | string uuid | The reads behind one APDS Session — its entry and exit reads and every read of their passages (Part 13 §13.3a(6)). A Session at a place outside the caller's `apx_places` grant is 403 `insufficient-grant` (Part 13 §13.5(4)). |
 | `place` | query | no | string uuid | Narrow results below the grant to one HierarchyElement and its subtree (Part 13 §13.5(3)). A place outside the caller's `apx_places` grant is 403 `insufficient-grant`. Servers that do not narrow MAY ignore it. |
 | `page` | query | no | integer | The page number for paginated responses. |
@@ -4398,6 +4398,9 @@ The APX OpenAPI document declares 181 operations and 6 webhooks. 36 operations a
 | --- | --- | --- | --- |
 | GET | `/observations` | get list of recorded observations |  |
 | POST | `/observations` | create an Observation or Observation Set |  |
+| GET | `/observations/{id}` | get a specific observation element |  |
+| PUT | `/observations/{id}` | update a specific observation element |  |
+| DELETE | `/observations/{id}` | delete a specific observation element |  |
 
 #### 7.2.1 GET /observations
 
@@ -4450,6 +4453,79 @@ The APX OpenAPI document declares 181 operations and 6 webhooks. 36 operations a
 | 401 | Problem | Missing, malformed, expired, or revoked access token (problem type `unauthenticated`, Part 12). |
 | 403 | Problem | Insufficient scope (problem type `insufficient-scope`) or place grant (`insufficient-grant`) for this operation (Part 9). |
 | 409 | ResponseStatus | Observation can not be created due to conflict (id already exists). APX: with `Accept: application/problem+json`, problem type `id-collision`. |
+| 429 | Problem | Rate limited (problem type `rate-limited`, Part 12). |
+
+#### 7.2.3 GET /observations/{id}
+
+**get a specific observation element.** get the latest version of a given `Observation` by its identifier (or a particular previous version when provided as a query parameter)
+
+| Item | Value |
+| --- | --- |
+| Operation id | `get-observation-id` |
+| Origin | APDS 4.1 native route |
+| Scopes | none |
+| Request body | — |
+
+| Parameter | In | Required | Type | Description |
+| --- | --- | --- | --- | --- |
+| `id` | path | yes | string | unique observation identifier |
+| `version` | query | no | integer | Previous version number. Useful when a reference to a resource version is found in another dataset, and that version is no longer the latest one. Latest version is assumed when this parameter is not used. |
+
+| Response | Body | Meaning |
+| --- | --- | --- |
+| 200 | ObservationElement | OK |
+| 401 | Problem | Missing, malformed, expired, or revoked access token (problem type `unauthenticated`, Part 12). |
+| 403 | Problem | Insufficient scope (problem type `insufficient-scope`) or place grant (`insufficient-grant`) for this operation (Part 9). |
+| 404 | ResponseStatus | Not Found. APX (Part 5 §5.1a, Part 12 §12.1): a client sending `Accept: application/problem+json` receives problem type `target-not-found` instead of ResponseStatus. |
+| 429 | Problem | Rate limited (problem type `rate-limited`, Part 12). |
+
+#### 7.2.4 PUT /observations/{id}
+
+**update a specific observation element.** update the given `Observation`
+
+| Item | Value |
+| --- | --- |
+| Operation id | `update-observation-id` |
+| Origin | APDS 4.1 native route |
+| Scopes | none |
+| Request body | ObservationElement / ObservationElementChangePayload |
+
+| Parameter | In | Required | Type | Description |
+| --- | --- | --- | --- | --- |
+| `id` | path | yes | string | unique observation identifier |
+| `APX-Update-Mode` | header | no | string (full, change) | APX data profile (Part 5 §5.1). `full` (default, stock APDS behavior): the body is the complete current state. `change`: the body is a ChangePayload — identity plus only the changed members; absent = unchanged, explicit null = clear. A stale `version` in change mode is 409 `version-conflict`. |
+
+| Response | Body | Meaning |
+| --- | --- | --- |
+| 200 | ResponseStatus | OK |
+| 400 | ResponseStatus | Observation can not be updated due to invalid or missing data. APX: with `Accept: application/problem+json`, problem type `invalid-request`. |
+| 401 | Problem | Missing, malformed, expired, or revoked access token (problem type `unauthenticated`, Part 12). |
+| 403 | Problem | Insufficient scope (problem type `insufficient-scope`) or place grant (`insufficient-grant`) for this operation (Part 9). |
+| 404 | ResponseStatus | Not Found. APX (Part 5 §5.1a, Part 12 §12.1): a client sending `Accept: application/problem+json` receives problem type `target-not-found` instead of ResponseStatus. |
+| 409 | ResponseStatus | Conflict. APX (Part 5 §5.1a, Part 12 §12.1): a client sending `Accept: application/problem+json` receives problem type `version-conflict` (stale `version`) instead of ResponseStatus. |
+| 429 | Problem | Rate limited (problem type `rate-limited`, Part 12). |
+
+#### 7.2.5 DELETE /observations/{id}
+
+**delete a specific observation element.** delete the given `Observation`
+
+| Item | Value |
+| --- | --- |
+| Operation id | `delete-observation-id` |
+| Origin | APDS 4.1 native route |
+| Scopes | none |
+| Request body | — |
+
+| Parameter | In | Required | Type | Description |
+| --- | --- | --- | --- | --- |
+| `id` | path | yes | string | unique observation identifier |
+
+| Response | Body | Meaning |
+| --- | --- | --- |
+| 200 | ResponseStatus | OK |
+| 401 | Problem | Missing, malformed, expired, or revoked access token (problem type `unauthenticated`, Part 12). |
+| 403 | Problem | Insufficient scope (problem type `insufficient-scope`) or place grant (`insufficient-grant`) for this operation (Part 9). |
+| 404 | ResponseStatus | Not Found. APX (Part 5 §5.1a, Part 12 §12.1): a client sending `Accept: application/problem+json` receives problem type `target-not-found` instead of ResponseStatus. |
 | 429 | Problem | Rate limited (problem type `rate-limited`, Part 12). |
 
 ### 7.3 Organisations
@@ -5153,6 +5229,7 @@ The APX OpenAPI document declares 181 operations and 6 webhooks. 36 operations a
 | --- | --- | --- | --- |
 | GET | `/quotes` | get quotes |  |
 | POST | `/quotes` | create quote request |  |
+| GET | `/quotes/{id}` | get details of a specific quote |  |
 
 #### 7.8.1 GET /quotes
 
@@ -5198,6 +5275,29 @@ The APX OpenAPI document declares 181 operations and 6 webhooks. 36 operations a
 | 200 | PaginatedListMeta / object | OK |
 | 401 | Problem | Missing, malformed, expired, or revoked access token (problem type `unauthenticated`, Part 12). |
 | 403 | Problem | Insufficient scope (problem type `insufficient-scope`) or place grant (`insufficient-grant`) for this operation (Part 9). |
+| 429 | Problem | Rate limited (problem type `rate-limited`, Part 12). |
+
+#### 7.8.3 GET /quotes/{id}
+
+**get details of a specific quote.** get details of quote identified by `id`
+
+| Item | Value |
+| --- | --- |
+| Operation id | `get-quote-id` |
+| Origin | APDS 4.1 native route |
+| Scopes | none |
+| Request body | — |
+
+| Parameter | In | Required | Type | Description |
+| --- | --- | --- | --- | --- |
+| `id` | path | yes | string | unique id of the quote |
+
+| Response | Body | Meaning |
+| --- | --- | --- |
+| 200 | QuoteRightRequest / QuoteRightResponse / QuoteSessionExtensionRequest / QuoteSessionExtensionResponse | OK |
+| 401 | Problem | Missing, malformed, expired, or revoked access token (problem type `unauthenticated`, Part 12). |
+| 403 | Problem | Insufficient scope (problem type `insufficient-scope`) or place grant (`insufficient-grant`) for this operation (Part 9). |
+| 404 | ResponseStatus | Not Found. APX (Part 5 §5.1a, Part 12 §12.1): a client sending `Accept: application/problem+json` receives problem type `target-not-found` instead of ResponseStatus. |
 | 429 | Problem | Rate limited (problem type `rate-limited`, Part 12). |
 
 ## Annex S (informative) Security schemes and scopes

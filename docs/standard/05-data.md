@@ -3,7 +3,8 @@
 The `apx-data` conformance class. APX defines **no parallel data routes**:
 pull and push use APDS 4.1's own endpoints (`/places`, `/observations`,
 `/contacts`, `/rights/specs`, `/rights/assigned`, `/rates`, `/sessions`,
-`/quotes`), mounted verbatim. This Part defines the additive behavior APDS
+`/quotes`, and the by-id routes APDS defines under them, such as
+`/observations/{id}` and `/quotes/{id}`), mounted verbatim. This Part defines the additive behavior APDS
 leaves open.
 
 ## 5.1 Update modes (generalizing APDS Use Case C.1.1.6)
@@ -338,6 +339,10 @@ way that breaks a stock client:
 - `POST /quotes` declares no request body in APDS; the overlay declares
   an optional `QuoteRightRequest | QuoteSessionExtensionRequest`.
   `GET /quotes` returns the single matching quote object, not a list.
+- `PUT /observations/{id}` declares no request body and no 400 in APDS;
+  the overlay declares an optional `anyOf [ObservationElement,
+  <Class>ChangePayload]` with the §5.1 header, and the 400, as on the
+  other native `PUT`s (candidate C-026, not yet filed).
 
 ## 5.8 Session detail written by a pairing engine (normative)
 
