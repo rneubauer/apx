@@ -369,7 +369,7 @@ packages:
         parent: null
         level: B
         tier: 3
-        apx: APX Part 23 §23.10 ChargingSession.idlePolicy
+        apx: APX Part 23 §23.2, §23.5 ChargingSession.idlePolicy
         rationale: >-
           Lets a driver be told, and later shown, the grace period and idle rate that applied to
           their charge.

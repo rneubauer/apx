@@ -195,7 +195,7 @@ packages:
         parent: null
         level: C
         tier: 1
-        apx: APX Part 19 §19.5 Violation.notice
+        apx: APX Part 19 §19.1–19.2 Violation.notice
         rationale: >-
           The notice number is how drivers, processing agencies and courts refer to a violation, so
           it must travel with it.
@@ -605,7 +605,7 @@ packages:
         designation: Notice kind
         definition: The kinds of notice that may be issued for a violation.
         tier: 1
-        apx: APX Part 19 §19.5 Violation.notice.noticeKind
+        apx: APX Part 19 §19.1–19.2 Violation.notice.noticeKind
         rationale: >-
           Receivers need to tell a warning with nothing to pay from a payable notice or a statutory
           citation. These values are a first draft for the group's review; the names of notices
@@ -641,7 +641,7 @@ packages:
         designation: Notice delivery method
         definition: How a notice reaches the keeper or driver of a vehicle.
         tier: 1
-        apx: APX Part 19 §19.5 Violation.notice.deliveryMethod
+        apx: APX Part 19 §19.1–19.2 Violation.notice.deliveryMethod
         rationale: >-
           Jurisdictions often allow some methods only for some detection modes, so the method must
           be recorded. These values are a first draft for the group's review.

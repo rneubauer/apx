@@ -32,6 +32,8 @@ jobs:
         run: npm run scenarios:check
       - name: APDS submission documents match their sources
         run: npm run submission:check
+      - name: APX Specification documents match the API and their sources
+        run: npm run apxdocs:check
       - name: Committed artifacts are fresh (bundle and edition manifest match source)
         run: git diff --exit-code spec/dist spec/edition.json
 

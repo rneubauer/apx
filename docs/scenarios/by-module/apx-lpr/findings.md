@@ -22,11 +22,11 @@ issue, not an edit to the vendored file.
 | F-LPR-09 | lpr | low | `PUT /v1/sessions/{id}/plate` declares no 400; Part 12 has no body-shape slug | fixed — 400 + `invalid-request` (4417f2f) |
 | F-LPR-10 | lpr | medium | Plate correction on a closed or settled session: allowed or refused is unsaid, and no refusal is declared | fixed — closed session only inside dispute window with `reason`, else 422 `session-not-open` (§17.5); registry wording widening asked of integrator |
 | F-LPR-11 | lpr | medium | `PUT /v1/sessions/{id}/plate` returns plate values under `apx.data:write`, which §9.6(1) does not list as a plate-bearing scope | fixed — §17.5: the 200 echoes only caller-supplied values; adding `apx.lpr:read` to the route's security would be breaking, so not done; §9.6(1) note asked of integrator |
-| F-LPR-12 | lpr | low | `LprRead`, `PlateCandidate`, `LprReadDetail` have no `extensions`; a vendor's extension key cannot be seen through the APX surface, and (upstream) there is no `GET /observations/{id}` | fixed — `extensions` on `LprRead`/`PlateCandidate`; `observation=` lookup on `/v1/lpr/reads` |
+| F-LPR-12 | lpr | low | `LprRead`, `PlateCandidate`, `LprReadDetail` have no `extensions`; a vendor's extension key cannot be seen through the APX surface, and (upstream) there is no `GET /observations/{id}` (corrected 2026-10-16: APDS 4.1 does define it; APX now mounts it) | fixed — `extensions` on `LprRead`/`PlateCandidate`; `observation=` lookup on `/v1/lpr/reads` |
 | F-LPR-13 | lpr | low | Retention and purge are required, but the wire shape of a purged image or read is undefined | fixed — new §13.3b; `purgedImagery` flag on `LprRead`/`PlateCandidate` |
 | F-LPR-14 | lpr | low | Place-less lookup outside the grant: empty 200 or 403 `insufficient-grant` is not fixed | fixed — Part 9 §9.3a (4417f2f) applied in §13.5(4): value keys empty 200, entity keys 403 |
 | F-LPR-15 | lpr | low | `wrongWayTravel` alert: one `relatedEntity` for two entities (Observation and Session) | fixed — §13.3a(5): `relatedEntity` is the Session, evidence under `apds-ext:apx:alert-evidence@1.0` |
-| F-LPR-16 | lpr | high | 0.12.0 tells the LPR system to revise `accessEvent` through native `PUT /observations/{id}`, a route APDS 4.1 does not have (only `GET`/`POST /observations`); `observation.updated.v1` has no trigger | fixed (0.12.1) — `PUT /v1/lpr/reads/{observation}/access-event` (`If-Match`, 409 stale, no-op on same value); all five citations updated; LPR-27/28/35 |
+| F-LPR-16 | lpr | high | 0.12.0 tells the LPR system to revise `accessEvent` through native `PUT /observations/{id}`, a route APDS 4.1 does not have (only `GET`/`POST /observations`); `observation.updated.v1` has no trigger (corrected 2026-10-16: APDS 4.1 does define it; APX now mounts it) | fixed (0.12.1) — `PUT /v1/lpr/reads/{observation}/access-event` (`If-Match`, 409 stale, no-op on same value); all five citations updated; LPR-27/28/35 |
 | F-LPR-17 | lpr | medium | (upstream APDS) `VehicularAccess` is unreachable: `HierarchyElementTypeEnum` lists `vehicularAccess` but the `HierarchyElement` discriminator mapping for it (and six other subtypes) is commented out, so a lane validates as a bare `HierarchyElement` — `accessType: "sideways"` and `lane-cameras` with `faces: "upward"` both pass | APX half fixed (0.12.1) — `lane-cameras` bound to `LaneCameras` via `Extensions` (F-LPR-19); upstream half **open** as erratum 013 (not yet filed) |
 | F-LPR-18 | lpr | low | `cameraId` MUST be unique within the Place (§13.3a(5)), but no problem type is named for a duplicate and native `PUT /places/{id}` declares no 422 | fixed (0.12.1) — 422 `request-unprocessable` declared on native `POST /places` and `PUT /places/{id}` via the data overlay (§13.3a(5)) |
 | F-LPR-19 | lpr | high | APX's own decorations are never validated: `Extensions` binds no key to a schema, so `lpr-read` with `speed: -1`, `accessEvent: "sideways"`, or a 0–100 confidence passes (LPR-33's refusals were asserted, not checked — the runner skips `invalid` bodies) | fixed (0.12.1) — `Extensions` binds `devicestatus`, `ratepolicy`, `lpr-read`, `lane-cameras`, `reservation`, `permit` (Part 4 §4.3); one private DATA scenario (`devicestatus` without `device`) and Part 4's example corrected |
@@ -230,6 +230,11 @@ cross-lookup, and the native read-back is a filtered list (`GET
 can be shown on the Observation and the event but not on any LPR
 resource.
 
+**Correction (2026-10-16).** APDS 4.1 does define
+`GET /observations/{id}` (with `PUT` and `DELETE`); the APX bundle had not
+mounted it. It is mounted now. The `observation=` lookup stays: it
+returns the `LprRead` projection, not the raw Observation.
+
 **Proposed fix.** Additive `extensions: {$ref: Extensions}` on `LprRead`
 and `PlateCandidate`, with §13.3a saying the server projects the
 Observation's `extensions` minus the APX block (which is already
@@ -311,6 +316,14 @@ native path (the overlay already adds responses and parameters to native
 routes, but not whole paths); (c) append-only: a new Observation that
 names the one it supersedes. (a) keeps APDS untouched and matches how
 F-LPR-12 was solved.
+
+**Correction (2026-10-16).** The premise was wrong: APDS 4.1 defines
+`/observations/{id}` with `GET`, `PUT` and `DELETE`, but the APX bundle
+had not mounted the path, so it looked absent. It is mounted now, with
+the §5.1 update modes, and a replacement through it publishes
+`observation.updated.v1`. The 0.12.1 route stays as the narrow,
+`If-Match`-guarded way to revise `accessEvent`. APDS's `PUT` declares no
+request body; the overlay declares one (candidate C-026).
 
 ## F-LPR-17 — (upstream APDS) The lane entity cannot be reached, so lanes are never checked
 

@@ -1534,9 +1534,9 @@ read retention simply finds nothing older than 90 days:
 ingests. **Then** the server preserves both keys on the Observation
 (tolerant reader, faithful writer, Part 4 §4.3), the event carries
 both, and the APX cross-lookup projects the APX block as `detail` and
-the vendor key in `LprRead.extensions` (Part 13 §13.3). APDS has no
-`GET /observations/{id}`, so the read-back by id is
-`GET /v1/lpr/reads?observation=` (was F-LPR-12).
+the vendor key in `LprRead.extensions` (Part 13 §13.3). The LPR
+read-back by id is `GET /v1/lpr/reads?observation=` (was F-LPR-12); the
+raw Observation is native `GET /observations/{id}`.
 
 <!-- apx:request POST /observations -->
 ```json
@@ -2094,8 +2094,9 @@ version it last saw (§13.3a(4)). **Then** `apx.data.observation.updated.v1` is
 published with the Observation as it now stands, and the read shows
 `entry`.
 
-Until 0.12.1 the spec named native `PUT /observations/{id}` here, a
-route APDS 4.1 does not have (F-LPR-16, fixed in 0.12.1).
+Until 0.12.1 the spec named native `PUT /observations/{id}` here
+(F-LPR-16). APDS 4.1 does define that route; APX had not mounted it, and
+now does. This narrower route remains the way to revise `accessEvent`.
 
 ```http
 PUT /v1/lpr/reads/f2000000-0000-4000-8000-000000000931/access-event

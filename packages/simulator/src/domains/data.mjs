@@ -1,6 +1,7 @@
 /**
  * apx-data (Part 5): the APDS-native routes (/places, /observations,
- * /contacts, /rights/specs, /rights/assigned, /rates, /sessions, /quotes)
+ * /contacts, /rights/specs, /rights/assigned, /rates, /sessions, /quotes,
+ * and their by-id routes)
  * with client-supplied ids, full vs change update modes, the §5.1a error
  * dialect, the §5.2 change feed, the §5.4 native events, and the §5.5
  * occupancy snapshot at GET /v1/places/{id}/occupancy.
@@ -209,6 +210,18 @@ export default {
       })
     );
     sim.on('get-observations', route((ctx) => routes.list(ctx, CLASSES.observations, { predicate: listFilter('observations', ctx), flat: true })));
+    sim.on('get-observation-id', route((ctx) => routes.read(ctx, CLASSES.observations)));
+    sim.on(
+      'update-observation-id',
+      route((ctx) => {
+        const res = routes.update(ctx, CLASSES.observations);
+        const rec = engine.coll('observations').get(ctx.params.id);
+        sim.events.publish({ type: 'apx.data.observation.updated.v1', data: wire(rec), subject: { id: rec.id, className: 'ObservationElement' }, place: rec._lane ?? rec._place ?? null });
+        return res;
+      }),
+      { skipBodyValidation: true }
+    );
+    sim.on('delete-observation-id', route((ctx) => routes.remove(ctx, CLASSES.observations, { checkUuid: false })));
 
     // ---------- quotes (APDS 4.1 as vendored: POST answers a list, GET the single matching quote) ----------
 
@@ -301,6 +314,17 @@ export default {
           .at(-1);
         if (!match) fail('target-not-found', `No ${type} matches this query.`);
         return wire(match);
+      })
+    );
+
+    sim.on(
+      'get-quote-id',
+      route((ctx) => {
+        routes.requireGrantClaim(ctx);
+        const qt = quotes().get(ctx.params.id);
+        if (!qt) fail('target-not-found', `No quote ${ctx.params.id} on this server.`);
+        if (qt._place && !sim.hierarchy.covers(ctx.principal.places, qt._place)) fail('insufficient-grant', `Quote ${qt.id} is at place ${qt._place}, which is not in the token's apx_places grant.`);
+        return wire(qt);
       })
     );
 

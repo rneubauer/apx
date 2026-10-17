@@ -235,7 +235,7 @@ hosted copy, traffic in the Fabric view runs only while the tab is open,
 and SSE subscribers are simulated (a real SSE client cannot connect to a
 page).
 
-- The simulator implements every operation in the bundle (181 of 181;
+- The simulator implements every operation in the bundle (185 of 185;
   `node bin/apx-sim.mjs ops`). Where the standard leaves a choice open
   (how a rate table prices a quote, which place a multi-place plate list's
   event is bound to), the simulator makes one and it is not normative.
