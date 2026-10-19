@@ -19,6 +19,10 @@ Pick a short lowercase namespace (your company): `acmecorp`. Then:
 1. **Decorate** — attach structured data to any APX resource or APDS entity
    via its `extensions` container. Servers MUST preserve your keys on
    round-trip (conformance-tested), so decorations survive intermediaries.
+   APX's own decorations (Part 4 §4.3) show the pattern: `devicestatus`,
+   `lane-cameras`, `session-detail`, `payment-detail`, and the Part 26 set
+   that describes a site — `equipment-detail`, `camera`, `external-ids`,
+   `place-operations`. Decorate beside them; never redefine them.
 2. **Extend vocabularies** — where a field is code-list-typed (alert types,
    command types, device states), publish your own UserDefinedCodeList and
    reference it via `codeListId`. Never re-mean an `apx` registry value.

@@ -32,6 +32,15 @@ export const ICONS = {
   Alerts: svg(
     '<path d="M6 16v-5a6 6 0 0 1 12 0v5l2 2H4z"/><path d="M10 21h4"/>'
   ),
+  // A barrier arm over a lane, with the help point beside it: the site as
+  // APX describes it (equipment, cameras, comms points).
+  'Site configuration': svg(
+    '<path d="M3 20h18"/><rect x="4" y="12" width="4" height="8" rx="1"/><path d="M8 14h11"/><circle cx="19" cy="14" r="1" fill="currentColor"/><rect x="14" y="3" width="6" height="6" rx="1.5"/><path d="M17 6h.01"/>'
+  ),
+  // A browser window opening out of the API, with the loopback arrow back in.
+  'UI launch': svg(
+    '<rect x="3" y="5" width="14" height="12" rx="2"/><path d="M3 9h14"/><path d="M14 13h7m0 0-2.5-2.5M21 13l-2.5 2.5"/><path d="M11 19.5h5"/>'
+  ),
 
   // Commerce
   Accounts: svg(

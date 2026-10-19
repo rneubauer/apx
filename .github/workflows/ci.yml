@@ -62,6 +62,7 @@ jobs:
           for f in index.html reference.html parcs.html apx-standard.md \
                    edition.json apx-v1.yaml apx-v1.json apx-parcs.json \
                    registries/index.html registries/registry.schema.json \
+                   specification/index.html \
                    simulator/index.html simulator/sim.js simulator/boot.js; do
             test -s "site/$f" || { echo "missing or empty: site/$f"; exit 1; }
           done

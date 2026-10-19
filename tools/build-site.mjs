@@ -8,6 +8,8 @@
  *   /apx-v1.yaml, /apx-v1.json, /apx-parcs.json   the bundles
  *   /registries/         the code-list registries, served as JSON, plus an
  *                        index generated from the files themselves
+ *   /specification/      the APX Specification document set (APDS 4.1 form),
+ *                        rendered by `npm run apxdocs:html`; linked, not built, here
  *
  * Part 11 §11.2 requires the registries an implementation validates against
  * to be served or linked. Publishing them here is what makes that true while
@@ -46,6 +48,14 @@ for (const page of RENDERED) {
     console.error(`[docs:site] FAIL site/${page} missing — redocly build-docs must run first`);
     process.exit(1);
   }
+}
+
+// The APX Specification document set (docs/apx-specification/, rendered into
+// site/specification/ by `npm run apxdocs:html`). The landing page links to
+// it, so its absence is worth a warning, but a local build without it is
+// still a valid site.
+if (!existsSync(join(SITE, 'specification', 'index.html'))) {
+  console.warn('[docs:site] WARN site/specification/index.html missing — run `npm run apxdocs:html` to render the specification documents');
 }
 
 for (const bundle of BUNDLES) {
