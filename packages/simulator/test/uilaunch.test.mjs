@@ -65,8 +65,8 @@ test('a launch nobody opens expires on the clock; the url is single-use', async 
   const { body: l2 } = await call('POST', '/v1/ui/launches', launchBody());
   const opened = await sim.injectors.get('uiLaunchOpen')({ launch: l2.id, nonce: l2.url.split('/').pop() }, sim);
   assert.equal(opened.status, 'opened');
-  await assert.rejects(() => sim.injectors.get('uiLaunchOpen')({ launch: l2.id }, sim), /single-use/);
-  await assert.rejects(() => sim.injectors.get('uiLaunchOpen')({ launch: l.id }, sim), /expired/);
+  await assert.rejects(async () => sim.injectors.get('uiLaunchOpen')({ launch: l2.id }, sim), /single-use/);
+  await assert.rejects(async () => sim.injectors.get('uiLaunchOpen')({ launch: l.id }, sim), /expired/);
 });
 
 test('a native action recorded in the screen becomes the Command it would have been, with the fields filled from its result', async () => {
