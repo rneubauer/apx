@@ -2921,3 +2921,155 @@ A void and a capture sent without the REQUIRED `Idempotency-Key`:
   "instance": "/v1/payment-links/e6000000-0000-4000-8000-000000000304/cancel"
 }
 ```
+
+---
+
+## ACC-27 — "Can you send me the receipt?" and a refund with a reason the reports can count
+
+<!-- apx:scenario ACC-27 kind=happy ics=APX-ACC-04,APX-ACC-10 -->
+
+**Given** the ticket `T-61077` payment (`e8…0204`) and a customer on the
+phone who wants the receipt. **When** the agent asks for it by e-mail,
+then as a link to read out, then by print at a site with no printer in
+the lane; and separately refunds a payment because the machine gave no
+change. **Then** 202 `queued` for e-mail, 202 with the `link` for the
+link channel, 422 `receipt-channel-unsupported` for print, 409
+`payment-state-illegal` for a declined payment; and the refund carries
+`reasonCode` from `apx-refund-reasons` beside the free text, so refunds
+for change not dispensed can be counted across operators (Part 13
+§13.1a). The destination is in the body, never the URL.
+
+```http
+POST /v1/payments/e8000000-0000-4000-8000-000000000204/receipt
+Idempotency-Key: cc-8201-receipt
+```
+
+<!-- apx:request POST /v1/payments/e8000000-0000-4000-8000-000000000204/receipt -->
+```json
+{
+  "channel": "email",
+  "destination": "j.smith@example.com",
+  "agent": "agent:j.okafor",
+  "correlationId": "8d2b0000-0000-4000-8000-000000006c81"
+}
+```
+
+<!-- apx:response 202 -->
+```json
+{
+  "payment": { "id": "e8000000-0000-4000-8000-000000000204", "className": "PaymentRecord" },
+  "channel": "email",
+  "status": "queued",
+  "requestedAt": "2026-10-18T10:16:00Z"
+}
+```
+
+```http
+POST /v1/payments/e8000000-0000-4000-8000-000000000204/receipt
+Idempotency-Key: cc-8202-receipt
+```
+
+<!-- apx:request POST /v1/payments/e8000000-0000-4000-8000-000000000204/receipt -->
+```json
+{
+  "channel": "link",
+  "agent": "agent:j.okafor",
+  "correlationId": "8d2b0000-0000-4000-8000-000000006c81"
+}
+```
+
+<!-- apx:response 202 -->
+```json
+{
+  "payment": { "id": "e8000000-0000-4000-8000-000000000204", "className": "PaymentRecord" },
+  "channel": "link",
+  "status": "sent",
+  "link": "https://pay.lakeside-garage.example/r/4f0a1b2c3d4e5f60718293a4b5c6d7e8",
+  "requestedAt": "2026-10-18T10:16:30Z"
+}
+```
+
+```http
+POST /v1/payments/e8000000-0000-4000-8000-000000000204/receipt
+Idempotency-Key: cc-8203-receipt
+```
+
+<!-- apx:request POST /v1/payments/e8000000-0000-4000-8000-000000000204/receipt -->
+```json
+{
+  "channel": "print",
+  "agent": "agent:j.okafor",
+  "correlationId": "8d2b0000-0000-4000-8000-000000006c81"
+}
+```
+
+<!-- apx:response 422 -->
+```json
+{
+  "type": "https://apx-standard.org/problems/receipt-channel-unsupported",
+  "title": "Receipt channel not supported",
+  "status": 422,
+  "detail": "No receipt printer serves payment e8000000-0000-4000-8000-000000000204; this site offers email, sms and link.",
+  "instance": "/v1/payments/e8000000-0000-4000-8000-000000000204/receipt"
+}
+```
+
+A declined attempt has no receipt to send:
+
+```http
+POST /v1/payments/e8000000-0000-4000-8000-000000000205/receipt
+Idempotency-Key: cc-8204-receipt
+```
+
+<!-- apx:request POST /v1/payments/e8000000-0000-4000-8000-000000000205/receipt -->
+```json
+{
+  "channel": "email",
+  "destination": "j.smith@example.com",
+  "agent": "agent:j.okafor",
+  "correlationId": "8d2b0000-0000-4000-8000-000000006c81"
+}
+```
+
+<!-- apx:response 409 -->
+```json
+{
+  "type": "https://apx-standard.org/problems/payment-state-illegal",
+  "title": "Payment state does not allow this",
+  "status": 409,
+  "detail": "Payment e8000000-0000-4000-8000-000000000205 is declined; only an approved payment has a receipt.",
+  "instance": "/v1/payments/e8000000-0000-4000-8000-000000000205/receipt"
+}
+```
+
+The refund, with a counted reason:
+
+```http
+POST /v1/payments/e8000000-0000-4000-8000-000000000209/refund
+Idempotency-Key: cc-8205-refund
+```
+
+<!-- apx:request POST /v1/payments/e8000000-0000-4000-8000-000000000209/refund -->
+```json
+{
+  "amount": { "currencyType": "USD", "currencyValue": 6.00 },
+  "reasonCode": "changeNotDispensed",
+  "reason": "paid $20.00 cash for a $14.00 ticket; pay station gave no change",
+  "approval": { "approvedBy": "supervisor:m.okafor", "approvedAt": "2026-10-18T10:30:00Z" }
+}
+```
+
+<!-- apx:response 200 -->
+```json
+{
+  "id": "e8000000-0000-4000-8000-000000000209",
+  "transactionID": "PARIS-20261018-00240",
+  "place": { "id": "b1000000-0000-4000-8000-000000000001", "className": "Place" },
+  "dateCollected": "2026-10-18T10:02:11Z",
+  "amount": { "currencyType": "USD", "currencyValue": 20.00 },
+  "meansOfPayment": "cashCoinsAndBills",
+  "paymentStatus": "approved",
+  "refundedAmount": { "currencyType": "USD", "currencyValue": 6.00 },
+  "ticketNumber": "T-61140"
+}
+```

@@ -6555,6 +6555,11 @@ paths:
           content:
             application/problem+json:
               schema: { $ref: "#/components/schemas/Problem" }
+        "422":
+          description: A `commsPoint`, `callerId`, `dialedNumber` or `commsDeviceId` this implementation does not hold (`comms-point-unknown`, Part 17 §17.1 and Part 26 §26.4), or a registered code value outside the served registries (`reference-unknown`).
+          content:
+            application/problem+json:
+              schema: { $ref: "#/components/schemas/Problem" }
 
   /v1/resolution/contexts/{id}:
     get:

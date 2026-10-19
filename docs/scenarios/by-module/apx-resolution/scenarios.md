@@ -4026,3 +4026,661 @@ Idempotency-Key: ctx-e5000000-0028-paylink
   "instance": "/v1/payment-links"
 }
 ```
+
+---
+
+## RES-29 — The call itself says where it came from: caller id, dialed number, device id
+
+<!-- apx:scenario RES-29 kind=happy ics=APX-RES-01,APX-RES-11 -->
+
+**Given** the call platform now holds Lakeside's comms points (Part 26
+§26.4) and no longer needs a table of its own. **When** it resolves a
+context from the intercom's caller id, then from the posted number a
+parker dialed on their own phone, then from a device id it does not
+hold. **Then** the first context carries the lane the comms point
+serves; the second carries the place and no lane, because a sign cannot
+say where the caller stands; the third is 422 `comms-point-unknown`.
+These members are the only telephony values APX accepts, and only a
+server that holds comms points answers them (§17.1 as amended).
+
+<!-- apx:request POST /v1/resolution/contexts -->
+```json
+{
+  "interactionId": "interaction-952901",
+  "correlationId": "ca000000-0000-4000-8000-000000000029",
+  "channel": "intercom",
+  "callerId": "+15550100201"
+}
+```
+
+<!-- apx:response 201 -->
+```json
+{
+  "id": "e5000000-0000-4000-8000-000000000029",
+  "version": 1,
+  "computedAt": "2026-10-18T16:02:05Z",
+  "status": "full",
+  "interactionId": "interaction-952901",
+  "correlationId": "ca000000-0000-4000-8000-000000000029",
+  "issue": { "code": "unknown", "display": "Intercom call, no event yet" },
+  "place": { "id": "b1000000-0000-4000-8000-000000000001", "className": "Place" },
+  "placeDisplay": "Lakeside Garage",
+  "lane": { "id": "b2000000-0000-4000-8000-000000000002", "className": "VehicularAccess" },
+  "laneStatus": {
+    "lane": { "id": "b2000000-0000-4000-8000-000000000002", "className": "VehicularAccess" }
+  },
+  "allowedActions": [
+    {
+      "action": "vendGate",
+      "display": "Vend exit gate",
+      "target": { "id": "b2000000-0000-4000-8000-000000000002", "className": "VehicularAccess" },
+      "allowed": true,
+      "requiresApproval": false,
+      "execution": { "type": "control", "command": "vendGate" }
+    }
+  ]
+}
+```
+
+<!-- apx:request POST /v1/resolution/contexts -->
+```json
+{
+  "interactionId": "interaction-952902",
+  "correlationId": "ca000000-0000-4000-8000-00000000002a",
+  "channel": "voice",
+  "dialedNumber": "+15550100042"
+}
+```
+
+<!-- apx:response 201 -->
+```json
+{
+  "id": "e5000000-0000-4000-8000-00000000002a",
+  "version": 1,
+  "computedAt": "2026-10-18T16:05:40Z",
+  "status": "full",
+  "interactionId": "interaction-952902",
+  "correlationId": "ca000000-0000-4000-8000-00000000002a",
+  "issue": { "code": "generalInquiry", "display": "Call to the posted number; lane unknown" },
+  "place": { "id": "b1000000-0000-4000-8000-000000000001", "className": "Place" },
+  "placeDisplay": "Lakeside Garage",
+  "allowedActions": []
+}
+```
+
+<!-- apx:request POST /v1/resolution/contexts -->
+```json
+{
+  "interactionId": "interaction-952903",
+  "correlationId": "ca000000-0000-4000-8000-00000000002b",
+  "channel": "intercom",
+  "commsDeviceId": "dev-00000000"
+}
+```
+
+<!-- apx:response 422 -->
+```json
+{
+  "type": "https://apx-standard.org/problems/comms-point-unknown",
+  "title": "Comms point unknown",
+  "status": 422,
+  "detail": "No comms point with commsDeviceId dev-00000000 at any place in the token's grant.",
+  "instance": "/v1/resolution/contexts"
+}
+```
+
+A comms point reference works the same way as its caller id:
+
+<!-- apx:request POST /v1/resolution/contexts -->
+```json
+{
+  "interactionId": "interaction-952904",
+  "correlationId": "ca000000-0000-4000-8000-00000000002c",
+  "channel": "intercom",
+  "commsPoint": { "id": "cc000000-0000-4000-8000-000000000c01", "className": "CommsPoint" }
+}
+```
+
+<!-- apx:response 201 -->
+```json
+{
+  "id": "e5000000-0000-4000-8000-00000000002c",
+  "version": 1,
+  "computedAt": "2026-10-18T16:08:00Z",
+  "status": "full",
+  "interactionId": "interaction-952904",
+  "correlationId": "ca000000-0000-4000-8000-00000000002c",
+  "place": { "id": "b1000000-0000-4000-8000-000000000001", "className": "Place" },
+  "placeDisplay": "Lakeside Garage",
+  "lane": { "id": "b2000000-0000-4000-8000-000000000002", "className": "VehicularAccess" },
+  "allowedActions": []
+}
+```
+
+---
+
+## RES-30 — "I'm in room 412": guests without a plate, and a reservation sold by someone else
+
+<!-- apx:scenario RES-30 kind=happy ics=APX-RES-01,APX-RES-02,APX-RES-11 -->
+
+**Given** a hotel guest at the exit with no plate on file and a room
+number, and a visitor whose confirmation code `LKG-88214` is also a
+valid code at a second reseller. **When** the console resolves with a
+`guestReference` and, separately, with the code and its issuer. **Then**
+the guest's context resolves the hotel's validation right; the
+visitor's context carries the reservation summary with the issuer that
+sold it and what was paid, so the agent does not re-charge a prepaid
+visitor (Part 14 §14.1a).
+
+<!-- apx:request POST /v1/resolution/contexts -->
+```json
+{
+  "interactionId": "interaction-953001",
+  "correlationId": "ca000000-0000-4000-8000-000000000030",
+  "channel": "intercom",
+  "lane": { "id": "b2000000-0000-4000-8000-000000000002", "className": "VehicularAccess" },
+  "guestReference": { "kind": "hotelRoom", "value": "412" }
+}
+```
+
+<!-- apx:response 201 -->
+```json
+{
+  "id": "e5000000-0000-4000-8000-000000000030",
+  "version": 1,
+  "computedAt": "2026-10-18T16:20:05Z",
+  "status": "full",
+  "interactionId": "interaction-953001",
+  "correlationId": "ca000000-0000-4000-8000-000000000030",
+  "issue": { "code": "authorizedVisitor", "display": "Hotel guest, room 412" },
+  "place": { "id": "b1000000-0000-4000-8000-000000000001", "className": "Place" },
+  "placeDisplay": "Lakeside Garage",
+  "lane": { "id": "b2000000-0000-4000-8000-000000000002", "className": "VehicularAccess" },
+  "assignedRight": { "id": "e2000000-0000-4000-8000-000000000412", "className": "AssignedRight" },
+  "allowedActions": [
+    {
+      "action": "applyValidation",
+      "display": "Apply hotel validation",
+      "target": { "id": "b2000000-0000-4000-8000-000000000002", "className": "VehicularAccess" },
+      "allowed": true,
+      "requiresApproval": false,
+      "execution": { "type": "control", "command": "applyValidation" }
+    }
+  ],
+  "recommendedAction": { "action": "applyValidation", "reason": "Room 412 is checked in with parking included." }
+}
+```
+
+<!-- apx:request POST /v1/resolution/contexts -->
+```json
+{
+  "interactionId": "interaction-953002",
+  "correlationId": "ca000000-0000-4000-8000-000000000031",
+  "channel": "intercom",
+  "lane": { "id": "b2000000-0000-4000-8000-000000000002", "className": "VehicularAccess" },
+  "reservationCode": "LKG-88214",
+  "reservationIssuer": "parkahead"
+}
+```
+
+<!-- apx:response 201 -->
+<!-- apx:validate ReservationSummary at /reservation -->
+```json
+{
+  "id": "e5000000-0000-4000-8000-000000000031",
+  "version": 1,
+  "computedAt": "2026-10-18T16:25:10Z",
+  "status": "full",
+  "interactionId": "interaction-953002",
+  "correlationId": "ca000000-0000-4000-8000-000000000031",
+  "issue": { "code": "reservationMismatch", "display": "Prepaid reservation not recognised at the lane" },
+  "place": { "id": "b1000000-0000-4000-8000-000000000001", "className": "Place" },
+  "placeDisplay": "Lakeside Garage",
+  "lane": { "id": "b2000000-0000-4000-8000-000000000002", "className": "VehicularAccess" },
+  "assignedRight": { "id": "e2000000-0000-4000-8000-000000000014", "className": "AssignedRight" },
+  "reservation": {
+    "reservation": { "id": "e2000000-0000-4000-8000-000000000014", "className": "AssignedRight" },
+    "reservationState": "checkedIn",
+    "plannedStart": "2026-10-18T12:00:00Z",
+    "plannedEnd": "2026-10-18T18:00:00Z",
+    "issuer": "parkahead",
+    "amountPaid": { "currencyType": "USD", "currencyValue": 18.00 }
+  },
+  "allowedActions": [
+    {
+      "action": "courtesyExit",
+      "display": "Courtesy exit (prepaid)",
+      "target": { "id": "b2000000-0000-4000-8000-000000000002", "className": "VehicularAccess" },
+      "allowed": true,
+      "requiresApproval": false,
+      "execution": { "type": "control", "command": "courtesyExit" }
+    }
+  ],
+  "recommendedAction": { "action": "courtesyExit", "reason": "Reservation LKG-88214 prepaid $18.00 through ParkAhead; no further charge." }
+}
+```
+
+---
+
+## RES-31 — Asking the on-call supervisor through the API, not the phone tree
+
+<!-- apx:scenario RES-31 kind=lifecycle ics=APX-RES-04,APX-RES-10 -->
+
+**Given** a gate vend that the context gates behind role `supervisor`
+(as in RES-01), and a supervisor who is remote. **When** the agent
+raises an approval request addressed to the role, the supervisor's
+console lists what is pending and decides it, and the agent executes
+with the decision as evidence. **Then** 201 `pending`, 200 `approved`
+with the decision recorded, the command carries `approval.approvalRequest`,
+and a second decision is 409 `approval-closed`. Every change publishes
+`apx.approvals.changed.v1` (Part 17 §17.3a). The roles that can be
+asked come from the place's escalation contacts (Part 26 §26.7).
+
+```http
+POST /v1/approvals
+Idempotency-Key: cc-9310-approval
+```
+
+<!-- apx:request POST /v1/approvals -->
+```json
+{
+  "id": "ec000000-0000-4000-8000-000000000031",
+  "version": 1,
+  "place": { "id": "b1000000-0000-4000-8000-000000000001", "className": "Place" },
+  "action": "vendGate",
+  "target": { "id": "b2000000-0000-4000-8000-000000000002", "className": "VehicularAccess" },
+  "requestedBy": "agent:j.okafor",
+  "agentType": "human",
+  "role": "supervisor",
+  "interactionId": "interaction-940101",
+  "correlationId": "ca000000-0000-4000-8000-000000000001",
+  "reason": "balance hold; customer disputes the amount and has a flight",
+  "expiresAt": "2026-10-18T16:40:00Z"
+}
+```
+
+<!-- apx:response 201 -->
+```json
+{
+  "id": "ec000000-0000-4000-8000-000000000031",
+  "version": 1,
+  "place": { "id": "b1000000-0000-4000-8000-000000000001", "className": "Place" },
+  "action": "vendGate",
+  "target": { "id": "b2000000-0000-4000-8000-000000000002", "className": "VehicularAccess" },
+  "requestedBy": "agent:j.okafor",
+  "agentType": "human",
+  "role": "supervisor",
+  "interactionId": "interaction-940101",
+  "correlationId": "ca000000-0000-4000-8000-000000000001",
+  "reason": "balance hold; customer disputes the amount and has a flight",
+  "status": "pending",
+  "expiresAt": "2026-10-18T16:40:00Z",
+  "recordInfo": {
+    "creationTime": "2026-10-18T16:30:05Z",
+    "creator": { "id": "a1000000-0000-4000-8000-000000000001", "className": "Organisation" },
+    "creationUser": "agent:j.okafor"
+  }
+}
+```
+
+The supervisor's console:
+
+<!-- apx:request GET /v1/approvals?place=b1000000-0000-4000-8000-000000000001&status=pending&role=supervisor -->
+<!-- apx:response 200 -->
+<!-- apx:validate ApprovalRequest at /data/0 -->
+```json
+{
+  "meta": { "referenceInstant": 1792341010, "offset": 0, "pageSize": 100, "total": 1 },
+  "data": [
+    {
+      "id": "ec000000-0000-4000-8000-000000000031",
+      "version": 1,
+      "place": { "id": "b1000000-0000-4000-8000-000000000001", "className": "Place" },
+      "action": "vendGate",
+      "target": { "id": "b2000000-0000-4000-8000-000000000002", "className": "VehicularAccess" },
+      "requestedBy": "agent:j.okafor",
+      "agentType": "human",
+      "role": "supervisor",
+      "correlationId": "ca000000-0000-4000-8000-000000000001",
+      "reason": "balance hold; customer disputes the amount and has a flight",
+      "status": "pending",
+      "expiresAt": "2026-10-18T16:40:00Z"
+    }
+  ]
+}
+```
+
+<!-- apx:request POST /v1/approvals/ec000000-0000-4000-8000-000000000031/decide -->
+```json
+{
+  "outcome": "approved",
+  "decidedBy": "sup:m.reyes",
+  "note": "let them out; collect on the account tomorrow"
+}
+```
+
+<!-- apx:response 200 -->
+```json
+{
+  "id": "ec000000-0000-4000-8000-000000000031",
+  "version": 2,
+  "place": { "id": "b1000000-0000-4000-8000-000000000001", "className": "Place" },
+  "action": "vendGate",
+  "target": { "id": "b2000000-0000-4000-8000-000000000002", "className": "VehicularAccess" },
+  "requestedBy": "agent:j.okafor",
+  "agentType": "human",
+  "role": "supervisor",
+  "interactionId": "interaction-940101",
+  "correlationId": "ca000000-0000-4000-8000-000000000001",
+  "reason": "balance hold; customer disputes the amount and has a flight",
+  "status": "approved",
+  "expiresAt": "2026-10-18T16:40:00Z",
+  "decision": { "decidedBy": "sup:m.reyes", "decidedAt": "2026-10-18T16:31:40Z", "outcome": "approved", "note": "let them out; collect on the account tomorrow" }
+}
+```
+
+<!-- apx:validate EventEnvelope -->
+<!-- apx:validate ApprovalRequest at /data -->
+```json
+{
+  "id": "e9000000-0000-4000-8000-000000000e31",
+  "type": "apx.approvals.changed.v1",
+  "source": "https://api.lakeside-garage.example/v1",
+  "subject": { "id": "ec000000-0000-4000-8000-000000000031", "className": "ApprovalRequest" },
+  "time": "2026-10-18T16:31:40Z",
+  "data": {
+    "id": "ec000000-0000-4000-8000-000000000031",
+    "version": 2,
+    "place": { "id": "b1000000-0000-4000-8000-000000000001", "className": "Place" },
+    "action": "vendGate",
+    "requestedBy": "agent:j.okafor",
+    "role": "supervisor",
+    "correlationId": "ca000000-0000-4000-8000-000000000001",
+    "status": "approved",
+    "decision": { "decidedBy": "sup:m.reyes", "decidedAt": "2026-10-18T16:31:40Z", "outcome": "approved" }
+  }
+}
+```
+
+The agent executes with the decision as evidence; the `approval`
+cites the request so the audit is one hop:
+
+```http
+POST /v1/commands
+Idempotency-Key: cc-9311-vend
+```
+
+<!-- apx:request POST /v1/commands -->
+```json
+{
+  "commandType": "vendGate",
+  "target": { "id": "b2000000-0000-4000-8000-000000000002", "className": "VehicularAccess" },
+  "agent": "agent:j.okafor",
+  "agentType": "human",
+  "reason": "balance hold; supervisor approved exit",
+  "resolutionContext": { "id": "e5000000-0000-4000-8000-000000000001", "className": "ResolutionContext" },
+  "correlationId": "ca000000-0000-4000-8000-000000000001",
+  "approval": {
+    "approvedBy": "sup:m.reyes",
+    "approvedAt": "2026-10-18T16:31:40Z",
+    "approvalRequest": { "id": "ec000000-0000-4000-8000-000000000031", "className": "ApprovalRequest" }
+  },
+  "expiryTime": "2026-10-18T16:34:00Z"
+}
+```
+
+<!-- apx:response 202 -->
+```json
+{
+  "id": "d1000000-0000-4000-8000-000000000231",
+  "version": 2,
+  "commandType": "vendGate",
+  "target": { "id": "b2000000-0000-4000-8000-000000000002", "className": "VehicularAccess" },
+  "requestedBy": { "id": "a1000000-0000-4000-8000-000000000001", "className": "Organisation" },
+  "agent": "agent:j.okafor",
+  "agentType": "human",
+  "reason": "balance hold; supervisor approved exit",
+  "resolutionContext": { "id": "e5000000-0000-4000-8000-000000000001", "className": "ResolutionContext" },
+  "correlationId": "ca000000-0000-4000-8000-000000000001",
+  "approval": {
+    "approvedBy": "sup:m.reyes",
+    "approvedAt": "2026-10-18T16:31:40Z",
+    "approvalRequest": { "id": "ec000000-0000-4000-8000-000000000031", "className": "ApprovalRequest" }
+  },
+  "expiryTime": "2026-10-18T16:34:00Z",
+  "priority": "normal",
+  "status": "accepted",
+  "confirmationLevel": "accepted",
+  "statusHistory": [
+    { "state": "received", "time": "2026-10-18T16:32:01Z", "actor": "apx-operator" },
+    { "state": "accepted", "time": "2026-10-18T16:32:01Z", "actor": "lakeside-parcs" }
+  ]
+}
+```
+
+A second supervisor decides the same request a minute later:
+
+<!-- apx:request POST /v1/approvals/ec000000-0000-4000-8000-000000000031/decide -->
+```json
+{
+  "outcome": "denied",
+  "decidedBy": "sup:a.lund"
+}
+```
+
+<!-- apx:response 409 -->
+```json
+{
+  "type": "https://apx-standard.org/problems/approval-closed",
+  "title": "Approval request closed",
+  "status": 409,
+  "detail": "Request ec000000-0000-4000-8000-000000000031 was approved by sup:m.reyes at 2026-10-18T16:31:40Z.",
+  "instance": "/v1/approvals/ec000000-0000-4000-8000-000000000031/decide"
+}
+```
+
+<!-- apx:request GET /v1/approvals/ec000000-0000-4000-8000-0000000000ff -->
+<!-- apx:response 404 -->
+```json
+{
+  "type": "https://apx-standard.org/problems/target-not-found",
+  "title": "Not found",
+  "status": 404,
+  "detail": "No approval request ec000000-0000-4000-8000-0000000000ff visible to this credential.",
+  "instance": "/v1/approvals/ec000000-0000-4000-8000-0000000000ff"
+}
+```
+
+A request nobody decides lapses at `expiresAt` to `expired` and the
+agent is back to the phone tree:
+
+<!-- apx:request GET /v1/approvals/ec000000-0000-4000-8000-000000000032 -->
+<!-- apx:response 200 -->
+```json
+{
+  "id": "ec000000-0000-4000-8000-000000000032",
+  "version": 2,
+  "place": { "id": "b1000000-0000-4000-8000-000000000001", "className": "Place" },
+  "action": "post-apx-v1-payments-id-refund",
+  "target": { "id": "e8000000-0000-4000-8000-000000000207", "className": "PaymentRecord" },
+  "requestedBy": "ai:lakeside-voicebot-02",
+  "agentType": "ai",
+  "role": "supervisor",
+  "correlationId": "ca000000-0000-4000-8000-000000000032",
+  "reason": "double charge reported by caller",
+  "status": "expired",
+  "expiresAt": "2026-10-18T16:50:00Z"
+}
+```
+
+---
+
+## RES-32 — How the call ended, in words every operator shares
+
+<!-- apx:scenario RES-32 kind=happy ics=APX-RES-06,APX-RES-09,APX-RES-12 -->
+
+**Given** three calls: one escalated to the supervisor (RES-31), one
+where the parker found their ticket before the agent did anything, and
+one that dropped. **When** each is recorded. **Then** `resolution.code`
+is a value of `apx-interaction-outcomes` (`escalated`, `noActionNeeded`,
+`abandoned`), so the ten operators who used to spell these three ways
+each can be reported together (Part 17 §17.5). The escalated record
+lists the approval request and the command in `actions[]`.
+
+<!-- apx:request POST /v1/support/interactions -->
+```json
+{
+  "channel": "intercom",
+  "agentType": "human",
+  "agent": "agent:j.okafor",
+  "startedAt": "2026-10-18T16:28:30Z",
+  "endedAt": "2026-10-18T16:33:00Z",
+  "place": { "id": "b1000000-0000-4000-8000-000000000001", "className": "Place" },
+  "issue": { "code": "accountBalanceDenied", "display": "Monthly parker denied because of outstanding balance" },
+  "summary": "Balance hold disputed; supervisor approved exit; account flagged for collection.",
+  "subjects": {
+    "holder": { "id": "a3000000-0000-4000-8000-000000000001", "className": "RightHolder" },
+    "account": { "id": "a4000000-0000-4000-8000-000000000001", "className": "Account" }
+  },
+  "actions": [
+    { "id": "ec000000-0000-4000-8000-000000000031", "className": "ApprovalRequest" },
+    { "id": "d1000000-0000-4000-8000-000000000231", "className": "Command" }
+  ],
+  "interactionId": "interaction-940101",
+  "resolution": { "code": "escalated", "display": "Supervisor approved the exit" },
+  "correlationId": "ca000000-0000-4000-8000-000000000001"
+}
+```
+
+<!-- apx:response 201 -->
+```json
+{
+  "id": "e7000000-0000-4000-8000-000000000732",
+  "version": 1,
+  "channel": "intercom",
+  "agentType": "human",
+  "agent": "agent:j.okafor",
+  "startedAt": "2026-10-18T16:28:30Z",
+  "endedAt": "2026-10-18T16:33:00Z",
+  "place": { "id": "b1000000-0000-4000-8000-000000000001", "className": "Place" },
+  "issue": { "code": "accountBalanceDenied", "display": "Monthly parker denied because of outstanding balance" },
+  "summary": "Balance hold disputed; supervisor approved exit; account flagged for collection.",
+  "subjects": {
+    "holder": { "id": "a3000000-0000-4000-8000-000000000001", "className": "RightHolder" },
+    "account": { "id": "a4000000-0000-4000-8000-000000000001", "className": "Account" }
+  },
+  "actions": [
+    { "id": "ec000000-0000-4000-8000-000000000031", "className": "ApprovalRequest" },
+    { "id": "d1000000-0000-4000-8000-000000000231", "className": "Command" }
+  ],
+  "interactionId": "interaction-940101",
+  "resolution": { "code": "escalated", "display": "Supervisor approved the exit" },
+  "correlationId": "ca000000-0000-4000-8000-000000000001",
+  "recordInfo": {
+    "creationTime": "2026-10-18T16:33:05Z",
+    "creator": { "id": "a1000000-0000-4000-8000-000000000001", "className": "Organisation" },
+    "creationUser": "agent:j.okafor"
+  }
+}
+```
+
+<!-- apx:request POST /v1/support/interactions -->
+```json
+{
+  "channel": "intercom",
+  "agentType": "ai",
+  "agent": "ai:lakeside-voicebot-02",
+  "startedAt": "2026-10-18T16:41:00Z",
+  "endedAt": "2026-10-18T16:41:50Z",
+  "place": { "id": "b1000000-0000-4000-8000-000000000001", "className": "Place" },
+  "issue": { "code": "lostTicket", "display": "Lost ticket" },
+  "summary": "Caller found the ticket in the door pocket before any action; exited normally.",
+  "interactionId": "interaction-953201",
+  "resolution": { "code": "noActionNeeded", "display": "Ticket found" },
+  "correlationId": "ca000000-0000-4000-8000-000000000033"
+}
+```
+
+<!-- apx:response 201 -->
+```json
+{
+  "id": "e7000000-0000-4000-8000-000000000733",
+  "version": 1,
+  "channel": "intercom",
+  "agentType": "ai",
+  "agent": "ai:lakeside-voicebot-02",
+  "startedAt": "2026-10-18T16:41:00Z",
+  "endedAt": "2026-10-18T16:41:50Z",
+  "place": { "id": "b1000000-0000-4000-8000-000000000001", "className": "Place" },
+  "issue": { "code": "lostTicket", "display": "Lost ticket" },
+  "summary": "Caller found the ticket in the door pocket before any action; exited normally.",
+  "interactionId": "interaction-953201",
+  "resolution": { "code": "noActionNeeded", "display": "Ticket found" },
+  "correlationId": "ca000000-0000-4000-8000-000000000033",
+  "recordInfo": {
+    "creationTime": "2026-10-18T16:41:52Z",
+    "creator": { "id": "a1000000-0000-4000-8000-000000000001", "className": "Organisation" },
+    "creationUser": "ai:lakeside-voicebot-02"
+  }
+}
+```
+
+<!-- apx:request POST /v1/support/interactions -->
+```json
+{
+  "channel": "intercom",
+  "agentType": "human",
+  "agent": "agent:j.okafor",
+  "startedAt": "2026-10-18T16:45:10Z",
+  "endedAt": "2026-10-18T16:45:25Z",
+  "place": { "id": "b1000000-0000-4000-8000-000000000001", "className": "Place" },
+  "issue": { "code": "noResponse", "display": "No response from caller" },
+  "summary": "Intercom pressed at exit lane 2; no answer after two prompts; call ended.",
+  "interactionId": "interaction-953202",
+  "resolution": { "code": "abandoned", "display": "Caller did not respond" },
+  "correlationId": "ca000000-0000-4000-8000-000000000034"
+}
+```
+
+<!-- apx:response 201 -->
+```json
+{
+  "id": "e7000000-0000-4000-8000-000000000734",
+  "version": 1,
+  "channel": "intercom",
+  "agentType": "human",
+  "agent": "agent:j.okafor",
+  "startedAt": "2026-10-18T16:45:10Z",
+  "endedAt": "2026-10-18T16:45:25Z",
+  "place": { "id": "b1000000-0000-4000-8000-000000000001", "className": "Place" },
+  "issue": { "code": "noResponse", "display": "No response from caller" },
+  "summary": "Intercom pressed at exit lane 2; no answer after two prompts; call ended.",
+  "interactionId": "interaction-953202",
+  "resolution": { "code": "abandoned", "display": "Caller did not respond" },
+  "correlationId": "ca000000-0000-4000-8000-000000000034",
+  "recordInfo": {
+    "creationTime": "2026-10-18T16:45:27Z",
+    "creator": { "id": "a1000000-0000-4000-8000-000000000001", "className": "Organisation" },
+    "creationUser": "agent:j.okafor"
+  }
+}
+```
+
+When the API cannot do it but the vendor's screen can, the context says
+so with an execution of type `ui` (Part 25 §25.6):
+
+<!-- apx:validate AllowedAction -->
+```json
+{
+  "action": "lostTicket",
+  "display": "Issue lost ticket (vendor console)",
+  "target": { "id": "b2000000-0000-4000-8000-000000000002", "className": "VehicularAccess" },
+  "allowed": true,
+  "requiresApproval": false,
+  "execution": {
+    "type": "ui",
+    "surface": "lane.console",
+    "subject": { "id": "b2000000-0000-4000-8000-000000000002", "className": "VehicularAccess" }
+  }
+}
+```

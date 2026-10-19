@@ -16277,6 +16277,16 @@
               }
             }
           },
+          "422": {
+            "description": "A `commsPoint`, `callerId`, `dialedNumber` or `commsDeviceId` this implementation does not hold (`comms-point-unknown`, Part 17 §17.1 and Part 26 §26.4), or a registered code value outside the served registries (`reference-unknown`).",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
           "429": {
             "$ref": "#/components/responses/TooManyRequests"
           }
@@ -28344,6 +28354,17 @@
               "status"
             ],
             "properties": {
+              "id": {
+                "type": "string",
+                "format": "uuid",
+                "readOnly": true
+              },
+              "version": {
+                "type": "integer",
+                "minimum": 1,
+                "readOnly": true,
+                "description": "Server-managed; bodies carry it only for a versioned replace (Part 4 §4.2a)."
+              },
               "place": {
                 "$ref": "#/components/schemas/Reference"
               },
@@ -28747,6 +28768,17 @@
               "expiresAt"
             ],
             "properties": {
+              "id": {
+                "type": "string",
+                "format": "uuid",
+                "readOnly": true
+              },
+              "version": {
+                "type": "integer",
+                "minimum": 1,
+                "readOnly": true,
+                "description": "Server-managed; bodies carry it only for a versioned replace (Part 4 §4.2a)."
+              },
               "url": {
                 "type": "string",
                 "format": "uri",
@@ -29402,6 +29434,17 @@
               }
             ],
             "properties": {
+              "id": {
+                "type": "string",
+                "format": "uuid",
+                "readOnly": true
+              },
+              "version": {
+                "type": "integer",
+                "minimum": 1,
+                "readOnly": true,
+                "description": "Server-managed; bodies carry it only for a versioned replace (Part 4 §4.2a)."
+              },
               "type": {
                 "type": "string",
                 "description": "definedValue from apx-comms-point-types.",

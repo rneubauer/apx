@@ -2290,3 +2290,46 @@ Authorization: Bearer <apx.data:write only>
   "instance": "/v1/sessions/f1000000-0000-4000-8000-000000000203/assigned-right/unlink"
 }
 ```
+
+---
+
+## RSV-25 — The same code from two sellers: history says who sold it and what was paid
+
+<!-- apx:scenario RSV-25 kind=happy ics=APX-RSV-02,APX-RES-11 -->
+
+**Given** Nadia (plate `SVN-4821`) has booked Lakeside through ParkAhead
+and, once, through the venue's own site, and the venue reuses
+ParkAhead-looking codes. **When** the console reads her recent
+reservations. **Then** each summary names its `issuer` and the
+`amountPaid`, so the agent can tell which seller's code is at the lane
+and whether anything is still owed before offering a courtesy exit
+(Part 14 §14.1a).
+
+<!-- apx:request GET /v1/reservations/recent?plate=SVN-4821&country=US&stateProvince=FL -->
+<!-- apx:response 200 -->
+<!-- apx:validate ReservationSummary at /data/0 -->
+<!-- apx:validate ReservationSummary at /data/1 -->
+```json
+{
+  "meta": { "referenceInstant": 1792340400, "offset": 0, "pageSize": 10, "total": 2 },
+  "data": [
+    {
+      "reservation": { "id": "e2000000-0000-4000-8000-000000000014", "className": "AssignedRight" },
+      "reservationState": "checkedIn",
+      "plannedStart": "2026-10-18T12:00:00Z",
+      "plannedEnd": "2026-10-18T18:00:00Z",
+      "issuer": "parkahead",
+      "amountPaid": { "currencyType": "USD", "currencyValue": 18.00 }
+    },
+    {
+      "reservation": { "id": "e2000000-0000-4000-8000-000000000115", "className": "AssignedRight" },
+      "reservationState": "noShow",
+      "plannedStart": "2026-09-25T18:00:00Z",
+      "plannedEnd": "2026-09-25T23:00:00Z",
+      "noShowAfter": "2026-09-25T20:00:00Z",
+      "issuer": "lakeside-arena",
+      "amountPaid": { "currencyType": "USD", "currencyValue": 0.00 }
+    }
+  ]
+}
+```

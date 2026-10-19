@@ -17,7 +17,7 @@
       "extensionVersion": "1.0",
       "apdsVersion": "4.1"
     },
-    "description": "The MINIMUM APX surface for a PARCS vendor: apx-data + apx-events + apx-control. A subset of the full APX specification (apx-v1) — every path and schema here is identical to the full spec. See docs/parcs-starter-profile.md for the build order."
+    "description": "The MINIMUM APX surface for a PARCS vendor: apx-data + apx-events + apx-control, plus the read side of apx-site-config (equipment and comms points). A subset of the full APX specification (apx-v1) — every path and schema here is identical to the full spec. See docs/parcs-starter-profile.md for the build order."
   },
   "servers": [
     {
@@ -5299,6 +5299,355 @@
           }
         }
       }
+    },
+    "/v1/equipment": {
+      "get": {
+        "operationId": "get-apx-v1-equipment",
+        "security": [
+          {
+            "apxOAuth": [
+              "apx.siteconfig:read"
+            ]
+          }
+        ],
+        "tags": [
+          "Site configuration"
+        ],
+        "summary": "List a place's equipment with its roles, makes, versions and areas",
+        "description": "Every SupplementalEquipment at the place, each with its\n`apds-ext:apx:equipment-detail@1.0` decoration, so a reader learns\nwhat the site has from APX alone (Part 26 §26.1). Distinct from\n`GET /v1/devices`, which serves live state; this serves the\ndescription. `mode=change&cursor=` serves the Part 5 §5.2 feed,\nso an edge or call-centre system keeps a local copy current.\nNaming a `place` outside the grant is 403 `insufficient-grant`.",
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/ModeParam"
+          },
+          {
+            "$ref": "#/components/parameters/CursorParam"
+          },
+          {
+            "name": "place",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            },
+            "description": "The HierarchyElement subtree root."
+          },
+          {
+            "name": "role",
+            "in": "query",
+            "schema": {
+              "type": "string"
+            },
+            "description": "An apx-equipment-roles value."
+          },
+          {
+            "name": "area",
+            "in": "query",
+            "schema": {
+              "type": "string"
+            },
+            "description": "An apx-area-types value."
+          },
+          {
+            "name": "lane",
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            },
+            "description": "Equipment serving this VehicularAccess."
+          },
+          {
+            "name": "level",
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "$ref": "#/components/parameters/page"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Paginated equipment; with `mode=change`, the changes after `cursor` in the same envelope (Part 5 §5.2 rule 8).",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "meta": {
+                      "$ref": "#/components/schemas/PaginatedListMeta"
+                    },
+                    "data": {
+                      "type": "array",
+                      "items": {
+                        "$ref": "#/components/schemas/EquipmentRecord"
+                      }
+                    },
+                    "updateMode": {
+                      "$ref": "#/components/schemas/ChangeFeedUpdateMode"
+                    },
+                    "cursor": {
+                      "$ref": "#/components/schemas/ChangeFeedCursor"
+                    },
+                    "deleted": {
+                      "$ref": "#/components/schemas/ChangeFeedTombstones"
+                    },
+                    "grantAdditions": {
+                      "$ref": "#/components/schemas/ChangeFeedGrantAdditions"
+                    },
+                    "next": {
+                      "$ref": "#/components/schemas/ChangeFeedNext"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "404": {
+            "$ref": "#/components/responses/CursorRefused"
+          },
+          "429": {
+            "$ref": "#/components/responses/TooManyRequests"
+          }
+        }
+      }
+    },
+    "/v1/equipment/{id}": {
+      "get": {
+        "operationId": "get-apx-v1-equipment-id",
+        "security": [
+          {
+            "apxOAuth": [
+              "apx.siteconfig:read"
+            ]
+          }
+        ],
+        "tags": [
+          "Site configuration"
+        ],
+        "summary": "Read one piece of equipment",
+        "description": "The SupplementalEquipment with its APX decorations (Part 26 §26.1).",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The equipment record.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/EquipmentRecord"
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          },
+          "429": {
+            "$ref": "#/components/responses/TooManyRequests"
+          }
+        }
+      }
+    },
+    "/v1/comms-points": {
+      "get": {
+        "operationId": "get-apx-v1-comms-points",
+        "security": [
+          {
+            "apxOAuth": [
+              "apx.siteconfig:read"
+            ]
+          }
+        ],
+        "tags": [
+          "Site configuration"
+        ],
+        "summary": "List or look up comms points",
+        "description": "The ways a parker reaches help at the caller's places (Part 26\n§26.4). A call platform finds the comms point of an inbound\ncontact with `callerId`, `dialedNumber` or `commsDeviceId`; the\nanswer carries the lane, or the place only. `mode=change&cursor=`\nserves the Part 5 §5.2 feed.",
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/ModeParam"
+          },
+          {
+            "$ref": "#/components/parameters/CursorParam"
+          },
+          {
+            "name": "place",
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "lane",
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "type",
+            "in": "query",
+            "schema": {
+              "type": "string"
+            },
+            "description": "An apx-comms-point-types value."
+          },
+          {
+            "name": "callerId",
+            "in": "query",
+            "schema": {
+              "type": "string"
+            },
+            "description": "E.164; matches `callerId`."
+          },
+          {
+            "name": "dialedNumber",
+            "in": "query",
+            "schema": {
+              "type": "string"
+            },
+            "description": "E.164; matches `phoneNumber`."
+          },
+          {
+            "name": "commsDeviceId",
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "$ref": "#/components/parameters/page"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Paginated comms points; with `mode=change`, the changes after `cursor` in the same envelope.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "meta": {
+                      "$ref": "#/components/schemas/PaginatedListMeta"
+                    },
+                    "data": {
+                      "type": "array",
+                      "items": {
+                        "$ref": "#/components/schemas/CommsPoint"
+                      }
+                    },
+                    "updateMode": {
+                      "$ref": "#/components/schemas/ChangeFeedUpdateMode"
+                    },
+                    "cursor": {
+                      "$ref": "#/components/schemas/ChangeFeedCursor"
+                    },
+                    "deleted": {
+                      "$ref": "#/components/schemas/ChangeFeedTombstones"
+                    },
+                    "grantAdditions": {
+                      "$ref": "#/components/schemas/ChangeFeedGrantAdditions"
+                    },
+                    "next": {
+                      "$ref": "#/components/schemas/ChangeFeedNext"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "404": {
+            "$ref": "#/components/responses/CursorRefused"
+          },
+          "429": {
+            "$ref": "#/components/responses/TooManyRequests"
+          }
+        }
+      }
+    },
+    "/v1/comms-points/{id}": {
+      "get": {
+        "operationId": "get-apx-v1-comms-points-id",
+        "security": [
+          {
+            "apxOAuth": [
+              "apx.siteconfig:read"
+            ]
+          }
+        ],
+        "tags": [
+          "Site configuration"
+        ],
+        "summary": "Read a comms point",
+        "description": "The comms point with the lane or place it serves and the barrier an agent opens for it (Part 26 §26.4).",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The comms point.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CommsPoint"
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          },
+          "429": {
+            "$ref": "#/components/responses/TooManyRequests"
+          }
+        }
+      }
     }
   },
   "webhooks": {
@@ -9104,7 +9453,7 @@
           },
           "fault": {
             "type": "object",
-            "description": "The current fault, when `deviceState` is `fault` or `inoperative` and the device reports one (Part 6 §6.4a).",
+            "description": "The current fault, when `deviceState` is `fault` or `inoperative` and the device reports one (Part 6 §6.4).",
             "required": [
               "code"
             ],
@@ -9130,7 +9479,7 @@
           },
           "consumables": {
             "type": "array",
-            "description": "Supply levels the device reports (Part 6 §6.4a). `low` or `empty` raises the Part 7 `consumableLow` alert.",
+            "description": "Supply levels the device reports (Part 6 §6.4). `low` or `empty` raises the Part 7 `consumableLow` alert.",
             "items": {
               "type": "object",
               "required": [
@@ -9161,7 +9510,7 @@
           },
           "maintenanceMode": {
             "type": "boolean",
-            "description": "The device is under test or maintenance; calls and events from it are excluded from service figures (Part 6 §6.4a)."
+            "description": "The device is under test or maintenance; calls and events from it are excluded from service figures (Part 6 §6.4)."
           },
           "extensions": {
             "$ref": "#/components/schemas/Extensions"
@@ -9176,6 +9525,162 @@
             "deviceState": "fault",
             "lastCommunication": "2026-08-06T18:16:55Z",
             "stateChangedTime": "2026-08-06T18:17:40Z"
+          }
+        ]
+      },
+      "EquipmentRecord": {
+        "title": "EquipmentRecord",
+        "description": "An APDS SupplementalEquipment as APX serves it (Part 26 §26.1): the\nstock APDS record plus its `extensions` container, which carries the\n`apds-ext:apx:equipment-detail@1.0` decoration (REQUIRED on every\nrecord this class serves), `apds-ext:apx:camera@1.0` on a camera, and\n`apds-ext:apx:external-ids@1.0` where other systems have ids for it.\nThe APDS record itself is never reshaped.",
+        "allOf": [
+          {
+            "$ref": "#/components/schemas/SupplementalEquipment"
+          },
+          {
+            "type": "object",
+            "properties": {
+              "extensions": {
+                "$ref": "#/components/schemas/Extensions"
+              }
+            }
+          }
+        ]
+      },
+      "CommsPoint": {
+        "title": "CommsPoint",
+        "description": "Any way a parker reaches help from a lane or a location (Part 26\n§26.4): an intercom, an analog dialler, a posted phone number, a\nkiosk, a QR code, an app. A call platform matches an inbound contact\nto a comms point by the number it calls out as (`callerId`), the\nnumber it called (`phoneNumber`), or its own device id\n(`commsDeviceId`), and APX then answers with the lane, or with the\nlocation only when the comms point serves no single lane (a posted\nnumber shared by many lanes can never name the lane by itself).\n\nThese are the only members of APX that carry telephony values, and\nthe call platform supplies them; a PARCS implementation never has to\nhold, return or understand them (Part 17 §17.1). SIP usernames,\nrealms and passwords are deliberately left out: a username with its\nrealm is half of a line's login, they exist only for SIP devices, and\nthe call platform already maps its own SIP data to these ids. A SIP\npassword or any other credential MUST never appear in any member.",
+        "allOf": [
+          {
+            "$ref": "#/components/schemas/ApxResourceCore"
+          },
+          {
+            "type": "object",
+            "required": [
+              "type",
+              "place"
+            ],
+            "anyOf": [
+              {
+                "required": [
+                  "phoneNumber"
+                ]
+              },
+              {
+                "required": [
+                  "callerId"
+                ]
+              },
+              {
+                "required": [
+                  "commsDeviceId"
+                ]
+              }
+            ],
+            "properties": {
+              "type": {
+                "type": "string",
+                "description": "definedValue from apx-comms-point-types.",
+                "examples": [
+                  "intercom"
+                ]
+              },
+              "place": {
+                "description": "The location it serves.",
+                "$ref": "#/components/schemas/Reference"
+              },
+              "lane": {
+                "description": "The VehicularAccess it serves, when it serves exactly one.",
+                "$ref": "#/components/schemas/Reference"
+              },
+              "equipment": {
+                "description": "The SupplementalEquipment it is, when it is inventoried hardware (role `intercom`, `analogDialer`, `emergencyPhone`).",
+                "$ref": "#/components/schemas/Reference"
+              },
+              "serves": {
+                "description": "The barrier an agent opens for this comms point, a gate or an access door, when there is one.",
+                "$ref": "#/components/schemas/Reference"
+              },
+              "phoneNumber": {
+                "type": "string",
+                "pattern": "^\\+[1-9][0-9]{1,14}$",
+                "description": "E.164. The number that is called when help is requested, dialled by the parker for a posted number, or by the intercom or dialler when its button is pushed.",
+                "examples": [
+                  "+15555550142"
+                ]
+              },
+              "callerId": {
+                "type": "string",
+                "pattern": "^\\+[1-9][0-9]{1,14}$",
+                "description": "E.164. The number the device calls out as.",
+                "examples": [
+                  "+15555550199"
+                ]
+              },
+              "commsDeviceId": {
+                "type": "string",
+                "description": "The id the call platform uses for this comms point when it identifies it by neither caller id nor dialled number.",
+                "examples": [
+                  "dev-51cc-ae16"
+                ]
+              },
+              "coverage": {
+                "type": "array",
+                "description": "When the comms point is answered and in which languages. The answering call centre itself is not named.",
+                "items": {
+                  "type": "object",
+                  "properties": {
+                    "period": {
+                      "$ref": "#/components/schemas/Period"
+                    },
+                    "languages": {
+                      "type": "array",
+                      "description": "BCP 47 language tags.",
+                      "items": {
+                        "type": "string"
+                      },
+                      "examples": [
+                        [
+                          "en",
+                          "es"
+                        ]
+                      ]
+                    }
+                  }
+                }
+              }
+            }
+          }
+        ],
+        "examples": [
+          {
+            "id": "c3000000-0000-4000-8000-000000000001",
+            "version": 1,
+            "type": "intercom",
+            "place": {
+              "id": "b1000000-0000-4000-8000-000000000001",
+              "className": "Place"
+            },
+            "lane": {
+              "id": "b2000000-0000-4000-8000-000000000002",
+              "className": "VehicularAccess"
+            },
+            "equipment": {
+              "id": "c2000000-0000-4000-8000-000000000023",
+              "className": "SupplementalEquipment"
+            },
+            "serves": {
+              "id": "c2000000-0000-4000-8000-000000000021",
+              "className": "SupplementalEquipment"
+            },
+            "callerId": "+15555550199",
+            "commsDeviceId": "dev-51cc-ae16",
+            "coverage": [
+              {
+                "languages": [
+                  "en",
+                  "es"
+                ]
+              }
+            ]
           }
         ]
       },
@@ -11088,7 +11593,7 @@
             "type": "string"
           },
           "approvalRequest": {
-            "description": "The Part 17 §17.8 ApprovalRequest whose decision this evidence cites, when the approval was asked for through APX.",
+            "description": "The Part 17 §17.3a ApprovalRequest whose decision this evidence cites, when the approval was asked for through APX.",
             "$ref": "#/components/schemas/Reference"
           }
         }
@@ -11262,6 +11767,101 @@
             "imageLink": "https://api.lakeside-garage.example/lpr/f2000000-0911.jpg"
           }
         ]
+      },
+      "SupplementalEquipment": {
+        "title": "SupplementalEquipment",
+        "description": "One type of supplemental equipment, which is available on some site, for example on a rest area.",
+        "type": "object",
+        "x-package": "place",
+        "allOf": [
+          {
+            "$ref": "#/components/schemas/SupplementalFacility"
+          },
+          {
+            "type": "object",
+            "properties": {
+              "equipmentType": {
+                "$ref": "#/components/schemas/EquipmentTypeEnum"
+              },
+              "refillPoints": {
+                "type": "array",
+                "items": {
+                  "$ref": "#/components/schemas/RefillPoint"
+                }
+              }
+            },
+            "required": [
+              "equipmentType"
+            ]
+          }
+        ]
+      },
+      "ApxResourceCore": {
+        "title": "ApxResourceCore",
+        "description": "Identity core shared by every APX-defined resource. Shaped so any APX\nresource can itself be the target of an APDS Reference or\nVersionedReference (RFC 4122 UUID identifier + integer version).",
+        "type": "object",
+        "required": [
+          "id",
+          "version"
+        ],
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid",
+            "description": "RFC 4122 UUID, unique within the resource class."
+          },
+          "version": {
+            "type": "integer",
+            "minimum": 1,
+            "description": "Monotonically increasing object version."
+          },
+          "recordInfo": {
+            "$ref": "#/components/schemas/RecordInfo"
+          },
+          "extensions": {
+            "$ref": "#/components/schemas/Extensions"
+          }
+        }
+      },
+      "Period": {
+        "title": "Period",
+        "description": "Defines a continuous time period or a set of discontinuous time periods defined by the intersection of a set of criteria all within an overall delimiting interval.",
+        "type": "object",
+        "x-package": "time",
+        "properties": {
+          "periodName": {
+            "$ref": "#/components/schemas/MultilingualString"
+          },
+          "startOfPeriod": {
+            "description": "Start of the period.",
+            "$ref": "#/components/schemas/DateTime"
+          },
+          "endOfPeriod": {
+            "description": "End of the period.",
+            "$ref": "#/components/schemas/DateTime"
+          },
+          "recurringDayWeekMonthPeriod": {
+            "type": "array",
+            "description": "The list of days each month for the period. If empty, all year (7d/7).",
+            "items": {
+              "$ref": "#/components/schemas/DayWeekMonth"
+            }
+          },
+          "recurringSpecialDay": {
+            "type": "array",
+            "description": "The list of special days for the period.",
+            "items": {
+              "$ref": "#/components/schemas/SpecialDay"
+            }
+          },
+          "recurringTimePeriodOfDay": {
+            "type": "array",
+            "description": "The list of start and end time for each day. If empty, all day (24h/24).",
+            "items": {
+              "$ref": "#/components/schemas/TimePeriodOfDay"
+            }
+          }
+        }
       },
       "StructureTypeEnum": {
         "title": "StructureTypeEnum",
@@ -12092,7 +12692,7 @@
       },
       "CameraDetail": {
         "title": "CameraDetail",
-        "description": "A camera anywhere on the site, not only on a lane (Part 26 §26.3).\nCarried on a SupplementalEquipment whose EquipmentDetail `role` is\n`camera`, as the Level B decoration `apds-ext:apx:camera@1.0`. Where\nthe camera is (`area`, `level`, `lane`) and what it is built into\n(`builtInto`) are EquipmentDetail members, shared with every other\npiece of hardware; this decoration adds how it is mounted, what it\nlooks at, and how it can be viewed. It holds no addresses, usernames\nor passwords: a view is obtained through `POST /v1/cameras/{id}/views`\nand the password never leaves the site (Part 26 §26.4). Camera models\nand stream profiles follow ONVIF (Profile S, Profile T) and are not\nredefined. `apds-ext:apx:lane-cameras@1.0` (Part 13) is unchanged.",
+        "description": "A camera anywhere on the site, not only on a lane (Part 26 §26.3).\nCarried on a SupplementalEquipment whose EquipmentDetail `role` is\n`camera`, as the Level B decoration `apds-ext:apx:camera@1.0`. Where\nthe camera is (`area`, `level`, `lane`) and what it is built into\n(`builtInto`) are EquipmentDetail members, shared with every other\npiece of hardware; this decoration adds how it is mounted, what it\nlooks at, and how it can be viewed. It holds no addresses, usernames\nor passwords: a view is obtained through `POST /v1/cameras/{id}/views`\nand the password never leaves the site (Part 26 §26.3). Camera models\nand stream profiles follow ONVIF (Profile S, Profile T) and are not\nredefined. `apds-ext:apx:lane-cameras@1.0` (Part 13) is unchanged.",
         "type": "object",
         "required": [
           "view"
@@ -12195,14 +12795,14 @@
           "retentionDays": {
             "type": "integer",
             "minimum": 0,
-            "description": "How long recordings are kept; stated per camera because `driver` and `pedestrians` views capture faces (Part 26 §26.4).",
+            "description": "How long recordings are kept; stated per camera because `driver` and `pedestrians` views capture faces (Part 26 §26.3).",
             "examples": [
               30
             ]
           },
           "credentialRef": {
             "type": "string",
-            "description": "For a camera that cannot sit behind a gateway, the label of the\ncredential the receiving system looks up in its own vault. NEVER\nthe secret itself; the secret is exchanged once, outside APX, at\nonboarding (Part 9 §9.9).",
+            "description": "For a camera that cannot sit behind a gateway, the label of the\ncredential the receiving system looks up in its own vault. NEVER\nthe secret itself; the secret is exchanged once, outside APX, at\nonboarding (Part 9 §9.7).",
             "examples": [
               "site-0042/cam-door-1"
             ]
@@ -12237,7 +12837,7 @@
       },
       "ExternalIdentifiers": {
         "title": "ExternalIdentifiers",
-        "description": "The ids other systems use for the same place, lane or equipment\n(Part 26 §26.5). Carried on any HierarchyElement as the Level B\ndecoration `apds-ext:apx:external-ids@1.0`. APDS\n`SupplementalFacility.externalIdentifiers` holds untyped strings; here\neach id says which system issued it. `system` is a URI the issuer\nowns, usually its own domain, so APX names no products or platforms.\n`POST /v1/identifiers:resolve` finds the APX record from such an id.",
+        "description": "The ids other systems use for the same place, lane or equipment\n(Part 26 §26.6). Carried on any HierarchyElement as the Level B\ndecoration `apds-ext:apx:external-ids@1.0`. APDS\n`SupplementalFacility.externalIdentifiers` holds untyped strings; here\neach id says which system issued it. `system` is a URI the issuer\nowns, usually its own domain, so APX names no products or platforms.\n`POST /v1/identifiers:resolve` finds the APX record from such an id.",
         "type": "object",
         "required": [
           "identifiers"
@@ -12288,7 +12888,7 @@
       },
       "PlaceOperations": {
         "title": "PlaceOperations",
-        "description": "Operational facts about a place that a call centre needs before a\ncall (Part 26 §26.6). Carried on a place HierarchyElement as the\nLevel B decoration `apds-ext:apx:place-operations@1.0`.\n`escalationContacts` lists roles in calling order, never names or\nphone numbers: the call platform holds those, so APX carries no\npersonal contact data. A Part 17 approval request is addressed to a\nrole from this list.",
+        "description": "Operational facts about a place that a call centre needs before a\ncall (Part 26 §26.5). Carried on a place HierarchyElement as the\nLevel B decoration `apds-ext:apx:place-operations@1.0`.\n`escalationContacts` lists roles in calling order, never names or\nphone numbers: the call platform holds those, so APX carries no\npersonal contact data. A Part 17 approval request is addressed to a\nrole from this list.",
         "type": "object",
         "properties": {
           "commsAccountId": {
@@ -13108,6 +13708,279 @@
           "verified"
         ]
       },
+      "SupplementalFacility": {
+        "title": "SupplementalFacility",
+        "description": "One type of supplemental facility which can be supplemental equipment or a supplemental service facility.",
+        "type": "object",
+        "x-package": "place",
+        "allOf": [
+          {
+            "$ref": "#/components/schemas/IdentifiedArea"
+          },
+          {
+            "type": "object",
+            "properties": {
+              "accessibilities": {
+                "type": "array",
+                "description": "Information on accessibility, easements and marking for handicapped people.",
+                "items": {
+                  "$ref": "#/components/schemas/AccessibilityTypeEnum"
+                }
+              },
+              "additionalDescription": {
+                "$ref": "#/components/schemas/MultilingualString"
+              },
+              "applicableForUsers": {
+                "type": "array",
+                "description": "Limitation to a set of special users.",
+                "items": {
+                  "$ref": "#/components/schemas/UserTypeEnum"
+                }
+              },
+              "comment": {
+                "$ref": "#/components/schemas/MultilingualString"
+              },
+              "externalIdentifiers": {
+                "type": "array",
+                "description": "An external identifier for the supplemental facility, e.g. an inventory number. This attribute has an unbounded multiplicity to support identifiers for multiple occurrences of this element.'",
+                "items": {
+                  "type": "string"
+                }
+              },
+              "nameOrBrand": {
+                "$ref": "#/components/schemas/MultilingualString"
+              },
+              "otherSupplementalFacility": {
+                "type": "array",
+                "items": {
+                  "$ref": "#/components/schemas/MultilingualString"
+                }
+              },
+              "photoUrl": {
+                "$ref": "#/components/schemas/Url"
+              },
+              "quantity": {
+                "type": "integer",
+                "minimum": 0,
+                "description": "Number of the supplemental facility (e.g. number of toilets, restaurants, park & ride places, etc.) with respect to given restrictions. Dynamic overridable."
+              },
+              "regularlyCleaned": {
+                "type": "boolean",
+                "description": "Indication, if the supplemental facility is cleaned on a regular basis."
+              },
+              "rightSpecificationIds": {
+                "type": "array",
+                "description": "List of applicable right specifications",
+                "items": {
+                  "$ref": "#/components/schemas/VersionedReference"
+                }
+              },
+              "supplementalFacilityIndex": {
+                "type": "integer",
+                "description": "An index to link this supplemental facility between the static and dynamic publications."
+              }
+            },
+            "required": [
+              "supplementalFacilityIndex"
+            ]
+          }
+        ]
+      },
+      "EquipmentTypeEnum": {
+        "title": "EquipmentTypeEnum",
+        "description": "Types of equipment.\n* bikeParking: Bike parking.\n* cashMachine: Cash machine.\n* copyMachineOrService: A possibility to create copies of documents.\n* defibrillator: Medical equipment to provide first aid after heart attacks.\n* dsrcReceiver: A system to manage digital short range communication (radio beacon transceivers), e.g. for tolling roadside equipment.\n* dumpingStation: Possibility to get rid of sewerage (especially for motorhomes).\n* electricChargingStation: For charging vehicles, motorhome supply etc. The 'numberOf...' attribute specifies the number of charging stations.\n* elevator: Indication of the availability of elevators.\n* faxMachineOrService: A possibility to send and/or receive faxes.\n* fireExtinguisher: Fire extinguisher\n* fireHose: A hose for water transport in case of fire.\n* fireHydrant: Fire hydrant\n* firstAidEquipment: Equipment to support first aid on injured people. Note that 'defibrillator' is a separate literal.\n* iceFreeScaffold: A technical equipment to remove ice and snow from the roof of lorries.\n* informationPoint: An information point with employees.\n* informationStele: An unmanned information point.\n* internetTerminal: Public internet terminal. Charges may be specified using the TariffsAndPayment section.\n* internetWireless: Public wireless internet. Specifying an amount would be the number of hotspots/access points. Charges may be specified using the TariffsAndPayment section.\n* luggageLocker: Possibility to deposit luggage in a safe way.\n* none: None.\n* other: Some other equipment. Use 'otherSupplementalFacility' to specify it.\n* paymentMachine: A payment machine, for example a parking ticket machine.\n* picnicFacilities: Indication of whether any picnicking facilities, such as tables, chairs and shaded areas, are available.\n* playground: A playground for children.\n* publicCardPhone: Indicates, whether there's a public telephone available that can be used with a card.\n* publicCoinPhone: Indicates, whether there's a public telephone available that can be used with coins.\n* publicPhone: Indicates, whether there's a public telephone available.\n* refuseBin: Refuse bins for small amounts of garbage (see also 'wasteDisposal').\n* safeDeposit: A possibility to store valuable possession in a safe way. \n* shelter: A shelter (against wind, sun, ....).\n* shower: Indicates, whether there are shower facilities available.\n* snowAndIceRemovalEquipment: Equipment to remove snow and ice.nt\n* toilet: Indicates, whether there are toilets available.\n* tollTerminal: A terminal, where toll charges can be paid manually (this does not mean a toll gate on the road)\n* tyreAirPressureEquipment: Equipment to measure and refill tyre air pressure.\n* unknown: Unknown.\n* vendingMachine: A vending machine for snacks, coffee etc. (without manpower).\n* wasteDisposal: Possibility to get rid of waste in a legal way (e.g. for truckers or motorhomes). Normal refuse bins are not intended here.\n* waterBasin: A water basin to wash hands, clothes or dishes.\n* waterSupply: Supply of fresh water, e.g. for motorhomes.\n* waterTap: Fresh water out of a tap.",
+        "type": "string",
+        "x-package": "place.service.enums",
+        "enum": [
+          "bikeParking",
+          "cashMachine",
+          "copyMachineOrService",
+          "defibrillator",
+          "dsrcReceiver",
+          "dumpingStation",
+          "electricChargingStation",
+          "elevator",
+          "faxMachineOrService",
+          "fireExtinguisher",
+          "fireHose",
+          "fireHydrant",
+          "firstAidEquipment",
+          "iceFreeScaffold",
+          "informationPoint",
+          "informationStele",
+          "internetTerminal",
+          "internetWireless",
+          "luggageLocker",
+          "none",
+          "other",
+          "paymentMachine",
+          "picnicFacilities",
+          "playground",
+          "publicCardPhone",
+          "publicCoinPhone",
+          "publicPhone",
+          "refuseBin",
+          "safeDeposit",
+          "shelter",
+          "shower",
+          "snowAndIceRemovalEquipment",
+          "toilet",
+          "tollTerminal",
+          "tyreAirPressureEquipment",
+          "unknown",
+          "vendingMachine",
+          "wasteDisposal",
+          "waterBasin",
+          "waterSupply",
+          "waterTap"
+        ]
+      },
+      "RefillPoint": {
+        "title": "RefillPoint",
+        "description": "Technical infrastructure at a specific location that facilitates an energy refilling process being connected to maximum one vehicle at a time.",
+        "type": "object",
+        "x-package": "place.service",
+        "properties": {
+          "authenticationAndIdentificationMethods": {
+            "type": "array",
+            "description": "Information on what methods of identification and/or authentication are accepted",
+            "items": {
+              "$ref": "#/components/schemas/AuthenticationAndIdentificationEnum"
+            }
+          },
+          "currencyOverride": {
+            "type": "array",
+            "description": "Information on which currency/currencies can be used to pay",
+            "items": {
+              "$ref": "#/components/schemas/CurrencyCode"
+            }
+          },
+          "deliveryUnit": {
+            "$ref": "#/components/schemas/DeliveryUnitEnum"
+          },
+          "minimumDeliveryAmount": {
+            "$ref": "#/components/schemas/Units"
+          },
+          "maximumDeliveryAmount": {
+            "$ref": "#/components/schemas/Units"
+          },
+          "modelType": {
+            "$ref": "#/components/schemas/MultilingualString"
+          },
+          "refillPointIndex": {
+            "type": "integer",
+            "description": "An index to link this element between the static and dynamic publications."
+          },
+          "reservability": {
+            "$ref": "#/components/schemas/ReservationTypeEnum"
+          },
+          "serviceType": {
+            "type": "array",
+            "description": "Information on different service types for the fuelling/charging and payment process.",
+            "items": {
+              "$ref": "#/components/schemas/ServiceTypeEnum"
+            }
+          },
+          "userInterfaceLanguage": {
+            "type": "array",
+            "description": "Languages, in which a user interface is available, if any",
+            "items": {
+              "$ref": "#/components/schemas/LanguageCode"
+            }
+          }
+        },
+        "required": [
+          "refillPointIndex"
+        ]
+      },
+      "DayWeekMonth": {
+        "title": "DayWeekMonth",
+        "description": "Specification of periods defined by the intersection of days, weeks and months.",
+        "type": "object",
+        "x-package": "time",
+        "properties": {
+          "applicableDay": {
+            "type": "array",
+            "uniqueItems": true,
+            "maxItems": 7,
+            "description": "Applicable day of the week (1 to 7). All days of the week is expressed by non-inclusion of this attribute.",
+            "items": {
+              "$ref": "#/components/schemas/DayEnum"
+            }
+          },
+          "applicableMonth": {
+            "type": "array",
+            "description": "Applicable month of the year (1 to 12). All months of the year is expressed by non-inclusion of this attribute.",
+            "uniqueItems": true,
+            "maxItems": 12,
+            "items": {
+              "$ref": "#/components/schemas/MonthEnum"
+            }
+          },
+          "applicableWeek": {
+            "type": "array",
+            "description": "Applicable week of the month (1 to 5). All weeks of the month is expressed by non-inclusion of this attribute.",
+            "uniqueItems": true,
+            "maxItems": 5,
+            "items": {
+              "$ref": "#/components/schemas/WeekOfMonthEnum"
+            }
+          }
+        }
+      },
+      "SpecialDay": {
+        "title": "SpecialDay",
+        "description": "Specification of a special type of day, possibly also a public holiday. Can be country or region specific.",
+        "type": "object",
+        "x-package": "time",
+        "discriminator": {
+          "propertyName": "specialDayType",
+          "mapping": {
+            "dayBeforePublicHoliday": "#/components/schemas/OtherSpecialDay",
+            "dayFollowingPublicHoliday": "#/components/schemas/OtherSpecialDay",
+            "inLieuOfPublicHoliday": "#/components/schemas/OtherSpecialDay",
+            "longWeekendDay": "#/components/schemas/OtherSpecialDay",
+            "other": "#/components/schemas/OtherSpecialDay",
+            "publicEventDay": "#/components/schemas/OtherSpecialDay",
+            "publicHoliday": "#/components/schemas/PublicHoliday",
+            "schoolDay": "#/components/schemas/OtherSpecialDay",
+            "schoolHolidays": "#/components/schemas/OtherSpecialDay"
+          }
+        },
+        "properties": {
+          "specialDayType": {
+            "$ref": "#/components/schemas/SpecialDayTypeEnum"
+          },
+          "intersectWithApplicableDays": {
+            "type": "boolean",
+            "description": "Indicates if the period is the intersection of applicable days and this special day (TRUE) or if it is the union of applicable days and this special day."
+          }
+        },
+        "required": [
+          "specialDayType",
+          "intersectWithApplicableDays"
+        ]
+      },
+      "TimePeriodOfDay": {
+        "title": "TimePeriodOfDay",
+        "description": "Specification of a continuous period of time within the same day.",
+        "type": "object",
+        "x-package": "time",
+        "properties": {
+          "startTimeOfPeriod": {
+            "description": "Start of time period.",
+            "$ref": "#/components/schemas/Time"
+          },
+          "endTimeOfPeriod": {
+            "description": "End time of period.",
+            "$ref": "#/components/schemas/Time"
+          }
+        },
+        "required": [
+          "startTimeOfPeriod",
+          "endTimeOfPeriod"
+        ]
+      },
       "AttributeRead": {
         "title": "AttributeRead",
         "description": "One recognized attribute with its own confidence (0–1, APDS Confidence scale).",
@@ -13181,46 +14054,6 @@
               "null"
             ],
             "description": "The implementer rule that closed a `stale` Session (e.g. `transient-48h`); null when none applied."
-          }
-        }
-      },
-      "Period": {
-        "title": "Period",
-        "description": "Defines a continuous time period or a set of discontinuous time periods defined by the intersection of a set of criteria all within an overall delimiting interval.",
-        "type": "object",
-        "x-package": "time",
-        "properties": {
-          "periodName": {
-            "$ref": "#/components/schemas/MultilingualString"
-          },
-          "startOfPeriod": {
-            "description": "Start of the period.",
-            "$ref": "#/components/schemas/DateTime"
-          },
-          "endOfPeriod": {
-            "description": "End of the period.",
-            "$ref": "#/components/schemas/DateTime"
-          },
-          "recurringDayWeekMonthPeriod": {
-            "type": "array",
-            "description": "The list of days each month for the period. If empty, all year (7d/7).",
-            "items": {
-              "$ref": "#/components/schemas/DayWeekMonth"
-            }
-          },
-          "recurringSpecialDay": {
-            "type": "array",
-            "description": "The list of special days for the period.",
-            "items": {
-              "$ref": "#/components/schemas/SpecialDay"
-            }
-          },
-          "recurringTimePeriodOfDay": {
-            "type": "array",
-            "description": "The list of start and end time for each day. If empty, all day (24h/24).",
-            "items": {
-              "$ref": "#/components/schemas/TimePeriodOfDay"
-            }
           }
         }
       },
@@ -13950,104 +14783,51 @@
           "unitOfTime"
         ]
       },
-      "DayWeekMonth": {
-        "title": "DayWeekMonth",
-        "description": "Specification of periods defined by the intersection of days, weeks and months.",
+      "IdentifiedArea": {
+        "title": "IdentifiedArea",
+        "description": "An identifiable discrete bounded geographic zone that shares common characteristics and that may be used for \nparking related or other purposes. \nIdentified Areas are segmented into two types : Vehicular Access class and Specific Area class.",
         "type": "object",
-        "x-package": "time",
-        "properties": {
-          "applicableDay": {
-            "type": "array",
-            "uniqueItems": true,
-            "maxItems": 7,
-            "description": "Applicable day of the week (1 to 7). All days of the week is expressed by non-inclusion of this attribute.",
-            "items": {
-              "$ref": "#/components/schemas/DayEnum"
+        "x-package": "place",
+        "allOf": [
+          {
+            "$ref": "#/components/schemas/HierarchyElement"
+          },
+          {
+            "type": "object",
+            "properties": {
+              "streetAddress": {
+                "type": "array",
+                "description": "Identified area street address.",
+                "items": {
+                  "$ref": "#/components/schemas/Address"
+                }
+              },
+              "areaBoundedZone": {
+                "type": "array",
+                "description": "Identified area bounded zone.",
+                "items": {
+                  "$ref": "#/components/schemas/GeoJsonObject"
+                }
+              },
+              "indicativePointLocation": {
+                "type": "array",
+                "description": "Indicative identified area point location.",
+                "items": {
+                  "$ref": "#/components/schemas/GeoJsonObject"
+                }
+              },
+              "times": {
+                "$ref": "#/components/schemas/Times"
+              },
+              "operatingRestrictions": {
+                "type": "array",
+                "description": "Operating restrictions",
+                "items": {
+                  "$ref": "#/components/schemas/OperatingRestrictions"
+                }
+              }
             }
-          },
-          "applicableMonth": {
-            "type": "array",
-            "description": "Applicable month of the year (1 to 12). All months of the year is expressed by non-inclusion of this attribute.",
-            "uniqueItems": true,
-            "maxItems": 12,
-            "items": {
-              "$ref": "#/components/schemas/MonthEnum"
-            }
-          },
-          "applicableWeek": {
-            "type": "array",
-            "description": "Applicable week of the month (1 to 5). All weeks of the month is expressed by non-inclusion of this attribute.",
-            "uniqueItems": true,
-            "maxItems": 5,
-            "items": {
-              "$ref": "#/components/schemas/WeekOfMonthEnum"
-            }
           }
-        }
-      },
-      "SpecialDay": {
-        "title": "SpecialDay",
-        "description": "Specification of a special type of day, possibly also a public holiday. Can be country or region specific.",
-        "type": "object",
-        "x-package": "time",
-        "discriminator": {
-          "propertyName": "specialDayType",
-          "mapping": {
-            "dayBeforePublicHoliday": "#/components/schemas/OtherSpecialDay",
-            "dayFollowingPublicHoliday": "#/components/schemas/OtherSpecialDay",
-            "inLieuOfPublicHoliday": "#/components/schemas/OtherSpecialDay",
-            "longWeekendDay": "#/components/schemas/OtherSpecialDay",
-            "other": "#/components/schemas/OtherSpecialDay",
-            "publicEventDay": "#/components/schemas/OtherSpecialDay",
-            "publicHoliday": "#/components/schemas/PublicHoliday",
-            "schoolDay": "#/components/schemas/OtherSpecialDay",
-            "schoolHolidays": "#/components/schemas/OtherSpecialDay"
-          }
-        },
-        "properties": {
-          "specialDayType": {
-            "$ref": "#/components/schemas/SpecialDayTypeEnum"
-          },
-          "intersectWithApplicableDays": {
-            "type": "boolean",
-            "description": "Indicates if the period is the intersection of applicable days and this special day (TRUE) or if it is the union of applicable days and this special day."
-          }
-        },
-        "required": [
-          "specialDayType",
-          "intersectWithApplicableDays"
-        ]
-      },
-      "TimePeriodOfDay": {
-        "title": "TimePeriodOfDay",
-        "description": "Specification of a continuous period of time within the same day.",
-        "type": "object",
-        "x-package": "time",
-        "properties": {
-          "startTimeOfPeriod": {
-            "description": "Start of time period.",
-            "$ref": "#/components/schemas/Time"
-          },
-          "endTimeOfPeriod": {
-            "description": "End time of period.",
-            "$ref": "#/components/schemas/Time"
-          }
-        },
-        "required": [
-          "startTimeOfPeriod",
-          "endTimeOfPeriod"
-        ]
-      },
-      "CoveredTypeEnum": {
-        "title": "CoveredTypeEnum",
-        "description": "Defines the supported lists of different types describing roof coverage of the facility or entity\n* covered: Indicates that the facility or specific entity has a roof to provide protection from direct overhead sun or adverse weather\n* notCovered: Indicates that the facility or specific entity has no roof to provide protection from direct overhead sun or adverse weather\n* partiallyCovered: Indicates that the facility or specific entity has a roof offering partial coverage to provide protection from direct overhead sun or adverse weather\n* topLevelNotCovered: Indicates that in a multi-level facility or specific entity the top level(s) have no roof to provide protection from direct overhead sun or adverse weather",
-        "type": "string",
-        "x-package": "place.characteristics.enums",
-        "enum": [
-          "covered",
-          "notCovered",
-          "partiallyCovered",
-          "topLevelNotCovered"
         ]
       },
       "AccessibilityTypeEnum": {
@@ -14065,6 +14845,233 @@
           "other",
           "unknown",
           "wheelChairAccessible"
+        ]
+      },
+      "UserTypeEnum": {
+        "title": "UserTypeEnum",
+        "description": "Types of different users,for example used in the context of parking.\n* allUsers: All users.\n* commuters: Commuters.\n* customers: Customers.\n* disabled: Physically impaired people.\n* elderlyUsers: Elderly users.\n* employees: Employees.\n* families: Families.\n* handicapped: Persons with deficiencies in their daily life.\n* hearingImpaired: People with difficulties to hear.\n* hotelGuests: Hotel guests.\n* longTermParkers: Long-term parker.\n* members: Members.\n* men: Men.\n* other: Other.\n* overnightParkers: Overnight parker.\n* parkAndCycleUser: Park and cycle user.\n* parkAndRideUsers: Users that are exchanging into public transport at a park and ride station.\n* parkAndWalkUser: Park and walk user.\n* pensioners: Pensioners.\n* pregnantWomen: Pregnant women.\n* registeredDisabledUsers: Registered disabled persons.\n* reservationHolders: Those who have a valid reservation, e.g. for the duration of parking.\n* residents: Local residents.\n* seasonTicketHolders: Season ticket holders.\n* shoppers: Shoppers.\n* shortTermParkers: Short-term parker.\n* sportEventAwaySupporters: Sport event away supporters.\n* sportEventHomeSupporters: Sport event home supporters.\n* staff: Staff.\n* students: Students.\n* subscribers: Subscribers.\n* unknown: Unknown.\n* visitors: Visitors.\n* visuallyImpaired: People with difficulties to see.\n* wheelchairUsers: Wheelchair users.\n* women: Women.",
+        "type": "string",
+        "x-package": "place.enums",
+        "enum": [
+          "allUsers",
+          "commuters",
+          "customers",
+          "disabled",
+          "elderlyUsers",
+          "employees",
+          "families",
+          "handicapped",
+          "hearingImpaired",
+          "hotelGuests",
+          "longTermParkers",
+          "members",
+          "men",
+          "other",
+          "overnightParkers",
+          "parkAndCycleUser",
+          "parkAndRideUsers",
+          "parkAndWalkUser",
+          "pensioners",
+          "pregnantWomen",
+          "registeredDisabledUsers",
+          "reservationHolders",
+          "residents",
+          "seasonTicketHolders",
+          "shoppers",
+          "shortTermParkers",
+          "sportEventAwaySupporters",
+          "sportEventHomeSupporters",
+          "staff",
+          "students",
+          "subscribers",
+          "unknown",
+          "visitors",
+          "visuallyImpaired",
+          "wheelchairUsers",
+          "women"
+        ]
+      },
+      "AuthenticationAndIdentificationEnum": {
+        "title": "AuthenticationAndIdentificationEnum",
+        "description": "A table of authentication and/or identification methods: \n* activeRFIDChip: Phone (active RFID chip)\n* apps: Apps\n* calypso: RFID Calypso\n* cashPayment: No specific authentication by using cash\n* creditCard: Credit card\n* debitCard: Debit card\n* mifareClassic: RFID Card / Phone NFC - Mifare Classic\n* mifareDesfire: RFID Card / Phone NFC - Mifare Desfire\n* nfc: Nearfield communication\n* noAccess: No access granted\n* overTheAir: Over the air according to ISO 15118\n* phoneDialog: phone (dialog with platform)\n* phoneSMS: Phone (SMS)\n* pinpad: PINPAD\n* plc: PLC according to ISO 15118\n* prepaidCard: Pre-Paid card\n* rfid: RFID\n* unlimitedAccess: No authentication/identification required.\n* website: Using a website",
+        "type": "string",
+        "x-package": "place.service.enums",
+        "enum": [
+          "activeRFIDChip",
+          "apps",
+          "calypso",
+          "cashPayment",
+          "creditCard",
+          "debitCard",
+          "mifareClassic",
+          "mifareDesfire",
+          "nfc",
+          "noAccess",
+          "overTheAir",
+          "phoneDialog",
+          "phoneSMS",
+          "pinpad",
+          "plc",
+          "prepaidCard",
+          "rfid",
+          "unlimitedAccess",
+          "website"
+        ]
+      },
+      "DeliveryUnitEnum": {
+        "title": "DeliveryUnitEnum",
+        "description": "Table with different units in which the delivery is measured.\n* gasGallonEquivalent: The amount of alternative fuel it takes to equal the energy content of one liquid gallon of gasoline. Used mostly in the US.\n* imperialGallon: Imperial Gallon (4.54609 litres)\n* kg: kilogram\n* kWh: kilowatt hour\n* litre: Litre\n* m3: cubic meter\n* usGallon: US-Gallon (3.785411784 litres)",
+        "type": "string",
+        "x-package": "place.service.enums",
+        "enum": [
+          "gasGallonEquivalent",
+          "imperialGallon",
+          "kg",
+          "kWh",
+          "litre",
+          "m3",
+          "usGallon"
+        ]
+      },
+      "Units": {
+        "title": "Units",
+        "description": "Amount in units, which are specified by unitTypeEnum.",
+        "type": "number",
+        "x-package": "common.units"
+      },
+      "ReservationTypeEnum": {
+        "title": "ReservationTypeEnum",
+        "description": "Different types of reservation.\n* mandatory: Reservation is mandatory.\n* notAvailable: Reservation is not possible.\n* optional: Reservation is optional.\n* partly: There is a specific contingent, that can be reserved.\n* unknown: Possibility of reservation is unknown,\n* unspecified: Possibility of reservation is not specified.",
+        "type": "string",
+        "x-package": "place.service.enums",
+        "enum": [
+          "mandatory",
+          "notAvailable",
+          "optional",
+          "partly",
+          "unknown",
+          "unspecified"
+        ]
+      },
+      "ServiceTypeEnum": {
+        "title": "ServiceTypeEnum",
+        "description": "A table of different service levels to be expected for fuelling/charging and payment.\n* fullService: Full fuelling service carried out by an employee.\n* selfService: Self Service for fuelling\n* unattended: Unattended station, fuelling and payment to be done without assistance.",
+        "type": "string",
+        "x-package": "place.service.enums",
+        "enum": [
+          "fullService",
+          "selfService",
+          "unattended"
+        ]
+      },
+      "DayEnum": {
+        "title": "DayEnum",
+        "description": "Defines permissible enumerations of identification of days within a week.",
+        "type": "string",
+        "x-package": "time.enums",
+        "enum": [
+          "monday",
+          "tuesday",
+          "wednesday",
+          "thursday",
+          "friday",
+          "saturday",
+          "sunday"
+        ]
+      },
+      "MonthEnum": {
+        "title": "MonthEnum",
+        "description": "Defines permissible enumerations of identification of calendar months within a year.",
+        "type": "string",
+        "x-package": "time.enums",
+        "enum": [
+          "january",
+          "february",
+          "march",
+          "april",
+          "may",
+          "june",
+          "july",
+          "august",
+          "september",
+          "october",
+          "november",
+          "december"
+        ]
+      },
+      "WeekOfMonthEnum": {
+        "title": "WeekOfMonthEnum",
+        "description": "Weeks of the month\n\n* `firstWeekOfMonth`: First week of the month\n* `secondWeekOfMonth`: Second week of the month\n* `thirdWeekOfMonth`: Third week of the month\n* `fourthWeekOfMonth`: Fourth week of the month\n* `fifthWeekOfMonth`: Fifth week of the month (at most only 3 days and non in February when not a leap year)",
+        "type": "string",
+        "x-package": "time.enums",
+        "enum": [
+          "firstWeekOfMonth",
+          "secondWeekOfMonth",
+          "thirdWeekOfMonth",
+          "fourthWeekOfMonth",
+          "fifthWeekOfMonth"
+        ]
+      },
+      "OtherSpecialDay": {
+        "title": "OtherSpecialDay",
+        "description": "Specification of a other type of special day.",
+        "type": "object",
+        "x-package": "time",
+        "allOf": [
+          {
+            "$ref": "#/components/schemas/SpecialDay"
+          }
+        ]
+      },
+      "PublicHoliday": {
+        "title": "PublicHoliday",
+        "description": "Specification of a specific public holiday in case `specialDayType` is set to `publicHoliday`.",
+        "type": "object",
+        "x-package": "time",
+        "allOf": [
+          {
+            "$ref": "#/components/schemas/SpecialDay"
+          },
+          {
+            "type": "object",
+            "properties": {
+              "publicHolidayName": {
+                "$ref": "#/components/schemas/MultilingualString"
+              }
+            },
+            "required": [
+              "publicHolidayName"
+            ]
+          }
+        ]
+      },
+      "SpecialDayTypeEnum": {
+        "title": "SpecialDayTypeEnum",
+        "description": "Collection of special types of days\n* dayBeforePublicHoliday: The day preceding a public holiday\n* dayFollowingPublicHoliday: A day following a public holiday\n* inLieuOfPublicHoliday: A holiday in lieu of a public holiday that falls on a weekend\n* longWeekendDay: A day between a public holiday and the weekend\n* other: Some other special day\n* publicEventDay: A day of a public event. You may use the publicEvent attribute to specify the corresponding event\n* publicHoliday: Public holiday A public holiday in general. You may use the PublicHoliday class to refer on a specific public holiday\n* schoolDay: A school day\n* schoolHolidays: A day within the school holidays",
+        "type": "string",
+        "x-package": "time.enums",
+        "enum": [
+          "dayBeforePublicHoliday",
+          "dayFollowingPublicHoliday",
+          "inLieuOfPublicHoliday",
+          "longWeekendDay",
+          "other",
+          "publicEventDay",
+          "publicHoliday",
+          "schoolDay",
+          "schoolHolidays"
+        ]
+      },
+      "CoveredTypeEnum": {
+        "title": "CoveredTypeEnum",
+        "description": "Defines the supported lists of different types describing roof coverage of the facility or entity\n* covered: Indicates that the facility or specific entity has a roof to provide protection from direct overhead sun or adverse weather\n* notCovered: Indicates that the facility or specific entity has no roof to provide protection from direct overhead sun or adverse weather\n* partiallyCovered: Indicates that the facility or specific entity has a roof offering partial coverage to provide protection from direct overhead sun or adverse weather\n* topLevelNotCovered: Indicates that in a multi-level facility or specific entity the top level(s) have no roof to provide protection from direct overhead sun or adverse weather",
+        "type": "string",
+        "x-package": "place.characteristics.enums",
+        "enum": [
+          "covered",
+          "notCovered",
+          "partiallyCovered",
+          "topLevelNotCovered"
         ]
       },
       "OperatingModeTypeEnum": {
@@ -14353,104 +15360,6 @@
           "hour",
           "minute",
           "second"
-        ]
-      },
-      "DayEnum": {
-        "title": "DayEnum",
-        "description": "Defines permissible enumerations of identification of days within a week.",
-        "type": "string",
-        "x-package": "time.enums",
-        "enum": [
-          "monday",
-          "tuesday",
-          "wednesday",
-          "thursday",
-          "friday",
-          "saturday",
-          "sunday"
-        ]
-      },
-      "MonthEnum": {
-        "title": "MonthEnum",
-        "description": "Defines permissible enumerations of identification of calendar months within a year.",
-        "type": "string",
-        "x-package": "time.enums",
-        "enum": [
-          "january",
-          "february",
-          "march",
-          "april",
-          "may",
-          "june",
-          "july",
-          "august",
-          "september",
-          "october",
-          "november",
-          "december"
-        ]
-      },
-      "WeekOfMonthEnum": {
-        "title": "WeekOfMonthEnum",
-        "description": "Weeks of the month\n\n* `firstWeekOfMonth`: First week of the month\n* `secondWeekOfMonth`: Second week of the month\n* `thirdWeekOfMonth`: Third week of the month\n* `fourthWeekOfMonth`: Fourth week of the month\n* `fifthWeekOfMonth`: Fifth week of the month (at most only 3 days and non in February when not a leap year)",
-        "type": "string",
-        "x-package": "time.enums",
-        "enum": [
-          "firstWeekOfMonth",
-          "secondWeekOfMonth",
-          "thirdWeekOfMonth",
-          "fourthWeekOfMonth",
-          "fifthWeekOfMonth"
-        ]
-      },
-      "OtherSpecialDay": {
-        "title": "OtherSpecialDay",
-        "description": "Specification of a other type of special day.",
-        "type": "object",
-        "x-package": "time",
-        "allOf": [
-          {
-            "$ref": "#/components/schemas/SpecialDay"
-          }
-        ]
-      },
-      "PublicHoliday": {
-        "title": "PublicHoliday",
-        "description": "Specification of a specific public holiday in case `specialDayType` is set to `publicHoliday`.",
-        "type": "object",
-        "x-package": "time",
-        "allOf": [
-          {
-            "$ref": "#/components/schemas/SpecialDay"
-          },
-          {
-            "type": "object",
-            "properties": {
-              "publicHolidayName": {
-                "$ref": "#/components/schemas/MultilingualString"
-              }
-            },
-            "required": [
-              "publicHolidayName"
-            ]
-          }
-        ]
-      },
-      "SpecialDayTypeEnum": {
-        "title": "SpecialDayTypeEnum",
-        "description": "Collection of special types of days\n* dayBeforePublicHoliday: The day preceding a public holiday\n* dayFollowingPublicHoliday: A day following a public holiday\n* inLieuOfPublicHoliday: A holiday in lieu of a public holiday that falls on a weekend\n* longWeekendDay: A day between a public holiday and the weekend\n* other: Some other special day\n* publicEventDay: A day of a public event. You may use the publicEvent attribute to specify the corresponding event\n* publicHoliday: Public holiday A public holiday in general. You may use the PublicHoliday class to refer on a specific public holiday\n* schoolDay: A school day\n* schoolHolidays: A day within the school holidays",
-        "type": "string",
-        "x-package": "time.enums",
-        "enum": [
-          "dayBeforePublicHoliday",
-          "dayFollowingPublicHoliday",
-          "inLieuOfPublicHoliday",
-          "longWeekendDay",
-          "other",
-          "publicEventDay",
-          "publicHoliday",
-          "schoolDay",
-          "schoolHolidays"
         ]
       },
       "AccessAndEgressValidity": {

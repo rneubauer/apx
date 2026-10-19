@@ -411,6 +411,8 @@ ApprovalRequest:
     - type: object
       required: [place, action, requestedBy, role, correlationId, status]
       properties:
+        id: { type: string, format: uuid, readOnly: true }
+        version: { type: integer, minimum: 1, readOnly: true, description: Server-managed; bodies carry it only for a versioned replace (Part 4 §4.2a). }
         place:
           $ref: "../../../vendor/apds/4.1/apds-api-4.1.yaml#/components/schemas/Reference"
         action:

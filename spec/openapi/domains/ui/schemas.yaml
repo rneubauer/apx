@@ -137,6 +137,8 @@ UiLaunch:
     - type: object
       required: [status, expiresAt]
       properties:
+        id: { type: string, format: uuid, readOnly: true }
+        version: { type: integer, minimum: 1, readOnly: true, description: Server-managed; bodies carry it only for a versioned replace (Part 4 §4.2a). }
         url:
           type: string
           format: uri
