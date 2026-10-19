@@ -6,7 +6,7 @@
 #   - `tags[].description` the per-domain narrative, rendered by Redoc and
 #     Swagger UI directly ABOVE the operations carrying that tag, so every
 #     group of routes explains itself before listing itself
-#   - `x-tagGroups`        nav grouping, so seventeen tags read as five areas
+#   - `x-tagGroups`        nav grouping, so eighteen tags read as five areas
 #
 # Applied to spec/dist/apx-v1.{yaml,json} by tools/apply-overlay.mjs as the
 # last step of `npm run spec:bundle`, after the data-profile overlay.
@@ -486,7 +486,7 @@ actions:
 
   # ===== Navigation grouping ===============================================
   - target: $.x-tagGroups
-    description: Group nineteen domains into five readable areas (Redoc; ignored elsewhere).
+    description: Group eighteen domains into five readable areas (Redoc; ignored elsewhere).
     update:
       - name: Start here
         tags: [Discovery]
