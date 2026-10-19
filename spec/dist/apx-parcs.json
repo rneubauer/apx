@@ -904,6 +904,265 @@
         }
       }
     },
+    "/observations/{id}": {
+      "get": {
+        "summary": "get a specific observation element",
+        "tags": [
+          "Observation"
+        ],
+        "operationId": "get-observation-id",
+        "description": "get the latest version of a given `Observation` by its identifier (or a particular previous version when provided as a query parameter)",
+        "parameters": [
+          {
+            "schema": {
+              "type": "string"
+            },
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "description": "unique observation identifier"
+          },
+          {
+            "$ref": "#/components/parameters/version"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ObservationElement"
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "404": {
+            "description": "Not Found. APX (Part 5 §5.1a, Part 12 §12.1): a client sending `Accept: application/problem+json` receives problem type `target-not-found` instead of ResponseStatus.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ResponseStatus"
+                }
+              },
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "429": {
+            "$ref": "#/components/responses/TooManyRequests"
+          }
+        }
+      },
+      "put": {
+        "summary": "update a specific observation element",
+        "tags": [
+          "Observation"
+        ],
+        "operationId": "update-observation-id",
+        "description": "update the given  `Observation`",
+        "parameters": [
+          {
+            "schema": {
+              "type": "string"
+            },
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "description": "unique observation identifier"
+          },
+          {
+            "name": "APX-Update-Mode",
+            "in": "header",
+            "required": false,
+            "description": "APX data profile (Part 5 §5.1). `full` (default, stock APDS behavior): the body is the complete current state. `change`: the body is a ChangePayload — identity plus only the changed members; absent = unchanged, explicit null = clear. A stale `version` in change mode is 409 `version-conflict`.",
+            "schema": {
+              "type": "string",
+              "enum": [
+                "full",
+                "change"
+              ],
+              "default": "full"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ResponseStatus"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Observation can not be updated due to invalid or missing data. APX: with `Accept: application/problem+json`, problem type `invalid-request`.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ResponseStatus"
+                }
+              },
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "404": {
+            "description": "Not Found. APX (Part 5 §5.1a, Part 12 §12.1): a client sending `Accept: application/problem+json` receives problem type `target-not-found` instead of ResponseStatus.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ResponseStatus"
+                },
+                "examples": {
+                  "not-found": {
+                    "value": {
+                      "status": "error",
+                      "code": 404,
+                      "message": "observation with given id does not exist"
+                    }
+                  }
+                }
+              },
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Conflict. APX (Part 5 §5.1a, Part 12 §12.1): a client sending `Accept: application/problem+json` receives problem type `version-conflict` (stale `version`) instead of ResponseStatus.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ResponseStatus"
+                },
+                "examples": {
+                  "not-found": {
+                    "value": {
+                      "status": "error",
+                      "code": 409,
+                      "message": "outdated version number provided"
+                    }
+                  }
+                }
+              },
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "429": {
+            "$ref": "#/components/responses/TooManyRequests"
+          }
+        },
+        "requestBody": {
+          "required": false,
+          "description": "The Observation as it now stands (full mode) or its identity plus the changed members (change mode). Undeclared in APDS 4.1 (candidate C-026, not yet filed).",
+          "content": {
+            "application/json": {
+              "schema": {
+                "anyOf": [
+                  {
+                    "$ref": "#/components/schemas/ObservationElement"
+                  },
+                  {
+                    "$ref": "#/components/schemas/ObservationElementChangePayload"
+                  }
+                ]
+              }
+            }
+          }
+        }
+      },
+      "delete": {
+        "summary": "delete a specific observation element",
+        "tags": [
+          "Observation"
+        ],
+        "operationId": "delete-observation-id",
+        "description": "delete the given  `Observation`",
+        "parameters": [
+          {
+            "schema": {
+              "type": "string"
+            },
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "description": "unique observation identifier"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ResponseStatus"
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "404": {
+            "description": "Not Found. APX (Part 5 §5.1a, Part 12 §12.1): a client sending `Accept: application/problem+json` receives problem type `target-not-found` instead of ResponseStatus.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ResponseStatus"
+                },
+                "examples": {
+                  "not-found": {
+                    "value": {
+                      "status": "error",
+                      "code": 404,
+                      "message": "observation with given id does not exist"
+                    }
+                  }
+                }
+              },
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "429": {
+            "$ref": "#/components/responses/TooManyRequests"
+          }
+        }
+      }
+    },
     "/contacts": {
       "get": {
         "summary": "Get List of Organisations (Contacts)",
@@ -3748,6 +4007,85 @@
         }
       }
     },
+    "/quotes/{id}": {
+      "parameters": [
+        {
+          "schema": {
+            "type": "string"
+          },
+          "name": "id",
+          "in": "path",
+          "required": true,
+          "description": "unique id of the quote"
+        }
+      ],
+      "get": {
+        "summary": "get details of a specific quote",
+        "description": "get details of quote identified by `id`",
+        "operationId": "get-quote-id",
+        "tags": [
+          "Quote"
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "oneOf": [
+                    {
+                      "$ref": "#/components/schemas/QuoteRightRequest"
+                    },
+                    {
+                      "$ref": "#/components/schemas/QuoteRightResponse"
+                    },
+                    {
+                      "$ref": "#/components/schemas/QuoteSessionExtensionRequest"
+                    },
+                    {
+                      "$ref": "#/components/schemas/QuoteSessionExtensionResponse"
+                    }
+                  ]
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "404": {
+            "description": "Not Found. APX (Part 5 §5.1a, Part 12 §12.1): a client sending `Accept: application/problem+json` receives problem type `target-not-found` instead of ResponseStatus.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ResponseStatus"
+                },
+                "examples": {
+                  "not-found": {
+                    "value": {
+                      "status": "error",
+                      "code": 404,
+                      "message": "requested item does not exist"
+                    }
+                  }
+                }
+              },
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "429": {
+            "$ref": "#/components/responses/TooManyRequests"
+          }
+        }
+      }
+    },
     "/v1/places/{id}/occupancy": {
       "get": {
         "operationId": "get-apx-v1-places-id-occupancy",
@@ -6259,6 +6597,180 @@
           "observation"
         ]
       },
+      "ObservationElementChangePayload": {
+        "title": "ObservationElementChangePayload",
+        "description": "A change-mode body for native `PUT /observations/{id}` (Part 5 §5.1a): `id` plus only the ObservationElement members that changed; an absent member is unchanged and an explicit `null` clears it. Every member present is checked against the class, and a member the class does not define is refused. Generated at build time (tools/change-payloads.mjs); the generic ChangePayload remains the shape of change-feed items.",
+        "type": "object",
+        "required": [
+          "id"
+        ],
+        "properties": {
+          "id": {
+            "type": "string",
+            "minLength": 1,
+            "description": "The entity identifier (APDS VersionedIdentity.id)."
+          },
+          "version": {
+            "anyOf": [
+              {
+                "type": "integer",
+                "description": "Positive integer representing the object version.",
+                "minimum": 1,
+                "examples": [
+                  1
+                ]
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "method": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/ObservationTypeEnum"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "observer": {
+            "anyOf": [
+              {
+                "type": "string",
+                "description": "The individual person making the observation recorded in this observation element."
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "type": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/CredentialTypeEnum"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "observedCredentialId": {
+            "anyOf": [
+              {
+                "type": "string",
+                "description": "Specific identifier to the referenced observed credential."
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "observationStartTime": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date-time",
+                "description": "The initial date and time of the observation."
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "observationEndTime": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date-time",
+                "description": "The ending date and time of the observation, when it was continous since `observationStartTime`."
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "description": {
+            "type": [
+              "array",
+              "null"
+            ],
+            "minItems": 1,
+            "items": {
+              "type": "object"
+            }
+          },
+          "creationDateTime": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date-time",
+                "description": "The date and time stamp for the creation of the observation element."
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "location": {
+            "type": [
+              "object",
+              "null"
+            ]
+          },
+          "images": {
+            "type": [
+              "array",
+              "null"
+            ],
+            "items": {
+              "type": "object"
+            }
+          },
+          "elementIds": {
+            "type": [
+              "object",
+              "null"
+            ]
+          },
+          "vehicleAncillaryIdentification": {
+            "type": [
+              "object",
+              "null"
+            ]
+          },
+          "observerOrganisation": {
+            "type": [
+              "object",
+              "null"
+            ]
+          },
+          "confidence": {
+            "type": [
+              "object",
+              "null"
+            ]
+          },
+          "characterConfidence": {
+            "type": [
+              "object",
+              "null"
+            ]
+          },
+          "extensions": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/Extensions"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          }
+        },
+        "additionalProperties": false
+      },
       "ContactPointTypeEnum": {
         "title": "ContactPointTypeEnum",
         "description": "Defines the supported lists of types of contact.\n* customerService : Contact details for parking customer support for a facility or specific entity\n* emergencyContact : Contact details for emergency assistance or support for a facility or specific entity specifically related to parking operations\n* enforcementSystemProvider : Contact details for the provider of the enforcement system\n* operator : Contact details for the parking operator for a facility or specific entity\n* owner : Contact details for the owner of a facility or specific entity.\n* propertyManager : Contact details for the property manager of a facility or related facility.\n* securityService : Contact details for security services for a facility or specific entity\n* serviceProvider : Contact details for a parking service provider (e.g. pay-by-mobile provider)",
@@ -8552,7 +9064,7 @@
       },
       "DeviceStatus": {
         "title": "DeviceStatus",
-        "description": "Live state overlay keyed by Reference to an APDS SupplementalEquipment —\nnever duplicates its descriptive fields. deviceState values mirror the\nRefillPointStatusEnum style (registry apx-device-states). Attachable to\nAPDS payloads as apds-ext:apx:devicestatus@1.0.",
+        "description": "Live state overlay keyed by Reference to an APDS SupplementalEquipment —\nnever duplicates its descriptive fields. APDS 4.1 has no general\nequipment status list: its RefillPointStatusEnum (Data Dictionary\nA.3.53) covers refill points only and is absent from apds-api-4.1.yaml.\ndeviceState values come from the APX registry apx-device-states, which\nfollows that enumeration's style and shares its available, occupied,\ninoperative and unknown values. Attachable to\nAPDS payloads as apds-ext:apx:devicestatus@1.0.",
         "type": "object",
         "required": [
           "device",

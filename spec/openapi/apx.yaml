@@ -138,6 +138,8 @@ paths:
     $ref: "../vendor/apds/4.1/apds-api-4.1.yaml#/paths/~1places~1{id}"
   /observations:
     $ref: "../vendor/apds/4.1/apds-api-4.1.yaml#/paths/~1observations"
+  /observations/{id}:
+    $ref: "../vendor/apds/4.1/apds-api-4.1.yaml#/paths/~1observations~1{id}"
   /contacts:
     $ref: "../vendor/apds/4.1/apds-api-4.1.yaml#/paths/~1contacts"
   /contacts/{contactId}:
@@ -160,6 +162,8 @@ paths:
     $ref: "../vendor/apds/4.1/apds-api-4.1.yaml#/paths/~1rights~1assigned~1{id}"
   /quotes:
     $ref: "../vendor/apds/4.1/apds-api-4.1.yaml#/paths/~1quotes"
+  /quotes/{id}:
+    $ref: "../vendor/apds/4.1/apds-api-4.1.yaml#/paths/~1quotes~1{id}"
 
   # ===== Data profile: additive convenience reads (Part 5) ===== #
   /v1/places/{id}/occupancy:
@@ -6129,9 +6133,9 @@ paths:
         - name: observation
           in: query
           description: |-
-            Lookup by the underlying APDS Observation id — the read-back
-            route for one ingested read (APDS 4.1 has no GET
-            /observations/{id}).
+            Lookup by the underlying APDS Observation id. Returns the
+            LprRead projection of one ingested read; the stored
+            ObservationElement itself is native GET /observations/{id}.
           schema: { type: string, format: uuid }
         - name: session
           in: query
