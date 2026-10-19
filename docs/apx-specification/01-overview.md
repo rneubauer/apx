@@ -97,6 +97,7 @@ APX was built in steps. The base classes came first, then each operational domai
 | 0.12.0 | 2026-09-28 | LPR access events: reads say what happened |
 | 0.13.0 | 2026-09-29 | Audit of every Part against the bundle, Annex A and the registries, ahead of APDS working-group review |
 | 0.14.0 | 2026-10-12 | EV charging (Part 23), plate lists (Part 24), and what an external pairing engine needs to write back (session detail, read review, imported violations) |
+| Unreleased | 2026-10-18 | UI launch (Part 25) and site configuration (Part 26), with the field and code gaps found in a six-month sample of ten remote-assistance call centres: new issue types, interaction outcomes, approvals, receipts, refund reasons, device faults and supplies |
 
 For the data elements proposed to APDS, the work is grouped in three tiers (`docs/apds-submission/01-overview.md`):
 
@@ -177,6 +178,8 @@ flowchart TB
     PlateLists["Plate lists"]
     Resolution["Resolution and customer support"]
     Charging["EV charging"]
+    UiLaunch["UI launch"]
+    SiteConfig["Site configuration"]
   end
   Data --> Place
   Data --> Session
@@ -200,6 +203,8 @@ flowchart TB
   Resolution --> Session
   Charging --> Place
   Charging --> Session
+  SiteConfig --> Place
+  UiLaunch --> Resolution
 ```
 
 *Figure 1: The APX modules and the APDS domains each one builds on. The base and fabric modules apply to every domain.*
@@ -513,6 +518,39 @@ A driver wants to know whether a charger is free now. An operator wants to know 
 - **Settlement.** Three modes: `parkingSession` (one bill at exit), `directPayment` and `chargingNetwork` (APX Part 23 §23.5).
 - **Charger control.** `startCharging`, `stopCharging` and `unlockConnector` through the Part 6 command plane (APX Part 23 §23.9).
 
+### UI Launch
+
+UI launch (class `apx-ui-launch`, APX Part 25) lets an implementation open its own screen for a member of staff, with automatic login, and brings everything done on that screen back as APX data. It is defined once and used by every module: a module offers a screen by adding a surface to the `apx-ui-surfaces` registry. "Screen-pop" already names the lane inquiry (Part 6 §6.2), so this Part speaks of a UI launch.
+
+#### Benefits of UI Launch
+
+Most remote-assistance actions still happen in a vendor's own web portal, not through an API. In a six-month sample of ten operator call centres (1,503 locations, 9,664 lanes), only one location in eight had any revenue-control link; elsewhere the agent opened the vendor's portal in another window, issued the lost ticket or applied the validation there, and typed a note. Money amounts were recorded on about one call in a hundred, and gate vends were never confirmed back. A vendor will take years to implement every APX module, but it already has good screens. UI launch lets it offer them on day one without breaking the record.
+
+#### Key concepts
+
+- **Surfaces.** The screens an implementation offers, named `<module>.<view>` (`lane.console`, `reservation.detail`, `violation.appeal`, `toll.dispute`, `place.console`), each with the subject class it opens, listed in discovery as `uiSurfaces[]` (APX Part 25 §25.1).
+- **Two launch modes, both with automatic login.** Handshake: the host posts `POST /v1/ui/launches` with its APX token and opens the single-use URL returned, which lives at most sixty seconds. Signed token: the host signs a JWS with the same members as claims and sends it by form post or URL fragment. The agent never sees a vendor login page and never holds vendor credentials (APX Part 25 §25.2).
+- **Lifecycle.** `issued`, `opened`, `closed` or `expired`, with `apx.ui.launch.changed.v1` on every transition (APX Part 25 §25.3).
+- **Loopback.** Everything done on the screen appears as if done through the API: the native command or resource first, carrying the launch's correlation identifier and agent; otherwise a `UiActionRecord` with the fields the host asked for, and any it cannot supply declared unavailable with a reason (APX Part 25 §25.4).
+- **Resolution link.** An allowed action may say "do it in the vendor's screen" (`execution.type: ui`), and the policy decision applies to the launch as to a command (APX Part 25 §25.5).
+- **Security.** Single use, sixty seconds, bound to surface, subject, agent and place, HTTPS only, never in a query string, no personal data in the launch; embedding only for registered origins; everything attributable to the agent, not a shared vendor account (APX Part 25 §25.6).
+
+### Site Configuration
+
+Site configuration (class `apx-site-config`, APX Part 26) makes APX alone enough to describe a location: what hardware it has and where it stands, how a parker at any point of it reaches help, what each camera looks at and how to see it, which other systems know the location by which identifiers, and whom to escalate to.
+
+#### Benefits of Site Configuration
+
+A system that joins a location today learns its layout from three places at once: the parking vendor's portal for the lanes and devices, the call platform for which intercom rings where, and a spreadsheet for the cameras. In the same sample of ten call centres, lane types were free text, the intercom fields on lanes were defined but never filled, most lanes could not be tied to the parking system's own lane identifier, and camera and parking-system passwords were stored in plain text on the lane records. Part 26 gives every item a fixed role, a place in the building, its make, model, versions, serial number and MAC addresses, and the relations between items, and keeps every password out of APX.
+
+#### Key concepts
+
+- **Equipment detail.** A decoration on every APDS SupplementalEquipment with a required `role` from the fixed `apx-equipment-roles` list (gates, doors, dispensers, verifiers, pay stations, readers, detectors, cameras, intercoms, signs, servers), its identity and versions, its `area` and `level`, the item it is `builtInto` and the barriers it `controls`, and who services it. The APDS equipment type is still written; the role adds to it. Network addresses are deliberately left out in the interest of security (APX Part 26 §26.1).
+- **Cameras and views.** A camera is equipment anywhere in the place, with its mounting, what it looks at (plate, vehicle, driver, the interaction with the equipment, pedestrians, an area), its facing, recorder and streams. An agent sees it through `POST /v1/cameras/{id}/views`: a single-use link for a live view, a snapshot or a playback, expiring within five minutes, served by whoever holds the camera so that the password never leaves the site (APX Part 26 §26.3).
+- **Comms points.** Any way a parker reaches help: an intercom, an analog dialer, a posted number, a kiosk, a QR code, an app. Each carries the number that is called when help is requested, the number the device calls out as, or the identifier the call systems use, and the barrier an agent opens for it. A posted number resolves to the place only; the agent asks which lane. No SIP data is held (APX Part 26 §26.4).
+- **Place operations and external identifiers.** The call platform's account for the site and the escalation roles in calling order, as roles only; typed identifiers from other systems, each naming the system that issued it, and a one-call lookup (APX Part 26 §26.5 and §26.6).
+- **Change notices.** `apx.equipment.changed.v1` and `apx.commspoints.changed.v1`, plus the change feed on both lists, so another system keeps a site's setup current without re-reading the place (APX Part 26 §26.7).
+
 ## Security and Permissions
 
 APDS leaves security to the Distributing Party. APX narrows that to an interoperable profile without prescribing an identity provider (APX Part 9). The APDS guidance still holds: access to data is controlled by the Distributing Party, and different Receiving Parties will receive different sets of data.
@@ -543,6 +581,8 @@ Scopes follow the pattern `apx.<domain>:<verb>`. A request whose token lacks the
 | Credentials | `apx.credentials:read`, `apx.credentials:manage` |
 | Valet | `apx.valet:read`, `apx.valet:manage`, `apx.valet:request` (customer) |
 | Plate lists | `apx.platelists:read`, `apx.platelists:manage` |
+| UI launch | `apx.ui:launch` (host), `apx.ui:read`, `apx.ui:record` (the surface's back end) |
+| Site configuration | `apx.siteconfig:read`, `apx.siteconfig:manage` (whoever runs the calls), `apx.cameras:view` |
 | EV charging | `apx.charging:read`, `apx.charging:manage` (bridge), `apx.charging:status` (customer) |
 | Other | `apx.digest:use`, `apx.replication:write` |
 
@@ -658,6 +698,8 @@ APX functionality is divided into named conformance classes, registered in `spec
 | `apx-valet` | Valet custody, retrieval queue, verified handback, customer scope | Base classes | 22 |
 | `apx-charging` | Charging-point status with bay presence, ChargingSession, settlement, customer scope | Base classes; `apx-control` for charger commands | 23 |
 | `apx-plate-lists` | Plate lists and entries, change feed, `apx.platelists.changed.v1` | Base classes | 24 |
+| `apx-ui-launch` | Vendor screens opened for staff with automatic login, single-use launches, loopback of every action as APX data | Base classes; `apx-resolution` for `execution.type: ui` | 25 |
+| `apx-site-config` | Equipment detail with a fixed role list, areas, cameras and views, comms points, place operations, external identifiers, change notices | Base classes | 26 |
 | `apx-mtls` | Mutual TLS on all APX endpoints | None; combines with any set | 9, 16 |
 
 `apx-data` and `apx-events` are the base classes. Every other class builds on them. The unauthenticated bootstrap document is required of every implementation, whatever it claims (APX Part 16 §16.1).

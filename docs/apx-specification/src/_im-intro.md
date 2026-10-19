@@ -66,8 +66,20 @@ were permitted as pre-1.0 revisions. The full record is `CHANGELOG.md`.
 
 **Unreleased (after 0.14.0)**
 
-- No normative change. The `DeviceStatus` description now states exactly
-  how APX device states relate to APDS `RefillPointStatusEnum`.
+- UI launch (Part 25, class `apx-ui-launch`): vendor screens opened for
+  staff with automatic login, single-use launches, and the loopback of
+  every action as APX data.
+- Site configuration (Part 26, class `apx-site-config`): equipment detail
+  with a fixed role list, areas, cameras and views, comms points, place
+  operations, typed external identifiers, and change notices.
+- Field and code gaps found in a six-month sample of ten remote-assistance
+  call centres: twenty-three issue types, interaction outcomes, approval
+  requests (Part 17 §17.3a), receipt re-send and refund reasons (Part 13
+  §13.1a), device faults, supplies and maintenance mode (Part 6 §6.4),
+  six alert types, three commands, guest references, reservation issuers,
+  and per-place capabilities in discovery.
+- The `DeviceStatus` description now states exactly how APX device states
+  relate to APDS `RefillPointStatusEnum`.
 - Added the APX Data Specification for the APDS committee
   (`docs/apds-submission/`), generated from
   `spec/proposals/apds-additions/*.yaml`.

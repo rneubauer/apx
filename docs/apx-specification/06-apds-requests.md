@@ -55,7 +55,7 @@ Notes on the counts:
 - Erratum 007 is counted as an Omission; it also carries a small
   consistency question. Erratum 014 is counted as a Suggestion; it is
   phrased as a question.
-- Parts C and D together are the 119 proposals of the APX submission to
+- Parts C and D together are the 127 proposals of the APX submission to
   the committee: 47 new classes, 11 additions to existing APDS classes,
   57 new enumerations and 4 sets of new values for existing APDS
   enumerations.
@@ -301,7 +301,7 @@ Dictionary's own definition of `barrierFreeAccessible` still mentions
 Four existing APDS enumerations would gain new values. Each value is a
 new name only; none repeats or redefines an existing value. These are
 the `change: extend` enumerations in `spec/proposals/apds-additions/`,
-and are part of the 119 proposals.
+and are part of the 127 proposals.
 
 | Enumeration | Domain | New values | Tier | Why | APX today |
 | --- | --- | --- | --- | --- | --- |
@@ -347,8 +347,9 @@ APX and widely useful, such as plate lists, validation programmes,
 payment outcomes, reservations and permits, valet custody and alerts.
 **Tier 3, for discussion,** covers areas that are still settling, such as
 electric vehicle charging sessions, or that may sit outside parking data,
-such as customer service interactions. Of the 119 proposals, 34 are Tier
-1, 59 Tier 2 and 26 Tier 3.
+such as customer service interactions, or the comms points through which
+a parker calls for help. Of the 127 proposals, 34 are Tier 1, 65 Tier 2
+and 28 Tier 3.
 
 Additions to existing APDS classes are written as Level B extensions:
 they add optional content only, so a valid extended instance is always a
@@ -360,7 +361,7 @@ Information Model, Data Dictionary and Use Case Document, is in
 below are generated from `spec/proposals/apds-additions/*.yaml`, the same
 source the submission is built from.
 
-119 data elements are proposed. The full text of each, in the APDS Data Dictionary format, is in `docs/apds-submission/03-data-dictionary.md`.
+127 data elements are proposed. The full text of each, in the APDS Data Dictionary format, is in `docs/apds-submission/03-data-dictionary.md`.
 
 ### Tier 1: propose now (34)
 
@@ -401,7 +402,7 @@ source the submission is built from.
 | `AccessDenialReasonEnum` | New enumeration | Session | Session | APX Part 11 code list (access denial reasons) |
 | `ValidationRedemptionStatusEnum` | New enumeration | Session | Session | APX Part 20 ValidationRedemption.redemptionStatus |
 
-### Tier 2: proven in APX, propose next (59)
+### Tier 2: proven in APX, propose next (65)
 
 | Element | Change | APDS domain | Package | Comes from in APX |
 | --- | --- | --- | --- | --- |
@@ -436,6 +437,12 @@ source the submission is built from.
 | `CameraFacingEnum` | New enumeration | Place | VehicularAccess | APX Part 13 §13.3a LaneCameras |
 | `Signage` | New class | Place | Signage | APX Part 19 §19.11 Signage |
 | `SignTypeEnum` | New enumeration | Place | Signage | APX Part 19 §19.11 Signage.signType |
+| `SupplementalEquipment` | Additions to an APDS class | Place | EquipmentDetail | APX Part 26 §26.1 EquipmentDetail (apds-ext:apx:equipment-detail@1.0) |
+| `Camera` | New class | Place | EquipmentDetail | APX Part 26 §26.3 CameraDetail (apds-ext:apx:camera@1.0) |
+| `EquipmentRoleEnum` | New enumeration | Place | EquipmentDetail | APX Part 11 code list apx-equipment-roles (Part 26 §26.1) |
+| `AreaTypeEnum` | New enumeration | Place | EquipmentDetail | APX Part 11 code list apx-area-types (Part 26 §26.2) |
+| `CameraMountingEnum` | New enumeration | Place | EquipmentDetail | APX Part 26 §26.3 CameraDetail.mounting |
+| `CameraViewEnum` | New enumeration | Place | EquipmentDetail | APX Part 26 §26.3 CameraDetail.view |
 | `RateTable` | Additions to an APDS class | Rates | Rates | APX Part 6 §6.6 RatePolicy |
 | `ValidationBenefit` | New class | Rates | Rates | APX Part 20 §20.1 ValidationBenefit |
 | `AssignedRight` | Additions to an APDS class | Right | Right | APX Part 14 §14.1 ReservationExtension |
@@ -465,7 +472,7 @@ source the submission is built from.
 | `ValetStatusEnum` | New enumeration | Session | Session | APX Part 22 ValetTicket.valetStatus |
 | `HandbackVerificationEnum` | New enumeration | Session | Session | APX Part 22 ValetTicket.handback |
 
-### Tier 3: for discussion (26)
+### Tier 3: for discussion (28)
 
 | Element | Change | APDS domain | Package | Comes from in APX |
 | --- | --- | --- | --- | --- |
@@ -486,6 +493,8 @@ source the submission is built from.
 | `SupportAgentTypeEnum` | New enumeration | Operations | Operations | APX Part 17 SupportInteraction.agentType |
 | `SupportIssueTypeEnum` | New enumeration | Operations | Operations | APX Part 11 code list (issue types) |
 | `RecordType` | Additions to an APDS class | PkCommon | CommonClasses | APX Part 18 §18.6 RecordInfo.origin |
+| `CommsPoint` | New class | Place | CommsPoint | APX Part 26 §26.4 CommsPoint |
+| `CommsPointTypeEnum` | New enumeration | Place | CommsPoint | APX Part 11 code list apx-comms-point-types (Part 26 §26.4) |
 | `RateSold` | New class | Right | Right | APX Part 13 §13.6a PaymentDetail.rateSold |
 | `RateProductEnum` | New enumeration | Right | Right | APX Part 13 §13.6a PaymentDetail.rateSold.product |
 | `RateClassEnum` | New enumeration | Right | Right | APX Part 13 §13.6a PaymentDetail.rateSold.class |

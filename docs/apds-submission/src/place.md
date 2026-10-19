@@ -54,6 +54,35 @@ A Lane Camera:
 - Has a facing: inward (into the Place) or outward (out of the Place).
 - Is associated to a Vehicular Access.
 
+### Equipment detail, cameras and comms points
+
+A system that joins a Place today learns its layout from three places at
+once: the parking vendor's portal for the lanes and devices, the call
+platform for which intercom rings where, and a spreadsheet for the
+cameras. A second group of additions lets the Place data say it all:
+
+- Supplemental equipment gains its **role** (what the item does on the
+  lane or in the building, from a fixed list: gate, access door, ticket
+  dispenser, exit verifier, pay-on-foot machine, card reader, camera,
+  intercom, count sign, video recorder and so on), its identity
+  (manufacturer, model, serial number, MAC addresses), the firmware and
+  software it runs, the date it went into service, the kind of area and
+  the level it stands in, the lane it serves, the item it is built into,
+  the barriers it opens, and who services it. The equipment type stays
+  what it is; the role adds to it. Network addresses are deliberately not
+  proposed, in the interest of security.
+- A **Camera** is equipment anywhere in the Place, with its mounting,
+  what it looks at (the plate, the vehicle, the driver, the hands at the
+  machine, pedestrians, an area), which way it faces on a lane, whether
+  it is the one to show first, whether it pans and zooms, which recorder
+  keeps it and for how long. No stream address and no credential.
+- A **Comms point** is any way a parker reaches help from a lane or the
+  Place: an intercom, an analog dialer, a posted telephone number, a
+  kiosk, a QR code or an app, with the number that is called when help
+  is requested, the number the device calls out as, or the identifier the
+  call systems use, the lane it serves and the gate or door an agent
+  opens for it. No SIP data is proposed.
+
 ### Signage
 
 A Signage record:
@@ -163,6 +192,74 @@ to the lane's flow, so it remains correct on a reversible lane. The
 association could equally be placed on AccessLaneSpecific where lanes are
 described one by one; we would welcome the group's view.
 
+### How equipment detail, cameras and comms points attach
+
+```mermaid
+classDiagram
+    class SupplementalEquipment {
+        <<APDS, extended>>
+        +equipmentRole : EquipmentRoleEnum [0..1]
+        +manufacturer : String [0..1]
+        +model : String [0..1]
+        +serialNumber : String [0..1]
+        +macAddress : String [0..*]
+        +firmwareVersion : String [0..1]
+        +softwareVersion : String [0..1]
+        +installationDate : Date [0..1]
+        +areaType : AreaTypeEnum [0..1]
+        +levelName : String [0..1]
+    }
+    class Camera {
+        <<proposed>>
+        +mounting : CameraMountingEnum [0..1]
+        +view : CameraViewEnum [1..*]
+        +facing : CameraFacingEnum [0..1]
+        +primary : Boolean [0..1]
+        +panTiltZoom : Boolean [0..1]
+        +retentionDays : NonNegativeInteger [0..1]
+    }
+    class CommsPoint {
+        <<proposed>>
+        +commsPointType : CommsPointTypeEnum [1..1]
+        +phoneNumber : String [0..1]
+        +callerId : String [0..1]
+        +commsDeviceId : String [0..1]
+        +language : LanguageCode [0..*]
+    }
+    class VehicularAccess {
+        <<APDS>>
+    }
+    class Place {
+        <<APDS>>
+    }
+    class Organisation {
+        <<APDS>>
+    }
+    class Period {
+        <<APDS>>
+    }
+    SupplementalEquipment <|-- Camera
+    SupplementalEquipment "0..1" <.. "0..*" SupplementalEquipment : builtInto
+    SupplementalEquipment "0..*" <.. "0..*" SupplementalEquipment : controls
+    VehicularAccess "0..1" <.. "0..*" SupplementalEquipment : servesAccess
+    Organisation "0..1" <.. "0..*" SupplementalEquipment : serviceProvider
+    SupplementalEquipment "0..1" <.. "0..*" Camera : recorder
+    Place "1" <.. "0..*" CommsPoint : placeId
+    VehicularAccess "0..1" <.. "0..*" CommsPoint : servesAccess
+    SupplementalEquipment "0..1" <.. "0..*" CommsPoint : equipmentId
+    SupplementalEquipment "0..1" <.. "0..*" CommsPoint : opensBarrier
+    CommsPoint o-- "0..*" Period : coverage
+```
+
+The equipment attributes are added to SupplementalEquipment itself,
+because they describe the item and change as rarely as the rest of the
+Place description. Camera is a specialisation of SupplementalEquipment,
+so a camera is still typed by EquipmentTypeEnum and carries the role
+`camera`; the Camera attributes say what it looks at. CommsPoint is a
+versioned record of its own in a new package beneath Place: it refers to
+the Place, the lane, the hardware and the barrier by reference, so that a
+posted number with no hardware is as valid as an intercom.
+
 ### How signage is modelled
 
 Signage is versioned identifiable so a receiver can hold every version
@@ -225,6 +322,34 @@ Neither party needs the Place hierarchy resent.
 images. Because each LaneCamera states which way it faces, a receiver can
 tell entering from exiting vehicles without knowing the camera vendor's
 own configuration.
+
+### A monitoring service learns a garage from the Place data
+
+A monitoring service takes on a 400-space garage. It reads the Place
+hierarchy and, for each SupplementalEquipment, the role, manufacturer,
+model, firmware version and serial number, the lane it serves and the
+barriers it opens. It knows at once that exit lane 2 has a gate, an exit
+verifier that opens it, an intercom and two cameras, one reading plates
+outward and one overhead watching the card slot; that the pay-on-foot
+machine on level G has a camera built in that looks at the driver; and
+that the street door is opened by a card reader and has an intercom in
+its call box. The comms points tell it which number each intercom calls
+out as and which gate or door an agent opens for it, and that the number
+posted on the pay-on-foot sign serves the whole Place and no single
+lane. Nothing was read from the vendor's portal, and no address or
+password reached the service.
+
+### Which lane is calling
+
+A parker presses the intercom at exit lane 2. The call platform hands
+the answering agent the caller id. The agent's console matches it to the
+comms point, and from the comms point to the lane and the gate it
+serves. A second parker dials the number posted on the pay-on-foot sign
+from a mobile phone; that comms point serves the Place and no lane, so
+the agent asks which machine the parker is at. A third presses the
+intercom at the street door after hours; the comms point names the door
+it opens, and the agent, having checked the parker's permit, opens the
+door.
 
 ### Showing the sign at appeal
 

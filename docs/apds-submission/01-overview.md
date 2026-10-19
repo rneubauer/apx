@@ -133,7 +133,7 @@ Session, Observation, Energy infrastructure and PkCommon.*
 
 ### Place Data Specification
 
-Adds what an operator needs to describe how the equipment in a Place is working right now, which way the licence plate cameras on an access lane face, and what is posted on the signs at a Place. It also suggests four lane-equipment values for EquipmentTypeEnum. Equipment status is kept in its own record, apart from the static Place description, for the same reason APDS keeps Demand apart from Supply: it changes far more often.
+Adds what an operator needs to describe how the equipment in a Place is working right now, which way the licence plate cameras on an access lane face, and what is posted on the signs at a Place. It also suggests four lane-equipment values for EquipmentTypeEnum. Equipment status is kept in its own record, apart from the static Place description, for the same reason APDS keeps Demand apart from Supply: it changes far more often. A second group describes the equipment itself, so that a Place can be understood from the data alone: what each item does (its role), where it stands, what it is and what runs on it, which cameras look at what, and how a parker at any point of the Place reaches help (a comms point).
 
 The Place data specification already describes where a Place is, how it
 is organised, and the equipment and services it offers. These proposals
@@ -188,6 +188,35 @@ A Lane Camera:
   its observations.
 - Has a facing: inward (into the Place) or outward (out of the Place).
 - Is associated to a Vehicular Access.
+
+#### Equipment detail, cameras and comms points
+
+A system that joins a Place today learns its layout from three places at
+once: the parking vendor's portal for the lanes and devices, the call
+platform for which intercom rings where, and a spreadsheet for the
+cameras. A second group of additions lets the Place data say it all:
+
+- Supplemental equipment gains its **role** (what the item does on the
+  lane or in the building, from a fixed list: gate, access door, ticket
+  dispenser, exit verifier, pay-on-foot machine, card reader, camera,
+  intercom, count sign, video recorder and so on), its identity
+  (manufacturer, model, serial number, MAC addresses), the firmware and
+  software it runs, the date it went into service, the kind of area and
+  the level it stands in, the lane it serves, the item it is built into,
+  the barriers it opens, and who services it. The equipment type stays
+  what it is; the role adds to it. Network addresses are deliberately not
+  proposed, in the interest of security.
+- A **Camera** is equipment anywhere in the Place, with its mounting,
+  what it looks at (the plate, the vehicle, the driver, the hands at the
+  machine, pedestrians, an area), which way it faces on a lane, whether
+  it is the one to show first, whether it pans and zooms, which recorder
+  keeps it and for how long. No stream address and no credential.
+- A **Comms point** is any way a parker reaches help from a lane or the
+  Place: an intercom, an analog dialer, a posted telephone number, a
+  kiosk, a QR code or an app, with the number that is called when help
+  is requested, the number the device calls out as, or the identifier the
+  call systems use, the lane it serves and the gate or door an agent
+  opens for it. No SIP data is proposed.
 
 #### Signage
 

@@ -69,31 +69,74 @@ There are no proposed associations in the "CommonClasses" package.
 | --- | --- | --- | --- | --- | --- |
 | RecordType | origin | Origin | Identifier of the system that first created the record, when it differs from the system distributing it. | 0..1 | PkCommon.String |
 
-### A.1.2 "Demand" package
+### A.1.2 "CommsPoint" package (new)
 
-**A.1.2.1 Location of "Demand" package.** The location of the "Demand" package is:
+**A.1.2.1 Location of "CommsPoint" package.** The location of the "CommsPoint" package is:
+
+`-- D2Payload/Extension/Parking/Place/CommsPoint`
+
+**A.1.2.2 Classes of the "CommsPoint" package**
+
+*Table A.3 -- Classes of the "CommsPoint" package*
+
+| Class name | Change | Designation | Definition | Stereotype | Abstract |
+| --- | --- | --- | --- | --- | --- |
+| CommsPoint | new | Comms point | Any way a parker reaches help from a lane or a Place: an intercom, an analog dialer, a posted telephone number, a kiosk, a QR code or an app. | D2VersionedIdentifiable | no |
+
+**A.1.2.3 Specializations of the "CommsPoint" package**
+
+There are no proposed specializations in the "CommsPoint" package.
+
+**A.1.2.4 Associations of the "CommsPoint" package**
+
+*Table A.4 -- Associations of the "CommsPoint" package*
+
+| Class name | Association end | Designation | Definition | Multiplicity | Target |
+| --- | --- | --- | --- | --- | --- |
+| CommsPoint | placeId | Place | The Place the point serves. | 1..1 | PkCommon.Reference (Place.Place) |
+| CommsPoint | servesAccess | Serves access | The vehicular access (lane) the point serves, where it serves exactly one. | 0..1 | PkCommon.Reference (Place.VehicularAccess) |
+| CommsPoint | equipmentId | Equipment | The item of supplemental equipment the point is, where it is inventoried hardware. | 0..1 | PkCommon.Reference (Place.SupplementalEquipment) |
+| CommsPoint | opensBarrier | Opens barrier | The gate or door an agent opens for a parker at this point. | 0..1 | PkCommon.Reference (Place.SupplementalEquipment) |
+| CommsPoint | coverage | Coverage | When the point is answered. | 0..* | PkCommon.Period |
+| CommsPoint | recordType | Record type | Record type for the associated CommsPoint | 0..1 | PkCommon.RecordType |
+
+**A.1.2.5 Attributes of the "CommsPoint" package**
+
+*Table A.5 -- Attributes of the "CommsPoint" package*
+
+| Class name | Attribute name | Designation | Definition | Multiplicity | Type |
+| --- | --- | --- | --- | --- | --- |
+| CommsPoint | commsPointType | Comms point type | The kind of help point. | 1..1 | Place.CommsPointTypeEnum |
+| CommsPoint | phoneNumber | Phone number | The number that is called when help is requested, in international format: dialled by the parker for a posted number, or by the intercom or dialer itself when its button is pushed. | 0..1 | PkCommon.String |
+| CommsPoint | callerId | Caller id | The number the device calls out as, in international format. | 0..1 | PkCommon.String |
+| CommsPoint | commsDeviceId | Comms device id | The identifier the call systems use for this point when they identify it by neither caller id nor dialled number. | 0..1 | PkCommon.String |
+| CommsPoint | language | Language | The languages in which the point is answered. | 0..* | PkCommon.LanguageCode |
+
+### A.1.3 "Demand" package
+
+**A.1.3.1 Location of "Demand" package.** The location of the "Demand" package is:
 
 `-- D2Payload/Extension/Parking/Occupancy/Demand`
 
-**A.1.2.2 Classes of the "Demand" package**
+**A.1.3.2 Classes of the "Demand" package**
 
-*Table A.3 -- Classes of the "Demand" package*
+*Table A.6 -- Classes of the "Demand" package*
 
 | Class name | Change | Designation | Definition | Stereotype | Abstract |
 | --- | --- | --- | --- | --- | --- |
 | DemandType | extends APDS | Demand type | Defines occupancy at a hierarchy element without specific space details; an aggregate count of demand activity within the Place hierarchy. | D2Class | no |
 
-**A.1.2.3 Specializations of the "Demand" package**
+**A.1.3.3 Specializations of the "Demand" package**
 
 There are no proposed specializations in the "Demand" package.
 
-**A.1.2.4 Associations of the "Demand" package**
+**A.1.3.4 Associations of the "Demand" package**
 
 There are no proposed associations in the "Demand" package.
 
-**A.1.2.5 Attributes of the "Demand" package**
+**A.1.3.5 Attributes of the "Demand" package**
 
-*Table A.4 -- Attributes of the "Demand" package*
+*Table A.7 -- Attributes of the "Demand" package*
 
 | Class name | Attribute name | Designation | Definition | Multiplicity | Type |
 | --- | --- | --- | --- | --- | --- |
@@ -103,15 +146,15 @@ There are no proposed associations in the "Demand" package.
 | DemandType | averageCount | Average count | The time-weighted average number of utilized or occupied spaces during the period. | 0..1 | PkCommon.Float |
 | DemandType | sampleCount | Sample count | The number of individual demand readings the period summary is calculated from. | 0..1 | PkCommon.NonNegativeInteger |
 
-### A.1.3 "EnergyInfrastructure" package
+### A.1.4 "EnergyInfrastructure" package
 
-**A.1.3.1 Location of "EnergyInfrastructure" package.** The location of the "EnergyInfrastructure" package is:
+**A.1.4.1 Location of "EnergyInfrastructure" package.** The location of the "EnergyInfrastructure" package is:
 
 `-- D2Payload/Extension/Parking/EnergyInfrastructure/Classes`
 
-**A.1.3.2 Classes of the "EnergyInfrastructure" package**
+**A.1.4.2 Classes of the "EnergyInfrastructure" package**
 
-*Table A.5 -- Classes of the "EnergyInfrastructure" package*
+*Table A.8 -- Classes of the "EnergyInfrastructure" package*
 
 | Class name | Change | Designation | Definition | Stereotype | Abstract |
 | --- | --- | --- | --- | --- | --- |
@@ -122,13 +165,13 @@ There are no proposed associations in the "Demand" package.
 | ChargingSession | new | Charging session | One charge of one vehicle at one charging point, from authorization to unplugging, as the parking operation sees it. | D2VersionedIdentifiable | no |
 | ConnectorStatus | new | Connector status | The live status of one Connector of an electric charging point. | D2Class | no |
 
-**A.1.3.3 Specializations of the "EnergyInfrastructure" package**
+**A.1.4.3 Specializations of the "EnergyInfrastructure" package**
 
 There are no proposed specializations in the "EnergyInfrastructure" package.
 
-**A.1.3.4 Associations of the "EnergyInfrastructure" package**
+**A.1.4.4 Associations of the "EnergyInfrastructure" package**
 
-*Table A.6 -- Associations of the "EnergyInfrastructure" package*
+*Table A.9 -- Associations of the "EnergyInfrastructure" package*
 
 | Class name | Association end | Designation | Definition | Multiplicity | Target |
 | --- | --- | --- | --- | --- | --- |
@@ -138,9 +181,9 @@ There are no proposed specializations in the "EnergyInfrastructure" package.
 | ChargingSession | chargingCost | Charging cost | Charging cost for the associated ChargingSession | 0..1 | EnergyInfrastructure.ChargingCost |
 | ChargingSession | idleTerms | Idle terms | Idle terms for the associated ChargingSession | 0..1 | EnergyInfrastructure.ChargingIdleTerms |
 
-**A.1.3.5 Attributes of the "EnergyInfrastructure" package**
+**A.1.4.5 Attributes of the "EnergyInfrastructure" package**
 
-*Table A.7 -- Attributes of the "EnergyInfrastructure" package*
+*Table A.10 -- Attributes of the "EnergyInfrastructure" package*
 
 | Class name | Attribute name | Designation | Definition | Multiplicity | Type |
 | --- | --- | --- | --- | --- | --- |
@@ -193,15 +236,15 @@ There are no proposed specializations in the "EnergyInfrastructure" package.
 | ConnectorStatus | status | Status | The current status of the connector. | 1..1 | EnergyInfrastructure.RefillPointStatusEnum |
 | ConnectorStatus | currentPower | Current power | The power in Watts being delivered through the connector at the time of the status. | 0..1 | EnergyInfrastructure.Watt |
 
-### A.1.4 "Enforcement" package (new)
+### A.1.5 "Enforcement" package (new)
 
-**A.1.4.1 Location of "Enforcement" package.** The location of the "Enforcement" package is:
+**A.1.5.1 Location of "Enforcement" package.** The location of the "Enforcement" package is:
 
 `-- D2Payload/Extension/Parking/Enforcement`
 
-**A.1.4.2 Classes of the "Enforcement" package**
+**A.1.5.2 Classes of the "Enforcement" package**
 
-*Table A.8 -- Classes of the "Enforcement" package*
+*Table A.11 -- Classes of the "Enforcement" package*
 
 | Class name | Change | Designation | Definition | Stereotype | Abstract |
 | --- | --- | --- | --- | --- | --- |
@@ -214,13 +257,13 @@ There are no proposed specializations in the "EnergyInfrastructure" package.
 | Violation | new | Violation | A finding that a vehicle at an element of a Place, at a given time, was not covered by a valid right or broke an operating restriction. | D2VersionedIdentifiable | no |
 | ViolationDetection | new | Violation detection | How a violation was found and by whom or what. | D2Class | no |
 
-**A.1.4.3 Specializations of the "Enforcement" package**
+**A.1.5.3 Specializations of the "Enforcement" package**
 
 There are no proposed specializations in the "Enforcement" package.
 
-**A.1.4.4 Associations of the "Enforcement" package**
+**A.1.5.4 Associations of the "Enforcement" package**
 
-*Table A.9 -- Associations of the "Enforcement" package*
+*Table A.12 -- Associations of the "Enforcement" package*
 
 | Class name | Association end | Designation | Definition | Multiplicity | Target |
 | --- | --- | --- | --- | --- | --- |
@@ -236,9 +279,9 @@ There are no proposed specializations in the "Enforcement" package.
 | Violation | notice | Notice | Notice for the associated Violation | 0..1 | Enforcement.Notice |
 | Violation | appeal | Appeal | Appeal for the associated Violation | 0..1 | Enforcement.Appeal |
 
-**A.1.4.5 Attributes of the "Enforcement" package**
+**A.1.5.5 Attributes of the "Enforcement" package**
 
-*Table A.10 -- Attributes of the "Enforcement" package*
+*Table A.13 -- Attributes of the "Enforcement" package*
 
 | Class name | Attribute name | Designation | Definition | Multiplicity | Type |
 | --- | --- | --- | --- | --- | --- |
@@ -300,15 +343,74 @@ There are no proposed specializations in the "Enforcement" package.
 | ViolationDetection | confidence | Confidence | The detector's confidence in the finding, from 0 to 1. | 0..1 | PkCommon.Decimal |
 | ViolationDetection | rule | Rule | The identifier of the enforcement rule that produced an automated finding. | 0..1 | PkCommon.String |
 
-### A.1.5 "Observation" package
+### A.1.6 "EquipmentDetail" package
 
-**A.1.5.1 Location of "Observation" package.** The location of the "Observation" package is:
+**A.1.6.1 Location of "EquipmentDetail" package.** The location of the "EquipmentDetail" package is:
+
+`-- D2Payload/Extension/Parking/Place/PlaceHierarchy/IdentifiedArea/SupplementalFacility/SupplementalEquipment`
+
+**A.1.6.2 Classes of the "EquipmentDetail" package**
+
+*Table A.14 -- Classes of the "EquipmentDetail" package*
+
+| Class name | Change | Designation | Definition | Stereotype | Abstract |
+| --- | --- | --- | --- | --- | --- |
+| Camera | new | Camera | An item of supplemental equipment that is a camera, anywhere in a Place: on a lane, a ramp, a level, in a lobby, a stairwell or an elevator, or inside another item such as a payment machine. | D2Class | no |
+| SupplementalEquipment | extends APDS | Supplemental equipment | One type of supplemental equipment, which is available on some site. | D2Class | no |
+
+**A.1.6.3 Specializations of the "EquipmentDetail" package**
+
+*Table A.15 -- Specializations of the "EquipmentDetail" package*
+
+| Class name | Parent class name |
+| --- | --- |
+| Camera | Place.SupplementalEquipment |
+| SupplementalEquipment | Place.SupplementalFacility |
+
+**A.1.6.4 Associations of the "EquipmentDetail" package**
+
+*Table A.16 -- Associations of the "EquipmentDetail" package*
+
+| Class name | Association end | Designation | Definition | Multiplicity | Target |
+| --- | --- | --- | --- | --- | --- |
+| Camera | recorder | Recorder | The video recorder that keeps this camera's pictures. | 0..1 | PkCommon.Reference (Place.SupplementalEquipment) |
+| SupplementalEquipment | servesAccess | Serves access | The vehicular access (lane) the item serves, where it serves exactly one. | 0..1 | PkCommon.Reference (Place.VehicularAccess) |
+| SupplementalEquipment | builtInto | Built into | The item of equipment this item is built into, such as a camera inside a payment machine. | 0..1 | PkCommon.Reference (Place.SupplementalEquipment) |
+| SupplementalEquipment | controls | Controls | The barrier, door or gate this item opens, such as the exit verifier that opens a gate. | 0..* | PkCommon.Reference (Place.SupplementalEquipment) |
+| SupplementalEquipment | serviceProvider | Service provider | The organisation that services the item. | 0..1 | PkCommon.Reference (PkCommon.Organisation) |
+
+**A.1.6.5 Attributes of the "EquipmentDetail" package**
+
+*Table A.17 -- Attributes of the "EquipmentDetail" package*
+
+| Class name | Attribute name | Designation | Definition | Multiplicity | Type |
+| --- | --- | --- | --- | --- | --- |
+| Camera | mounting | Mounting | How the camera is mounted. | 0..1 | Place.CameraMountingEnum |
+| Camera | view | View | What the camera looks at; one camera may cover more than one. | 1..* | Place.CameraViewEnum |
+| Camera | facing | Facing | Whether a camera on a lane, plaza or ramp looks into or out of the Place. | 0..1 | Place.CameraFacingEnum |
+| Camera | primary | Primary | Whether this is the camera to show first for its lane or area. | 0..1 | PkCommon.Boolean |
+| Camera | panTiltZoom | Pan, tilt and zoom | Whether the camera can be panned, tilted and zoomed. | 0..1 | PkCommon.Boolean |
+| Camera | retentionDays | Retention days | How many days the camera's recordings are kept. | 0..1 | PkCommon.NonNegativeInteger |
+| SupplementalEquipment | equipmentRole | Equipment role | What the item does on the lane or in the Place, from a fixed list; it adds to equipmentType and never contradicts it. | 0..1 | Place.EquipmentRoleEnum |
+| SupplementalEquipment | manufacturer | Manufacturer | The maker of the item, as named on it. | 0..1 | PkCommon.String |
+| SupplementalEquipment | model | Model | The maker's model designation of the item. | 0..1 | PkCommon.String |
+| SupplementalEquipment | serialNumber | Serial number | The maker's serial number of the item. | 0..1 | PkCommon.String |
+| SupplementalEquipment | macAddress | MAC address | A hardware address of the item, one per network interface, as twelve lower-case hexadecimal digits without separators; a hardware identity, useful when the serial label is missing. | 0..* | PkCommon.String |
+| SupplementalEquipment | firmwareVersion | Firmware version | The firmware release running on the item. | 0..1 | PkCommon.String |
+| SupplementalEquipment | softwareVersion | Software version | The application software release running on the item, where it runs one. | 0..1 | PkCommon.String |
+| SupplementalEquipment | installationDate | Installation date | The date the item went into service. | 0..1 | PkCommon.Date |
+| SupplementalEquipment | areaType | Area type | The kind of area of the Place the item stands in. | 0..1 | Place.AreaTypeEnum |
+| SupplementalEquipment | levelName | Level name | The label of the level the item stands on, as it is signed. | 0..1 | PkCommon.String |
+
+### A.1.7 "Observation" package
+
+**A.1.7.1 Location of "Observation" package.** The location of the "Observation" package is:
 
 `-- D2Payload/Extension/Parking/Observation`
 
-**A.1.5.2 Classes of the "Observation" package**
+**A.1.7.2 Classes of the "Observation" package**
 
-*Table A.11 -- Classes of the "Observation" package*
+*Table A.18 -- Classes of the "Observation" package*
 
 | Class name | Change | Designation | Definition | Stereotype | Abstract |
 | --- | --- | --- | --- | --- | --- |
@@ -321,13 +423,13 @@ There are no proposed specializations in the "Enforcement" package.
 | ObservationElement | extends APDS | Observation element | A specific collection of observation details intended to be used for one specific observation instance. | D2VersionedIdentifiable | no |
 | ReadReview | new | Read review | The human-review state of an observation. | D2Class | no |
 
-**A.1.5.3 Specializations of the "Observation" package**
+**A.1.7.3 Specializations of the "Observation" package**
 
 There are no proposed specializations in the "Observation" package.
 
-**A.1.5.4 Associations of the "Observation" package**
+**A.1.7.4 Associations of the "Observation" package**
 
-*Table A.12 -- Associations of the "Observation" package*
+*Table A.19 -- Associations of the "Observation" package*
 
 | Class name | Association end | Designation | Definition | Multiplicity | Target |
 | --- | --- | --- | --- | --- | --- |
@@ -338,9 +440,9 @@ There are no proposed specializations in the "Observation" package.
 | ObservationElement | readReview | Read review | Read review for the associated ObservationElement | 0..1 | Observation.ReadReview |
 | ReadReview | originalRead | Original read | The engine's values and confidences before the first correction, for the associated ReadReview | 0..* | Observation.AttributeRead |
 
-**A.1.5.5 Attributes of the "Observation" package**
+**A.1.7.5 Attributes of the "Observation" package**
 
-*Table A.13 -- Attributes of the "Observation" package*
+*Table A.20 -- Attributes of the "Observation" package*
 
 | Class name | Attribute name | Designation | Definition | Multiplicity | Type |
 | --- | --- | --- | --- | --- | --- |
@@ -373,36 +475,36 @@ There are no proposed specializations in the "Observation" package.
 | ReadReview | decidedTime | Decided time | The date/time the reviewer decided. | 0..1 | PkCommon.DateTime |
 | ReadReview | decidedBy | Decided by | An identifier of the reviewer. | 0..1 | PkCommon.String |
 
-### A.1.6 "Operations" package (new)
+### A.1.8 "Operations" package (new)
 
-**A.1.6.1 Location of "Operations" package.** The location of the "Operations" package is:
+**A.1.8.1 Location of "Operations" package.** The location of the "Operations" package is:
 
 `-- D2Payload/Extension/Parking/Operations`
 
-**A.1.6.2 Classes of the "Operations" package**
+**A.1.8.2 Classes of the "Operations" package**
 
-*Table A.14 -- Classes of the "Operations" package*
+*Table A.21 -- Classes of the "Operations" package*
 
 | Class name | Change | Designation | Definition | Stereotype | Abstract |
 | --- | --- | --- | --- | --- | --- |
 | Alert | new | Alert | An operational condition at an element of a Place or a piece of equipment that needs attention. | D2VersionedIdentifiable | no |
 | SupportInteraction | new | Support interaction | One customer-service contact with a person or an automated agent about a parking matter. | D2VersionedIdentifiable | no |
 
-**A.1.6.3 Specializations of the "Operations" package**
+**A.1.8.3 Specializations of the "Operations" package**
 
 There are no proposed specializations in the "Operations" package.
 
-**A.1.6.4 Associations of the "Operations" package**
+**A.1.8.4 Associations of the "Operations" package**
 
-*Table A.15 -- Associations of the "Operations" package*
+*Table A.22 -- Associations of the "Operations" package*
 
 | Class name | Association end | Designation | Definition | Multiplicity | Target |
 | --- | --- | --- | --- | --- | --- |
 | SupportInteraction | identifiedCredential | Identified credential | Identified credential for the associated SupportInteraction | 0..1 | Right.Credential |
 
-**A.1.6.5 Attributes of the "Operations" package**
+**A.1.8.5 Attributes of the "Operations" package**
 
-*Table A.16 -- Attributes of the "Operations" package*
+*Table A.23 -- Attributes of the "Operations" package*
 
 | Class name | Attribute name | Designation | Definition | Multiplicity | Type |
 | --- | --- | --- | --- | --- | --- |
@@ -429,15 +531,15 @@ There are no proposed specializations in the "Operations" package.
 | SupportInteraction | resolved | Resolved | Whether the problem was resolved during the contact. | 0..1 | PkCommon.Boolean |
 | SupportInteraction | externalIdentifier | External identifier | The identifier the contact centre's own system uses for the contact. | 0..1 | PkCommon.ExternalIdentifier |
 
-### A.1.7 "PlateList" package (new)
+### A.1.9 "PlateList" package (new)
 
-**A.1.7.1 Location of "PlateList" package.** The location of the "PlateList" package is:
+**A.1.9.1 Location of "PlateList" package.** The location of the "PlateList" package is:
 
 `-- D2Payload/Extension/Parking/Right/PlateList`
 
-**A.1.7.2 Classes of the "PlateList" package**
+**A.1.9.2 Classes of the "PlateList" package**
 
-*Table A.17 -- Classes of the "PlateList" package*
+*Table A.24 -- Classes of the "PlateList" package*
 
 | Class name | Change | Designation | Definition | Stereotype | Abstract |
 | --- | --- | --- | --- | --- | --- |
@@ -445,13 +547,13 @@ There are no proposed specializations in the "Operations" package.
 | PlateListEntry | new | Plate list entry | One credential on a plate list, with when it is in force and why it was listed. | D2VersionedIdentifiable | no |
 | PlateListPlaceFlags | new | Plate list place flags | What a plate list does at one element of the Place Hierarchy. | D2Class | no |
 
-**A.1.7.3 Specializations of the "PlateList" package**
+**A.1.9.3 Specializations of the "PlateList" package**
 
 There are no proposed specializations in the "PlateList" package.
 
-**A.1.7.4 Associations of the "PlateList" package**
+**A.1.9.4 Associations of the "PlateList" package**
 
-*Table A.18 -- Associations of the "PlateList" package*
+*Table A.25 -- Associations of the "PlateList" package*
 
 | Class name | Association end | Designation | Definition | Multiplicity | Target |
 | --- | --- | --- | --- | --- | --- |
@@ -461,9 +563,9 @@ There are no proposed specializations in the "PlateList" package.
 | PlateListEntry | entryValidity | Entry validity | Entry validity for the associated PlateListEntry | 0..1 | PkCommon.OverallPeriod |
 | PlateListEntry | amountOwed | Amount owed | Amount owed for the associated PlateListEntry | 0..1 | PkCommon.AmountInCurrency |
 
-**A.1.7.5 Attributes of the "PlateList" package**
+**A.1.9.5 Attributes of the "PlateList" package**
 
-*Table A.19 -- Attributes of the "PlateList" package*
+*Table A.26 -- Attributes of the "PlateList" package*
 
 | Class name | Attribute name | Designation | Definition | Multiplicity | Type |
 | --- | --- | --- | --- | --- | --- |
@@ -483,36 +585,36 @@ There are no proposed specializations in the "PlateList" package.
 | PlateListPlaceFlags | alertOnArrival | Alert on arrival | Indicates whether a match raises an alert when the vehicle arrives, if yes (TRUE), if not (FALSE). | 0..1 | PkCommon.Boolean |
 | PlateListPlaceFlags | refuseService | Refuse service | Indicates whether a match refuses service at the element, if yes (TRUE), if not (FALSE). | 0..1 | PkCommon.Boolean |
 
-### A.1.8 "Rates" package
+### A.1.10 "Rates" package
 
-**A.1.8.1 Location of "Rates" package.** The location of the "Rates" package is:
+**A.1.10.1 Location of "Rates" package.** The location of the "Rates" package is:
 
 `-- D2Payload/Extension/Parking/Rates`
 
-**A.1.8.2 Classes of the "Rates" package**
+**A.1.10.2 Classes of the "Rates" package**
 
-*Table A.20 -- Classes of the "Rates" package*
+*Table A.27 -- Classes of the "Rates" package*
 
 | Class name | Change | Designation | Definition | Stereotype | Abstract |
 | --- | --- | --- | --- | --- | --- |
 | RateTable | extends APDS | Rate table | A specific set of rate charges relating to one or more locations and optionally one set of eligibility criteria (existing APDS class; the attributes below are proposed additions). | D2VersionedIdentifiable | no |
 | ValidationBenefit | new | Validation benefit | What a merchant validation is worth when applied to a Session: a fixed value, a proportionate discount, or an amount of comped time, with a plain-language description. | D2Class | no |
 
-**A.1.8.3 Specializations of the "Rates" package**
+**A.1.10.3 Specializations of the "Rates" package**
 
-*Table A.21 -- Specializations of the "Rates" package*
+*Table A.28 -- Specializations of the "Rates" package*
 
 | Class name | Parent class name |
 | --- | --- |
 | ValidationBenefit | Right.RateDiscount |
 
-**A.1.8.4 Associations of the "Rates" package**
+**A.1.10.4 Associations of the "Rates" package**
 
 There are no proposed associations in the "Rates" package.
 
-**A.1.8.5 Attributes of the "Rates" package**
+**A.1.10.5 Attributes of the "Rates" package**
 
-*Table A.22 -- Attributes of the "Rates" package*
+*Table A.29 -- Attributes of the "Rates" package*
 
 | Class name | Attribute name | Designation | Definition | Multiplicity | Type |
 | --- | --- | --- | --- | --- | --- |
@@ -522,15 +624,15 @@ There are no proposed associations in the "Rates" package.
 | ValidationBenefit | discountDuration | Discount duration | Amount of parking time comped by the validation, valued at the applicable RateTable. | 0..1 | PkCommon.Duration |
 | ValidationBenefit | description | Description | Plain-language statement of what the validation is worth, for receipts and customer service. | 1..* | PkCommon.MultilingualString |
 
-### A.1.9 "Right" package
+### A.1.11 "Right" package
 
-**A.1.9.1 Location of "Right" package.** The location of the "Right" package is:
+**A.1.11.1 Location of "Right" package.** The location of the "Right" package is:
 
 `-- D2Payload/Extension/Parking/Right`
 
-**A.1.9.2 Classes of the "Right" package**
+**A.1.11.2 Classes of the "Right" package**
 
-*Table A.23 -- Classes of the "Right" package*
+*Table A.30 -- Classes of the "Right" package*
 
 | Class name | Change | Designation | Definition | Stereotype | Abstract |
 | --- | --- | --- | --- | --- | --- |
@@ -544,18 +646,18 @@ There are no proposed associations in the "Rates" package.
 | RateSold | new | Rate sold | The rate or product a payment bought, as the seller names it. | D2Class | no |
 | RightHolder | extends APDS | Right holder | Information concerning a specific holder of a granted right (existing APDS class; the attributes and associations below are proposed additions). | D2VersionedIdentifiable | no |
 
-**A.1.9.3 Specializations of the "Right" package**
+**A.1.11.3 Specializations of the "Right" package**
 
-*Table A.24 -- Specializations of the "Right" package*
+*Table A.31 -- Specializations of the "Right" package*
 
 | Class name | Parent class name |
 | --- | --- |
 | CredentialAssigned | Right.Credential |
 | PresentedCredential | Right.Credential |
 
-**A.1.9.4 Associations of the "Right" package**
+**A.1.11.4 Associations of the "Right" package**
 
-*Table A.25 -- Associations of the "Right" package*
+*Table A.32 -- Associations of the "Right" package*
 
 | Class name | Association end | Designation | Definition | Multiplicity | Target |
 | --- | --- | --- | --- | --- | --- |
@@ -569,9 +671,9 @@ There are no proposed associations in the "Rates" package.
 | Payment | rateSold | Rate sold | Rate sold for the associated Payment | 0..1 | Right.RateSold |
 | RightHolder | accountBalance | Account balance | Account balance for the associated RightHolder | 0..1 | PkCommon.AmountInCurrency |
 
-**A.1.9.5 Attributes of the "Right" package**
+**A.1.11.5 Attributes of the "Right" package**
 
-*Table A.26 -- Attributes of the "Right" package*
+*Table A.33 -- Attributes of the "Right" package*
 
 | Class name | Attribute name | Designation | Definition | Multiplicity | Type |
 | --- | --- | --- | --- | --- | --- |
@@ -606,15 +708,15 @@ There are no proposed associations in the "Rates" package.
 | RightHolder | accountStatus | Account status | Whether the RightHolder's account is enabled for use. | 0..1 | Right.AccountStatusEnum |
 | RightHolder | elementId | Element id | Reference to an element within the Place Hierarchy at which the account is valid. | 0..* | PkCommon.VersionedReference (Place.HierarchyElementGeneral) |
 
-### A.1.10 "Session" package
+### A.1.12 "Session" package
 
-**A.1.10.1 Location of "Session" package.** The location of the "Session" package is:
+**A.1.12.1 Location of "Session" package.** The location of the "Session" package is:
 
 `-- D2Payload/Extension/Parking/Session`
 
-**A.1.10.2 Classes of the "Session" package**
+**A.1.12.2 Classes of the "Session" package**
 
-*Table A.27 -- Classes of the "Session" package*
+*Table A.34 -- Classes of the "Session" package*
 
 | Class name | Change | Designation | Definition | Stereotype | Abstract |
 | --- | --- | --- | --- | --- | --- |
@@ -626,13 +728,13 @@ There are no proposed associations in the "Rates" package.
 | ValetTicket | new | Valet ticket | The custody record for one vehicle left with a valet service, from drop-off to handback. | D2VersionedIdentifiable | no |
 | ValidationRedemption | new | Validation redemption | One validation applied to one Session, as recorded by the channel that applied it. | D2VersionedIdentifiable | no |
 
-**A.1.10.3 Specializations of the "Session" package**
+**A.1.12.3 Specializations of the "Session" package**
 
 There are no proposed specializations in the "Session" package.
 
-**A.1.10.4 Associations of the "Session" package**
+**A.1.12.4 Associations of the "Session" package**
 
-*Table A.28 -- Associations of the "Session" package*
+*Table A.35 -- Associations of the "Session" package*
 
 | Class name | Association end | Designation | Definition | Multiplicity | Target |
 | --- | --- | --- | --- | --- | --- |
@@ -645,9 +747,9 @@ There are no proposed specializations in the "Session" package.
 | ValetTicket | handbackCondition | Handback condition | Condition report recorded at handback for the associated ValetTicket | 0..1 | Observation.ConditionReport |
 | ValetTicket | vehicleCredential | Vehicle credential | Vehicle credential for the associated ValetTicket | 0..1 | Right.PresentedCredential |
 
-**A.1.10.5 Attributes of the "Session" package**
+**A.1.12.5 Attributes of the "Session" package**
 
-*Table A.29 -- Attributes of the "Session" package*
+*Table A.36 -- Attributes of the "Session" package*
 
 | Class name | Attribute name | Designation | Definition | Multiplicity | Type |
 | --- | --- | --- | --- | --- | --- |
@@ -705,27 +807,27 @@ There are no proposed specializations in the "Session" package.
 | ValidationRedemption | reversalTime | Reversal time | The date/time the redemption was reversed. | 0..1 | PkCommon.DateTime |
 | ValidationRedemption | reversalReason | Reversal reason | Free-text reason the redemption was reversed. | 0..1 | PkCommon.MultilingualString |
 
-### A.1.11 "Signage" package (new)
+### A.1.13 "Signage" package (new)
 
-**A.1.11.1 Location of "Signage" package.** The location of the "Signage" package is:
+**A.1.13.1 Location of "Signage" package.** The location of the "Signage" package is:
 
 `-- D2Payload/Extension/Parking/Place/Signage`
 
-**A.1.11.2 Classes of the "Signage" package**
+**A.1.13.2 Classes of the "Signage" package**
 
-*Table A.30 -- Classes of the "Signage" package*
+*Table A.37 -- Classes of the "Signage" package*
 
 | Class name | Change | Designation | Definition | Stereotype | Abstract |
 | --- | --- | --- | --- | --- | --- |
 | Signage | new | Signage | A record of a sign posted at a Place, its wording, where it stands and when it was in force. | D2VersionedIdentifiable | no |
 
-**A.1.11.3 Specializations of the "Signage" package**
+**A.1.13.3 Specializations of the "Signage" package**
 
 There are no proposed specializations in the "Signage" package.
 
-**A.1.11.4 Associations of the "Signage" package**
+**A.1.13.4 Associations of the "Signage" package**
 
-*Table A.31 -- Associations of the "Signage" package*
+*Table A.38 -- Associations of the "Signage" package*
 
 | Class name | Association end | Designation | Definition | Multiplicity | Target |
 | --- | --- | --- | --- | --- | --- |
@@ -733,9 +835,9 @@ There are no proposed specializations in the "Signage" package.
 | Signage | location | Location | Location for the associated Signage | 0..1 | PkCommon.PointLocation |
 | Signage | recordType | Record type | Record type for the associated Signage | 0..1 | PkCommon.RecordType |
 
-**A.1.11.5 Attributes of the "Signage" package**
+**A.1.13.5 Attributes of the "Signage" package**
 
-*Table A.32 -- Attributes of the "Signage" package*
+*Table A.39 -- Attributes of the "Signage" package*
 
 | Class name | Attribute name | Designation | Definition | Multiplicity | Type |
 | --- | --- | --- | --- | --- | --- |
@@ -746,35 +848,35 @@ There are no proposed specializations in the "Signage" package.
 | Signage | photoUrl | Photo URL | Specifies a Universal resource locator (URL) at which a photo of the sign as posted can be found. | 0..1 | PkCommon.Url |
 | Signage | endReason | End reason | Why the sign is no longer in use, when it has ended. | 0..1 | PkCommon.RecordEndReasonEnum |
 
-### A.1.12 "SupplementalFacility" package
+### A.1.14 "SupplementalFacility" package
 
-**A.1.12.1 Location of "SupplementalFacility" package.** The location of the "SupplementalFacility" package is:
+**A.1.14.1 Location of "SupplementalFacility" package.** The location of the "SupplementalFacility" package is:
 
 `-- D2Payload/Extension/Parking/Place/PlaceHierarchy/IdentifiedArea/SupplementalFacility`
 
-**A.1.12.2 Classes of the "SupplementalFacility" package**
+**A.1.14.2 Classes of the "SupplementalFacility" package**
 
-*Table A.33 -- Classes of the "SupplementalFacility" package*
+*Table A.40 -- Classes of the "SupplementalFacility" package*
 
 | Class name | Change | Designation | Definition | Stereotype | Abstract |
 | --- | --- | --- | --- | --- | --- |
 | EquipmentStatus | new | Equipment status | The operational state of one item of supplemental equipment at a point in time, reported separately from the description of the equipment. | D2Class | no |
 
-**A.1.12.3 Specializations of the "SupplementalFacility" package**
+**A.1.14.3 Specializations of the "SupplementalFacility" package**
 
 There are no proposed specializations in the "SupplementalFacility" package.
 
-**A.1.12.4 Associations of the "SupplementalFacility" package**
+**A.1.14.4 Associations of the "SupplementalFacility" package**
 
-*Table A.34 -- Associations of the "SupplementalFacility" package*
+*Table A.41 -- Associations of the "SupplementalFacility" package*
 
 | Class name | Association end | Designation | Definition | Multiplicity | Target |
 | --- | --- | --- | --- | --- | --- |
 | EquipmentStatus | recordType | Record type | Record type for the associated EquipmentStatus | 0..1 | PkCommon.RecordType |
 
-**A.1.12.5 Attributes of the "SupplementalFacility" package**
+**A.1.14.5 Attributes of the "SupplementalFacility" package**
 
-*Table A.35 -- Attributes of the "SupplementalFacility" package*
+*Table A.42 -- Attributes of the "SupplementalFacility" package*
 
 | Class name | Attribute name | Designation | Definition | Multiplicity | Type |
 | --- | --- | --- | --- | --- | --- |
@@ -784,37 +886,37 @@ There are no proposed specializations in the "SupplementalFacility" package.
 | EquipmentStatus | statusChangeTime | Status change time | The date/time at which the equipment entered the reported state. | 0..1 | PkCommon.DateTime |
 | EquipmentStatus | lastCommunicationTime | Last communication | The date/time at which the equipment was last heard from by the reporting system. | 0..1 | PkCommon.DateTime |
 
-### A.1.13 "Tolling" package (new)
+### A.1.15 "Tolling" package (new)
 
-**A.1.13.1 Location of "Tolling" package.** The location of the "Tolling" package is:
+**A.1.15.1 Location of "Tolling" package.** The location of the "Tolling" package is:
 
 `-- D2Payload/Extension/Parking/Observation/Tolling`
 
-**A.1.13.2 Classes of the "Tolling" package**
+**A.1.15.2 Classes of the "Tolling" package**
 
-*Table A.36 -- Classes of the "Tolling" package*
+*Table A.43 -- Classes of the "Tolling" package*
 
 | Class name | Change | Designation | Definition | Stereotype | Abstract |
 | --- | --- | --- | --- | --- | --- |
 | TollDispute | new | Toll dispute | A challenge to a toll charge and its outcome. | D2Class | no |
 | TollTransaction | new | Toll transaction | A toll charge assembled from one or more observations of a vehicle at a toll point, with its price, settlement and any dispute. | D2VersionedIdentifiable | no |
 
-**A.1.13.3 Specializations of the "Tolling" package**
+**A.1.15.3 Specializations of the "Tolling" package**
 
 There are no proposed specializations in the "Tolling" package.
 
-**A.1.13.4 Associations of the "Tolling" package**
+**A.1.15.4 Associations of the "Tolling" package**
 
-*Table A.37 -- Associations of the "Tolling" package*
+*Table A.44 -- Associations of the "Tolling" package*
 
 | Class name | Association end | Designation | Definition | Multiplicity | Target |
 | --- | --- | --- | --- | --- | --- |
 | TollTransaction | tollDispute | Toll dispute | Toll dispute for the associated TollTransaction | 0..1 | Observation.TollDispute |
 | TollTransaction | vehicleCredential | Vehicle credential | Vehicle credential for the associated TollTransaction | 0..1 | Right.PresentedCredential |
 
-**A.1.13.5 Attributes of the "Tolling" package**
+**A.1.15.5 Attributes of the "Tolling" package**
 
-*Table A.38 -- Attributes of the "Tolling" package*
+*Table A.45 -- Attributes of the "Tolling" package*
 
 | Class name | Attribute name | Designation | Definition | Multiplicity | Type |
 | --- | --- | --- | --- | --- | --- |
@@ -830,15 +932,15 @@ There are no proposed specializations in the "Tolling" package.
 | TollTransaction | paymentId | Payment id | The payment that settles the charge. | 0..1 | PkCommon.Reference (Right.Payment) |
 | TollTransaction | transactionStatus | Transaction status | Where the charge is in its lifecycle. | 1..1 | Observation.TollTransactionStatusEnum |
 
-### A.1.14 "Validation" package (new)
+### A.1.16 "Validation" package (new)
 
-**A.1.14.1 Location of "Validation" package.** The location of the "Validation" package is:
+**A.1.16.1 Location of "Validation" package.** The location of the "Validation" package is:
 
 `-- D2Payload/Extension/Parking/Right/Validation`
 
-**A.1.14.2 Classes of the "Validation" package**
+**A.1.16.2 Classes of the "Validation" package**
 
-*Table A.39 -- Classes of the "Validation" package*
+*Table A.46 -- Classes of the "Validation" package*
 
 | Class name | Change | Designation | Definition | Stereotype | Abstract |
 | --- | --- | --- | --- | --- | --- |
@@ -848,13 +950,13 @@ There are no proposed specializations in the "Tolling" package.
 | ValidationProgram | new | Validation program | A merchant's enrolment to validate parking at a Place: who the provider is, what each validation is worth, the rules that bound it and how the merchant is billed. | D2VersionedIdentifiable | no |
 | ValidationRules | new | Validation rules | The limits that bound when a validation of a program may be applied. | D2Class | no |
 
-**A.1.14.3 Specializations of the "Validation" package**
+**A.1.16.3 Specializations of the "Validation" package**
 
 There are no proposed specializations in the "Validation" package.
 
-**A.1.14.4 Associations of the "Validation" package**
+**A.1.16.4 Associations of the "Validation" package**
 
-*Table A.40 -- Associations of the "Validation" package*
+*Table A.47 -- Associations of the "Validation" package*
 
 | Class name | Association end | Designation | Definition | Multiplicity | Target |
 | --- | --- | --- | --- | --- | --- |
@@ -866,9 +968,9 @@ There are no proposed specializations in the "Validation" package.
 | ValidationProgram | validationRules | Validation rules | Validation rules for the associated ValidationProgram | 0..1 | Right.ValidationRules |
 | ValidationProgram | validationBilling | Validation billing | Validation billing for the associated ValidationProgram | 0..1 | Right.ValidationBilling |
 
-**A.1.14.5 Attributes of the "Validation" package**
+**A.1.16.5 Attributes of the "Validation" package**
 
-*Table A.41 -- Attributes of the "Validation" package*
+*Table A.48 -- Attributes of the "Validation" package*
 
 | Class name | Attribute name | Designation | Definition | Multiplicity | Type |
 | --- | --- | --- | --- | --- | --- |
@@ -897,40 +999,40 @@ There are no proposed specializations in the "Validation" package.
 | ValidationRules | stackable | Stackable | Indicates whether the program may be combined with other programs on the same Session, if yes (TRUE), if not (FALSE). | 0..1 | PkCommon.Boolean |
 | ValidationRules | rateTableId | Rate table id | Reference to a RateTable the program applies to; absent means all RateTables at the Place that accept validations. | 0..* | PkCommon.VersionedReference (Rates.RateTable) |
 
-### A.1.15 "VehicularAccess" package
+### A.1.17 "VehicularAccess" package
 
-**A.1.15.1 Location of "VehicularAccess" package.** The location of the "VehicularAccess" package is:
+**A.1.17.1 Location of "VehicularAccess" package.** The location of the "VehicularAccess" package is:
 
 `-- D2Payload/Extension/Parking/Place/PlaceHierarchy/IdentifiedArea/VehicularAccess`
 
-**A.1.15.2 Classes of the "VehicularAccess" package**
+**A.1.17.2 Classes of the "VehicularAccess" package**
 
-*Table A.42 -- Classes of the "VehicularAccess" package*
+*Table A.49 -- Classes of the "VehicularAccess" package*
 
 | Class name | Change | Designation | Definition | Stereotype | Abstract |
 | --- | --- | --- | --- | --- | --- |
 | LaneCamera | new | Lane camera | A licence plate camera that observes a vehicular access, and the direction it faces relative to the Place. | D2Class | no |
 | VehicularAccess | extends APDS | Vehicular access | A specialisation of an identifiedArea defining a VehicularAccess areas. | D2Class | no |
 
-**A.1.15.3 Specializations of the "VehicularAccess" package**
+**A.1.17.3 Specializations of the "VehicularAccess" package**
 
-*Table A.43 -- Specializations of the "VehicularAccess" package*
+*Table A.50 -- Specializations of the "VehicularAccess" package*
 
 | Class name | Parent class name |
 | --- | --- |
 | VehicularAccess | Place.IdentifiedArea |
 
-**A.1.15.4 Associations of the "VehicularAccess" package**
+**A.1.17.4 Associations of the "VehicularAccess" package**
 
-*Table A.44 -- Associations of the "VehicularAccess" package*
+*Table A.51 -- Associations of the "VehicularAccess" package*
 
 | Class name | Association end | Designation | Definition | Multiplicity | Target |
 | --- | --- | --- | --- | --- | --- |
 | VehicularAccess | laneCamera | Lane camera | Lane camera for the associated VehicularAccess | 0..* | Place.LaneCamera |
 
-**A.1.15.5 Attributes of the "VehicularAccess" package**
+**A.1.17.5 Attributes of the "VehicularAccess" package**
 
-*Table A.45 -- Attributes of the "VehicularAccess" package*
+*Table A.52 -- Attributes of the "VehicularAccess" package*
 
 | Class name | Attribute name | Designation | Definition | Multiplicity | Type |
 | --- | --- | --- | --- | --- | --- |
@@ -947,7 +1049,7 @@ No new datatypes are proposed. Every attribute uses an existing APDS 4.1 datatyp
 
 Why an access attempt was refused.
 
-*Table A.46 -- Values contained in the enumeration "AccessDenialReasonEnum"*
+*Table A.53 -- Values contained in the enumeration "AccessDenialReasonEnum"*
 
 | Enumerated value name | Designation | Definition |
 | --- | --- | --- |
@@ -967,7 +1069,7 @@ Why an access attempt was refused.
 
 The result of an access attempt.
 
-*Table A.47 -- Values contained in the enumeration "AccessOutcomeEnum"*
+*Table A.54 -- Values contained in the enumeration "AccessOutcomeEnum"*
 
 | Enumerated value name | Designation | Definition |
 | --- | --- | --- |
@@ -978,7 +1080,7 @@ The result of an access attempt.
 
 Whether a RightHolder's account is enabled for use.
 
-*Table A.48 -- Values contained in the enumeration "AccountStatusEnum"*
+*Table A.55 -- Values contained in the enumeration "AccountStatusEnum"*
 
 | Enumerated value name | Designation | Definition |
 | --- | --- | --- |
@@ -989,7 +1091,7 @@ Whether a RightHolder's account is enabled for use.
 
 How serious an operational condition is.
 
-*Table A.49 -- Values contained in the enumeration "AlertSeverityEnum"*
+*Table A.56 -- Values contained in the enumeration "AlertSeverityEnum"*
 
 | Enumerated value name | Designation | Definition |
 | --- | --- | --- |
@@ -1003,7 +1105,7 @@ How serious an operational condition is.
 
 The states of an alert.
 
-*Table A.50 -- Values contained in the enumeration "AlertStatusEnum"*
+*Table A.57 -- Values contained in the enumeration "AlertStatusEnum"*
 
 | Enumerated value name | Designation | Definition |
 | --- | --- | --- |
@@ -1016,7 +1118,7 @@ The states of an alert.
 
 The kinds of operational condition that need attention.
 
-*Table A.51 -- Values contained in the enumeration "AlertTypeEnum"*
+*Table A.58 -- Values contained in the enumeration "AlertTypeEnum"*
 
 | Enumerated value name | Designation | Definition |
 | --- | --- | --- |
@@ -1042,7 +1144,7 @@ The kinds of operational condition that need attention.
 
 The grounds on which a violation is appealed.
 
-*Table A.52 -- Values contained in the enumeration "AppealReasonEnum"*
+*Table A.59 -- Values contained in the enumeration "AppealReasonEnum"*
 
 | Enumerated value name | Designation | Definition |
 | --- | --- | --- |
@@ -1059,7 +1161,7 @@ The grounds on which a violation is appealed.
 
 The outcomes of an appeal.
 
-*Table A.53 -- Values contained in the enumeration "AppealResolutionEnum"*
+*Table A.60 -- Values contained in the enumeration "AppealResolutionEnum"*
 
 | Enumerated value name | Designation | Definition |
 | --- | --- | --- |
@@ -1067,11 +1169,39 @@ The outcomes of an appeal.
 | reduced | Reduced | The violation stands with a lower amount payable. |
 | dismissed | Dismissed | The violation is cancelled. |
 
-### A.3.9 The <<D2Enumeration>> "BayPresenceEnum"
+### A.3.9 The <<D2Enumeration>> "AreaTypeEnum"
+
+The kind of area of a Place something stands in, for equipment, cameras and help points.
+
+*Table A.61 -- Values contained in the enumeration "AreaTypeEnum"*
+
+| Enumerated value name | Designation | Definition |
+| --- | --- | --- |
+| lane | Lane | An entry or exit lane. |
+| entryPlaza | Entry plaza | The approach to the entry lanes. |
+| exitPlaza | Exit plaza | The approach to the exit lanes. |
+| ramp | Ramp | A ramp between levels. |
+| parkingLevel | Parking level | A drive aisle or parking area on a level. |
+| roof | Roof | An open roof level. |
+| evChargingArea | EV charging area | The bays with electric vehicle charging. |
+| loadingDock | Loading dock | A loading or service area. |
+| perimeter | Perimeter | Outside the structure, at the fence line or the street. |
+| elevator | Elevator | The inside of an elevator car. |
+| elevatorLobby | Elevator lobby | An elevator landing. |
+| lobby | Lobby | A main or pedestrian lobby. |
+| stairwell | Stairwell | A stairwell. |
+| pedestrianEntrance | Pedestrian entrance | A street door or access door for people. |
+| paymentArea | Payment area | Where the pay-on-foot machines stand. |
+| cashierBooth | Cashier booth | A staffed booth. |
+| office | Office | An office or attendant room. |
+| equipmentRoom | Equipment room | A server, electrical or equipment room. |
+| other | Other | An area nothing above fits. |
+
+### A.3.10 The <<D2Enumeration>> "BayPresenceEnum"
 
 What a charging bay physically contains.
 
-*Table A.54 -- Values contained in the enumeration "BayPresenceEnum"*
+*Table A.62 -- Values contained in the enumeration "BayPresenceEnum"*
 
 | Enumerated value name | Designation | Definition |
 | --- | --- | --- |
@@ -1081,11 +1211,11 @@ What a charging bay physically contains.
 | blocked | Blocked | The bay is obstructed by something other than a correctly parked vehicle, such as cones, debris or a vehicle straddling two bays. |
 | unknown | Unknown | What the bay contains is not known. |
 
-### A.3.10 The <<D2Enumeration>> "BayPresenceSourceEnum"
+### A.3.11 The <<D2Enumeration>> "BayPresenceSourceEnum"
 
 The kind of evidence a bay presence was derived from.
 
-*Table A.55 -- Values contained in the enumeration "BayPresenceSourceEnum"*
+*Table A.63 -- Values contained in the enumeration "BayPresenceSourceEnum"*
 
 | Enumerated value name | Designation | Definition |
 | --- | --- | --- |
@@ -1095,33 +1225,64 @@ The kind of evidence a bay presence was derived from.
 | attendant | Attendant | A member of staff on site. |
 | inferred | Inferred | Derived from other data without a direct observation of the bay. |
 
-### A.3.11 The <<D2Enumeration>> "CameraFacingEnum"
+### A.3.12 The <<D2Enumeration>> "CameraFacingEnum"
 
 The direction a lane camera faces relative to the Place it serves.
 
-*Table A.56 -- Values contained in the enumeration "CameraFacingEnum"*
+*Table A.64 -- Values contained in the enumeration "CameraFacingEnum"*
 
 | Enumerated value name | Designation | Definition |
 | --- | --- | --- |
 | inward | Inward | The camera looks into the Place, the way entering traffic travels. |
 | outward | Outward | The camera looks out of the Place, the way exiting traffic travels. |
 
-### A.3.12 The <<D2Enumeration>> "CaptureStatusEnum"
+### A.3.13 The <<D2Enumeration>> "CameraMountingEnum"
+
+How a camera is mounted.
+
+*Table A.65 -- Values contained in the enumeration "CameraMountingEnum"*
+
+| Enumerated value name | Designation | Definition |
+| --- | --- | --- |
+| builtIn | Built in | Inside another item of equipment, named by builtInto. |
+| overhead | Overhead | Above the vehicle or the lane, looking down. |
+| pole | Pole | On a pole or an island. |
+| wall | Wall | On a wall or a column. |
+| ceiling | Ceiling | On a ceiling. |
+| other | Other | Mounted in another way. |
+
+### A.3.14 The <<D2Enumeration>> "CameraViewEnum"
+
+What a camera looks at.
+
+*Table A.66 -- Values contained in the enumeration "CameraViewEnum"*
+
+| Enumerated value name | Designation | Definition |
+| --- | --- | --- |
+| plate | Plate | Reads licence plates. |
+| vehicle | Vehicle | An overview of the vehicle in the lane. |
+| driver | Driver | The driver at a payment machine or lane device. |
+| equipmentInteraction | Equipment interaction | Hands, ticket and card at the machine. |
+| pedestrians | Pedestrians | People at a door, in a lobby or on a stairwell. |
+| areaOverview | Area overview | General surveillance of a ramp, a level or the perimeter. |
+| other | Other | Another view. |
+
+### A.3.15 The <<D2Enumeration>> "CaptureStatusEnum"
 
 Whether the funds of an approved payment have been collected.
 
-*Table A.57 -- Values contained in the enumeration "CaptureStatusEnum"*
+*Table A.67 -- Values contained in the enumeration "CaptureStatusEnum"*
 
 | Enumerated value name | Designation | Definition |
 | --- | --- | --- |
 | authorized | Authorized | Funds are held but not yet collected. |
 | captured | Captured | Funds have been collected. |
 
-### A.3.13 The <<D2Enumeration>> "ChargingSessionStatusEnum"
+### A.3.16 The <<D2Enumeration>> "ChargingSessionStatusEnum"
 
 The states of one charge, from authorization to closure.
 
-*Table A.58 -- Values contained in the enumeration "ChargingSessionStatusEnum"*
+*Table A.68 -- Values contained in the enumeration "ChargingSessionStatusEnum"*
 
 | Enumerated value name | Designation | Definition |
 | --- | --- | --- |
@@ -1136,11 +1297,11 @@ The states of one charge, from authorization to closure.
 | cancelled | Cancelled | The authorization was never used. |
 | faulted | Faulted | A fault interrupted the charge. |
 
-### A.3.14 The <<D2Enumeration>> "ChargingSettlementModeEnum"
+### A.3.17 The <<D2Enumeration>> "ChargingSettlementModeEnum"
 
 How the cost of a charge is collected.
 
-*Table A.59 -- Values contained in the enumeration "ChargingSettlementModeEnum"*
+*Table A.69 -- Values contained in the enumeration "ChargingSettlementModeEnum"*
 
 | Enumerated value name | Designation | Definition |
 | --- | --- | --- |
@@ -1148,11 +1309,11 @@ How the cost of a charge is collected.
 | directPayment | Direct payment | The cost is paid by its own Payment. |
 | chargingNetwork | Charging network | The cost is billed by the charging network or a roaming partner; the parking side records energy and time but not money. |
 
-### A.3.15 The <<D2Enumeration>> "ChargingStopReasonEnum"
+### A.3.18 The <<D2Enumeration>> "ChargingStopReasonEnum"
 
 Why energy delivery ended.
 
-*Table A.60 -- Values contained in the enumeration "ChargingStopReasonEnum"*
+*Table A.70 -- Values contained in the enumeration "ChargingStopReasonEnum"*
 
 | Enumerated value name | Designation | Definition |
 | --- | --- | --- |
@@ -1168,11 +1329,27 @@ Why energy delivery ended.
 | powerLoss | Power loss | Power to the charger was lost. |
 | other | Other | Some other reason. |
 
-### A.3.16 The <<D2Enumeration>> "CredentialMediaFormEnum"
+### A.3.19 The <<D2Enumeration>> "CommsPointTypeEnum"
+
+The kinds of help point.
+
+*Table A.71 -- Values contained in the enumeration "CommsPointTypeEnum"*
+
+| Enumerated value name | Designation | Definition |
+| --- | --- | --- |
+| intercom | Intercom | A help button with two-way audio, and possibly video. |
+| analogDialer | Analog dialer | A help button on a telephone line. |
+| postedNumber | Posted number | A telephone number posted on a sign, dialled from the parker's own phone. |
+| kiosk | Kiosk | A self-service kiosk with a help function. |
+| qrCode | QR code | A code posted at the point that opens a help channel. |
+| app | App | A help function in a mobile application, tied to the Place. |
+| other | Other | Another kind of help point. |
+
+### A.3.20 The <<D2Enumeration>> "CredentialMediaFormEnum"
 
 The physical or virtual form of the item a credential was issued on.
 
-*Table A.61 -- Values contained in the enumeration "CredentialMediaFormEnum"*
+*Table A.72 -- Values contained in the enumeration "CredentialMediaFormEnum"*
 
 | Enumerated value name | Designation | Definition |
 | --- | --- | --- |
@@ -1185,11 +1362,11 @@ The physical or virtual form of the item a credential was issued on.
 | ticket | Ticket | A ticket issued for the stay. |
 | virtual | Virtual | A credential with no physical item, such as an account number. |
 
-### A.3.17 The <<D2Enumeration>> "CredentialStatusEnum"
+### A.3.21 The <<D2Enumeration>> "CredentialStatusEnum"
 
 The lifecycle status of an assigned credential.
 
-*Table A.62 -- Values contained in the enumeration "CredentialStatusEnum"*
+*Table A.73 -- Values contained in the enumeration "CredentialStatusEnum"*
 
 | Enumerated value name | Designation | Definition |
 | --- | --- | --- |
@@ -1201,11 +1378,11 @@ The lifecycle status of an assigned credential.
 | expired | Expired | The credential's validity period has ended. |
 | replaced | Replaced | The credential has been succeeded by another credential. |
 
-### A.3.18 The <<D2Enumeration>> "DamageSeverityEnum"
+### A.3.22 The <<D2Enumeration>> "DamageSeverityEnum"
 
 How serious a damage finding is.
 
-*Table A.63 -- Values contained in the enumeration "DamageSeverityEnum"*
+*Table A.74 -- Values contained in the enumeration "DamageSeverityEnum"*
 
 | Enumerated value name | Designation | Definition |
 | --- | --- | --- |
@@ -1213,11 +1390,11 @@ How serious a damage finding is.
 | moderate | Moderate | Damage needing repair. |
 | major | Major | Serious damage. |
 
-### A.3.19 The <<D2Enumeration>> "DepositStatusEnum"
+### A.3.23 The <<D2Enumeration>> "DepositStatusEnum"
 
 What has happened to a deposit taken for a physical credential item.
 
-*Table A.64 -- Values contained in the enumeration "DepositStatusEnum"*
+*Table A.75 -- Values contained in the enumeration "DepositStatusEnum"*
 
 | Enumerated value name | Designation | Definition |
 | --- | --- | --- |
@@ -1225,11 +1402,11 @@ What has happened to a deposit taken for a physical credential item.
 | refunded | Refunded | The deposit has been returned to the holder. |
 | forfeited | Forfeited | The deposit has been kept by the issuer. |
 
-### A.3.20 The <<D2Enumeration>> "DetectionModeEnum"
+### A.3.24 The <<D2Enumeration>> "DetectionModeEnum"
 
 How a violation was found.
 
-*Table A.65 -- Values contained in the enumeration "DetectionModeEnum"*
+*Table A.76 -- Values contained in the enumeration "DetectionModeEnum"*
 
 | Enumerated value name | Designation | Definition |
 | --- | --- | --- |
@@ -1237,11 +1414,50 @@ How a violation was found.
 | guided | Guided | A system proposed the violation and an officer confirmed it on site. |
 | manual | Manual | An officer found the violation directly. |
 
-### A.3.21 The <<D2Enumeration>> "EquipmentStatusEnum"
+### A.3.25 The <<D2Enumeration>> "EquipmentRoleEnum"
+
+What an item of supplemental equipment does on a lane or in a Place. Offered as an extensible code list: a fixed starting set, extended by publication, never by free text.
+
+*Table A.77 -- Values contained in the enumeration "EquipmentRoleEnum"*
+
+| Enumerated value name | Designation | Definition |
+| --- | --- | --- |
+| gate | Gate | A barrier arm across a lane. |
+| overheadDoor | Overhead door | A rolling or overhead door across a vehicle entrance. |
+| bollard | Bollard | A retractable bollard. |
+| trafficSpikes | Traffic spikes | One-way tyre spikes. |
+| accessDoor | Access door | A pedestrian door a parker authenticates at to enter, for example after hours. |
+| turnstile | Turnstile | A pedestrian turnstile. |
+| ticketDispenser | Ticket dispenser | An entry station that issues a ticket or token. |
+| exitVerifier | Exit verifier | An exit station that reads the ticket or credential and opens the gate. |
+| exitPayStation | Exit pay station | A pay-in-lane station at the exit. |
+| payOnFoot | Pay on foot | A central pay station away from the lane. |
+| cashierBooth | Cashier booth | A staffed booth. |
+| validationTerminal | Validation terminal | A merchant's validation device. |
+| paymentTerminal | Payment terminal | A standalone card or contactless payment terminal. |
+| cardReader | Card reader | An access or proximity card reader. |
+| tagReader | Tag reader | An RFID, transponder or automatic vehicle identification tag reader. |
+| barcodeReader | Barcode reader | A QR or barcode reader, for reservations and mobile passes. |
+| loopDetector | Loop detector | An in-ground vehicle detection loop. |
+| presenceSensor | Presence sensor | A vehicle sensor other than a loop, such as radar, ultrasonic or magnetic. |
+| camera | Camera | A camera; what it looks at is described on the Camera class. |
+| intercom | Intercom | A help button with two-way audio, and possibly video. |
+| analogDialer | Analog dialer | A help button on a telephone line. |
+| emergencyPhone | Emergency phone | A dedicated emergency call box. |
+| laneDisplay | Lane display | A message screen at the lane. |
+| laneSignal | Lane signal | An open or closed light, or a traffic light, at the lane. |
+| countSign | Count sign | A spaces-available sign. |
+| laneController | Lane controller | The computer or controller that runs a lane. |
+| facilityServer | Facility server | The on-site parking system server. |
+| videoRecorder | Video recorder | A digital or network video recorder. |
+| videoGateway | Video gateway | A gateway that serves camera pictures to other parties on the cameras' behalf. |
+| other | Other | Hardware nothing above fits. |
+
+### A.3.26 The <<D2Enumeration>> "EquipmentStatusEnum"
 
 The operational state of an item of supplemental equipment.
 
-*Table A.66 -- Values contained in the enumeration "EquipmentStatusEnum"*
+*Table A.78 -- Values contained in the enumeration "EquipmentStatusEnum"*
 
 | Enumerated value name | Designation | Definition |
 | --- | --- | --- |
@@ -1254,11 +1470,11 @@ The operational state of an item of supplemental equipment.
 | unknown | Unknown | The state of the equipment cannot be determined, e.g. because communication with it has been lost. |
 | other | Other | Some other state. Use 'otherEquipmentStatus' to specify it. |
 
-### A.3.22 The <<D2Enumeration>> "EquipmentTypeEnum" (values proposed for addition)
+### A.3.27 The <<D2Enumeration>> "EquipmentTypeEnum" (values proposed for addition)
 
 Types of equipment.
 
-*Table A.67 -- Values proposed for the enumeration "EquipmentTypeEnum"*
+*Table A.79 -- Values proposed for the enumeration "EquipmentTypeEnum"*
 
 | Enumerated value name | Designation | Definition |
 | --- | --- | --- |
@@ -1267,11 +1483,11 @@ Types of equipment.
 | ticketDispenser | Ticket dispenser | A machine at an entry lane that issues a ticket or other credential to start a Session. |
 | intercom | Intercom | A call point at a lane or machine that connects a customer with an attendant by voice or video. |
 
-### A.3.23 The <<D2Enumeration>> "HandbackVerificationEnum"
+### A.3.28 The <<D2Enumeration>> "HandbackVerificationEnum"
 
 How the person collecting a valeted vehicle was verified.
 
-*Table A.68 -- Values contained in the enumeration "HandbackVerificationEnum"*
+*Table A.80 -- Values contained in the enumeration "HandbackVerificationEnum"*
 
 | Enumerated value name | Designation | Definition |
 | --- | --- | --- |
@@ -1281,22 +1497,22 @@ How the person collecting a valeted vehicle was verified.
 | id | Identity document | An identity document was checked. |
 | attendant | Attendant | An attendant recognised the customer. |
 
-### A.3.24 The <<D2Enumeration>> "ImageTypeEnum" (values proposed for addition)
+### A.3.29 The <<D2Enumeration>> "ImageTypeEnum" (values proposed for addition)
 
 The nature of the captured image.
 
-*Table A.69 -- Values proposed for the enumeration "ImageTypeEnum"*
+*Table A.81 -- Values proposed for the enumeration "ImageTypeEnum"*
 
 | Enumerated value name | Designation | Definition |
 | --- | --- | --- |
 | plateExtended | Plate extended | A crop around the plate wider than the plate itself, showing the surrounding bodywork. |
 | context | Context | A wide view of the scene around the vehicle, wider than the overview. |
 
-### A.3.25 The <<D2Enumeration>> "InteractionChannelEnum"
+### A.3.30 The <<D2Enumeration>> "InteractionChannelEnum"
 
 The channel through which a customer, merchant, member of staff or system carried out an action such as a payment, a validation, a request or a contact.
 
-*Table A.70 -- Values contained in the enumeration "InteractionChannelEnum"*
+*Table A.82 -- Values contained in the enumeration "InteractionChannelEnum"*
 
 | Enumerated value name | Designation | Definition |
 | --- | --- | --- |
@@ -1314,22 +1530,22 @@ The channel through which a customer, merchant, member of staff or system carrie
 | systemInterface | System interface | By one system acting directly on another, without a person at a channel. |
 | other | Other | Any other channel. |
 
-### A.3.26 The <<D2Enumeration>> "MatchDecisionEnum"
+### A.3.31 The <<D2Enumeration>> "MatchDecisionEnum"
 
 Who made a link.
 
-*Table A.71 -- Values contained in the enumeration "MatchDecisionEnum"*
+*Table A.83 -- Values contained in the enumeration "MatchDecisionEnum"*
 
 | Enumerated value name | Designation | Definition |
 | --- | --- | --- |
 | system | System | Software made the link. |
 | person | Person | A person made the link. |
 
-### A.3.27 The <<D2Enumeration>> "MatchTypeEnum"
+### A.3.32 The <<D2Enumeration>> "MatchTypeEnum"
 
 The kind of link between a Session and another record.
 
-*Table A.72 -- Values contained in the enumeration "MatchTypeEnum"*
+*Table A.84 -- Values contained in the enumeration "MatchTypeEnum"*
 
 | Enumerated value name | Designation | Definition |
 | --- | --- | --- |
@@ -1340,11 +1556,11 @@ The kind of link between a Session and another record.
 | entryExitPair | Entry and exit pair | An exit observation was paired to the Session's entry observation. |
 | other | Other | Any other kind of link. |
 
-### A.3.28 The <<D2Enumeration>> "NoticeDeliveryMethodEnum"
+### A.3.33 The <<D2Enumeration>> "NoticeDeliveryMethodEnum"
 
 How a notice reaches the keeper or driver of a vehicle.
 
-*Table A.73 -- Values contained in the enumeration "NoticeDeliveryMethodEnum"*
+*Table A.85 -- Values contained in the enumeration "NoticeDeliveryMethodEnum"*
 
 | Enumerated value name | Designation | Definition |
 | --- | --- | --- |
@@ -1354,11 +1570,11 @@ How a notice reaches the keeper or driver of a vehicle.
 | electronic | Electronic | Sent by e-mail, text message or an application. |
 | other | Other | Some other method. |
 
-### A.3.29 The <<D2Enumeration>> "NoticeKindEnum"
+### A.3.34 The <<D2Enumeration>> "NoticeKindEnum"
 
 The kinds of notice that may be issued for a violation.
 
-*Table A.74 -- Values contained in the enumeration "NoticeKindEnum"*
+*Table A.86 -- Values contained in the enumeration "NoticeKindEnum"*
 
 | Enumerated value name | Designation | Definition |
 | --- | --- | --- |
@@ -1370,11 +1586,11 @@ The kinds of notice that may be issued for a violation.
 | reminder | Reminder | A follow-up notice for a violation that is still unpaid. |
 | other | Other | Some other kind of notice. |
 
-### A.3.30 The <<D2Enumeration>> "OverageBillingModeEnum"
+### A.3.35 The <<D2Enumeration>> "OverageBillingModeEnum"
 
 The way a vehicle beyond an AssignedRight's concurrent-vehicle limit is charged.
 
-*Table A.75 -- Values contained in the enumeration "OverageBillingModeEnum"*
+*Table A.87 -- Values contained in the enumeration "OverageBillingModeEnum"*
 
 | Enumerated value name | Designation | Definition |
 | --- | --- | --- |
@@ -1382,11 +1598,11 @@ The way a vehicle beyond an AssignedRight's concurrent-vehicle limit is charged.
 | dayRate | Day rate | Charged a flat day rate. |
 | none | None | Recorded but not charged. |
 
-### A.3.31 The <<D2Enumeration>> "PaymentStatusEnum"
+### A.3.36 The <<D2Enumeration>> "PaymentStatusEnum"
 
 The outcome of a payment as reported by the payment layer.
 
-*Table A.76 -- Values contained in the enumeration "PaymentStatusEnum"*
+*Table A.88 -- Values contained in the enumeration "PaymentStatusEnum"*
 
 | Enumerated value name | Designation | Definition |
 | --- | --- | --- |
@@ -1394,11 +1610,11 @@ The outcome of a payment as reported by the payment layer.
 | declined | Declined | The payment was refused by the payment layer. |
 | reversed | Reversed | An authorisation was voided, or the payment was refunded in full. |
 
-### A.3.32 The <<D2Enumeration>> "PaymentTypeEnum" (values proposed for addition)
+### A.3.37 The <<D2Enumeration>> "PaymentTypeEnum" (values proposed for addition)
 
 Indicates the list of acceptable payment types against an AssignedRight. Values proposed for addition, so payment lines can tell a fee or a discount from the base charge.
 
-*Table A.77 -- Values proposed for the enumeration "PaymentTypeEnum"*
+*Table A.89 -- Values proposed for the enumeration "PaymentTypeEnum"*
 
 | Enumerated value name | Designation | Definition |
 | --- | --- | --- |
@@ -1408,11 +1624,11 @@ Indicates the list of acceptable payment types against an AssignedRight. Values 
 | energy | Energy | A charge for energy delivered to the vehicle. |
 | idle | Idle | A charge for occupying a charging bay after charging ended. |
 
-### A.3.33 The <<D2Enumeration>> "PlateFaceEnum"
+### A.3.38 The <<D2Enumeration>> "PlateFaceEnum"
 
 Which plate of a vehicle was read.
 
-*Table A.78 -- Values contained in the enumeration "PlateFaceEnum"*
+*Table A.90 -- Values contained in the enumeration "PlateFaceEnum"*
 
 | Enumerated value name | Designation | Definition |
 | --- | --- | --- |
@@ -1420,11 +1636,11 @@ Which plate of a vehicle was read.
 | rear | Rear | The rear plate. |
 | unknown | Unknown | The engine cannot tell. |
 
-### A.3.34 The <<D2Enumeration>> "PlateListCategoryEnum"
+### A.3.39 The <<D2Enumeration>> "PlateListCategoryEnum"
 
 The category of a plate list. Suggested as an extensible code list; the values below are a starting set used by APX today.
 
-*Table A.79 -- Values contained in the enumeration "PlateListCategoryEnum"*
+*Table A.91 -- Values contained in the enumeration "PlateListCategoryEnum"*
 
 | Enumerated value name | Designation | Definition |
 | --- | --- | --- |
@@ -1433,11 +1649,11 @@ The category of a plate list. Suggested as an extensible code list; the values b
 | scofflaw | Scofflaw | Credentials with unpaid notices or a standing refusal from the list owner. |
 | enforcementVehicle | Enforcement vehicle | The list owner's own enforcement and service vehicles, recorded but never enforced. |
 
-### A.3.35 The <<D2Enumeration>> "RateClassEnum"
+### A.3.40 The <<D2Enumeration>> "RateClassEnum"
 
 How the price of a sold rate was arrived at.
 
-*Table A.80 -- Values contained in the enumeration "RateClassEnum"*
+*Table A.92 -- Values contained in the enumeration "RateClassEnum"*
 
 | Enumerated value name | Designation | Definition |
 | --- | --- | --- |
@@ -1447,11 +1663,11 @@ How the price of a sold rate was arrived at.
 | zeroed | Zeroed | The charge was reduced to zero. |
 | other | Other | Some other pricing. |
 
-### A.3.36 The <<D2Enumeration>> "RateProductEnum"
+### A.3.41 The <<D2Enumeration>> "RateProductEnum"
 
 The kind of product a rate sold.
 
-*Table A.81 -- Values contained in the enumeration "RateProductEnum"*
+*Table A.93 -- Values contained in the enumeration "RateProductEnum"*
 
 | Enumerated value name | Designation | Definition |
 | --- | --- | --- |
@@ -1459,11 +1675,11 @@ The kind of product a rate sold.
 | pass | Pass | A pass covering more than one stay or a period. |
 | other | Other | Some other product. |
 
-### A.3.37 The <<D2Enumeration>> "ReadAttributeEnum"
+### A.3.42 The <<D2Enumeration>> "ReadAttributeEnum"
 
 The attributes of a vehicle a recognition engine can recognise.
 
-*Table A.82 -- Values contained in the enumeration "ReadAttributeEnum"*
+*Table A.94 -- Values contained in the enumeration "ReadAttributeEnum"*
 
 | Enumerated value name | Designation | Definition |
 | --- | --- | --- |
@@ -1476,11 +1692,11 @@ The attributes of a vehicle a recognition engine can recognise.
 | colour | Colour | The predominant colour of the vehicle. |
 | bodyType | Body type | The vehicle body type as the engine reports it, such as sedan or bus. |
 
-### A.3.38 The <<D2Enumeration>> "ReadReviewReasonEnum"
+### A.3.43 The <<D2Enumeration>> "ReadReviewReasonEnum"
 
 Why an observation was sent to human review.
 
-*Table A.83 -- Values contained in the enumeration "ReadReviewReasonEnum"*
+*Table A.95 -- Values contained in the enumeration "ReadReviewReasonEnum"*
 
 | Enumerated value name | Designation | Definition |
 | --- | --- | --- |
@@ -1491,11 +1707,11 @@ Why an observation was sent to human review.
 | enforcementHandoff | Enforcement handoff | The read is about to be passed to an enforcement system that requires reviewed evidence. |
 | conflictingReads | Conflicting reads | Reads of the same passage disagree on the plate, country or state. |
 
-### A.3.39 The <<D2Enumeration>> "ReadReviewStateEnum"
+### A.3.44 The <<D2Enumeration>> "ReadReviewStateEnum"
 
 Where an observation is in human review.
 
-*Table A.84 -- Values contained in the enumeration "ReadReviewStateEnum"*
+*Table A.96 -- Values contained in the enumeration "ReadReviewStateEnum"*
 
 | Enumerated value name | Designation | Definition |
 | --- | --- | --- |
@@ -1505,22 +1721,22 @@ Where an observation is in human review.
 | rejected | Rejected | A reviewer rejected the read as unusable. |
 | notRequired | Not required | No rule sent the read to review. |
 
-### A.3.40 The <<D2Enumeration>> "RecordEndReasonEnum"
+### A.3.45 The <<D2Enumeration>> "RecordEndReasonEnum"
 
 Why a record that was in use is no longer in use, beyond what its Validity already says.
 
-*Table A.85 -- Values contained in the enumeration "RecordEndReasonEnum"*
+*Table A.97 -- Values contained in the enumeration "RecordEndReasonEnum"*
 
 | Enumerated value name | Designation | Definition |
 | --- | --- | --- |
 | superseded | Superseded | Replaced by a newer record that now applies. |
 | retired | Retired | Withdrawn from use, or physically removed, without a replacement. |
 
-### A.3.41 The <<D2Enumeration>> "ReservationStateEnum"
+### A.3.46 The <<D2Enumeration>> "ReservationStateEnum"
 
 The state of an AssignedRight that is a reservation.
 
-*Table A.86 -- Values contained in the enumeration "ReservationStateEnum"*
+*Table A.98 -- Values contained in the enumeration "ReservationStateEnum"*
 
 | Enumerated value name | Designation | Definition |
 | --- | --- | --- |
@@ -1530,21 +1746,21 @@ The state of an AssignedRight that is a reservation.
 | checkedIn | Checked in | A Session has used the reservation. |
 | noShow | No show | The reservation was not used before its no-show time. |
 
-### A.3.42 The <<D2Enumeration>> "RightTypeEnum" (values proposed for addition)
+### A.3.47 The <<D2Enumeration>> "RightTypeEnum" (values proposed for addition)
 
 Defines the type of Right Specification (existing APDS enumeration; the value below is a proposed addition).
 
-*Table A.87 -- Values proposed for the enumeration "RightTypeEnum"*
+*Table A.99 -- Values proposed for the enumeration "RightTypeEnum"*
 
 | Enumerated value name | Designation | Definition |
 | --- | --- | --- |
 | valet | Valet | Intended for a vehicle placed in valet custody, valid from drop-off to handback. |
 
-### A.3.43 The <<D2Enumeration>> "SessionEndReasonEnum"
+### A.3.48 The <<D2Enumeration>> "SessionEndReasonEnum"
 
 Why a Session ended.
 
-*Table A.88 -- Values contained in the enumeration "SessionEndReasonEnum"*
+*Table A.100 -- Values contained in the enumeration "SessionEndReasonEnum"*
 
 | Enumerated value name | Designation | Definition |
 | --- | --- | --- |
@@ -1559,11 +1775,11 @@ Why a Session ended.
 | closedByOperator | Closed by operator | A member of staff closed the Session. |
 | closedAfterReview | Closed after review | A person reviewing the observations paired an exit with the Session and closed it. |
 
-### A.3.44 The <<D2Enumeration>> "SessionLifecycleEnum"
+### A.3.49 The <<D2Enumeration>> "SessionLifecycleEnum"
 
 How settled a Session is.
 
-*Table A.89 -- Values contained in the enumeration "SessionLifecycleEnum"*
+*Table A.101 -- Values contained in the enumeration "SessionLifecycleEnum"*
 
 | Enumerated value name | Designation | Definition |
 | --- | --- | --- |
@@ -1572,11 +1788,11 @@ How settled a Session is.
 | final | Final | The Session has ended and no further revision is expected. |
 | disputed | Disputed | The Session is under review. |
 
-### A.3.45 The <<D2Enumeration>> "SessionReadRoleEnum"
+### A.3.50 The <<D2Enumeration>> "SessionReadRoleEnum"
 
 The part an observation played in a Session.
 
-*Table A.90 -- Values contained in the enumeration "SessionReadRoleEnum"*
+*Table A.102 -- Values contained in the enumeration "SessionReadRoleEnum"*
 
 | Enumerated value name | Designation | Definition |
 | --- | --- | --- |
@@ -1585,11 +1801,11 @@ The part an observation played in a Session.
 | duplicate | Duplicate | The same passage seen by another camera or in another frame. |
 | activity | Activity | The vehicle seen inside the Place, for example during a patrol or by a bay camera. |
 
-### A.3.46 The <<D2Enumeration>> "SignTypeEnum"
+### A.3.51 The <<D2Enumeration>> "SignTypeEnum"
 
 The kind of sign posted at a Place.
 
-*Table A.91 -- Values contained in the enumeration "SignTypeEnum"*
+*Table A.103 -- Values contained in the enumeration "SignTypeEnum"*
 
 | Enumerated value name | Designation | Definition |
 | --- | --- | --- |
@@ -1600,22 +1816,22 @@ The kind of sign posted at a Place.
 | towAway | Tow away | A sign warning that vehicles may be removed. |
 | other | Other | Some other kind of sign. |
 
-### A.3.47 The <<D2Enumeration>> "SupportAgentTypeEnum"
+### A.3.52 The <<D2Enumeration>> "SupportAgentTypeEnum"
 
 Who handled a customer-service contact.
 
-*Table A.92 -- Values contained in the enumeration "SupportAgentTypeEnum"*
+*Table A.104 -- Values contained in the enumeration "SupportAgentTypeEnum"*
 
 | Enumerated value name | Designation | Definition |
 | --- | --- | --- |
 | human | Human | A person. |
 | automated | Automated | An automated agent, such as a voice or chat assistant. |
 
-### A.3.48 The <<D2Enumeration>> "SupportIssueTypeEnum"
+### A.3.53 The <<D2Enumeration>> "SupportIssueTypeEnum"
 
 The kinds of problem a customer-service contact is about.
 
-*Table A.93 -- Values contained in the enumeration "SupportIssueTypeEnum"*
+*Table A.105 -- Values contained in the enumeration "SupportIssueTypeEnum"*
 
 | Enumerated value name | Designation | Definition |
 | --- | --- | --- |
@@ -1631,11 +1847,11 @@ The kinds of problem a customer-service contact is about.
 | equipmentFault | Equipment fault | A piece of equipment is not working. |
 | unknown | Unknown | The problem has not been classified. |
 
-### A.3.49 The <<D2Enumeration>> "TollDisputeReasonEnum"
+### A.3.54 The <<D2Enumeration>> "TollDisputeReasonEnum"
 
 Why a toll charge was challenged.
 
-*Table A.94 -- Values contained in the enumeration "TollDisputeReasonEnum"*
+*Table A.106 -- Values contained in the enumeration "TollDisputeReasonEnum"*
 
 | Enumerated value name | Designation | Definition |
 | --- | --- | --- |
@@ -1645,11 +1861,11 @@ Why a toll charge was challenged.
 | notLiable | Not liable | The party is not liable for the passage, for example an exempt, sold or stolen vehicle. |
 | other | Other | Any other reason. |
 
-### A.3.50 The <<D2Enumeration>> "TollDisputeResolutionEnum"
+### A.3.55 The <<D2Enumeration>> "TollDisputeResolutionEnum"
 
 How a toll dispute was resolved.
 
-*Table A.95 -- Values contained in the enumeration "TollDisputeResolutionEnum"*
+*Table A.107 -- Values contained in the enumeration "TollDisputeResolutionEnum"*
 
 | Enumerated value name | Designation | Definition |
 | --- | --- | --- |
@@ -1658,11 +1874,11 @@ How a toll dispute was resolved.
 | reduced | Reduced | The charge stands with a lower amount owed. |
 | withdrawn | Withdrawn | The disputing party abandoned the dispute and the charge stands. |
 
-### A.3.51 The <<D2Enumeration>> "TollTransactionStatusEnum"
+### A.3.56 The <<D2Enumeration>> "TollTransactionStatusEnum"
 
 The lifecycle stage of a toll charge.
 
-*Table A.96 -- Values contained in the enumeration "TollTransactionStatusEnum"*
+*Table A.108 -- Values contained in the enumeration "TollTransactionStatusEnum"*
 
 | Enumerated value name | Designation | Definition |
 | --- | --- | --- |
@@ -1673,11 +1889,11 @@ The lifecycle stage of a toll charge.
 | resolved | Resolved | A dispute has been resolved. |
 | voided | Voided | Cancelled by the operator. |
 
-### A.3.52 The <<D2Enumeration>> "ValetStatusEnum"
+### A.3.57 The <<D2Enumeration>> "ValetStatusEnum"
 
 The stage of a vehicle in valet custody.
 
-*Table A.97 -- Values contained in the enumeration "ValetStatusEnum"*
+*Table A.109 -- Values contained in the enumeration "ValetStatusEnum"*
 
 | Enumerated value name | Designation | Definition |
 | --- | --- | --- |
@@ -1690,11 +1906,11 @@ The stage of a vehicle in valet custody.
 | closed | Closed | The stay is settled. |
 | cancelled | Cancelled | The ticket was cancelled before custody was taken. |
 
-### A.3.53 The <<D2Enumeration>> "ValidationBillingCycleEnum"
+### A.3.58 The <<D2Enumeration>> "ValidationBillingCycleEnum"
 
 How often a validation provider is billed.
 
-*Table A.98 -- Values contained in the enumeration "ValidationBillingCycleEnum"*
+*Table A.110 -- Values contained in the enumeration "ValidationBillingCycleEnum"*
 
 | Enumerated value name | Designation | Definition |
 | --- | --- | --- |
@@ -1702,11 +1918,11 @@ How often a validation provider is billed.
 | weekly | Weekly | Billed once a week. |
 | perValidation | Per validation | Billed for each validation as it is applied. |
 
-### A.3.54 The <<D2Enumeration>> "ValidationBillingModelEnum"
+### A.3.59 The <<D2Enumeration>> "ValidationBillingModelEnum"
 
 Who bears the cost of validations under a program.
 
-*Table A.99 -- Values contained in the enumeration "ValidationBillingModelEnum"*
+*Table A.111 -- Values contained in the enumeration "ValidationBillingModelEnum"*
 
 | Enumerated value name | Designation | Definition |
 | --- | --- | --- |
@@ -1714,11 +1930,11 @@ Who bears the cost of validations under a program.
 | operatorAbsorbs | Operator absorbs | The operator bears the cost. |
 | split | Split | The provider pays a share of the amount reduced. |
 
-### A.3.55 The <<D2Enumeration>> "ValidationInstrumentStatusEnum"
+### A.3.60 The <<D2Enumeration>> "ValidationInstrumentStatusEnum"
 
 The status of one validation instrument. Expiry follows the instrument Validity.
 
-*Table A.100 -- Values contained in the enumeration "ValidationInstrumentStatusEnum"*
+*Table A.112 -- Values contained in the enumeration "ValidationInstrumentStatusEnum"*
 
 | Enumerated value name | Designation | Definition |
 | --- | --- | --- |
@@ -1726,11 +1942,11 @@ The status of one validation instrument. Expiry follows the instrument Validity.
 | redeemed | Redeemed | The instrument has been applied to a Session. |
 | void | Void | The instrument has been withdrawn. |
 
-### A.3.56 The <<D2Enumeration>> "ValidationIssuanceMethodEnum"
+### A.3.61 The <<D2Enumeration>> "ValidationIssuanceMethodEnum"
 
 The form of a validation instrument.
 
-*Table A.101 -- Values contained in the enumeration "ValidationIssuanceMethodEnum"*
+*Table A.113 -- Values contained in the enumeration "ValidationIssuanceMethodEnum"*
 
 | Enumerated value name | Designation | Definition |
 | --- | --- | --- |
@@ -1740,33 +1956,33 @@ The form of a validation instrument.
 | digital | Digital | A digital token held in an application. |
 | system | System | Applied directly by a connected system, with no instrument handed out. |
 
-### A.3.57 The <<D2Enumeration>> "ValidationIssuanceStatusEnum"
+### A.3.62 The <<D2Enumeration>> "ValidationIssuanceStatusEnum"
 
 Whether a batch of validation instruments is in force.
 
-*Table A.102 -- Values contained in the enumeration "ValidationIssuanceStatusEnum"*
+*Table A.114 -- Values contained in the enumeration "ValidationIssuanceStatusEnum"*
 
 | Enumerated value name | Designation | Definition |
 | --- | --- | --- |
 | issued | Issued | The batch is in force. |
 | void | Void | The batch has been withdrawn; unredeemed instruments may not be used. |
 
-### A.3.58 The <<D2Enumeration>> "ValidationRedemptionStatusEnum"
+### A.3.63 The <<D2Enumeration>> "ValidationRedemptionStatusEnum"
 
 Whether a validation redemption stands.
 
-*Table A.103 -- Values contained in the enumeration "ValidationRedemptionStatusEnum"*
+*Table A.115 -- Values contained in the enumeration "ValidationRedemptionStatusEnum"*
 
 | Enumerated value name | Designation | Definition |
 | --- | --- | --- |
 | applied | Applied | The validation is applied to the Session. |
 | reversed | Reversed | The validation was reversed. |
 
-### A.3.59 The <<D2Enumeration>> "VehicleMovementEnum"
+### A.3.64 The <<D2Enumeration>> "VehicleMovementEnum"
 
 The motion of a vehicle relative to the camera that observed it.
 
-*Table A.104 -- Values contained in the enumeration "VehicleMovementEnum"*
+*Table A.116 -- Values contained in the enumeration "VehicleMovementEnum"*
 
 | Enumerated value name | Designation | Definition |
 | --- | --- | --- |
@@ -1775,11 +1991,11 @@ The motion of a vehicle relative to the camera that observed it.
 | stopped | Stopped | The vehicle was stationary. |
 | unknown | Unknown | The motion could not be determined. |
 
-### A.3.60 The <<D2Enumeration>> "ViolationStatusEnum"
+### A.3.65 The <<D2Enumeration>> "ViolationStatusEnum"
 
 The states of a violation from detection to closure.
 
-*Table A.105 -- Values contained in the enumeration "ViolationStatusEnum"*
+*Table A.117 -- Values contained in the enumeration "ViolationStatusEnum"*
 
 | Enumerated value name | Designation | Definition |
 | --- | --- | --- |
@@ -1792,11 +2008,11 @@ The states of a violation from detection to closure.
 | closed | Closed | The violation is finished, after payment or a successful appeal; this is final. |
 | voided | Voided | The violation was withdrawn, for example as issued in error or a duplicate; this is final. |
 
-### A.3.61 The <<D2Enumeration>> "ViolationTypeEnum"
+### A.3.66 The <<D2Enumeration>> "ViolationTypeEnum"
 
 The kinds of parking violation.
 
-*Table A.106 -- Values contained in the enumeration "ViolationTypeEnum"*
+*Table A.118 -- Values contained in the enumeration "ViolationTypeEnum"*
 
 | Enumerated value name | Designation | Definition |
 | --- | --- | --- |

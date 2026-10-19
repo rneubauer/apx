@@ -52,7 +52,7 @@ can be read on its own.
 
 ## Operations at a glance
 
-The APX OpenAPI document declares 185 operations and 6 webhooks. 40 operations are APDS 4.1 native routes that APX carries; the rest are defined by APX.
+The APX OpenAPI document declares 204 operations and 6 webhooks. 40 operations are APDS 4.1 native routes that APX carries; the rest are defined by APX.
 
 | Group | Tag | Operations |
 | --- | --- | --- |
@@ -61,7 +61,9 @@ The APX OpenAPI document declares 185 operations and 6 webhooks. 40 operations a
 | Platform | Subscription | 7 |
 | Platform | Control | 8 |
 | Platform | Alerts | 5 |
-| Commerce | Accounts | 13 |
+| Platform | Site configuration | 9 |
+| Platform | UI launch | 5 |
+| Commerce | Accounts | 14 |
 | Commerce | Reservations | 3 |
 | Commerce | Permits | 2 |
 | Commerce | Validations | 17 |
@@ -72,7 +74,7 @@ The APX OpenAPI document declares 185 operations and 6 webhooks. 40 operations a
 | Vehicles and access | Charging | 9 |
 | Enforcement and service | Violations | 24 |
 | Enforcement and service | Plate lists | 8 |
-| Enforcement and service | Resolution | 4 |
+| Enforcement and service | Resolution | 8 |
 | Enforcement and service | Support | 4 |
 | Webhooks (event deliveries) | Webhooks | 6 |
 | APDS 4.1 native routes | Places | 5 |
@@ -755,6 +757,388 @@ The APX OpenAPI document declares 185 operations and 6 webhooks. 40 operations a
 | 409 | Problem | Illegal transition from the current state (`alert-transition-illegal`, Part 7 §7.3). |
 | 429 | Problem | Rate limited (problem type `rate-limited`, Part 12). |
 
+### 2.5 Site configuration
+
+**A location, described by APX alone.** Before a call, an agent or a system should be able to learn what a site has without data from any other system: which hardware is on each lane and what each piece does, what it is, what runs on it, where the cameras are and what they see, how a parker reaches help from each lane or door, and who to escalate to.
+
+| Method | Path | Summary | Scopes |
+| --- | --- | --- | --- |
+| GET | `/v1/equipment` | List a place's equipment with its roles, makes, versions and areas | `apx.siteconfig:read` |
+| GET | `/v1/equipment/{id}` | Read one piece of equipment | `apx.siteconfig:read` |
+| GET | `/v1/comms-points` | List or look up comms points | `apx.siteconfig:read` |
+| POST | `/v1/comms-points` | Add a comms point | `apx.siteconfig:manage` |
+| GET | `/v1/comms-points/{id}` | Read a comms point | `apx.siteconfig:read` |
+| PUT | `/v1/comms-points/{id}` | Replace a comms point | `apx.siteconfig:manage` |
+| DELETE | `/v1/comms-points/{id}` | Remove a comms point | `apx.siteconfig:manage` |
+| POST | `/v1/identifiers:resolve` | Find the APX record behind another system's id | `apx.siteconfig:read` |
+| POST | `/v1/cameras/{id}/views` | Get a short-lived link to see a camera | `apx.cameras:view` |
+
+#### 2.5.1 GET /v1/equipment
+
+**List a place's equipment with its roles, makes, versions and areas.** Every SupplementalEquipment at the place, each with its `apds-ext:apx:equipment-detail@1.0` decoration, so a reader learns what the site has from APX alone (Part 26 §26.1). Distinct from `GET /v1/devices`, which serves live state; this serves the description. `mode=change&cursor=` serves the Part 5 §5.2 feed, so an edge or call-centre system keeps a local copy current. Naming a `place` outside the grant is 403 `insufficient-grant`.
+
+| Item | Value |
+| --- | --- |
+| Operation id | `get-apx-v1-equipment` |
+| Origin | APX |
+| Scopes | `apx.siteconfig:read` |
+| Request body | — |
+
+| Parameter | In | Required | Type | Description |
+| --- | --- | --- | --- | --- |
+| `mode` | query | no | string (full, change) | APX change feed (Part 5 §5.2): `full` (default — the route's ordinary list; on a native APDS route, exactly stock APDS 4.1) or `change` (the changes after `cursor`: a ChangeFeedPage on a native route, the route's own list envelope with the change-page members on an APX list route, rule 8; on an APX list route without a cursor, an empty page holding the current head cursor). |
+| `cursor` | query | no | string | Opaque change-feed cursor from a previous change page. Only meaningful with `mode=change`; a refused cursor is 404 `target-not-found` (Part 5 §5.2 rules 2 and 5). |
+| `place` | query | yes | string uuid | The HierarchyElement subtree root. |
+| `role` | query | no | string | An apx-equipment-roles value. |
+| `area` | query | no | string | An apx-area-types value. |
+| `lane` | query | no | string uuid | Equipment serving this VehicularAccess. |
+| `level` | query | no | string |  |
+| `page` | query | no | integer | The page number for paginated responses. |
+
+| Response | Body | Meaning |
+| --- | --- | --- |
+| 200 | object | Paginated equipment; with `mode=change`, the changes after `cursor` in the same envelope (Part 5 §5.2 rule 8). |
+| 401 | Problem | Missing, malformed, expired, or revoked access token (problem type `unauthenticated`, Part 12). |
+| 403 | Problem | Insufficient scope (problem type `insufficient-scope`) or place grant (`insufficient-grant`) for this operation (Part 9). |
+| 404 | Problem | `mode=change` only (Part 5 §5.2): the cursor is unknown, older than the retention window, or was issued for another (class, credential, filter set). Problem type `target-not-found`; re-sync with `mode=full`. The cursor is an APX parameter, so this refusal is always a Problem (Part 5 §5.2 rules 2 and 5). |
+| 429 | Problem | Rate limited (problem type `rate-limited`, Part 12). |
+
+#### 2.5.2 GET /v1/equipment/{id}
+
+**Read one piece of equipment.** The SupplementalEquipment with its APX decorations (Part 26 §26.1).
+
+| Item | Value |
+| --- | --- |
+| Operation id | `get-apx-v1-equipment-id` |
+| Origin | APX |
+| Scopes | `apx.siteconfig:read` |
+| Request body | — |
+
+| Parameter | In | Required | Type | Description |
+| --- | --- | --- | --- | --- |
+| `id` | path | yes | string uuid |  |
+
+| Response | Body | Meaning |
+| --- | --- | --- |
+| 200 | EquipmentRecord | The equipment record. |
+| 401 | Problem | Missing, malformed, expired, or revoked access token (problem type `unauthenticated`, Part 12). |
+| 403 | Problem | Insufficient scope (problem type `insufficient-scope`) or place grant (`insufficient-grant`) for this operation (Part 9). |
+| 404 | Problem | The addressed resource does not exist (problem type `target-not-found`). A resource at a place outside the caller's `apx_places` grant is 403 `insufficient-grant` instead (Part 9 §9.3). A resource that exists but lies outside a narrower ownership scope (a merchant's own programs, a valet customer's own ticket) is reported as 404, so the answer never confirms another party's record exists (Part 9 §9.3a). |
+| 429 | Problem | Rate limited (problem type `rate-limited`, Part 12). |
+
+#### 2.5.3 GET /v1/comms-points
+
+**List or look up comms points.** The ways a parker reaches help at the caller's places (Part 26 §26.4). A call platform finds the comms point of an inbound contact with `callerId`, `dialedNumber` or `commsDeviceId`; the answer carries the lane, or the place only. `mode=change&cursor=` serves the Part 5 §5.2 feed.
+
+| Item | Value |
+| --- | --- |
+| Operation id | `get-apx-v1-comms-points` |
+| Origin | APX |
+| Scopes | `apx.siteconfig:read` |
+| Request body | — |
+
+| Parameter | In | Required | Type | Description |
+| --- | --- | --- | --- | --- |
+| `mode` | query | no | string (full, change) | APX change feed (Part 5 §5.2): `full` (default — the route's ordinary list; on a native APDS route, exactly stock APDS 4.1) or `change` (the changes after `cursor`: a ChangeFeedPage on a native route, the route's own list envelope with the change-page members on an APX list route, rule 8; on an APX list route without a cursor, an empty page holding the current head cursor). |
+| `cursor` | query | no | string | Opaque change-feed cursor from a previous change page. Only meaningful with `mode=change`; a refused cursor is 404 `target-not-found` (Part 5 §5.2 rules 2 and 5). |
+| `place` | query | no | string uuid |  |
+| `lane` | query | no | string uuid |  |
+| `type` | query | no | string | An apx-comms-point-types value. |
+| `callerId` | query | no | string | E.164; matches `callerId`. |
+| `dialedNumber` | query | no | string | E.164; matches `phoneNumber`. |
+| `commsDeviceId` | query | no | string |  |
+| `page` | query | no | integer | The page number for paginated responses. |
+
+| Response | Body | Meaning |
+| --- | --- | --- |
+| 200 | object | Paginated comms points; with `mode=change`, the changes after `cursor` in the same envelope. |
+| 401 | Problem | Missing, malformed, expired, or revoked access token (problem type `unauthenticated`, Part 12). |
+| 403 | Problem | Insufficient scope (problem type `insufficient-scope`) or place grant (`insufficient-grant`) for this operation (Part 9). |
+| 404 | Problem | `mode=change` only (Part 5 §5.2): the cursor is unknown, older than the retention window, or was issued for another (class, credential, filter set). Problem type `target-not-found`; re-sync with `mode=full`. The cursor is an APX parameter, so this refusal is always a Problem (Part 5 §5.2 rules 2 and 5). |
+| 429 | Problem | Rate limited (problem type `rate-limited`, Part 12). |
+
+#### 2.5.4 POST /v1/comms-points
+
+**Add a comms point.** Whoever runs the calls adds the comms point, the call centre or the call platform (Part 26 §26.4). `place` must lie inside the grant (403 `insufficient-grant`); `lane`, `equipment` and `serves` must exist (422 `reference-unknown`). `Idempotency-Key` optional. Publishes `apx.commspoints.changed.v1`.
+
+| Item | Value |
+| --- | --- |
+| Operation id | `post-apx-v1-comms-points` |
+| Origin | APX |
+| Scopes | `apx.siteconfig:manage` |
+| Request body | CommsPoint |
+
+| Parameter | In | Required | Type | Description |
+| --- | --- | --- | --- | --- |
+| `Idempotency-Key` | header | no | string | When given, the operation is idempotent per Part 4 §4.2a: a replay with the same body returns the current representation (200), a different body is 409 `idempotency-conflict`. Clients that retry SHOULD send it. |
+
+| Response | Body | Meaning |
+| --- | --- | --- |
+| 200 | CommsPoint | Idempotent replay. |
+| 201 | CommsPoint | Created. |
+| 400 | Problem | The request is malformed: the body or a parameter fails the operation's schema or a normative field rule (problem type `invalid-request`, with an `errors[]` member naming each offending JSON Pointer), or a REQUIRED Idempotency-Key is absent (`idempotency-key-required`). Part 12. |
+| 401 | Problem | Missing, malformed, expired, or revoked access token (problem type `unauthenticated`, Part 12). |
+| 403 | Problem | Insufficient scope (problem type `insufficient-scope`) or place grant (`insufficient-grant`) for this operation (Part 9). |
+| 409 | Problem | `Idempotency-Key` replayed with a different body (`idempotency-conflict`). |
+| 422 | Problem | A `type` outside the registry, or a `place`, `lane`, `equipment` or `serves` that does not exist (`reference-unknown`). |
+| 429 | Problem | Rate limited (problem type `rate-limited`, Part 12). |
+
+#### 2.5.5 GET /v1/comms-points/{id}
+
+**Read a comms point.** The comms point with the lane or place it serves and the barrier an agent opens for it (Part 26 §26.4).
+
+| Item | Value |
+| --- | --- |
+| Operation id | `get-apx-v1-comms-points-id` |
+| Origin | APX |
+| Scopes | `apx.siteconfig:read` |
+| Request body | — |
+
+| Parameter | In | Required | Type | Description |
+| --- | --- | --- | --- | --- |
+| `id` | path | yes | string uuid |  |
+
+| Response | Body | Meaning |
+| --- | --- | --- |
+| 200 | CommsPoint | The comms point. |
+| 401 | Problem | Missing, malformed, expired, or revoked access token (problem type `unauthenticated`, Part 12). |
+| 403 | Problem | Insufficient scope (problem type `insufficient-scope`) or place grant (`insufficient-grant`) for this operation (Part 9). |
+| 404 | Problem | The addressed resource does not exist (problem type `target-not-found`). A resource at a place outside the caller's `apx_places` grant is 403 `insufficient-grant` instead (Part 9 §9.3). A resource that exists but lies outside a narrower ownership scope (a merchant's own programs, a valet customer's own ticket) is reported as 404, so the answer never confirms another party's record exists (Part 9 §9.3a). |
+| 429 | Problem | Rate limited (problem type `rate-limited`, Part 12). |
+
+#### 2.5.6 PUT /v1/comms-points/{id}
+
+**Replace a comms point.** Full replacement with the version last read as `If-Match` or body `version` (409 `version-conflict`, Part 4 §4.2a). Publishes `apx.commspoints.changed.v1`.
+
+| Item | Value |
+| --- | --- |
+| Operation id | `put-apx-v1-comms-points-id` |
+| Origin | APX |
+| Scopes | `apx.siteconfig:manage` |
+| Request body | CommsPoint |
+
+| Parameter | In | Required | Type | Description |
+| --- | --- | --- | --- | --- |
+| `id` | path | yes | string uuid |  |
+| `If-Match` | header | no | string | The `version` the client last read, as an entity tag (`"7"`). A stale value is 409 `version-conflict`; nothing is written (Part 4 §4.2a). Equivalent to sending `version` in the body. |
+
+| Response | Body | Meaning |
+| --- | --- | --- |
+| 200 | CommsPoint | Replaced. |
+| 400 | Problem | The request is malformed: the body or a parameter fails the operation's schema or a normative field rule (problem type `invalid-request`, with an `errors[]` member naming each offending JSON Pointer), or a REQUIRED Idempotency-Key is absent (`idempotency-key-required`). Part 12. |
+| 401 | Problem | Missing, malformed, expired, or revoked access token (problem type `unauthenticated`, Part 12). |
+| 403 | Problem | Insufficient scope (problem type `insufficient-scope`) or place grant (`insufficient-grant`) for this operation (Part 9). |
+| 404 | Problem | The addressed resource does not exist (problem type `target-not-found`). A resource at a place outside the caller's `apx_places` grant is 403 `insufficient-grant` instead (Part 9 §9.3). A resource that exists but lies outside a narrower ownership scope (a merchant's own programs, a valet customer's own ticket) is reported as 404, so the answer never confirms another party's record exists (Part 9 §9.3a). |
+| 409 | Problem | Stale version (`version-conflict`). |
+| 422 | Problem | A `type` outside the registry, or a reference that does not exist (`reference-unknown`). |
+| 429 | Problem | Rate limited (problem type `rate-limited`, Part 12). |
+
+#### 2.5.7 DELETE /v1/comms-points/{id}
+
+**Remove a comms point.** The feed emits a tombstone (Part 5 §5.2); publishes `apx.commspoints.changed.v1`.
+
+| Item | Value |
+| --- | --- |
+| Operation id | `delete-apx-v1-comms-points-id` |
+| Origin | APX |
+| Scopes | `apx.siteconfig:manage` |
+| Request body | — |
+
+| Parameter | In | Required | Type | Description |
+| --- | --- | --- | --- | --- |
+| `id` | path | yes | string uuid |  |
+
+| Response | Body | Meaning |
+| --- | --- | --- |
+| 204 | — | Removed. |
+| 401 | Problem | Missing, malformed, expired, or revoked access token (problem type `unauthenticated`, Part 12). |
+| 403 | Problem | Insufficient scope (problem type `insufficient-scope`) or place grant (`insufficient-grant`) for this operation (Part 9). |
+| 404 | Problem | The addressed resource does not exist (problem type `target-not-found`). A resource at a place outside the caller's `apx_places` grant is 403 `insufficient-grant` instead (Part 9 §9.3). A resource that exists but lies outside a narrower ownership scope (a merchant's own programs, a valet customer's own ticket) is reported as 404, so the answer never confirms another party's record exists (Part 9 §9.3a). |
+| 429 | Problem | Rate limited (problem type `rate-limited`, Part 12). |
+
+#### 2.5.8 POST /v1/identifiers:resolve
+
+**Find the APX record behind another system's id.** Looks up a `{system, id}` pair from any `apds-ext:apx:external-ids@1.0` decoration the caller may see (Part 26 §26.6), so a PARCS, a call platform or an aggregator goes from its own id to the place, lane, equipment or comms point without a table of its own. A read, as a POST so the id never sits in a URL. No match is 404 `target-not-found`.
+
+| Item | Value |
+| --- | --- |
+| Operation id | `post-apx-v1-identifiers-resolve` |
+| Origin | APX |
+| Scopes | `apx.siteconfig:read` |
+| Request body | IdentifierResolveRequest |
+
+| Response | Body | Meaning |
+| --- | --- | --- |
+| 200 | IdentifierResolution | The record the id names. |
+| 400 | Problem | The request is malformed: the body or a parameter fails the operation's schema or a normative field rule (problem type `invalid-request`, with an `errors[]` member naming each offending JSON Pointer), or a REQUIRED Idempotency-Key is absent (`idempotency-key-required`). Part 12. |
+| 401 | Problem | Missing, malformed, expired, or revoked access token (problem type `unauthenticated`, Part 12). |
+| 403 | Problem | Insufficient scope (problem type `insufficient-scope`) or place grant (`insufficient-grant`) for this operation (Part 9). |
+| 404 | Problem | No visible record carries this id (`target-not-found`). |
+| 429 | Problem | Rate limited (problem type `rate-limited`, Part 12). |
+
+#### 2.5.9 POST /v1/cameras/{id}/views
+
+**Get a short-lived link to see a camera.** A live stream, a still, or a recording of the camera (the SupplementalEquipment with role `camera`), as a single-use link bound to the agent and valid for at most 5 minutes (Part 26 §26.3). Whoever holds the camera answers; its password never leaves the site. Every view is logged against the agent and `correlationId`. Offered under the `cameraViews` feature; `playback` also needs `cameraPlayback`.
+
+| Item | Value |
+| --- | --- |
+| Operation id | `post-apx-v1-cameras-id-views` |
+| Origin | APX |
+| Scopes | `apx.cameras:view` |
+| Request body | CameraViewRequest |
+
+| Parameter | In | Required | Type | Description |
+| --- | --- | --- | --- | --- |
+| `id` | path | yes | string uuid | The camera's SupplementalEquipment id. |
+
+| Response | Body | Meaning |
+| --- | --- | --- |
+| 201 | CameraView | The link. |
+| 400 | Problem | The request is malformed: the body or a parameter fails the operation's schema or a normative field rule (problem type `invalid-request`, with an `errors[]` member naming each offending JSON Pointer), or a REQUIRED Idempotency-Key is absent (`idempotency-key-required`). Part 12. |
+| 401 | Problem | Missing, malformed, expired, or revoked access token (problem type `unauthenticated`, Part 12). |
+| 403 | Problem | Insufficient scope (problem type `insufficient-scope`) or place grant (`insufficient-grant`) for this operation (Part 9). |
+| 404 | Problem | The addressed resource does not exist (problem type `target-not-found`). A resource at a place outside the caller's `apx_places` grant is 403 `insufficient-grant` instead (Part 9 §9.3). A resource that exists but lies outside a narrower ownership scope (a merchant's own programs, a valet customer's own ticket) is reported as 404, so the answer never confirms another party's record exists (Part 9 §9.3a). |
+| 409 | Problem | The camera is offline, has no recorder for `playback`, or the implementation cannot issue a view now (`camera-view-unavailable`). |
+| 422 | Problem | `playback` with a `from`/`to` outside the camera's retention or missing (`playback-range-unavailable`), or a `kind` the camera's `streams` cannot serve (`request-unprocessable`). |
+| 429 | Problem | Rate limited (problem type `rate-limited`, Part 12). |
+
+### 2.6 UI launch
+
+**The vendor's own screen, without breaking the record.** Most actions in a call centre still happen in a vendor's portal in another window, and the two systems never agree afterwards. A vendor will take years to implement every APX module, but it already has good screens.
+
+| Method | Path | Summary | Scopes |
+| --- | --- | --- | --- |
+| GET | `/v1/ui/launches` | List launches | `apx.ui:read` |
+| POST | `/v1/ui/launches` | Open a vendor screen for an agent (handshake launch) | `apx.ui:launch` |
+| GET | `/v1/ui/launches/{id}` | Read a launch and what was done in it | `apx.ui:read` |
+| POST | `/v1/ui/launches/{id}/actions` | Record an action done in the screen (loopback fallback) | `apx.ui:record` |
+| POST | `/v1/ui/launches/{id}/close` | Close a launch | `apx.ui:record` |
+
+#### 2.6.1 GET /v1/ui/launches
+
+**List launches.** The launch records visible to the caller, newest first (Part 25 §25.3). `url` is never included on a list read.
+
+| Item | Value |
+| --- | --- |
+| Operation id | `get-apx-v1-ui-launches` |
+| Origin | APX |
+| Scopes | `apx.ui:read` |
+| Request body | — |
+
+| Parameter | In | Required | Type | Description |
+| --- | --- | --- | --- | --- |
+| `place` | query | no | string uuid | Launches at this place or its subtree. |
+| `agent` | query | no | string |  |
+| `status` | query | no | string (issued, opened, closed, expired) |  |
+| `correlationId` | query | no | string uuid |  |
+| `interactionId` | query | no | string |  |
+| `page` | query | no | integer | The page number for paginated responses. |
+
+| Response | Body | Meaning |
+| --- | --- | --- |
+| 200 | object | Paginated launches. |
+| 401 | Problem | Missing, malformed, expired, or revoked access token (problem type `unauthenticated`, Part 12). |
+| 403 | Problem | Insufficient scope (problem type `insufficient-scope`) or place grant (`insufficient-grant`) for this operation (Part 9). |
+| 429 | Problem | Rate limited (problem type `rate-limited`, Part 12). |
+
+#### 2.6.2 POST /v1/ui/launches
+
+**Open a vendor screen for an agent (handshake launch).** The host sends its normal APX token and gets back a single-use `url` that logs the named agent into the surface, valid for at most 60 seconds (Part 25 §25.2). This is the launch mode for vendors who want header-based authentication, since a browser cannot add headers when it opens a page. `place` must lie inside the grant (403 `insufficient-grant`). `Idempotency-Key` optional (Part 4 §4.2a). Publishes `apx.ui.launch.changed.v1`.
+
+| Item | Value |
+| --- | --- |
+| Operation id | `post-apx-v1-ui-launches` |
+| Origin | APX |
+| Scopes | `apx.ui:launch` |
+| Request body | UiLaunchRequest |
+
+| Parameter | In | Required | Type | Description |
+| --- | --- | --- | --- | --- |
+| `Idempotency-Key` | header | no | string | When given, the operation is idempotent per Part 4 §4.2a: a replay with the same body returns the current representation (200), a different body is 409 `idempotency-conflict`. Clients that retry SHOULD send it. |
+
+| Response | Body | Meaning |
+| --- | --- | --- |
+| 200 | UiLaunch | Idempotent replay. |
+| 201 | UiLaunch | Issued. `url` and `expiresAt` are set; `status` is `issued`. |
+| 400 | Problem | The request is malformed: the body or a parameter fails the operation's schema or a normative field rule (problem type `invalid-request`, with an `errors[]` member naming each offending JSON Pointer), or a REQUIRED Idempotency-Key is absent (`idempotency-key-required`). Part 12. |
+| 401 | Problem | Missing, malformed, expired, or revoked access token (problem type `unauthenticated`, Part 12). |
+| 403 | Problem | Insufficient scope (problem type `insufficient-scope`) or place grant (`insufficient-grant`) for this operation (Part 9). |
+| 409 | Problem | `Idempotency-Key` replayed with a different body (`idempotency-conflict`). |
+| 422 | Problem | A `surface` this implementation does not offer, or not at this place (`ui-surface-unknown`); a `displayMode` the surface does not support (`ui-display-mode-unsupported`); or a `subject`, `place` or `lane` that does not exist (`reference-unknown`). |
+| 429 | Problem | Rate limited (problem type `rate-limited`, Part 12). |
+
+#### 2.6.3 GET /v1/ui/launches/{id}
+
+**Read a launch and what was done in it.** The launch with its `actions[]` (Part 25 §25.3). `url` is present only while the launch is `issued` and before `expiresAt`.
+
+| Item | Value |
+| --- | --- |
+| Operation id | `get-apx-v1-ui-launches-id` |
+| Origin | APX |
+| Scopes | `apx.ui:read` |
+| Request body | — |
+
+| Parameter | In | Required | Type | Description |
+| --- | --- | --- | --- | --- |
+| `id` | path | yes | string uuid |  |
+
+| Response | Body | Meaning |
+| --- | --- | --- |
+| 200 | UiLaunch | The launch. |
+| 401 | Problem | Missing, malformed, expired, or revoked access token (problem type `unauthenticated`, Part 12). |
+| 403 | Problem | Insufficient scope (problem type `insufficient-scope`) or place grant (`insufficient-grant`) for this operation (Part 9). |
+| 404 | Problem | The addressed resource does not exist (problem type `target-not-found`). A resource at a place outside the caller's `apx_places` grant is 403 `insufficient-grant` instead (Part 9 §9.3). A resource that exists but lies outside a narrower ownership scope (a merchant's own programs, a valet customer's own ticket) is reported as 404, so the answer never confirms another party's record exists (Part 9 §9.3a). |
+| 429 | Problem | Rate limited (problem type `rate-limited`, Part 12). |
+
+#### 2.6.4 POST /v1/ui/launches/{id}/actions
+
+**Record an action done in the screen (loopback fallback).** The surface, or the service behind it, records what the agent did when the implementation could not express it as the module's own resource or Command (Part 25 §25.4). The record carries the launch's `correlationId` and is published as `apx.ui.action.recorded.v1`. A launch that was never opened and has expired refuses with `ui-launch-expired`; a closed one with `ui-launch-closed`.
+
+| Item | Value |
+| --- | --- |
+| Operation id | `post-apx-v1-ui-launches-id-actions` |
+| Origin | APX |
+| Scopes | `apx.ui:record` |
+| Request body | UiActionRecord |
+
+| Parameter | In | Required | Type | Description |
+| --- | --- | --- | --- | --- |
+| `id` | path | yes | string uuid |  |
+
+| Response | Body | Meaning |
+| --- | --- | --- |
+| 201 | UiActionRecord | Recorded. |
+| 400 | Problem | The request is malformed: the body or a parameter fails the operation's schema or a normative field rule (problem type `invalid-request`, with an `errors[]` member naming each offending JSON Pointer), or a REQUIRED Idempotency-Key is absent (`idempotency-key-required`). Part 12. |
+| 401 | Problem | Missing, malformed, expired, or revoked access token (problem type `unauthenticated`, Part 12). |
+| 403 | Problem | Insufficient scope (problem type `insufficient-scope`) or place grant (`insufficient-grant`) for this operation (Part 9). |
+| 404 | Problem | The addressed resource does not exist (problem type `target-not-found`). A resource at a place outside the caller's `apx_places` grant is 403 `insufficient-grant` instead (Part 9 §9.3). A resource that exists but lies outside a narrower ownership scope (a merchant's own programs, a valet customer's own ticket) is reported as 404, so the answer never confirms another party's record exists (Part 9 §9.3a). |
+| 409 | Problem | The launch is `expired` (`ui-launch-expired`) or `closed` (`ui-launch-closed`). |
+| 429 | Problem | Rate limited (problem type `rate-limited`, Part 12). |
+
+#### 2.6.5 POST /v1/ui/launches/{id}/close
+
+**Close a launch.** The screen reports it is done: `opened` (or `issued`) → `closed` (Part 25 §25.3). No body. Publishes `apx.ui.launch.changed.v1`. Already closed is 409 `ui-launch-closed`.
+
+| Item | Value |
+| --- | --- |
+| Operation id | `post-apx-v1-ui-launches-id-close` |
+| Origin | APX |
+| Scopes | `apx.ui:record` |
+| Request body | — |
+
+| Parameter | In | Required | Type | Description |
+| --- | --- | --- | --- | --- |
+| `id` | path | yes | string uuid |  |
+
+| Response | Body | Meaning |
+| --- | --- | --- |
+| 200 | UiLaunch | The closed launch. |
+| 401 | Problem | Missing, malformed, expired, or revoked access token (problem type `unauthenticated`, Part 12). |
+| 403 | Problem | Insufficient scope (problem type `insufficient-scope`) or place grant (`insufficient-grant`) for this operation (Part 9). |
+| 404 | Problem | The addressed resource does not exist (problem type `target-not-found`). A resource at a place outside the caller's `apx_places` grant is 403 `insufficient-grant` instead (Part 9 §9.3). A resource that exists but lies outside a narrower ownership scope (a merchant's own programs, a valet customer's own ticket) is reported as 404, so the answer never confirms another party's record exists (Part 9 §9.3a). |
+| 409 | Problem | Already closed (`ui-launch-closed`). |
+| 429 | Problem | Rate limited (problem type `rate-limited`, Part 12). |
+
 ## 3 Commerce
 
 ### 3.1 Accounts
@@ -776,6 +1160,7 @@ The APX OpenAPI document declares 185 operations and 6 webhooks. 40 operations a
 | POST | `/v1/payment-links` | Send a hosted payment link | `apx.payments:write` |
 | GET | `/v1/payment-links/{id}` | Read a payment link | `apx.accounts:read` `apx.payments:write` |
 | POST | `/v1/payment-links/{id}/cancel` | Cancel a payment link | `apx.payments:write` |
+| POST | `/v1/payments/{id}/receipt` | Send the receipt again | `apx.payments:write` |
 
 #### 3.1.1 POST /v1/accounts:search
 
@@ -1109,6 +1494,32 @@ The APX OpenAPI document declares 185 operations and 6 webhooks. 40 operations a
 | 403 | Problem | Insufficient scope (problem type `insufficient-scope`) or place grant (`insufficient-grant`) for this operation (Part 9). |
 | 404 | Problem | The addressed resource does not exist (problem type `target-not-found`). A resource at a place outside the caller's `apx_places` grant is 403 `insufficient-grant` instead (Part 9 §9.3). A resource that exists but lies outside a narrower ownership scope (a merchant's own programs, a valet customer's own ticket) is reported as 404, so the answer never confirms another party's record exists (Part 9 §9.3a). |
 | 409 | Problem | The link is `paid`, `expired`, or already `cancelled` (`payment-state-illegal`), or Idempotency-Key replayed with a different body (`idempotency-conflict`). |
+| 429 | Problem | Rate limited (problem type `rate-limited`, Part 12). |
+
+#### 3.1.14 POST /v1/payments/{id}/receipt
+
+**Send the receipt again.** Re-sends the receipt of a settled payment by e-mail, SMS, a re-print at the device, or a short-lived link (Part 13 §13.1a). The destination travels in the body, never in a URL. Accepted for delivery (202); the outcome is in the returned ReceiptDelivery.
+
+| Item | Value |
+| --- | --- |
+| Operation id | `post-apx-v1-payments-id-receipt` |
+| Origin | APX |
+| Scopes | `apx.payments:write` |
+| Request body | ReceiptRequest |
+
+| Parameter | In | Required | Type | Description |
+| --- | --- | --- | --- | --- |
+| `id` | path | yes | string uuid |  |
+
+| Response | Body | Meaning |
+| --- | --- | --- |
+| 202 | ReceiptDelivery | Queued or sent. |
+| 400 | Problem | The request is malformed: the body or a parameter fails the operation's schema or a normative field rule (problem type `invalid-request`, with an `errors[]` member naming each offending JSON Pointer), or a REQUIRED Idempotency-Key is absent (`idempotency-key-required`). Part 12. |
+| 401 | Problem | Missing, malformed, expired, or revoked access token (problem type `unauthenticated`, Part 12). |
+| 403 | Problem | Insufficient scope (problem type `insufficient-scope`) or place grant (`insufficient-grant`) for this operation (Part 9). |
+| 404 | Problem | The addressed resource does not exist (problem type `target-not-found`). A resource at a place outside the caller's `apx_places` grant is 403 `insufficient-grant` instead (Part 9 §9.3). A resource that exists but lies outside a narrower ownership scope (a merchant's own programs, a valet customer's own ticket) is reported as 404, so the answer never confirms another party's record exists (Part 9 §9.3a). |
+| 409 | Problem | The payment is not settled (`payment-state-illegal`, Part 13 §13.1a). |
+| 422 | Problem | A `channel` this implementation or device cannot serve (`receipt-channel-unsupported`), or a `destination` missing for `email`/`sms` (`request-unprocessable`). |
 | 429 | Problem | Rate limited (problem type `rate-limited`, Part 12). |
 
 ### 3.2 Reservations
@@ -3899,6 +4310,10 @@ The APX OpenAPI document declares 185 operations and 6 webhooks. 40 operations a
 | GET | `/v1/resolution/contexts/{id}` | Re-read (recompute) a resolution context | `apx.resolution:read` |
 | GET | `/v1/resolution/contexts/{id}/allowed-actions` | Re-evaluate the allowed actions for a context | `apx.resolution:read` |
 | GET | `/v1/credentials/{id}/passback` | Anti-passback status for a credential | `apx.control:read` |
+| GET | `/v1/approvals` | List approval requests | `apx.resolution:read` |
+| POST | `/v1/approvals` | Ask for approval of an action | `apx.support:manage` |
+| GET | `/v1/approvals/{id}` | Read an approval request | `apx.resolution:read` |
+| POST | `/v1/approvals/{id}/decide` | Approve or deny | `apx.support:manage` |
 
 #### 5.3.1 POST /v1/resolution/contexts
 
@@ -3918,6 +4333,7 @@ The APX OpenAPI document declares 185 operations and 6 webhooks. 40 operations a
 | 401 | Problem | Missing, malformed, expired, or revoked access token (problem type `unauthenticated`, Part 12). |
 | 403 | Problem | Insufficient scope (problem type `insufficient-scope`) or place grant (`insufficient-grant`) for this operation (Part 9). |
 | 404 | Problem | No identifier resolved to anything this implementation knows. |
+| 422 | Problem | A `commsPoint`, `callerId`, `dialedNumber` or `commsDeviceId` this implementation does not hold (`comms-point-unknown`, Part 17 §17.1 and Part 26 §26.4), or a registered code value outside the served registries (`reference-unknown`). |
 | 429 | Problem | Rate limited (problem type `rate-limited`, Part 12). |
 
 #### 5.3.2 GET /v1/resolution/contexts/{id}
@@ -3987,6 +4403,105 @@ The APX OpenAPI document declares 185 operations and 6 webhooks. 40 operations a
 | 401 | Problem | Missing, malformed, expired, or revoked access token (problem type `unauthenticated`, Part 12). |
 | 403 | Problem | Insufficient scope (problem type `insufficient-scope`) or place grant (`insufficient-grant`) for this operation (Part 9). |
 | 404 | Problem | No such credential (problem type `target-not-found`). |
+| 429 | Problem | Rate limited (problem type `rate-limited`, Part 12). |
+
+#### 5.3.5 GET /v1/approvals
+
+**List approval requests.** Approval requests at the caller's places, newest first (Part 17 §17.3a); an approver's queue is `status=pending&role=…`.
+
+| Item | Value |
+| --- | --- |
+| Operation id | `get-apx-v1-approvals` |
+| Origin | APX |
+| Scopes | `apx.resolution:read` |
+| Request body | — |
+
+| Parameter | In | Required | Type | Description |
+| --- | --- | --- | --- | --- |
+| `place` | query | no | string uuid |  |
+| `status` | query | no | string (pending, approved, denied, expired) |  |
+| `role` | query | no | string |  |
+| `page` | query | no | integer | The page number for paginated responses. |
+
+| Response | Body | Meaning |
+| --- | --- | --- |
+| 200 | object | Paginated approval requests. |
+| 401 | Problem | Missing, malformed, expired, or revoked access token (problem type `unauthenticated`, Part 12). |
+| 403 | Problem | Insufficient scope (problem type `insufficient-scope`) or place grant (`insufficient-grant`) for this operation (Part 9). |
+| 429 | Problem | Rate limited (problem type `rate-limited`, Part 12). |
+
+#### 5.3.6 POST /v1/approvals
+
+**Ask for approval of an action.** An agent whose AllowedAction said `requiresApproval` asks the named role to decide (Part 17 §17.3a). `place` must lie inside the grant. `Idempotency-Key` optional. Publishes `apx.approvals.changed.v1`; the approver's system subscribes to it or reads the queue.
+
+| Item | Value |
+| --- | --- |
+| Operation id | `post-apx-v1-approvals` |
+| Origin | APX |
+| Scopes | `apx.support:manage` |
+| Request body | ApprovalRequest |
+
+| Parameter | In | Required | Type | Description |
+| --- | --- | --- | --- | --- |
+| `Idempotency-Key` | header | no | string | When given, the operation is idempotent per Part 4 §4.2a: a replay with the same body returns the current representation (200), a different body is 409 `idempotency-conflict`. Clients that retry SHOULD send it. |
+
+| Response | Body | Meaning |
+| --- | --- | --- |
+| 200 | ApprovalRequest | Idempotent replay. |
+| 201 | ApprovalRequest | Created, `status` = `pending`. |
+| 400 | Problem | The request is malformed: the body or a parameter fails the operation's schema or a normative field rule (problem type `invalid-request`, with an `errors[]` member naming each offending JSON Pointer), or a REQUIRED Idempotency-Key is absent (`idempotency-key-required`). Part 12. |
+| 401 | Problem | Missing, malformed, expired, or revoked access token (problem type `unauthenticated`, Part 12). |
+| 403 | Problem | Insufficient scope (problem type `insufficient-scope`) or place grant (`insufficient-grant`) for this operation (Part 9). |
+| 409 | Problem | `Idempotency-Key` replayed with a different body (`idempotency-conflict`). |
+| 422 | Problem | A `place` or `target` that does not exist (`reference-unknown`). |
+| 429 | Problem | Rate limited (problem type `rate-limited`, Part 12). |
+
+#### 5.3.7 GET /v1/approvals/{id}
+
+**Read an approval request.** The request with its `decision` once made, or its `expired` status once `expiresAt` has passed (Part 17 §17.3a).
+
+| Item | Value |
+| --- | --- |
+| Operation id | `get-apx-v1-approvals-id` |
+| Origin | APX |
+| Scopes | `apx.resolution:read` |
+| Request body | — |
+
+| Parameter | In | Required | Type | Description |
+| --- | --- | --- | --- | --- |
+| `id` | path | yes | string uuid |  |
+
+| Response | Body | Meaning |
+| --- | --- | --- |
+| 200 | ApprovalRequest | The request with its decision, if made. |
+| 401 | Problem | Missing, malformed, expired, or revoked access token (problem type `unauthenticated`, Part 12). |
+| 403 | Problem | Insufficient scope (problem type `insufficient-scope`) or place grant (`insufficient-grant`) for this operation (Part 9). |
+| 404 | Problem | The addressed resource does not exist (problem type `target-not-found`). A resource at a place outside the caller's `apx_places` grant is 403 `insufficient-grant` instead (Part 9 §9.3). A resource that exists but lies outside a narrower ownership scope (a merchant's own programs, a valet customer's own ticket) is reported as 404, so the answer never confirms another party's record exists (Part 9 §9.3a). |
+| 429 | Problem | Rate limited (problem type `rate-limited`, Part 12). |
+
+#### 5.3.8 POST /v1/approvals/{id}/decide
+
+**Approve or deny.** The approver decides: `pending` → `approved` or `denied` (Part 17 §17.3a). The agent then executes the action with `Approval` evidence citing the request. A request already decided or expired is 409 `approval-closed`. Publishes `apx.approvals.changed.v1`.
+
+| Item | Value |
+| --- | --- |
+| Operation id | `post-apx-v1-approvals-id-decide` |
+| Origin | APX |
+| Scopes | `apx.support:manage` |
+| Request body | ApprovalDecision |
+
+| Parameter | In | Required | Type | Description |
+| --- | --- | --- | --- | --- |
+| `id` | path | yes | string uuid |  |
+
+| Response | Body | Meaning |
+| --- | --- | --- |
+| 200 | ApprovalRequest | The decided request. |
+| 400 | Problem | The request is malformed: the body or a parameter fails the operation's schema or a normative field rule (problem type `invalid-request`, with an `errors[]` member naming each offending JSON Pointer), or a REQUIRED Idempotency-Key is absent (`idempotency-key-required`). Part 12. |
+| 401 | Problem | Missing, malformed, expired, or revoked access token (problem type `unauthenticated`, Part 12). |
+| 403 | Problem | Insufficient scope (problem type `insufficient-scope`) or place grant (`insufficient-grant`) for this operation (Part 9). |
+| 404 | Problem | The addressed resource does not exist (problem type `target-not-found`). A resource at a place outside the caller's `apx_places` grant is 403 `insufficient-grant` instead (Part 9 §9.3). A resource that exists but lies outside a narrower ownership scope (a merchant's own programs, a valet customer's own ticket) is reported as 404, so the answer never confirms another party's record exists (Part 9 §9.3a). |
+| 409 | Problem | Already decided or expired (`approval-closed`). |
 | 429 | Problem | Rate limited (problem type `rate-limited`, Part 12). |
 
 ### 5.4 Support
@@ -5337,6 +5852,12 @@ Scopes are defined in the OpenAPI security schemes below and explained in APX Pa
 | apxOAuth | `apx.valet:request` | Customer scope — request or cancel retrieval and read status/ETA for the caller's own ticket (text, app, web, voice bot) |
 | apxOAuth | `apx.platelists:read` | Read plate lists and their entries, plate values included (Part 24) |
 | apxOAuth | `apx.platelists:manage` | Create and maintain plate lists and entries (Part 24) |
+| apxOAuth | `apx.ui:launch` | Open a vendor screen for an agent and read the launches it issued (Part 25) |
+| apxOAuth | `apx.ui:read` | Read UI launches and the actions recorded in them (Part 25) |
+| apxOAuth | `apx.ui:record` | The surface's own scope; record actions done in a launched screen and close it (Part 25) |
+| apxOAuth | `apx.siteconfig:read` | Read a place's equipment, cameras, comms points and external ids; resolve another system's id (Part 26) |
+| apxOAuth | `apx.siteconfig:manage` | Add, replace and remove comms points (Part 26) |
+| apxOAuth | `apx.cameras:view` | Obtain short-lived camera view links, logged against the agent (Part 26) |
 | apxOAuth | `apx.digest:use` | Receive the credential digest keys (Part 9 §9.6 rule 6) |
 | apxOAuth | `apx.replication:write` | Replay another implementation's records with their original provenance and lifecycle times (Part 18 §18.6) |
 | apxOAuth | `apx.charging:read` | read charging-point status (with bay presence) and charging sessions |

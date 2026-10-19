@@ -65,7 +65,7 @@ corrections already filed against the API document.
 
 ## Proposed changes at a glance
 
-119 proposals: 47 new classes, 11 additions to existing APDS classes, 57 new enumerations and 4 sets of new values for existing APDS enumerations. Tier 1: 34, Tier 2: 59, Tier 3: 26.
+127 proposals: 49 new classes, 12 additions to existing APDS classes, 62 new enumerations and 4 sets of new values for existing APDS enumerations. Tier 1: 34, Tier 2: 65, Tier 3: 28.
 
 ### Tier 1: propose now
 
@@ -115,6 +115,12 @@ corrections already filed against the API document.
 | `CameraFacingEnum` | New enumeration | VehicularAccess | 2 | — |
 | `Signage` | New class | Signage | 2 | B |
 | `SignTypeEnum` | New enumeration | Signage | 2 | — |
+| `SupplementalEquipment` | Additions to an APDS class | EquipmentDetail | 2 | B |
+| `Camera` | New class | EquipmentDetail | 2 | B |
+| `EquipmentRoleEnum` | New enumeration | EquipmentDetail | 2 | — |
+| `AreaTypeEnum` | New enumeration | EquipmentDetail | 2 | — |
+| `CameraMountingEnum` | New enumeration | EquipmentDetail | 2 | — |
+| `CameraViewEnum` | New enumeration | EquipmentDetail | 2 | — |
 | `RateTable` | Additions to an APDS class | Rates | 2 | B |
 | `ValidationBenefit` | New class | Rates | 2 | B |
 | `AssignedRight` | Additions to an APDS class | Right | 2 | B |
@@ -174,6 +180,8 @@ corrections already filed against the API document.
 
 | Element | Change | Package | Tier | Level |
 | --- | --- | --- | --- | --- |
+| `CommsPoint` | New class | CommsPoint | 3 | B |
+| `CommsPointTypeEnum` | New enumeration | CommsPoint | 3 | — |
 | `DemandType` | Additions to an APDS class | Demand | 3 | B |
 | `RateSold` | New class | Right | 3 | B |
 | `RateProductEnum` | New enumeration | Right | 3 | — |
@@ -205,7 +213,7 @@ corrections already filed against the API document.
 
 ### Place
 
-Adds what an operator needs to describe how the equipment in a Place is working right now, which way the licence plate cameras on an access lane face, and what is posted on the signs at a Place. It also suggests four lane-equipment values for EquipmentTypeEnum. Equipment status is kept in its own record, apart from the static Place description, for the same reason APDS keeps Demand apart from Supply: it changes far more often.
+Adds what an operator needs to describe how the equipment in a Place is working right now, which way the licence plate cameras on an access lane face, and what is posted on the signs at a Place. It also suggests four lane-equipment values for EquipmentTypeEnum. Equipment status is kept in its own record, apart from the static Place description, for the same reason APDS keeps Demand apart from Supply: it changes far more often. A second group describes the equipment itself, so that a Place can be understood from the data alone: what each item does (its role), where it stands, what it is and what runs on it, which cameras look at what, and how a parker at any point of the Place reaches help (a comms point).
 
 The Place additions sit in two existing packages, SupplementalFacility and
 VehicularAccess, and one new package, Signage, beneath the Place
@@ -297,6 +305,74 @@ to the lane's flow, so it remains correct on a reversible lane. The
 association could equally be placed on AccessLaneSpecific where lanes are
 described one by one; we would welcome the group's view.
 
+#### How equipment detail, cameras and comms points attach
+
+```mermaid
+classDiagram
+    class SupplementalEquipment {
+        <<APDS, extended>>
+        +equipmentRole : EquipmentRoleEnum [0..1]
+        +manufacturer : String [0..1]
+        +model : String [0..1]
+        +serialNumber : String [0..1]
+        +macAddress : String [0..*]
+        +firmwareVersion : String [0..1]
+        +softwareVersion : String [0..1]
+        +installationDate : Date [0..1]
+        +areaType : AreaTypeEnum [0..1]
+        +levelName : String [0..1]
+    }
+    class Camera {
+        <<proposed>>
+        +mounting : CameraMountingEnum [0..1]
+        +view : CameraViewEnum [1..*]
+        +facing : CameraFacingEnum [0..1]
+        +primary : Boolean [0..1]
+        +panTiltZoom : Boolean [0..1]
+        +retentionDays : NonNegativeInteger [0..1]
+    }
+    class CommsPoint {
+        <<proposed>>
+        +commsPointType : CommsPointTypeEnum [1..1]
+        +phoneNumber : String [0..1]
+        +callerId : String [0..1]
+        +commsDeviceId : String [0..1]
+        +language : LanguageCode [0..*]
+    }
+    class VehicularAccess {
+        <<APDS>>
+    }
+    class Place {
+        <<APDS>>
+    }
+    class Organisation {
+        <<APDS>>
+    }
+    class Period {
+        <<APDS>>
+    }
+    SupplementalEquipment <|-- Camera
+    SupplementalEquipment "0..1" <.. "0..*" SupplementalEquipment : builtInto
+    SupplementalEquipment "0..*" <.. "0..*" SupplementalEquipment : controls
+    VehicularAccess "0..1" <.. "0..*" SupplementalEquipment : servesAccess
+    Organisation "0..1" <.. "0..*" SupplementalEquipment : serviceProvider
+    SupplementalEquipment "0..1" <.. "0..*" Camera : recorder
+    Place "1" <.. "0..*" CommsPoint : placeId
+    VehicularAccess "0..1" <.. "0..*" CommsPoint : servesAccess
+    SupplementalEquipment "0..1" <.. "0..*" CommsPoint : equipmentId
+    SupplementalEquipment "0..1" <.. "0..*" CommsPoint : opensBarrier
+    CommsPoint o-- "0..*" Period : coverage
+```
+
+The equipment attributes are added to SupplementalEquipment itself,
+because they describe the item and change as rarely as the rest of the
+Place description. Camera is a specialisation of SupplementalEquipment,
+so a camera is still typed by EquipmentTypeEnum and carries the role
+`camera`; the Camera attributes say what it looks at. CommsPoint is a
+versioned record of its own in a new package beneath Place: it refers to
+the Place, the lane, the hardware and the barrier by reference, so that a
+posted number with no hardware is as valid as an intercom.
+
 #### How signage is modelled
 
 Signage is versioned identifiable so a receiver can hold every version
@@ -336,6 +412,14 @@ the operator or by APX. No new code list mechanism is needed.
 | `CameraFacingEnum` | New enumeration | VehicularAccess | 2 | — |
 | `Signage` | New class | Signage | 2 | B |
 | `SignTypeEnum` | New enumeration | Signage | 2 | — |
+| `SupplementalEquipment` | Additions to an APDS class | EquipmentDetail | 2 | B |
+| `Camera` | New class | EquipmentDetail | 2 | B |
+| `EquipmentRoleEnum` | New enumeration | EquipmentDetail | 2 | — |
+| `AreaTypeEnum` | New enumeration | EquipmentDetail | 2 | — |
+| `CameraMountingEnum` | New enumeration | EquipmentDetail | 2 | — |
+| `CameraViewEnum` | New enumeration | EquipmentDetail | 2 | — |
+| `CommsPoint` | New class | CommsPoint | 3 | B |
+| `CommsPointTypeEnum` | New enumeration | CommsPoint | 3 | — |
 
 ### Occupancy
 
@@ -1681,6 +1765,14 @@ Each proposal comes from a data element already used in APX. This annex lists wh
 | `CameraFacingEnum` | Place | APX Part 13 §13.3a LaneCameras |
 | `Signage` | Place | APX Part 19 §19.11 Signage |
 | `SignTypeEnum` | Place | APX Part 19 §19.11 Signage.signType |
+| `SupplementalEquipment` | Place | APX Part 26 §26.1 EquipmentDetail (apds-ext:apx:equipment-detail@1.0) |
+| `Camera` | Place | APX Part 26 §26.3 CameraDetail (apds-ext:apx:camera@1.0) |
+| `EquipmentRoleEnum` | Place | APX Part 11 code list apx-equipment-roles (Part 26 §26.1) |
+| `AreaTypeEnum` | Place | APX Part 11 code list apx-area-types (Part 26 §26.2) |
+| `CameraMountingEnum` | Place | APX Part 26 §26.3 CameraDetail.mounting |
+| `CameraViewEnum` | Place | APX Part 26 §26.3 CameraDetail.view |
+| `CommsPoint` | Place | APX Part 26 §26.4 CommsPoint |
+| `CommsPointTypeEnum` | Place | APX Part 11 code list apx-comms-point-types (Part 26 §26.4) |
 | `DemandType` | Occupancy | APX Part 5 §5.5a OccupancyHistoryPage |
 | `RateTable` | Rates | APX Part 6 §6.6 RatePolicy |
 | `ValidationBenefit` | Rates | APX Part 20 §20.1 ValidationBenefit |

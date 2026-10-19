@@ -86,6 +86,15 @@ camera reads, or a ticket number (APX Part 14 §14.1a).
 **ReservationSummary** is the compact view returned by history lookups
 and carried by the no-show event.
 
+### Reservations from several sellers
+
+A site may honour reservations sold by several channels, whose
+confirmation codes collide. A ReservationSummary carries the `issuer`
+that sold it and the `amountPaid`, and a resolve request may name the
+`reservationIssuer` beside the code, so that an agent finds the right
+booking when two sellers issued the same code (APX Part 14 §14.1 rule 7;
+Part 17 §17.1).
+
 ## Lifecycle
 
 ```mermaid

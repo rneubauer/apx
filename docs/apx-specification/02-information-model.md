@@ -72,8 +72,20 @@ were permitted as pre-1.0 revisions. The full record is `CHANGELOG.md`.
 
 **Unreleased (after 0.14.0)**
 
-- No normative change. The `DeviceStatus` description now states exactly
-  how APX device states relate to APDS `RefillPointStatusEnum`.
+- UI launch (Part 25, class `apx-ui-launch`): vendor screens opened for
+  staff with automatic login, single-use launches, and the loopback of
+  every action as APX data.
+- Site configuration (Part 26, class `apx-site-config`): equipment detail
+  with a fixed role list, areas, cameras and views, comms points, place
+  operations, typed external identifiers, and change notices.
+- Field and code gaps found in a six-month sample of ten remote-assistance
+  call centres: twenty-three issue types, interaction outcomes, approval
+  requests (Part 17 §17.3a), receipt re-send and refund reasons (Part 13
+  §13.1a), device faults, supplies and maintenance mode (Part 6 §6.4),
+  six alert types, three commands, guest references, reservation issuers,
+  and per-place capabilities in discovery.
+- The `DeviceStatus` description now states exactly how APX device states
+  relate to APDS `RefillPointStatusEnum`.
 - Added the APX Data Specification for the APDS committee
   (`docs/apds-submission/`), generated from
   `spec/proposals/apds-additions/*.yaml`.
@@ -464,7 +476,9 @@ not the parking data itself, and the APX Data Specification proposes
 data, not interface. `CodeListValue` needs nothing new from APDS, because
 `ReferencedCodeListEntry` already provides the pattern.
 
-#### Class diagram
+#### Class diagrams
+
+Figures 1 to 3 provide the UML class diagrams for the Common elements package. A class marked «proposed» is proposed to APDS (06, Part D); one marked «APDS» is defined in APDS 4.1. Up to 12 attributes are shown per class; 03 Data Dictionary lists them all.
 
 ```mermaid
 classDiagram
@@ -473,16 +487,14 @@ classDiagram
     +Uuid id
     +Integer version
   }
-  class CodeListValue {
-    +String value
-    +VersionedReference codeListId
-  }
+  <<D2Class>> ApxResourceCore
   class CredentialDigest {
     +Enum alg
     +String keyId
     +String value
     +CredentialTypeEnum credentialType
   }
+  <<D2Class>> CredentialDigest
   class EventEnvelope {
     +Uuid id
     +String type
@@ -492,14 +504,9 @@ classDiagram
     +Object data
     +Reference subject
   }
+  <<D2Class>> EventEnvelope
   class Extensions
-  class Problem {
-    +Url type
-    +String title
-    +Integer status
-    +String detail
-    +String instance
-  }
+  <<D2Class>> Extensions
   class RecordInfo {
     +DateTime creationTime
     +String creationUser
@@ -524,6 +531,11 @@ classDiagram
   Extensions --> "0..1" ViolationSource : apds-ext apx violation-source 1.0
   Extensions --> "0..1" PaymentDetail : apds-ext apx payment-detail 1.0
   Extensions --> "0..1" CredentialDigest : apds-ext apx credential-digest 1.0
+  Extensions --> "0..1" EquipmentDetail : apds-ext apx equipment-detail 1.0
+  Extensions --> "0..1" CameraDetail : apds-ext apx camera 1.0
+  Extensions --> "0..1" ExternalIdentifiers : apds-ext apx external-ids 1.0
+  Extensions --> "0..1" PlaceOperations : apds-ext apx place-operations 1.0
+  RecordInfo ..> "0..1" Contact : creator
   class DeviceStatus
   <<APX>> DeviceStatus
   class RatePolicy
@@ -544,9 +556,49 @@ classDiagram
   <<APX>> ViolationSource
   class PaymentDetail
   <<APX>> PaymentDetail
+  class EquipmentDetail
+  <<APX>> EquipmentDetail
+  class CameraDetail
+  <<APX>> CameraDetail
+  class ExternalIdentifiers
+  <<APX>> ExternalIdentifiers
+  class PlaceOperations
+  <<APX>> PlaceOperations
+  class Contact
+  <<APDS>> Contact
 ```
 
-*Figure 1 -- Common elements. Members of a «proposed» class are proposed to APDS (06, Part D). Classes marked «APDS» are defined in APDS 4.1. Up to 12 attributes are shown per class; 03 Data Dictionary lists them all.*
+*Figure 1 - Extensions class diagram*
+
+```mermaid
+classDiagram
+  direction TB
+  class CodeListValue {
+    +String value
+    +VersionedReference codeListId
+  }
+  <<D2Class>> CodeListValue
+  CodeListValue ..> "0..1" UserDefinedCodeList : codeListId
+  class UserDefinedCodeList
+  <<APDS>> UserDefinedCodeList
+```
+
+*Figure 2 - CodeListValue class diagram*
+
+```mermaid
+classDiagram
+  direction TB
+  class Problem {
+    +Url type
+    +String title
+    +Integer status
+    +String detail
+    +String instance
+  }
+  <<D2Class>> Problem
+```
+
+*Figure 3 - Common elements classes*
 
 #### Classes in Common elements
 
@@ -556,7 +608,7 @@ classDiagram
 | `CodeListValue` | A value drawn from an APX or implementer UserDefinedCodeList — carries the defined value plus an optional ReferencedCodeListEntry-style pointer to the list that defines it. | 2 | APX only |
 | `CredentialDigest` | The `apds-ext:apx:credential-digest@1.0` decoration (Part 9 §9.6 rule 6): a keyed digest of a normalized credential identification (a plate), so a consumer that only needs "same plate?" can match without the plate itself. `value` is base64url(HMAC-SHA-256(key, normalized identification)); the key is named by `keyId` and distributed through `GET /v1/digest-keys`. Visible under `apx.data:read`. | 4 | APX only |
 | `EventEnvelope` | The single envelope for all APX asynchronous delivery (webhooks and SSE). Attribute names are aligned with CloudEvents 1.0 (informative mapping in the standard's annex); `subject` carries an APDS Reference so events bind to APDS/APX entities natively. | 8 | APX only |
-| `Extensions` | The official APDS extension container (Use Case Document §C.2.5). Keys MUST follow `apds-ext:<namespace>:<class>@<major>.<minor>`. Implementations MUST preserve unknown extension keys on round-trip (tolerant reader, faithful writer). An APX decoration key, wherever the container appears, MUST carry a value valid against that decoration's schema (Part 4 §4.3); other keys are any object. | 12 | APX only |
+| `Extensions` | The official APDS extension container (Use Case Document §C.2.5). Keys MUST follow `apds-ext:<namespace>:<class>@<major>.<minor>`. Implementations MUST preserve unknown extension keys on round-trip (tolerant reader, faithful writer). An APX decoration key, wherever the container appears, MUST carry a value valid against that decoration's schema (Part 4 §4.3); other keys are any object. | 16 | APX only |
 | `Problem` | RFC 9457 problem details. APX problem `type` URIs are registered in the APX problem-type registry. Used for all APX error responses; APDS-native routes may alternatively use the APDS ResponseStatus shape. | 5 | APX only |
 | `RecordInfo` | Provenance metadata for an APX resource, aligned to the APDS Information Model's RecordType (creationTime/creator/lastUpdate). All timestamps are RFC 3339 (APDS DateTime). | 6 | Proposed: RecordType (Tier 3) |
 
@@ -676,6 +728,17 @@ the boundary before any traffic flows (APX Part 18 §18.3). An aggregator
 runs exactly the single-site flow; that uniformity is the design (APX
 Part 18 §18.1).
 
+##### Surfaces and per-place capabilities
+
+A discovery document lists the vendor screens the client may open as
+`uiSurfaces[]` (APX Part 25 §25.1): each surface, its display and launch
+modes, the actions it reports back, its launch URL and the places where
+it is offered. It also says what the client can do at each place as
+`placeCapabilities[]`: the command types, the surfaces and the features
+offered there (APX Part 16 §16.2), so a console knows before a call
+whether a site takes a `lostTicket` command, offers its lane console, or
+serves camera views. The soundness rule applies to both.
+
 #### Lifecycle
 
 No lifecycle.
@@ -694,11 +757,41 @@ the parking data, and the APX Data Specification proposes data only.
 APX-only: `ApxConfiguration` and `DiscoveryDocument`, together with the
 `apx-conformance-classes` and `apx-features` registries they draw on.
 
-#### Class diagram
+#### Class diagrams
+
+Figures 4 to 5 provide the UML class diagrams for the Discovery package. A class marked «proposed» is proposed to APDS (06, Part D); one marked «APDS» is defined in APDS 4.1. Up to 12 attributes are shown per class; 03 Data Dictionary lists them all.
 
 ```mermaid
 classDiagram
-  direction LR
+  direction TB
+  class DiscoveryDocument {
+    +String client
+    +String[] conformanceClasses
+    +String[] scopes
+    +String[] places
+    +Structure[] endpoints
+    +String[] commandTypes
+    +String[] features
+    +Structure[] placeCapabilities
+    +String[] topics
+    +Map rateLimits
+    +Structure[] replication
+    +Reference organisation
+  }
+  <<D2Class>> DiscoveryDocument
+  DiscoveryDocument --> "0..*" UiSurface : uiSurfaces
+  DiscoveryDocument --> "0..1" Extensions : extensions
+  class UiSurface
+  <<APX>> UiSurface
+  class Extensions
+  <<APX>> Extensions
+```
+
+*Figure 4 - DiscoveryDocument class diagram*
+
+```mermaid
+classDiagram
+  direction TB
   class ApxConfiguration {
     +String apxVersion
     +String edition
@@ -710,33 +803,20 @@ classDiagram
     +Map registries
     +Map registryVersions
   }
-  class DiscoveryDocument {
-    +String client
-    +String[] conformanceClasses
-    +String[] scopes
-    +String[] places
-    +Structure[] endpoints
-    +String[] commandTypes
-    +String[] features
-    +String[] topics
-    +Map rateLimits
-    +Structure[] replication
-    +Reference organisation
-  }
+  <<D2Class>> ApxConfiguration
   ApxConfiguration --> "0..1" Extensions : extensions
-  DiscoveryDocument --> "0..1" Extensions : extensions
   class Extensions
   <<APX>> Extensions
 ```
 
-*Figure 2 -- Discovery. Members of a «proposed» class are proposed to APDS (06, Part D). Classes marked «APDS» are defined in APDS 4.1. Up to 12 attributes are shown per class; 03 Data Dictionary lists them all.*
+*Figure 5 - ApxConfiguration class diagram*
 
 #### Classes in Discovery
 
 | Class | Definition | Members | APDS status |
 | --- | --- | --- | --- |
 | `ApxConfiguration` | Unauthenticated bootstrap configuration document. | 10 | APX only |
-| `DiscoveryDocument` | What THIS credential can do: exactly the endpoints, commands, topics, and places reachable with the presented token's scopes and grants. Two clients with different grants receive different documents; a client can call everything its document lists and nothing more. | 18 | APX only |
+| `DiscoveryDocument` | What THIS credential can do: exactly the endpoints, commands, topics, and places reachable with the presented token's scopes and grants. Two clients with different grants receive different documents; a client can call everything its document lists and nothing more. | 24 | APX only |
 
 #### Enumerations in Discovery
 
@@ -748,7 +828,7 @@ classDiagram
 
 | Code list | Entries | Examples |
 | --- | --- | --- |
-| `apx-features` | 3 | `negotiatedRates`, `ticketMatching`, `negotiatedAmounts` |
+| `apx-features` | 5 | `negotiatedRates`, `ticketMatching`, `negotiatedAmounts`, `cameraViews` |
 
 ### 3 Data exchange
 
@@ -937,75 +1017,13 @@ behaviour. The snapshot needs nothing new from APDS: it is made of Supply
 and DemandType plus an `available` figure any receiver can calculate (APX
 Data Specification, Occupancy).
 
-#### Class diagram
+#### Class diagrams
+
+Figures 6 to 18 provide the UML class diagrams for the Data exchange package. A class marked «proposed» is proposed to APDS (06, Part D); one marked «APDS» is defined in APDS 4.1. Up to 12 attributes are shown per class; 03 Data Dictionary lists them all.
 
 ```mermaid
 classDiagram
   direction LR
-  class AssignedRightChangePayload {
-    +String id
-    +Integer version
-    +Object rightSpecification
-    +Object rightHolder
-    +Object assignedRightIssuer
-    +IssueMethodTypeEnum issueMethod
-    +DateTime issuanceTime
-    +Decimal minutesAvailable
-    +Decimal minutesUsed
-    +Decimal totalMinutes
-    +Object remainingValue
-    +Object totalRightValue
-    +7 more in 03
-  }
-  class ChangeFeedCursor
-  class ChangeFeedGrantAdditions {
-    +Uuid[] item
-  }
-  class ChangeFeedNext
-  class ChangeFeedPage {
-    +DateTime publicationTime
-    +String updateMode
-    +String cursor
-    +Uuid[] grantAdditions
-    +String next
-    +Reference publisher
-  }
-  class ChangeFeedTombstones
-  class ChangeFeedUpdateMode
-  class ChangePayload {
-    +String id
-    +Integer version
-  }
-  class ContactPointChangePayload {
-    +ContactTypeEnum contactType
-    +Boolean contactNotDefined
-    +Boolean contactUnknown
-    +Boolean shareWithPublic
-    +Object validityOfContact
-    +String id
-    +Integer version
-    +Object[] organisationName
-    +ContactPointTypeEnum type
-    +Object[] address
-    +Object[] contactDetails
-    +Object[] eMailCommonData
-    +2 more in 03
-  }
-  class HierarchyElementChangePayload {
-    +String id
-    +Integer version
-    +HierarchyElementTypeEnum type
-    +Object[] name
-    +Object[] description
-    +MultilingualString[] aliases
-    +Object operatorDefinedReference
-    +Object parentId
-    +Object[] childIds
-    +Integer layer
-    +Object[] rightSpecifications
-    +Object hierarchyElementRecord
-    +20 more in 03
-  }
   class MatchEvidence {
     +Enum matchType
     +Structure plate
@@ -1016,75 +1034,6 @@ classDiagram
     +Reference target
   }
   <<proposed>> MatchEvidence
-  class ObservationElementChangePayload {
-    +String id
-    +Integer version
-    +ObservationTypeEnum method
-    +String observer
-    +CredentialTypeEnum type
-    +String observedCredentialId
-    +DateTime observationStartTime
-    +DateTime observationEndTime
-    +Object[] description
-    +DateTime creationDateTime
-    +Object location
-    +Object[] images
-    +5 more in 03
-  }
-  class OccupancyHistoryPage {
-    +Duration interval
-    +DateTime from
-    +DateTime to
-    +Structure[] buckets
-    +Reference place
-  }
-  <<proposed>> OccupancyHistoryPage
-  class OccupancySnapshot {
-    +DateTime computedAt
-    +Integer available
-    +Structure evCharging
-    +Reference place
-  }
-  class RateTableChangePayload {
-    +String id
-    +Integer version
-    +Object[] rateTableName
-    +Object[] rateTableID
-    +RateAvailabilityTypeEnum availability
-    +Object rateResponsibleParty
-    +Object rateSupersedeLink
-    +Boolean validation
-    +RateTypeEnum rateType
-    +Url additionalInformation
-    +Object validity
-    +Object[] rateLineCollections
-  }
-  class RightSpecificationChangePayload {
-    +String id
-    +Integer version
-    +Object[] description
-    +RightSpecificationTypeEnum type
-    +String financialReference
-    +Boolean transferable
-    +Boolean transferableConditions
-    +CredentialTypeEnum[] credentials
-    +Object validity
-    +DateTime expiry
-    +Object[] rightPools
-    +Object issuer
-    +3 more in 03
-  }
-  class SessionChangePayload {
-    +String id
-    +Integer version
-    +DateTime actualStart
-    +DateTime actualEnd
-    +Object initiator
-    +Object hierarchyElement
-    +Object[] identifiedCredentials
-    +Object[] segments
-    +Object identifiedVehicle
-  }
   class SessionClosure {
     +String endReason
     +Boolean endInferred
@@ -1106,34 +1055,297 @@ classDiagram
     +Reference observation
   }
   <<proposed>> SessionReadBinding
-  AssignedRightChangePayload --> "0..1" Extensions : extensions
-  ChangeFeedPage --> "0..*" ChangePayload : items
-  ChangeFeedPage --> "0..*" DeletedReference : deleted
-  ChangeFeedTombstones --> "0..*" DeletedReference : item
-  ContactPointChangePayload --> "0..1" Extensions : extensions
-  HierarchyElementChangePayload --> "0..1" Extensions : extensions
-  ObservationElementChangePayload --> "0..1" Extensions : extensions
-  OccupancyHistoryPage --> "0..1" Extensions : extensions
-  OccupancySnapshot --> "0..1" Supply : supply
-  OccupancySnapshot --> "0..1" DemandType : demand
-  OccupancySnapshot --> "0..1" Extensions : extensions
-  RateTableChangePayload --> "0..1" Extensions : extensions
-  RightSpecificationChangePayload --> "0..1" Extensions : extensions
-  SessionChangePayload --> "0..1" Extensions : extensions
+  MatchEvidence ..> "1..1" AssignedRight : target
   SessionDetail --> "0..*" SessionReadBinding : reads
   SessionDetail --> "0..1" SessionClosure : closure
   SessionDetail --> "0..*" MatchEvidence : matches
-  class Extensions
-  <<APX>> Extensions
+  SessionDetail ..> "0..1" Session : supersedes
+  SessionDetail ..> "0..1" Session : parent
+  SessionReadBinding ..> "1..1" ObservationElement : observation
+  class AssignedRight
+  <<APDS>> AssignedRight
+  class Session
+  <<APDS>> Session
+  class ObservationElement
+  <<APDS>> ObservationElement
+```
+
+*Figure 6 - MatchEvidence class diagram*
+
+```mermaid
+classDiagram
+  direction LR
+  class ChangeFeedPage {
+    +DateTime publicationTime
+    +String updateMode
+    +String cursor
+    +Uuid[] grantAdditions
+    +String next
+    +Reference publisher
+  }
+  <<D2Class>> ChangeFeedPage
+  class ChangePayload {
+    +String id
+    +Integer version
+  }
+  <<D2Class>> ChangePayload
+  ChangeFeedPage --> "0..*" ChangePayload : items
+  ChangeFeedPage --> "0..*" DeletedReference : deleted
   class DeletedReference
   <<APDS>> DeletedReference
+```
+
+*Figure 7 - ChangeFeedPage class diagram*
+
+```mermaid
+classDiagram
+  direction TB
+  class HierarchyElementChangePayload {
+    +String id
+    +Integer version
+    +HierarchyElementTypeEnum type
+    +Object[] name
+    +Object[] description
+    +MultilingualString[] aliases
+    +Object operatorDefinedReference
+    +Object parentId
+    +Object[] childIds
+    +Integer layer
+    +Object[] rightSpecifications
+    +Object hierarchyElementRecord
+    +20 more in 03
+  }
+  <<D2Class>> HierarchyElementChangePayload
+  HierarchyElementChangePayload --> "0..1" Extensions : extensions
+  class Extensions
+  <<APX>> Extensions
+```
+
+*Figure 8 - HierarchyElementChangePayload class diagram*
+
+```mermaid
+classDiagram
+  direction TB
+  class AssignedRightChangePayload {
+    +String id
+    +Integer version
+    +Object rightSpecification
+    +Object rightHolder
+    +Object assignedRightIssuer
+    +IssueMethodTypeEnum issueMethod
+    +DateTime issuanceTime
+    +Decimal minutesAvailable
+    +Decimal minutesUsed
+    +Decimal totalMinutes
+    +Object remainingValue
+    +Object totalRightValue
+    +7 more in 03
+  }
+  <<D2Class>> AssignedRightChangePayload
+  AssignedRightChangePayload --> "0..1" Extensions : extensions
+  class Extensions
+  <<APX>> Extensions
+```
+
+*Figure 9 - AssignedRightChangePayload class diagram*
+
+```mermaid
+classDiagram
+  direction TB
+  class ObservationElementChangePayload {
+    +String id
+    +Integer version
+    +ObservationTypeEnum method
+    +String observer
+    +CredentialTypeEnum type
+    +String observedCredentialId
+    +DateTime observationStartTime
+    +DateTime observationEndTime
+    +Object[] description
+    +DateTime creationDateTime
+    +Object location
+    +Object[] images
+    +5 more in 03
+  }
+  <<D2Class>> ObservationElementChangePayload
+  ObservationElementChangePayload --> "0..1" Extensions : extensions
+  class Extensions
+  <<APX>> Extensions
+```
+
+*Figure 10 - ObservationElementChangePayload class diagram*
+
+```mermaid
+classDiagram
+  direction TB
+  class RightSpecificationChangePayload {
+    +String id
+    +Integer version
+    +Object[] description
+    +RightSpecificationTypeEnum type
+    +String financialReference
+    +Boolean transferable
+    +Boolean transferableConditions
+    +CredentialTypeEnum[] credentials
+    +Object validity
+    +DateTime expiry
+    +Object[] rightPools
+    +Object issuer
+    +3 more in 03
+  }
+  <<D2Class>> RightSpecificationChangePayload
+  RightSpecificationChangePayload --> "0..1" Extensions : extensions
+  class Extensions
+  <<APX>> Extensions
+```
+
+*Figure 11 - RightSpecificationChangePayload class diagram*
+
+```mermaid
+classDiagram
+  direction TB
+  class ContactPointChangePayload {
+    +ContactTypeEnum contactType
+    +Boolean contactNotDefined
+    +Boolean contactUnknown
+    +Boolean shareWithPublic
+    +Object validityOfContact
+    +String id
+    +Integer version
+    +Object[] organisationName
+    +ContactPointTypeEnum type
+    +Object[] address
+    +Object[] contactDetails
+    +Object[] eMailCommonData
+    +2 more in 03
+  }
+  <<D2Class>> ContactPointChangePayload
+  ContactPointChangePayload --> "0..1" Extensions : extensions
+  class Extensions
+  <<APX>> Extensions
+```
+
+*Figure 12 - ContactPointChangePayload class diagram*
+
+```mermaid
+classDiagram
+  direction LR
+  class OccupancySnapshot {
+    +DateTime computedAt
+    +Integer available
+    +Structure evCharging
+    +Reference place
+  }
+  <<D2Class>> OccupancySnapshot
+  OccupancySnapshot --> "0..1" Supply : supply
+  OccupancySnapshot --> "0..1" DemandType : demand
+  OccupancySnapshot --> "0..1" Extensions : extensions
+  OccupancySnapshot ..> "1..1" HierarchyElement : place
   class Supply
   <<APDS>> Supply
   class DemandType
   <<APDS>> DemandType
+  class Extensions
+  <<APX>> Extensions
+  class HierarchyElement
+  <<APDS>> HierarchyElement
 ```
 
-*Figure 3 -- Data exchange. Members of a «proposed» class are proposed to APDS (06, Part D). Classes marked «APDS» are defined in APDS 4.1. Up to 12 attributes are shown per class; 03 Data Dictionary lists them all.*
+*Figure 13 - OccupancySnapshot class diagram*
+
+```mermaid
+classDiagram
+  direction TB
+  class RateTableChangePayload {
+    +String id
+    +Integer version
+    +Object[] rateTableName
+    +Object[] rateTableID
+    +RateAvailabilityTypeEnum availability
+    +Object rateResponsibleParty
+    +Object rateSupersedeLink
+    +Boolean validation
+    +RateTypeEnum rateType
+    +Url additionalInformation
+    +Object validity
+    +Object[] rateLineCollections
+  }
+  <<D2Class>> RateTableChangePayload
+  RateTableChangePayload --> "0..1" Extensions : extensions
+  class Extensions
+  <<APX>> Extensions
+```
+
+*Figure 14 - RateTableChangePayload class diagram*
+
+```mermaid
+classDiagram
+  direction TB
+  class OccupancyHistoryPage {
+    +Duration interval
+    +DateTime from
+    +DateTime to
+    +Structure[] buckets
+    +Reference place
+  }
+  <<proposed>> OccupancyHistoryPage
+  OccupancyHistoryPage --> "0..1" Extensions : extensions
+  class Extensions
+  <<APX>> Extensions
+```
+
+*Figure 15 - OccupancyHistoryPage class diagram*
+
+```mermaid
+classDiagram
+  direction TB
+  class SessionChangePayload {
+    +String id
+    +Integer version
+    +DateTime actualStart
+    +DateTime actualEnd
+    +Object initiator
+    +Object hierarchyElement
+    +Object[] identifiedCredentials
+    +Object[] segments
+    +Object identifiedVehicle
+  }
+  <<D2Class>> SessionChangePayload
+  SessionChangePayload --> "0..1" Extensions : extensions
+  class Extensions
+  <<APX>> Extensions
+```
+
+*Figure 16 - SessionChangePayload class diagram*
+
+```mermaid
+classDiagram
+  direction TB
+  class ChangeFeedTombstones
+  <<D2Class>> ChangeFeedTombstones
+  ChangeFeedTombstones --> "0..*" DeletedReference : item
+  class DeletedReference
+  <<APDS>> DeletedReference
+```
+
+*Figure 17 - ChangeFeedTombstones class diagram*
+
+```mermaid
+classDiagram
+  direction TB
+  class ChangeFeedCursor
+  <<D2Class>> ChangeFeedCursor
+  class ChangeFeedGrantAdditions {
+    +Uuid[] item
+  }
+  <<D2Class>> ChangeFeedGrantAdditions
+  class ChangeFeedNext
+  <<D2Class>> ChangeFeedNext
+  class ChangeFeedUpdateMode
+  <<D2Class>> ChangeFeedUpdateMode
+```
+
+*Figure 18 - Data exchange classes*
 
 #### Classes in Data exchange
 
@@ -1329,7 +1541,9 @@ APX-only: all schemas in this module (`ApxEventSubscription`,
 delivery contract, the APDS construct wins and APX adopts it (APX Part 3
 §3.3(8)).
 
-#### Class diagram
+#### Class diagrams
+
+Figures 19 to 20 provide the UML class diagrams for the Subscriptions and events package. A class marked «proposed» is proposed to APDS (06, Part D); one marked «APDS» is defined in APDS 4.1. Up to 12 attributes are shown per class; 03 Data Dictionary lists them all.
 
 ```mermaid
 classDiagram
@@ -1347,6 +1561,7 @@ classDiagram
     +String[] activeKeyIds
     +Enum status
   }
+  <<D2Class>> ApxEventSubscription
   class ApxEventSubscriptionPatch {
     +Integer version
     +Url endpoint
@@ -1358,19 +1573,7 @@ classDiagram
     +String[] retireKeyIds
     +Enum status
   }
-  class DeliveryAttempt {
-    +Uuid deliveryId
-    +DateTime time
-    +Integer code
-  }
-  class DeliveryRecord {
-    +Uuid deliveryId
-    +Uuid eventId
-    +Integer attempts
-    +Enum status
-    +Integer lastCode
-    +DateTime time
-  }
+  <<D2Class>> ApxEventSubscriptionPatch
   class SubscriptionFailure {
     +Url endpoint
     +DateTime failedTime
@@ -1379,24 +1582,49 @@ classDiagram
     +Integer lastCode
     +Reference subscription
   }
+  <<D2Class>> SubscriptionFailure
   class SubscriptionFilters {
     +Uuid[] places
     +Enum severityFloor
     +String[] alertTypes
   }
+  <<D2Class>> SubscriptionFilters
   ApxEventSubscription --> "0..1" SubscriptionFilters : filters
   ApxEventSubscription --> "0..1" RecordInfo : recordInfo
   ApxEventSubscription --> "0..1" Extensions : extensions
   ApxEventSubscriptionPatch --> "0..1" SubscriptionFilters : filters
   ApxEventSubscriptionPatch --> "0..1" Extensions : extensions
-  DeliveryRecord --> "0..*" DeliveryAttempt : attemptHistory
+  SubscriptionFailure ..> "1..1" ApxEventSubscription : subscription
   class RecordInfo
   <<APX>> RecordInfo
   class Extensions
   <<APX>> Extensions
 ```
 
-*Figure 4 -- Subscriptions and events. Members of a «proposed» class are proposed to APDS (06, Part D). Classes marked «APDS» are defined in APDS 4.1. Up to 12 attributes are shown per class; 03 Data Dictionary lists them all.*
+*Figure 19 - ApxEventSubscription class diagram*
+
+```mermaid
+classDiagram
+  direction TB
+  class DeliveryAttempt {
+    +Uuid deliveryId
+    +DateTime time
+    +Integer code
+  }
+  <<D2Class>> DeliveryAttempt
+  class DeliveryRecord {
+    +Uuid deliveryId
+    +Uuid eventId
+    +Integer attempts
+    +Enum status
+    +Integer lastCode
+    +DateTime time
+  }
+  <<D2Class>> DeliveryRecord
+  DeliveryRecord --> "0..*" DeliveryAttempt : attemptHistory
+```
+
+*Figure 20 - DeliveryRecord class diagram*
 
 #### Classes in Subscriptions and events
 
@@ -1424,7 +1652,7 @@ classDiagram
 
 | Code list | Entries | Examples |
 | --- | --- | --- |
-| `apx-alert-types` | 18 | `noCheckOut`, `wrongSpace`, `occupiedWithoutCheckIn`, `iceInEvSpace` |
+| `apx-alert-types` | 24 | `noCheckOut`, `wrongSpace`, `occupiedWithoutCheckIn`, `iceInEvSpace` |
 
 ### 5 Control
 
@@ -1541,6 +1769,21 @@ registry or a reservation (`matchedBy`), with its evidence, confidence and
 terms and publishes `SessionUpdated`. APX keeps no parallel matching
 store: the match is the Session's exit.
 
+##### Faults, supplies and maintenance
+
+A device status may carry the fault the device reports (`fault`: a code,
+a display text and since when), the level of each consumable it holds
+(`consumables[]`: tickets, receipt paper, cash and coins, each `ok`,
+`low`, `empty` or `unknown`), and whether it is in `maintenanceMode`, so
+that test calls can be kept out of service figures (APX Part 6 §6.4). The
+APDS-style `lastCommunication` already says when the device was last
+heard from, so no separate "last seen" member is added. A consumable that
+runs low raises a `consumableLow` alert. Three commands complete what an
+agent does at a device: `ejectTicket`, `cancelTransaction` and
+`reprintReceipt` (APX Part 6 §6.1). What a device *is*, its role, make,
+model and position, is the Site configuration module's equipment detail
+(APX Part 26 §26.1).
+
 #### Lifecycle
 
 ```mermaid
@@ -1610,7 +1853,9 @@ APX-only: `Command`, `CommandResult`, `Approval`, `LaneStatus`,
 workflow and the lane screen-pop, which are interface rather than data,
 and stay in the APX API.
 
-#### Class diagram
+#### Class diagrams
+
+Figures 21 to 25 provide the UML class diagrams for the Control package. A class marked «proposed» is proposed to APDS (06, Part D); one marked «APDS» is defined in APDS 4.1. Up to 12 attributes are shown per class; 03 Data Dictionary lists them all.
 
 ```mermaid
 classDiagram
@@ -1619,7 +1864,9 @@ classDiagram
     +String approvedBy
     +DateTime approvedAt
     +String note
+    +Reference approvalRequest
   }
+  <<D2Class>> Approval
   class Command {
     +Uuid id
     +Integer version
@@ -1635,24 +1882,54 @@ classDiagram
     +Enum status
     +5 more in 03
   }
+  <<D2Class>> Command
   class CommandResult {
     +String ticketNumber
     +Structure display
     +Reference session
     +VersionedReference rateTable
   }
-  class DeviceStatus {
-    +String deviceState
-    +DateTime lastCommunication
-    +DateTime stateChangedTime
-    +Reference device
-  }
-  <<proposed>> DeviceStatus
+  <<D2Class>> CommandResult
+  Approval ..> "0..1" ApprovalRequest : approvalRequest
+  Command --> "0..1" Approval : approval
+  Command --> "0..1" CommandResult : result
+  Command --> "0..1" RecordInfo : recordInfo
+  Command --> "0..1" Extensions : extensions
+  Command ..> "1..1" SupplementalEquipment : target
+  Command ..> "0..1" ResolutionContext : resolutionContext
+  CommandResult --> "0..1" AmountInCurrency : amountDue
+  CommandResult --> "0..1" Extensions : extensions
+  CommandResult ..> "0..1" Session : session
+  CommandResult ..> "0..1" RateTable : rateTable
+  class ApprovalRequest
+  <<APX>> ApprovalRequest
+  class RecordInfo
+  <<APX>> RecordInfo
+  class Extensions
+  <<APX>> Extensions
+  class SupplementalEquipment
+  <<APDS>> SupplementalEquipment
+  class ResolutionContext
+  <<APX>> ResolutionContext
+  class AmountInCurrency
+  <<APDS>> AmountInCurrency
+  class Session
+  <<APDS>> Session
+  class RateTable
+  <<APDS>> RateTable
+```
+
+*Figure 21 - Command class diagram*
+
+```mermaid
+classDiagram
+  direction LR
   class LaneStatus {
     +Structure currentTicket
     +Structure monthlyCredential
     +Reference lane
   }
+  <<D2Class>> LaneStatus
   class MatchCandidate {
     +String ticketNumber
     +DateTime entryTime
@@ -1664,12 +1941,47 @@ classDiagram
     +Reference entryLane
     +Reference evidence
   }
-  class RatePolicy {
-    +Boolean negotiable
-    +String displayName
-    +String note
+  <<D2Class>> MatchCandidate
+  LaneStatus --> "0..*" MatchCandidate : matchCandidates
+  MatchCandidate --> "0..1" AmountInCurrency : amountDueIfMatched
+  MatchCandidate ..> "1..1" Session : session
+  MatchCandidate ..> "0..1" VehicularAccess : entryLane
+  MatchCandidate ..> "0..1" Credential : evidence
+  class AmountInCurrency
+  <<APDS>> AmountInCurrency
+  class Session
+  <<APDS>> Session
+  class VehicularAccess
+  <<APDS>> VehicularAccess
+  class Credential
+  <<APDS>> Credential
+```
+
+*Figure 22 - LaneStatus class diagram*
+
+```mermaid
+classDiagram
+  direction TB
+  class DeviceStatus {
+    +String deviceState
+    +DateTime lastCommunication
+    +DateTime stateChangedTime
+    +Structure fault
+    +Structure[] consumables
+    +Boolean maintenanceMode
+    +Reference device
   }
-  <<proposed>> RatePolicy
+  <<proposed>> DeviceStatus
+  DeviceStatus --> "0..1" Extensions : extensions
+  class Extensions
+  <<APX>> Extensions
+```
+
+*Figure 23 - DeviceStatus class diagram*
+
+```mermaid
+classDiagram
+  direction TB
   class ValidationProvider {
     +String name
     +String validationType
@@ -1677,33 +1989,35 @@ classDiagram
     +Reference provider
     +Reference program
   }
-  Command --> "0..1" Approval : approval
-  Command --> "0..1" CommandResult : result
-  Command --> "0..1" RecordInfo : recordInfo
-  Command --> "0..1" Extensions : extensions
-  CommandResult --> "0..1" AmountInCurrency : amountDue
-  CommandResult --> "0..1" Extensions : extensions
-  DeviceStatus --> "0..1" Extensions : extensions
-  LaneStatus --> "0..*" MatchCandidate : matchCandidates
-  MatchCandidate --> "0..1" AmountInCurrency : amountDueIfMatched
-  class RecordInfo
-  <<APX>> RecordInfo
-  class Extensions
-  <<APX>> Extensions
-  class AmountInCurrency
-  <<APDS>> AmountInCurrency
+  <<D2Class>> ValidationProvider
+  ValidationProvider ..> "0..1" ValidationProgram : program
+  class ValidationProgram
+  <<APX>> ValidationProgram
 ```
 
-*Figure 5 -- Control. Members of a «proposed» class are proposed to APDS (06, Part D). Classes marked «APDS» are defined in APDS 4.1. Up to 12 attributes are shown per class; 03 Data Dictionary lists them all.*
+*Figure 24 - ValidationProvider class diagram*
+
+```mermaid
+classDiagram
+  direction TB
+  class RatePolicy {
+    +Boolean negotiable
+    +String displayName
+    +String note
+  }
+  <<proposed>> RatePolicy
+```
+
+*Figure 25 - Control classes*
 
 #### Classes in Control
 
 | Class | Definition | Members | APDS status |
 | --- | --- | --- | --- |
-| `Approval` | Approval evidence, REQUIRED on a write whose AllowedAction said requiresApproval (Part 17 §17.3). Servers MUST reject a requires-approval action without it (403 approval-required). One shared shape for control commands and domain actions (e.g. refunds). | 3 | APX only |
+| `Approval` | Approval evidence, REQUIRED on a write whose AllowedAction said requiresApproval (Part 17 §17.3). Servers MUST reject a requires-approval action without it (403 approval-required). One shared shape for control commands and domain actions (e.g. refunds). | 4 | APX only |
 | `Command` | A request for an operational action against a lane/device/place. Perishable (expiryTime), idempotent (Idempotency-Key), fully audited (immutable statusHistory). | 25 | APX only |
 | `CommandResult` | The structured outcome of a command, populated by the server when the command reaches `succeeded` (Part 6 §6.1a) and absent before then. Members are normative per command type: `lostTicket` → `ticketNumber`, `session`, `amountDue`; `matchTicket` → `session`, `amountDue`; `pushNegotiatedRate` → `amountDue`, and `rateTable` when a table was selected (absent for a stated amount, which the lane inquiry reports as `currentTicket.negotiatedAmount`). Other command types leave it absent unless a registry entry says otherwise. It restates what the lane inquiry shows, so a console can continue (print, take payment) without parsing `statusHistory[].detail` or making a second call. | 11 | APX only |
-| `DeviceStatus` | Live state overlay keyed by Reference to an APDS SupplementalEquipment — never duplicates its descriptive fields. APDS 4.1 has no general equipment status list: its RefillPointStatusEnum (Data Dictionary A.3.53) covers refill points only and is absent from apds-api-4.1.yaml. deviceState values come from the APX registry apx-device-states, which follows that enumeration's style and shares its available, occupied, inoperative and unknown values. Attachable to APDS payloads as apds-ext:apx:devicestatus@1.0. | 5 | Proposed: EquipmentStatus (Tier 1) |
+| `DeviceStatus` | Live state overlay keyed by Reference to an APDS SupplementalEquipment — never duplicates its descriptive fields. APDS 4.1 has no general equipment status list: its RefillPointStatusEnum (Data Dictionary A.3.53) covers refill points only and is absent from apds-api-4.1.yaml. deviceState values come from the APX registry apx-device-states, which follows that enumeration's style and shares its available, occupied, inoperative and unknown values. Attachable to APDS payloads as apds-ext:apx:devicestatus@1.0. | 13 | Proposed: EquipmentStatus (Tier 1) |
 | `LaneStatus` | The transaction context at a lane right now (the call-center screen-pop). Composes APDS references and data; adds no parallel entities. | 41 | APX only |
 | `MatchCandidate` | An open session at the place that plausibly belongs to the vehicle in the lane (Part 6 §6.7). Produced by the lane inquiry from the lane's own LPR read, a presented credential, the account registry (by plate or phone), or a checked-in reservation. Composes APDS references; adds no parallel session store. Advisory until a matchTicket command binds one. | 10 | APX only |
 | `RatePolicy` | Level B decoration on an APDS RateTable, carried in its `extensions` container as `apds-ext:apx:ratepolicy@1.0` (Part 6 §6.6). APDS models the rate deck completely; it has no way to say which tables an agent may offer as a negotiated rate. This is that flag — and because it rides inside the RateTable, every consumer mirroring the deck through the native `/rates` route (Part 5 §5.2) receives it with the table, no second query. APX deliberately defines NO selection rules here (length of stay, time of day, caller type): the system presenting the deck to an agent or a third party applies its own guardrails. The server's only rule is enforcement — a pushNegotiatedRate naming a table that is not flagged negotiable is refused (422 rate-not-negotiable). | 3 | Proposed: RateTable (Tier 2) |
@@ -1718,6 +2032,8 @@ classDiagram
 | `Command.priority` | `normal`, `high` |
 | `Command.status` | `received`, `accepted`, `rejected`, `dispatched`, `executing`, `succeeded`, `failed`, `expired`, `cancelled` |
 | `CommandResult.display.acknowledgedBy` | `player`, `operator`, `none` |
+| `DeviceStatus.consumables.kind` | `tickets`, `receiptPaper`, `cash`, `coins` |
+| `DeviceStatus.consumables.level` | `ok`, `low`, `empty`, `unknown` |
 | `MatchCandidate.matchedBy` | `plateRead`, `credential`, `account`, `reservation` |
 
 #### External code lists used in Control
@@ -1726,7 +2042,412 @@ classDiagram
 | --- | --- | --- |
 | `apx-access-denial-reasons` | 11 | `credentialSuspended`, `credentialLost`, `credentialRevoked`, `credentialReplaced` |
 
-### 6 Alerts
+### 6 Site configuration
+
+*Normative text: APX Part 26. Package: `APX/SiteConfiguration`.*
+
+#### Purpose
+
+This module lets one source describe a location's whole setup (APX Part
+26). A system that joins a location today learns its layout from three
+places at once: the parking vendor's portal for the lanes and devices,
+the call platform for which intercom rings where, and a spreadsheet for
+the cameras. From APX alone a consumer can tell what hardware a location
+has and where it stands, how a parker at any point of it reaches help,
+what each camera looks at and how to see it, which other systems know the
+location by which identifiers, and whom to escalate to.
+
+APDS 4.1 already gives the skeleton: the place hierarchy, with
+VehicularAccess as the lane and SupplementalEquipment as a device, each
+with a name, a location and opening times; AccessLaneSpecific for a
+lane's type and sequence; untyped external identifiers on a facility; and
+EquipmentTypeEnum for the kind of equipment. That enumeration was written
+for rest areas and general parking: it has a payment machine, a toll
+terminal and a public phone, and no gate, ticket dispenser, reader,
+camera, intercom or door. This module adds what is missing as decorations
+on the APDS elements, and one new resource for the ways a parker calls
+for help. Equipment type stays the APDS enumeration; it is never
+redefined.
+
+#### Concepts
+
+##### Equipment detail
+
+**EquipmentDetail** is a decoration on every piece of hardware at a
+location, cameras, signs, readers, doors and servers included (APX Part
+26 §26.1). Its required `role` says what the item does, as a value of the
+fixed `apx-equipment-roles` code list: vehicle barriers (gate, overhead
+door, bollard, traffic spikes), pedestrian barriers (access door,
+turnstile), ticketing and payment (ticket dispenser, exit verifier, exit
+pay station, pay-on-foot, cashier booth, validation terminal, payment
+terminal), credential readers (card, tag, barcode), vehicle detection
+(loop, presence sensor), the camera, communications (intercom, analog
+dialer, emergency phone), signs and displays, and on-site infrastructure
+(lane controller, facility server, video recorder, video gateway). An
+implementation uses one of these codes and never free text; the APDS
+equipment type is still written as the nearest APDS value, and the role
+adds to it.
+
+The detail also carries the item's identity (manufacturer, model, serial
+number, and its MAC addresses, one per network interface, because a MAC
+is sometimes the serial number, labels come off, and a MAC can always be
+read back from the network), its firmware and software versions
+(recommended, because knowing what runs on each device is what makes
+integration at scale possible), where it stands (`area`, `level` and the
+`lane` it serves, where it serves one), when it was installed, how it
+relates to other items (`builtInto` the host it is part of, and the
+barriers it `controls`), and who services it, as an organisation and a
+support reference, never a person.
+
+Network addresses are deliberately left out. Together with model and
+firmware version, an address map of a site's devices tells an attacker
+which unit to reach and which known weakness to try, and no APX flow
+needs one: commands go through the API, camera views arrive as
+short-lived links, launches as single-use URLs. An optional member behind
+a restricted scope could be added later if a real need arises.
+
+##### Areas
+
+The `apx-area-types` code list names where something stands, for
+equipment, cameras and comms points (APX Part 26 §26.2): the vehicle
+areas (lane, entry and exit plaza, ramp, parking level, roof, charging
+area, loading dock, perimeter) and the pedestrian and staff areas
+(elevator, elevator lobby, lobby, stairwell, pedestrian entrance, payment
+area, cashier booth, office, equipment room). An item on a lane carries
+the lane area and names the lane.
+
+##### Cameras and views
+
+A camera is equipment with the camera role anywhere in the place, not
+only on a lane, and carries **CameraDetail** beside its equipment detail
+(APX Part 26 §26.3): how it is mounted (built in, overhead, pole, wall,
+ceiling), what it looks at (the plate, the vehicle, the driver, the
+interaction with the equipment, pedestrians, an area overview), which way
+it faces on a lane, whether it is the primary camera for its lane or
+area, whether it can pan, tilt and zoom, which recorder keeps it and on
+which channel, which streams it can deliver, how long its recordings are
+kept, and, for a camera that cannot sit behind a gateway, a credential
+reference that the receiving system looks up in its own vault. The
+decoration carries no address, user name or password. The LPR module's
+lane-cameras decoration is unchanged: it remains the statement of which
+camera reads which lane.
+
+A **CameraView** is how an agent sees a camera. A **CameraViewRequest**
+asks for a live view, a snapshot or a playback between two instants (for
+a dispute: "I entered at 2:14"), naming the agent and the correlation
+identifier; the answer is a single-use URL bound to the agent that
+expires within five minutes and needs no further credential. Whoever
+holds the camera answers: the parking system, the video system, or an
+on-site gateway that holds the camera's password and serves the link. The
+password never leaves the site. Driver and pedestrian views capture
+faces, so each camera states its retention, every view is logged against
+the agent and the correlation identifier, and a link is never reused or
+shared outside the interaction it was issued for.
+
+##### Comms points
+
+A **CommsPoint** is any way a parker reaches help from a lane or a
+location (APX Part 26 §26.4). It is not always an intercom: a posted
+phone number on a sign, an analog dialer on a phone line, a kiosk, a QR
+code or an app all count, and a lane may have one of each. It carries its
+type, the place, the lane where it serves exactly one, the inventoried
+hardware where it is one, and the barrier an agent opens for it (a gate
+or an access door). At least one of three identifiers is present: the
+`phoneNumber` that is called when help is requested, dialed by the parker
+for a posted number or by the intercom itself when its button is pushed;
+the `callerId` the device calls out as; and the `commsDeviceId` the call
+systems use when they identify it by neither. Coverage says when it is
+answered and in which languages, without naming the call center.
+
+SIP user names, realms and passwords are deliberately left out: a user
+name with its realm is half of a line's login, they exist only for SIP
+devices, and the call platform already maps its own SIP data to its
+device and account identifiers. A comms point resolves to its lane when
+it has one and otherwise to its place only; a posted number shared by
+many lanes can never name the lane by itself. The Resolution module's
+resolve request takes a comms point, a caller id, a dialed number or a
+comms device id, and a server that holds no comms points says so.
+Whoever runs the calls writes the comms points, through the create,
+replace and delete operations; a parking system never has to hold or
+understand them.
+
+##### Place operations
+
+**PlaceOperations** is a decoration on the place (APX Part 26 §26.4 and
+§26.5). Its `commsAccountId` is the identifier the call platform uses for
+the whole site, so that with the comms device ids a call maps to a
+location and a lane from APX alone. Its `escalationContacts` say whom to
+ask when the agent cannot settle a matter, as **roles only** (site
+manager, attendant, security, operator on call, maintenance), in calling
+order with their hours. Names and phone numbers stay with the call
+platform, so APX holds no personal contact data. An approval request of
+the Resolution module is addressed to one of these roles.
+
+##### External identifiers
+
+**ExternalIdentifiers** is a decoration any hierarchy element may carry:
+a list of system and identifier pairs, where the system is a URI the
+issuing system owns, as a rule its own domain (APX Part 26 §26.6). APDS
+external identifiers are untyped strings, so a reader cannot tell which
+system an identifier belongs to; the decoration adds the system and
+changes nothing else. APX names no products or platforms: the issuer
+names itself. An **IdentifierResolveRequest** asks for the APX record
+behind a pair, and the **IdentifierResolution** answers with the target
+reference, its class and its place, so any system finds the record for an
+identifier it holds in one call. An unknown pair, or one outside the
+grant, is not found; the answer never confirms another party's record.
+
+##### Change notices
+
+Every create, change or removal of a piece of equipment or its
+decorations publishes `apx.equipment.changed.v1`, and of a comms point
+`apx.commspoints.changed.v1`; removal carries the last representation.
+The equipment and comms-point lists serve the Data module's change feed,
+so another system keeps a copy of a site's setup current without
+re-reading the whole place, and catches up after an outage (APX Part 26
+§26.7).
+
+##### After-hours access
+
+Both transient parkers and permit holders may have to authenticate at an
+access door to reach their car after the lanes close (APX Part 26 §26.8).
+The door is place-level equipment with no lane; its reader controls it
+and takes a ticket, receipt, code, card or PIN; its comms point names the
+intercom built into the door and the door it serves. An attempt at the
+door is recorded like a lane access event, and an agent opens the door
+with a Control `vendGate` command whose target is the door. A call from
+the intercom resolves through the comms device id to the comms point,
+from it to the door, and the agent's allowed actions include the vend,
+with the door camera's view a click away.
+
+#### Lifecycle
+
+```mermaid
+stateDiagram-v2
+    [*] --> described : equipment or comms point created
+    described --> described : decoration or record changed (version + 1)
+    described --> removed : deleted; feed emits a tombstone
+    removed --> [*]
+```
+
+Equipment and comms points are descriptions, not processes, so the
+module has no state machine of its own. A record is created, changed by
+versioned replacement (the comms point by its own `PUT`, the equipment
+through the native place routes) and removed with a tombstone on the
+feed; every step publishes its change topic. A camera view has a short
+life of its own: issued, used once, expired within five minutes.
+
+#### Relationship to APDS
+
+APDS classes used as they stand: HierarchyElement and its
+specialisations Place, VehicularAccess and SupplementalEquipment
+(decorated, never redefined), EquipmentTypeEnum (the equipment type,
+still written as the nearest APDS value), Organisation (the service
+provider), Period (coverage and escalation hours) and Reference.
+
+Proposed to APDS, in the Place domain, as Level B additions (see the APX
+Data Specification):
+
+| Element | Change | Tier |
+| --- | --- | --- |
+| `SupplementalEquipment` | Additions: manufacturer, model, serial number, MAC addresses, firmware and software versions, installation date, role, area, level, built-into and controls relations | 2 |
+| `EquipmentRoleEnum` | New enumeration | 2 |
+| `AreaTypeEnum` | New enumeration | 2 |
+| `Camera` | New class (a specialisation of SupplementalEquipment) | 2 |
+| `CameraMountingEnum`, `CameraViewEnum` | New enumerations | 2 |
+| `CommsPoint` | New class | 3 |
+| `CommsPointTypeEnum` | New enumeration | 3 |
+
+The lane-equipment values for EquipmentTypeEnum (barrier, gate, ticket
+dispenser, intercom) are proposed separately, as Tier 1, by the Control
+module. The equipment role is offered as an extensible code list beside
+the equipment type, so APDS would fix the attribute and a starting set of
+values. CommsPoint is offered for discussion, because the numbers a
+parker calls sit between parking data and telephony; the proposal carries
+the phone number and caller id and no SIP data, as APX does.
+
+APX-only: ExternalIdentifiers (APDS already has untyped external
+identifiers; the typed form is an APX decoration until the committee
+decides), PlaceOperations (call-platform and escalation workflow),
+CameraView and its request (a delivery mechanism), IdentifierResolution
+and its request (a lookup), and the change topics.
+
+#### Class diagrams
+
+Figures 26 to 30 provide the UML class diagrams for the Site configuration package. A class marked «proposed» is proposed to APDS (06, Part D); one marked «APDS» is defined in APDS 4.1. Up to 12 attributes are shown per class; 03 Data Dictionary lists them all.
+
+```mermaid
+classDiagram
+  direction TB
+  class EquipmentDetail {
+    +String role
+    +String manufacturer
+    +String model
+    +String firmwareVersion
+    +String softwareVersion
+    +String serialNumber
+    +String[] macAddresses
+    +Date installedAt
+    +String area
+    +String level
+    +Structure serviceProvider
+    +Reference lane
+    +2 more in 03
+  }
+  <<proposed>> EquipmentDetail
+  EquipmentDetail ..> "0..1" VehicularAccess : lane
+  class VehicularAccess
+  <<APDS>> VehicularAccess
+```
+
+*Figure 26 - EquipmentDetail class diagram*
+
+```mermaid
+classDiagram
+  direction LR
+  class CommsPoint {
+    +Uuid id
+    +Integer version
+    +String type
+    +String phoneNumber
+    +String callerId
+    +String commsDeviceId
+    +Structure[] coverage
+    +Reference place
+    +Reference lane
+    +Reference equipment
+    +Reference serves
+  }
+  <<proposed>> CommsPoint
+  ApxResourceCore <|-- CommsPoint
+  CommsPoint ..> "0..1" VehicularAccess : lane
+  CommsPoint ..> "0..1" SupplementalEquipment : equipment
+  class ApxResourceCore
+  <<APX>> ApxResourceCore
+  class VehicularAccess
+  <<APDS>> VehicularAccess
+  class SupplementalEquipment
+  <<APDS>> SupplementalEquipment
+```
+
+*Figure 27 - CommsPoint class diagram*
+
+```mermaid
+classDiagram
+  direction TB
+  class EquipmentRecord
+  <<D2Class>> EquipmentRecord
+  SupplementalEquipment <|-- EquipmentRecord
+  EquipmentRecord --> "0..1" Extensions : extensions
+  class SupplementalEquipment
+  <<APDS>> SupplementalEquipment
+  class Extensions
+  <<APX>> Extensions
+```
+
+*Figure 28 - EquipmentRecord class diagram*
+
+```mermaid
+classDiagram
+  direction TB
+  class CameraDetail {
+    +Enum mounting
+    +Enum[] view
+    +Enum faces
+    +Boolean primary
+    +Boolean ptz
+    +Structure recorder
+    +Structure[] streams
+    +Integer retentionDays
+    +String credentialRef
+  }
+  <<proposed>> CameraDetail
+  class CameraView {
+    +Uuid id
+    +Enum kind
+    +Url url
+    +Enum protocol
+    +DateTime expiresAt
+    +String issuedTo
+    +DateTime from
+    +DateTime to
+    +Reference camera
+  }
+  <<D2Class>> CameraView
+  class CameraViewRequest {
+    +Enum kind
+    +DateTime from
+    +DateTime to
+    +String agent
+    +Enum agentType
+    +Uuid correlationId
+    +String interactionId
+  }
+  <<D2Class>> CameraViewRequest
+  class ExternalIdentifiers {
+    +Structure[] identifiers
+  }
+  <<D2Class>> ExternalIdentifiers
+```
+
+*Figure 29 - Site configuration classes*
+
+```mermaid
+classDiagram
+  direction TB
+  class IdentifierResolution {
+    +String className
+    +Reference target
+    +Reference place
+  }
+  <<D2Class>> IdentifierResolution
+  class IdentifierResolveRequest {
+    +Url system
+    +String id
+  }
+  <<D2Class>> IdentifierResolveRequest
+  class PlaceOperations {
+    +String commsAccountId
+    +Structure[] escalationContacts
+  }
+  <<D2Class>> PlaceOperations
+```
+
+*Figure 30 - Site configuration classes (continued)*
+
+#### Classes in Site configuration
+
+| Class | Definition | Members | APDS status |
+| --- | --- | --- | --- |
+| `CameraDetail` | A camera anywhere on the site, not only on a lane (Part 26 §26.3). Carried on a SupplementalEquipment whose EquipmentDetail `role` is `camera`, as the Level B decoration `apds-ext:apx:camera@1.0`. Where the camera is (`area`, `level`, `lane`) and what it is built into (`builtInto`) are EquipmentDetail members, shared with every other piece of hardware; this decoration adds how it is mounted, what it looks at, and how it can be viewed. It holds no addresses, usernames or passwords: a view is obtained through `POST /v1/cameras/{id}/views` and the password never leaves the site (Part 26 §26.3). Camera models and stream profiles follow ONVIF (Profile S, Profile T) and are not redefined. `apds-ext:apx:lane-cameras@1.0` (Part 13) is unchanged. | 14 | Proposed: Camera (Tier 2); Proposed: CameraMountingEnum (Tier 2); Proposed: CameraViewEnum (Tier 2) |
+| `CameraView` | A single-use, short-lived link to a camera's live stream, a still, or a recording (Part 26 §26.3). Bound to the agent it was issued to and logged against the `correlationId`; it expires at `expiresAt`, never more than 5 minutes after issue, and it never contains a camera credential. | 9 | APX only |
+| `CameraViewRequest` | Asks for a short-lived link to see a camera (Part 26 §26.3). Whoever holds the camera answers, the PARCS, the video system or an on-site gateway, and the camera's password never leaves the site. `playback` needs `from` and `to` and the `cameraPlayback` feature. | 7 | APX only |
+| `CommsPoint` | Any way a parker reaches help from a lane or a location (Part 26 §26.4): an intercom, an analog dialler, a posted phone number, a kiosk, a QR code, an app. A call platform matches an inbound contact to a comms point by the number it calls out as (`callerId`), the number it called (`phoneNumber`), or its own device id (`commsDeviceId`), and APX then answers with the lane, or with the location only when the comms point serves no single lane (a posted number shared by many lanes can never name the lane by itself). | 13 | Proposed: CommsPoint (Tier 3) |
+| `EquipmentDetail` | What a piece of hardware is, where it is, and what it does (Part 26 §26.1). Carried on an APDS SupplementalEquipment as the Level B decoration `apds-ext:apx:equipment-detail@1.0` in its `extensions` container (Part 4 §4.3). The equipment TYPE stays the APDS `EquipmentTypeEnum` (often `paymentMachine` or `other`); `role` says what the item does on the site, from the fixed code list `apx-equipment-roles`. | 16 | Proposed: SupplementalEquipment (Tier 2) |
+| `EquipmentRecord` | An APDS SupplementalEquipment as APX serves it (Part 26 §26.1): the stock APDS record plus its `extensions` container, which carries the `apds-ext:apx:equipment-detail@1.0` decoration (REQUIRED on every record this class serves), `apds-ext:apx:camera@1.0` on a camera, and `apds-ext:apx:external-ids@1.0` where other systems have ids for it. The APDS record itself is never reshaped. | 1 | APX only |
+| `ExternalIdentifiers` | The ids other systems use for the same place, lane or equipment (Part 26 §26.6). Carried on any HierarchyElement as the Level B decoration `apds-ext:apx:external-ids@1.0`. APDS `SupplementalFacility.externalIdentifiers` holds untyped strings; here each id says which system issued it. `system` is a URI the issuer owns, usually its own domain, so APX names no products or platforms. `POST /v1/identifiers:resolve` finds the APX record from such an id. | 3 | APX only |
+| `IdentifierResolution` | The APX record an external id names (Part 26 §26.6). | 3 | APX only |
+| `IdentifierResolveRequest` | An external id to look up (Part 26 §26.6), as it appears in an ExternalIdentifiers entry. | 2 | APX only |
+| `PlaceOperations` | Operational facts about a place that a call centre needs before a call (Part 26 §26.5). Carried on a place HierarchyElement as the Level B decoration `apds-ext:apx:place-operations@1.0`. `escalationContacts` lists roles in calling order, never names or phone numbers: the call platform holds those, so APX carries no personal contact data. A Part 17 approval request is addressed to a role from this list. | 5 | APX only |
+
+#### Enumerations in Site configuration
+
+| Enumeration | Values |
+| --- | --- |
+| `CameraDetail.faces` | `inward`, `outward` |
+| `CameraDetail.mounting` | `builtIn`, `overhead`, `pole`, `wall`, `ceiling`, `other` |
+| `CameraDetail.streams.protocol` | `webrtc`, `hls`, `rtsp`, `mjpeg`, `snapshot` |
+| `CameraDetail.view` | `plate`, `vehicle`, `driver`, `equipmentInteraction`, `pedestrians`, `areaOverview`, `other` |
+| `CameraView.kind` | `live`, `snapshot`, `playback` |
+| `CameraView.protocol` | `webrtc`, `hls`, `rtsp`, `mjpeg`, `snapshot` |
+| `CameraViewRequest.agentType` | `human`, `ai` |
+| `CameraViewRequest.kind` | `live`, `snapshot`, `playback` |
+
+#### External code lists used in Site configuration
+
+None.
+
+### 7 Alerts
 
 *Normative text: APX Part 7. Package: `APX/Alerts`.*
 
@@ -1819,6 +2540,17 @@ retry schedule raises `webhookDeliveryFailed` (APX Part 8 §8.3), which
 must never itself be delivered to the failed subscription (APX Part 7
 §7.4).
 
+##### Alerts raised from a call
+
+Some site cases begin as a customer call: a receipt is wanted, a refund
+is asked for, a citation is queried, damage is reported, or a customer
+asks to be called back. The alert types `receiptRequested`,
+`refundRequested`, `citationInquiry`, `damageReported` and
+`customerCallbackRequested` carry these to the people on site, and
+`consumableLow` carries a device's empty paper or ticket stock (APX Part
+7 §7.7). An alert raised during a call cites its `supportInteraction`, so
+the site sees the call it came from.
+
 #### Lifecycle
 
 ```mermaid
@@ -1880,7 +2612,9 @@ APX-only: `statusHistory` (audit detail that stays in the APX profile),
 `apds-ext:apx:alert-evidence@1.0` decoration, and the organisation
 binding of place-less alerts.
 
-#### Class diagram
+#### Class diagrams
+
+Figures 31 to 32 provide the UML class diagrams for the Alerts package. A class marked «proposed» is proposed to APDS (06, Part D); one marked «APDS» is defined in APDS 4.1. Up to 12 attributes are shown per class; 03 Data Dictionary lists them all.
 
 ```mermaid
 classDiagram
@@ -1898,28 +2632,45 @@ classDiagram
     +MultilingualString description
     +Structure[] statusHistory
     +Reference relatedEntity
+    +1 more in 03
   }
   <<proposed>> Alert
-  class AlertTransition {
-    +String detail
-    +String agent
-  }
   Alert --> "0..1" RecordInfo : recordInfo
   Alert --> "0..1" Extensions : extensions
-  AlertTransition --> "0..1" Extensions : extensions
+  Alert ..> "0..1" Session : relatedEntity
+  Alert ..> "0..1" SupportInteraction : supportInteraction
   class RecordInfo
   <<APX>> RecordInfo
   class Extensions
   <<APX>> Extensions
+  class Session
+  <<APDS>> Session
+  class SupportInteraction
+  <<APX>> SupportInteraction
 ```
 
-*Figure 6 -- Alerts. Members of a «proposed» class are proposed to APDS (06, Part D). Classes marked «APDS» are defined in APDS 4.1. Up to 12 attributes are shown per class; 03 Data Dictionary lists them all.*
+*Figure 31 - Alert class diagram*
+
+```mermaid
+classDiagram
+  direction TB
+  class AlertTransition {
+    +String detail
+    +String agent
+  }
+  <<D2Class>> AlertTransition
+  AlertTransition --> "0..1" Extensions : extensions
+  class Extensions
+  <<APX>> Extensions
+```
+
+*Figure 32 - AlertTransition class diagram*
 
 #### Classes in Alerts
 
 | Class | Definition | Members | APDS status |
 | --- | --- | --- | --- |
-| `Alert` | An operational condition requiring attention. Alert types are OPEN (UserDefinedCodeList `apx-alert-types`, seeded from APDS Use Case C.2.2 transaction exceptions and space statuses); severity is CLOSED. | 20 | Proposed: Alert (Tier 2); Proposed: AlertSeverityEnum (Tier 2); Proposed: AlertStatusEnum (Tier 2) |
+| `Alert` | An operational condition requiring attention. Alert types are OPEN (UserDefinedCodeList `apx-alert-types`, seeded from APDS Use Case C.2.2 transaction exceptions and space statuses); severity is CLOSED. | 21 | Proposed: Alert (Tier 2); Proposed: AlertSeverityEnum (Tier 2); Proposed: AlertStatusEnum (Tier 2) |
 | `AlertTransition` | Optional body of `POST /v1/alerts/{id}/acknowledge` and `/resolve` (Part 7 §7.2). Annotates the `statusHistory[]` entry the transition appends. Sending no body is equivalent to sending `{}`. | 3 | APX only |
 
 #### Enumerations in Alerts
@@ -1933,7 +2684,7 @@ classDiagram
 
 None.
 
-### 7 Accounts and payments
+### 8 Accounts and payments
 
 *Normative text: APX Part 13. Package: `APX/Accounts`.*
 
@@ -2042,6 +2793,18 @@ carries the same keys in a body. With `mode=change` the route is a change
 feed instead, delivering what the payment topic delivers to the same
 credential.
 
+##### Receipts and refund reasons
+
+A **ReceiptRequest** asks for a settled payment's receipt to be sent
+again: by e-mail, text message, print at the device, or as a link, with
+the destination in the body and never in the URL. The answer is a
+**ReceiptDelivery**: the channel, whether it is queued, sent or failed,
+and the link where that was the channel (APX Part 13 §13.1a). A refund
+carries a `reasonCode` from the `apx-refund-reasons` code list beside its
+free-text reason (change not dispensed, double charge, overcharge,
+service failure, courtesy), so that refunds can be counted by cause
+across sites.
+
 #### Lifecycle
 
 The payment states and transitions are normative (APX Part 13 §13.1a).
@@ -2124,7 +2887,75 @@ call-centre and accounting operations, not exchanged parking data. The
 `ticketNumber`, `cardLast4` and `postings` members of PaymentRecord also
 stay on the APX surface (APX Part 13 §13.6).
 
-#### Class diagram
+#### Class diagrams
+
+Figures 33 to 37 provide the UML class diagrams for the Accounts and payments package. A class marked «proposed» is proposed to APDS (06, Part D); one marked «APDS» is defined in APDS 4.1. Up to 12 attributes are shown per class; 03 Data Dictionary lists them all.
+
+```mermaid
+classDiagram
+  direction LR
+  class PaymentLink {
+    +Uuid id
+    +Integer version
+    +String ticketNumber
+    +String channel
+    +String sentTo
+    +Enum status
+    +DateTime expiresAt
+    +Uuid correlationId
+    +Integer resolutionContextVersion
+    +Reference place
+    +Reference account
+    +Reference session
+    +2 more in 03
+  }
+  <<D2Class>> PaymentLink
+  class PaymentRecord {
+    +Uuid id
+    +String transactionID
+    +DateTime dateCollected
+    +MeansOfPaymentEnum meansOfPayment
+    +Enum channel
+    +Enum paymentStatus
+    +Enum captureStatus
+    +Boolean captureLater
+    +String ticketNumber
+    +String cardLast4
+    +Reference place
+    +Reference account
+  }
+  <<proposed>> PaymentRecord
+  class Posting {
+    +String confirmationNumber
+    +Boolean accountUpdated
+    +String postedTo
+    +DateTime time
+  }
+  <<D2Class>> Posting
+  PaymentLink --> "0..1" AmountInCurrency : amount
+  PaymentLink --> "0..1" Approval : approval
+  PaymentLink --> "0..1" RecordInfo : recordInfo
+  PaymentLink --> "0..1" Extensions : extensions
+  PaymentLink ..> "0..1" PaymentRecord : payment
+  PaymentRecord --> "1..1" AmountInCurrency : amount
+  PaymentRecord --> "0..1" AmountInCurrency : refundedAmount
+  PaymentRecord --> "0..*" Posting : postings
+  PaymentRecord --> "0..1" Extensions : extensions
+  PaymentRecord ..> "1..1" HierarchyElement : place
+  Posting --> "0..1" AmountInCurrency : newBalance
+  class AmountInCurrency
+  <<APDS>> AmountInCurrency
+  class Approval
+  <<APX>> Approval
+  class RecordInfo
+  <<APX>> RecordInfo
+  class Extensions
+  <<APX>> Extensions
+  class HierarchyElement
+  <<APDS>> HierarchyElement
+```
+
+*Figure 33 - PaymentLink class diagram*
 
 ```mermaid
 classDiagram
@@ -2143,6 +2974,46 @@ classDiagram
     +Reference[] places
   }
   <<proposed>> Account
+  class PostingRequest {
+    +String postedTo
+    +String note
+    +Reference account
+  }
+  <<D2Class>> PostingRequest
+  Account --> "0..1" AmountInCurrency : balance
+  Account --> "0..1" RecordInfo : recordInfo
+  Account --> "0..1" Extensions : extensions
+  Account ..> "0..*" HierarchyElement : places
+  PostingRequest ..> "0..1" Account : account
+  class AmountInCurrency
+  <<APDS>> AmountInCurrency
+  class RecordInfo
+  <<APX>> RecordInfo
+  class Extensions
+  <<APX>> Extensions
+  class HierarchyElement
+  <<APDS>> HierarchyElement
+```
+
+*Figure 34 - Account class diagram*
+
+```mermaid
+classDiagram
+  direction TB
+  class PaymentDetail {
+    +Structure rateSold
+  }
+  <<proposed>> PaymentDetail
+  PaymentDetail --> "0..*" PaymentLine : lines
+  class PaymentLine
+  <<APDS>> PaymentLine
+```
+
+*Figure 35 - PaymentDetail class diagram*
+
+```mermaid
+classDiagram
+  direction TB
   class AccountSearch {
     +String name
     +String phone
@@ -2152,44 +3023,12 @@ classDiagram
     +Uuid[] place
     +Integer page
   }
-  class PaymentDetail {
-    +Structure rateSold
-  }
-  <<proposed>> PaymentDetail
-  class PaymentLink {
-    +Uuid id
-    +Integer version
-    +String ticketNumber
-    +String channel
-    +String sentTo
-    +Enum status
-    +DateTime expiresAt
-    +Uuid correlationId
-    +Integer resolutionContextVersion
-    +Reference place
-    +Reference account
-    +Reference session
-    +2 more in 03
-  }
+  <<D2Class>> AccountSearch
   class PaymentLinkCancel {
     +String reason
     +String note
   }
-  class PaymentRecord {
-    +Uuid id
-    +String transactionID
-    +DateTime dateCollected
-    +MeansOfPaymentEnum meansOfPayment
-    +Enum channel
-    +Enum paymentStatus
-    +Enum captureStatus
-    +Boolean captureLater
-    +String ticketNumber
-    +String cardLast4
-    +Reference place
-    +Reference account
-  }
-  <<proposed>> PaymentRecord
+  <<D2Class>> PaymentLinkCancel
   class PaymentSearch {
     +String ticketLast4
     +String cardLast4
@@ -2200,43 +3039,32 @@ classDiagram
     +Enum captureStatus
     +Integer page
   }
-  class Posting {
-    +String confirmationNumber
-    +Boolean accountUpdated
-    +String postedTo
-    +DateTime time
+  <<D2Class>> PaymentSearch
+  class ReceiptDelivery {
+    +Enum channel
+    +Enum status
+    +Url link
+    +DateTime requestedAt
+    +Reference payment
   }
-  class PostingRequest {
-    +String postedTo
-    +String note
-    +Reference account
-  }
-  Account --> "0..1" AmountInCurrency : balance
-  Account --> "0..1" RecordInfo : recordInfo
-  Account --> "0..1" Extensions : extensions
-  PaymentDetail --> "0..*" PaymentLine : lines
-  PaymentLink --> "0..1" AmountInCurrency : amount
-  PaymentLink --> "0..1" Approval : approval
-  PaymentLink --> "0..1" RecordInfo : recordInfo
-  PaymentLink --> "0..1" Extensions : extensions
-  PaymentRecord --> "1..1" AmountInCurrency : amount
-  PaymentRecord --> "0..1" AmountInCurrency : refundedAmount
-  PaymentRecord --> "0..*" Posting : postings
-  PaymentRecord --> "0..1" Extensions : extensions
-  Posting --> "0..1" AmountInCurrency : newBalance
-  class AmountInCurrency
-  <<APDS>> AmountInCurrency
-  class RecordInfo
-  <<APX>> RecordInfo
-  class Extensions
-  <<APX>> Extensions
-  class PaymentLine
-  <<APDS>> PaymentLine
-  class Approval
-  <<APX>> Approval
+  <<D2Class>> ReceiptDelivery
 ```
 
-*Figure 7 -- Accounts and payments. Members of a «proposed» class are proposed to APDS (06, Part D). Classes marked «APDS» are defined in APDS 4.1. Up to 12 attributes are shown per class; 03 Data Dictionary lists them all.*
+*Figure 36 - Accounts and payments classes*
+
+```mermaid
+classDiagram
+  direction TB
+  class ReceiptRequest {
+    +Enum channel
+    +String destination
+    +String agent
+    +Uuid correlationId
+  }
+  <<D2Class>> ReceiptRequest
+```
+
+*Figure 37 - Accounts and payments classes (continued)*
 
 #### Classes in Accounts and payments
 
@@ -2251,6 +3079,8 @@ classDiagram
 | `PaymentSearch` | Request body of `POST /v1/payments:search` (Part 13 §13.2): the same keys and rules as the `GET` lookup, in a body (Part 9 §9.6). | 8 | APX only |
 | `Posting` | An accounting write-back of a payment to a monthly-parking/AR system. | 5 | APX only |
 | `PostingRequest` | Request body for the accounting write-back of a payment. | 3 | APX only |
+| `ReceiptDelivery` | The outcome of a receipt request (Part 13 §13.1a). | 5 | APX only |
+| `ReceiptRequest` | Asks the implementation to send the receipt for a settled payment again (Part 13 §13.1a). The `destination` travels in the body, never in a URL, and is not stored beyond the delivery. | 4 | APX only |
 
 #### Enumerations in Accounts and payments
 
@@ -2264,6 +3094,9 @@ classDiagram
 | `PaymentRecord.channel` | `lane`, `payStation`, `agent`, `autoAttendant`, `online`, `other` |
 | `PaymentRecord.paymentStatus` | `approved`, `declined`, `reversed` |
 | `PaymentSearch.captureStatus` | `authorized`, `captured` |
+| `ReceiptDelivery.channel` | `email`, `sms`, `print`, `link` |
+| `ReceiptDelivery.status` | `queued`, `sent`, `failed` |
+| `ReceiptRequest.channel` | `email`, `sms`, `print`, `link` |
 
 #### External code lists used in Accounts and payments
 
@@ -2271,7 +3104,7 @@ classDiagram
 | --- | --- | --- |
 | `apx-payment-line-codes` | 8 | `base`, `convenienceFee`, `serviceFee`, `tax` |
 
-### 8 License plate recognition
+### 9 License plate recognition
 
 *Normative text: APX Part 13. Package: `APX/Lpr`.*
 
@@ -2449,7 +3282,9 @@ APX-only: `LprRead` (a projection for lookups), `LprReadSearch` and
 decoration members `captureGroup`, `frameReads`, `platesRead` and `engine`
 are not part of the proposal and remain in the APX decoration.
 
-#### Class diagram
+#### Class diagrams
+
+Figures 38 to 40 provide the UML class diagrams for the License plate recognition package. A class marked «proposed» is proposed to APDS (06, Part D); one marked «APDS» is defined in APDS 4.1. Up to 12 attributes are shown per class; 03 Data Dictionary lists them all.
 
 ```mermaid
 classDiagram
@@ -2459,10 +3294,6 @@ classDiagram
     +Decimal confidence
   }
   <<proposed>> AttributeRead
-  class LaneCameras {
-    +Structure[] cameras
-  }
-  <<proposed>> LaneCameras
   class LprRead {
     +String plate
     +Decimal confidence
@@ -2493,25 +3324,11 @@ classDiagram
     +Structure review
   }
   <<proposed>> LprReadDetail
-  class LprReadSearch {
-    +String plate
-    +String ticket
-    +Uuid observation
-    +Uuid session
-    +Uuid place
-    +Integer page
-  }
-  class PlateCorrection {
-    +Enum decision
-    +String plate
-    +String country
-    +String stateProvince
-    +String reason
-    +String reviewer
-  }
   LprRead --> "0..1" LprReadDetail : detail
   LprRead --> "0..10" ReservationSummary : recentReservations
   LprRead --> "0..1" Extensions : extensions
+  LprRead ..> "1..1" HierarchyElement : place
+  LprRead ..> "0..1" VehicularAccess : lane
   LprReadDetail --> "0..1" AttributeRead : plate
   LprReadDetail --> "0..1" AttributeRead : country
   LprReadDetail --> "0..1" AttributeRead : stateProvince
@@ -2520,14 +3337,56 @@ classDiagram
   LprReadDetail --> "0..1" AttributeRead : model
   LprReadDetail --> "0..1" AttributeRead : color
   LprReadDetail --> "0..1" AttributeRead : bodyType
-  PlateCorrection --> "0..1" Extensions : extensions
   class ReservationSummary
   <<APX>> ReservationSummary
   class Extensions
   <<APX>> Extensions
+  class HierarchyElement
+  <<APDS>> HierarchyElement
+  class VehicularAccess
+  <<APDS>> VehicularAccess
 ```
 
-*Figure 8 -- License plate recognition. Members of a «proposed» class are proposed to APDS (06, Part D). Classes marked «APDS» are defined in APDS 4.1. Up to 12 attributes are shown per class; 03 Data Dictionary lists them all.*
+*Figure 38 - LprReadDetail class diagram*
+
+```mermaid
+classDiagram
+  direction TB
+  class PlateCorrection {
+    +Enum decision
+    +String plate
+    +String country
+    +String stateProvince
+    +String reason
+    +String reviewer
+  }
+  <<D2Class>> PlateCorrection
+  PlateCorrection --> "0..1" Extensions : extensions
+  class Extensions
+  <<APX>> Extensions
+```
+
+*Figure 39 - PlateCorrection class diagram*
+
+```mermaid
+classDiagram
+  direction TB
+  class LaneCameras {
+    +Structure[] cameras
+  }
+  <<proposed>> LaneCameras
+  class LprReadSearch {
+    +String plate
+    +String ticket
+    +Uuid observation
+    +Uuid session
+    +Uuid place
+    +Integer page
+  }
+  <<D2Class>> LprReadSearch
+```
+
+*Figure 40 - License plate recognition classes*
 
 #### Classes in License plate recognition
 
@@ -2558,7 +3417,7 @@ classDiagram
 | --- | --- | --- |
 | `apx-read-review-reasons` | 6 | `lowConfidence`, `noConfidence`, `jurisdictionRequiresReview`, `ambiguousCharacters` |
 
-### 9 Reservations and permits
+### 10 Reservations and permits
 
 *Normative text: APX Part 14. Package: `APX/Reservations`.*
 
@@ -2650,6 +3509,15 @@ camera reads, or a ticket number (APX Part 14 §14.1a).
 **ReservationSummary** is the compact view returned by history lookups
 and carried by the no-show event.
 
+##### Reservations from several sellers
+
+A site may honour reservations sold by several channels, whose
+confirmation codes collide. A ReservationSummary carries the `issuer`
+that sold it and the `amountPaid`, and a resolve request may name the
+`reservationIssuer` beside the code, so that an agent finds the right
+booking when two sellers issued the same code (APX Part 14 §14.1 rule 7;
+Part 17 §17.1).
+
 #### Lifecycle
 
 ```mermaid
@@ -2711,24 +3579,33 @@ They are request and view shapes over APDS data, not new data, so they
 are not proposed. The waitlist is not standardised at all (APX Part 14
 §14.2).
 
-#### Class diagram
+#### Class diagrams
+
+Figures 41 to 45 provide the UML class diagrams for the Reservations and permits package. A class marked «proposed» is proposed to APDS (06, Part D); one marked «APDS» is defined in APDS 4.1. Up to 12 attributes are shown per class; 03 Data Dictionary lists them all.
 
 ```mermaid
 classDiagram
-  direction LR
-  class PermitExtension {
-    +Integer maxConcurrentVehicles
-    +Structure overageBilling
-    +Reference renews
-    +Reference renewedBy
-  }
-  <<proposed>> PermitExtension
+  direction TB
   class PermitIssueRequest {
     +Structure[] credentials
     +Structure validity
     +VersionedReference rightSpecification
     +Reference holder
   }
+  <<D2Class>> PermitIssueRequest
+  PermitIssueRequest --> "0..1" Extensions : extensions
+  PermitIssueRequest ..> "1..1" CustomerCredential : holder
+  class Extensions
+  <<APX>> Extensions
+  class CustomerCredential
+  <<APDS>> CustomerCredential
+```
+
+*Figure 41 - PermitIssueRequest class diagram*
+
+```mermaid
+classDiagram
+  direction TB
   class PoolAvailability {
     +Integer capacity
     +Integer issued
@@ -2737,6 +3614,56 @@ classDiagram
     +VersionedReference rightSpecification
     +VersionedReference pool
   }
+  <<D2Class>> PoolAvailability
+  PoolAvailability --> "0..1" Validity : validity
+  PoolAvailability ..> "0..1" RightPool : pool
+  class Validity
+  <<APDS>> Validity
+  class RightPool
+  <<APDS>> RightPool
+```
+
+*Figure 42 - PoolAvailability class diagram*
+
+```mermaid
+classDiagram
+  direction TB
+  class ReservationSummary {
+    +Enum reservationState
+    +DateTime plannedStart
+    +DateTime plannedEnd
+    +DateTime noShowAfter
+    +String issuer
+    +Reference reservation
+  }
+  <<D2Class>> ReservationSummary
+  ReservationSummary --> "0..1" AmountInCurrency : amountPaid
+  class AmountInCurrency
+  <<APDS>> AmountInCurrency
+```
+
+*Figure 43 - ReservationSummary class diagram*
+
+```mermaid
+classDiagram
+  direction TB
+  class PermitExtension {
+    +Integer maxConcurrentVehicles
+    +Structure overageBilling
+    +Reference renews
+    +Reference renewedBy
+  }
+  <<proposed>> PermitExtension
+  PermitExtension ..> "0..1" AssignedRight : renews
+  class AssignedRight
+  <<APDS>> AssignedRight
+```
+
+*Figure 44 - PermitExtension class diagram*
+
+```mermaid
+classDiagram
+  direction TB
   class ReservationExtension {
     +Enum reservationState
     +DateTime plannedStart
@@ -2745,22 +3672,12 @@ classDiagram
     +Reference checkInSession
   }
   <<proposed>> ReservationExtension
-  class ReservationSummary {
-    +Enum reservationState
-    +DateTime plannedStart
-    +DateTime plannedEnd
-    +DateTime noShowAfter
-    +Reference reservation
-  }
-  PermitIssueRequest --> "0..1" Extensions : extensions
-  PoolAvailability --> "0..1" Validity : validity
-  class Extensions
-  <<APX>> Extensions
-  class Validity
-  <<APDS>> Validity
+  ReservationExtension ..> "0..1" Session : checkInSession
+  class Session
+  <<APDS>> Session
 ```
 
-*Figure 9 -- Reservations and permits. Members of a «proposed» class are proposed to APDS (06, Part D). Classes marked «APDS» are defined in APDS 4.1. Up to 12 attributes are shown per class; 03 Data Dictionary lists them all.*
+*Figure 45 - ReservationExtension class diagram*
 
 #### Classes in Reservations and permits
 
@@ -2770,7 +3687,7 @@ classDiagram
 | `PermitIssueRequest` | Issue a permit from a pooled RightSpecification — creates a native AssignedRight with (possibly multiple) vehicle credentials, per the APDS annual-permit use case (one right, multiple vehicles). | 10 | APX only |
 | `PoolAvailability` | Availability of one RightPool of a pooled RightSpecification (APDS RightPool profile, Part 14 §14.2). `issued` = `RightPool.distributedAssignedRights`, `available` = `RightPool.availableAssignedRights`, `capacity` = their sum. | 7 | APX only |
 | `ReservationExtension` | The apds-ext:apx:reservation@1.0 extension object attached to a native AssignedRight. Presence of this extension marks the AssignedRight as a reservation; state transitions follow Part 14 §14.1 (transition table). `plannedStart`/`plannedEnd` MUST mirror the AssignedRight's `plannedUses[0].startTime`/`endTime`, which is authoritative. | 5 | Proposed: AssignedRight (Tier 2); Proposed: ReservationStateEnum (Tier 2) |
-| `ReservationSummary` | Compact view of one past/current reservation, for customer-history lookups. Also the `data` of `apx.reservation.noshow.v1` (Part 14 §14.1 step 6). | 5 | APX only |
+| `ReservationSummary` | Compact view of one past/current reservation, for customer-history lookups. Also the `data` of `apx.reservation.noshow.v1` (Part 14 §14.1 step 6). | 7 | APX only |
 
 #### Enumerations in Reservations and permits
 
@@ -2784,7 +3701,7 @@ classDiagram
 
 None.
 
-### 10 Tolling
+### 11 Tolling
 
 *Normative text: APX Part 15. Package: `APX/Tolling`.*
 
@@ -2917,27 +3834,13 @@ The request bodies (TollPricing, TollPaymentAttachment, TollVoid,
 TollDisputeOpen, TollDisputeResolution) are API operations, not data, and
 are not proposed. The void reason is an implementer code list.
 
-#### Class diagram
+#### Class diagrams
+
+Figures 46 to 51 provide the UML class diagrams for the Tolling package. A class marked «proposed» is proposed to APDS (06, Part D); one marked «APDS» is defined in APDS 4.1. Up to 12 attributes are shown per class; 03 Data Dictionary lists them all.
 
 ```mermaid
 classDiagram
   direction LR
-  class TollDisputeOpen {
-    +String reason
-    +String detail
-    +Reference disputedBy
-  }
-  class TollDisputeResolution {
-    +String resolution
-    +String note
-  }
-  class TollPaymentAttachment {
-    +String note
-    +Reference payment
-  }
-  class TollPricing {
-    +String detail
-  }
   class TollTransaction {
     +Uuid id
     +Integer version
@@ -2950,24 +3853,96 @@ classDiagram
     +Reference payment
   }
   <<proposed>> TollTransaction
-  class TollVoid {
-    +String reason
-    +String note
-  }
-  TollDisputeResolution --> "0..1" AmountInCurrency : adjustedPricing
-  TollPricing --> "1..1" AmountInCurrency : pricing
   TollTransaction --> "0..1" AmountInCurrency : pricing
   TollTransaction --> "0..1" RecordInfo : recordInfo
   TollTransaction --> "0..1" Extensions : extensions
+  TollTransaction ..> "1..1" SupplementalEquipment : tollPoint
+  TollTransaction ..> "0..1" PaymentRecord : payment
   class AmountInCurrency
   <<APDS>> AmountInCurrency
   class RecordInfo
   <<APX>> RecordInfo
   class Extensions
   <<APX>> Extensions
+  class SupplementalEquipment
+  <<APDS>> SupplementalEquipment
+  class PaymentRecord
+  <<APX>> PaymentRecord
 ```
 
-*Figure 10 -- Tolling. Members of a «proposed» class are proposed to APDS (06, Part D). Classes marked «APDS» are defined in APDS 4.1. Up to 12 attributes are shown per class; 03 Data Dictionary lists them all.*
+*Figure 46 - TollTransaction class diagram*
+
+```mermaid
+classDiagram
+  direction TB
+  class TollDisputeOpen {
+    +String reason
+    +String detail
+    +Reference disputedBy
+  }
+  <<D2Class>> TollDisputeOpen
+  TollDisputeOpen ..> "0..1" Contact : disputedBy
+  class Contact
+  <<APDS>> Contact
+```
+
+*Figure 47 - TollDisputeOpen class diagram*
+
+```mermaid
+classDiagram
+  direction TB
+  class TollDisputeResolution {
+    +String resolution
+    +String note
+  }
+  <<D2Class>> TollDisputeResolution
+  TollDisputeResolution --> "0..1" AmountInCurrency : adjustedPricing
+  class AmountInCurrency
+  <<APDS>> AmountInCurrency
+```
+
+*Figure 48 - TollDisputeResolution class diagram*
+
+```mermaid
+classDiagram
+  direction TB
+  class TollPaymentAttachment {
+    +String note
+    +Reference payment
+  }
+  <<D2Class>> TollPaymentAttachment
+  TollPaymentAttachment ..> "1..1" Payment : payment
+  class Payment
+  <<APDS>> Payment
+```
+
+*Figure 49 - TollPaymentAttachment class diagram*
+
+```mermaid
+classDiagram
+  direction TB
+  class TollPricing {
+    +String detail
+  }
+  <<D2Class>> TollPricing
+  TollPricing --> "1..1" AmountInCurrency : pricing
+  class AmountInCurrency
+  <<APDS>> AmountInCurrency
+```
+
+*Figure 50 - TollPricing class diagram*
+
+```mermaid
+classDiagram
+  direction TB
+  class TollVoid {
+    +String reason
+    +String note
+  }
+  <<D2Class>> TollVoid
+```
+
+*Figure 51 - Tolling classes*
 
 #### Classes in Tolling
 
@@ -2993,7 +3968,7 @@ classDiagram
 | `apx-toll-dispute-reasons` | 5 | `wrongVehicle`, `duplicateCharge`, `wrongClass`, `notLiable` |
 | `apx-toll-dispute-resolutions` | 4 | `upheld`, `refunded`, `adjusted`, `withdrawn` |
 
-### 11 Violations and enforcement
+### 12 Violations and enforcement
 
 *Normative text: APX Part 19. Package: `APX/Violations`.*
 
@@ -3262,7 +4237,9 @@ bodies are API operations. None of these is proposed.
 Should APDS standardise an enforcement entity natively, the APDS
 construct wins and this Part migrates to it (APX Part 3 §3.3(8)).
 
-#### Class diagram
+#### Class diagrams
+
+Figures 52 to 59 provide the UML class diagrams for the Violations and enforcement package. A class marked «proposed» is proposed to APDS (06, Part D); one marked «APDS» is defined in APDS 4.1. Up to 12 attributes are shown per class; 03 Data Dictionary lists them all.
 
 ```mermaid
 classDiagram
@@ -3277,6 +4254,7 @@ classDiagram
     +Structure lastRead
     +Reference place
   }
+  <<D2Class>> EligibilityResult
   class EnforcementPolicy {
     +Uuid id
     +Integer version
@@ -3323,22 +4301,12 @@ classDiagram
     +6 more in 03
   }
   <<proposed>> Violation
-  class ViolationAppealOpen {
-    +String reason
-    +String detail
-    +Url[] evidenceLinks
-    +Reference appellant
-  }
-  class ViolationAppealResolution {
-    +String resolution
-    +String note
-    +Reference refund
-  }
   class ViolationAppliedPayment {
     +DateTime paidTime
     +String reference
     +Reference payment
   }
+  <<D2Class>> ViolationAppliedPayment
   class ViolationDetection {
     +Enum mode
     +DateTime detectedTime
@@ -3348,7 +4316,6 @@ classDiagram
     +Reference detector
   }
   <<proposed>> ViolationDetection
-  class ViolationEvidence
   class ViolationImport {
     +Uuid id
     +String violationType
@@ -3363,60 +4330,29 @@ classDiagram
     +Reference relatedSession
     +Reference relatedRight
   }
-  class ViolationIssue {
-    +String noticeKind
-    +String noticeNumber
-    +DateTime dueTime
-    +String deliveryMethod
-    +String note
-    +Reference issuedBy
-  }
+  <<D2Class>> ViolationImport
   class ViolationLocation {
     +MultilingualString observedLocationTextual
     +Decimal accuracyMetres
   }
-  class ViolationPaymentAttachment {
-    +String note
-    +Reference payment
-  }
-  class ViolationReview {
-    +Enum decision
-    +String reason
-    +String note
-    +String violationType
-    +Reference reviewer
-  }
-  class ViolationSessionLink {
-    +String reason
-    +Reference session
-  }
-  class ViolationSource {
-    +String system
-    +String recordId
-    +String sourceStatus
-    +Integer sourceRevision
-    +DateTime sourceUpdatedTime
-    +DateTime receivedTime
-    +String officer
-    +String violationCode
-  }
+  <<D2Class>> ViolationLocation
   class ViolationVehicle {
     +CredentialTypeEnum credentialType
     +String credentialIdentification
     +String jurisdiction
     +String description
   }
-  class ViolationVoid {
-    +String reason
-    +String note
-    +Reference refund
-  }
+  <<D2Class>> ViolationVehicle
   EligibilityResult --> "0..1" Extensions : extensions
+  EligibilityResult ..> "1..1" HierarchyElement : place
   EnforcementPolicy --> "0..1" RecordInfo : recordInfo
   EnforcementPolicy --> "0..1" Extensions : extensions
+  EnforcementPolicy ..> "1..1" HierarchyElement : place
   Signage --> "0..1" GeoJsonObject : location
   Signage --> "0..1" RecordInfo : recordInfo
   Signage --> "0..1" Extensions : extensions
+  Signage ..> "1..1" HierarchyElement : place
+  Signage ..> "0..1" EnforcementPolicy : policy
   Violation --> "1..1" ViolationDetection : detection
   Violation --> "0..1" ViolationVehicle : vehicle
   Violation --> "0..1" EligibilityResult : eligibilityCheck
@@ -3428,8 +4364,16 @@ classDiagram
   Violation --> "0..1" AmountInCurrency : amountPaid
   Violation --> "0..1" RecordInfo : recordInfo
   Violation --> "0..1" Extensions : extensions
-  ViolationAppealResolution --> "0..1" AmountInCurrency : adjustedAmount
+  Violation ..> "1..1" HierarchyElement : place
+  Violation ..> "0..1" Space : space
+  Violation ..> "0..1" Session : relatedSession
+  Violation ..> "0..1" AssignedRight : relatedRight
+  Violation ..> "0..1" EnforcementPolicy : policy
+  Violation ..> "0..*" Signage : signage
+  Violation ..> "0..1" Payment : payment
   ViolationAppliedPayment --> "1..1" AmountInCurrency : amount
+  ViolationAppliedPayment ..> "0..1" Payment : payment
+  ViolationDetection ..> "0..1" SupplementalEquipment : detector
   ViolationImport --> "1..1" ViolationDetection : detection
   ViolationImport --> "0..1" ViolationVehicle : vehicle
   ViolationImport --> "0..1" ViolationLocation : location
@@ -3437,24 +4381,170 @@ classDiagram
   ViolationImport --> "0..1" AmountInCurrency : amountPaid
   ViolationImport --> "0..*" ViolationAppliedPayment : payments
   ViolationImport --> "1..1" Extensions : extensions
-  ViolationIssue --> "1..1" AmountInCurrency : amount
+  ViolationImport ..> "1..1" HierarchyElement : place
+  ViolationImport ..> "0..1" Space : space
+  ViolationImport ..> "0..1" Session : relatedSession
+  ViolationImport ..> "0..1" AssignedRight : relatedRight
   ViolationLocation --> "0..1" GeoJsonObject : observedLocation
   ViolationLocation --> "0..1" GeoJsonObject : observerLocation
-  ViolationPaymentAttachment --> "0..1" AmountInCurrency : amount
-  ViolationSessionLink --> "0..1" MatchEvidence : evidence
   class Extensions
   <<APX>> Extensions
+  class HierarchyElement
+  <<APDS>> HierarchyElement
   class RecordInfo
   <<APX>> RecordInfo
   class GeoJsonObject
   <<APDS>> GeoJsonObject
   class AmountInCurrency
   <<APDS>> AmountInCurrency
-  class MatchEvidence
-  <<APX>> MatchEvidence
+  class Space
+  <<APDS>> Space
+  class Session
+  <<APDS>> Session
+  class AssignedRight
+  <<APDS>> AssignedRight
+  class Payment
+  <<APDS>> Payment
+  class SupplementalEquipment
+  <<APDS>> SupplementalEquipment
 ```
 
-*Figure 11 -- Violations and enforcement. Members of a «proposed» class are proposed to APDS (06, Part D). Classes marked «APDS» are defined in APDS 4.1. Up to 12 attributes are shown per class; 03 Data Dictionary lists them all.*
+*Figure 52 - Violation class diagram*
+
+```mermaid
+classDiagram
+  direction TB
+  class ViolationIssue {
+    +String noticeKind
+    +String noticeNumber
+    +DateTime dueTime
+    +String deliveryMethod
+    +String note
+    +Reference issuedBy
+  }
+  <<D2Class>> ViolationIssue
+  ViolationIssue --> "1..1" AmountInCurrency : amount
+  ViolationIssue ..> "0..1" Contact : issuedBy
+  class AmountInCurrency
+  <<APDS>> AmountInCurrency
+  class Contact
+  <<APDS>> Contact
+```
+
+*Figure 53 - ViolationIssue class diagram*
+
+```mermaid
+classDiagram
+  direction TB
+  class ViolationReview {
+    +Enum decision
+    +String reason
+    +String note
+    +String violationType
+    +Reference reviewer
+  }
+  <<D2Class>> ViolationReview
+  ViolationReview ..> "0..1" Contact : reviewer
+  class Contact
+  <<APDS>> Contact
+```
+
+*Figure 54 - ViolationReview class diagram*
+
+```mermaid
+classDiagram
+  direction TB
+  class ViolationAppealOpen {
+    +String reason
+    +String detail
+    +Url[] evidenceLinks
+    +Reference appellant
+  }
+  <<D2Class>> ViolationAppealOpen
+  ViolationAppealOpen ..> "0..1" Contact : appellant
+  class Contact
+  <<APDS>> Contact
+```
+
+*Figure 55 - ViolationAppealOpen class diagram*
+
+```mermaid
+classDiagram
+  direction TB
+  class ViolationAppealResolution {
+    +String resolution
+    +String note
+    +Reference refund
+  }
+  <<D2Class>> ViolationAppealResolution
+  ViolationAppealResolution --> "0..1" AmountInCurrency : adjustedAmount
+  class AmountInCurrency
+  <<APDS>> AmountInCurrency
+```
+
+*Figure 56 - ViolationAppealResolution class diagram*
+
+```mermaid
+classDiagram
+  direction TB
+  class ViolationPaymentAttachment {
+    +String note
+    +Reference payment
+  }
+  <<D2Class>> ViolationPaymentAttachment
+  ViolationPaymentAttachment --> "0..1" AmountInCurrency : amount
+  ViolationPaymentAttachment ..> "1..1" Payment : payment
+  class AmountInCurrency
+  <<APDS>> AmountInCurrency
+  class Payment
+  <<APDS>> Payment
+```
+
+*Figure 57 - ViolationPaymentAttachment class diagram*
+
+```mermaid
+classDiagram
+  direction TB
+  class ViolationSessionLink {
+    +String reason
+    +Reference session
+  }
+  <<D2Class>> ViolationSessionLink
+  ViolationSessionLink --> "0..1" MatchEvidence : evidence
+  ViolationSessionLink ..> "1..1" Session : session
+  class MatchEvidence
+  <<APX>> MatchEvidence
+  class Session
+  <<APDS>> Session
+```
+
+*Figure 58 - ViolationSessionLink class diagram*
+
+```mermaid
+classDiagram
+  direction TB
+  class ViolationEvidence
+  <<D2Class>> ViolationEvidence
+  class ViolationSource {
+    +String system
+    +String recordId
+    +String sourceStatus
+    +Integer sourceRevision
+    +DateTime sourceUpdatedTime
+    +DateTime receivedTime
+    +String officer
+    +String violationCode
+  }
+  <<D2Class>> ViolationSource
+  class ViolationVoid {
+    +String reason
+    +String note
+    +Reference refund
+  }
+  <<D2Class>> ViolationVoid
+```
+
+*Figure 59 - Violations and enforcement classes*
 
 #### Classes in Violations and enforcement
 
@@ -3501,7 +4591,7 @@ classDiagram
 | --- | --- | --- |
 | `apx-violation-types` | 11 | `noValidRight`, `expiredRight`, `notYetValidRight`, `wrongPlace` |
 
-### 12 Validations
+### 13 Validations
 
 *Normative text: APX Part 20. Package: `APX/Validations`.*
 
@@ -3696,7 +4786,9 @@ void detail and the reversal body. Statements are an accounting
 handoff, not parking data; APX itself does not invoice or take money for
 them (APX Part 20 §20.6).
 
-#### Class diagram
+#### Class diagrams
+
+Figures 60 to 63 provide the UML class diagrams for the Validations package. A class marked «proposed» is proposed to APDS (06, Part D); one marked «APDS» is defined in APDS 4.1. Up to 12 attributes are shown per class; 03 Data Dictionary lists them all.
 
 ```mermaid
 classDiagram
@@ -3731,19 +4823,6 @@ classDiagram
     +Reference program
   }
   <<proposed>> ValidationIssuance
-  class ValidationIssuanceRequest {
-    +Uuid id
-    +Integer version
-    +Integer quantity
-    +Enum method
-    +DateTime validFrom
-    +DateTime validTo
-    +String issuedTo
-    +String[] codes
-    +Enum issuanceStatus
-    +String note
-    +Reference program
-  }
   class ValidationProgram {
     +Uuid id
     +Integer version
@@ -3774,10 +4853,50 @@ classDiagram
     +4 more in 03
   }
   <<proposed>> ValidationRedemption
-  class ValidationRedemptionReversal {
+  class ValidationVoidDetail {
     +String reason
     +String note
+    +DateTime time
+    +String actor
+    +Integer voidedCount
   }
+  <<D2Class>> ValidationVoidDetail
+  ValidationBenefit --> "0..1" AmountInCurrency : amount
+  ValidationInstrument --> "0..1" ValidationBenefit : benefit
+  ValidationInstrument --> "0..1" ValidationVoidDetail : voidDetail
+  ValidationInstrument --> "0..1" Extensions : extensions
+  ValidationInstrument ..> "0..1" ValidationRedemption : redemption
+  ValidationIssuance --> "0..1" ValidationVoidDetail : voidDetail
+  ValidationIssuance --> "0..1" RecordInfo : recordInfo
+  ValidationIssuance --> "0..1" Extensions : extensions
+  ValidationProgram --> "1..1" ValidationBenefit : benefit
+  ValidationProgram --> "0..1" RecordInfo : recordInfo
+  ValidationProgram --> "0..1" Extensions : extensions
+  ValidationProgram ..> "1..1" HierarchyElement : place
+  ValidationProgram ..> "1..1" Contact : provider
+  ValidationRedemption --> "0..1" AmountInCurrency : amountReduced
+  ValidationRedemption --> "0..1" RecordInfo : recordInfo
+  ValidationRedemption --> "0..1" Extensions : extensions
+  ValidationRedemption ..> "0..1" Command : command
+  class AmountInCurrency
+  <<APDS>> AmountInCurrency
+  class Extensions
+  <<APX>> Extensions
+  class RecordInfo
+  <<APX>> RecordInfo
+  class HierarchyElement
+  <<APDS>> HierarchyElement
+  class Contact
+  <<APDS>> Contact
+  class Command
+  <<APX>> Command
+```
+
+*Figure 60 - ValidationRedemption class diagram*
+
+```mermaid
+classDiagram
+  direction LR
   class ValidationStatement {
     +Uuid id
     +Integer version
@@ -3793,50 +4912,70 @@ classDiagram
     +String closedBy
     +3 more in 03
   }
-  class ValidationStatementClose {
-    +DateTime periodStart
-    +DateTime periodEnd
-    +String note
-  }
-  class ValidationVoid {
-    +String reason
-    +String note
-  }
-  class ValidationVoidDetail {
-    +String reason
-    +String note
-    +DateTime time
-    +String actor
-    +Integer voidedCount
-  }
-  ValidationBenefit --> "0..1" AmountInCurrency : amount
-  ValidationInstrument --> "0..1" ValidationBenefit : benefit
-  ValidationInstrument --> "0..1" ValidationVoidDetail : voidDetail
-  ValidationInstrument --> "0..1" Extensions : extensions
-  ValidationIssuance --> "0..1" ValidationVoidDetail : voidDetail
-  ValidationIssuance --> "0..1" RecordInfo : recordInfo
-  ValidationIssuance --> "0..1" Extensions : extensions
-  ValidationIssuanceRequest --> "0..1" RecordInfo : recordInfo
-  ValidationIssuanceRequest --> "0..1" Extensions : extensions
-  ValidationProgram --> "1..1" ValidationBenefit : benefit
-  ValidationProgram --> "0..1" RecordInfo : recordInfo
-  ValidationProgram --> "0..1" Extensions : extensions
-  ValidationRedemption --> "0..1" AmountInCurrency : amountReduced
-  ValidationRedemption --> "0..1" RecordInfo : recordInfo
-  ValidationRedemption --> "0..1" Extensions : extensions
+  <<D2Class>> ValidationStatement
   ValidationStatement --> "0..1" AmountInCurrency : totalReduced
   ValidationStatement --> "1..1" AmountInCurrency : billableAmount
   ValidationStatement --> "0..1" RecordInfo : recordInfo
   ValidationStatement --> "0..1" Extensions : extensions
   class AmountInCurrency
   <<APDS>> AmountInCurrency
-  class Extensions
-  <<APX>> Extensions
   class RecordInfo
   <<APX>> RecordInfo
+  class Extensions
+  <<APX>> Extensions
 ```
 
-*Figure 12 -- Validations. Members of a «proposed» class are proposed to APDS (06, Part D). Classes marked «APDS» are defined in APDS 4.1. Up to 12 attributes are shown per class; 03 Data Dictionary lists them all.*
+*Figure 61 - ValidationStatement class diagram*
+
+```mermaid
+classDiagram
+  direction TB
+  class ValidationIssuanceRequest {
+    +Uuid id
+    +Integer version
+    +Integer quantity
+    +Enum method
+    +DateTime validFrom
+    +DateTime validTo
+    +String issuedTo
+    +String[] codes
+    +Enum issuanceStatus
+    +String note
+    +Reference program
+  }
+  <<D2Class>> ValidationIssuanceRequest
+  ValidationIssuanceRequest --> "0..1" RecordInfo : recordInfo
+  ValidationIssuanceRequest --> "0..1" Extensions : extensions
+  class RecordInfo
+  <<APX>> RecordInfo
+  class Extensions
+  <<APX>> Extensions
+```
+
+*Figure 62 - ValidationIssuanceRequest class diagram*
+
+```mermaid
+classDiagram
+  direction TB
+  class ValidationRedemptionReversal {
+    +String reason
+    +String note
+  }
+  <<D2Class>> ValidationRedemptionReversal
+  class ValidationStatementClose {
+    +DateTime periodStart
+    +DateTime periodEnd
+    +String note
+  }
+  <<D2Class>> ValidationStatementClose
+  class ValidationVoid {
+    +String reason
+    +String note
+  }
+  <<D2Class>> ValidationVoid
+```
+
+*Figure 63 - Validations classes*
 
 #### Classes in Validations
 
@@ -3877,7 +5016,7 @@ classDiagram
 
 None.
 
-### 13 Credentials
+### 14 Credentials
 
 *Normative text: APX Part 21. Package: `APX/Credentials`.*
 
@@ -4058,7 +5197,9 @@ APX-only: the CredentialRecord resource itself, as an API shape, and the
 transition and replace request bodies. Their data reaches APDS through
 the CredentialAssigned additions above rather than as a separate record.
 
-#### Class diagram
+#### Class diagrams
+
+Figures 64 to 65 provide the UML class diagrams for the Credentials package. A class marked «proposed» is proposed to APDS (06, Part D); one marked «APDS» is defined in APDS 4.1. Up to 12 attributes are shown per class; 03 Data Dictionary lists them all.
 
 ```mermaid
 classDiagram
@@ -4088,6 +5229,7 @@ classDiagram
     +Reference device
     +Reference session
   }
+  <<D2Class>> CredentialAccessEvent
   class CredentialRecord {
     +Uuid id
     +Integer version
@@ -4104,6 +5246,50 @@ classDiagram
     +5 more in 03
   }
   <<proposed>> CredentialRecord
+  class PresentedCredential {
+    +CredentialTypeEnum credentialType
+    +String credentialIdentification
+  }
+  <<proposed>> PresentedCredential
+  AccessEvent --> "0..1" PresentedCredential : presented
+  AccessEvent --> "0..1" Extensions : extensions
+  AccessEvent ..> "0..1" CredentialRecord : credential
+  AccessEvent ..> "0..1" VehicularAccess : lane
+  AccessEvent ..> "0..1" SupplementalEquipment : device
+  AccessEvent ..> "0..1" Session : session
+  CredentialAccessEvent --> "0..1" PresentedCredential : presented
+  CredentialAccessEvent --> "0..1" Extensions : extensions
+  CredentialAccessEvent ..> "0..1" VehicularAccess : lane
+  CredentialAccessEvent ..> "0..1" SupplementalEquipment : device
+  CredentialAccessEvent ..> "0..1" Session : session
+  CredentialRecord --> "0..1" RecordInfo : recordInfo
+  CredentialRecord --> "0..1" Extensions : extensions
+  CredentialRecord ..> "0..1" Contact : holder
+  CredentialRecord ..> "0..1" Account : account
+  CredentialRecord ..> "0..*" HierarchyElement : places
+  class Extensions
+  <<APX>> Extensions
+  class VehicularAccess
+  <<APDS>> VehicularAccess
+  class SupplementalEquipment
+  <<APDS>> SupplementalEquipment
+  class Session
+  <<APDS>> Session
+  class RecordInfo
+  <<APX>> RecordInfo
+  class Contact
+  <<APDS>> Contact
+  class Account
+  <<APX>> Account
+  class HierarchyElement
+  <<APDS>> HierarchyElement
+```
+
+*Figure 64 - CredentialRecord class diagram*
+
+```mermaid
+classDiagram
+  direction TB
   class CredentialReplaceRequest {
     +String reason
     +CredentialTypeEnum credentialType
@@ -4112,29 +5298,16 @@ classDiagram
     +Enum oldDepositStatus
     +String note
   }
+  <<D2Class>> CredentialReplaceRequest
   class CredentialTransition {
     +String reason
     +String note
     +DateTime until
   }
-  class PresentedCredential {
-    +CredentialTypeEnum credentialType
-    +String credentialIdentification
-  }
-  <<proposed>> PresentedCredential
-  AccessEvent --> "0..1" PresentedCredential : presented
-  AccessEvent --> "0..1" Extensions : extensions
-  CredentialAccessEvent --> "0..1" PresentedCredential : presented
-  CredentialAccessEvent --> "0..1" Extensions : extensions
-  CredentialRecord --> "0..1" RecordInfo : recordInfo
-  CredentialRecord --> "0..1" Extensions : extensions
-  class Extensions
-  <<APX>> Extensions
-  class RecordInfo
-  <<APX>> RecordInfo
+  <<D2Class>> CredentialTransition
 ```
 
-*Figure 13 -- Credentials. Members of a «proposed» class are proposed to APDS (06, Part D). Classes marked «APDS» are defined in APDS 4.1. Up to 12 attributes are shown per class; 03 Data Dictionary lists them all.*
+*Figure 65 - Credentials classes*
 
 #### Classes in Credentials
 
@@ -4168,7 +5341,7 @@ classDiagram
 | --- | --- | --- |
 | `apx-access-denial-reasons` | 11 | `credentialSuspended`, `credentialLost`, `credentialRevoked`, `credentialReplaced` |
 
-### 14 Valet
+### 15 Valet
 
 *Normative text: APX Part 22. Package: `APX/Valet`.*
 
@@ -4341,11 +5514,13 @@ and key location, mileage, fuel, items left, the staging lane, the
 runner, the charging request and `statusHistory[]`. The park, pickup,
 stage, retrieval, cancel and handback request bodies are API operations.
 
-#### Class diagram
+#### Class diagrams
+
+Figures 66 to 69 provide the UML class diagrams for the Valet package. A class marked «proposed» is proposed to APDS (06, Part D); one marked «APDS» is defined in APDS 4.1. Up to 12 attributes are shown per class; 03 Data Dictionary lists them all.
 
 ```mermaid
 classDiagram
-  direction LR
+  direction TB
   class ConditionReport {
     +String notes
     +Structure[] damage
@@ -4355,14 +5530,6 @@ classDiagram
     +Boolean customerAcknowledged
   }
   <<proposed>> ConditionReport
-  class ValetCancelRequest {
-    +String reason
-    +String note
-  }
-  class ValetCancelRetrievalRequest {
-    +String reason
-    +String note
-  }
   class ValetHandbackRequest {
     +Enum verificationMethod
     +String verificationValue
@@ -4370,26 +5537,15 @@ classDiagram
     +Integer mileage
     +String notes
   }
-  class ValetParkRequest {
-    +String zone
-    +String keyLocation
-    +String note
-    +Reference space
-  }
-  class ValetPickupRequest {
-    +String retrievingBy
-    +String note
-  }
-  class ValetRetrievalRequest {
-    +Enum channel
-    +DateTime requestedFor
-    +String interaction
-    +String note
-  }
-  class ValetStageRequest {
-    +String note
-    +Reference stagingLane
-  }
+  <<D2Class>> ValetHandbackRequest
+  ValetHandbackRequest --> "0..1" ConditionReport : conditionReport
+```
+
+*Figure 66 - ConditionReport class diagram*
+
+```mermaid
+classDiagram
+  direction LR
   class ValetTicket {
     +Uuid id
     +Integer version
@@ -4406,16 +5562,72 @@ classDiagram
     +3 more in 03
   }
   <<proposed>> ValetTicket
-  ValetHandbackRequest --> "0..1" ConditionReport : conditionReport
   ValetTicket --> "0..1" RecordInfo : recordInfo
   ValetTicket --> "0..1" Extensions : extensions
+  ValetTicket ..> "1..1" HierarchyElement : place
+  ValetTicket ..> "0..1" Session : session
+  ValetTicket ..> "0..1" AssignedRight : assignedRight
   class RecordInfo
   <<APX>> RecordInfo
   class Extensions
   <<APX>> Extensions
+  class HierarchyElement
+  <<APDS>> HierarchyElement
+  class Session
+  <<APDS>> Session
+  class AssignedRight
+  <<APDS>> AssignedRight
 ```
 
-*Figure 14 -- Valet. Members of a «proposed» class are proposed to APDS (06, Part D). Classes marked «APDS» are defined in APDS 4.1. Up to 12 attributes are shown per class; 03 Data Dictionary lists them all.*
+*Figure 67 - ValetTicket class diagram*
+
+```mermaid
+classDiagram
+  direction TB
+  class ValetCancelRequest {
+    +String reason
+    +String note
+  }
+  <<D2Class>> ValetCancelRequest
+  class ValetCancelRetrievalRequest {
+    +String reason
+    +String note
+  }
+  <<D2Class>> ValetCancelRetrievalRequest
+  class ValetParkRequest {
+    +String zone
+    +String keyLocation
+    +String note
+    +Reference space
+  }
+  <<D2Class>> ValetParkRequest
+  class ValetPickupRequest {
+    +String retrievingBy
+    +String note
+  }
+  <<D2Class>> ValetPickupRequest
+```
+
+*Figure 68 - Valet classes*
+
+```mermaid
+classDiagram
+  direction TB
+  class ValetRetrievalRequest {
+    +Enum channel
+    +DateTime requestedFor
+    +String interaction
+    +String note
+  }
+  <<D2Class>> ValetRetrievalRequest
+  class ValetStageRequest {
+    +String note
+    +Reference stagingLane
+  }
+  <<D2Class>> ValetStageRequest
+```
+
+*Figure 69 - Valet classes (continued)*
 
 #### Classes in Valet
 
@@ -4447,7 +5659,7 @@ classDiagram
 
 None.
 
-### 15 Plate lists
+### 16 Plate lists
 
 *Normative text: APX Part 24. Package: `APX/PlateLists`.*
 
@@ -4585,7 +5797,9 @@ APX-only: the credential digest decoration and the change event are
 delivery mechanisms, not data, and are not proposed. Screening itself is
 left to implementations.
 
-#### Class diagram
+#### Class diagrams
+
+Figure 70 provides a UML class diagram for the Plate lists package. A class marked «proposed» is proposed to APDS (06, Part D); one marked «APDS» is defined in APDS 4.1. Up to 12 attributes are shown per class; 03 Data Dictionary lists them all.
 
 ```mermaid
 classDiagram
@@ -4623,13 +5837,17 @@ classDiagram
   PlateList --> "0..1" Extensions : extensions
   PlateListEntry --> "0..1" RecordInfo : recordInfo
   PlateListEntry --> "0..1" Extensions : extensions
+  PlateListEntry ..> "0..1" PlateList : list
+  PlateListPlaceFlags ..> "1..1" HierarchyElement : place
   class RecordInfo
   <<APX>> RecordInfo
   class Extensions
   <<APX>> Extensions
+  class HierarchyElement
+  <<APDS>> HierarchyElement
 ```
 
-*Figure 15 -- Plate lists. Members of a «proposed» class are proposed to APDS (06, Part D). Classes marked «APDS» are defined in APDS 4.1. Up to 12 attributes are shown per class; 03 Data Dictionary lists them all.*
+*Figure 70 - PlateListEntry class diagram*
 
 #### Classes in Plate lists
 
@@ -4651,7 +5869,7 @@ classDiagram
 | --- | --- | --- |
 | `apx-plate-list-categories` | 4 | `allow`, `watch`, `scofflaw`, `enforcementVehicle` |
 
-### 16 Resolution and customer support
+### 17 Resolution and customer support
 
 *Normative text: APX Part 17. Package: `APX/Resolution`.*
 
@@ -4676,11 +5894,20 @@ and the record of a support interaction.
 
 A **ResolutionResolveRequest** carries whatever parking identifiers the
 caller has: device, place, lane, session, holder, credential, plate,
-ticket number or reservation code. At least one is required. The server
-MUST resolve every relationship it can and MUST NOT fail because some
-identifiers are missing (APX Part 17 §17.1). APX accepts no telephony
-identifiers. The call platform maps the call to a lane or device before
-it calls APX, so no parking system needs telephony concepts.
+ticket number or reservation code, and, since Part 26, the comms point a
+call came from, or the `callerId`, `dialedNumber` or `commsDeviceId` the
+call platform hands over. At least one is required. The server MUST
+resolve every relationship it can and MUST NOT fail because some
+identifiers are missing (APX Part 17 §17.1). Telephony values appear
+only on comms points and on these members, and only the party that runs
+the calls supplies them; a parking system never has to hold or
+understand them, and one that holds no comms points says so
+(`comms-point-unknown`). A comms point resolves to its lane when it has
+one and otherwise to its place only. Two further qualifiers help an
+agent find the right record: `reservationIssuer`, when several sellers'
+confirmation codes collide, and `guestReference` (a hotel room, a
+company, a tenant, an event), for a guest who has no plate or ticket to
+give.
 
 A **ResolutionContext** is the result. Its core is small: id, version,
 computation time, status, Place and the allowed actions. Every other
@@ -4706,8 +5933,25 @@ context, this credential and this moment (APX Part 17 §17.3). It says
 whether the action is allowed, whether it needs approval and by which
 role, and why when it is denied or gated. An `execution` descriptor says
 how to run it: a Part 6 control command, or a domain operation by its
-operationId. So the agent sees one list and never needs to know which
-module executes the action (APX Part 17 §17.4).
+operationId, or, since Part 25, a vendor surface to open (`type: ui`,
+with the surface and the subject), so an agent is offered "do it in the
+vendor's screen" when no API operation exists. So the agent sees one
+list and never needs to know which module executes the action (APX Part
+17 §17.4).
+
+##### Approval requests
+
+An **ApprovalRequest** asks a role for permission to take an action the
+policy gates (APX Part 17 §17.3a): the place, the action and its target,
+who asks and whether that is a person or an AI agent, the role that may
+decide (a value of the `apx-escalation-roles` list where the place's
+escalation contacts apply), a reason, the correlation identifier, and an
+expiry. The decision (`ApprovalDecision`: approved or denied, by whom,
+when, with a note) is recorded on the request, and a command that needs
+approval cites the decided request as its approval evidence. A request
+is addressed to a role, never a person, so APX holds no manager's name
+or number. A decided or expired request cannot be decided again
+(`approval-closed`).
 
 The decisions are binding. A command or domain write that the current
 context does not allow is refused (`action-not-allowed`); one that needs
@@ -4740,7 +5984,13 @@ courtesy exit, from the Part 6 Command that performed it.
 A **SupportInteraction** records one customer-service contact: channel,
 agent type (human or AI), start and end, Place, issue, a short summary,
 the subjects it was about (Session, holder, account, credential,
-reservation, plate) and references to the actions taken. It holds a
+reservation, plate) and references to the actions taken, which may
+include the commands, payment links, UI launches and action records of
+the episode. Its resolution code comes from the `apx-interaction-outcomes`
+list (resolved, vended, transferred, escalated, no action needed,
+abandoned, callback scheduled) or is an implementer code, and its issue
+from `apx-issue-types`, which now carries the thirty-four types a
+six-month sample of ten call centres showed to be shared. It holds a
 summary, never a transcript (APX Part 17 §17.6). Recorded interactions
 appear in later contexts as `supportHistory`, so an agent can see that
 the customer called twice yesterday.
@@ -4790,6 +6040,21 @@ completed later with its end time, resolution, summary and actions (APX
 Part 17 §17.6). Every update increments `version`. `open` and `completed`
 are descriptive; the record has no status field.
 
+```mermaid
+stateDiagram-v2
+    [*] --> pending : request
+    pending --> approved : decide
+    pending --> denied : decide
+    pending --> expired : expiresAt passed
+    approved --> [*]
+    denied --> [*]
+    expired --> [*]
+```
+
+An approval request is `pending` until the role decides it `approved` or
+`denied`, or until it expires; the three are final (APX Part 17 §17.3a).
+Every transition publishes `apx.approvals.changed.v1`.
+
 #### Relationship to APDS
 
 APDS classes referenced: Place and its hierarchy, VehicularAccess (the
@@ -4817,11 +6082,14 @@ proposed as a class: it follows from the access events of a credential,
 and AccessEvent is proposed in the Session package.
 
 APX-only: ResolutionResolveRequest, ResolutionContext, AllowedAction,
-ResolutionIssue, PassbackStatus, PlateCandidate and OverrideRecord. They
-are aggregation, policy and workflow shapes over APDS data, not new
-parking data, so they are not proposed.
+ResolutionIssue, PassbackStatus, PlateCandidate, OverrideRecord,
+ApprovalRequest and ApprovalDecision. They are aggregation, policy and
+workflow shapes over APDS data, not new parking data, so they are not
+proposed.
 
-#### Class diagram
+#### Class diagrams
+
+Figures 71 to 74 provide the UML class diagrams for the Resolution and customer support package. A class marked «proposed» is proposed to APDS (06, Part D); one marked «APDS» is defined in APDS 4.1. Up to 12 attributes are shown per class; 03 Data Dictionary lists them all.
 
 ```mermaid
 classDiagram
@@ -4836,6 +6104,7 @@ classDiagram
     +Structure reason
     +Reference target
   }
+  <<D2Class>> AllowedAction
   class OverrideRecord {
     +String commandType
     +DateTime occurredAt
@@ -4846,6 +6115,7 @@ classDiagram
     +Reference requestedBy
     +Reference place
   }
+  <<D2Class>> OverrideRecord
   class PassbackStatus {
     +Enum state
     +Enum expectedPresence
@@ -4853,18 +6123,7 @@ classDiagram
     +Structure lastAccess
     +Reference credential
   }
-  class PlateCandidate {
-    +String plate
-    +String country
-    +String stateProvince
-    +Decimal confidence
-    +DateTime observationDateTime
-    +Url plateImage
-    +Url vehicleImage
-    +Boolean purgedImagery
-    +Reference lane
-    +Reference observation
-  }
+  <<D2Class>> PassbackStatus
   class ResolutionContext {
     +Uuid id
     +Integer version
@@ -4880,24 +6139,12 @@ classDiagram
     +Structure recommendedAction
     +6 more in 03
   }
+  <<D2Class>> ResolutionContext
   class ResolutionIssue {
     +String code
     +String display
   }
-  class ResolutionResolveRequest {
-    +String interactionId
-    +Uuid correlationId
-    +String channel
-    +String plate
-    +String ticketNumber
-    +String reservationCode
-    +Reference device
-    +Reference place
-    +Reference lane
-    +Reference session
-    +Reference holder
-    +Reference credential
-  }
+  <<D2Class>> ResolutionIssue
   class SupportInteraction {
     +Uuid id
     +Integer version
@@ -4914,9 +6161,8 @@ classDiagram
     +2 more in 03
   }
   <<proposed>> SupportInteraction
+  OverrideRecord ..> "0..1" Command : command
   PassbackStatus --> "0..1" Extensions : extensions
-  PlateCandidate --> "0..1" LprReadDetail : detail
-  PlateCandidate --> "0..1" Extensions : extensions
   ResolutionContext --> "0..1" ResolutionIssue : issue
   ResolutionContext --> "0..1" LaneStatus : laneStatus
   ResolutionContext --> "0..1" Account : account
@@ -4929,13 +6175,15 @@ classDiagram
   ResolutionContext --> "0..*" AllowedAction : allowedActions
   ResolutionContext --> "0..1" RecordInfo : recordInfo
   ResolutionContext --> "0..1" Extensions : extensions
+  ResolutionContext ..> "0..1" VehicularAccess : lane
+  ResolutionContext ..> "0..1" AssignedRight : assignedRight
   SupportInteraction --> "0..1" ResolutionIssue : issue
   SupportInteraction --> "0..1" RecordInfo : recordInfo
   SupportInteraction --> "0..1" Extensions : extensions
+  class Command
+  <<APX>> Command
   class Extensions
   <<APX>> Extensions
-  class LprReadDetail
-  <<APX>> LprReadDetail
   class LaneStatus
   <<APX>> LaneStatus
   class Account
@@ -4948,28 +6196,126 @@ classDiagram
   <<APX>> DeviceStatus
   class RecordInfo
   <<APX>> RecordInfo
+  class VehicularAccess
+  <<APDS>> VehicularAccess
+  class AssignedRight
+  <<APDS>> AssignedRight
 ```
 
-*Figure 16 -- Resolution and customer support. Members of a «proposed» class are proposed to APDS (06, Part D). Classes marked «APDS» are defined in APDS 4.1. Up to 12 attributes are shown per class; 03 Data Dictionary lists them all.*
+*Figure 71 - ResolutionContext class diagram*
+
+```mermaid
+classDiagram
+  direction LR
+  class ApprovalDecision {
+    +Enum outcome
+    +String decidedBy
+    +DateTime decidedAt
+    +String note
+  }
+  <<D2Class>> ApprovalDecision
+  class ApprovalRequest {
+    +Uuid id
+    +Integer version
+    +String action
+    +String requestedBy
+    +Enum agentType
+    +String role
+    +String interactionId
+    +Uuid correlationId
+    +String reason
+    +Enum status
+    +DateTime expiresAt
+    +Reference place
+    +1 more in 03
+  }
+  <<D2Class>> ApprovalRequest
+  ApxResourceCore <|-- ApprovalRequest
+  ApprovalRequest --> "0..1" ApprovalDecision : decision
+  class ApxResourceCore
+  <<APX>> ApxResourceCore
+```
+
+*Figure 72 - ApprovalRequest class diagram*
+
+```mermaid
+classDiagram
+  direction TB
+  class ResolutionResolveRequest {
+    +String interactionId
+    +Uuid correlationId
+    +String channel
+    +String plate
+    +String ticketNumber
+    +String reservationCode
+    +String reservationIssuer
+    +Structure guestReference
+    +String callerId
+    +String dialedNumber
+    +String commsDeviceId
+    +Reference device
+    +6 more in 03
+  }
+  <<D2Class>> ResolutionResolveRequest
+  ResolutionResolveRequest ..> "0..1" SupplementalEquipment : device
+  ResolutionResolveRequest ..> "0..1" CommsPoint : commsPoint
+  class SupplementalEquipment
+  <<APDS>> SupplementalEquipment
+  class CommsPoint
+  <<APX>> CommsPoint
+```
+
+*Figure 73 - ResolutionResolveRequest class diagram*
+
+```mermaid
+classDiagram
+  direction TB
+  class PlateCandidate {
+    +String plate
+    +String country
+    +String stateProvince
+    +Decimal confidence
+    +DateTime observationDateTime
+    +Url plateImage
+    +Url vehicleImage
+    +Boolean purgedImagery
+    +Reference lane
+    +Reference observation
+  }
+  <<D2Class>> PlateCandidate
+  PlateCandidate --> "0..1" LprReadDetail : detail
+  PlateCandidate --> "0..1" Extensions : extensions
+  class LprReadDetail
+  <<APX>> LprReadDetail
+  class Extensions
+  <<APX>> Extensions
+```
+
+*Figure 74 - PlateCandidate class diagram*
 
 #### Classes in Resolution and customer support
 
 | Class | Definition | Members | APDS status |
 | --- | --- | --- | --- |
-| `AllowedAction` | One policy decision about one action, evaluated for THIS context, THIS credential, and THIS moment (Part 17 §17.3). The server — never the consuming agent, human or AI — decides permissibility. Approval requirements are policy-dependent, which is why they live here at runtime and not in a registry. | 14 | APX only |
+| `AllowedAction` | One policy decision about one action, evaluated for THIS context, THIS credential, and THIS moment (Part 17 §17.3). The server — never the consuming agent, human or AI — decides permissibility. Approval requirements are policy-dependent, which is why they live here at runtime and not in a registry. | 16 | APX only |
+| `ApprovalDecision` | The decision on an ApprovalRequest (Part 17 §17.3a), also the body of `POST /v1/approvals/{id}/decide`. | 4 | APX only |
+| `ApprovalRequest` | Asking someone with authority to approve an action before it runs (Part 17 §17.3a). An agent whose AllowedAction said `requiresApproval` creates one, addressed to a `role` (an escalation role of the place, Part 26 §26.5, or the AllowedAction's `approvalRole`); the approver decides through `POST /v1/approvals/{id}/decide`; the resulting `Approval` evidence on the write cites the request. Every change is published as `apx.approvals.changed.v1`. | 14 | APX only |
 | `OverrideRecord` | A recent manual override relevant to this context (courtesy exits, gate opens, passback resets…). Summarizes a Part 6 Command. | 8 | APX only |
 | `PassbackStatus` | Anti-passback state overlay for one APDS Credential. | 10 | APX only |
 | `PlateCandidate` | One candidate plate read for correction workflows (Part 17 §17.5) — a projection over APDS Observations, imagery as access-controlled links (Part 9 §9.6). | 12 | APX only |
 | `ResolutionContext` | The aggregated customer-service context (Part 17): everything the server could resolve about one interaction, plus the policy-decided allowed actions. Every section beyond the required core is OPTIONAL — implementations include what they know and omit what they don't (graceful degradation), and MUST NOT include sections the caller's scopes/grants could not read directly. | 41 | APX only |
 | `ResolutionIssue` | The machine-classified issue this context describes. `code` is a definedValue from the apx-issue-types registry (open, per Part 11); `display` is the human-readable summary shown to agents. | 2 | APX only |
-| `ResolutionResolveRequest` | Whatever PARKING-DOMAIN identifiers are currently known — the server resolves every relationship it can (Part 17 §17.2). At least one IDENTIFYING member is required — `device`, `place`, `lane`, `session`, `holder`, `credential`, `plate`, `ticketNumber`, or `reservationCode`; all are optional individually. `interactionId`, `correlationId`, and `channel` are correlation metadata and do not count: a body without an identifying member is 400 `invalid-request` (Part 17 §17.1). Unknown members are ignored (tolerant reader) and never used for resolution. (`minProperties: 1` is the only part of this rule the schema states; the full rule is enforced by the server.) | 12 | APX only |
+| `ResolutionResolveRequest` | Whatever PARKING-DOMAIN identifiers are currently known — the server resolves every relationship it can (Part 17 §17.2). At least one IDENTIFYING member is required — `device`, `place`, `lane`, `session`, `holder`, `credential`, `plate`, `ticketNumber`, `reservationCode`, `guestReference`, `commsPoint`, `callerId`, `dialedNumber`, or `commsDeviceId`; all are optional individually. `interactionId`, `correlationId`, `channel`, and `reservationIssuer` are metadata and do not count: a body without an identifying member is 400 `invalid-request` (Part 17 §17.1). Unknown members are ignored (tolerant reader) and never used for resolution. (`minProperties: 1` is the only part of this rule the schema states; the full rule is enforced by the server.) | 20 | APX only |
 | `SupportInteraction` | One customer-service interaction (human or AI agent), recorded so future resolution contexts can surface "they called twice yesterday". | 25 | Proposed: SupportInteraction (Tier 3); Proposed: SupportAgentTypeEnum (Tier 3) |
 
 #### Enumerations in Resolution and customer support
 
 | Enumeration | Values |
 | --- | --- |
-| `AllowedAction.execution.type` | `control`, `domain` |
+| `AllowedAction.execution.type` | `control`, `domain`, `ui` |
+| `ApprovalDecision.outcome` | `approved`, `denied` |
+| `ApprovalRequest.agentType` | `human`, `ai` |
+| `ApprovalRequest.status` | `pending`, `approved`, `denied`, `expired` |
 | `OverrideRecord.agentType` | `human`, `ai` |
 | `PassbackStatus.expectedPresence` | `inside`, `outside`, `unknown` |
 | `PassbackStatus.lastAccess.direction` | `entry`, `exit` |
@@ -4977,13 +6323,295 @@ classDiagram
 | `PassbackStatus.state` | `normal`, `violation`, `unknown` |
 | `ResolutionContext.accessDecision.status` | `granted`, `denied`, `pending`, `unknown` |
 | `ResolutionContext.status` | `full`, `partial` |
+| `ResolutionResolveRequest.guestReference.kind` | `hotelRoom`, `company`, `tenant`, `event`, `other` |
 | `SupportInteraction.agentType` | `human`, `ai` |
 
 #### External code lists used in Resolution and customer support
 
 None.
 
-### 17 EV charging
+### 18 UI launch
+
+*Normative text: APX Part 25. Package: `APX/UiLaunch`.*
+
+#### Purpose
+
+This module covers the launch of a vendor's own screen for a member of
+staff, and the return of what was done there as APX data (APX Part 25).
+Most remote-assistance actions still happen in a vendor's web portal
+rather than through an API: the agent opens the portal in another
+window, issues the lost ticket or applies the validation there, and
+types a note into the call record. The two records never agree
+afterwards. A UI launch opens that screen with automatic login, bound to
+one agent, one place and one subject, and everything the agent does on
+it comes back through the API, so the call record and the vendor's
+record stay in step.
+
+The module is defined once and used by every other module. A module
+offers a screen by adding a **surface** to the `apx-ui-surfaces` registry;
+the launch, the lifecycle and the loopback are the same for tolling,
+licence plate recognition, reservations and validations. "Screen-pop"
+already names the lane inquiry of the Control module (APX Part 6 §6.2),
+so this module speaks of a UI launch.
+
+APDS 4.1 has nothing for this. It defines no user interface, no agent
+identity, and no way to refer a person from one system's screen to
+another's.
+
+#### Concepts
+
+##### Surface
+
+A **UiSurface** is one screen an implementation offers to staff,
+advertised in the discovery document (APX Part 25 §25.1). Its name is a
+value of the `apx-ui-surfaces` code list, written as module and view:
+`lane.console`, `session.detail`, `reservation.detail`,
+`violation.appeal`, `toll.dispute`, `place.console` and so on. Each entry
+names the **subject class** the surface opens, such as a Session or a
+Violation; the general surfaces (`reservation.search`, `place.console`,
+`module.home`) open with the place as subject or with none.
+
+The discovery entry also says how the surface may be shown
+(`displayModes`: embedded, pop-up or tab), how it may be launched
+(`launchModes`: handshake or signed token), which actions it can report
+back, the launch URL for the signed-token mode, and the places where it
+is offered. The discovery soundness rule applies: a listed surface must be
+launchable by that client for at least one granted place.
+
+##### Launch request and launch
+
+A **UiLaunchRequest** is what the host sends to open a surface: the
+surface, the place, the agent and whether the agent is a person or an AI,
+the correlation identifier of the episode, the display mode, and
+optionally the subject, the lane, the host's own interaction identifier,
+the fields it wants back and how long the launch may wait to be opened,
+at most sixty seconds (APX Part 25 §25.2).
+
+A **UiLaunch** is one opening of a surface for one agent. In the
+**handshake** mode the host posts the request with its ordinary APX token
+and receives the launch with a single-use `url` that lives at most sixty
+seconds; it opens that URL for the agent. This mode also serves
+implementations that authenticate the host by request header, because a
+browser cannot add headers when it opens a page. In the **signed token**
+mode the host signs the same members as the claims of a JWS, with the
+host as issuer, the implementation as audience, an expiry at most sixty
+seconds away and a unique token identifier, and sends it to the surface's
+launch URL by form post or URL fragment, never in a query string. The
+implementation verifies the signature against keys registered at
+onboarding and creates the launch itself. Both modes log the agent in
+automatically: the agent never sees a vendor login page and never holds
+vendor credentials. A launch is bound to its surface, subject, agent and
+place, and the opened session cannot reach another subject.
+
+##### Loopback
+
+Loopback is the heart of the module (APX Part 25 §25.4). Everything an
+agent does on a launched surface must appear in APX exactly as if it had
+been done through the API:
+
+- **Native first.** An action whose APX operation the implementation
+  supports produces that operation's own effect: the Control command, the
+  refund, the validation redemption, the plate correction. The record
+  carries the launch's correlation identifier and agent, and publishes the
+  events the operation publishes. A consumer following the correlation
+  identifier sees the action with no knowledge that a screen was involved.
+- **Fallback.** An action with no supported APX operation is recorded as
+  a **UiActionRecord** on the launch: the action (a command type, the
+  nearest operation, or `other`), its outcome (completed, failed or no
+  action), when it occurred, a short summary, and a reference to any
+  native resource that was nevertheless created.
+- **Return fields.** The host may ask, as JSON pointers into the schema
+  the action concerns, for the values it needs back. The record carries
+  them in `fields`; a value the implementation cannot supply is listed as
+  unavailable with a reason, never silently omitted.
+
+A launch closed with no native effect and no action record means the
+agent did nothing; the implementation never infers an action from a
+screen having been opened. Summaries and fields carry no personal data
+beyond what the referenced APX resources already carry.
+
+##### Link to resolution
+
+An **AllowedAction** of the Resolution module may have an execution of
+type `ui`, naming the surface and the subject, so an agent's console
+offers "do it in the vendor's screen" when no API operation exists for
+the action, and the policy decision applies to the launch exactly as to
+a command (APX Part 25 §25.5). A support interaction may list launches
+and action records beside commands in its actions.
+
+##### Security
+
+A launch URL and a launch token are bearer secrets: single use, sixty
+seconds at most, bound, HTTPS only, never in a query string, a referrer
+or a log line. They carry no personal data and no secrets; the surface
+reads what it needs through its own back end. Embedding requires the
+host's origin to be registered, and the implementation sets
+`frame-ancestors` to exactly the registered origins; otherwise the
+surface is offered as a pop-up or a tab. Signing keys and handshake
+secrets are rotatable with an overlap window and are never returned by
+any read. The opened session ends when the launch closes or expires, and
+every record produced on the surface names the agent of the launch, not
+a shared vendor account (APX Part 25 §25.6).
+
+#### Lifecycle
+
+```mermaid
+stateDiagram-v2
+    [*] --> issued : launch created
+    issued --> opened : url or token used once
+    issued --> expired : expiresAt passed
+    opened --> closed : surface reports end
+    opened --> expired : session limit passed
+    closed --> [*]
+    expired --> [*]
+```
+
+A launch is `issued` on creation and `opened` on the first use of its URL
+or token; a second use is refused by the surface. It is `closed` when the
+surface reports the end of the session, or when the implementation
+observes it, and `expired` when its expiry passes while still issued, or
+when an opened launch outlives the implementation's session limit (one
+hour after opening is recommended). The terminal states never transition
+again: an action or a close on a terminal launch is refused, as is one on
+an issued launch whose expiry has passed. Every transition publishes
+`apx.ui.launch.changed.v1`, and every action record publishes
+`apx.ui.action.recorded.v1` (APX Part 25 §25.3 and §25.4).
+
+#### Relationship to APDS
+
+APDS classes referenced: HierarchyElement (the place), VehicularAccess
+(the lane), and whichever APDS or APX class the surface opens as its
+subject: Session, Observation, AssignedRight and the rest. Every subject
+is referenced, never redefined, and every native effect of an action goes
+through the module that owns it.
+
+Nothing in this module is proposed to APDS. A launch, its token and its
+action record are workflow and delivery mechanisms between two systems,
+not parking data, and the APDS model describes data. The actions a
+surface reports come back as the APDS and APX records those modules
+already define, and those are proposed where their own module proposes
+them.
+
+APX-only: UiSurface, UiLaunchRequest, UiLaunch, UiActionRecord and the
+informative UiLaunchToken claim set.
+
+#### Class diagrams
+
+Figures 75 to 76 provide the UML class diagrams for the UI launch package. A class marked «proposed» is proposed to APDS (06, Part D); one marked «APDS» is defined in APDS 4.1. Up to 12 attributes are shown per class; 03 Data Dictionary lists them all.
+
+```mermaid
+classDiagram
+  direction LR
+  class UiActionRecord {
+    +Uuid id
+    +String action
+    +Enum outcome
+    +DateTime occurredAt
+    +String agent
+    +String summary
+    +Map fields
+    +Structure[] unavailable
+    +Uuid correlationId
+    +Reference launch
+    +Reference result
+  }
+  <<D2Class>> UiActionRecord
+  class UiLaunch {
+    +Uuid id
+    +Integer version
+    +Url url
+    +DateTime expiresAt
+    +Enum status
+    +DateTime openedAt
+    +DateTime closedAt
+  }
+  <<D2Class>> UiLaunch
+  class UiLaunchRequest {
+    +String surface
+    +String agent
+    +Enum agentType
+    +String interactionId
+    +Uuid correlationId
+    +Enum displayMode
+    +String[] returnFields
+    +Integer expiresIn
+    +Reference subject
+    +Reference place
+    +Reference lane
+  }
+  <<D2Class>> UiLaunchRequest
+  class UiLaunchToken {
+    +String iss
+    +String aud
+    +Integer exp
+    +Integer iat
+    +String jti
+  }
+  <<D2Class>> UiLaunchToken
+  UiActionRecord ..> "0..1" UiLaunch : launch
+  UiActionRecord ..> "0..1" Command : result
+  ApxResourceCore <|-- UiLaunch
+  UiLaunchRequest <|-- UiLaunch
+  UiLaunch --> "0..*" UiActionRecord : actions
+  UiLaunchRequest ..> "0..1" VehicularAccess : lane
+  UiLaunchRequest <|-- UiLaunchToken
+  class Command
+  <<APX>> Command
+  class ApxResourceCore
+  <<APX>> ApxResourceCore
+  class VehicularAccess
+  <<APDS>> VehicularAccess
+```
+
+*Figure 75 - UiActionRecord class diagram*
+
+```mermaid
+classDiagram
+  direction TB
+  class UiSurface {
+    +String surface
+    +String subjectClass
+    +Enum[] displayModes
+    +Enum[] launchModes
+    +Url launchUrl
+    +String[] actions
+    +Reference[] places
+  }
+  <<D2Class>> UiSurface
+  UiSurface ..> "0..*" HierarchyElement : places
+  class HierarchyElement
+  <<APDS>> HierarchyElement
+```
+
+*Figure 76 - UiSurface class diagram*
+
+#### Classes in UI launch
+
+| Class | Definition | Members | APDS status |
+| --- | --- | --- | --- |
+| `UiActionRecord` | What an agent did in a launched screen when the implementation could not express it as the module's own resource or Command (Part 25 §25.4). The native resource is always preferred: a lost ticket issued in the vendor's screen MUST appear as a `lostTicket` Command carrying the launch's `correlationId`. Only an action with no APX operation on this implementation is recorded here, with the `fields` the host asked for in `returnFields`, and `unavailable[]` for the ones it could not supply. Published as `apx.ui.action.recorded.v1`. | 13 | APX only |
+| `UiLaunch` | One opening of a surface for one agent (Part 25 §25.3). Created by the handshake (`POST /v1/ui/launches`) or minted by the implementation when a signed token is presented. `url` is single-use and expires at `expiresAt`; the record itself stays readable for audit and carries the `actions[]` the screen reported. | 8 | APX only |
+| `UiLaunchRequest` | What the host sends to open a surface for one agent (Part 25 §25.2). The same members are the claims of a signed launch token (UiLaunchToken). `correlationId` ties everything the agent does in the screen back to the host's record; `returnFields` lists the APX paths the host wants back when the implementation has to answer with a UiActionRecord instead of a native resource. | 11 | APX only |
+| `UiLaunchToken` | INFORMATIVE. The claims of a signed launch token (JWS, ES256 or RS256) in the `signedToken` launch mode (Part 25 §25.3). `aud` is the implementation, `exp` is at most 60 s after `iat`, `jti` is unique and single-use. The remaining claims are the UiLaunchRequest members. The token travels by form POST or in the URL fragment, never in the query string, and the implementation checks it against the host's keys registered at onboarding (Part 25 §25.6). | 5 | APX only |
+| `UiSurface` | One screen an implementation offers for launch (Part 25 §25.1). Listed in the discovery document's `uiSurfaces[]`, so a host learns which screens exist, how each may be shown, which launch modes it accepts, and which actions it reports back. The `surface` name is a definedValue of `apx-ui-surfaces` (`<module>.<view>`, Part 11); its registry entry names the subject class the surface opens. | 7 | APX only |
+
+#### Enumerations in UI launch
+
+| Enumeration | Values |
+| --- | --- |
+| `UiActionRecord.outcome` | `completed`, `failed`, `noAction` |
+| `UiActionRecord.unavailable.reason` | `notSupported`, `notApplicable` |
+| `UiLaunch.status` | `issued`, `opened`, `closed`, `expired` |
+| `UiLaunchRequest.agentType` | `human`, `ai` |
+| `UiLaunchRequest.displayMode` | `embed`, `popup`, `tab` |
+| `UiSurface.displayModes` | `embed`, `popup`, `tab` |
+| `UiSurface.launchModes` | `handshake`, `signedToken` |
+
+#### External code lists used in UI launch
+
+None.
+
+### 19 EV charging
 
 *Normative text: APX Part 23. Package: `APX/Charging`.*
 
@@ -5191,7 +6819,9 @@ APX-only: ChargingEvent and ChargingPaymentAttachment (bridge and API
 operations), `statusHistory[]`, and the customer-scope minimization
 rules.
 
-#### Class diagram
+#### Class diagrams
+
+Figures 77 to 79 provide the UML class diagrams for the EV charging package. A class marked «proposed» is proposed to APDS (06, Part D); one marked «APDS» is defined in APDS 4.1. Up to 12 attributes are shown per class; 03 Data Dictionary lists them all.
 
 ```mermaid
 classDiagram
@@ -5208,24 +6838,6 @@ classDiagram
     +Reference observation
   }
   <<proposed>> ChargingBayPresence
-  class ChargingEvent {
-    +Enum eventType
-    +DateTime time
-    +Integer connectorIndex
-    +Decimal meterWh
-    +Decimal powerKw
-    +Decimal stateOfChargePercent
-    +Enum suspendedBy
-    +Enum stopReason
-    +String faultCode
-    +String externalEventId
-    +String detail
-  }
-  class ChargingPaymentAttachment {
-    +String externalReference
-    +String note
-    +Reference payment
-  }
   class ChargingPointStatus {
     +Integer refillPointIndex
     +String evseId
@@ -5258,15 +6870,75 @@ classDiagram
   <<proposed>> ChargingSession
   ChargingPointStatus --> "0..1" ChargingBayPresence : bay
   ChargingPointStatus --> "0..1" Extensions : extensions
+  ChargingPointStatus ..> "1..1" ElectricChargingEquipment : chargingPoint
+  ChargingPointStatus ..> "0..1" Place : place
+  ChargingPointStatus ..> "0..1" Space : space
+  ChargingPointStatus ..> "0..1" ChargingSession : currentSession
+  ChargingPointStatus ..> "0..1" AssignedRight : reservedFor
   ChargingSession --> "0..1" RecordInfo : recordInfo
   ChargingSession --> "0..1" Extensions : extensions
+  ChargingSession ..> "1..1" Place : place
+  ChargingSession ..> "1..1" ElectricChargingEquipment : chargingPoint
+  ChargingSession ..> "0..1" Space : space
+  ChargingSession ..> "0..1" Session : parkingSession
+  ChargingSession ..> "0..1" AssignedRight : assignedRight
+  ChargingSession ..> "0..1" ValetTicket : valetTicket
   class Extensions
   <<APX>> Extensions
+  class ElectricChargingEquipment
+  <<APDS>> ElectricChargingEquipment
+  class Place
+  <<APDS>> Place
+  class Space
+  <<APDS>> Space
+  class AssignedRight
+  <<APDS>> AssignedRight
   class RecordInfo
   <<APX>> RecordInfo
+  class Session
+  <<APDS>> Session
+  class ValetTicket
+  <<APX>> ValetTicket
 ```
 
-*Figure 17 -- EV charging. Members of a «proposed» class are proposed to APDS (06, Part D). Classes marked «APDS» are defined in APDS 4.1. Up to 12 attributes are shown per class; 03 Data Dictionary lists them all.*
+*Figure 77 - ChargingSession class diagram*
+
+```mermaid
+classDiagram
+  direction TB
+  class ChargingPaymentAttachment {
+    +String externalReference
+    +String note
+    +Reference payment
+  }
+  <<D2Class>> ChargingPaymentAttachment
+  ChargingPaymentAttachment ..> "0..1" Payment : payment
+  class Payment
+  <<APDS>> Payment
+```
+
+*Figure 78 - ChargingPaymentAttachment class diagram*
+
+```mermaid
+classDiagram
+  direction TB
+  class ChargingEvent {
+    +Enum eventType
+    +DateTime time
+    +Integer connectorIndex
+    +Decimal meterWh
+    +Decimal powerKw
+    +Decimal stateOfChargePercent
+    +Enum suspendedBy
+    +Enum stopReason
+    +String faultCode
+    +String externalEventId
+    +String detail
+  }
+  <<D2Class>> ChargingEvent
+```
+
+*Figure 79 - EV charging classes*
 
 #### Classes in EV charging
 

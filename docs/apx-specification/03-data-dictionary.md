@@ -112,6 +112,10 @@ There are no specializations in the "Common" package.
 | Extensions | apds-ext:apx:violation-source@1.0 | 0 | The `apds-ext:apx:violation-source@1.0` decoration (Part 19 §19.13): a violation issued by an external enforcement system and imported through `POST /v1/enforcement/violation-imports`, keyed on `system` + `recordId`. `sourceRevision`, or without one `sourceUpdatedTime`, orders the source's revisions. | 0..1 | Violations.ViolationSource |  |
 | Extensions | apds-ext:apx:payment-detail@1.0 | 0 | The `apds-ext:apx:payment-detail@1.0` decoration (Part 13 §13.6a) on a `PaymentRecord` or an APDS `Payment`: the rate sold and the lines that sum to the total, so revenue reports and the deck price check have the base amount, the fee, and the product without a bilateral code. On a `PaymentRecord` it carries `rateSold` and `lines`; on a native APDS `Payment` it carries `rateSold` only, because the Payment's own `paymentLines` are the itemization there. | 0..1 | Accounts.PaymentDetail |  |
 | Extensions | apds-ext:apx:credential-digest@1.0 | 0 | The `apds-ext:apx:credential-digest@1.0` decoration (Part 9 §9.6 rule 6): a keyed digest of a normalized credential identification (a plate), so a consumer that only needs "same plate?" can match without the plate itself. `value` is base64url(HMAC-SHA-256(key, normalized identification)); the key is named by `keyId` and distributed through `GET /v1/digest-keys`. Visible under `apx.data:read`. | 0..1 | Common.CredentialDigest |  |
+| Extensions | apds-ext:apx:equipment-detail@1.0 | 0 | What a piece of hardware is, where it is, and what it does (Part 26 §26.1). Carried on an APDS SupplementalEquipment as the Level B decoration `apds-ext:apx:equipment-detail@1.0` in its `extensions` container (Part 4 §4.3). The equipment TYPE stays the APDS `EquipmentTypeEnum` (often `paymentMachine` or `other`); `role` says what the item does on the site, from the fixed code list `apx-equipment-roles`. | 0..1 | SiteConfiguration.EquipmentDetail |  |
+| Extensions | apds-ext:apx:camera@1.0 | 0 | A camera anywhere on the site, not only on a lane (Part 26 §26.3). Carried on a SupplementalEquipment whose EquipmentDetail `role` is `camera`, as the Level B decoration `apds-ext:apx:camera@1.0`. Where the camera is (`area`, `level`, `lane`) and what it is built into (`builtInto`) are EquipmentDetail members, shared with every other piece of hardware; this decoration adds how it is mounted, what it looks at, and how it can be viewed. It holds no addresses, usernames or passwords: a view is obtained through `POST /v1/cameras/{id}/views` and the password never leaves the site (Part 26 §26.3). Camera models and stream profiles follow ONVIF (Profile S, Profile T) and are not redefined. `apds-ext:apx:lane-cameras@1.0` (Part 13) is unchanged. | 0..1 | SiteConfiguration.CameraDetail |  |
+| Extensions | apds-ext:apx:external-ids@1.0 | 0 | The ids other systems use for the same place, lane or equipment (Part 26 §26.6). Carried on any HierarchyElement as the Level B decoration `apds-ext:apx:external-ids@1.0`. APDS `SupplementalFacility.externalIdentifiers` holds untyped strings; here each id says which system issued it. `system` is a URI the issuer owns, usually its own domain, so APX names no products or platforms. `POST /v1/identifiers:resolve` finds the APX record from such an id. | 0..1 | SiteConfiguration.ExternalIdentifiers |  |
+| Extensions | apds-ext:apx:place-operations@1.0 | 0 | Operational facts about a place that a call centre needs before a call (Part 26 §26.5). Carried on a place HierarchyElement as the Level B decoration `apds-ext:apx:place-operations@1.0`. `escalationContacts` lists roles in calling order, never names or phone numbers: the call platform holds those, so APX carries no personal contact data. A Part 17 approval request is addressed to a role from this list. | 0..1 | SiteConfiguration.PlaceOperations |  |
 | RecordInfo | creator | Creator | Reference to the creating Organisation or Contact. | 0..1 | PkCommon.Reference |  |
 
 **A.1.1.5 Attributes of the "Common" package**
@@ -171,6 +175,7 @@ There are no specializations in the "Discovery" package.
 | --- | --- | --- | --- | --- | --- | --- |
 | ApxConfiguration | extensions | Extensions | Implementer extensions, keyed by a namespaced name (Part 10). | 0..1 | Common.Extensions |  |
 | DiscoveryDocument | organisation | Organisation | The client's Organisation (token claim apx_org). | 0..1 | PkCommon.Reference |  |
+| DiscoveryDocument | uiSurfaces | Ui surfaces | The vendor screens this client may launch (Part 25 §25.1), each with its display and launch modes and the actions it reports back. Present only when the host implements `apx-ui-launch` and the client holds `apx.ui:launch`. | 0..* | UiLaunch.UiSurface |  |
 | DiscoveryDocument | extensions | Extensions | Implementer extensions, keyed by a namespaced name (Part 10). | 0..1 | Common.Extensions |  |
 
 **A.1.2.5 Attributes of the "Discovery" package**
@@ -197,6 +202,11 @@ There are no specializations in the "Discovery" package.
 | DiscoveryDocument | endpoints.methods | Methods | Upper-case HTTP method names. | 0..* | String |  |
 | DiscoveryDocument | commandTypes | Command types | Command types this client may execute (empty without apx.control:execute). A permission list; what the host offers is `features` (Part 16 §16.2). | 0..* | String |  |
 | DiscoveryDocument | features | Features | Optional features of claimed classes that this client may use (definedValues from `apx-features`, Part 11; Part 6 §6.5). Listed whenever the host offers the feature and the client holds a read or execute scope of the class, so a read-only client can see it too. | 0..* | String (code list apx-features) |  |
+| DiscoveryDocument | placeCapabilities | Place capabilities | What each granted place can do, before a call (Part 16 §16.2): the command types the site executes, the surfaces offered there, and the optional features it supports. A site with no revenue control link lists no command types, so an agent knows to use the vendor's screen instead. Absent when every place offers the same as the document-level `commandTypes`, `uiSurfaces` and `features`. | 0..* | Structure (members below) |  |
+| DiscoveryDocument | placeCapabilities.place | Place | The HierarchyElement subtree root the row applies to. | 1..1 | Uuid |  |
+| DiscoveryDocument | placeCapabilities.commandTypes | Command types | The apx-command-types values this client may send at this place (Part 16 §16.2). † | 0..* | String |  |
+| DiscoveryDocument | placeCapabilities.uiSurfaces | Ui surfaces | apx-ui-surfaces values offered at this place. | 0..* | String |  |
+| DiscoveryDocument | placeCapabilities.features | Features | The apx-features values the implementation offers at this place. † | 0..* | String |  |
 | DiscoveryDocument | topics | Topics | Topics this client may subscribe to: APX registry topics, APDS `EventTypeEnum` values (Part 8), and vendor topics (`<vendor-ns>.`). | 0..* | String |  |
 | DiscoveryDocument | rateLimits | Rate limits | Advisory per-credential limits (Part 16 §16.2). Defined keys: `requestsPerMinute`, `commandsPerMinute`, `burst` (most requests in any one second), `subscriptionsMax`, `streamConnectionsMax`. Every value is a per-credential integer; other keys are advisory vendor additions. | 0..1 | Map of Integer |  |
 | DiscoveryDocument | replication | Replication | Part 18 §18.6 — for a place this implementation shares with a replicated site or aggregator implementation, which side is authoritative for each entity class. A write to a class from the non-authoritative side is 409 `not-authoritative`. Absent when the implementation replicates nothing. | 0..* | Structure (members below) |  |
@@ -557,6 +567,7 @@ There are no specializations in the "Control" package.
 
 | Class name | Association end | Designation | Definition | Multiplicity | Target | Notes |
 | --- | --- | --- | --- | --- | --- | --- |
+| Approval | approvalRequest | Approval request | The Part 17 §17.3a ApprovalRequest whose decision this evidence cites, when the approval was asked for through APX. | 0..1 | PkCommon.Reference |  |
 | Command | target | Target | Reference to the target — SupplementalEquipment (device) or a VehicularAccess/Place HierarchyElement (lane/place scope). | 1..1 | PkCommon.Reference |  |
 | Command | requestedBy | Requested by | The organisation requesting the action (defaults to the token's apx_org). | 0..1 | PkCommon.Reference |  |
 | Command | resolutionContext | Resolution context | The ResolutionContext this command resolves (Part 17) — links the action into the interaction's audit chain. | 0..1 | PkCommon.Reference |  |
@@ -628,8 +639,16 @@ There are no specializations in the "Control" package.
 | CommandResult | display.screenshot | Screenshot | Access-controlled link to a capture of the display (Part 9 §9.6). | 0..1 | PkCommon.Url |  |
 | CommandResult | display.acknowledgedBy | Acknowledged by | Who acknowledged the display: the player, an operator, or no one. † | 0..1 | CommandResult.display.acknowledgedBy (enumeration) |  |
 | DeviceStatus | deviceState | Device state | definedValue from apx-device-states. | 1..1 | String |  |
-| DeviceStatus | lastCommunication | Last communication | ISO-8601 format definition of a date and time - format YYYY-MM-DDTHH:MM:SSZ. | 0..1 | PkCommon.DateTime |  |
+| DeviceStatus | lastCommunication | Last communication | When the device last reported; an agent reads "offline since" from it (Part 6 §6.4). | 0..1 | PkCommon.DateTime |  |
 | DeviceStatus | stateChangedTime | State changed time | ISO-8601 format definition of a date and time - format YYYY-MM-DDTHH:MM:SSZ. | 0..1 | PkCommon.DateTime |  |
+| DeviceStatus | fault | Fault | The current fault, when `deviceState` is `fault` or `inoperative` and the device reports one (Part 6 §6.4). | 0..1 | Structure (members below) |  |
+| DeviceStatus | fault.code | Code | The implementation's fault code, as the device reports it. | 1..1 | String |  |
+| DeviceStatus | fault.displayText | Display text | What the device shows or what the technician reads for the code. | 0..1 | String |  |
+| DeviceStatus | fault.since | Since | ISO-8601 format definition of a date and time - format YYYY-MM-DDTHH:MM:SSZ. | 0..1 | PkCommon.DateTime |  |
+| DeviceStatus | consumables | Consumables | Supply levels the device reports (Part 6 §6.4). `low` or `empty` raises the Part 7 `consumableLow` alert. | 0..* | Structure (members below) |  |
+| DeviceStatus | consumables.kind | Kind | Which consumable the level is reported for (Part 6 §6.4). † | 1..1 | DeviceStatus.consumables.kind (enumeration) |  |
+| DeviceStatus | consumables.level | Level | How much of the consumable is left, as a level, not a count. † | 1..1 | DeviceStatus.consumables.level (enumeration) |  |
+| DeviceStatus | maintenanceMode | Maintenance mode | The device is under test or maintenance; calls and events from it are excluded from service figures (Part 6 §6.4). | 0..1 | Boolean |  |
 | LaneStatus | currentTicket | Current ticket | The ticket/credential currently in the machine, if any. | 0..1 | Structure (members below) |  |
 | LaneStatus | currentTicket.ticketNumber | Ticket number | Number printed on, or encoded in, the parking ticket. | 0..1 | String |  |
 | LaneStatus | currentTicket.issuedTime | Issued time | ISO-8601 format definition of a date and time - format YYYY-MM-DDTHH:MM:SSZ. | 0..1 | PkCommon.DateTime |  |
@@ -672,40 +691,160 @@ There are no specializations in the "Control" package.
 | ValidationProvider | benefit.duration | Duration | Comped parking time (ISO 8601), valued at the applicable rate. | 0..1 | PkCommon.Duration |  |
 | ValidationProvider | benefit.percentage | Percentage | Proportionate discount on the amount due, mirrored from a percentage ValidationProgram (Part 20 §20.1). | 0..1 | Decimal |  |
 
-### A.1.6 "Alerts" package
+### A.1.6 "SiteConfiguration" package
 
-**A.1.6.1 Location of "Alerts" package.** The location of the "Alerts" package is:
+**A.1.6.1 Location of "SiteConfiguration" package.** The location of the "SiteConfiguration" package is:
+
+`-- APX/SiteConfiguration` (source: `spec/openapi/domains/siteconfig/schemas.yaml`; normative text: APX Part 26)
+
+**A.1.6.2 Classes of the "SiteConfiguration" package**
+
+*Table A.16 -- Classes of the "SiteConfiguration" package*
+
+| Class name | Designation | Definition | Kind | APDS status |
+| --- | --- | --- | --- | --- |
+| CameraDetail | Camera detail | A camera anywhere on the site, not only on a lane (Part 26 §26.3). Carried on a SupplementalEquipment whose EquipmentDetail `role` is `camera`, as the Level B decoration `apds-ext:apx:camera@1.0`. Where the camera is (`area`, `level`, `lane`) and what it is built into (`builtInto`) are EquipmentDetail members, shared with every other piece of hardware; this decoration adds how it is mounted, what it looks at, and how it can be viewed. It holds no addresses, usernames or passwords: a view is obtained through `POST /v1/cameras/{id}/views` and the password never leaves the site (Part 26 §26.3). Camera models and stream profiles follow ONVIF (Profile S, Profile T) and are not redefined. `apds-ext:apx:lane-cameras@1.0` (Part 13) is unchanged. | class | Proposed: Camera (Tier 2); Proposed: CameraMountingEnum (Tier 2); Proposed: CameraViewEnum (Tier 2) |
+| CameraView | Camera view | A single-use, short-lived link to a camera's live stream, a still, or a recording (Part 26 §26.3). Bound to the agent it was issued to and logged against the `correlationId`; it expires at `expiresAt`, never more than 5 minutes after issue, and it never contains a camera credential. | class | APX only |
+| CameraViewRequest | Camera view request | Asks for a short-lived link to see a camera (Part 26 §26.3). Whoever holds the camera answers, the PARCS, the video system or an on-site gateway, and the camera's password never leaves the site. `playback` needs `from` and `to` and the `cameraPlayback` feature. | class | APX only |
+| CommsPoint | Comms point | Any way a parker reaches help from a lane or a location (Part 26 §26.4): an intercom, an analog dialler, a posted phone number, a kiosk, a QR code, an app. A call platform matches an inbound contact to a comms point by the number it calls out as (`callerId`), the number it called (`phoneNumber`), or its own device id (`commsDeviceId`), and APX then answers with the lane, or with the location only when the comms point serves no single lane (a posted number shared by many lanes can never name the lane by itself). | class | Proposed: CommsPoint (Tier 3) |
+| EquipmentDetail | Equipment detail | What a piece of hardware is, where it is, and what it does (Part 26 §26.1). Carried on an APDS SupplementalEquipment as the Level B decoration `apds-ext:apx:equipment-detail@1.0` in its `extensions` container (Part 4 §4.3). The equipment TYPE stays the APDS `EquipmentTypeEnum` (often `paymentMachine` or `other`); `role` says what the item does on the site, from the fixed code list `apx-equipment-roles`. | class | Proposed: SupplementalEquipment (Tier 2) |
+| EquipmentRecord | Equipment record | An APDS SupplementalEquipment as APX serves it (Part 26 §26.1): the stock APDS record plus its `extensions` container, which carries the `apds-ext:apx:equipment-detail@1.0` decoration (REQUIRED on every record this class serves), `apds-ext:apx:camera@1.0` on a camera, and `apds-ext:apx:external-ids@1.0` where other systems have ids for it. The APDS record itself is never reshaped. | class | APX only |
+| ExternalIdentifiers | External identifiers | The ids other systems use for the same place, lane or equipment (Part 26 §26.6). Carried on any HierarchyElement as the Level B decoration `apds-ext:apx:external-ids@1.0`. APDS `SupplementalFacility.externalIdentifiers` holds untyped strings; here each id says which system issued it. `system` is a URI the issuer owns, usually its own domain, so APX names no products or platforms. `POST /v1/identifiers:resolve` finds the APX record from such an id. | class | APX only |
+| IdentifierResolution | Identifier resolution | The APX record an external id names (Part 26 §26.6). | class | APX only |
+| IdentifierResolveRequest | Identifier resolve request | An external id to look up (Part 26 §26.6), as it appears in an ExternalIdentifiers entry. | class | APX only |
+| PlaceOperations | Place operations | Operational facts about a place that a call centre needs before a call (Part 26 §26.5). Carried on a place HierarchyElement as the Level B decoration `apds-ext:apx:place-operations@1.0`. `escalationContacts` lists roles in calling order, never names or phone numbers: the call platform holds those, so APX carries no personal contact data. A Part 17 approval request is addressed to a role from this list. | class | APX only |
+
+**A.1.6.3 Specializations of the "SiteConfiguration" package**
+
+*Table A.17 -- Specializations of the "SiteConfiguration" package*
+
+| Class name | Parent class name |
+| --- | --- |
+| CommsPoint | Common.ApxResourceCore |
+| EquipmentRecord | Place.SupplementalEquipment |
+
+**A.1.6.4 Associations of the "SiteConfiguration" package**
+
+*Table A.18 -- Associations of the "SiteConfiguration" package*
+
+| Class name | Association end | Designation | Definition | Multiplicity | Target | Notes |
+| --- | --- | --- | --- | --- | --- | --- |
+| CameraDetail | recorder.equipment | Equipment | Represents a reference to an identifiable object where the identifier is unique. It is composed of an unique identifier and a string identifying the class of the referenced object. If multiple versions exists for the object, the latest version is considered. | 0..1 | PkCommon.Reference |  |
+| CameraView | camera | Camera | Represents a reference to an identifiable object where the identifier is unique. It is composed of an unique identifier and a string identifying the class of the referenced object. If multiple versions exists for the object, the latest version is considered. | 1..1 | PkCommon.Reference |  |
+| CommsPoint | place | Place | The location it serves. | 1..1 | PkCommon.Reference |  |
+| CommsPoint | lane | Lane | The VehicularAccess it serves, when it serves exactly one. | 0..1 | PkCommon.Reference |  |
+| CommsPoint | equipment | Equipment | The SupplementalEquipment it is, when it is inventoried hardware (role `intercom`, `analogDialer`, `emergencyPhone`). | 0..1 | PkCommon.Reference |  |
+| CommsPoint | serves | Serves | The barrier an agent opens for this comms point, a gate or an access door, when there is one. | 0..1 | PkCommon.Reference |  |
+| CommsPoint | coverage.period | Period | Defines a continuous time period or a set of discontinuous time periods defined by the intersection of a set of criteria all within an overall delimiting interval. | 0..1 | PkCommon.Period |  |
+| EquipmentDetail | lane | Lane | The VehicularAccess the item serves. Absent for place-level equipment (an access door, a pay-on-foot station, a server). | 0..1 | PkCommon.Reference |  |
+| EquipmentDetail | builtInto | Built into | The host equipment this item is part of (an intercom in a door's call box, a camera in a pay station). | 0..1 | PkCommon.Reference |  |
+| EquipmentDetail | controls | Controls | The barriers this device opens (an exit verifier that controls gate 2, a card reader that controls an access door). | 0..* | PkCommon.Reference |  |
+| EquipmentDetail | serviceProvider.organisation | Organisation | Represents a reference to an identifiable object where the identifier is unique. It is composed of an unique identifier and a string identifying the class of the referenced object. If multiple versions exists for the object, the latest version is considered. | 0..1 | PkCommon.Reference |  |
+| EquipmentRecord | extensions | Extensions | Implementer extensions, keyed by a namespaced name (Part 10). | 0..1 | Common.Extensions |  |
+| IdentifierResolution | target | Target | The place, lane, equipment or comms point found. | 1..1 | PkCommon.Reference |  |
+| IdentifierResolution | place | Place | The place the target belongs to (the target itself when it is a place). | 0..1 | PkCommon.Reference |  |
+| PlaceOperations | escalationContacts.hours | Hours | When this role is reachable. Absent means always. | 0..1 | PkCommon.Period |  |
+
+**A.1.6.5 Attributes of the "SiteConfiguration" package**
+
+*Table A.19 -- Attributes of the "SiteConfiguration" package*
+
+| Class name | Attribute name | Designation | Definition | Multiplicity | Type | Notes |
+| --- | --- | --- | --- | --- | --- | --- |
+| CameraDetail | mounting | Mounting | When `builtIn`, EquipmentDetail `builtInto` names the host, for example a pay station's driver camera. | 0..1 | CameraDetail.mounting (enumeration) |  |
+| CameraDetail | view | View | What the camera looks at; one camera may cover several. | 1..* | CameraDetail.view (enumeration) |  |
+| CameraDetail | faces | Faces | For lanes, plazas and ramps, relative to the facility (Part 13 §13.3a). | 0..1 | CameraDetail.faces (enumeration) |  |
+| CameraDetail | primary | Primary | Show this camera first for its lane or area. | 0..1 | Boolean |  |
+| CameraDetail | ptz | Ptz | Can pan, tilt and zoom. | 0..1 | Boolean |  |
+| CameraDetail | recorder | Recorder | The DVR or NVR that records it (an equipment item with role `videoRecorder`) and the channel. | 0..1 | Structure (members below) |  |
+| CameraDetail | recorder.channel | Channel | The channel on the recorder that keeps this camera. † | 0..1 | String |  |
+| CameraDetail | streams | Streams | What the camera can deliver, so a host knows what kind of view to ask for. | 0..* | Structure (members below) |  |
+| CameraDetail | streams.protocol | Protocol | The stream protocol the camera can deliver (Part 26 §26.3). † | 1..1 | CameraDetail.streams.protocol (enumeration) |  |
+| CameraDetail | streams.transport | Transport | The transport of the stream, such as tcp or udp for RTSP. † | 0..1 | String |  |
+| CameraDetail | streams.resolution | Resolution | The picture size of the stream, such as 1920x1080. † | 0..1 | String |  |
+| CameraDetail | retentionDays | Retention days | How long recordings are kept; stated per camera because `driver` and `pedestrians` views capture faces (Part 26 §26.3). | 0..1 | Integer |  |
+| CameraDetail | credentialRef | Credential ref | For a camera that cannot sit behind a gateway, the label of the credential the receiving system looks up in its own vault. NEVER the secret itself; the secret is exchanged once, outside APX, at onboarding (Part 9 §9.7). | 0..1 | String |  |
+| CameraView | id | Id | Unique identifier of the record (Part 4). | 1..1 | Uuid |  |
+| CameraView | kind | Kind | The kind of view the link delivers. † | 1..1 | CameraView.kind (enumeration) |  |
+| CameraView | url | Url | The single-use link, bound to the agent, that delivers the view until expiresAt (Part 26 §26.3). † | 1..1 | Url |  |
+| CameraView | protocol | Protocol | What the link serves (`snapshot` is an image). | 0..1 | CameraView.protocol (enumeration) |  |
+| CameraView | expiresAt | Expires at | ISO-8601 format definition of a date and time - format YYYY-MM-DDTHH:MM:SSZ. | 1..1 | PkCommon.DateTime |  |
+| CameraView | issuedTo | Issued to | The agent, echoed. | 0..1 | String |  |
+| CameraView | from | From | ISO-8601 format definition of a date and time - format YYYY-MM-DDTHH:MM:SSZ. | 0..1 | PkCommon.DateTime |  |
+| CameraView | to | To | ISO-8601 format definition of a date and time - format YYYY-MM-DDTHH:MM:SSZ. | 0..1 | PkCommon.DateTime |  |
+| CameraViewRequest | kind | Kind | Whether a live view, a snapshot or a playback is asked for (Part 26 §26.3). † | 1..1 | CameraViewRequest.kind (enumeration) |  |
+| CameraViewRequest | from | From | ISO-8601 format definition of a date and time - format YYYY-MM-DDTHH:MM:SSZ. | 0..1 | PkCommon.DateTime |  |
+| CameraViewRequest | to | To | ISO-8601 format definition of a date and time - format YYYY-MM-DDTHH:MM:SSZ. | 0..1 | PkCommon.DateTime |  |
+| CameraViewRequest | agent | Agent | The staff member the view is issued to; every view is logged against them. | 1..1 | String |  |
+| CameraViewRequest | agentType | Agent type | Whether a person or an AI agent will view the camera. † | 0..1 | CameraViewRequest.agentType (enumeration) |  |
+| CameraViewRequest | correlationId | Correlation id | The interaction the view belongs to; a view link MUST NOT be reused outside it. | 1..1 | Uuid |  |
+| CameraViewRequest | interactionId | Interaction id | The calling application's opaque interaction identifier (Part 17 §17.7). † | 0..1 | String |  |
+| CommsPoint | id | Id | Unique identifier of the record (Part 4). | 0..1 | Uuid | read-only |
+| CommsPoint | version | Version | Server-managed; bodies carry it only for a versioned replace (Part 4 §4.2a). | 0..1 | Integer | read-only |
+| CommsPoint | type | Type | definedValue from apx-comms-point-types. | 1..1 | String |  |
+| CommsPoint | phoneNumber | Phone number | E.164. The number that is called when help is requested, dialled by the parker for a posted number, or by the intercom or dialler when its button is pushed. | 0..1 | String |  |
+| CommsPoint | callerId | Caller id | E.164. The number the device calls out as. | 0..1 | String |  |
+| CommsPoint | commsDeviceId | Comms device id | The id the call platform uses for this comms point when it identifies it by neither caller id nor dialled number. | 0..1 | String |  |
+| CommsPoint | coverage | Coverage | When the comms point is answered and in which languages. The answering call centre itself is not named. | 0..* | Structure (members below) |  |
+| CommsPoint | coverage.languages | Languages | BCP 47 language tags. | 0..* | String |  |
+| EquipmentDetail | role | Role | definedValue from apx-equipment-roles (a fixed list; `other` is a code, not free text). | 1..1 | String |  |
+| EquipmentDetail | manufacturer | Manufacturer | The maker of the item, as named on it (Part 26 §26.1). † | 0..1 | String |  |
+| EquipmentDetail | model | Model | Vehicle model. | 0..1 | String |  |
+| EquipmentDetail | firmwareVersion | Firmware version | The firmware release running on the item; recommended. † | 0..1 | String |  |
+| EquipmentDetail | softwareVersion | Software version | The application software on the device, when distinct from its firmware. | 0..1 | String |  |
+| EquipmentDetail | serialNumber | Serial number | The maker's serial number of the item. † | 0..1 | String |  |
+| EquipmentDetail | macAddresses | Mac addresses | One per network interface, lower-case hex without separators. | 0..* | String |  |
+| EquipmentDetail | installedAt | Installed at | The date the item went into service. † | 0..1 | Date |  |
+| EquipmentDetail | area | Area | Where on the site the item is, a definedValue from apx-area-types (Part 26 §26.2). | 0..1 | String |  |
+| EquipmentDetail | level | Level | The floor label as signed on site. | 0..1 | String |  |
+| EquipmentDetail | serviceProvider | Service provider | Who services the item. An organisation and a support reference, never a person. | 0..1 | Structure (members below) |  |
+| EquipmentDetail | serviceProvider.supportReference | Support reference | The provider's own reference for this unit or contract (an asset tag, a contract number). | 0..1 | String |  |
+| ExternalIdentifiers | identifiers | Identifiers | The identifiers other systems use for this element, each with the system that issued it (Part 26 §26.6). † | 1..* | Structure (members below) |  |
+| ExternalIdentifiers | identifiers.system | System | A URI owned by the system that issued the id. | 1..1 | Url |  |
+| ExternalIdentifiers | identifiers.id | Id | Unique identifier of the record (Part 4). | 1..1 | String |  |
+| IdentifierResolution | className | Class name | The target's class, repeated for convenience. | 1..1 | String |  |
+| IdentifierResolveRequest | system | System | The URI of the system that issued the identifier, as it appears in the element's external identifiers. † | 1..1 | Url |  |
+| IdentifierResolveRequest | id | Id | Unique identifier of the record (Part 4). | 1..1 | String |  |
+| PlaceOperations | commsAccountId | Comms account id | The id the call platform uses for the whole site (its account), the site-level pair of `CommsPoint.commsDeviceId`. | 0..1 | String |  |
+| PlaceOperations | escalationContacts | Escalation contacts | Who to escalate to, by role, in order. | 0..* | Structure (members below) |  |
+| PlaceOperations | escalationContacts.role | Role | definedValue from apx-escalation-roles. | 1..1 | String |  |
+| PlaceOperations | escalationContacts.order | Order | Calling order; 1 is tried first. | 1..1 | Integer |  |
+
+### A.1.7 "Alerts" package
+
+**A.1.7.1 Location of "Alerts" package.** The location of the "Alerts" package is:
 
 `-- APX/Alerts` (source: `spec/openapi/domains/alerts/schemas.yaml`; normative text: APX Part 7)
 
-**A.1.6.2 Classes of the "Alerts" package**
+**A.1.7.2 Classes of the "Alerts" package**
 
-*Table A.16 -- Classes of the "Alerts" package*
+*Table A.20 -- Classes of the "Alerts" package*
 
 | Class name | Designation | Definition | Kind | APDS status |
 | --- | --- | --- | --- | --- |
 | Alert | Alert | An operational condition requiring attention. Alert types are OPEN (UserDefinedCodeList `apx-alert-types`, seeded from APDS Use Case C.2.2 transaction exceptions and space statuses); severity is CLOSED. | class | Proposed: Alert (Tier 2); Proposed: AlertSeverityEnum (Tier 2); Proposed: AlertStatusEnum (Tier 2) |
 | AlertTransition | Alert transition | Optional body of `POST /v1/alerts/{id}/acknowledge` and `/resolve` (Part 7 §7.2). Annotates the `statusHistory[]` entry the transition appends. Sending no body is equivalent to sending `{}`. | class | APX only |
 
-**A.1.6.3 Specializations of the "Alerts" package**
+**A.1.7.3 Specializations of the "Alerts" package**
 
 There are no specializations in the "Alerts" package.
 
-**A.1.6.4 Associations of the "Alerts" package**
+**A.1.7.4 Associations of the "Alerts" package**
 
-*Table A.17 -- Associations of the "Alerts" package*
+*Table A.21 -- Associations of the "Alerts" package*
 
 | Class name | Association end | Designation | Definition | Multiplicity | Target | Notes |
 | --- | --- | --- | --- | --- | --- | --- |
 | Alert | source.device | Device | Reference to a SupplementalEquipment. | 0..1 | PkCommon.Reference |  |
 | Alert | relatedEntity | Related entity | The APDS/APX entity this alert concerns (Session, AssignedRight, Command…). | 0..1 | PkCommon.Reference |  |
+| Alert | supportInteraction | Support interaction | The Part 17 SupportInteraction the alert was raised from, when a call produced it (a receipt request, a refund request, a damage report; Part 7 §7.6). | 0..1 | PkCommon.Reference |  |
 | Alert | recordInfo | Record info | Provenance metadata for an APX resource, aligned to the APDS Information Model's RecordType (creationTime/creator/lastUpdate). All timestamps are RFC 3339 (APDS DateTime). | 0..1 | Common.RecordInfo |  |
 | Alert | extensions | Extensions | Implementer extensions, keyed by a namespaced name (Part 10). | 0..1 | Common.Extensions |  |
 | AlertTransition | extensions | Extensions | Implementer extensions, keyed by a namespaced name (Part 10). | 0..1 | Common.Extensions |  |
 
-**A.1.6.5 Attributes of the "Alerts" package**
+**A.1.7.5 Attributes of the "Alerts" package**
 
-*Table A.18 -- Attributes of the "Alerts" package*
+*Table A.22 -- Attributes of the "Alerts" package*
 
 | Class name | Attribute name | Designation | Definition | Multiplicity | Type | Notes |
 | --- | --- | --- | --- | --- | --- | --- |
@@ -728,15 +867,15 @@ There are no specializations in the "Alerts" package.
 | AlertTransition | detail | Detail | Copied verbatim into the appended history entry's `detail`. | 0..1 | String |  |
 | AlertTransition | agent | Agent | The human or AI principal acting through the calling client (as `Command.agent`, Part 6 §6.1). When given it is recorded as the appended entry's `actor`; otherwise `actor` is the principal derived from the token. Attribution only: authorization is always the token's. | 0..1 | String |  |
 
-### A.1.7 "Accounts" package
+### A.1.8 "Accounts" package
 
-**A.1.7.1 Location of "Accounts" package.** The location of the "Accounts" package is:
+**A.1.8.1 Location of "Accounts" package.** The location of the "Accounts" package is:
 
 `-- APX/Accounts` (source: `spec/openapi/domains/accounts/schemas.yaml`; normative text: APX Part 13)
 
-**A.1.7.2 Classes of the "Accounts" package**
+**A.1.8.2 Classes of the "Accounts" package**
 
-*Table A.19 -- Classes of the "Accounts" package*
+*Table A.23 -- Classes of the "Accounts" package*
 
 | Class name | Designation | Definition | Kind | APDS status |
 | --- | --- | --- | --- | --- |
@@ -749,14 +888,16 @@ There are no specializations in the "Alerts" package.
 | PaymentSearch | Payment search | Request body of `POST /v1/payments:search` (Part 13 §13.2): the same keys and rules as the `GET` lookup, in a body (Part 9 §9.6). | class | APX only |
 | Posting | Posting | An accounting write-back of a payment to a monthly-parking/AR system. | class | APX only |
 | PostingRequest | Posting request | Request body for the accounting write-back of a payment. | class | APX only |
+| ReceiptDelivery | Receipt delivery | The outcome of a receipt request (Part 13 §13.1a). | class | APX only |
+| ReceiptRequest | Receipt request | Asks the implementation to send the receipt for a settled payment again (Part 13 §13.1a). The `destination` travels in the body, never in a URL, and is not stored beyond the delivery. | class | APX only |
 
-**A.1.7.3 Specializations of the "Accounts" package**
+**A.1.8.3 Specializations of the "Accounts" package**
 
 There are no specializations in the "Accounts" package.
 
-**A.1.7.4 Associations of the "Accounts" package**
+**A.1.8.4 Associations of the "Accounts" package**
 
-*Table A.20 -- Associations of the "Accounts" package*
+*Table A.24 -- Associations of the "Accounts" package*
 
 | Class name | Association end | Designation | Definition | Multiplicity | Target | Notes |
 | --- | --- | --- | --- | --- | --- | --- |
@@ -785,10 +926,11 @@ There are no specializations in the "Accounts" package.
 | PaymentRecord | extensions | Extensions | Implementer extensions, keyed by a namespaced name (Part 10). | 0..1 | Common.Extensions |  |
 | Posting | newBalance | New balance | A class supporting the definition of a unit of currency in a defined currency. | 0..1 | Rates.AmountInCurrency |  |
 | PostingRequest | account | Account | Account to post against when the payment isn't already account-bound. | 0..1 | PkCommon.Reference |  |
+| ReceiptDelivery | payment | Payment | Represents a reference to an identifiable object where the identifier is unique. It is composed of an unique identifier and a string identifying the class of the referenced object. If multiple versions exists for the object, the latest version is considered. | 1..1 | PkCommon.Reference |  |
 
-**A.1.7.5 Attributes of the "Accounts" package**
+**A.1.8.5 Attributes of the "Accounts" package**
 
-*Table A.21 -- Attributes of the "Accounts" package*
+*Table A.25 -- Attributes of the "Accounts" package*
 
 | Class name | Attribute name | Designation | Definition | Multiplicity | Type | Notes |
 | --- | --- | --- | --- | --- | --- | --- |
@@ -847,16 +989,24 @@ There are no specializations in the "Accounts" package.
 | Posting | time | Time | ISO-8601 format definition of a date and time - format YYYY-MM-DDTHH:MM:SSZ. | 0..1 | PkCommon.DateTime |  |
 | PostingRequest | postedTo | Posted to | Target accounting system identifier; server default applies when omitted. | 0..1 | String |  |
 | PostingRequest | note | Note | Free-text note from the actor. | 0..1 | String |  |
+| ReceiptDelivery | channel | Channel | The channel the receipt was sent by. † | 1..1 | ReceiptDelivery.channel (enumeration) |  |
+| ReceiptDelivery | status | Status | Whether the receipt is queued, sent or failed. † | 1..1 | ReceiptDelivery.status (enumeration) |  |
+| ReceiptDelivery | link | Link | For `channel` = `link`, the receipt's short-lived URL. | 0..1 | Url |  |
+| ReceiptDelivery | requestedAt | Requested at | ISO-8601 format definition of a date and time - format YYYY-MM-DDTHH:MM:SSZ. | 1..1 | PkCommon.DateTime |  |
+| ReceiptRequest | channel | Channel | `print` re-prints at the device the payment was taken on; `link` returns a short-lived URL for the agent to read out or forward. | 1..1 | ReceiptRequest.channel (enumeration) |  |
+| ReceiptRequest | destination | Destination | The e-mail address or E.164 number for `email` and `sms`; ignored for `print` and `link`. | 0..1 | String |  |
+| ReceiptRequest | agent | Agent | The agent who asked for the receipt to be re-sent, for the audit record. † | 0..1 | String |  |
+| ReceiptRequest | correlationId | Correlation id | Identifier that links related requests and records. | 0..1 | Uuid |  |
 
-### A.1.8 "Lpr" package
+### A.1.9 "Lpr" package
 
-**A.1.8.1 Location of "Lpr" package.** The location of the "Lpr" package is:
+**A.1.9.1 Location of "Lpr" package.** The location of the "Lpr" package is:
 
 `-- APX/Lpr` (source: `spec/openapi/domains/lpr/schemas.yaml`; normative text: APX Part 13)
 
-**A.1.8.2 Classes of the "Lpr" package**
+**A.1.9.2 Classes of the "Lpr" package**
 
-*Table A.22 -- Classes of the "Lpr" package*
+*Table A.26 -- Classes of the "Lpr" package*
 
 | Class name | Designation | Definition | Kind | APDS status |
 | --- | --- | --- | --- | --- |
@@ -867,13 +1017,13 @@ There are no specializations in the "Accounts" package.
 | LprReadSearch | Lpr read search | Request body of `POST /v1/lpr/reads:search` (Part 13 §13.3): the same keys as the `GET` lookup, carried in a body so a plate never enters a URL that proxies and access logs keep (Part 9 §9.6). At least one of `plate`, `ticket`, `observation`, or `session` is REQUIRED. | class | APX only |
 | PlateCorrection | Plate correction | Request body of `PUT /v1/lpr/reads/{observation}/plate` (Part 13 §13.3a(4a)): a reviewer's decision on one read. `confirmed` keeps the engine's values; `corrected` replaces them with the ones given; `rejected` marks the read unusable for pairing and enforcement. `plate`, `country`, and `stateProvince` belong to `corrected` only: sent with another decision they are 422 `request-unprocessable`. | class | APX only |
 
-**A.1.8.3 Specializations of the "Lpr" package**
+**A.1.9.3 Specializations of the "Lpr" package**
 
 There are no specializations in the "Lpr" package.
 
-**A.1.8.4 Associations of the "Lpr" package**
+**A.1.9.4 Associations of the "Lpr" package**
 
-*Table A.23 -- Associations of the "Lpr" package*
+*Table A.27 -- Associations of the "Lpr" package*
 
 | Class name | Association end | Designation | Definition | Multiplicity | Target | Notes |
 | --- | --- | --- | --- | --- | --- | --- |
@@ -897,9 +1047,9 @@ There are no specializations in the "Lpr" package.
 | LprReadDetail | review.original.stateProvince | State province | State or province that issued the plate. | 0..1 | Lpr.AttributeRead |  |
 | PlateCorrection | extensions | Extensions | Implementer extensions, keyed by a namespaced name (Part 10). | 0..1 | Common.Extensions |  |
 
-**A.1.8.5 Attributes of the "Lpr" package**
+**A.1.9.5 Attributes of the "Lpr" package**
 
-*Table A.24 -- Attributes of the "Lpr" package*
+*Table A.28 -- Attributes of the "Lpr" package*
 
 | Class name | Attribute name | Designation | Definition | Multiplicity | Type | Notes |
 | --- | --- | --- | --- | --- | --- | --- |
@@ -957,15 +1107,15 @@ There are no specializations in the "Lpr" package.
 | PlateCorrection | reason | Reason | Why the action was taken. | 0..1 | String |  |
 | PlateCorrection | reviewer | Reviewer | Opaque reviewer principal (recorded as `review.decidedBy`). | 0..1 | String |  |
 
-### A.1.9 "Reservations" package
+### A.1.10 "Reservations" package
 
-**A.1.9.1 Location of "Reservations" package.** The location of the "Reservations" package is:
+**A.1.10.1 Location of "Reservations" package.** The location of the "Reservations" package is:
 
 `-- APX/Reservations` (source: `spec/openapi/domains/reservations/schemas.yaml`; normative text: APX Part 14)
 
-**A.1.9.2 Classes of the "Reservations" package**
+**A.1.10.2 Classes of the "Reservations" package**
 
-*Table A.25 -- Classes of the "Reservations" package*
+*Table A.29 -- Classes of the "Reservations" package*
 
 | Class name | Designation | Definition | Kind | APDS status |
 | --- | --- | --- | --- | --- |
@@ -975,13 +1125,13 @@ There are no specializations in the "Lpr" package.
 | ReservationExtension | Reservation extension | The apds-ext:apx:reservation@1.0 extension object attached to a native AssignedRight. Presence of this extension marks the AssignedRight as a reservation; state transitions follow Part 14 §14.1 (transition table). `plannedStart`/`plannedEnd` MUST mirror the AssignedRight's `plannedUses[0].startTime`/`endTime`, which is authoritative. | class | Proposed: AssignedRight (Tier 2); Proposed: ReservationStateEnum (Tier 2) |
 | ReservationSummary | Reservation summary | Compact view of one past/current reservation, for customer-history lookups. Also the `data` of `apx.reservation.noshow.v1` (Part 14 §14.1 step 6). | class | APX only |
 
-**A.1.9.3 Specializations of the "Reservations" package**
+**A.1.10.3 Specializations of the "Reservations" package**
 
 There are no specializations in the "Reservations" package.
 
-**A.1.9.4 Associations of the "Reservations" package**
+**A.1.10.4 Associations of the "Reservations" package**
 
-*Table A.26 -- Associations of the "Reservations" package*
+*Table A.30 -- Associations of the "Reservations" package*
 
 | Class name | Association end | Designation | Definition | Multiplicity | Target | Notes |
 | --- | --- | --- | --- | --- | --- | --- |
@@ -997,10 +1147,11 @@ There are no specializations in the "Reservations" package.
 | PoolAvailability | validity | Validity | The selected pool's validity window (APDS `RightPool.validity`), when it has one. | 0..1 | PkCommon.Validity |  |
 | ReservationExtension | checkInSession | Check in session | Set when a Session referencing this AssignedRight is created. | 0..1 | PkCommon.Reference |  |
 | ReservationSummary | reservation | Reservation | Represents a reference to an identifiable object where the identifier is unique. It is composed of an unique identifier and a string identifying the class of the referenced object. If multiple versions exists for the object, the latest version is considered. | 1..1 | PkCommon.Reference |  |
+| ReservationSummary | amountPaid | Amount paid | What the customer prepaid, so an agent at the lane sees it without a payment lookup. | 0..1 | Rates.AmountInCurrency |  |
 
-**A.1.9.5 Attributes of the "Reservations" package**
+**A.1.10.5 Attributes of the "Reservations" package**
 
-*Table A.27 -- Attributes of the "Reservations" package*
+*Table A.31 -- Attributes of the "Reservations" package*
 
 | Class name | Attribute name | Designation | Definition | Multiplicity | Type | Notes |
 | --- | --- | --- | --- | --- | --- | --- |
@@ -1025,16 +1176,17 @@ There are no specializations in the "Reservations" package.
 | ReservationSummary | plannedStart | Planned start | ISO-8601 format definition of a date and time - format YYYY-MM-DDTHH:MM:SSZ. | 0..1 | PkCommon.DateTime |  |
 | ReservationSummary | plannedEnd | Planned end | ISO-8601 format definition of a date and time - format YYYY-MM-DDTHH:MM:SSZ. | 0..1 | PkCommon.DateTime |  |
 | ReservationSummary | noShowAfter | No show after | When a reservation not yet checked in lapses to `noShow` (see ReservationExtension.noShowAfter). | 0..1 | PkCommon.DateTime |  |
+| ReservationSummary | issuer | Issuer | Who sold the reservation, so a code that several sellers could have issued is read against the right one (Part 14 §14.1, Part 17 §17.2). An operator code or the seller's domain. | 0..1 | String |  |
 
-### A.1.10 "Tolling" package
+### A.1.11 "Tolling" package
 
-**A.1.10.1 Location of "Tolling" package.** The location of the "Tolling" package is:
+**A.1.11.1 Location of "Tolling" package.** The location of the "Tolling" package is:
 
 `-- APX/Tolling` (source: `spec/openapi/domains/tolling/schemas.yaml`; normative text: APX Part 15)
 
-**A.1.10.2 Classes of the "Tolling" package**
+**A.1.11.2 Classes of the "Tolling" package**
 
-*Table A.28 -- Classes of the "Tolling" package*
+*Table A.32 -- Classes of the "Tolling" package*
 
 | Class name | Designation | Definition | Kind | APDS status |
 | --- | --- | --- | --- | --- |
@@ -1045,13 +1197,13 @@ There are no specializations in the "Reservations" package.
 | TollTransaction | Toll transaction | A toll charge assembled from plate/transponder reads: Observation refs → pricing → Payment ref, with a dispute lifecycle. | class | Proposed: TollTransaction (Tier 2); Proposed: TollDispute (Tier 2); Proposed: TollTransactionStatusEnum (Tier 2) |
 | TollVoid | Toll void | Request body voiding a toll transaction that should never have been charged (Part 15 §15.1). | class | APX only |
 
-**A.1.10.3 Specializations of the "Tolling" package**
+**A.1.11.3 Specializations of the "Tolling" package**
 
 There are no specializations in the "Tolling" package.
 
-**A.1.10.4 Associations of the "Tolling" package**
+**A.1.11.4 Associations of the "Tolling" package**
 
-*Table A.29 -- Associations of the "Tolling" package*
+*Table A.33 -- Associations of the "Tolling" package*
 
 | Class name | Association end | Designation | Definition | Multiplicity | Target | Notes |
 | --- | --- | --- | --- | --- | --- | --- |
@@ -1068,9 +1220,9 @@ There are no specializations in the "Tolling" package.
 | TollTransaction | recordInfo | Record info | Provenance metadata for an APX resource, aligned to the APDS Information Model's RecordType (creationTime/creator/lastUpdate). All timestamps are RFC 3339 (APDS DateTime). | 0..1 | Common.RecordInfo |  |
 | TollTransaction | extensions | Extensions | Implementer extensions, keyed by a namespaced name (Part 10). | 0..1 | Common.Extensions |  |
 
-**A.1.10.5 Attributes of the "Tolling" package**
+**A.1.11.5 Attributes of the "Tolling" package**
 
-*Table A.30 -- Attributes of the "Tolling" package*
+*Table A.34 -- Attributes of the "Tolling" package*
 
 | Class name | Attribute name | Designation | Definition | Multiplicity | Type | Notes |
 | --- | --- | --- | --- | --- | --- | --- |
@@ -1099,15 +1251,15 @@ There are no specializations in the "Tolling" package.
 | TollVoid | reason | Reason | Why the transaction is void (implementer code list, e.g. duplicate, exemptVehicle, misread). | 1..1 | String |  |
 | TollVoid | note | Note | Free-text note from the actor. | 0..1 | String |  |
 
-### A.1.11 "Violations" package
+### A.1.12 "Violations" package
 
-**A.1.11.1 Location of "Violations" package.** The location of the "Violations" package is:
+**A.1.12.1 Location of "Violations" package.** The location of the "Violations" package is:
 
 `-- APX/Violations` (source: `spec/openapi/domains/violations/schemas.yaml`; normative text: APX Part 19)
 
-**A.1.11.2 Classes of the "Violations" package**
+**A.1.12.2 Classes of the "Violations" package**
 
-*Table A.31 -- Classes of the "Violations" package*
+*Table A.35 -- Classes of the "Violations" package*
 
 | Class name | Designation | Definition | Kind | APDS status |
 | --- | --- | --- | --- | --- |
@@ -1130,13 +1282,13 @@ There are no specializations in the "Tolling" package.
 | ViolationVehicle | Violation vehicle | The credential observed on the vehicle (an APDS CredentialTypeEnum credential). | class | APX only |
 | ViolationVoid | Violation void | Request body voiding a violation (terminal; never deletes the audit). | class | APX only |
 
-**A.1.11.3 Specializations of the "Violations" package**
+**A.1.12.3 Specializations of the "Violations" package**
 
 There are no specializations in the "Violations" package.
 
-**A.1.11.4 Associations of the "Violations" package**
+**A.1.12.4 Associations of the "Violations" package**
 
-*Table A.32 -- Associations of the "Violations" package*
+*Table A.36 -- Associations of the "Violations" package*
 
 | Class name | Association end | Designation | Definition | Multiplicity | Target | Notes |
 | --- | --- | --- | --- | --- | --- | --- |
@@ -1211,9 +1363,9 @@ There are no specializations in the "Violations" package.
 | ViolationSessionLink | evidence | Evidence | How the match was made; written onto the violation as `apds-ext:apx:match-evidence@1.0`, with the Session as `target`. | 0..1 | Data.MatchEvidence |  |
 | ViolationVoid | refund | Refund | When voiding a `paid` violation: the Part 13 refund that returned the payment (SHOULD be given; Part 19 §19.1 rule 4). | 0..1 | PkCommon.Reference |  |
 
-**A.1.11.5 Attributes of the "Violations" package**
+**A.1.12.5 Attributes of the "Violations" package**
 
-*Table A.33 -- Attributes of the "Violations" package*
+*Table A.37 -- Attributes of the "Violations" package*
 
 | Class name | Attribute name | Designation | Definition | Multiplicity | Type | Notes |
 | --- | --- | --- | --- | --- | --- | --- |
@@ -1375,15 +1527,15 @@ There are no specializations in the "Violations" package.
 | ViolationVoid | reason | Reason | Void reason (implementer code list — issuedInError, duplicate, policyException…). | 1..1 | String |  |
 | ViolationVoid | note | Note | Free-text note from the actor. | 0..1 | String |  |
 
-### A.1.12 "Validations" package
+### A.1.13 "Validations" package
 
-**A.1.12.1 Location of "Validations" package.** The location of the "Validations" package is:
+**A.1.13.1 Location of "Validations" package.** The location of the "Validations" package is:
 
 `-- APX/Validations` (source: `spec/openapi/domains/validations/schemas.yaml`; normative text: APX Part 20)
 
-**A.1.12.2 Classes of the "Validations" package**
+**A.1.13.2 Classes of the "Validations" package**
 
-*Table A.34 -- Classes of the "Validations" package*
+*Table A.38 -- Classes of the "Validations" package*
 
 | Class name | Designation | Definition | Kind | APDS status |
 | --- | --- | --- | --- | --- |
@@ -1399,13 +1551,13 @@ There are no specializations in the "Violations" package.
 | ValidationVoid | Validation void | Request body voiding an issuance batch or a single instrument code (Part 20 §20.2 rule 5) — a stolen sheet, a leaked code, a misprint. | class | APX only |
 | ValidationVoidDetail | Validation void detail | Who voided an issuance or instrument, when, and why. Present once `void`. | class | APX only |
 
-**A.1.12.3 Specializations of the "Validations" package**
+**A.1.13.3 Specializations of the "Validations" package**
 
 There are no specializations in the "Validations" package.
 
-**A.1.12.4 Associations of the "Validations" package**
+**A.1.13.4 Associations of the "Validations" package**
 
-*Table A.35 -- Associations of the "Validations" package*
+*Table A.39 -- Associations of the "Validations" package*
 
 | Class name | Association end | Designation | Definition | Multiplicity | Target | Notes |
 | --- | --- | --- | --- | --- | --- | --- |
@@ -1450,9 +1602,9 @@ There are no specializations in the "Validations" package.
 | ValidationStatement | recordInfo | Record info | Provenance metadata for an APX resource, aligned to the APDS Information Model's RecordType (creationTime/creator/lastUpdate). All timestamps are RFC 3339 (APDS DateTime). | 0..1 | Common.RecordInfo |  |
 | ValidationStatement | extensions | Extensions | Implementer extensions, keyed by a namespaced name (Part 10). | 0..1 | Common.Extensions |  |
 
-**A.1.12.5 Attributes of the "Validations" package**
+**A.1.13.5 Attributes of the "Validations" package**
 
-*Table A.36 -- Attributes of the "Validations" package*
+*Table A.40 -- Attributes of the "Validations" package*
 
 | Class name | Attribute name | Designation | Definition | Multiplicity | Type | Notes |
 | --- | --- | --- | --- | --- | --- | --- |
@@ -1552,15 +1704,15 @@ There are no specializations in the "Validations" package.
 | ValidationVoidDetail | actor | Actor | The person or system that performed the action. | 0..1 | String |  |
 | ValidationVoidDetail | voidedCount | Voided count | On an issuance, how many un-redeemed instruments the void moved to `void` (redeemed ones are unaffected). | 0..1 | Integer |  |
 
-### A.1.13 "Credentials" package
+### A.1.14 "Credentials" package
 
-**A.1.13.1 Location of "Credentials" package.** The location of the "Credentials" package is:
+**A.1.14.1 Location of "Credentials" package.** The location of the "Credentials" package is:
 
 `-- APX/Credentials` (source: `spec/openapi/domains/credentials/schemas.yaml`; normative text: APX Part 21)
 
-**A.1.13.2 Classes of the "Credentials" package**
+**A.1.14.2 Classes of the "Credentials" package**
 
-*Table A.37 -- Classes of the "Credentials" package*
+*Table A.41 -- Classes of the "Credentials" package*
 
 | Class name | Designation | Definition | Kind | APDS status |
 | --- | --- | --- | --- | --- |
@@ -1571,13 +1723,13 @@ There are no specializations in the "Validations" package.
 | CredentialTransition | Credential transition | Request body for activate / suspend / resume / report-lost / revoke. | class | APX only |
 | PresentedCredential | Presented credential | What the reader actually read at the lane. Carried on an access event when no CredentialRecord matched (`denialReason: unknownCredential`), and MAY be carried otherwise. Personal data under Part 21 §21.5: returned only under `apx.credentials:*` scopes. | class | Proposed: PresentedCredential (Tier 1) |
 
-**A.1.13.3 Specializations of the "Credentials" package**
+**A.1.14.3 Specializations of the "Credentials" package**
 
 There are no specializations in the "Credentials" package.
 
-**A.1.13.4 Associations of the "Credentials" package**
+**A.1.14.4 Associations of the "Credentials" package**
 
-*Table A.38 -- Associations of the "Credentials" package*
+*Table A.42 -- Associations of the "Credentials" package*
 
 | Class name | Association end | Designation | Definition | Multiplicity | Target | Notes |
 | --- | --- | --- | --- | --- | --- | --- |
@@ -1606,9 +1758,9 @@ There are no specializations in the "Credentials" package.
 | CredentialRecord | extensions | Extensions | Implementer extensions, keyed by a namespaced name (Part 10). | 0..1 | Common.Extensions |  |
 | CredentialReplaceRequest | media.deposit | Deposit | A class supporting the definition of a unit of currency in a defined currency. | 0..1 | Rates.AmountInCurrency |  |
 
-**A.1.13.5 Attributes of the "Credentials" package**
+**A.1.14.5 Attributes of the "Credentials" package**
 
-*Table A.39 -- Attributes of the "Credentials" package*
+*Table A.43 -- Attributes of the "Credentials" package*
 
 | Class name | Attribute name | Designation | Definition | Multiplicity | Type | Notes |
 | --- | --- | --- | --- | --- | --- | --- |
@@ -1661,15 +1813,15 @@ There are no specializations in the "Credentials" package.
 | PresentedCredential | credentialType | Credential type | * barcode : barcode or QR digital print pattern, held on any physical media. * bluetooth : specific bluetooth or BLE identification chip used to associate a BLE receiver to a specific user. Used for both one time and permit uses. * eticket : digital equivalent of a paper ticket, often presentable via smartphone or similar device for control. * hangtag : visible, often removable, credential indicator, with visible markings * licensePlate : fixed plate, in a defined format, used to identify a specific vehicle- Normally a permanent fixture. * permit : issued credential, often in the form of an adhesive label, often placed on the windscreen, credential indicator, with visible markings * qrCode : quick Reference (QR) code * rfid : specific RF identification associated to an RFID-related account. Used for permit uses. * ticket : typically issued paper with printed details, often with magnetic strips; typically single use disposable. * electronicID : an identifier transmitted by electronic means * ticketcoupon : a visible printed or written paper-based ticket or coupon carrying an identifiable credential. * vehicleplate : a fixed identifier (registration plate) visible and fixed to a vehicle. | 1..1 | Right.CredentialTypeEnum |  |
 | PresentedCredential | credentialIdentification | Credential identification | The value read (card number, tag id, plate). | 1..1 | String |  |
 
-### A.1.14 "Valet" package
+### A.1.15 "Valet" package
 
-**A.1.14.1 Location of "Valet" package.** The location of the "Valet" package is:
+**A.1.15.1 Location of "Valet" package.** The location of the "Valet" package is:
 
 `-- APX/Valet` (source: `spec/openapi/domains/valet/schemas.yaml`; normative text: APX Part 22)
 
-**A.1.14.2 Classes of the "Valet" package**
+**A.1.15.2 Classes of the "Valet" package**
 
-*Table A.40 -- Classes of the "Valet" package*
+*Table A.44 -- Classes of the "Valet" package*
 
 | Class name | Designation | Definition | Kind | APDS status |
 | --- | --- | --- | --- | --- |
@@ -1683,13 +1835,13 @@ There are no specializations in the "Credentials" package.
 | ValetStageRequest | Valet stage request | Request body recording the vehicle at the staging lane, ready for handback. | class | APX only |
 | ValetTicket | Valet ticket | The custody record for one valeted vehicle: drop-off (with condition evidence), where it is parked and where the keys are, the retrieval request and its ETA, staging, and handback — with the immutable lifecycle audit. The APDS Session remains the stay and the money; this record is what the attendant board, the customer's phone, and a damage claim look at. | class | Proposed: RightTypeEnum (Tier 2); Proposed: ValetTicket (Tier 2); Proposed: ValetStatusEnum (Tier 2); Proposed: HandbackVerificationEnum (Tier 2) |
 
-**A.1.14.3 Specializations of the "Valet" package**
+**A.1.15.3 Specializations of the "Valet" package**
 
 There are no specializations in the "Valet" package.
 
-**A.1.14.4 Associations of the "Valet" package**
+**A.1.15.4 Associations of the "Valet" package**
 
-*Table A.41 -- Associations of the "Valet" package*
+*Table A.45 -- Associations of the "Valet" package*
 
 | Class name | Association end | Designation | Definition | Multiplicity | Target | Notes |
 | --- | --- | --- | --- | --- | --- | --- |
@@ -1710,9 +1862,9 @@ There are no specializations in the "Valet" package.
 | ValetTicket | recordInfo | Record info | Provenance metadata for an APX resource, aligned to the APDS Information Model's RecordType (creationTime/creator/lastUpdate). All timestamps are RFC 3339 (APDS DateTime). | 0..1 | Common.RecordInfo |  |
 | ValetTicket | extensions | Extensions | Implementer extensions, keyed by a namespaced name (Part 10). | 0..1 | Common.Extensions |  |
 
-**A.1.14.5 Attributes of the "Valet" package**
+**A.1.15.5 Attributes of the "Valet" package**
 
-*Table A.42 -- Attributes of the "Valet" package*
+*Table A.46 -- Attributes of the "Valet" package*
 
 | Class name | Attribute name | Designation | Definition | Multiplicity | Type | Notes |
 | --- | --- | --- | --- | --- | --- | --- |
@@ -1805,15 +1957,15 @@ There are no specializations in the "Valet" package.
 | ValetTicket | statusHistory.actor | Actor | The person or system that performed the action. | 1..1 | String |  |
 | ValetTicket | statusHistory.detail | Detail | Further detail, in free text. | 0..1 | String |  |
 
-### A.1.15 "PlateLists" package
+### A.1.16 "PlateLists" package
 
-**A.1.15.1 Location of "PlateLists" package.** The location of the "PlateLists" package is:
+**A.1.16.1 Location of "PlateLists" package.** The location of the "PlateLists" package is:
 
 `-- APX/PlateLists` (source: `spec/openapi/domains/platelists/schemas.yaml`; normative text: APX Part 24)
 
-**A.1.15.2 Classes of the "PlateLists" package**
+**A.1.16.2 Classes of the "PlateLists" package**
 
-*Table A.43 -- Classes of the "PlateLists" package*
+*Table A.47 -- Classes of the "PlateLists" package*
 
 | Class name | Designation | Definition | Kind | APDS status |
 | --- | --- | --- | --- | --- |
@@ -1821,13 +1973,13 @@ There are no specializations in the "Valet" package.
 | PlateListEntry | Plate list entry | One credential on a list (Part 24 §24.2). The plate value appears only under `apx.platelists:read`/`:manage`; a consumer that only screens may hold the `apds-ext:apx:credential-digest@1.0` decoration instead (Part 9 §9.6 rule 6). | class | Proposed: PlateListEntry (Tier 2) |
 | PlateListPlaceFlags | Plate list place flags | What the list does at one place (Part 24 §24.1). | class | Proposed: PlateListPlaceFlags (Tier 2) |
 
-**A.1.15.3 Specializations of the "PlateLists" package**
+**A.1.16.3 Specializations of the "PlateLists" package**
 
 There are no specializations in the "PlateLists" package.
 
-**A.1.15.4 Associations of the "PlateLists" package**
+**A.1.16.4 Associations of the "PlateLists" package**
 
-*Table A.44 -- Associations of the "PlateLists" package*
+*Table A.48 -- Associations of the "PlateLists" package*
 
 | Class name | Association end | Designation | Definition | Multiplicity | Target | Notes |
 | --- | --- | --- | --- | --- | --- | --- |
@@ -1841,9 +1993,9 @@ There are no specializations in the "PlateLists" package.
 | PlateListEntry | extensions | Extensions | Implementer extensions, keyed by a namespaced name (Part 10). | 0..1 | Common.Extensions |  |
 | PlateListPlaceFlags | place | Place | The HierarchyElement subtree the flags apply to. | 1..1 | PkCommon.Reference |  |
 
-**A.1.15.5 Attributes of the "PlateLists" package**
+**A.1.16.5 Attributes of the "PlateLists" package**
 
-*Table A.45 -- Attributes of the "PlateLists" package*
+*Table A.49 -- Attributes of the "PlateLists" package*
 
 | Class name | Attribute name | Designation | Definition | Multiplicity | Type | Notes |
 | --- | --- | --- | --- | --- | --- | --- |
@@ -1873,38 +2025,48 @@ There are no specializations in the "PlateLists" package.
 | PlateListPlaceFlags | alertOnArrival | Alert on arrival | A match raises the Part 7 arrival alert of the list's category. | 0..1 | Boolean |  |
 | PlateListPlaceFlags | refuseService | Refuse service | A match refuses service at the lane (the refused-service sign, Part 6 `displayMessage`). | 0..1 | Boolean |  |
 
-### A.1.16 "Resolution" package
+### A.1.17 "Resolution" package
 
-**A.1.16.1 Location of "Resolution" package.** The location of the "Resolution" package is:
+**A.1.17.1 Location of "Resolution" package.** The location of the "Resolution" package is:
 
 `-- APX/Resolution` (source: `spec/openapi/domains/resolution/schemas.yaml`; normative text: APX Part 17)
 
-**A.1.16.2 Classes of the "Resolution" package**
+**A.1.17.2 Classes of the "Resolution" package**
 
-*Table A.46 -- Classes of the "Resolution" package*
+*Table A.50 -- Classes of the "Resolution" package*
 
 | Class name | Designation | Definition | Kind | APDS status |
 | --- | --- | --- | --- | --- |
 | AllowedAction | Allowed action | One policy decision about one action, evaluated for THIS context, THIS credential, and THIS moment (Part 17 §17.3). The server — never the consuming agent, human or AI — decides permissibility. Approval requirements are policy-dependent, which is why they live here at runtime and not in a registry. | class | APX only |
+| ApprovalDecision | Approval decision | The decision on an ApprovalRequest (Part 17 §17.3a), also the body of `POST /v1/approvals/{id}/decide`. | class | APX only |
+| ApprovalRequest | Approval request | Asking someone with authority to approve an action before it runs (Part 17 §17.3a). An agent whose AllowedAction said `requiresApproval` creates one, addressed to a `role` (an escalation role of the place, Part 26 §26.5, or the AllowedAction's `approvalRole`); the approver decides through `POST /v1/approvals/{id}/decide`; the resulting `Approval` evidence on the write cites the request. Every change is published as `apx.approvals.changed.v1`. | class | APX only |
 | OverrideRecord | Override record | A recent manual override relevant to this context (courtesy exits, gate opens, passback resets…). Summarizes a Part 6 Command. | class | APX only |
 | PassbackStatus | Passback status | Anti-passback state overlay for one APDS Credential. | class | APX only |
 | PlateCandidate | Plate candidate | One candidate plate read for correction workflows (Part 17 §17.5) — a projection over APDS Observations, imagery as access-controlled links (Part 9 §9.6). | class | APX only |
 | ResolutionContext | Resolution context | The aggregated customer-service context (Part 17): everything the server could resolve about one interaction, plus the policy-decided allowed actions. Every section beyond the required core is OPTIONAL — implementations include what they know and omit what they don't (graceful degradation), and MUST NOT include sections the caller's scopes/grants could not read directly. | class | APX only |
 | ResolutionIssue | Resolution issue | The machine-classified issue this context describes. `code` is a definedValue from the apx-issue-types registry (open, per Part 11); `display` is the human-readable summary shown to agents. | class | APX only |
-| ResolutionResolveRequest | Resolution resolve request | Whatever PARKING-DOMAIN identifiers are currently known — the server resolves every relationship it can (Part 17 §17.2). At least one IDENTIFYING member is required — `device`, `place`, `lane`, `session`, `holder`, `credential`, `plate`, `ticketNumber`, or `reservationCode`; all are optional individually. `interactionId`, `correlationId`, and `channel` are correlation metadata and do not count: a body without an identifying member is 400 `invalid-request` (Part 17 §17.1). Unknown members are ignored (tolerant reader) and never used for resolution. (`minProperties: 1` is the only part of this rule the schema states; the full rule is enforced by the server.) | class | APX only |
+| ResolutionResolveRequest | Resolution resolve request | Whatever PARKING-DOMAIN identifiers are currently known — the server resolves every relationship it can (Part 17 §17.2). At least one IDENTIFYING member is required — `device`, `place`, `lane`, `session`, `holder`, `credential`, `plate`, `ticketNumber`, `reservationCode`, `guestReference`, `commsPoint`, `callerId`, `dialedNumber`, or `commsDeviceId`; all are optional individually. `interactionId`, `correlationId`, `channel`, and `reservationIssuer` are metadata and do not count: a body without an identifying member is 400 `invalid-request` (Part 17 §17.1). Unknown members are ignored (tolerant reader) and never used for resolution. (`minProperties: 1` is the only part of this rule the schema states; the full rule is enforced by the server.) | class | APX only |
 | SupportInteraction | Support interaction | One customer-service interaction (human or AI agent), recorded so future resolution contexts can surface "they called twice yesterday". | class | Proposed: SupportInteraction (Tier 3); Proposed: SupportAgentTypeEnum (Tier 3) |
 
-**A.1.16.3 Specializations of the "Resolution" package**
+**A.1.17.3 Specializations of the "Resolution" package**
 
-There are no specializations in the "Resolution" package.
+*Table A.51 -- Specializations of the "Resolution" package*
 
-**A.1.16.4 Associations of the "Resolution" package**
+| Class name | Parent class name |
+| --- | --- |
+| ApprovalRequest | Common.ApxResourceCore |
 
-*Table A.47 -- Associations of the "Resolution" package*
+**A.1.17.4 Associations of the "Resolution" package**
+
+*Table A.52 -- Associations of the "Resolution" package*
 
 | Class name | Association end | Designation | Definition | Multiplicity | Target | Notes |
 | --- | --- | --- | --- | --- | --- | --- |
 | AllowedAction | target | Target | The Reference the action should be executed against. | 0..1 | PkCommon.Reference |  |
+| AllowedAction | execution.subject | Subject | For type=ui — the entity to open the surface on; defaults to the action's `target`. | 0..1 | PkCommon.Reference |  |
+| ApprovalRequest | place | Place | Represents a reference to an identifiable object where the identifier is unique. It is composed of an unique identifier and a string identifying the class of the referenced object. If multiple versions exists for the object, the latest version is considered. | 1..1 | PkCommon.Reference |  |
+| ApprovalRequest | target | Target | What the action is to be executed against. | 0..1 | PkCommon.Reference |  |
+| ApprovalRequest | decision | Decision | The decision on an ApprovalRequest (Part 17 §17.3a), also the body of `POST /v1/approvals/{id}/decide`. | 0..1 | Resolution.ApprovalDecision | read-only |
 | OverrideRecord | command | Command | Reference to the full Command (audit trail). | 0..1 | PkCommon.Reference |  |
 | OverrideRecord | requestedBy | Requested by | Represents a reference to an identifiable object where the identifier is unique. It is composed of an unique identifier and a string identifying the class of the referenced object. If multiple versions exists for the object, the latest version is considered. | 0..1 | PkCommon.Reference |  |
 | OverrideRecord | place | Place | Represents a reference to an identifiable object where the identifier is unique. It is composed of an unique identifier and a string identifying the class of the referenced object. If multiple versions exists for the object, the latest version is considered. | 0..1 | PkCommon.Reference |  |
@@ -1940,6 +2102,7 @@ There are no specializations in the "Resolution" package.
 | ResolutionResolveRequest | session | Session | Represents a reference to an identifiable object where the identifier is unique. It is composed of an unique identifier and a string identifying the class of the referenced object. If multiple versions exists for the object, the latest version is considered. | 0..1 | PkCommon.Reference |  |
 | ResolutionResolveRequest | holder | Holder | Represents a reference to an identifiable object where the identifier is unique. It is composed of an unique identifier and a string identifying the class of the referenced object. If multiple versions exists for the object, the latest version is considered. | 0..1 | PkCommon.Reference |  |
 | ResolutionResolveRequest | credential | Credential | Represents a reference to an identifiable object where the identifier is unique. It is composed of an unique identifier and a string identifying the class of the referenced object. If multiple versions exists for the object, the latest version is considered. | 0..1 | PkCommon.Reference |  |
+| ResolutionResolveRequest | commsPoint | Comms point | The Part 26 CommsPoint the contact came from, when the call platform already knows it. | 0..1 | PkCommon.Reference |  |
 | SupportInteraction | place | Place | Represents a reference to an identifiable object where the identifier is unique. It is composed of an unique identifier and a string identifying the class of the referenced object. If multiple versions exists for the object, the latest version is considered. | 1..1 | PkCommon.Reference |  |
 | SupportInteraction | issue | Issue | The machine-classified issue this context describes. `code` is a definedValue from the apx-issue-types registry (open, per Part 11); `display` is the human-readable summary shown to agents. | 0..1 | Resolution.ResolutionIssue |  |
 | SupportInteraction | subjects.session | Session | Represents a reference to an identifiable object where the identifier is unique. It is composed of an unique identifier and a string identifying the class of the referenced object. If multiple versions exists for the object, the latest version is considered. | 0..1 | PkCommon.Reference |  |
@@ -1951,9 +2114,9 @@ There are no specializations in the "Resolution" package.
 | SupportInteraction | recordInfo | Record info | Provenance metadata for an APX resource, aligned to the APDS Information Model's RecordType (creationTime/creator/lastUpdate). All timestamps are RFC 3339 (APDS DateTime). | 0..1 | Common.RecordInfo |  |
 | SupportInteraction | extensions | Extensions | Implementer extensions, keyed by a namespaced name (Part 10). | 0..1 | Common.Extensions |  |
 
-**A.1.16.5 Attributes of the "Resolution" package**
+**A.1.17.5 Attributes of the "Resolution" package**
 
-*Table A.48 -- Attributes of the "Resolution" package*
+*Table A.53 -- Attributes of the "Resolution" package*
 
 | Class name | Attribute name | Designation | Definition | Multiplicity | Type | Notes |
 | --- | --- | --- | --- | --- | --- | --- |
@@ -1962,14 +2125,30 @@ There are no specializations in the "Resolution" package.
 | AllowedAction | allowed | Allowed | Whether policy permits the action now. † | 1..1 | Boolean |  |
 | AllowedAction | requiresApproval | Requires approval | When true, the executing request MUST carry approval evidence (Part 17 §17.3). | 0..1 | Boolean |  |
 | AllowedAction | approvalRole | Approval role | Role that can approve (implementer/operator code list). | 0..1 | String |  |
-| AllowedAction | execution | Execution | How to execute (RECOMMENDED). Exactly one of command/operationId per type. | 0..1 | Structure (members below) |  |
+| AllowedAction | execution | Execution | How to execute (RECOMMENDED). Exactly one of command/operationId/ surface per type. `ui` says the action is done in the vendor's own screen (Part 25): the agent launches `surface` on `subject` and the implementation reports what was done as the module's native resource or a UiActionRecord carrying the launch's correlation id. | 0..1 | Structure (members below) |  |
 | AllowedAction | execution.type | Type | Whether the action runs as a Part 6 control command or as a domain API operation. † | 1..1 | AllowedAction.execution.type (enumeration) |  |
 | AllowedAction | execution.command | Command | For type=control — the apx-command-types value for POST /v1/commands. | 0..1 | String |  |
 | AllowedAction | execution.operationId | Operation id | For type=domain — the operationId of the executing operation in the effective OpenAPI description. | 0..1 | String |  |
+| AllowedAction | execution.surface | Surface | For type=ui — the apx-ui-surfaces value to launch (Part 25 §25.5). | 0..1 | String |  |
 | AllowedAction | reason | Reason | Why the action is denied or gated. REQUIRED when allowed=false or requiresApproval=true. | 0..1 | Structure (members below) |  |
 | AllowedAction | reason.code | Code | Machine-readable policy reason code (operator code list). | 1..1 | String |  |
 | AllowedAction | reason.display | Display | The agent-facing explanation of why the action is denied or gated. † | 0..1 | String |  |
 | AllowedAction | reason.policy | Policy | Identifier of the matched operator policy (opaque to APX). | 0..1 | String |  |
+| ApprovalDecision | outcome | Outcome | Whether the role approved or denied the action. † | 1..1 | ApprovalDecision.outcome (enumeration) |  |
+| ApprovalDecision | decidedBy | Decided by | The approving principal, in the role the request named. | 1..1 | String |  |
+| ApprovalDecision | decidedAt | Decided at | ISO-8601 format definition of a date and time - format YYYY-MM-DDTHH:MM:SSZ. | 0..1 | PkCommon.DateTime | read-only |
+| ApprovalDecision | note | Note | Free-text note from the actor. | 0..1 | String |  |
+| ApprovalRequest | id | Id | Unique identifier of the record (Part 4). | 0..1 | Uuid | read-only |
+| ApprovalRequest | version | Version | Server-managed; bodies carry it only for a versioned replace (Part 4 §4.2a). | 0..1 | Integer | read-only |
+| ApprovalRequest | action | Action | The apx-command-types value or effective-spec operationId to be approved (the AllowedAction.action). | 1..1 | String |  |
+| ApprovalRequest | requestedBy | Requested by | The agent asking. | 1..1 | String |  |
+| ApprovalRequest | agentType | Agent type | Whether a person or an AI agent asked for the approval. † | 0..1 | ApprovalRequest.agentType (enumeration) |  |
+| ApprovalRequest | role | Role | The role asked to decide (apx-escalation-roles value or the AllowedAction's approvalRole). | 1..1 | String |  |
+| ApprovalRequest | interactionId | Interaction id | The calling application's opaque interaction identifier (Part 17 §17.7). † | 0..1 | String |  |
+| ApprovalRequest | correlationId | Correlation id | The interaction's correlation id (Part 17 §17.7). | 1..1 | Uuid |  |
+| ApprovalRequest | reason | Reason | Why the agent is asking, in one line. | 0..1 | String |  |
+| ApprovalRequest | status | Status | Where the request stands: pending, approved, denied or expired (Part 17 §17.3a). † | 1..1 | ApprovalRequest.status (enumeration) | read-only |
+| ApprovalRequest | expiresAt | Expires at | When a pending request lapses to `expired`. Settable on create; the server MAY default it by policy. | 0..1 | PkCommon.DateTime |  |
 | OverrideRecord | commandType | Command type | definedValue from apx-command-types. | 1..1 | String |  |
 | OverrideRecord | occurredAt | Occurred at | ISO-8601 format definition of a date and time - format YYYY-MM-DDTHH:MM:SSZ. | 1..1 | PkCommon.DateTime |  |
 | OverrideRecord | agent | Agent | The human or AI principal who initiated the override, copied from the summarized Command's `agent`. | 0..1 | String |  |
@@ -2020,6 +2199,13 @@ There are no specializations in the "Resolution" package.
 | ResolutionResolveRequest | plate | Plate | Vehicle license plate text as read or entered. | 0..1 | String |  |
 | ResolutionResolveRequest | ticketNumber | Ticket number | Number printed on, or encoded in, the parking ticket. | 0..1 | String |  |
 | ResolutionResolveRequest | reservationCode | Reservation code | A reservation code the customer presented. † | 0..1 | String |  |
+| ResolutionResolveRequest | reservationIssuer | Reservation issuer | Who sold the reservation, when the code alone is ambiguous across sellers (Part 17 §17.2, ReservationSummary.issuer). Metadata, not an identifier. | 0..1 | String |  |
+| ResolutionResolveRequest | guestReference | Guest reference | A guest without a plate or ticket — a hotel room, a company, a tenant's employee, an event (Part 17 §17.2). The server resolves it through the place's guest arrangements. | 0..1 | Structure (members below) |  |
+| ResolutionResolveRequest | guestReference.kind | Kind | What kind of reference the guest gave (Part 17 §17.1). † | 1..1 | ResolutionResolveRequest.guestReference.kind (enumeration) |  |
+| ResolutionResolveRequest | guestReference.value | Value | The reference as the guest gave it, such as the room number or the company name. † | 1..1 | String |  |
+| ResolutionResolveRequest | callerId | Caller id | E.164. The number the contact came from; matched against `CommsPoint.callerId` (Part 26 §26.4). A parker's own mobile number resolves to nothing and is not stored. | 0..1 | String |  |
+| ResolutionResolveRequest | dialedNumber | Dialed number | E.164. The number the contact called; matched against `CommsPoint.phoneNumber`. A posted number shared by many lanes resolves to the place only. | 0..1 | String |  |
+| ResolutionResolveRequest | commsDeviceId | Comms device id | The call platform's device id; matched against `CommsPoint.commsDeviceId`. | 0..1 | String |  |
 | SupportInteraction | id | Id | Unique identifier of the record (Part 4). | 1..1 | Uuid | read-only |
 | SupportInteraction | version | Version | Version number of the record; increases by one on each change (Part 4). | 1..1 | Integer | read-only |
 | SupportInteraction | channel | Channel | voice \| chat \| email \| sms \| other (implementer code list). | 1..1 | String |  |
@@ -2032,19 +2218,105 @@ There are no specializations in the "Resolution" package.
 | SupportInteraction | subjects.plate | Plate | Vehicle license plate text as read or entered. | 0..1 | String |  |
 | SupportInteraction | interactionId | Interaction id | The calling application's opaque interaction identifier. | 0..1 | String |  |
 | SupportInteraction | resolution | Resolution | How the interaction ended. | 0..1 | Structure (members below) |  |
-| SupportInteraction | resolution.code | Code | A code for how the interaction ended. † | 0..1 | String |  |
+| SupportInteraction | resolution.code | Code | A definedValue of apx-interaction-outcomes (Part 11) or an implementer code (Part 17 §17.5). | 0..1 | String |  |
 | SupportInteraction | resolution.display | Display | A human-readable description of how the interaction ended. † | 0..1 | String |  |
 | SupportInteraction | correlationId | Correlation id | Correlation chain id (Part 17 §17.7). | 0..1 | Uuid |  |
 
-### A.1.17 "Charging" package
+### A.1.18 "UiLaunch" package
 
-**A.1.17.1 Location of "Charging" package.** The location of the "Charging" package is:
+**A.1.18.1 Location of "UiLaunch" package.** The location of the "UiLaunch" package is:
+
+`-- APX/UiLaunch` (source: `spec/openapi/domains/ui/schemas.yaml`; normative text: APX Part 25)
+
+**A.1.18.2 Classes of the "UiLaunch" package**
+
+*Table A.54 -- Classes of the "UiLaunch" package*
+
+| Class name | Designation | Definition | Kind | APDS status |
+| --- | --- | --- | --- | --- |
+| UiActionRecord | Ui action record | What an agent did in a launched screen when the implementation could not express it as the module's own resource or Command (Part 25 §25.4). The native resource is always preferred: a lost ticket issued in the vendor's screen MUST appear as a `lostTicket` Command carrying the launch's `correlationId`. Only an action with no APX operation on this implementation is recorded here, with the `fields` the host asked for in `returnFields`, and `unavailable[]` for the ones it could not supply. Published as `apx.ui.action.recorded.v1`. | class | APX only |
+| UiLaunch | Ui launch | One opening of a surface for one agent (Part 25 §25.3). Created by the handshake (`POST /v1/ui/launches`) or minted by the implementation when a signed token is presented. `url` is single-use and expires at `expiresAt`; the record itself stays readable for audit and carries the `actions[]` the screen reported. | class | APX only |
+| UiLaunchRequest | Ui launch request | What the host sends to open a surface for one agent (Part 25 §25.2). The same members are the claims of a signed launch token (UiLaunchToken). `correlationId` ties everything the agent does in the screen back to the host's record; `returnFields` lists the APX paths the host wants back when the implementation has to answer with a UiActionRecord instead of a native resource. | class | APX only |
+| UiLaunchToken | Ui launch token | INFORMATIVE. The claims of a signed launch token (JWS, ES256 or RS256) in the `signedToken` launch mode (Part 25 §25.3). `aud` is the implementation, `exp` is at most 60 s after `iat`, `jti` is unique and single-use. The remaining claims are the UiLaunchRequest members. The token travels by form POST or in the URL fragment, never in the query string, and the implementation checks it against the host's keys registered at onboarding (Part 25 §25.6). | class | APX only |
+| UiSurface | Ui surface | One screen an implementation offers for launch (Part 25 §25.1). Listed in the discovery document's `uiSurfaces[]`, so a host learns which screens exist, how each may be shown, which launch modes it accepts, and which actions it reports back. The `surface` name is a definedValue of `apx-ui-surfaces` (`<module>.<view>`, Part 11); its registry entry names the subject class the surface opens. | class | APX only |
+
+**A.1.18.3 Specializations of the "UiLaunch" package**
+
+*Table A.55 -- Specializations of the "UiLaunch" package*
+
+| Class name | Parent class name |
+| --- | --- |
+| UiLaunch | Common.ApxResourceCore |
+| UiLaunch | UiLaunch.UiLaunchRequest |
+| UiLaunchToken | UiLaunch.UiLaunchRequest |
+
+**A.1.18.4 Associations of the "UiLaunch" package**
+
+*Table A.56 -- Associations of the "UiLaunch" package*
+
+| Class name | Association end | Designation | Definition | Multiplicity | Target | Notes |
+| --- | --- | --- | --- | --- | --- | --- |
+| UiActionRecord | launch | Launch | The UiLaunch this record belongs to. | 0..1 | PkCommon.Reference | read-only |
+| UiActionRecord | result | Result | The native resource or Command the action produced, when one exists (then `fields` MAY be omitted). | 0..1 | PkCommon.Reference |  |
+| UiLaunch | actions | Actions | Every UiActionRecord reported for this launch, oldest first (Part 25 §25.4). | 0..* | UiLaunch.UiActionRecord | read-only |
+| UiLaunchRequest | subject | Subject | The entity the surface opens on (its class per the surface's registry entry). Required unless the surface is general. | 0..1 | PkCommon.Reference |  |
+| UiLaunchRequest | place | Place | The facility the launch concerns; MUST lie inside the caller's grant. | 1..1 | PkCommon.Reference |  |
+| UiLaunchRequest | lane | Lane | The VehicularAccess, when the launch concerns one lane. | 0..1 | PkCommon.Reference |  |
+| UiSurface | places | Places | The HierarchyElement subtrees where the surface is offered. Absent means everywhere the credential is granted. | 0..* | PkCommon.Reference |  |
+
+**A.1.18.5 Attributes of the "UiLaunch" package**
+
+*Table A.57 -- Attributes of the "UiLaunch" package*
+
+| Class name | Attribute name | Designation | Definition | Multiplicity | Type | Notes |
+| --- | --- | --- | --- | --- | --- | --- |
+| UiActionRecord | id | Id | Unique identifier of the record (Part 4). | 0..1 | Uuid | read-only |
+| UiActionRecord | action | Action | The apx-command-types value or effective-spec operationId the action corresponds to, or `other` when none does (Part 25 §25.4). | 1..1 | String |  |
+| UiActionRecord | outcome | Outcome | Whether the action completed, failed or was not taken (Part 25 §25.4). † | 1..1 | UiActionRecord.outcome (enumeration) |  |
+| UiActionRecord | occurredAt | Occurred at | ISO-8601 format definition of a date and time - format YYYY-MM-DDTHH:MM:SSZ. | 1..1 | PkCommon.DateTime |  |
+| UiActionRecord | agent | Agent | The agent who acted; defaults to the launch's `agent`. | 0..1 | String |  |
+| UiActionRecord | summary | Summary | One line a host can show in the call record. Carries no personal data beyond what the host already holds. | 1..1 | String |  |
+| UiActionRecord | fields | Fields | The values the host asked for, keyed by the `returnFields` path. | 0..1 | Map of Any |  |
+| UiActionRecord | unavailable | Unavailable | Requested paths the implementation could not fill, and why. | 0..* | Structure (members below) |  |
+| UiActionRecord | unavailable.field | Field | The return field, as a JSON pointer, that the implementation could not supply. † | 1..1 | String |  |
+| UiActionRecord | unavailable.reason | Reason | Why the action was taken. | 1..1 | UiActionRecord.unavailable.reason (enumeration) |  |
+| UiActionRecord | correlationId | Correlation id | The launch's correlation id, echoed. | 0..1 | Uuid |  |
+| UiLaunch | id | Id | Unique identifier of the record (Part 4). | 0..1 | Uuid | read-only |
+| UiLaunch | version | Version | Server-managed; bodies carry it only for a versioned replace (Part 4 §4.2a). | 0..1 | Integer | read-only |
+| UiLaunch | url | Url | The single-use HTTPS address the host opens for the agent. Present only on the create response and the first read within `expiresAt`; never carries personal data or secrets in its query string (Part 25 §25.6). | 0..1 | Url | read-only |
+| UiLaunch | expiresAt | Expires at | When `url` (or the signed token) stops working. At most 60 s after issue. | 1..1 | PkCommon.DateTime |  |
+| UiLaunch | status | Status | `issued` → `opened` on first use of the url or token (single use) → `closed` when the screen reports it is done, or `expired` when `expiresAt` passes unused. An opened launch not closed within the implementation's limit (RECOMMENDED 1 h) also becomes `expired` (Part 25 §25.3). | 1..1 | UiLaunch.status (enumeration) |  |
+| UiLaunch | openedAt | Opened at | ISO-8601 format definition of a date and time - format YYYY-MM-DDTHH:MM:SSZ. | 0..1 | PkCommon.DateTime |  |
+| UiLaunch | closedAt | Closed at | ISO-8601 format definition of a date and time - format YYYY-MM-DDTHH:MM:SSZ. | 0..1 | PkCommon.DateTime |  |
+| UiLaunchRequest | surface | Surface | definedValue from apx-ui-surfaces. | 1..1 | String |  |
+| UiLaunchRequest | agent | Agent | The staff member the screen is opened for; the implementation logs them in as this agent. | 1..1 | String |  |
+| UiLaunchRequest | agentType | Agent type | Whether a person or an AI agent will use the surface (Part 25 §25.2). † | 1..1 | UiLaunchRequest.agentType (enumeration) |  |
+| UiLaunchRequest | interactionId | Interaction id | The host's opaque interaction identifier (Part 17 §17.7), echoed on every record the launch produces. | 0..1 | String |  |
+| UiLaunchRequest | correlationId | Correlation id | Host-minted correlation id, carried by every native resource, Command, or UiActionRecord that results from the screen (Part 25 §25.4). | 1..1 | Uuid |  |
+| UiLaunchRequest | displayMode | Display mode | How the host will show the surface; must be one the surface lists. † | 1..1 | UiLaunchRequest.displayMode (enumeration) |  |
+| UiLaunchRequest | returnFields | Return fields | JSON-pointer paths, relative to the module resource the surface's actions produce, that the host wants back in `UiActionRecord.fields` (`/amount`, `/session/id`). A value the implementation cannot supply is listed in `unavailable[]` with a reason. | 0..* | String |  |
+| UiLaunchRequest | expiresIn | Expires in | Seconds the launch `url` stays usable. Never more than 60 (Part 25 §25.6). | 0..1 | Integer |  |
+| UiLaunchToken | iss | Iss | The host's issuer identifier, as registered. | 1..1 | String |  |
+| UiLaunchToken | aud | Aud | The implementation the token is for. | 1..1 | String |  |
+| UiLaunchToken | exp | Exp | Expiry, seconds since the epoch; at most `iat` + 60. | 1..1 | Integer |  |
+| UiLaunchToken | iat | Iat | Issued at, seconds since the epoch. | 1..1 | Integer |  |
+| UiLaunchToken | jti | Jti | Unique token id; the implementation refuses a replay. | 1..1 | String |  |
+| UiSurface | surface | Surface | definedValue from apx-ui-surfaces. | 1..1 | String |  |
+| UiSurface | subjectClass | Subject class | The APDS or APX class a launch of this surface opens (`VehicularAccess`, `Session`, `Violation`…). Absent for a general surface such as `place.console` or `module.home`. | 0..1 | String |  |
+| UiSurface | displayModes | Display modes | How the host may show the surface. `embed` needs the host's origin registered with the implementation (Part 25 §25.6); `popup` is the fallback every surface MUST support. | 1..* | UiSurface.displayModes (enumeration) |  |
+| UiSurface | launchModes | Launch modes | `handshake` — the host calls `POST /v1/ui/launches` and opens the returned single-use `url`. `signedToken` — the host signs a UiLaunchToken and sends it to `launchUrl` (Part 25 §25.3). | 1..* | UiSurface.launchModes (enumeration) |  |
+| UiSurface | launchUrl | Launch url | Where a signed launch token is sent (signedToken mode only). HTTPS only. | 0..1 | Url |  |
+| UiSurface | actions | Actions | What the surface can report back (Part 25 §25.4): apx-command-types values and effective-spec operationIds. A host uses it to decide which `returnFields` to ask for. | 0..* | String |  |
+
+### A.1.19 "Charging" package
+
+**A.1.19.1 Location of "Charging" package.** The location of the "Charging" package is:
 
 `-- APX/Charging` (source: `spec/openapi/domains/charging/schemas.yaml`; normative text: APX Part 23)
 
-**A.1.17.2 Classes of the "Charging" package**
+**A.1.19.2 Classes of the "Charging" package**
 
-*Table A.49 -- Classes of the "Charging" package*
+*Table A.58 -- Classes of the "Charging" package*
 
 | Class name | Designation | Definition | Kind | APDS status |
 | --- | --- | --- | --- | --- |
@@ -2054,13 +2326,13 @@ There are no specializations in the "Resolution" package.
 | ChargingPointStatus | Charging point status | Part 23 — live state overlay keyed by Reference to an APDS ElectricChargingEquipment — the dynamic counterpart of the static ElectricChargingPoint (APDS `refillPointIndex` exists precisely "to link static and dynamic publications"). Never duplicates the static descriptive fields (connector types, power ratings live in APDS). Carries availability per point and per connector, the current session, a reservation, and what the bay camera sees. Same pattern as Part 6 DeviceStatus. Also the request body the charging-network bridge PUTs to `…/points/{id}/status`. | class | Proposed: ChargingPointStatus (Tier 3); Proposed: ConnectorStatus (Tier 3) |
 | ChargingSession | Charging session | Part 23 — one charge of one vehicle at one charging point, as the parking system sees it: who was authorized and how, the timeline from plug-in to unplug, energy delivered, the idle period after charging completed, cost, and how it settles — while the APDS Session remains the parking stay and is only referenced. The charging network's own identifiers (OCPP transaction, OCPI session/CDR) ride along opaquely so the two records can be reconciled without APX redefining either protocol. | class | Proposed: ChargingSession (Tier 3); Proposed: ChargingCost (Tier 3); Proposed: ChargingIdleTerms (Tier 3); Proposed: ChargingSessionStatusEnum (Tier 3); Proposed: ChargingStopReasonEnum (Tier 3); Proposed: ChargingSettlementModeEnum (Tier 3) |
 
-**A.1.17.3 Specializations of the "Charging" package**
+**A.1.19.3 Specializations of the "Charging" package**
 
 There are no specializations in the "Charging" package.
 
-**A.1.17.4 Associations of the "Charging" package**
+**A.1.19.4 Associations of the "Charging" package**
 
-*Table A.50 -- Associations of the "Charging" package*
+*Table A.59 -- Associations of the "Charging" package*
 
 | Class name | Association end | Designation | Definition | Multiplicity | Target | Notes |
 | --- | --- | --- | --- | --- | --- | --- |
@@ -2093,9 +2365,9 @@ There are no specializations in the "Charging" package.
 | ChargingSession | recordInfo | Record info | Provenance metadata for an APX resource, aligned to the APDS Information Model's RecordType (creationTime/creator/lastUpdate). All timestamps are RFC 3339 (APDS DateTime). | 0..1 | Common.RecordInfo |  |
 | ChargingSession | extensions | Extensions | Implementer extensions, keyed by a namespaced name (Part 10). | 0..1 | Common.Extensions |  |
 
-**A.1.17.5 Attributes of the "Charging" package**
+**A.1.19.5 Attributes of the "Charging" package**
 
-*Table A.51 -- Attributes of the "Charging" package*
+*Table A.60 -- Attributes of the "Charging" package*
 
 | Class name | Attribute name | Designation | Definition | Multiplicity | Type | Notes |
 | --- | --- | --- | --- | --- | --- | --- |
@@ -2196,7 +2468,7 @@ There are no specializations in the "Charging" package.
 
 APX uses the APDS 4.1 datatypes where a member carries APDS content. The types below are how this dictionary names the JSON types of APX members.
 
-*Table A.52 -- Datatypes*
+*Table A.61 -- Datatypes*
 
 | Datatype | Definition | Nearest APDS 4.1 datatype |
 | --- | --- | --- |
@@ -2221,7 +2493,7 @@ Values of direction on AccessEvent.
 
 Defined inline on `AccessEvent`; the API names it by its owner and attribute.
 
-*Table A.53 -- Values contained in the enumeration "AccessEvent.direction"*
+*Table A.62 -- Values contained in the enumeration "AccessEvent.direction"*
 
 | Enumerated value name | Designation | Definition |
 | --- | --- | --- |
@@ -2234,7 +2506,7 @@ Values of outcome on AccessEvent.
 
 Defined inline on `AccessEvent`; the API names it by its owner and attribute.
 
-*Table A.54 -- Values contained in the enumeration "AccessEvent.outcome"*
+*Table A.63 -- Values contained in the enumeration "AccessEvent.outcome"*
 
 | Enumerated value name | Designation | Definition |
 | --- | --- | --- |
@@ -2247,7 +2519,7 @@ Values of accountStatus on Account.
 
 Defined inline on `Account`; the API names it by its owner and attribute.
 
-*Table A.55 -- Values contained in the enumeration "Account.accountStatus"*
+*Table A.64 -- Values contained in the enumeration "Account.accountStatus"*
 
 | Enumerated value name | Designation | Definition |
 | --- | --- | --- |
@@ -2260,7 +2532,7 @@ Values of severity on Alert.
 
 Defined inline on `Alert`; the API names it by its owner and attribute.
 
-*Table A.56 -- Values contained in the enumeration "Alert.severity"*
+*Table A.65 -- Values contained in the enumeration "Alert.severity"*
 
 | Enumerated value name | Designation | Definition |
 | --- | --- | --- |
@@ -2276,7 +2548,7 @@ Lifecycle: raised → acknowledged → resolved | expired.
 
 Defined inline on `Alert`; the API names it by its owner and attribute.
 
-*Table A.57 -- Values contained in the enumeration "Alert.status"*
+*Table A.66 -- Values contained in the enumeration "Alert.status"*
 
 | Enumerated value name | Designation | Definition |
 | --- | --- | --- |
@@ -2291,20 +2563,62 @@ Values of execution.type on AllowedAction.
 
 Defined inline on `AllowedAction`; the API names it by its owner and attribute.
 
-*Table A.58 -- Values contained in the enumeration "AllowedAction.execution.type"*
+*Table A.67 -- Values contained in the enumeration "AllowedAction.execution.type"*
 
 | Enumerated value name | Designation | Definition |
 | --- | --- | --- |
 | control | control | The action is executed as a Part 6 control command, named in command. † |
 | domain | domain | The action is executed as a domain API operation, named in operationId. † |
+| ui | ui | Execute by opening the named vendor surface for the agent (Part 25 §25.5); surface is required, subject optional. † |
 
-### A.3.7 The <<D2Enumeration>> "ApxEventSubscription.status"
+### A.3.7 The <<D2Enumeration>> "ApprovalDecision.outcome"
+
+Values of outcome on ApprovalDecision.
+
+Defined inline on `ApprovalDecision`; the API names it by its owner and attribute.
+
+*Table A.68 -- Values contained in the enumeration "ApprovalDecision.outcome"*
+
+| Enumerated value name | Designation | Definition |
+| --- | --- | --- |
+| approved | approved | The action may proceed; the decision is the approval evidence. † |
+| denied | denied | The action may not proceed. † |
+
+### A.3.8 The <<D2Enumeration>> "ApprovalRequest.agentType"
+
+Values of agentType on ApprovalRequest.
+
+Defined inline on `ApprovalRequest`; the API names it by its owner and attribute.
+
+*Table A.69 -- Values contained in the enumeration "ApprovalRequest.agentType"*
+
+| Enumerated value name | Designation | Definition |
+| --- | --- | --- |
+| human | human | A person asked for the approval. † |
+| ai | ai | An AI agent asked for the approval. † |
+
+### A.3.9 The <<D2Enumeration>> "ApprovalRequest.status"
+
+Values of status on ApprovalRequest.
+
+Defined inline on `ApprovalRequest`; the API names it by its owner and attribute.
+
+*Table A.70 -- Values contained in the enumeration "ApprovalRequest.status"*
+
+| Enumerated value name | Designation | Definition |
+| --- | --- | --- |
+| pending | pending | Waiting for the named role to decide (Part 17 §17.3a). † |
+| approved | approved | The role approved the action; the decision carries who and when. † |
+| denied | denied | The role refused the action; this is final. † |
+| expired | expired | No decision arrived before expiresAt; the request can no longer be decided. † |
+
+### A.3.10 The <<D2Enumeration>> "ApxEventSubscription.status"
 
 `active` delivers; `paused` holds matching events for up to 24 hours and delivers them in order on resume (Part 8 §8.1); `failed` is server-assigned when the retry schedule is exhausted (a client setting it is 400 `invalid-request`). PATCH `status: active` to resume a paused or failed subscription.
 
 Defined inline on `ApxEventSubscription`; the API names it by its owner and attribute.
 
-*Table A.59 -- Values contained in the enumeration "ApxEventSubscription.status"*
+*Table A.71 -- Values contained in the enumeration "ApxEventSubscription.status"*
 
 | Enumerated value name | Designation | Definition |
 | --- | --- | --- |
@@ -2312,26 +2626,26 @@ Defined inline on `ApxEventSubscription`; the API names it by its owner and attr
 | paused | paused | The client has paused delivery; matching events are held for up to 24 hours and delivered in order on resume (Part 8 §8.1). † |
 | failed | failed | The retry schedule was exhausted; the server set this state and delivery stops until the client resumes the subscription (Part 8 §8.1). † |
 
-### A.3.8 The <<D2Enumeration>> "ApxEventSubscription.transport"
+### A.3.11 The <<D2Enumeration>> "ApxEventSubscription.transport"
 
 Values of transport on ApxEventSubscription.
 
 Defined inline on `ApxEventSubscription`; the API names it by its owner and attribute.
 
-*Table A.60 -- Values contained in the enumeration "ApxEventSubscription.transport"*
+*Table A.72 -- Values contained in the enumeration "ApxEventSubscription.transport"*
 
 | Enumerated value name | Designation | Definition |
 | --- | --- | --- |
 | webhook | webhook | Events are delivered by HTTP POST to the subscription's endpoint (Part 8). † |
 | sse | sse | Events are read from the subscription's server-sent events stream (Part 8 §8.4). † |
 
-### A.3.9 The <<D2Enumeration>> "ApxEventSubscriptionPatch.status"
+### A.3.12 The <<D2Enumeration>> "ApxEventSubscriptionPatch.status"
 
 `active` or `paused` — the client-settable states. `failed` is server-assigned; a PATCH setting it is 400 `invalid-request`.
 
 Defined inline on `ApxEventSubscriptionPatch`; the API names it by its owner and attribute.
 
-*Table A.61 -- Values contained in the enumeration "ApxEventSubscriptionPatch.status"*
+*Table A.73 -- Values contained in the enumeration "ApxEventSubscriptionPatch.status"*
 
 | Enumerated value name | Designation | Definition |
 | --- | --- | --- |
@@ -2339,26 +2653,147 @@ Defined inline on `ApxEventSubscriptionPatch`; the API names it by its owner and
 | paused | paused | the client-settable states |
 | failed | failed | Server-assigned when the retry schedule is exhausted; a PATCH setting it is refused (Part 8 §8.1). † |
 
-### A.3.10 The <<D2Enumeration>> "ApxEventSubscriptionPatch.transport"
+### A.3.13 The <<D2Enumeration>> "ApxEventSubscriptionPatch.transport"
 
 Values of transport on ApxEventSubscriptionPatch.
 
 Defined inline on `ApxEventSubscriptionPatch`; the API names it by its owner and attribute.
 
-*Table A.62 -- Values contained in the enumeration "ApxEventSubscriptionPatch.transport"*
+*Table A.74 -- Values contained in the enumeration "ApxEventSubscriptionPatch.transport"*
 
 | Enumerated value name | Designation | Definition |
 | --- | --- | --- |
 | webhook | webhook | Events are delivered by HTTP POST to the subscription's endpoint (Part 8). † |
 | sse | sse | Events are read from the subscription's server-sent events stream (Part 8 §8.4). † |
 
-### A.3.11 The <<D2Enumeration>> "ChargingBayPresence.presence"
+### A.3.14 The <<D2Enumeration>> "CameraDetail.faces"
+
+For lanes, plazas and ramps, relative to the facility (Part 13 §13.3a).
+
+Defined inline on `CameraDetail`; the API names it by its owner and attribute.
+
+*Table A.75 -- Values contained in the enumeration "CameraDetail.faces"*
+
+| Enumerated value name | Designation | Definition |
+| --- | --- | --- |
+| inward | inward | Looking into the facility, the way entering traffic travels (Part 13 §13.3a(5)). † |
+| outward | outward | Looking out of the facility, the way exiting traffic travels. † |
+
+### A.3.15 The <<D2Enumeration>> "CameraDetail.mounting"
+
+When `builtIn`, EquipmentDetail `builtInto` names the host, for example a pay station's driver camera.
+
+Defined inline on `CameraDetail`; the API names it by its owner and attribute.
+
+*Table A.76 -- Values contained in the enumeration "CameraDetail.mounting"*
+
+| Enumerated value name | Designation | Definition |
+| --- | --- | --- |
+| builtIn | built in | Inside another item of equipment, named by the equipment detail's builtInto (Part 26 §26.3). † |
+| overhead | overhead | Above the vehicle or the lane, looking down. † |
+| pole | pole | On a pole or an island. † |
+| wall | wall | On a wall or a column. † |
+| ceiling | ceiling | On a ceiling, as in lobbies and stairwells. † |
+| other | other | Mounted in another way. † |
+
+### A.3.16 The <<D2Enumeration>> "CameraDetail.streams.protocol"
+
+Values of streams.protocol on CameraDetail.
+
+Defined inline on `CameraDetail`; the API names it by its owner and attribute.
+
+*Table A.77 -- Values contained in the enumeration "CameraDetail.streams.protocol"*
+
+| Enumerated value name | Designation | Definition |
+| --- | --- | --- |
+| webrtc | webrtc | WebRTC, for low-latency live viewing in a browser. † |
+| hls | hls | HTTP Live Streaming segments. † |
+| rtsp | rtsp | RTSP, as an on-site gateway or recorder consumes it. † |
+| mjpeg | mjpeg | Motion JPEG over HTTP. † |
+| snapshot | snapshot | A single still image on request. † |
+
+### A.3.17 The <<D2Enumeration>> "CameraDetail.view"
+
+Values of view on CameraDetail.
+
+Defined inline on `CameraDetail`; the API names it by its owner and attribute.
+
+*Table A.78 -- Values contained in the enumeration "CameraDetail.view"*
+
+| Enumerated value name | Designation | Definition |
+| --- | --- | --- |
+| plate | plate | Reads licence plates. † |
+| vehicle | vehicle | An overview of the vehicle in the lane. † |
+| driver | driver | The driver's face at a pay station or lane device. † |
+| equipmentInteraction | equipment interaction | Hands, ticket and card at the machine. † |
+| pedestrians | pedestrians | People at a door, in a lobby or on a stairwell. † |
+| areaOverview | area overview | General surveillance of a ramp, a level or the perimeter. † |
+| other | other | Another view. † |
+
+### A.3.18 The <<D2Enumeration>> "CameraView.kind"
+
+Values of kind on CameraView.
+
+Defined inline on `CameraView`; the API names it by its owner and attribute.
+
+*Table A.79 -- Values contained in the enumeration "CameraView.kind"*
+
+| Enumerated value name | Designation | Definition |
+| --- | --- | --- |
+| live | live | The link plays a live view. † |
+| snapshot | snapshot | The link returns a single still. † |
+| playback | playback | The link plays the recorded range asked for. † |
+
+### A.3.19 The <<D2Enumeration>> "CameraView.protocol"
+
+What the link serves (`snapshot` is an image).
+
+Defined inline on `CameraView`; the API names it by its owner and attribute.
+
+*Table A.80 -- Values contained in the enumeration "CameraView.protocol"*
+
+| Enumerated value name | Designation | Definition |
+| --- | --- | --- |
+| webrtc | webrtc | The link is a WebRTC session. † |
+| hls | hls | The link is an HLS playlist. † |
+| rtsp | rtsp | The link is an RTSP URL served by a gateway. † |
+| mjpeg | mjpeg | The link is a Motion JPEG stream. † |
+| snapshot | snapshot | The link returns an image. † |
+
+### A.3.20 The <<D2Enumeration>> "CameraViewRequest.agentType"
+
+Values of agentType on CameraViewRequest.
+
+Defined inline on `CameraViewRequest`; the API names it by its owner and attribute.
+
+*Table A.81 -- Values contained in the enumeration "CameraViewRequest.agentType"*
+
+| Enumerated value name | Designation | Definition |
+| --- | --- | --- |
+| human | human | A person will view the camera. † |
+| ai | ai | An AI agent will view the camera. † |
+
+### A.3.21 The <<D2Enumeration>> "CameraViewRequest.kind"
+
+Values of kind on CameraViewRequest.
+
+Defined inline on `CameraViewRequest`; the API names it by its owner and attribute.
+
+*Table A.82 -- Values contained in the enumeration "CameraViewRequest.kind"*
+
+| Enumerated value name | Designation | Definition |
+| --- | --- | --- |
+| live | live | A live view; feature cameraViews (Part 26 §26.3). † |
+| snapshot | snapshot | A single still taken now. † |
+| playback | playback | Recorded video between from and to; feature cameraPlayback. † |
+
+### A.3.22 The <<D2Enumeration>> "ChargingBayPresence.presence"
 
 `empty` — nothing in the bay; `vehiclePluggedIn` — a vehicle is present and the charger reports a connected cable; `vehicleNotPluggedIn` — a vehicle is present and no cable is connected (ICE-ing, or an EV not charging); `blocked` — the bay is obstructed by something other than a parked vehicle (cones, debris, a vehicle straddling); `unknown`.
 
 Defined inline on `ChargingBayPresence`; the API names it by its owner and attribute.
 
-*Table A.63 -- Values contained in the enumeration "ChargingBayPresence.presence"*
+*Table A.83 -- Values contained in the enumeration "ChargingBayPresence.presence"*
 
 | Enumerated value name | Designation | Definition |
 | --- | --- | --- |
@@ -2368,13 +2803,13 @@ Defined inline on `ChargingBayPresence`; the API names it by its owner and attri
 | blocked | blocked | the bay is |
 | unknown | unknown | What the bay contains is not known. † |
 
-### A.3.12 The <<D2Enumeration>> "ChargingBayPresence.source"
+### A.3.23 The <<D2Enumeration>> "ChargingBayPresence.source"
 
 The evidence source this presence state was derived from (the strongest one, when fused).
 
 Defined inline on `ChargingBayPresence`; the API names it by its owner and attribute.
 
-*Table A.64 -- Values contained in the enumeration "ChargingBayPresence.source"*
+*Table A.84 -- Values contained in the enumeration "ChargingBayPresence.source"*
 
 | Enumerated value name | Designation | Definition |
 | --- | --- | --- |
@@ -2384,13 +2819,13 @@ Defined inline on `ChargingBayPresence`; the API names it by its owner and attri
 | attendant | attendant | A member of staff on site. † |
 | inferred | inferred | Derived from other data without a direct observation of the bay. † |
 
-### A.3.13 The <<D2Enumeration>> "ChargingEvent.eventType"
+### A.3.24 The <<D2Enumeration>> "ChargingEvent.eventType"
 
 Values of eventType on ChargingEvent.
 
 Defined inline on `ChargingEvent`; the API names it by its owner and attribute.
 
-*Table A.65 -- Values contained in the enumeration "ChargingEvent.eventType"*
+*Table A.85 -- Values contained in the enumeration "ChargingEvent.eventType"*
 
 | Enumerated value name | Designation | Definition |
 | --- | --- | --- |
@@ -2404,13 +2839,13 @@ Defined inline on `ChargingEvent`; the API names it by its owner and attribute.
 | fault | fault | The charger reported a fault. † |
 | cancelled | cancelled | The authorization was cancelled before a vehicle was plugged in (Part 23 §23.2). † |
 
-### A.3.14 The <<D2Enumeration>> "ChargingEvent.stopReason"
+### A.3.25 The <<D2Enumeration>> "ChargingEvent.stopReason"
 
 With `chargingEnded`.
 
 Defined inline on `ChargingEvent`; the API names it by its owner and attribute.
 
-*Table A.66 -- Values contained in the enumeration "ChargingEvent.stopReason"*
+*Table A.86 -- Values contained in the enumeration "ChargingEvent.stopReason"*
 
 | Enumerated value name | Designation | Definition |
 | --- | --- | --- |
@@ -2426,26 +2861,26 @@ Defined inline on `ChargingEvent`; the API names it by its owner and attribute.
 | powerLoss | power loss | Power to the charger was lost. † |
 | other | other | Some other reason. † |
 
-### A.3.15 The <<D2Enumeration>> "ChargingEvent.suspendedBy"
+### A.3.26 The <<D2Enumeration>> "ChargingEvent.suspendedBy"
 
 With `suspended`.
 
 Defined inline on `ChargingEvent`; the API names it by its owner and attribute.
 
-*Table A.67 -- Values contained in the enumeration "ChargingEvent.suspendedBy"*
+*Table A.87 -- Values contained in the enumeration "ChargingEvent.suspendedBy"*
 
 | Enumerated value name | Designation | Definition |
 | --- | --- | --- |
 | ev | ev | The vehicle paused energy delivery. † |
 | evse | evse | The charger paused energy delivery. † |
 
-### A.3.16 The <<D2Enumeration>> "ChargingPointStatus.availability"
+### A.3.27 The <<D2Enumeration>> "ChargingPointStatus.availability"
 
 Point-level availability (the busiest connector wins): `available`; `occupied` — a cable is connected but no energy is flowing (plugged in, suspended, complete, or idle); `charging`; `reserved` (Part 14 AssignedRight in force); `blocked` — the bay is occupied or obstructed without a connected cable (from `bay.presence`); `inoperative` (planned: maintenance, closed hours); `outOfOrder` (fault); `unknown`. Aligned with the OCPI EVSE status vocabulary.
 
 Defined inline on `ChargingPointStatus`; the API names it by its owner and attribute.
 
-*Table A.68 -- Values contained in the enumeration "ChargingPointStatus.availability"*
+*Table A.88 -- Values contained in the enumeration "ChargingPointStatus.availability"*
 
 | Enumerated value name | Designation | Definition |
 | --- | --- | --- |
@@ -2458,13 +2893,13 @@ Defined inline on `ChargingPointStatus`; the API names it by its owner and attri
 | outOfOrder | out of order | fault |
 | unknown | unknown | The point's state is not known. † |
 
-### A.3.17 The <<D2Enumeration>> "ChargingPointStatus.connectors.availability"
+### A.3.28 The <<D2Enumeration>> "ChargingPointStatus.connectors.availability"
 
 Values of connectors.availability on ChargingPointStatus.
 
 Defined inline on `ChargingPointStatus`; the API names it by its owner and attribute.
 
-*Table A.69 -- Values contained in the enumeration "ChargingPointStatus.connectors.availability"*
+*Table A.89 -- Values contained in the enumeration "ChargingPointStatus.connectors.availability"*
 
 | Enumerated value name | Designation | Definition |
 | --- | --- | --- |
@@ -2477,13 +2912,13 @@ Defined inline on `ChargingPointStatus`; the API names it by its owner and attri
 | outOfOrder | out of order | The connector is out of use because of a fault. † |
 | unknown | unknown | The connector's state is not known. † |
 
-### A.3.18 The <<D2Enumeration>> "ChargingSession.chargingStatus"
+### A.3.29 The <<D2Enumeration>> "ChargingSession.chargingStatus"
 
 Mapping to OCPP 2.0.1 `chargingState`: `pluggedIn` = EVConnected; `charging` = Charging; `suspended` = SuspendedEV | SuspendedEVSE (see `suspendedBy`); `complete` and `idle` = EVConnected after energy delivery ended; `unplugged` = Idle (no EV).
 
 Defined inline on `ChargingSession`; the API names it by its owner and attribute.
 
-*Table A.70 -- Values contained in the enumeration "ChargingSession.chargingStatus"*
+*Table A.90 -- Values contained in the enumeration "ChargingSession.chargingStatus"*
 
 | Enumerated value name | Designation | Definition |
 | --- | --- | --- |
@@ -2498,26 +2933,26 @@ Defined inline on `ChargingSession`; the API names it by its owner and attribute
 | cancelled | cancelled | The authorization was never used (Part 23 §23.2). † |
 | faulted | faulted | A fault interrupted the charge (Part 23 §23.2). † |
 
-### A.3.19 The <<D2Enumeration>> "ChargingSession.idlePolicy.idleRatePer"
+### A.3.30 The <<D2Enumeration>> "ChargingSession.idlePolicy.idleRatePer"
 
 Values of idlePolicy.idleRatePer on ChargingSession.
 
 Defined inline on `ChargingSession`; the API names it by its owner and attribute.
 
-*Table A.71 -- Values contained in the enumeration "ChargingSession.idlePolicy.idleRatePer"*
+*Table A.91 -- Values contained in the enumeration "ChargingSession.idlePolicy.idleRatePer"*
 
 | Enumerated value name | Designation | Definition |
 | --- | --- | --- |
 | minute | minute | The idle rate is charged per started minute (Part 23 §23.5). † |
 | hour | hour | The idle rate is charged per started hour (Part 23 §23.5). † |
 
-### A.3.20 The <<D2Enumeration>> "ChargingSession.settlement.mode"
+### A.3.31 The <<D2Enumeration>> "ChargingSession.settlement.mode"
 
 `parkingSession` — the cost becomes a line on the APDS Session and is paid with the parking (one bill at exit); `directPayment` — settled by a Part 13 payment referenced in `payment`; `chargingNetwork` — billed by the charging network or roaming partner; the parking side records energy and idle but not money.
 
 Defined inline on `ChargingSession`; the API names it by its owner and attribute.
 
-*Table A.72 -- Values contained in the enumeration "ChargingSession.settlement.mode"*
+*Table A.92 -- Values contained in the enumeration "ChargingSession.settlement.mode"*
 
 | Enumerated value name | Designation | Definition |
 | --- | --- | --- |
@@ -2525,13 +2960,13 @@ Defined inline on `ChargingSession`; the API names it by its owner and attribute
 | directPayment | direct payment | settled by a Part 13 payment referenced in |
 | chargingNetwork | charging network | billed by the charging network |
 
-### A.3.21 The <<D2Enumeration>> "ChargingSession.stopReason"
+### A.3.32 The <<D2Enumeration>> "ChargingSession.stopReason"
 
 Why energy delivery ended (OCPP 2.0.1 stopped-reason subset plus `targetReached`).
 
 Defined inline on `ChargingSession`; the API names it by its owner and attribute.
 
-*Table A.73 -- Values contained in the enumeration "ChargingSession.stopReason"*
+*Table A.93 -- Values contained in the enumeration "ChargingSession.stopReason"*
 
 | Enumerated value name | Designation | Definition |
 | --- | --- | --- |
@@ -2547,39 +2982,39 @@ Defined inline on `ChargingSession`; the API names it by its owner and attribute
 | powerLoss | power loss | Power to the charger was lost. † |
 | other | other | Some other reason. † |
 
-### A.3.22 The <<D2Enumeration>> "ChargingSession.suspendedBy"
+### A.3.33 The <<D2Enumeration>> "ChargingSession.suspendedBy"
 
 While `suspended`: whether the vehicle or the charger paused delivery.
 
 Defined inline on `ChargingSession`; the API names it by its owner and attribute.
 
-*Table A.74 -- Values contained in the enumeration "ChargingSession.suspendedBy"*
+*Table A.94 -- Values contained in the enumeration "ChargingSession.suspendedBy"*
 
 | Enumerated value name | Designation | Definition |
 | --- | --- | --- |
 | ev | ev | The vehicle paused energy delivery. † |
 | evse | evse | The charger paused energy delivery. † |
 
-### A.3.23 The <<D2Enumeration>> "Command.agentType"
+### A.3.34 The <<D2Enumeration>> "Command.agentType"
 
 Whether `agent` is a person or an AI agent (mirrors SupportInteraction.agentType).
 
 Defined inline on `Command`; the API names it by its owner and attribute.
 
-*Table A.75 -- Values contained in the enumeration "Command.agentType"*
+*Table A.95 -- Values contained in the enumeration "Command.agentType"*
 
 | Enumerated value name | Designation | Definition |
 | --- | --- | --- |
 | human | human | A person initiated the command. † |
 | ai | ai | An AI agent initiated the command. † |
 
-### A.3.24 The <<D2Enumeration>> "Command.confirmationLevel"
+### A.3.35 The <<D2Enumeration>> "Command.confirmationLevel"
 
 How far success is actually confirmed (Part 6 §6.1): the command was accepted; the device acknowledged it; or the physical outcome was verified (e.g. gate-state sensor). Consumers — AI agents especially — MUST NOT claim a physical outcome ("the gate is open") beyond this level ("the open command was accepted").
 
 Defined inline on `Command`; the API names it by its owner and attribute.
 
-*Table A.76 -- Values contained in the enumeration "Command.confirmationLevel"*
+*Table A.96 -- Values contained in the enumeration "Command.confirmationLevel"*
 
 | Enumerated value name | Designation | Definition |
 | --- | --- | --- |
@@ -2587,26 +3022,26 @@ Defined inline on `Command`; the API names it by its owner and attribute.
 | deviceAcknowledged | device acknowledged | The device acknowledged the command. † |
 | physicallyConfirmed | physically confirmed | The physical outcome was verified, for example by a gate-state sensor (Part 6 §6.1). † |
 
-### A.3.25 The <<D2Enumeration>> "Command.priority"
+### A.3.36 The <<D2Enumeration>> "Command.priority"
 
 Values of priority on Command.
 
 Defined inline on `Command`; the API names it by its owner and attribute.
 
-*Table A.77 -- Values contained in the enumeration "Command.priority"*
+*Table A.97 -- Values contained in the enumeration "Command.priority"*
 
 | Enumerated value name | Designation | Definition |
 | --- | --- | --- |
 | normal | normal | — |
 | high | high | — |
 
-### A.3.26 The <<D2Enumeration>> "Command.status"
+### A.3.37 The <<D2Enumeration>> "Command.status"
 
 Values of status on Command.
 
 Defined inline on `Command`; the API names it by its owner and attribute.
 
-*Table A.78 -- Values contained in the enumeration "Command.status"*
+*Table A.98 -- Values contained in the enumeration "Command.status"*
 
 | Enumerated value name | Designation | Definition |
 | --- | --- | --- |
@@ -2620,13 +3055,13 @@ Defined inline on `Command`; the API names it by its owner and attribute.
 | expired | expired | The command's expiry time passed before dispatch, so it was never carried out (Part 6 §6.1). † |
 | cancelled | cancelled | The command was cancelled before it was dispatched (Part 6 §6.1). † |
 
-### A.3.27 The <<D2Enumeration>> "CommandResult.display.acknowledgedBy"
+### A.3.38 The <<D2Enumeration>> "CommandResult.display.acknowledgedBy"
 
 Values of display.acknowledgedBy on CommandResult.
 
 Defined inline on `CommandResult`; the API names it by its owner and attribute.
 
-*Table A.79 -- Values contained in the enumeration "CommandResult.display.acknowledgedBy"*
+*Table A.99 -- Values contained in the enumeration "CommandResult.display.acknowledgedBy"*
 
 | Enumerated value name | Designation | Definition |
 | --- | --- | --- |
@@ -2634,13 +3069,13 @@ Defined inline on `CommandResult`; the API names it by its owner and attribute.
 | operator | operator | An operator acknowledged that the message was shown. † |
 | none | none | No one acknowledged the display. † |
 
-### A.3.28 The <<D2Enumeration>> "ConditionReport.damage.severity"
+### A.3.39 The <<D2Enumeration>> "ConditionReport.damage.severity"
 
 Values of damage.severity on ConditionReport.
 
 Defined inline on `ConditionReport`; the API names it by its owner and attribute.
 
-*Table A.80 -- Values contained in the enumeration "ConditionReport.damage.severity"*
+*Table A.100 -- Values contained in the enumeration "ConditionReport.damage.severity"*
 
 | Enumerated value name | Designation | Definition |
 | --- | --- | --- |
@@ -2648,51 +3083,51 @@ Defined inline on `ConditionReport`; the API names it by its owner and attribute
 | moderate | moderate | Damage needing repair. † |
 | major | major | Serious damage. † |
 
-### A.3.29 The <<D2Enumeration>> "CredentialAccessEvent.direction"
+### A.3.40 The <<D2Enumeration>> "CredentialAccessEvent.direction"
 
 Values of direction on CredentialAccessEvent.
 
 Defined inline on `CredentialAccessEvent`; the API names it by its owner and attribute.
 
-*Table A.81 -- Values contained in the enumeration "CredentialAccessEvent.direction"*
+*Table A.101 -- Values contained in the enumeration "CredentialAccessEvent.direction"*
 
 | Enumerated value name | Designation | Definition |
 | --- | --- | --- |
 | entry | entry | The attempt was to enter. † |
 | exit | exit | The attempt was to leave. † |
 
-### A.3.30 The <<D2Enumeration>> "CredentialAccessEvent.outcome"
+### A.3.41 The <<D2Enumeration>> "CredentialAccessEvent.outcome"
 
 Values of outcome on CredentialAccessEvent.
 
 Defined inline on `CredentialAccessEvent`; the API names it by its owner and attribute.
 
-*Table A.82 -- Values contained in the enumeration "CredentialAccessEvent.outcome"*
+*Table A.102 -- Values contained in the enumeration "CredentialAccessEvent.outcome"*
 
 | Enumerated value name | Designation | Definition |
 | --- | --- | --- |
 | granted | granted | Access was granted. † |
 | denied | denied | Access was refused. † |
 
-### A.3.31 The <<D2Enumeration>> "CredentialDigest.alg"
+### A.3.42 The <<D2Enumeration>> "CredentialDigest.alg"
 
 Values of alg on CredentialDigest.
 
 Defined inline on `CredentialDigest`; the API names it by its owner and attribute.
 
-*Table A.83 -- Values contained in the enumeration "CredentialDigest.alg"*
+*Table A.103 -- Values contained in the enumeration "CredentialDigest.alg"*
 
 | Enumerated value name | Designation | Definition |
 | --- | --- | --- |
 | HS256 | hs256 | HMAC with SHA-256, keyed by the digest key named in keyId (Part 9 §9.6). † |
 
-### A.3.32 The <<D2Enumeration>> "CredentialRecord.credentialAssignedType"
+### A.3.43 The <<D2Enumeration>> "CredentialRecord.credentialAssignedType"
 
 APDS CredentialAssignedTypeEnum — what the credential identifies.
 
 Defined inline on `CredentialRecord`; the API names it by its owner and attribute.
 
-*Table A.84 -- Values contained in the enumeration "CredentialRecord.credentialAssignedType"*
+*Table A.104 -- Values contained in the enumeration "CredentialRecord.credentialAssignedType"*
 
 | Enumerated value name | Designation | Definition |
 | --- | --- | --- |
@@ -2700,13 +3135,13 @@ Defined inline on `CredentialRecord`; the API names it by its owner and attribut
 | customer | customer | The credential identifies a customer. † |
 | other | other | The credential identifies something other than a vehicle or a customer. † |
 
-### A.3.33 The <<D2Enumeration>> "CredentialRecord.credentialStatus"
+### A.3.44 The <<D2Enumeration>> "CredentialRecord.credentialStatus"
 
 Values of credentialStatus on CredentialRecord.
 
 Defined inline on `CredentialRecord`; the API names it by its owner and attribute.
 
-*Table A.85 -- Values contained in the enumeration "CredentialRecord.credentialStatus"*
+*Table A.105 -- Values contained in the enumeration "CredentialRecord.credentialStatus"*
 
 | Enumerated value name | Designation | Definition |
 | --- | --- | --- |
@@ -2718,13 +3153,13 @@ Defined inline on `CredentialRecord`; the API names it by its owner and attribut
 | expired | expired | The credential's validity period has ended. † |
 | replaced | replaced | The credential has been succeeded by another credential (Part 21 §21.1). † |
 
-### A.3.34 The <<D2Enumeration>> "CredentialRecord.media.depositStatus"
+### A.3.45 The <<D2Enumeration>> "CredentialRecord.media.depositStatus"
 
 Values of media.depositStatus on CredentialRecord.
 
 Defined inline on `CredentialRecord`; the API names it by its owner and attribute.
 
-*Table A.86 -- Values contained in the enumeration "CredentialRecord.media.depositStatus"*
+*Table A.106 -- Values contained in the enumeration "CredentialRecord.media.depositStatus"*
 
 | Enumerated value name | Designation | Definition |
 | --- | --- | --- |
@@ -2732,13 +3167,13 @@ Defined inline on `CredentialRecord`; the API names it by its owner and attribut
 | refunded | refunded | The deposit has been returned to the holder. † |
 | forfeited | forfeited | The deposit has been kept by the issuer. † |
 
-### A.3.35 The <<D2Enumeration>> "CredentialRecord.media.form"
+### A.3.46 The <<D2Enumeration>> "CredentialRecord.media.form"
 
 Values of media.form on CredentialRecord.
 
 Defined inline on `CredentialRecord`; the API names it by its owner and attribute.
 
-*Table A.87 -- Values contained in the enumeration "CredentialRecord.media.form"*
+*Table A.107 -- Values contained in the enumeration "CredentialRecord.media.form"*
 
 | Enumerated value name | Designation | Definition |
 | --- | --- | --- |
@@ -2751,13 +3186,13 @@ Defined inline on `CredentialRecord`; the API names it by its owner and attribut
 | ticket | ticket | A ticket issued for the stay. † |
 | virtual | virtual | A credential with no physical item, such as an account number. † |
 
-### A.3.36 The <<D2Enumeration>> "CredentialReplaceRequest.media.form"
+### A.3.47 The <<D2Enumeration>> "CredentialReplaceRequest.media.form"
 
 Values of media.form on CredentialReplaceRequest.
 
 Defined inline on `CredentialReplaceRequest`; the API names it by its owner and attribute.
 
-*Table A.88 -- Values contained in the enumeration "CredentialReplaceRequest.media.form"*
+*Table A.108 -- Values contained in the enumeration "CredentialReplaceRequest.media.form"*
 
 | Enumerated value name | Designation | Definition |
 | --- | --- | --- |
@@ -2770,13 +3205,13 @@ Defined inline on `CredentialReplaceRequest`; the API names it by its owner and 
 | ticket | ticket | A ticket issued for the stay. † |
 | virtual | virtual | A credential with no physical item, such as an account number. † |
 
-### A.3.37 The <<D2Enumeration>> "CredentialReplaceRequest.oldDepositStatus"
+### A.3.48 The <<D2Enumeration>> "CredentialReplaceRequest.oldDepositStatus"
 
 What happens to the old record's deposit.
 
 Defined inline on `CredentialReplaceRequest`; the API names it by its owner and attribute.
 
-*Table A.89 -- Values contained in the enumeration "CredentialReplaceRequest.oldDepositStatus"*
+*Table A.109 -- Values contained in the enumeration "CredentialReplaceRequest.oldDepositStatus"*
 
 | Enumerated value name | Designation | Definition |
 | --- | --- | --- |
@@ -2784,13 +3219,13 @@ Defined inline on `CredentialReplaceRequest`; the API names it by its owner and 
 | refunded | refunded | The old item's deposit is returned to the holder. † |
 | forfeited | forfeited | The old item's deposit is kept by the issuer. † |
 
-### A.3.38 The <<D2Enumeration>> "DeliveryRecord.status"
+### A.3.49 The <<D2Enumeration>> "DeliveryRecord.status"
 
 Values of status on DeliveryRecord.
 
 Defined inline on `DeliveryRecord`; the API names it by its owner and attribute.
 
-*Table A.90 -- Values contained in the enumeration "DeliveryRecord.status"*
+*Table A.110 -- Values contained in the enumeration "DeliveryRecord.status"*
 
 | Enumerated value name | Designation | Definition |
 | --- | --- | --- |
@@ -2798,26 +3233,56 @@ Defined inline on `DeliveryRecord`; the API names it by its owner and attribute.
 | retrying | retrying | Delivery has not yet succeeded and further attempts are scheduled (Part 8 §8.3). † |
 | failed | failed | Every attempt in the retry schedule failed (Part 8 §8.3). † |
 
-### A.3.39 The <<D2Enumeration>> "DiscoveryDocument.replication.authority"
+### A.3.50 The <<D2Enumeration>> "DeviceStatus.consumables.kind"
+
+Values of consumables.kind on DeviceStatus.
+
+Defined inline on `DeviceStatus`; the API names it by its owner and attribute.
+
+*Table A.111 -- Values contained in the enumeration "DeviceStatus.consumables.kind"*
+
+| Enumerated value name | Designation | Definition |
+| --- | --- | --- |
+| tickets | tickets | Blank ticket stock in a dispenser or verifier (Part 6 §6.4). † |
+| receiptPaper | receipt paper | Receipt paper in a pay station or terminal. † |
+| cash | cash | Notes held for change in a pay station. † |
+| coins | coins | Coins held for change in a pay station. † |
+
+### A.3.51 The <<D2Enumeration>> "DeviceStatus.consumables.level"
+
+Values of consumables.level on DeviceStatus.
+
+Defined inline on `DeviceStatus`; the API names it by its owner and attribute.
+
+*Table A.112 -- Values contained in the enumeration "DeviceStatus.consumables.level"*
+
+| Enumerated value name | Designation | Definition |
+| --- | --- | --- |
+| ok | ok | Enough of the consumable for normal operation. † |
+| low | low | The consumable needs replenishing soon; service continues. † |
+| empty | empty | The consumable has run out; the function that needs it has stopped. † |
+| unknown | unknown | The device does not report the level. † |
+
+### A.3.52 The <<D2Enumeration>> "DiscoveryDocument.replication.authority"
 
 Values of replication.authority on DiscoveryDocument.
 
 Defined inline on `DiscoveryDocument`; the API names it by its owner and attribute.
 
-*Table A.91 -- Values contained in the enumeration "DiscoveryDocument.replication.authority"*
+*Table A.113 -- Values contained in the enumeration "DiscoveryDocument.replication.authority"*
 
 | Enumerated value name | Designation | Definition |
 | --- | --- | --- |
 | site | site | The site implementation is authoritative for the class at the place (Part 18 §18.6). † |
 | aggregator | aggregator | The aggregating implementation is authoritative for the class at the place (Part 18 §18.6). † |
 
-### A.3.40 The <<D2Enumeration>> "EligibilityResult.basis.status"
+### A.3.53 The <<D2Enumeration>> "EligibilityResult.basis.status"
 
 Why this basis does or does not entitle the vehicle here, now.
 
 Defined inline on `EligibilityResult`; the API names it by its owner and attribute.
 
-*Table A.92 -- Values contained in the enumeration "EligibilityResult.basis.status"*
+*Table A.114 -- Values contained in the enumeration "EligibilityResult.basis.status"*
 
 | Enumerated value name | Designation | Definition |
 | --- | --- | --- |
@@ -2828,13 +3293,13 @@ Defined inline on `EligibilityResult`; the API names it by its owner and attribu
 | consumed | consumed | The right has already been used by another session. † |
 | suspended | suspended | The right is suspended. † |
 
-### A.3.41 The <<D2Enumeration>> "EnforcementPolicy.deliveryRules.detectionModes"
+### A.3.54 The <<D2Enumeration>> "EnforcementPolicy.deliveryRules.detectionModes"
 
 Values of deliveryRules.detectionModes on EnforcementPolicy.
 
 Defined inline on `EnforcementPolicy`; the API names it by its owner and attribute.
 
-*Table A.93 -- Values contained in the enumeration "EnforcementPolicy.deliveryRules.detectionModes"*
+*Table A.115 -- Values contained in the enumeration "EnforcementPolicy.deliveryRules.detectionModes"*
 
 | Enumerated value name | Designation | Definition |
 | --- | --- | --- |
@@ -2842,26 +3307,26 @@ Defined inline on `EnforcementPolicy`; the API names it by its owner and attribu
 | guided | guided | A system proposed the violation and an officer confirmed it on site. † |
 | manual | manual | An officer found the violation directly. † |
 
-### A.3.42 The <<D2Enumeration>> "EnforcementPolicy.penaltyCap.onExceed"
+### A.3.55 The <<D2Enumeration>> "EnforcementPolicy.penaltyCap.onExceed"
 
 `refuse` → 422 `penalty-exceeds-cap`; `clamp` → issue at the cap and record `reason: cap` in amountHistory.
 
 Defined inline on `EnforcementPolicy`; the API names it by its owner and attribute.
 
-*Table A.94 -- Values contained in the enumeration "EnforcementPolicy.penaltyCap.onExceed"*
+*Table A.116 -- Values contained in the enumeration "EnforcementPolicy.penaltyCap.onExceed"*
 
 | Enumerated value name | Designation | Definition |
 | --- | --- | --- |
 | refuse | refuse | An issue whose amount exceeds the cap is refused (Part 19 §19.10). † |
 | clamp | clamp | An issue whose amount exceeds the cap is issued at the cap (Part 19 §19.10). † |
 
-### A.3.43 The <<D2Enumeration>> "EnforcementPolicy.policyStatus"
+### A.3.56 The <<D2Enumeration>> "EnforcementPolicy.policyStatus"
 
 Values of policyStatus on EnforcementPolicy.
 
 Defined inline on `EnforcementPolicy`; the API names it by its owner and attribute.
 
-*Table A.95 -- Values contained in the enumeration "EnforcementPolicy.policyStatus"*
+*Table A.117 -- Values contained in the enumeration "EnforcementPolicy.policyStatus"*
 
 | Enumerated value name | Designation | Definition |
 | --- | --- | --- |
@@ -2869,26 +3334,26 @@ Defined inline on `EnforcementPolicy`; the API names it by its owner and attribu
 | superseded | superseded | Replaced by a newer policy that now applies. † |
 | retired | retired | Withdrawn from use without a replacement. † |
 
-### A.3.44 The <<D2Enumeration>> "LaneCameras.cameras.faces"
+### A.3.57 The <<D2Enumeration>> "LaneCameras.cameras.faces"
 
 `inward` — looking into the facility, the way entering traffic travels (reads the rear plates of entering vehicles); `outward` — looking out of it, the way exiting traffic travels (reads the rear plates of exiting vehicles).
 
 Defined inline on `LaneCameras`; the API names it by its owner and attribute.
 
-*Table A.96 -- Values contained in the enumeration "LaneCameras.cameras.faces"*
+*Table A.118 -- Values contained in the enumeration "LaneCameras.cameras.faces"*
 
 | Enumerated value name | Designation | Definition |
 | --- | --- | --- |
 | inward | inward | looking into the facility, the way entering |
 | outward | outward | looking out of it, the way exiting |
 
-### A.3.45 The <<D2Enumeration>> "LprRead.laneTravel"
+### A.3.58 The <<D2Enumeration>> "LprRead.laneTravel"
 
 DEPRECATED since 0.12.0, removed at 1.0. APX no longer derives direction; use `detail.accessEvent` (entry | exit), which the LPR system reports (Part 13 §13.3a(4)). Servers SHOULD return `unknown`.
 
 Defined inline on `LprRead`; the API names it by its owner and attribute.
 
-*Table A.97 -- Values contained in the enumeration "LprRead.laneTravel"*
+*Table A.119 -- Values contained in the enumeration "LprRead.laneTravel"*
 
 | Enumerated value name | Designation | Definition |
 | --- | --- | --- |
@@ -2896,13 +3361,13 @@ Defined inline on `LprRead`; the API names it by its owner and attribute.
 | againstLane | against lane | The vehicle travelled against the lane's configured purpose, such as entering on an exit lane (deprecated since 0.12.0). † |
 | unknown | unknown | The direction of travel relative to the lane is not determined; the value servers return since 0.12.0. † |
 
-### A.3.46 The <<D2Enumeration>> "LprReadDetail.accessEvent"
+### A.3.59 The <<D2Enumeration>> "LprReadDetail.accessEvent"
 
 Whether this read was a vehicle entering or leaving the facility, as reported by the LPR system — not the lane's configured purpose (the lane's APDS `accessType`), and never inferred by the APX server. Absent means `unknown`. The LPR system MAY revise it through `PUT /v1/lpr/reads/{observation}/access-event` (Part 13 §13.3a(4)).
 
 Defined inline on `LprReadDetail`; the API names it by its owner and attribute.
 
-*Table A.98 -- Values contained in the enumeration "LprReadDetail.accessEvent"*
+*Table A.120 -- Values contained in the enumeration "LprReadDetail.accessEvent"*
 
 | Enumerated value name | Designation | Definition |
 | --- | --- | --- |
@@ -2910,13 +3375,13 @@ Defined inline on `LprReadDetail`; the API names it by its owner and attribute.
 | exit | exit | The LPR system reports the read as a vehicle leaving the facility. † |
 | unknown | unknown | Whether the vehicle was entering or leaving is not reported. † |
 
-### A.3.47 The <<D2Enumeration>> "LprReadDetail.movement"
+### A.3.60 The <<D2Enumeration>> "LprReadDetail.movement"
 
 The vehicle's motion relative to the camera: toward it, away from it, or stopped. A camera fact, not a statement about the facility. `approaching` and `receding` are deprecated synonyms of `toward` and `away` — accepted until 1.0; writers SHOULD send the new values (Part 13 §13.3a(3)).
 
 Defined inline on `LprReadDetail`; the API names it by its owner and attribute.
 
-*Table A.99 -- Values contained in the enumeration "LprReadDetail.movement"*
+*Table A.121 -- Values contained in the enumeration "LprReadDetail.movement"*
 
 | Enumerated value name | Designation | Definition |
 | --- | --- | --- |
@@ -2927,13 +3392,13 @@ Defined inline on `LprReadDetail`; the API names it by its owner and attribute.
 | approaching | approaching | Deprecated synonym of toward, accepted until 1.0 (Part 13 §13.3a(3)). † |
 | receding | receding | Deprecated synonym of away, accepted until 1.0 (Part 13 §13.3a(3)). † |
 
-### A.3.48 The <<D2Enumeration>> "LprReadDetail.plateFace"
+### A.3.61 The <<D2Enumeration>> "LprReadDetail.plateFace"
 
 Which plate of the vehicle was read, for engines that can tell.
 
 Defined inline on `LprReadDetail`; the API names it by its owner and attribute.
 
-*Table A.100 -- Values contained in the enumeration "LprReadDetail.plateFace"*
+*Table A.122 -- Values contained in the enumeration "LprReadDetail.plateFace"*
 
 | Enumerated value name | Designation | Definition |
 | --- | --- | --- |
@@ -2941,13 +3406,13 @@ Defined inline on `LprReadDetail`; the API names it by its owner and attribute.
 | rear | rear | The rear plate was read. † |
 | unknown | unknown | The engine cannot tell which plate was read. † |
 
-### A.3.49 The <<D2Enumeration>> "LprReadDetail.review.state"
+### A.3.62 The <<D2Enumeration>> "LprReadDetail.review.state"
 
 Values of review.state on LprReadDetail.
 
 Defined inline on `LprReadDetail`; the API names it by its owner and attribute.
 
-*Table A.101 -- Values contained in the enumeration "LprReadDetail.review.state"*
+*Table A.123 -- Values contained in the enumeration "LprReadDetail.review.state"*
 
 | Enumerated value name | Designation | Definition |
 | --- | --- | --- |
@@ -2957,13 +3422,13 @@ Defined inline on `LprReadDetail`; the API names it by its owner and attribute.
 | rejected | rejected | A reviewer rejected the read as unusable for pairing and enforcement. † |
 | notRequired | not required | No rule sent the read to review. † |
 
-### A.3.50 The <<D2Enumeration>> "MatchCandidate.matchedBy"
+### A.3.63 The <<D2Enumeration>> "MatchCandidate.matchedBy"
 
 How this candidate was found: the lane's LPR read against the entry read (plateRead); a credential presented at the lane (credential); the account registry by plate or phone (account); a checked-in reservation carrying the plate (reservation).
 
 Defined inline on `MatchCandidate`; the API names it by its owner and attribute.
 
-*Table A.102 -- Values contained in the enumeration "MatchCandidate.matchedBy"*
+*Table A.124 -- Values contained in the enumeration "MatchCandidate.matchedBy"*
 
 | Enumerated value name | Designation | Definition |
 | --- | --- | --- |
@@ -2972,26 +3437,26 @@ Defined inline on `MatchCandidate`; the API names it by its owner and attribute.
 | account | account | The account registry linked the session by plate or phone. † |
 | reservation | reservation | A checked-in reservation carrying the plate linked the session. † |
 
-### A.3.51 The <<D2Enumeration>> "MatchEvidence.decidedBy"
+### A.3.64 The <<D2Enumeration>> "MatchEvidence.decidedBy"
 
 Whether software or a person made the link. A `matchTicket` that binds a lane-inquiry candidate SHOULD be recorded as `person` (Part 5 §5.8 rule 5).
 
 Defined inline on `MatchEvidence`; the API names it by its owner and attribute.
 
-*Table A.103 -- Values contained in the enumeration "MatchEvidence.decidedBy"*
+*Table A.125 -- Values contained in the enumeration "MatchEvidence.decidedBy"*
 
 | Enumerated value name | Designation | Definition |
 | --- | --- | --- |
 | system | system | Software made the link. † |
 | person | person | Part 5 §5.8 rule 5). |
 
-### A.3.52 The <<D2Enumeration>> "MatchEvidence.matchType"
+### A.3.65 The <<D2Enumeration>> "MatchEvidence.matchType"
 
 The kind of link: `right` — an AssignedRight covers the stay; `valet` — a ValetTicket's stay; `violation` — a Violation's stay; `list` — a plate-list entry matched the vehicle (Part 24); `exitPairing` — an exit read paired to the Session's entry; `sweep` — the vehicle seen during an inventory or patrol sweep tied to the Session; `other` — anything else.
 
 Defined inline on `MatchEvidence`; the API names it by its owner and attribute.
 
-*Table A.104 -- Values contained in the enumeration "MatchEvidence.matchType"*
+*Table A.126 -- Values contained in the enumeration "MatchEvidence.matchType"*
 
 | Enumerated value name | Designation | Definition |
 | --- | --- | --- |
@@ -3003,13 +3468,13 @@ Defined inline on `MatchEvidence`; the API names it by its owner and attribute.
 | sweep | sweep | the vehicle seen during an inventory or patrol sweep tied |
 | other | other | anything else. |
 
-### A.3.53 The <<D2Enumeration>> "MatchEvidence.plate.jurisdiction"
+### A.3.66 The <<D2Enumeration>> "MatchEvidence.plate.jurisdiction"
 
 Values of plate.jurisdiction on MatchEvidence.
 
 Defined inline on `MatchEvidence`; the API names it by its owner and attribute.
 
-*Table A.105 -- Values contained in the enumeration "MatchEvidence.plate.jurisdiction"*
+*Table A.127 -- Values contained in the enumeration "MatchEvidence.plate.jurisdiction"*
 
 | Enumerated value name | Designation | Definition |
 | --- | --- | --- |
@@ -3017,13 +3482,13 @@ Defined inline on `MatchEvidence`; the API names it by its owner and attribute.
 | differs | differs | The plate's issuing jurisdiction differs between the two sides of the match. † |
 | unknown | unknown | Whether the issuing jurisdiction agrees is not known. † |
 
-### A.3.54 The <<D2Enumeration>> "MatchEvidence.plate.method"
+### A.3.67 The <<D2Enumeration>> "MatchEvidence.plate.method"
 
 `exact` — the same characters; `alias` — a plate the right or account lists for the same vehicle; `fold` — equal after folding look-alike characters (O/0, I/1, B/8); `fuzzy` — within the implementation's edit-cost threshold; `lenient` — accepted under a relaxed rule that may excuse a stay but never accuse one; `reviewer` — a person judged the plates to match where no automatic method did.
 
 Defined inline on `MatchEvidence`; the API names it by its owner and attribute.
 
-*Table A.106 -- Values contained in the enumeration "MatchEvidence.plate.method"*
+*Table A.128 -- Values contained in the enumeration "MatchEvidence.plate.method"*
 
 | Enumerated value name | Designation | Definition |
 | --- | --- | --- |
@@ -3034,13 +3499,13 @@ Defined inline on `MatchEvidence`; the API names it by its owner and attribute.
 | lenient | lenient | accepted |
 | reviewer | reviewer | a person judged the plates to match where no |
 
-### A.3.55 The <<D2Enumeration>> "MatchEvidence.vehicle.level"
+### A.3.68 The <<D2Enumeration>> "MatchEvidence.vehicle.level"
 
 `unknown` — not compared; `mismatch` — the attributes contradict the match; `inconclusive` — compared, no signal; `weak`, `good`, `strong` — increasing support.
 
 Defined inline on `MatchEvidence`; the API names it by its owner and attribute.
 
-*Table A.107 -- Values contained in the enumeration "MatchEvidence.vehicle.level"*
+*Table A.129 -- Values contained in the enumeration "MatchEvidence.vehicle.level"*
 
 | Enumerated value name | Designation | Definition |
 | --- | --- | --- |
@@ -3051,26 +3516,26 @@ Defined inline on `MatchEvidence`; the API names it by its owner and attribute.
 | good | good | The vehicle attributes give good support to the match. † |
 | strong | strong | increasing support. |
 
-### A.3.56 The <<D2Enumeration>> "OverrideRecord.agentType"
+### A.3.69 The <<D2Enumeration>> "OverrideRecord.agentType"
 
 Copied from the summarized Command's `agentType`.
 
 Defined inline on `OverrideRecord`; the API names it by its owner and attribute.
 
-*Table A.108 -- Values contained in the enumeration "OverrideRecord.agentType"*
+*Table A.130 -- Values contained in the enumeration "OverrideRecord.agentType"*
 
 | Enumerated value name | Designation | Definition |
 | --- | --- | --- |
 | human | human | A person initiated the summarized command. † |
 | ai | ai | An AI agent initiated the summarized command. † |
 
-### A.3.57 The <<D2Enumeration>> "PassbackStatus.expectedPresence"
+### A.3.70 The <<D2Enumeration>> "PassbackStatus.expectedPresence"
 
 Values of expectedPresence on PassbackStatus.
 
 Defined inline on `PassbackStatus`; the API names it by its owner and attribute.
 
-*Table A.109 -- Values contained in the enumeration "PassbackStatus.expectedPresence"*
+*Table A.131 -- Values contained in the enumeration "PassbackStatus.expectedPresence"*
 
 | Enumerated value name | Designation | Definition |
 | --- | --- | --- |
@@ -3078,26 +3543,26 @@ Defined inline on `PassbackStatus`; the API names it by its owner and attribute.
 | outside | outside | The credential is expected to be outside the facility, as when presented at an entry lane. † |
 | unknown | unknown | Where the credential is expected to be is not known. † |
 
-### A.3.58 The <<D2Enumeration>> "PassbackStatus.lastAccess.direction"
+### A.3.71 The <<D2Enumeration>> "PassbackStatus.lastAccess.direction"
 
 Values of lastAccess.direction on PassbackStatus.
 
 Defined inline on `PassbackStatus`; the API names it by its owner and attribute.
 
-*Table A.110 -- Values contained in the enumeration "PassbackStatus.lastAccess.direction"*
+*Table A.132 -- Values contained in the enumeration "PassbackStatus.lastAccess.direction"*
 
 | Enumerated value name | Designation | Definition |
 | --- | --- | --- |
 | entry | entry | The last access was an entry. † |
 | exit | exit | The last access was an exit. † |
 
-### A.3.59 The <<D2Enumeration>> "PassbackStatus.recordedPresence"
+### A.3.72 The <<D2Enumeration>> "PassbackStatus.recordedPresence"
 
 Values of recordedPresence on PassbackStatus.
 
 Defined inline on `PassbackStatus`; the API names it by its owner and attribute.
 
-*Table A.111 -- Values contained in the enumeration "PassbackStatus.recordedPresence"*
+*Table A.133 -- Values contained in the enumeration "PassbackStatus.recordedPresence"*
 
 | Enumerated value name | Designation | Definition |
 | --- | --- | --- |
@@ -3105,13 +3570,13 @@ Defined inline on `PassbackStatus`; the API names it by its owner and attribute.
 | outside | outside | The anti-passback record places the credential outside the facility. † |
 | unknown | unknown | The anti-passback record does not place the credential. † |
 
-### A.3.60 The <<D2Enumeration>> "PassbackStatus.state"
+### A.3.73 The <<D2Enumeration>> "PassbackStatus.state"
 
 Values of state on PassbackStatus.
 
 Defined inline on `PassbackStatus`; the API names it by its owner and attribute.
 
-*Table A.112 -- Values contained in the enumeration "PassbackStatus.state"*
+*Table A.134 -- Values contained in the enumeration "PassbackStatus.state"*
 
 | Enumerated value name | Designation | Definition |
 | --- | --- | --- |
@@ -3119,13 +3584,13 @@ Defined inline on `PassbackStatus`; the API names it by its owner and attribute.
 | violation | violation | The recorded presence contradicts the expected presence, so anti-passback refuses the credential. † |
 | unknown | unknown | The implementation does not track passback for this credential (Part 17 §17.8). † |
 
-### A.3.61 The <<D2Enumeration>> "PaymentDetail.rateSold.class"
+### A.3.74 The <<D2Enumeration>> "PaymentDetail.rateSold.class"
 
 Values of rateSold.class on PaymentDetail.
 
 Defined inline on `PaymentDetail`; the API names it by its owner and attribute.
 
-*Table A.113 -- Values contained in the enumeration "PaymentDetail.rateSold.class"*
+*Table A.135 -- Values contained in the enumeration "PaymentDetail.rateSold.class"*
 
 | Enumerated value name | Designation | Definition |
 | --- | --- | --- |
@@ -3135,13 +3600,13 @@ Defined inline on `PaymentDetail`; the API names it by its owner and attribute.
 | zeroed | zeroed | The charge was reduced to zero. † |
 | other | other | Some other pricing. † |
 
-### A.3.62 The <<D2Enumeration>> "PaymentDetail.rateSold.product"
+### A.3.75 The <<D2Enumeration>> "PaymentDetail.rateSold.product"
 
 Values of rateSold.product on PaymentDetail.
 
 Defined inline on `PaymentDetail`; the API names it by its owner and attribute.
 
-*Table A.114 -- Values contained in the enumeration "PaymentDetail.rateSold.product"*
+*Table A.136 -- Values contained in the enumeration "PaymentDetail.rateSold.product"*
 
 | Enumerated value name | Designation | Definition |
 | --- | --- | --- |
@@ -3149,13 +3614,13 @@ Defined inline on `PaymentDetail`; the API names it by its owner and attribute.
 | pass | pass | A pass covering more than one stay or a period. † |
 | other | other | Some other product. † |
 
-### A.3.63 The <<D2Enumeration>> "PaymentLink.status"
+### A.3.76 The <<D2Enumeration>> "PaymentLink.status"
 
 Values of status on PaymentLink.
 
 Defined inline on `PaymentLink`; the API names it by its owner and attribute.
 
-*Table A.115 -- Values contained in the enumeration "PaymentLink.status"*
+*Table A.137 -- Values contained in the enumeration "PaymentLink.status"*
 
 | Enumerated value name | Designation | Definition |
 | --- | --- | --- |
@@ -3165,26 +3630,26 @@ Defined inline on `PaymentLink`; the API names it by its owner and attribute.
 | expired | expired | The link lapsed without payment. † |
 | cancelled | cancelled | The link was cancelled and the hosted page no longer accepts payment (Part 13 §13.1a). † |
 
-### A.3.64 The <<D2Enumeration>> "PaymentRecord.captureStatus"
+### A.3.77 The <<D2Enumeration>> "PaymentRecord.captureStatus"
 
 Whether an approved payment's funds have been collected (Part 13 §13.1a). `authorized` = a hold: the payment layer approved an authorization-only request (`captureLater: true`), funds are held, nothing is collected yet; settled by `POST /v1/payments/{id}/capture` or released by `…/void`. `captured` = collected. Absent = `captured` (a sale). A hold is returned to the caller that created it, but is not listed by `GET /v1/payments` unless asked for, is not published on `apx.accounts.payment.recorded.v1`, and is not materialized as an APDS Payment until captured.
 
 Defined inline on `PaymentRecord`; the API names it by its owner and attribute.
 
-*Table A.116 -- Values contained in the enumeration "PaymentRecord.captureStatus"*
+*Table A.138 -- Values contained in the enumeration "PaymentRecord.captureStatus"*
 
 | Enumerated value name | Designation | Definition |
 | --- | --- | --- |
 | authorized | authorized | a hold: the payment layer approved an |
 | captured | captured | collected |
 
-### A.3.65 The <<D2Enumeration>> "PaymentRecord.channel"
+### A.3.78 The <<D2Enumeration>> "PaymentRecord.channel"
 
 Where the payment was captured. `lane` = a lane device; `payStation` = a pay-on-foot or pay station; `agent` = a person on the implementer's own PCI-scoped terminal; `autoAttendant` = a PCI-compliant IVR that captures the card out of band; `online` = web or mobile app. APX never carries PANs, whichever channel is used.
 
 Defined inline on `PaymentRecord`; the API names it by its owner and attribute.
 
-*Table A.117 -- Values contained in the enumeration "PaymentRecord.channel"*
+*Table A.139 -- Values contained in the enumeration "PaymentRecord.channel"*
 
 | Enumerated value name | Designation | Definition |
 | --- | --- | --- |
@@ -3195,13 +3660,13 @@ Defined inline on `PaymentRecord`; the API names it by its owner and attribute.
 | online | online | web or mobile app |
 | other | other | The payment was captured through a channel not otherwise listed. † |
 
-### A.3.66 The <<D2Enumeration>> "PaymentRecord.paymentStatus"
+### A.3.79 The <<D2Enumeration>> "PaymentRecord.paymentStatus"
 
 The payment layer's answer. `approved` = approved (for a hold, see `captureStatus`); `declined` = refused by the payment layer; `reversed` = a hold voided, or a payment refunded in full. Transitions per Part 13 §13.1a.
 
 Defined inline on `PaymentRecord`; the API names it by its owner and attribute.
 
-*Table A.118 -- Values contained in the enumeration "PaymentRecord.paymentStatus"*
+*Table A.140 -- Values contained in the enumeration "PaymentRecord.paymentStatus"*
 
 | Enumerated value name | Designation | Definition |
 | --- | --- | --- |
@@ -3209,26 +3674,26 @@ Defined inline on `PaymentRecord`; the API names it by its owner and attribute.
 | declined | declined | refused by the payment layer |
 | reversed | reversed | a hold voided, or a payment refunded in full |
 
-### A.3.67 The <<D2Enumeration>> "PaymentSearch.captureStatus"
+### A.3.80 The <<D2Enumeration>> "PaymentSearch.captureStatus"
 
 Values of captureStatus on PaymentSearch.
 
 Defined inline on `PaymentSearch`; the API names it by its owner and attribute.
 
-*Table A.119 -- Values contained in the enumeration "PaymentSearch.captureStatus"*
+*Table A.141 -- Values contained in the enumeration "PaymentSearch.captureStatus"*
 
 | Enumerated value name | Designation | Definition |
 | --- | --- | --- |
 | authorized | authorized | Return only holds, whose funds are authorized but not yet collected (Part 13 §13.2). † |
 | captured | captured | Return only payments whose funds have been collected (Part 13 §13.2). † |
 
-### A.3.68 The <<D2Enumeration>> "PermitExtension.overageBilling.mode"
+### A.3.81 The <<D2Enumeration>> "PermitExtension.overageBilling.mode"
 
 `rack` — the place's transient rate deck; `dayRate` — the flat `dayRate`; `none` — recorded, not billed.
 
 Defined inline on `PermitExtension`; the API names it by its owner and attribute.
 
-*Table A.120 -- Values contained in the enumeration "PermitExtension.overageBilling.mode"*
+*Table A.142 -- Values contained in the enumeration "PermitExtension.overageBilling.mode"*
 
 | Enumerated value name | Designation | Definition |
 | --- | --- | --- |
@@ -3236,13 +3701,13 @@ Defined inline on `PermitExtension`; the API names it by its owner and attribute
 | dayRate | day rate | An overage is charged the flat dayRate (Part 14 §14.2d). † |
 | none | none | recorded, not billed. |
 
-### A.3.69 The <<D2Enumeration>> "PlateCorrection.decision"
+### A.3.82 The <<D2Enumeration>> "PlateCorrection.decision"
 
 Values of decision on PlateCorrection.
 
 Defined inline on `PlateCorrection`; the API names it by its owner and attribute.
 
-*Table A.121 -- Values contained in the enumeration "PlateCorrection.decision"*
+*Table A.143 -- Values contained in the enumeration "PlateCorrection.decision"*
 
 | Enumerated value name | Designation | Definition |
 | --- | --- | --- |
@@ -3250,13 +3715,13 @@ Defined inline on `PlateCorrection`; the API names it by its owner and attribute
 | corrected | corrected | The reviewer replaces the engine's values with the ones given. † |
 | rejected | rejected | The reviewer marks the read unusable for pairing and enforcement (Part 13 §13.3a(4a)). † |
 
-### A.3.70 The <<D2Enumeration>> "PlateList.status"
+### A.3.83 The <<D2Enumeration>> "PlateList.status"
 
 Values of status on PlateList.
 
 Defined inline on `PlateList`; the API names it by its owner and attribute.
 
-*Table A.122 -- Values contained in the enumeration "PlateList.status"*
+*Table A.144 -- Values contained in the enumeration "PlateList.status"*
 
 | Enumerated value name | Designation | Definition |
 | --- | --- | --- |
@@ -3264,13 +3729,57 @@ Defined inline on `PlateList`; the API names it by its owner and attribute.
 | suspended | suspended | The list is temporarily not applied anywhere; its entries remain readable (Part 24 §24.1). † |
 | retired | retired | The list is withdrawn and applies nowhere; its entries remain readable for audit (Part 24 §24.1). † |
 
-### A.3.71 The <<D2Enumeration>> "ReservationExtension.reservationState"
+### A.3.84 The <<D2Enumeration>> "ReceiptDelivery.channel"
+
+Values of channel on ReceiptDelivery.
+
+Defined inline on `ReceiptDelivery`; the API names it by its owner and attribute.
+
+*Table A.145 -- Values contained in the enumeration "ReceiptDelivery.channel"*
+
+| Enumerated value name | Designation | Definition |
+| --- | --- | --- |
+| email | email | The receipt was sent, or queued, by e-mail. † |
+| sms | sms | The receipt was sent, or queued, by text message. † |
+| print | print | The receipt was printed at the device. † |
+| link | link | The receipt is available at the returned link. † |
+
+### A.3.85 The <<D2Enumeration>> "ReceiptDelivery.status"
+
+Values of status on ReceiptDelivery.
+
+Defined inline on `ReceiptDelivery`; the API names it by its owner and attribute.
+
+*Table A.146 -- Values contained in the enumeration "ReceiptDelivery.status"*
+
+| Enumerated value name | Designation | Definition |
+| --- | --- | --- |
+| queued | queued | Accepted for delivery; not yet sent. † |
+| sent | sent | Delivered to the channel. † |
+| failed | failed | Delivery failed; the destination or the channel did not accept it. † |
+
+### A.3.86 The <<D2Enumeration>> "ReceiptRequest.channel"
+
+`print` re-prints at the device the payment was taken on; `link` returns a short-lived URL for the agent to read out or forward.
+
+Defined inline on `ReceiptRequest`; the API names it by its owner and attribute.
+
+*Table A.147 -- Values contained in the enumeration "ReceiptRequest.channel"*
+
+| Enumerated value name | Designation | Definition |
+| --- | --- | --- |
+| email | email | Send the receipt by e-mail to the destination address (Part 13 §13.1a). † |
+| sms | sms | Send the receipt by text message to the destination number. † |
+| print | print | Print the receipt at the device that took the payment. † |
+| link | link | Return a link from which the receipt can be fetched; no destination is needed. † |
+
+### A.3.87 The <<D2Enumeration>> "ReservationExtension.reservationState"
 
 Values of reservationState on ReservationExtension.
 
 Defined inline on `ReservationExtension`; the API names it by its owner and attribute.
 
-*Table A.123 -- Values contained in the enumeration "ReservationExtension.reservationState"*
+*Table A.148 -- Values contained in the enumeration "ReservationExtension.reservationState"*
 
 | Enumerated value name | Designation | Definition |
 | --- | --- | --- |
@@ -3280,13 +3789,13 @@ Defined inline on `ReservationExtension`; the API names it by its owner and attr
 | checkedIn | checked in | A Session has used the reservation. † |
 | noShow | no show | The reservation was not used before its no-show time (Part 14 §14.1). † |
 
-### A.3.72 The <<D2Enumeration>> "ReservationSummary.reservationState"
+### A.3.88 The <<D2Enumeration>> "ReservationSummary.reservationState"
 
 Values of reservationState on ReservationSummary.
 
 Defined inline on `ReservationSummary`; the API names it by its owner and attribute.
 
-*Table A.124 -- Values contained in the enumeration "ReservationSummary.reservationState"*
+*Table A.149 -- Values contained in the enumeration "ReservationSummary.reservationState"*
 
 | Enumerated value name | Designation | Definition |
 | --- | --- | --- |
@@ -3296,13 +3805,13 @@ Defined inline on `ReservationSummary`; the API names it by its owner and attrib
 | checkedIn | checked in | A Session has used the reservation. † |
 | noShow | no show | The reservation was not used before its no-show time (Part 14 §14.1). † |
 
-### A.3.73 The <<D2Enumeration>> "ResolutionContext.accessDecision.status"
+### A.3.89 The <<D2Enumeration>> "ResolutionContext.accessDecision.status"
 
 Values of accessDecision.status on ResolutionContext.
 
 Defined inline on `ResolutionContext`; the API names it by its owner and attribute.
 
-*Table A.125 -- Values contained in the enumeration "ResolutionContext.accessDecision.status"*
+*Table A.150 -- Values contained in the enumeration "ResolutionContext.accessDecision.status"*
 
 | Enumerated value name | Designation | Definition |
 | --- | --- | --- |
@@ -3311,26 +3820,42 @@ Defined inline on `ResolutionContext`; the API names it by its owner and attribu
 | pending | pending | The access decision has not yet been made. † |
 | unknown | unknown | The access decision is not known. † |
 
-### A.3.74 The <<D2Enumeration>> "ResolutionContext.status"
+### A.3.90 The <<D2Enumeration>> "ResolutionContext.status"
 
 partial = at least one source has not answered yet; re-read to refresh.
 
 Defined inline on `ResolutionContext`; the API names it by its owner and attribute.
 
-*Table A.126 -- Values contained in the enumeration "ResolutionContext.status"*
+*Table A.151 -- Values contained in the enumeration "ResolutionContext.status"*
 
 | Enumerated value name | Designation | Definition |
 | --- | --- | --- |
 | full | full | Every source has answered. † |
 | partial | partial | At least one source has not answered yet; re-read to refresh (Part 17 §17.2). † |
 
-### A.3.75 The <<D2Enumeration>> "SessionDetail.lifecycle"
+### A.3.91 The <<D2Enumeration>> "ResolutionResolveRequest.guestReference.kind"
+
+Values of guestReference.kind on ResolutionResolveRequest.
+
+Defined inline on `ResolutionResolveRequest`; the API names it by its owner and attribute.
+
+*Table A.152 -- Values contained in the enumeration "ResolutionResolveRequest.guestReference.kind"*
+
+| Enumerated value name | Designation | Definition |
+| --- | --- | --- |
+| hotelRoom | hotel room | A hotel room number, for a guest parking under a hotel arrangement (Part 17 §17.1). † |
+| company | company | A company or merchant name the parker claims to visit or work for. † |
+| tenant | tenant | A tenant of the building the place serves, for a tenant's employee or visitor. † |
+| event | event | An event name or booking, for an attendee. † |
+| other | other | Another kind of reference, as the operator and the call platform agree. † |
+
+### A.3.92 The <<D2Enumeration>> "SessionDetail.lifecycle"
 
 `open` — a vehicle is in the facility, no `actualEnd` yet; `ended` — closed, may still be revised; `final` — no further revision expected; `disputed` — under review. Every state but `open` requires `actualEnd`, and `open` forbids it (422 `request-unprocessable` otherwise). `final` is the writer's statement, never a lock: a server MUST NOT refuse a later revision on that ground.
 
 Defined inline on `SessionDetail`; the API names it by its owner and attribute.
 
-*Table A.127 -- Values contained in the enumeration "SessionDetail.lifecycle"*
+*Table A.153 -- Values contained in the enumeration "SessionDetail.lifecycle"*
 
 | Enumerated value name | Designation | Definition |
 | --- | --- | --- |
@@ -3339,13 +3864,13 @@ Defined inline on `SessionDetail`; the API names it by its owner and attribute.
 | final | final | no further revision |
 | disputed | disputed | under review |
 
-### A.3.76 The <<D2Enumeration>> "SessionReadBinding.role"
+### A.3.93 The <<D2Enumeration>> "SessionReadBinding.role"
 
 `entry` and `exit` are the passages that opened and closed the visit; `duplicate` is the same passage seen by another camera or frame; `activity` is the vehicle seen inside (a sweep, a bay camera).
 
 Defined inline on `SessionReadBinding`; the API names it by its owner and attribute.
 
-*Table A.128 -- Values contained in the enumeration "SessionReadBinding.role"*
+*Table A.154 -- Values contained in the enumeration "SessionReadBinding.role"*
 
 | Enumerated value name | Designation | Definition |
 | --- | --- | --- |
@@ -3354,13 +3879,13 @@ Defined inline on `SessionReadBinding`; the API names it by its owner and attrib
 | duplicate | duplicate | The same passage seen by another camera or in another frame. † |
 | activity | activity | The vehicle seen inside the facility, for example during a sweep or by a bay camera. † |
 
-### A.3.77 The <<D2Enumeration>> "Signage.signageStatus"
+### A.3.94 The <<D2Enumeration>> "Signage.signageStatus"
 
 Values of signageStatus on Signage.
 
 Defined inline on `Signage`; the API names it by its owner and attribute.
 
-*Table A.129 -- Values contained in the enumeration "Signage.signageStatus"*
+*Table A.155 -- Values contained in the enumeration "Signage.signageStatus"*
 
 | Enumerated value name | Designation | Definition |
 | --- | --- | --- |
@@ -3368,13 +3893,13 @@ Defined inline on `Signage`; the API names it by its owner and attribute.
 | superseded | superseded | Replaced by a newer sign record or version (Part 19 §19.11). † |
 | removed | removed | The sign has been taken down without a replacement. † |
 
-### A.3.78 The <<D2Enumeration>> "SubscriptionFilters.severityFloor"
+### A.3.95 The <<D2Enumeration>> "SubscriptionFilters.severityFloor"
 
 For alert topics — minimum severity delivered.
 
 Defined inline on `SubscriptionFilters`; the API names it by its owner and attribute.
 
-*Table A.130 -- Values contained in the enumeration "SubscriptionFilters.severityFloor"*
+*Table A.156 -- Values contained in the enumeration "SubscriptionFilters.severityFloor"*
 
 | Enumerated value name | Designation | Definition |
 | --- | --- | --- |
@@ -3384,26 +3909,26 @@ Defined inline on `SubscriptionFilters`; the API names it by its owner and attri
 | major | major | Alerts of major severity and above are delivered. † |
 | critical | critical | Only critical alerts are delivered. † |
 
-### A.3.79 The <<D2Enumeration>> "SupportInteraction.agentType"
+### A.3.96 The <<D2Enumeration>> "SupportInteraction.agentType"
 
 Values of agentType on SupportInteraction.
 
 Defined inline on `SupportInteraction`; the API names it by its owner and attribute.
 
-*Table A.131 -- Values contained in the enumeration "SupportInteraction.agentType"*
+*Table A.157 -- Values contained in the enumeration "SupportInteraction.agentType"*
 
 | Enumerated value name | Designation | Definition |
 | --- | --- | --- |
 | human | human | A person handled the interaction. † |
 | ai | ai | An AI agent handled the interaction. † |
 
-### A.3.80 The <<D2Enumeration>> "TollTransaction.transactionStatus"
+### A.3.97 The <<D2Enumeration>> "TollTransaction.transactionStatus"
 
 Values of transactionStatus on TollTransaction.
 
 Defined inline on `TollTransaction`; the API names it by its owner and attribute.
 
-*Table A.132 -- Values contained in the enumeration "TollTransaction.transactionStatus"*
+*Table A.158 -- Values contained in the enumeration "TollTransaction.transactionStatus"*
 
 | Enumerated value name | Designation | Definition |
 | --- | --- | --- |
@@ -3414,13 +3939,109 @@ Defined inline on `TollTransaction`; the API names it by its owner and attribute
 | resolved | resolved | A dispute has been resolved. † |
 | voided | voided | Cancelled by the operator. † |
 
-### A.3.81 The <<D2Enumeration>> "ValetHandbackRequest.verificationMethod"
+### A.3.98 The <<D2Enumeration>> "UiActionRecord.outcome"
+
+Values of outcome on UiActionRecord.
+
+Defined inline on `UiActionRecord`; the API names it by its owner and attribute.
+
+*Table A.159 -- Values contained in the enumeration "UiActionRecord.outcome"*
+
+| Enumerated value name | Designation | Definition |
+| --- | --- | --- |
+| completed | completed | The action was carried out on the surface. † |
+| failed | failed | The action was attempted on the surface and did not succeed. † |
+| noAction | no action | The agent took no action; recorded so that the launch is accounted for. † |
+
+### A.3.99 The <<D2Enumeration>> "UiActionRecord.unavailable.reason"
+
+Values of unavailable.reason on UiActionRecord.
+
+Defined inline on `UiActionRecord`; the API names it by its owner and attribute.
+
+*Table A.160 -- Values contained in the enumeration "UiActionRecord.unavailable.reason"*
+
+| Enumerated value name | Designation | Definition |
+| --- | --- | --- |
+| notSupported | not supported | The surface never knows this value (Part 25 §25.4). † |
+| notApplicable | not applicable | The value does not apply to this action. † |
+
+### A.3.100 The <<D2Enumeration>> "UiLaunch.status"
+
+`issued` → `opened` on first use of the url or token (single use) → `closed` when the screen reports it is done, or `expired` when `expiresAt` passes unused. An opened launch not closed within the implementation's limit (RECOMMENDED 1 h) also becomes `expired` (Part 25 §25.3).
+
+Defined inline on `UiLaunch`; the API names it by its owner and attribute.
+
+*Table A.161 -- Values contained in the enumeration "UiLaunch.status"*
+
+| Enumerated value name | Designation | Definition |
+| --- | --- | --- |
+| issued | issued | Created; the URL or token has not yet been used (Part 25 §25.3). † |
+| opened | opened | The URL or token was used once and the surface is open for the agent. † |
+| closed | closed | The surface reported the end of the session, or the implementation observed it; final. † |
+| expired | expired | Part 25 §25.3). |
+
+### A.3.101 The <<D2Enumeration>> "UiLaunchRequest.agentType"
+
+Values of agentType on UiLaunchRequest.
+
+Defined inline on `UiLaunchRequest`; the API names it by its owner and attribute.
+
+*Table A.162 -- Values contained in the enumeration "UiLaunchRequest.agentType"*
+
+| Enumerated value name | Designation | Definition |
+| --- | --- | --- |
+| human | human | A person will use the surface. † |
+| ai | ai | An AI agent will use the surface. † |
+
+### A.3.102 The <<D2Enumeration>> "UiLaunchRequest.displayMode"
+
+Values of displayMode on UiLaunchRequest.
+
+Defined inline on `UiLaunchRequest`; the API names it by its owner and attribute.
+
+*Table A.163 -- Values contained in the enumeration "UiLaunchRequest.displayMode"*
+
+| Enumerated value name | Designation | Definition |
+| --- | --- | --- |
+| embed | embed | Show the surface inside the host's page. † |
+| popup | popup | Show the surface in a pop-up window. † |
+| tab | tab | Show the surface in a new browser tab. † |
+
+### A.3.103 The <<D2Enumeration>> "UiSurface.displayModes"
+
+Values of displayModes on UiSurface.
+
+Defined inline on `UiSurface`; the API names it by its owner and attribute.
+
+*Table A.164 -- Values contained in the enumeration "UiSurface.displayModes"*
+
+| Enumerated value name | Designation | Definition |
+| --- | --- | --- |
+| embed | embed | The surface may be shown inside the host's page (the host's origin must be registered; Part 25 §25.6). † |
+| popup | popup | The surface may be shown in a pop-up window. † |
+| tab | tab | The surface may be shown in a new browser tab. † |
+
+### A.3.104 The <<D2Enumeration>> "UiSurface.launchModes"
+
+Values of launchModes on UiSurface.
+
+Defined inline on `UiSurface`; the API names it by its owner and attribute.
+
+*Table A.165 -- Values contained in the enumeration "UiSurface.launchModes"*
+
+| Enumerated value name | Designation | Definition |
+| --- | --- | --- |
+| handshake | handshake | The host posts a launch request with its APX token and opens the single-use URL returned (Part 25 §25.2). † |
+| signedToken | signed token | The host signs a launch token and sends it to the surface's launch URL by form post or URL fragment (Part 25 §25.2). † |
+
+### A.3.105 The <<D2Enumeration>> "ValetHandbackRequest.verificationMethod"
 
 Values of verificationMethod on ValetHandbackRequest.
 
 Defined inline on `ValetHandbackRequest`; the API names it by its owner and attribute.
 
-*Table A.133 -- Values contained in the enumeration "ValetHandbackRequest.verificationMethod"*
+*Table A.166 -- Values contained in the enumeration "ValetHandbackRequest.verificationMethod"*
 
 | Enumerated value name | Designation | Definition |
 | --- | --- | --- |
@@ -3430,13 +4051,13 @@ Defined inline on `ValetHandbackRequest`; the API names it by its owner and attr
 | id | id | An identity document was checked. † |
 | attendant | attendant | An attendant recognised the customer. † |
 
-### A.3.82 The <<D2Enumeration>> "ValetRetrievalRequest.channel"
+### A.3.106 The <<D2Enumeration>> "ValetRetrievalRequest.channel"
 
 Values of channel on ValetRetrievalRequest.
 
 Defined inline on `ValetRetrievalRequest`; the API names it by its owner and attribute.
 
-*Table A.134 -- Values contained in the enumeration "ValetRetrievalRequest.channel"*
+*Table A.167 -- Values contained in the enumeration "ValetRetrievalRequest.channel"*
 
 | Enumerated value name | Designation | Definition |
 | --- | --- | --- |
@@ -3448,13 +4069,13 @@ Defined inline on `ValetRetrievalRequest`; the API names it by its owner and att
 | attendant | attendant | An attendant raised the request at the stand. † |
 | callCenter | call center | An agent at a contact centre raised the request. † |
 
-### A.3.83 The <<D2Enumeration>> "ValetTicket.customer.contactChannel.type"
+### A.3.107 The <<D2Enumeration>> "ValetTicket.customer.contactChannel.type"
 
 Values of customer.contactChannel.type on ValetTicket.
 
 Defined inline on `ValetTicket`; the API names it by its owner and attribute.
 
-*Table A.135 -- Values contained in the enumeration "ValetTicket.customer.contactChannel.type"*
+*Table A.168 -- Values contained in the enumeration "ValetTicket.customer.contactChannel.type"*
 
 | Enumerated value name | Designation | Definition |
 | --- | --- | --- |
@@ -3465,13 +4086,13 @@ Defined inline on `ValetTicket`; the API names it by its owner and attribute.
 | email | email | The customer is reached by email. † |
 | none | none | The customer has given no channel to be reached on. † |
 
-### A.3.84 The <<D2Enumeration>> "ValetTicket.handback.verificationMethod"
+### A.3.108 The <<D2Enumeration>> "ValetTicket.handback.verificationMethod"
 
 Values of handback.verificationMethod on ValetTicket.
 
 Defined inline on `ValetTicket`; the API names it by its owner and attribute.
 
-*Table A.136 -- Values contained in the enumeration "ValetTicket.handback.verificationMethod"*
+*Table A.169 -- Values contained in the enumeration "ValetTicket.handback.verificationMethod"*
 
 | Enumerated value name | Designation | Definition |
 | --- | --- | --- |
@@ -3481,13 +4102,13 @@ Defined inline on `ValetTicket`; the API names it by its owner and attribute.
 | id | id | An identity document was checked. † |
 | attendant | attendant | An attendant recognised the customer. † |
 
-### A.3.85 The <<D2Enumeration>> "ValetTicket.retrieval.channel"
+### A.3.109 The <<D2Enumeration>> "ValetTicket.retrieval.channel"
 
 Values of retrieval.channel on ValetTicket.
 
 Defined inline on `ValetTicket`; the API names it by its owner and attribute.
 
-*Table A.137 -- Values contained in the enumeration "ValetTicket.retrieval.channel"*
+*Table A.170 -- Values contained in the enumeration "ValetTicket.retrieval.channel"*
 
 | Enumerated value name | Designation | Definition |
 | --- | --- | --- |
@@ -3499,13 +4120,13 @@ Defined inline on `ValetTicket`; the API names it by its owner and attribute.
 | attendant | attendant | An attendant raised the request at the stand. † |
 | callCenter | call center | An agent at a contact centre raised the request. † |
 
-### A.3.86 The <<D2Enumeration>> "ValetTicket.valetStatus"
+### A.3.110 The <<D2Enumeration>> "ValetTicket.valetStatus"
 
 Values of valetStatus on ValetTicket.
 
 Defined inline on `ValetTicket`; the API names it by its owner and attribute.
 
-*Table A.138 -- Values contained in the enumeration "ValetTicket.valetStatus"*
+*Table A.171 -- Values contained in the enumeration "ValetTicket.valetStatus"*
 
 | Enumerated value name | Designation | Definition |
 | --- | --- | --- |
@@ -3518,13 +4139,13 @@ Defined inline on `ValetTicket`; the API names it by its owner and attribute.
 | closed | closed | The stay is settled (Part 22 §22.1). † |
 | cancelled | cancelled | The ticket was cancelled before custody was taken; this is final (Part 22 §22.1). † |
 
-### A.3.87 The <<D2Enumeration>> "ValidationInstrument.instrumentStatus"
+### A.3.111 The <<D2Enumeration>> "ValidationInstrument.instrumentStatus"
 
 Values of instrumentStatus on ValidationInstrument.
 
 Defined inline on `ValidationInstrument`; the API names it by its owner and attribute.
 
-*Table A.139 -- Values contained in the enumeration "ValidationInstrument.instrumentStatus"*
+*Table A.172 -- Values contained in the enumeration "ValidationInstrument.instrumentStatus"*
 
 | Enumerated value name | Designation | Definition |
 | --- | --- | --- |
@@ -3533,26 +4154,26 @@ Defined inline on `ValidationInstrument`; the API names it by its owner and attr
 | void | void | The instrument has been withdrawn. † |
 | expired | expired | The instrument is past its validTo time (Part 20 §20.2). † |
 
-### A.3.88 The <<D2Enumeration>> "ValidationIssuance.issuanceStatus"
+### A.3.112 The <<D2Enumeration>> "ValidationIssuance.issuanceStatus"
 
 `void` after `POST …/issuances/{issuanceId}/void` (Part 20 §20.2 rule 5).
 
 Defined inline on `ValidationIssuance`; the API names it by its owner and attribute.
 
-*Table A.140 -- Values contained in the enumeration "ValidationIssuance.issuanceStatus"*
+*Table A.173 -- Values contained in the enumeration "ValidationIssuance.issuanceStatus"*
 
 | Enumerated value name | Designation | Definition |
 | --- | --- | --- |
 | issued | issued | The batch is in force. † |
 | void | void | The batch has been withdrawn; unredeemed instruments may not be used (Part 20 §20.2). † |
 
-### A.3.89 The <<D2Enumeration>> "ValidationIssuance.method"
+### A.3.113 The <<D2Enumeration>> "ValidationIssuance.method"
 
 Values of method on ValidationIssuance.
 
 Defined inline on `ValidationIssuance`; the API names it by its owner and attribute.
 
-*Table A.141 -- Values contained in the enumeration "ValidationIssuance.method"*
+*Table A.174 -- Values contained in the enumeration "ValidationIssuance.method"*
 
 | Enumerated value name | Designation | Definition |
 | --- | --- | --- |
@@ -3562,26 +4183,26 @@ Defined inline on `ValidationIssuance`; the API names it by its owner and attrib
 | digital | digital | A digital token held in an application. † |
 | api | api | Redemptions recorded directly by a merchant system, with no per-instrument code (Part 20 §20.2). † |
 
-### A.3.90 The <<D2Enumeration>> "ValidationIssuanceRequest.issuanceStatus"
+### A.3.114 The <<D2Enumeration>> "ValidationIssuanceRequest.issuanceStatus"
 
 Values of issuanceStatus on ValidationIssuanceRequest.
 
 Defined inline on `ValidationIssuanceRequest`; the API names it by its owner and attribute.
 
-*Table A.142 -- Values contained in the enumeration "ValidationIssuanceRequest.issuanceStatus"*
+*Table A.175 -- Values contained in the enumeration "ValidationIssuanceRequest.issuanceStatus"*
 
 | Enumerated value name | Designation | Definition |
 | --- | --- | --- |
 | issued | issued | The batch is in force. † |
 | void | void | The batch has been withdrawn; unredeemed instruments may not be used (Part 20 §20.2). † |
 
-### A.3.91 The <<D2Enumeration>> "ValidationIssuanceRequest.method"
+### A.3.115 The <<D2Enumeration>> "ValidationIssuanceRequest.method"
 
 Values of method on ValidationIssuanceRequest.
 
 Defined inline on `ValidationIssuanceRequest`; the API names it by its owner and attribute.
 
-*Table A.143 -- Values contained in the enumeration "ValidationIssuanceRequest.method"*
+*Table A.176 -- Values contained in the enumeration "ValidationIssuanceRequest.method"*
 
 | Enumerated value name | Designation | Definition |
 | --- | --- | --- |
@@ -3591,13 +4212,13 @@ Defined inline on `ValidationIssuanceRequest`; the API names it by its owner and
 | digital | digital | A digital token held in an application. † |
 | api | api | Redemptions recorded directly by a merchant system, with no per-instrument code (Part 20 §20.2). † |
 
-### A.3.92 The <<D2Enumeration>> "ValidationProgram.billing.billingCycle"
+### A.3.116 The <<D2Enumeration>> "ValidationProgram.billing.billingCycle"
 
 Values of billing.billingCycle on ValidationProgram.
 
 Defined inline on `ValidationProgram`; the API names it by its owner and attribute.
 
-*Table A.144 -- Values contained in the enumeration "ValidationProgram.billing.billingCycle"*
+*Table A.177 -- Values contained in the enumeration "ValidationProgram.billing.billingCycle"*
 
 | Enumerated value name | Designation | Definition |
 | --- | --- | --- |
@@ -3605,13 +4226,13 @@ Defined inline on `ValidationProgram`; the API names it by its owner and attribu
 | weekly | weekly | Billed once a week. † |
 | perRedemption | per redemption | Billed for each redemption as it is applied. † |
 
-### A.3.93 The <<D2Enumeration>> "ValidationProgram.billing.model"
+### A.3.117 The <<D2Enumeration>> "ValidationProgram.billing.model"
 
 Values of billing.model on ValidationProgram.
 
 Defined inline on `ValidationProgram`; the API names it by its owner and attribute.
 
-*Table A.145 -- Values contained in the enumeration "ValidationProgram.billing.model"*
+*Table A.178 -- Values contained in the enumeration "ValidationProgram.billing.model"*
 
 | Enumerated value name | Designation | Definition |
 | --- | --- | --- |
@@ -3619,13 +4240,13 @@ Defined inline on `ValidationProgram`; the API names it by its owner and attribu
 | operatorAbsorbs | operator absorbs | The operator bears the cost and nothing is billable (Part 20 §20.6). † |
 | split | split | The merchant pays a share of the amount reduced (Part 20 §20.6). † |
 
-### A.3.94 The <<D2Enumeration>> "ValidationProgram.issuanceMethods"
+### A.3.118 The <<D2Enumeration>> "ValidationProgram.issuanceMethods"
 
 Values of issuanceMethods on ValidationProgram.
 
 Defined inline on `ValidationProgram`; the API names it by its owner and attribute.
 
-*Table A.146 -- Values contained in the enumeration "ValidationProgram.issuanceMethods"*
+*Table A.179 -- Values contained in the enumeration "ValidationProgram.issuanceMethods"*
 
 | Enumerated value name | Designation | Definition |
 | --- | --- | --- |
@@ -3635,13 +4256,13 @@ Defined inline on `ValidationProgram`; the API names it by its owner and attribu
 | digital | digital | A digital token held in an application. † |
 | api | api | Redemptions recorded directly by a merchant system, with no per-instrument code (Part 20 §20.2). † |
 
-### A.3.95 The <<D2Enumeration>> "ValidationProgram.programStatus"
+### A.3.119 The <<D2Enumeration>> "ValidationProgram.programStatus"
 
 Values of programStatus on ValidationProgram.
 
 Defined inline on `ValidationProgram`; the API names it by its owner and attribute.
 
-*Table A.147 -- Values contained in the enumeration "ValidationProgram.programStatus"*
+*Table A.180 -- Values contained in the enumeration "ValidationProgram.programStatus"*
 
 | Enumerated value name | Designation | Definition |
 | --- | --- | --- |
@@ -3649,13 +4270,13 @@ Defined inline on `ValidationProgram`; the API names it by its owner and attribu
 | suspended | suspended | The program is temporarily stopped and redemptions are refused; it may be resumed (Part 20 §20.1). † |
 | ended | ended | The program has ended; this is final (Part 20 §20.1). † |
 
-### A.3.96 The <<D2Enumeration>> "ValidationRedemption.channel"
+### A.3.120 The <<D2Enumeration>> "ValidationRedemption.channel"
 
 Values of channel on ValidationRedemption.
 
 Defined inline on `ValidationRedemption`; the API names it by its owner and attribute.
 
-*Table A.148 -- Values contained in the enumeration "ValidationRedemption.channel"*
+*Table A.181 -- Values contained in the enumeration "ValidationRedemption.channel"*
 
 | Enumerated value name | Designation | Definition |
 | --- | --- | --- |
@@ -3665,26 +4286,26 @@ Defined inline on `ValidationRedemption`; the API names it by its owner and attr
 | callCenter | call center | Applied by an agent through the applyValidation command (Part 20 §20.3). † |
 | api | api | Recorded directly by a connected system. † |
 
-### A.3.97 The <<D2Enumeration>> "ValidationRedemption.redemptionStatus"
+### A.3.121 The <<D2Enumeration>> "ValidationRedemption.redemptionStatus"
 
 Values of redemptionStatus on ValidationRedemption.
 
 Defined inline on `ValidationRedemption`; the API names it by its owner and attribute.
 
-*Table A.149 -- Values contained in the enumeration "ValidationRedemption.redemptionStatus"*
+*Table A.182 -- Values contained in the enumeration "ValidationRedemption.redemptionStatus"*
 
 | Enumerated value name | Designation | Definition |
 | --- | --- | --- |
 | applied | applied | The validation is applied to the ticket or session. † |
 | reversed | reversed | The validation was reversed (Part 20 §20.4). † |
 
-### A.3.98 The <<D2Enumeration>> "ValidationStatement.billingModel"
+### A.3.122 The <<D2Enumeration>> "ValidationStatement.billingModel"
 
 Values of billingModel on ValidationStatement.
 
 Defined inline on `ValidationStatement`; the API names it by its owner and attribute.
 
-*Table A.150 -- Values contained in the enumeration "ValidationStatement.billingModel"*
+*Table A.183 -- Values contained in the enumeration "ValidationStatement.billingModel"*
 
 | Enumerated value name | Designation | Definition |
 | --- | --- | --- |
@@ -3692,39 +4313,39 @@ Defined inline on `ValidationStatement`; the API names it by its owner and attri
 | operatorAbsorbs | operator absorbs | The operator bears the cost and nothing is billable (Part 20 §20.6). † |
 | split | split | The merchant pays a share of the amount reduced (Part 20 §20.6). † |
 
-### A.3.99 The <<D2Enumeration>> "ValidationStatement.lines.lineKind"
+### A.3.123 The <<D2Enumeration>> "ValidationStatement.lines.lineKind"
 
 `redemption` (default when absent) — a redemption applied in the period. `credit` — a redemption billed on an earlier closed statement and reversed since; `billable` is negative.
 
 Defined inline on `ValidationStatement`; the API names it by its owner and attribute.
 
-*Table A.151 -- Values contained in the enumeration "ValidationStatement.lines.lineKind"*
+*Table A.184 -- Values contained in the enumeration "ValidationStatement.lines.lineKind"*
 
 | Enumerated value name | Designation | Definition |
 | --- | --- | --- |
 | redemption | redemption | default when absent) — a redemption applied in |
 | credit | credit | a redemption billed on an earlier |
 
-### A.3.100 The <<D2Enumeration>> "ValidationStatement.statementStatus"
+### A.3.124 The <<D2Enumeration>> "ValidationStatement.statementStatus"
 
 Values of statementStatus on ValidationStatement.
 
 Defined inline on `ValidationStatement`; the API names it by its owner and attribute.
 
-*Table A.152 -- Values contained in the enumeration "ValidationStatement.statementStatus"*
+*Table A.185 -- Values contained in the enumeration "ValidationStatement.statementStatus"*
 
 | Enumerated value name | Designation | Definition |
 | --- | --- | --- |
 | preview | preview | A computed preview for a period, with no identifier (Part 20 §20.6). † |
 | closed | closed | An immutable statement for a closed period that the operator invoices from (Part 20 §20.6). † |
 
-### A.3.101 The <<D2Enumeration>> "Violation.amountHistory.reason"
+### A.3.125 The <<D2Enumeration>> "Violation.amountHistory.reason"
 
 Values of amountHistory.reason on Violation.
 
 Defined inline on `Violation`; the API names it by its owner and attribute.
 
-*Table A.153 -- Values contained in the enumeration "Violation.amountHistory.reason"*
+*Table A.186 -- Values contained in the enumeration "Violation.amountHistory.reason"*
 
 | Enumerated value name | Designation | Definition |
 | --- | --- | --- |
@@ -3733,26 +4354,26 @@ Defined inline on `Violation`; the API names it by its owner and attribute.
 | appealReduced | appeal reduced | An appeal resolved as reduced lowered the amount. † |
 | cap | cap | The amount asked for at issue exceeded the penalty cap and was clamped to it (Part 19 §19.10). † |
 
-### A.3.102 The <<D2Enumeration>> "Violation.appeal.openedFrom"
+### A.3.126 The <<D2Enumeration>> "Violation.appeal.openedFrom"
 
 The state the appeal was opened from; `paid` is a pay-then-appeal (Part 19 §19.6). `upheld` and `reduced` return the violation to this state.
 
 Defined inline on `Violation`; the API names it by its owner and attribute.
 
-*Table A.154 -- Values contained in the enumeration "Violation.appeal.openedFrom"*
+*Table A.187 -- Values contained in the enumeration "Violation.appeal.openedFrom"*
 
 | Enumerated value name | Designation | Definition |
 | --- | --- | --- |
 | issued | issued | The appeal was opened while the violation was issued and unpaid. † |
 | paid | paid | The appeal was opened after payment, a pay-then-appeal (Part 19 §19.6). † |
 
-### A.3.103 The <<D2Enumeration>> "Violation.violationStatus"
+### A.3.127 The <<D2Enumeration>> "Violation.violationStatus"
 
 Current lifecycle state (see schema description for transitions).
 
 Defined inline on `Violation`; the API names it by its owner and attribute.
 
-*Table A.155 -- Values contained in the enumeration "Violation.violationStatus"*
+*Table A.188 -- Values contained in the enumeration "Violation.violationStatus"*
 
 | Enumerated value name | Designation | Definition |
 | --- | --- | --- |
@@ -3765,13 +4386,13 @@ Defined inline on `Violation`; the API names it by its owner and attribute.
 | closed | closed | The violation is finished, after payment or a successful appeal; this is final. † |
 | voided | voided | The violation was withdrawn, for example as issued in error or a duplicate; this is final (Part 19 §19.1). † |
 
-### A.3.104 The <<D2Enumeration>> "ViolationDetection.mode"
+### A.3.128 The <<D2Enumeration>> "ViolationDetection.mode"
 
 `automated` — a camera/sensor pipeline created the violation with no human in the loop. `guided` — the system surfaced a candidate (typically to a handheld) and an officer confirms on site. `manual` — an officer created the violation directly.
 
 Defined inline on `ViolationDetection`; the API names it by its owner and attribute.
 
-*Table A.156 -- Values contained in the enumeration "ViolationDetection.mode"*
+*Table A.189 -- Values contained in the enumeration "ViolationDetection.mode"*
 
 | Enumerated value name | Designation | Definition |
 | --- | --- | --- |
@@ -3779,13 +4400,13 @@ Defined inline on `ViolationDetection`; the API names it by its owner and attrib
 | guided | guided | the system surfaced a candidate |
 | manual | manual | an officer created the violation directly. |
 
-### A.3.105 The <<D2Enumeration>> "ViolationImport.violationStatus"
+### A.3.129 The <<D2Enumeration>> "ViolationImport.violationStatus"
 
 The APX state the source's status maps to. `paid` requires `amountPaid` at least `amount`; a part-paid violation is `issued` (Part 19 §19.6a). The source's own wording goes in the decoration's `sourceStatus`.
 
 Defined inline on `ViolationImport`; the API names it by its owner and attribute.
 
-*Table A.157 -- Values contained in the enumeration "ViolationImport.violationStatus"*
+*Table A.190 -- Values contained in the enumeration "ViolationImport.violationStatus"*
 
 | Enumerated value name | Designation | Definition |
 | --- | --- | --- |
@@ -3798,13 +4419,13 @@ Defined inline on `ViolationImport`; the API names it by its owner and attribute
 | closed | closed | The source reports the violation as finished; this is final. † |
 | voided | voided | The source reports the violation as withdrawn; this is final. † |
 
-### A.3.106 The <<D2Enumeration>> "ViolationReview.decision"
+### A.3.130 The <<D2Enumeration>> "ViolationReview.decision"
 
 Values of decision on ViolationReview.
 
 Defined inline on `ViolationReview`; the API names it by its owner and attribute.
 
-*Table A.158 -- Values contained in the enumeration "ViolationReview.decision"*
+*Table A.191 -- Values contained in the enumeration "ViolationReview.decision"*
 
 | Enumerated value name | Designation | Definition |
 | --- | --- | --- |
@@ -3819,7 +4440,7 @@ These lists extend APX string members without changing the schema, in the same w
 
 Used by: `LaneStatus.monthlyCredential.denialReason`, `CredentialAccessEvent.denialReason`, `AccessEvent.denialReason`. Seeds the APDS proposal AccessDenialReasonEnum (Tier 1). Published as an APDS `UserDefinedCodeList` at `spec/registries/apx-access-denial-reasons.json` (Part 11).
 
-*Table A.159 -- Entries in the code list "apx-access-denial-reasons"*
+*Table A.192 -- Entries in the code list "apx-access-denial-reasons"*
 
 | definedValue | Description |
 | --- | --- |
@@ -3839,7 +4460,7 @@ Used by: `LaneStatus.monthlyCredential.denialReason`, `CredentialAccessEvent.den
 
 Used by: `SubscriptionFilters.alertTypes`. Seeds the APDS proposal AlertTypeEnum (Tier 2). Published as an APDS `UserDefinedCodeList` at `spec/registries/apx-alert-types.json` (Part 11).
 
-*Table A.160 -- Entries in the code list "apx-alert-types"*
+*Table A.193 -- Entries in the code list "apx-alert-types"*
 
 | definedValue | Description |
 | --- | --- |
@@ -3861,12 +4482,46 @@ Used by: `SubscriptionFilters.alertTypes`. Seeds the APDS proposal AlertTypeEnum
 | watchListArrival | A credential on a watch plate list (Part 24) was read at a place where the list has alertOnArrival; relatedEntity is the PlateListEntry, the read is the evidence. |
 | scofflawArrival | A credential on a scofflaw plate list (Part 24) was read at a place where the list has alertOnArrival; relatedEntity is the PlateListEntry. |
 | refusedServiceArrival | A credential on a plate list with refuseService arrived at a lane and service was refused (the refused-service sign shown, the gate not vended); relatedEntity is the PlateListEntry, the displayMessage command's result.display is the proof of display. |
+| consumableLow | A device reports a supply at low or empty (tickets, receipt paper, cash, coins; DeviceStatus.consumables, Part 6 §6.4a); relatedEntity is the SupplementalEquipment. |
+| receiptRequested | A customer asked for a receipt that could not be sent during the interaction; relatedEntity is the PaymentRecord, supportInteraction the call. |
+| refundRequested | A customer asked for a refund that needs review or approval; relatedEntity is the PaymentRecord, supportInteraction the call. |
+| citationInquiry | A customer asked about a citation or notice the agent could not resolve; relatedEntity is the Violation when known. |
+| damageReported | A vehicle was reported damaged, broken into or towed at the place; relatedEntity is the Session when known, supportInteraction the call. |
+| customerCallbackRequested | A customer asked to be called back by the site or operator; supportInteraction is the call, which holds the contact details under its own scope. |
 
-### A.4.3 External code list "apx-command-types"
+### A.4.3 External code list "apx-area-types"
+
+Used by: Not referenced by a schema description. Seeds the APDS proposal AreaTypeEnum (Tier 2). Published as an APDS `UserDefinedCodeList` at `spec/registries/apx-area-types.json` (Part 11).
+
+*Table A.194 -- Entries in the code list "apx-area-types"*
+
+| definedValue | Description |
+| --- | --- |
+| lane | Vehicle area: an entry or exit lane. |
+| entryPlaza | Vehicle area: the approach to the entry lanes. |
+| exitPlaza | Vehicle area: the approach to the exit lanes. |
+| ramp | Vehicle area: a ramp between levels. |
+| parkingLevel | Vehicle area: a drive aisle or parking area on a level. |
+| roof | Vehicle area: an open roof level. |
+| evChargingArea | Vehicle area: the EV charging bays. |
+| loadingDock | Vehicle area: a loading or service area. |
+| perimeter | Vehicle area: outside the facility, its fence line or the street. |
+| elevator | Pedestrian area: inside an elevator car. |
+| elevatorLobby | Pedestrian area: an elevator lobby. |
+| lobby | Pedestrian area: the main or pedestrian lobby. |
+| stairwell | Pedestrian area: a stairwell. |
+| pedestrianEntrance | Pedestrian area: a street door or access door. |
+| paymentArea | Pedestrian area: where the pay-on-foot stations are. |
+| cashierBooth | Staff area: a cashier booth. |
+| office | Staff area: an office or attendant room. |
+| equipmentRoom | Staff area: a server or electrical room. |
+| other | An area none of the other codes fit. A code, not free text. |
+
+### A.4.4 External code list "apx-command-types"
 
 Used by: Not referenced by a schema description. Published as an APDS `UserDefinedCodeList` at `spec/registries/apx-command-types.json` (Part 11).
 
-*Table A.161 -- Entries in the code list "apx-command-types"*
+*Table A.195 -- Entries in the code list "apx-command-types"*
 
 | definedValue | Description |
 | --- | --- |
@@ -3888,12 +4543,31 @@ Used by: Not referenced by a schema description. Published as an APDS `UserDefin
 | startCharging | Remote-start charging on the target ElectricChargingEquipment for a plugged-in vehicle whose own authorization failed; parameters connectorIndex and chargingSession (Reference), or an authorization object for the server to open one (Part 23 §23.9). |
 | stopCharging | Remote-stop charging on the target ElectricChargingEquipment; parameters connectorIndex and chargingSession; the bridge reports chargingEnded with stopReason remote (Part 23 §23.9). |
 | unlockConnector | Release a cable the target ElectricChargingEquipment will not let go of; parameter connectorIndex; physicallyConfirmed only when the charger reported the connector unlocked or the bay camera saw the cable move (Part 23 §23.9). |
+| ejectTicket | Return the ticket or card held by the target device (a ticket stuck on cancel, a card the reader kept) to the customer (Part 6 §6.1). |
+| cancelTransaction | Abandon the transaction in progress at the target device and return it to idle, releasing any media it holds (Part 6 §6.1). |
+| reprintReceipt | Print the receipt of the last, or the referenced, payment again at the target device; parameter payment (Part 6 §6.1, Part 13 §13.1b). |
 
-### A.4.4 External code list "apx-conformance-classes"
+### A.4.5 External code list "apx-comms-point-types"
+
+Used by: Not referenced by a schema description. Seeds the APDS proposal CommsPointTypeEnum (Tier 3). Published as an APDS `UserDefinedCodeList` at `spec/registries/apx-comms-point-types.json` (Part 11).
+
+*Table A.196 -- Entries in the code list "apx-comms-point-types"*
+
+| definedValue | Description |
+| --- | --- |
+| intercom | A help button with two-way audio and/or video on a lane, a door or a pay station; the call platform knows it by its device id or caller id. |
+| analogDialer | A help button on a phone line; known by the line's caller id. |
+| postedNumber | A phone number on a sign that the parker dials from their own phone; known by the dialled number, and resolves to the place only unless the sign is for one lane. |
+| kiosk | A help function on a kiosk or pay station screen. |
+| qrCode | A printed code that opens a help page or chat for the place or lane it was printed for. |
+| app | A help function in the operator's or vendor's app. |
+| other | A way of reaching help none of the other codes fit. A code, not free text. |
+
+### A.4.6 External code list "apx-conformance-classes"
 
 Used by: Not referenced by a schema description. Published as an APDS `UserDefinedCodeList` at `spec/registries/apx-conformance-classes.json` (Part 11).
 
-*Table A.162 -- Entries in the code list "apx-conformance-classes"*
+*Table A.197 -- Entries in the code list "apx-conformance-classes"*
 
 | definedValue | Description |
 | --- | --- |
@@ -3917,12 +4591,14 @@ Used by: Not referenced by a schema description. Published as an APDS `UserDefin
 | apx-valet | Implements valet custody: drop-off with condition evidence, parked position and keys, the retrieval queue with ETA, staging, verified handback, and the customer request scope. |
 | apx-charging | Implements the parking-side view of EV charging: live charging-point status with bay-presence fusion, the ChargingSession referencing the APDS Session, idle after complete, three settlement modes, and the customer status scope. Requires the base classes; the charger-control commands (Part 23 §23.9) require apx-control. |
 | apx-plate-lists | Implements plate lists: watch, scofflaw, allow, and enforcement-vehicle lists with per-place flags, their entries, the change feed on both, and the apx.platelists.changed.v1 topic. Requires the base classes. |
+| apx-ui-launch | Implements UI launch (Part 25): the handshake launch with single-use urls, the signed-token launch, the UiLaunch record and lifecycle, the loopback rule (native resource or UiActionRecord carrying the correlationId), discovery uiSurfaces, and the apx.ui.launch.changed.v1 and apx.ui.action.recorded.v1 topics. Requires the base classes and apx-discovery. |
+| apx-site-config | Implements site configuration (Part 26): the equipment-detail, camera, external-ids and place-operations decorations, the equipment and comms-point routes with their change feeds, identifier resolution, camera views by short-lived link, and the apx.equipment.changed.v1 and apx.commspoints.changed.v1 topics. Requires the base classes. |
 
-### A.4.5 External code list "apx-device-states"
+### A.4.7 External code list "apx-device-states"
 
 Used by: Not referenced by a schema description. Seeds the APDS proposal EquipmentStatusEnum (Tier 1). Published as an APDS `UserDefinedCodeList` at `spec/registries/apx-device-states.json` (Part 11).
 
-*Table A.163 -- Entries in the code list "apx-device-states"*
+*Table A.198 -- Entries in the code list "apx-device-states"*
 
 | definedValue | Description |
 | --- | --- |
@@ -3933,23 +4609,95 @@ Used by: Not referenced by a schema description. Seeds the APDS proposal Equipme
 | fault | Device reports an error condition requiring attention. |
 | unknown | Device state cannot be determined (e.g. communication lost). |
 
-### A.4.6 External code list "apx-features"
+### A.4.8 External code list "apx-equipment-roles"
+
+Used by: Not referenced by a schema description. Seeds the APDS proposal EquipmentRoleEnum (Tier 2). Published as an APDS `UserDefinedCodeList` at `spec/registries/apx-equipment-roles.json` (Part 11).
+
+*Table A.199 -- Entries in the code list "apx-equipment-roles"*
+
+| definedValue | Description |
+| --- | --- |
+| gate | Vehicle barrier: a barrier arm. |
+| overheadDoor | Vehicle barrier: a rolling or overhead door. |
+| bollard | Vehicle barrier: a retractable bollard. |
+| trafficSpikes | Vehicle barrier: one-way tyre spikes. |
+| accessDoor | Pedestrian barrier: a door a parker authenticates at to enter the facility, for example after hours to reach their car. Place-level equipment with no lane. |
+| turnstile | Pedestrian barrier: a turnstile at a pedestrian entrance. |
+| ticketDispenser | Ticketing: the entry station that issues a ticket or token. |
+| exitVerifier | Ticketing: the exit station that reads the ticket or credential and opens the gate. |
+| exitPayStation | Payment: a pay-in-lane station at the exit (APDS type paymentMachine). |
+| payOnFoot | Payment: a central pay station away from the lanes (APDS type paymentMachine). |
+| cashierBooth | Payment: a staffed booth. |
+| validationTerminal | Payment: a merchant validator. |
+| paymentTerminal | Payment: a standalone card or tap terminal. |
+| cardReader | Credential reader: an access or proximity card reader. |
+| tagReader | Credential reader: an RFID, transponder or AVI tag reader. |
+| barcodeReader | Credential reader: a QR or barcode reader for reservations and mobile passes. |
+| loopDetector | Vehicle detection: an in-ground loop. |
+| presenceSensor | Vehicle detection: a non-loop vehicle sensor (radar, ultrasonic, magnetic). |
+| camera | A camera anywhere on the site; what it looks at, how it is mounted and how it is viewed are in the apds-ext:apx:camera@1.0 decoration (Part 26 §26.3). |
+| intercom | Communications: a help button with two-way audio and/or video. |
+| analogDialer | Communications: a help button on a phone line. |
+| emergencyPhone | Communications: a dedicated emergency call box. |
+| laneDisplay | Signs and displays: a message screen at the lane. |
+| laneSignal | Signs and displays: an open/closed light or traffic light. |
+| countSign | Signs and displays: a spaces-available sign. |
+| laneController | On-site infrastructure: a lane computer or controller. |
+| facilityServer | On-site infrastructure: the on-site PARCS server. |
+| videoRecorder | On-site infrastructure: a DVR or NVR; a camera's recorder points here. |
+| videoGateway | On-site infrastructure: the gateway that issues short-lived camera links (Part 26 §26.4). |
+| other | Hardware none of the other codes fit. A code, not free text; propose a new code rather than describing the item in prose. |
+
+### A.4.9 External code list "apx-escalation-roles"
+
+Used by: Not referenced by a schema description. Published as an APDS `UserDefinedCodeList` at `spec/registries/apx-escalation-roles.json` (Part 11).
+
+*Table A.200 -- Entries in the code list "apx-escalation-roles"*
+
+| definedValue | Description |
+| --- | --- |
+| siteManager | The manager responsible for the place. |
+| attendant | Staff on site at the time. |
+| security | The place's security desk or patrol. |
+| operatorOnCall | The operator's on-call duty manager or supervisor. |
+| maintenance | The maintenance or service provider for the equipment. |
+| other | A role none of the other codes fit. A code, not free text. |
+
+### A.4.10 External code list "apx-features"
 
 Used by: `DiscoveryDocument.features`, `ApxConfiguration.features`. Published as an APDS `UserDefinedCodeList` at `spec/registries/apx-features.json` (Part 11).
 
-*Table A.164 -- Entries in the code list "apx-features"*
+*Table A.201 -- Entries in the code list "apx-features"*
 
 | definedValue | Description |
 | --- | --- |
 | negotiatedRates | apx-control optional feature: agents may offer negotiated rate tables with pushNegotiatedRate (Part 6 §6.6; Annex A APX-CTL-09 and 10). |
 | ticketMatching | apx-control optional feature: advisory match candidates at the lane and the matchTicket command (Part 6 §6.7; Annex A APX-CTL-11 and 12). |
 | negotiatedAmounts | apx-control optional feature, offered only with negotiatedRates: pushNegotiatedRate may state any amount for the current ticket, with agent and reason required (Part 6 §6.6; Annex A APX-CTL-16). |
+| cameraViews | apx-site-config optional feature: POST /v1/cameras/{id}/views issues short-lived live and snapshot links bound to the agent (Part 26 §26.4). |
+| cameraPlayback | apx-site-config optional feature, offered only with cameraViews: a view of kind playback over a from/to range within the camera's retention (Part 26 §26.4). |
 
-### A.4.7 External code list "apx-issue-types"
+### A.4.11 External code list "apx-interaction-outcomes"
+
+Used by: Not referenced by a schema description. Published as an APDS `UserDefinedCodeList` at `spec/registries/apx-interaction-outcomes.json` (Part 11).
+
+*Table A.202 -- Entries in the code list "apx-interaction-outcomes"*
+
+| definedValue | Description |
+| --- | --- |
+| resolved | The issue was resolved during the interaction, by an action or an answer. |
+| vended | The gate or door was opened for the customer as the resolution. |
+| transferred | The interaction was handed to another agent or system. |
+| escalated | A manager, attendant or other role took over or was asked to act (see escalationContacts and ApprovalRequest). |
+| noActionNeeded | The customer needed no assistance by the time the agent answered. |
+| abandoned | The customer left or the contact ended before a resolution. |
+| callbackScheduled | The customer will be called back; raises customerCallbackRequested when the site must do it. |
+
+### A.4.12 External code list "apx-issue-types"
 
 Used by: Not referenced by a schema description. Seeds the APDS proposal SupportIssueTypeEnum (Tier 3). Published as an APDS `UserDefinedCodeList` at `spec/registries/apx-issue-types.json` (Part 11).
 
-*Table A.165 -- Entries in the code list "apx-issue-types"*
+*Table A.203 -- Entries in the code list "apx-issue-types"*
 
 | definedValue | Description |
 | --- | --- |
@@ -3964,12 +4712,35 @@ Used by: Not referenced by a schema description. Seeds the APDS proposal Support
 | plateUnresolved | The session has no plate or a low-confidence/incorrect plate association. |
 | equipmentFault | A lane device (payment terminal, ticket reader, gate, intercom, camera) is offline or faulted. |
 | unknown | The issue could not be classified from available signals. |
+| noResponse | The help button was pressed or the number dialled, but nobody answered the agent. |
+| callDropped | The contact ended before the issue was stated or resolved. |
+| audioFault | The agent cannot hear the parker or the parker cannot hear the agent; a fault in the lane's call equipment. |
+| generalInquiry | A question about rates, hours, directions or the facility, with no transaction problem. |
+| wrongLocation | The parker is at the wrong garage, dialled the wrong number, or the vehicle does not fit. |
+| facilityFull | No space is available for the arriving vehicle. |
+| ticketUnreadable | The entry ticket is present but the device cannot read it (damaged, demagnetized, faded). |
+| ticketNotAccepted | The device refuses or will not return a readable ticket, including a ticket stuck on cancel. |
+| noTicketIssued | The entry station issued no ticket, typically because it is out of tickets (see DeviceStatus.consumables). |
+| paidCannotExit | The ticket is paid, but the exit does not open; a payment-status lookup is the first step. |
+| cardNotReading | The card reader does not read the payment card at all, as distinct from a decline. |
+| paymentMethodUnavailable | The parker cannot pay with what they have (card-only device, no money, needs change). |
+| mediaJam | A ticket, bill or card is jammed or stuck in the device. |
+| gateStuckOpen | The barrier is stuck open and vehicles pass without a transaction. |
+| credentialForgotten | A holder arrived without their card, transponder or fob. |
+| credentialDisabled | The holder's credential is present but disabled or deactivated. |
+| gracePeriod | A dispute about the grace period, for example a fee charged just after it ended. |
+| validationExpired | A validation was applied but has expired, so an amount is due. |
+| authorizedVisitor | A hotel guest, vendor, employee, police officer or security staff needing entry under the place's guest arrangements (resolve with guestReference). |
+| receiptRequest | The customer needs a receipt sent or printed again (Part 13 receipt re-send). |
+| refundRequest | The customer asks for a refund or credit (reason from apx-refund-reasons). |
+| vehicleIncident | A vehicle was damaged, broken into or towed at the place; raises a damageReported alert. |
+| equipmentTest | A technician testing the equipment, not a customer; excluded from service figures. |
 
-### A.4.8 External code list "apx-payment-line-codes"
+### A.4.13 External code list "apx-payment-line-codes"
 
 Used by: `PaymentDetail.lines`. Seeds the APDS proposal PaymentTypeEnum (Tier 2). Published as an APDS `UserDefinedCodeList` at `spec/registries/apx-payment-line-codes.json` (Part 11).
 
-*Table A.166 -- Entries in the code list "apx-payment-line-codes"*
+*Table A.204 -- Entries in the code list "apx-payment-line-codes"*
 
 | definedValue | Description |
 | --- | --- |
@@ -3982,11 +4753,11 @@ Used by: `PaymentDetail.lines`. Seeds the APDS proposal PaymentTypeEnum (Tier 2)
 | idle | An EV charging idle charge (Part 23 §23.5). A paymentType payment line. |
 | energy | An EV charging energy charge (Part 23 §23.5). A paymentType payment line. |
 
-### A.4.9 External code list "apx-plate-list-categories"
+### A.4.14 External code list "apx-plate-list-categories"
 
 Used by: `PlateList.category`. Seeds the APDS proposal PlateListCategoryEnum (Tier 2). Published as an APDS `UserDefinedCodeList` at `spec/registries/apx-plate-list-categories.json` (Part 11).
 
-*Table A.167 -- Entries in the code list "apx-plate-list-categories"*
+*Table A.205 -- Entries in the code list "apx-plate-list-categories"*
 
 | definedValue | Description |
 | --- | --- |
@@ -3995,11 +4766,11 @@ Used by: `PlateList.category`. Seeds the APDS proposal PlateListCategoryEnum (Ti
 | scofflaw | Credentials with unpaid notices or a standing refusal from the list owner; a match raises scofflawArrival and, where refuseService, refuses service at the lane. |
 | enforcementVehicle | The list owner's own enforcement and service vehicles, whose visits are recorded but never enforced or screened. |
 
-### A.4.10 External code list "apx-read-review-reasons"
+### A.4.15 External code list "apx-read-review-reasons"
 
 Used by: `LprReadDetail.review.reasons`. Seeds the APDS proposal ReadReviewReasonEnum (Tier 2). Published as an APDS `UserDefinedCodeList` at `spec/registries/apx-read-review-reasons.json` (Part 11).
 
-*Table A.168 -- Entries in the code list "apx-read-review-reasons"*
+*Table A.206 -- Entries in the code list "apx-read-review-reasons"*
 
 | definedValue | Description |
 | --- | --- |
@@ -4010,11 +4781,25 @@ Used by: `LprReadDetail.review.reasons`. Seeds the APDS proposal ReadReviewReaso
 | enforcementHandoff | The read is about to be handed to an enforcement system that requires reviewed evidence. |
 | conflictingReads | Reads of the same passage (one captureGroup) disagree on the plate, country, or state/province. |
 
-### A.4.11 External code list "apx-session-end-reasons"
+### A.4.16 External code list "apx-refund-reasons"
+
+Used by: Not referenced by a schema description. Published as an APDS `UserDefinedCodeList` at `spec/registries/apx-refund-reasons.json` (Part 11).
+
+*Table A.207 -- Entries in the code list "apx-refund-reasons"*
+
+| definedValue | Description |
+| --- | --- |
+| changeNotDispensed | The device kept money it should have returned. |
+| doubleCharge | The customer was charged twice for one stay. |
+| overcharge | The amount taken exceeded what the rate or validation said was due. |
+| serviceFailure | The customer paid for something the facility did not deliver (a reservation not honoured, a stay cut short by a fault). |
+| courtesy | A goodwill refund with no fault found. |
+
+### A.4.17 External code list "apx-session-end-reasons"
 
 Used by: `SessionClosure.endReason`. Seeds the APDS proposal SessionEndReasonEnum (Tier 1). Published as an APDS `UserDefinedCodeList` at `spec/registries/apx-session-end-reasons.json` (Part 11).
 
-*Table A.169 -- Entries in the code list "apx-session-end-reasons"*
+*Table A.208 -- Entries in the code list "apx-session-end-reasons"*
 
 | definedValue | Description |
 | --- | --- |
@@ -4029,11 +4814,11 @@ Used by: `SessionClosure.endReason`. Seeds the APDS proposal SessionEndReasonEnu
 | operator | A person closed the Session. |
 | review | A reviewer paired the exit read that closed the Session. |
 
-### A.4.12 External code list "apx-toll-dispute-reasons"
+### A.4.18 External code list "apx-toll-dispute-reasons"
 
 Used by: `TollTransaction.dispute.reason`, `TollDisputeOpen.reason`. Seeds the APDS proposal TollDisputeReasonEnum (Tier 2). Published as an APDS `UserDefinedCodeList` at `spec/registries/apx-toll-dispute-reasons.json` (Part 11).
 
-*Table A.170 -- Entries in the code list "apx-toll-dispute-reasons"*
+*Table A.209 -- Entries in the code list "apx-toll-dispute-reasons"*
 
 | definedValue | Description |
 | --- | --- |
@@ -4043,11 +4828,11 @@ Used by: `TollTransaction.dispute.reason`, `TollDisputeOpen.reason`. Seeds the A
 | notLiable | The party is not liable for the passage (exempt vehicle, sold or stolen vehicle, rental transfer). |
 | other | Any other reason; the dispute `detail` explains it. |
 
-### A.4.13 External code list "apx-toll-dispute-resolutions"
+### A.4.19 External code list "apx-toll-dispute-resolutions"
 
 Used by: `TollTransaction.dispute.resolution`, `TollDisputeResolution.resolution`. Seeds the APDS proposal TollDisputeResolutionEnum (Tier 2). Published as an APDS `UserDefinedCodeList` at `spec/registries/apx-toll-dispute-resolutions.json` (Part 11).
 
-*Table A.171 -- Entries in the code list "apx-toll-dispute-resolutions"*
+*Table A.210 -- Entries in the code list "apx-toll-dispute-resolutions"*
 
 | definedValue | Description |
 | --- | --- |
@@ -4056,11 +4841,11 @@ Used by: `TollTransaction.dispute.resolution`, `TollDisputeResolution.resolution
 | adjusted | A new amount is owed; the resolution carries `adjustedPricing` and the original is kept in `dispute.originalPricing`. |
 | withdrawn | The disputing party abandoned the dispute; the charge stands. |
 
-### A.4.14 External code list "apx-topics"
+### A.4.20 External code list "apx-topics"
 
 Used by: Not referenced by a schema description. Published as an APDS `UserDefinedCodeList` at `spec/registries/apx-topics.json` (Part 11).
 
-*Table A.172 -- Entries in the code list "apx-topics"*
+*Table A.211 -- Entries in the code list "apx-topics"*
 
 | definedValue | Description |
 | --- | --- |
@@ -4093,12 +4878,41 @@ Used by: Not referenced by a schema description. Published as an APDS `UserDefin
 | apx.charging.idle.started.v1 | A ChargingSession entered idle after its idlePolicy grace elapsed with the cable still connected; carries the idle policy and the minimized vehicle summary (data: ChargingSession) — drives the customer's move-your-car notification and the Part 19 enforcement hook. Required for apx-charging (Part 23 §23.2, §23.10). |
 | apx.charging.point.status.v1 | A charging point's availability or bay presence changed (data: ChargingPointStatus; place-bound on ChargingPointStatus.place). Required for apx-charging (Part 23 §23.1, §23.3). |
 | apx.platelists.changed.v1 | A plate list or one of its entries was created, changed, or removed (data: PlateList with entryCount; subject: the list). Consumers resync entries through the Part 5 feed on /v1/plate-lists/{id}/entries. Required for apx-plate-lists (Part 24 §24.3). |
+| apx.ui.launch.changed.v1 | A UI launch was issued, opened, closed, or expired (data: UiLaunch without url; subject: the launch; place-bound on UiLaunch.place). Required for apx-ui-launch (Part 25 §25.3). |
+| apx.ui.action.recorded.v1 | An action done in a launched vendor screen was recorded as a UiActionRecord because no native resource could express it (data: UiActionRecord; subject: the launch; carries the launch's correlationId). Required for apx-ui-launch (Part 25 §25.4). |
+| apx.equipment.changed.v1 | A piece of equipment or its APX decorations (equipment-detail, camera, external-ids) was added, changed, or removed (data: EquipmentRecord; subject: the SupplementalEquipment; place-bound). Lets other systems stay in sync without re-reading the place. Required for apx-site-config (Part 26 §26.8). |
+| apx.commspoints.changed.v1 | A comms point was added, changed, or removed (data: CommsPoint; subject: the comms point; place-bound). Required for apx-site-config (Part 26 §26.8). |
+| apx.approvals.changed.v1 | An approval request was created, decided, or expired (data: ApprovalRequest; subject: the request; place-bound). An approver's system subscribes to it for its queue. Required for apx-resolution when approvals are offered (Part 17 §17.8). |
 
-### A.4.15 External code list "apx-violation-types"
+### A.4.21 External code list "apx-ui-surfaces"
+
+Used by: Not referenced by a schema description. Published as an APDS `UserDefinedCodeList` at `spec/registries/apx-ui-surfaces.json` (Part 11).
+
+*Table A.212 -- Entries in the code list "apx-ui-surfaces"*
+
+| definedValue | Description |
+| --- | --- |
+| lane.console | The vendor's lane console: the transaction in the machine, the devices, and the actions an agent takes at a lane. Subject: VehicularAccess. |
+| session.detail | One parking session, its reads, payments and validations. Subject: Session. |
+| reservation.detail | One reservation, with redeem, amend and cancel. Subject: AssignedRight (the reservation). |
+| reservation.search | Find a reservation by code, plate, name or time. General surface, no subject. |
+| lpr.read.review | Review and correct one plate read. Subject: Observation. |
+| violation.detail | One violation, its evidence and status. Subject: Violation. |
+| violation.appeal | Open or decide an appeal on a violation. Subject: Violation. |
+| validation.redeem | Apply a validation to the current session or ticket. Subject: Session. |
+| credential.detail | One credential and its holder, with suspend, resume and replace. Subject: CredentialRecord. |
+| toll.transaction | One toll transaction and its payment. Subject: TollTransaction. |
+| toll.dispute | Open or resolve a dispute on a toll transaction. Subject: TollTransaction. |
+| valet.ticket | One valet ticket: position, keys, retrieval and handback. Subject: ValetTicket. |
+| charging.session | One charging session and its charger. Subject: ChargingSession. |
+| place.console | The vendor's console for one place: lanes, devices, counts. Subject: HierarchyElement (the place). |
+| module.home | The vendor's home screen for a module, with no subject. General surface. |
+
+### A.4.22 External code list "apx-violation-types"
 
 Used by: `Violation.violationType`, `EligibilityResult.suggestedViolationType`, `ViolationSource.violationCode`, `ViolationImport.violationType`. Seeds the APDS proposal ViolationTypeEnum (Tier 1). Published as an APDS `UserDefinedCodeList` at `spec/registries/apx-violation-types.json` (Part 11).
 
-*Table A.173 -- Entries in the code list "apx-violation-types"*
+*Table A.213 -- Entries in the code list "apx-violation-types"*
 
 | definedValue | Description |
 | --- | --- |
@@ -4116,7 +4930,7 @@ Used by: `Violation.violationType`, `EligibilityResult.suggestedViolationType`, 
 
 ## Annex B (informative) APDS 4.1 classes used by APX
 
-APX carries 194 classes, datatypes and enumerations from the APDS 4.1 API document unchanged in meaning. Their definitions are in the APDS 4.1 Data Dictionary and are not repeated here. Where the APX overlay changes the published schema, the change is named. Additions are optional extension points (Part 10). Corrections work around the errata in 06, Part A.
+APX carries 204 classes, datatypes and enumerations from the APDS 4.1 API document unchanged in meaning. Their definitions are in the APDS 4.1 Data Dictionary and are not repeated here. Where the APX overlay changes the published schema, the change is named. Additions are optional extension points (Part 10). Corrections work around the errata in 06, Part A.
 
 | APDS name | APDS domain | How APX uses it |
 | --- | --- | --- |
@@ -4162,6 +4976,7 @@ APX carries 194 classes, datatypes and enumerations from the APDS 4.1 API docume
 | DayEnum | PkCommon | Used as published |
 | DayWeekMonth | PkCommon | Used as published |
 | DeletedReference | PkCommon | Used as published |
+| DeliveryUnitEnum | EnergyInfrastructure | Used as published |
 | DemandSpaceType | Occupancy | Used as published |
 | DemandTable | Occupancy | Used as published |
 | DemandType | Occupancy | Used as published |
@@ -4172,6 +4987,7 @@ APX carries 194 classes, datatypes and enumerations from the APDS 4.1 API docume
 | EmailTypeEnum | PkCommon | Used as published |
 | Emissions | Rates | Used as published |
 | EntranceOpenTime | PkCommon | Used as published |
+| EquipmentTypeEnum | EnergyInfrastructure | Used as published |
 | EventData | PkCommon | Used as published |
 | EventTypeEnum | PkCommon | Used as published |
 | ExitOpenTime | PkCommon | Used as published |
@@ -4185,6 +5001,7 @@ APX carries 194 classes, datatypes and enumerations from the APDS 4.1 API docume
 | HierarchyElementRecord | Place | Used as published |
 | HierarchyElementReference | Place | Used as published |
 | HierarchyElementTypeEnum | Place | Used as published |
+| IdentifiedArea | Place | Corrected by the APX overlay (see 06, Part A) |
 | Identifiers | Quote | APX overlay adds `rateTableId` |
 | Image | Observation | Used as published |
 | ImageAlbum | PkCommon | Used as published |
@@ -4259,8 +5076,10 @@ APX carries 194 classes, datatypes and enumerations from the APDS 4.1 API docume
 | ReferenceToQuote | Quote | Used as published |
 | ReferencedCodeListEntry | PkCommon | Used as published |
 | ReferencedRightSpecification | Quote | Used as published |
+| RefillPoint | EnergyInfrastructure | Used as published |
 | RelativeOffsets | PkCommon | Used as published |
 | RelativeTimes | PkCommon | Used as published |
+| ReservationTypeEnum | EnergyInfrastructure | Used as published |
 | ResponseReasonEnum | Quote | Used as published |
 | ResponseStatus | PkCommon | Used as published |
 | ResponseStatusEnum | PkCommon | Used as published |
@@ -4272,6 +5091,7 @@ APX carries 194 classes, datatypes and enumerations from the APDS 4.1 API docume
 | RightSpecificationTypeEnum | Right | Used as published |
 | SafetyStandardClassification | Place | Used as published |
 | Segment | Session | Used as published |
+| ServiceTypeEnum | EnergyInfrastructure | Used as published |
 | Session | Session | APX overlay adds `extensions` |
 | SessionList | Session | Used as published |
 | Space | Place | Corrected by the APX overlay (see 06, Part A) |
@@ -4282,6 +5102,8 @@ APX carries 194 classes, datatypes and enumerations from the APDS 4.1 API docume
 | StaffEnum | Place | Used as published |
 | StructureGradeEnum | Place | Used as published |
 | StructureTypeEnum | Place | Used as published |
+| SupplementalEquipment | Place | Used as published |
+| SupplementalFacility | Place | Used as published |
 | Supply | Occupancy | Used as published |
 | SupplyViewTypeEnum | Occupancy | Used as published |
 | TelephoneContact | PkCommon | Used as published |
@@ -4296,8 +5118,10 @@ APX carries 194 classes, datatypes and enumerations from the APDS 4.1 API docume
 | UnitOfMeasureEnum | Rates | Used as published |
 | UnitOfMeasureWeightEnum | Place | Used as published |
 | UnitOfTimeEnum | PkCommon | Used as published |
+| Units | PkCommon | Used as published |
 | Url | PkCommon | Used as published |
 | UserQualification | Rates | Used as published |
+| UserTypeEnum | Place | Used as published |
 | Validity | PkCommon | Used as published |
 | ValidityAlias | PkCommon | Used as published |
 | ValidityStatusEnum | PkCommon | Used as published |
@@ -4329,6 +5153,9 @@ Each row links an APX class to the APDS data element proposed from it. The full 
 | Alert | AlertSeverityEnum | new enumeration | Operations | 2 |
 | Alert | AlertStatusEnum | new enumeration | Operations | 2 |
 | AttributeRead | AttributeRead | new class | Observation | 1 |
+| CameraDetail | Camera | new class | Place | 2 |
+| CameraDetail | CameraMountingEnum | new enumeration | Place | 2 |
+| CameraDetail | CameraViewEnum | new enumeration | Place | 2 |
 | ChargingBayPresence | ChargingBayPresence | new class | EnergyInfrastructure | 3 |
 | ChargingBayPresence | BayPresenceEnum | new enumeration | EnergyInfrastructure | 3 |
 | ChargingBayPresence | BayPresenceSourceEnum | new enumeration | EnergyInfrastructure | 3 |
@@ -4340,6 +5167,7 @@ Each row links an APX class to the APDS data element proposed from it. The full 
 | ChargingSession | ChargingSessionStatusEnum | new enumeration | EnergyInfrastructure | 3 |
 | ChargingSession | ChargingStopReasonEnum | new enumeration | EnergyInfrastructure | 3 |
 | ChargingSession | ChargingSettlementModeEnum | new enumeration | EnergyInfrastructure | 3 |
+| CommsPoint | CommsPoint | new class | Place | 3 |
 | ConditionReport | ConditionReport | new class | Observation | 2 |
 | ConditionReport | DamageItem | new class | Observation | 2 |
 | ConditionReport | DamageSeverityEnum | new enumeration | Observation | 2 |
@@ -4354,6 +5182,7 @@ Each row links an APX class to the APDS data element proposed from it. The full 
 | EnforcementPolicy | NoticeDeliveryRule | new class | Enforcement | 2 |
 | EnforcementPolicy | PenaltyLimit | new class | Enforcement | 3 |
 | EnforcementPolicy | EscalationStep | new class | Enforcement | 2 |
+| EquipmentDetail | SupplementalEquipment | extends APDS SupplementalEquipment | Place | 2 |
 | LaneCameras | VehicularAccess | extends APDS VehicularAccess | Place | 2 |
 | LaneCameras | LaneCamera | new class | Place | 2 |
 | LaneCameras | CameraFacingEnum | new enumeration | Place | 2 |

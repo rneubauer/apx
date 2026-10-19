@@ -100,6 +100,17 @@ the boundary before any traffic flows (APX Part 18 §18.3). An aggregator
 runs exactly the single-site flow; that uniformity is the design (APX
 Part 18 §18.1).
 
+### Surfaces and per-place capabilities
+
+A discovery document lists the vendor screens the client may open as
+`uiSurfaces[]` (APX Part 25 §25.1): each surface, its display and launch
+modes, the actions it reports back, its launch URL and the places where
+it is offered. It also says what the client can do at each place as
+`placeCapabilities[]`: the command types, the surfaces and the features
+offered there (APX Part 16 §16.2), so a console knows before a call
+whether a site takes a `lostTicket` command, offers its lane console, or
+serves camera views. The soundness rule applies to both.
+
 ## Lifecycle
 
 No lifecycle.

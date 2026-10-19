@@ -15,6 +15,7 @@ export const MODULES = [
   { dir: 'data', pkg: 'Data', title: 'Data exchange', part: 'Parts 5 and 18' },
   { dir: 'events', pkg: 'Events', title: 'Subscriptions and events', part: 'Part 8' },
   { dir: 'control', pkg: 'Control', title: 'Control', part: 'Part 6' },
+  { dir: 'siteconfig', pkg: 'SiteConfiguration', title: 'Site configuration', part: 'Part 26' },
   { dir: 'alerts', pkg: 'Alerts', title: 'Alerts', part: 'Part 7' },
   { dir: 'accounts', pkg: 'Accounts', title: 'Accounts and payments', part: 'Part 13' },
   { dir: 'lpr', pkg: 'Lpr', title: 'License plate recognition', part: 'Part 13' },
@@ -26,6 +27,7 @@ export const MODULES = [
   { dir: 'valet', pkg: 'Valet', title: 'Valet', part: 'Part 22' },
   { dir: 'platelists', pkg: 'PlateLists', title: 'Plate lists', part: 'Part 24' },
   { dir: 'resolution', pkg: 'Resolution', title: 'Resolution and customer support', part: 'Part 17' },
+  { dir: 'ui', pkg: 'UiLaunch', title: 'UI launch', part: 'Part 25' },
   { dir: 'charging', pkg: 'Charging', title: 'EV charging', part: 'Part 23' },
 ];
 

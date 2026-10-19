@@ -53,7 +53,7 @@ Notes on the counts:
 - Erratum 007 is counted as an Omission; it also carries a small
   consistency question. Erratum 014 is counted as a Suggestion; it is
   phrased as a question.
-- Parts C and D together are the 119 proposals of the APX submission to
+- Parts C and D together are the 127 proposals of the APX submission to
   the committee: 47 new classes, 11 additions to existing APDS classes,
   57 new enumerations and 4 sets of new values for existing APDS
   enumerations.
@@ -299,7 +299,7 @@ Dictionary's own definition of `barrierFreeAccessible` still mentions
 Four existing APDS enumerations would gain new values. Each value is a
 new name only; none repeats or redefines an existing value. These are
 the `change: extend` enumerations in `spec/proposals/apds-additions/`,
-and are part of the 119 proposals.
+and are part of the 127 proposals.
 
 | Enumeration | Domain | New values | Tier | Why | APX today |
 | --- | --- | --- | --- | --- | --- |
@@ -345,8 +345,9 @@ APX and widely useful, such as plate lists, validation programmes,
 payment outcomes, reservations and permits, valet custody and alerts.
 **Tier 3, for discussion,** covers areas that are still settling, such as
 electric vehicle charging sessions, or that may sit outside parking data,
-such as customer service interactions. Of the 119 proposals, 34 are Tier
-1, 59 Tier 2 and 26 Tier 3.
+such as customer service interactions, or the comms points through which
+a parker calls for help. Of the 127 proposals, 34 are Tier 1, 65 Tier 2
+and 28 Tier 3.
 
 Additions to existing APDS classes are written as Level B extensions:
 they add optional content only, so a valid extended instance is always a
