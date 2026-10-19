@@ -95,13 +95,23 @@ that opens an object or array to fold it, and use Copy or Expand at the
 block's top right. The UI is plain HTML, CSS and JavaScript with no external
 assets, so it works offline. Browser zoom (Ctrl/Cmd and +) scales it
 for the back of a room; above 1800 px wide it already sets larger type.
-`scenarios/` holds twenty narrated demos: the core story, everyday
+`scenarios/` holds twenty-three narrated demos: the core story, everyday
 operations (card in/out, monthly fobs and permit pools, find-and-book,
-lost ticket, valet, tolling, plate lists), and analytics in the `analytics-lakeside`
-world (transient transactions, monthly parkers, plate reads, occupancy,
-change-feed sync); [DEMO.md](DEMO.md) is the runbook for showing
-them on a call (checks to run first, which demos for which slot, talking
-points, and what to do if a step fails).
+lost ticket, valet, tolling, plate lists), the vendor screen and site
+configuration of Parts 25 and 26 (a lost ticket issued in the PARCS
+vendor's own console and still on the record, the lobby door after
+hours, a garage described from APX alone), and analytics in the
+`analytics-lakeside` world (transient transactions, monthly parkers,
+plate reads, occupancy, change-feed sync); [DEMO.md](DEMO.md) is the
+runbook for showing them on a call (checks to run first, which demos for
+which slot, talking points, and what to do if a step fails).
+
+The **mock vendor screen** (`ui/vendor.html`) stands in for a PARCS
+vendor's own console: a UiLaunch step in Present shows "Open the vendor
+screen", which consumes the launch's single-use url, signs the agent in,
+and reports every button press back through the real API under the
+vendor's client (`POST /v1/ui/launches/{id}/actions`, `…/close`), as a
+vendor implementation must (Part 25 §25.4).
 
 To show it to people on other machines, bind to the network with
 `--host 0.0.0.0` and share the address. Anyone who can reach the port

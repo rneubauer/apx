@@ -3017,11 +3017,11 @@ Idempotency-Key: cc-8203-receipt
 A declined attempt has no receipt to send:
 
 ```http
-POST /v1/payments/e8000000-0000-4000-8000-000000000205/receipt
+POST /v1/payments/e8000000-0000-4000-8000-000000000215/receipt
 Idempotency-Key: cc-8204-receipt
 ```
 
-<!-- apx:request POST /v1/payments/e8000000-0000-4000-8000-000000000205/receipt -->
+<!-- apx:request POST /v1/payments/e8000000-0000-4000-8000-000000000215/receipt -->
 ```json
 {
   "channel": "email",
@@ -3037,8 +3037,8 @@ Idempotency-Key: cc-8204-receipt
   "type": "https://apx-standard.org/problems/payment-state-illegal",
   "title": "Payment state does not allow this",
   "status": 409,
-  "detail": "Payment e8000000-0000-4000-8000-000000000205 is declined; only an approved payment has a receipt.",
-  "instance": "/v1/payments/e8000000-0000-4000-8000-000000000205/receipt"
+  "detail": "Payment e8000000-0000-4000-8000-000000000215 is declined; only an approved payment has a receipt.",
+  "instance": "/v1/payments/e8000000-0000-4000-8000-000000000215/receipt"
 }
 ```
 

@@ -1,8 +1,24 @@
 {
   "_comment": "Stage directions for the replay of apx-control: world events the prose describes but no request performs. Keys are scenario ids; `at` is the 0-based exchange index the step runs before ('start' = before the scenario).",
   "CTL-08": [
-    { "at": 0, "inject": { "kind": "deviceState", "device": "c1000000-0000-4000-8000-000000000002", "state": "fault", "actor": "barrier arm sensor" } },
-    { "at": 2, "inject": { "kind": "deviceState", "device": "c1000000-0000-4000-8000-000000000002", "state": "available", "actor": "technician" } }
+    {
+      "at": 0,
+      "inject": {
+        "kind": "deviceState",
+        "device": "c1000000-0000-4000-8000-000000000002",
+        "state": "fault",
+        "actor": "barrier arm sensor"
+      }
+    },
+    {
+      "at": 2,
+      "inject": {
+        "kind": "deviceState",
+        "device": "c1000000-0000-4000-8000-000000000002",
+        "state": "available",
+        "actor": "technician"
+      }
+    }
   ],
   "CTL-10": [
     {
@@ -13,7 +29,12 @@
         "record": {
           "id": "d5000000-0000-4000-8000-000000000001",
           "version": 8,
-          "rateTableName": [{ "language": "en", "string": "Standard deck" }],
+          "rateTableName": [
+            {
+              "language": "en",
+              "string": "Standard deck"
+            }
+          ],
           "availability": "public",
           "rateLineCollections": [
             {
@@ -25,7 +46,22 @@
               "validStart": "2026-01-01T00:00:00Z",
               "relativeTimes": true,
               "taxIncluded": true,
-              "rateLines": [{ "id": "d5000000-0000-4000-8000-000000000111", "version": 1, "sequence": 1, "rateLineType": "incrementingRate", "description": [{ "language": "en", "string": "per hour" }], "incrementPeriod": "PT1H", "value": 3.0 }]
+              "rateLines": [
+                {
+                  "id": "d5000000-0000-4000-8000-000000000111",
+                  "version": 1,
+                  "sequence": 1,
+                  "rateLineType": "incrementingRate",
+                  "description": [
+                    {
+                      "language": "en",
+                      "string": "per hour"
+                    }
+                  ],
+                  "incrementPeriod": "PT1H",
+                  "value": 3
+                }
+              ]
             }
           ]
         }
@@ -41,7 +77,12 @@
         "record": {
           "id": "d5000000-0000-4000-8000-000000000001",
           "version": 9,
-          "rateTableName": [{ "language": "en", "string": "Standard deck" }],
+          "rateTableName": [
+            {
+              "language": "en",
+              "string": "Standard deck"
+            }
+          ],
           "availability": "public",
           "rateLineCollections": [
             {
@@ -54,12 +95,91 @@
               "relativeTimes": true,
               "taxIncluded": true,
               "rateLines": [
-                { "id": "d5000000-0000-4000-8000-000000000111", "version": 1, "sequence": 1, "rateLineType": "incrementingRate", "description": [{ "language": "en", "string": "per hour" }], "incrementPeriod": "PT1H", "value": 3.0 },
-                { "id": "d5000000-0000-4000-8000-000000000112", "version": 1, "sequence": 2, "rateLineType": "flatRate", "description": [{ "language": "en", "string": "lostTicketFee" }], "value": 32.0 }
+                {
+                  "id": "d5000000-0000-4000-8000-000000000111",
+                  "version": 1,
+                  "sequence": 1,
+                  "rateLineType": "incrementingRate",
+                  "description": [
+                    {
+                      "language": "en",
+                      "string": "per hour"
+                    }
+                  ],
+                  "incrementPeriod": "PT1H",
+                  "value": 3
+                },
+                {
+                  "id": "d5000000-0000-4000-8000-000000000112",
+                  "version": 1,
+                  "sequence": 2,
+                  "rateLineType": "flatRate",
+                  "description": [
+                    {
+                      "language": "en",
+                      "string": "lostTicketFee"
+                    }
+                  ],
+                  "value": 32
+                }
               ]
             }
           ]
         }
+      }
+    }
+  ],
+  "CTL-26": [
+    {
+      "at": "start",
+      "inject": {
+        "kind": "deviceFault",
+        "device": "c1000000-0000-4000-8000-000000000003",
+        "code": "CARD_JAM",
+        "displayText": "Card stuck in reader; eject or clear.",
+        "actor": "card reader sensor"
+      }
+    },
+    {
+      "at": "start",
+      "inject": {
+        "kind": "receiptPaper",
+        "device": "c1000000-0000-4000-8000-000000000003",
+        "level": "low"
+      }
+    },
+    {
+      "at": "start",
+      "inject": {
+        "kind": "tickets",
+        "device": "c1000000-0000-4000-8000-000000000003",
+        "level": "ok"
+      }
+    },
+    {
+      "at": "start",
+      "inject": {
+        "kind": "cash",
+        "device": "c1000000-0000-4000-8000-000000000003",
+        "level": "ok"
+      }
+    },
+    {
+      "at": "start",
+      "inject": {
+        "kind": "coins",
+        "device": "c1000000-0000-4000-8000-000000000003",
+        "level": "empty"
+      }
+    },
+    {
+      "at": "start",
+      "inject": {
+        "kind": "deviceMaintenance",
+        "device": "c1000000-0000-4000-8000-000000000002",
+        "on": true,
+        "state": "outOfService",
+        "actor": "technician"
       }
     }
   ]

@@ -28,6 +28,8 @@ const REQUIRES = {
   'apx-events-sse': ['apx-events'],
   'apx-payment-history': [...BASE, 'apx-accounts'],
   'apx-resolution': [...BASE, 'apx-control'],
+  'apx-ui-launch': [...BASE],
+  'apx-site-config': [...BASE],
 };
 const requires = (cls) => REQUIRES[cls] ?? BASE;
 
@@ -49,10 +51,15 @@ const SCOPE_CLASSES = {
   'apx.validations': ['apx-validations'],
   'apx.credentials': ['apx-credentials'],
   'apx.valet': ['apx-valet'],
+  'apx.ui': ['apx-ui-launch'],
+  'apx.siteconfig': ['apx-site-config'],
+  'apx.cameras': ['apx-site-config'],
 };
 
 // Bundle operation tag → conformance class.
 const TAG_CLASS = {
+  'UI launch': 'apx-ui-launch',
+  'Site configuration': 'apx-site-config',
   Data: 'apx-data',
   Subscription: 'apx-events',
   Control: 'apx-control',
@@ -107,10 +114,16 @@ const TOPIC_RULES = [
   ['apx.credentials.', ['apx.credentials:read'], 'apx-credentials'],
   ['apx.valet.', ['apx.valet:read', 'apx.valet:request'], 'apx-valet'],
   ['apx.permits.', ['apx.permits:manage'], 'apx-permits'],
+  ['apx.ui.', ['apx.ui:read', 'apx.ui:launch'], 'apx-ui-launch'],
+  ['apx.equipment.', ['apx.siteconfig:read'], 'apx-site-config'],
+  ['apx.commspoints.', ['apx.siteconfig:read'], 'apx-site-config'],
+  ['apx.approvals.', ['apx.resolution:read', 'apx.support:manage'], 'apx-resolution'],
 ];
 
-// Optional features (apx-features) and the class they belong to (Part 6 §6.5).
-const FEATURE_CLASS = { negotiatedRates: 'apx-control', negotiatedAmounts: 'apx-control', ticketMatching: 'apx-control' };
+// Optional features (apx-features) and the class they belong to (Part 6 §6.5, Part 26 §26.3).
+const FEATURE_CLASS = { negotiatedRates: 'apx-control', negotiatedAmounts: 'apx-control', ticketMatching: 'apx-control', cameraViews: 'apx-site-config', cameraPlayback: 'apx-site-config' };
+// A feature a client cannot use without the scope of its route is not listed for it.
+const FEATURE_SCOPE = { cameraViews: 'apx.cameras:view', cameraPlayback: 'apx.cameras:view' };
 const FEATURE_COMMANDS = { negotiatedRates: 'pushNegotiatedRate', ticketMatching: 'matchTicket' };
 
 const DEFAULT_RATE_LIMITS = { requestsPerMinute: 300, commandsPerMinute: 60, burst: 20, subscriptionsMax: 10, streamConnectionsMax: 2 };
@@ -256,13 +269,35 @@ export default {
       return [...registryValues('apx-command-types').filter((c) => !gated.includes(c)), ...(sim.world.vendorCommandTypes ?? [])];
     };
 
-    const featuresFor = (classes, features) =>
+    const featuresFor = (classes, features, principal = null) =>
       features.filter((f) => {
+        if (principal && FEATURE_SCOPE[f] && !principal.has(FEATURE_SCOPE[f])) return false;
         const cls = FEATURE_CLASS[f];
         if (cls) return classes.includes(cls);
         const ns = f.split('-')[0];
         return classes.some((c) => c.startsWith(`${ns}-`));
       });
+
+    /** Part 25 §25.1: the vendor screens this client may launch — only with the launch scope, only inside its grant. */
+    const surfacesFor = (principal, classes) => {
+      if (!classes.includes('apx-ui-launch') || !principal.has('apx.ui:launch') || !sim.uilaunch) return [];
+      const hasPlaces = principal.hasGrant && principal.places.length > 0;
+      if (!hasPlaces) return [];
+      return sim.uilaunch.surfaces().filter((s) => !s.places?.length || s.places.some((p) => sim.hierarchy.intersects(principal.places, p.id)));
+    };
+
+    /** Part 16 §16.2: what each granted place can do before a call — commands the site executes, surfaces offered there, features. */
+    const placeCapabilitiesFor = (principal, classes, commandTypes, features) => {
+      if (!classes.includes('apx-site-config') && !classes.includes('apx-ui-launch')) return null;
+      if (!principal.hasGrant || !principal.places.length) return null;
+      const roots = principal.places.includes('*') ? sim.hierarchy.all('place').filter((p) => !p.parentId).map((p) => p.id) : principal.places;
+      return roots.map((place) => ({
+        place,
+        commandTypes: commandTypes.filter((c) => !(sim.control?.unsupportedAt?.(place) ?? []).includes(c)),
+        uiSurfaces: classes.includes('apx-ui-launch') && principal.has('apx.ui:launch') ? (sim.uilaunch?.surfacesAt(place) ?? []).map((s) => s.surface) : [],
+        features,
+      }));
+    };
 
     const topicsFor = (principal, classes, offered) => {
       if (!principal.has('apx.subscriptions:manage') || !classes.includes('apx-events')) return [];
@@ -323,9 +358,12 @@ export default {
       checkBinding(p);
       const classes = clientClasses(p, offered);
       const hostFeatures = [...new Set(cfg.features ?? [])];
-      const features = featuresFor(classes, hostFeatures);
+      const features = featuresFor(classes, hostFeatures, p);
       const vendorScopes = [...p.scopes].filter((s) => !s.startsWith('apx.') && vendorClasses().some((v) => (v.scopes ?? []).includes(s)));
       const vendorExt = Object.assign({}, ...vendorClasses().filter((v) => classes.includes(v.name) && v.extensions).map((v) => v.extensions));
+      const commandTypes = commandTypesFor(p, classes, hostFeatures);
+      const uiSurfaces = surfacesFor(p, classes);
+      const placeCapabilities = placeCapabilitiesFor(p, classes, commandTypes, features);
       const body = {
         client: clientId(p),
         ...(p.orgRef ? { organisation: p.orgRef } : {}),
@@ -333,8 +371,10 @@ export default {
         scopes: [...apxScopes, ...vendorScopes],
         places: p.hasGrant ? [...p.places] : [],
         endpoints: endpointsFor(p, classes),
-        commandTypes: commandTypesFor(p, classes, hostFeatures),
+        commandTypes,
         ...(features.length ? { features } : {}),
+        ...(classes.includes('apx-ui-launch') ? { uiSurfaces } : {}),
+        ...(placeCapabilities ? { placeCapabilities } : {}),
         topics: topicsFor(p, classes, offered),
         rateLimits: { ...DEFAULT_RATE_LIMITS, ...(cfg.rateLimits ?? {}), ...(p.raw?.rateLimits ?? {}) },
         ...(Object.keys(vendorExt).length ? { extensions: vendorExt } : {}),

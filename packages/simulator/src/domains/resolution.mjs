@@ -28,6 +28,7 @@ import { wire, refOf } from './common.mjs';
 import { createComposer, IDENTIFIERS } from './resolution/compose.mjs';
 import { evaluate, policyConfig } from './resolution/policy.mjs';
 import { registerSupport } from './resolution/support.mjs';
+import { registerApprovals } from './resolution/approvals.mjs';
 
 const COLL = 'resolutionContexts';
 const TOPIC = 'apx.resolution.context.created.v1';
@@ -87,7 +88,9 @@ export default {
       const pending = pendingFor(rec);
       const { body, facts, issue } = composer.compose(rec, { cfg: cfg(), pending, extraCourtesy: (h) => courtesyExtra.get(h) ?? 0 });
       if (pending.length) return { body: { ...body, allowedActions: [] }, policy: DENY_ALL, issue };
-      const { allowedActions, recommendedAction, policy } = evaluate(facts, cfg(), rec._overrides ?? []);
+      // Part 25 §25.5: an action the PARCS cannot execute through APX, but a vendor screen offers, is executed in that screen.
+      const uiFor = (action) => (sim.control?.unsupportedAt?.(rec._place) ?? []).includes(action) ? sim.uilaunch?.surfaceFor?.(rec._place, action) ?? null : null;
+      const { allowedActions, recommendedAction, policy } = evaluate(facts, cfg(), rec._overrides ?? [], uiFor);
       return { body: { ...body, allowedActions, ...(recommendedAction ? { recommendedAction } : {}) }, policy, issue };
     };
 
@@ -191,8 +194,8 @@ export default {
       const b = ctx.body;
       const present = IDENTIFIERS.filter((k) => b[k] !== undefined && b[k] !== null && b[k] !== '');
       if (!present.length) {
-        const telephony = ['phoneNumber', 'phone', 'sipUri', 'callerId'].filter((k) => b[k] !== undefined);
-        const why = telephony.length ? `; ${telephony.join(', ')} is not an APX identifier and was ignored (Part 17 §17.1). Map the call to a lane or device on the call platform first.` : ` (${IDENTIFIERS.join(', ')}).`;
+        const telephony = ['phoneNumber', 'phone', 'sipUri', 'sipUser', 'realm'].filter((k) => b[k] !== undefined);
+        const why = telephony.length ? `; ${telephony.join(', ')} is not an APX identifier and was ignored (Part 17 §17.1). Name the comms point instead: commsPoint, callerId, dialedNumber or commsDeviceId (Part 26 §26.4).` : ` (${IDENTIFIERS.join(', ')}).`;
         fail('invalid-request', `No parking-domain identifier supplied${why}`, { errors: [{ pointer: '/', detail: 'at least one identifying member required' }] });
       }
       if (!ctx.principal.hasGrant) fail('insufficient-grant', NO_GRANT);
@@ -220,10 +223,11 @@ export default {
     });
 
     registerSupport(sim);
+    registerApprovals(sim);
 
     // ---------- the world changes; the contexts follow ----------
 
-    for (const hook of ['command.transition', 'payment.recorded', 'lane.vehicleArrives', 'lane.vehicleLeaves', 'device.state', 'courtesyExit', 'credential.access', 'validation.applied', 'rate.pushed', 'support.interaction']) {
+    for (const hook of ['command.transition', 'payment.recorded', 'lane.vehicleArrives', 'lane.vehicleLeaves', 'device.state', 'courtesyExit', 'credential.access', 'validation.applied', 'rate.pushed', 'support.interaction', 'approval.changed', 'ui.action']) {
       sim.hooks.on(hook, recomputeLive);
     }
     // Time-based rules (courtesy windows, night approval, expiry) move with the clock.
@@ -232,7 +236,7 @@ export default {
     // ---------- injectors ----------
 
     /** The call platform (or the PARCS, preloading on a repeated denial) opens a context server-side. */
-    sim.injector('openContextFor', ({ id, lane, device, place, plate, ticket, ticketNumber, phone, credential, session, holder, reservationCode, issue, interactionId, correlationId, channel = 'intercom' }) => {
+    sim.injector('openContextFor', ({ id, lane, device, place, plate, ticket, ticketNumber, phone, credential, session, holder, reservationCode, reservationIssuer, commsPoint, callerId, dialedNumber, commsDeviceId, guestReference, issue, interactionId, correlationId, channel = 'intercom' }) => {
       const asRef = (v, cls) => (v ? (typeof v === 'string' ? refOf(v, cls) : v) : undefined);
       const input = {
         lane: asRef(lane, 'VehicularAccess'),
@@ -241,9 +245,15 @@ export default {
         session: asRef(session, 'Session'),
         credential: asRef(credential, 'Credential'),
         holder: asRef(holder, 'RightHolder'),
+        commsPoint: asRef(commsPoint, 'CommsPoint'),
+        callerId,
+        dialedNumber,
+        commsDeviceId,
+        guestReference,
         plate,
         ticketNumber: ticketNumber ?? ticket,
         reservationCode,
+        reservationIssuer,
       };
       if (phone && !input.holder) {
         const acct = sim.accounts?.accountsByPhone?.(phone)?.[0];
@@ -251,7 +261,7 @@ export default {
         input.holder = acct.holder;
       }
       for (const k of Object.keys(input)) if (input[k] === undefined) delete input[k];
-      if (!Object.keys(input).length) throw new Error('openContextFor needs lane, device, place, plate, ticket, phone, credential, session, holder, or reservationCode');
+      if (!Object.keys(input).length) throw new Error('openContextFor needs lane, device, place, plate, ticket, phone, credential, session, holder, reservationCode, commsPoint, callerId, dialedNumber, commsDeviceId or guestReference');
       const subjects = composer.resolveSubjects(input);
       const org = sim.hierarchy.operatorOf(subjects.place);
       const rec = create(subjects, { interactionId, correlationId, channel }, { assignedId: id, actor: { org: org ? refOf(org, 'Organisation') : undefined, user: sim.world.actors?.parcs ?? 'parcs' }, issue });
@@ -269,6 +279,16 @@ export default {
       else contexts().update(context, (r) => ({ ...r, _overrides: [...(r._overrides ?? []).filter((o) => o.action !== name), rule] }), { bump: false });
       recomputeLive();
       return targets.map((r) => ({ context: r.id, allowedActions: contexts().get(r.id).allowedActions }));
+    });
+
+    /** The operator keeps a context alive past its TTL (a long call, an escalation that waits for the supervisor): { context, until }. */
+    sim.injector('contextExtend', ({ context, until }) => {
+      const rec = contexts().get(context);
+      if (!rec) throw new Error(`no context ${context}`);
+      if (!until || Number.isNaN(Date.parse(until))) throw new Error('contextExtend needs until (an RFC 3339 instant)');
+      contexts().update(context, (r) => ({ ...r, _expiresAt: until, ...(r._policy?._expired ? { _policy: DENY_ALL, _fingerprint: null } : {}) }), { bump: false });
+      const next = recompute(context) ?? contexts().get(context);
+      return { context, expiresAt: until, allowedActions: next.allowedActions ?? [] };
     });
 
     /** Courtesy exits granted off-API (another system, a cash-desk waiver) count toward the holder's limit. */

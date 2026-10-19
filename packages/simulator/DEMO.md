@@ -83,6 +83,14 @@ Pick the world in Present (or the header) and its demos are listed first.
 | 14 | `toll-passage-and-dispute.json` | apx-tolling | Part 15: transponder and plate-fallback passages, nightly billing, a wrong-vehicle dispute refunded | 11 |
 | 20 | `plate-lists-watch-and-allow.json` | apx-plate-lists | Part 24: watch, scofflaw, allow and enforcement-fleet lists; an idempotent re-add; per-place flags; an edge camera keeping its copy current by change feed (a removal arrives as a tombstone); a listed car's arrival raising the alert | 14 |
 
+### UI launch and site configuration (Parts 25 and 26)
+
+| # | File | World | What it shows | Steps |
+|---|---|---|---|---|
+| 21 | `help-call-vendor-screen.json` | apx-ui-launch | Part 25: the PARCS has no `lostTicket` through APX, so Part 17 offers the vendor's screen (`execution.type: ui`); the host launches it signed in with a single-use url; what the agent does there comes back as the Command it would have been, carrying the call's `correlationId`; the launch record, the Command and the support interaction agree. Click "Open the vendor screen" on the launch step to drive the mock vendor console yourself | 14 |
+| 22 | `after-hours-access-door.json` | apx-site-config | Part 26 §26.4 and §26.8: the lobby-door intercom is a comms point that serves the door; a paid parker is let in with `vendGate` on the door after a camera still; a permit holder's card opens it with no call; an expired permit puts the on-call supervisor behind the door, asked and answered through `POST /v1/approvals` (Part 17 §17.3a) | 12 |
+| 23 | `site-configuration-tour.json` | apx-site-config | Part 26: a garage described from APX alone: equipment by lane, area and role with make, model, versions, serial and MAC; cameras and where they look; comms points by caller id and dialed number; another system's id resolved; a live view; per-place capabilities in discovery; a swapped terminal arriving as a change notice and through the change feed | 13 |
+
 ### Analytics (world `analytics-lakeside`)
 
 A Tuesday evening at Lakeside with a day of data already in it: ten
@@ -115,7 +123,10 @@ stay attributable. Finish with two minutes of the Fabric view.
 
 1, 2, 3, then the Fabric view (5 minutes), then one analytics demo (15
 or 19), then 5 or 6. Keep 7 in reserve for EV charging, and 8–14 and 20
-for whichever module a vendor in the room cares about.
+for whichever module a vendor in the room cares about. For a call-center
+or PARCS-vendor audience, swap 5 for 21 (the vendor screen) and add 23
+(a site from APX alone): together they are the answer to "we have a
+portal, not an API".
 
 ## The Fabric view
 

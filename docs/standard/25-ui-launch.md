@@ -84,8 +84,8 @@ vendor login page and never holds vendor credentials.
    given), one agent and one place. The implementation MUST open exactly
    that screen for that agent and MUST NOT let the opened session reach
    another subject outside the agent's grant.
-4. `expiresIn` is capped at 60 seconds; a larger value is clamped and the
-   effective `expiresAt` returned. `Idempotency-Key` is optional (Part 4
+4. `expiresIn` is at most 60 seconds; a larger value is refused (400
+   `invalid-request`), and the effective `expiresAt` is returned. `Idempotency-Key` is optional (Part 4
    §4.2a); a replay returns the launch as it currently stands (200).
 5. `GET /v1/ui/launches/{id}` and `GET /v1/ui/launches` (scope
    `apx.ui:read`; filters `place`, `agent`, `status`, `correlationId`,

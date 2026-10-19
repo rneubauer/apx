@@ -1,0 +1,104 @@
+{
+  "extends": "apx-site-config",
+  "name": "apx-ui-launch",
+  "description": "The cast of docs/scenarios/by-module/apx-ui-launch: Lakeside Garage, whose PARCS vendor Gatewise has no lostTicket through APX yet but runs a good lane console of its own at ui.gatewise.example. The host is the call-center console; the vendor screen records what the agent did under its own client. Launches ea…0a03 (signed token, opened), ea…0a05 (never opened, expired) and ea…0a08 (closed, a vend the lane controller refused) are already on file; the transient with ticket T-61099 and the lost-ticket fee on the standard deck are what UIL-01 turns on.",
+  "credentials": {
+    "default": {
+      "scopes": ["apx.ui:launch", "apx.ui:read", "apx.ui:record", "apx.control:execute", "apx.control:read", "apx.resolution:read", "apx.support:manage", "apx.data:read", "apx.siteconfig:read", "apx.cameras:view", "apx.subscriptions:manage"],
+      "apx_org": { "id": "a1…0001", "className": "Organisation" },
+      "apx_places": ["b1…0001"],
+      "user": "agent:j.okafor"
+    },
+    "host-console": {
+      "scopes": ["apx.ui:launch", "apx.ui:read", "apx.control:read", "apx.resolution:read", "apx.support:manage"],
+      "apx_org": { "id": "a1…0001", "className": "Organisation" },
+      "apx_places": ["b1…0001"],
+      "user": "console-lakeside-oncall"
+    },
+    "gatewise-ui": {
+      "scopes": ["apx.ui:record"],
+      "apx_org": { "id": "a2…0021", "className": "Organisation" },
+      "apx_places": ["b1…0001"],
+      "user": "gatewise-ui"
+    },
+    "wall-lakeside": {
+      "scopes": ["apx.ui:read", "apx.control:read"],
+      "apx_org": { "id": "a1…0001", "className": "Organisation" },
+      "apx_places": ["b1…0001"],
+      "user": "wall:lakeside"
+    }
+  },
+  "control": {
+    "hourlyRate": 3,
+    "clearLaneOnVend": false,
+    "unsupportedCommandTypes": ["lostTicket"],
+    "timing": { "dispatch": 1000, "execute": 0, "succeed": 2000 }
+  },
+  "uiLaunch": { "recorder": "lakeside-parcs" },
+  "uiSurfaces": [
+    {
+      "surface": "lane.console", "subjectClass": "VehicularAccess",
+      "displayModes": ["popup", "tab", "embed"], "launchModes": ["handshake", "signedToken"],
+      "launchUrl": "https://ui.gatewise.example/launch",
+      "actions": ["lostTicket", "applyValidation", "vendGate", "pushRate"],
+      "places": [ { "id": "b1…0001", "className": "Place" } ]
+    },
+    { "surface": "session.detail", "subjectClass": "Session", "displayModes": ["popup", "tab"], "launchModes": ["handshake"], "launchUrl": "https://ui.gatewise.example/session", "actions": ["other"] },
+    { "surface": "validation.redeem", "subjectClass": "Session", "displayModes": ["embed", "popup"], "launchModes": ["handshake"], "launchUrl": "https://ui.gatewise.example/validate", "actions": ["applyValidation", "other"] },
+    { "surface": "place.console", "displayModes": ["tab"], "launchModes": ["handshake"], "launchUrl": "https://ui.gatewise.example/site", "actions": ["setDeviceState", "restartDevice", "other"] }
+  ],
+  "uiLaunches": [
+    {
+      "id": "ea…0a03", "version": 2, "surface": "lane.console",
+      "subject": { "id": "b2…0002", "className": "VehicularAccess" }, "place": { "id": "b1…0001", "className": "Place" }, "lane": { "id": "b2…0002", "className": "VehicularAccess" },
+      "agent": "agent:j.okafor", "agentType": "human", "interactionId": "interaction-951003", "correlationId": "ca000000-0000-4000-8000-000000000003",
+      "displayMode": "tab", "returnFields": ["/ticketNumber"],
+      "expiresAt": "2026-10-18T14:26:00Z", "status": "opened", "openedAt": "2026-10-18T14:25:04Z", "actions": [],
+      "recordInfo": { "creationTime": "2026-10-18T14:25:04Z", "creator": { "id": "a1…0001", "className": "Organisation" }, "creationUser": "agent:j.okafor" }
+    },
+    {
+      "id": "ea…0a05", "version": 2, "surface": "lane.console",
+      "place": { "id": "b1…0001", "className": "Place" },
+      "agent": "agent:j.okafor", "agentType": "human", "correlationId": "ca000000-0000-4000-8000-000000000005",
+      "displayMode": "popup", "url": "https://ui.gatewise.example/launch/5d2a4b7e-9c6f-4a2b-8c4d-3c4d5e6f8f3c",
+      "expiresAt": "2026-10-18T14:31:00Z", "status": "expired", "actions": [],
+      "recordInfo": { "creationTime": "2026-10-18T14:30:00Z", "creator": { "id": "a1…0001", "className": "Organisation" }, "creationUser": "agent:j.okafor" }
+    },
+    {
+      "id": "ea…0a08", "version": 3, "surface": "lane.console",
+      "place": { "id": "b1…0001", "className": "Place" }, "lane": { "id": "b2…0002", "className": "VehicularAccess" },
+      "agent": "agent:j.okafor", "agentType": "human", "correlationId": "ca000000-0000-4000-8000-000000000008",
+      "displayMode": "popup", "url": "https://ui.gatewise.example/launch/9c6f1a2b-3c4d-4e6f-8f3c-0e1b5d2a4b7e",
+      "expiresAt": "2026-10-18T15:40:00Z", "status": "closed", "openedAt": "2026-10-18T15:39:10Z", "closedAt": "2026-10-18T15:41:02Z",
+      "actions": [
+        { "id": "eb…0b08", "launch": { "id": "ea…0a08", "className": "UiLaunch" }, "action": "vendGate", "outcome": "failed", "occurredAt": "2026-10-18T15:40:50Z", "agent": "agent:j.okafor", "summary": "Vend refused by the lane controller: barrier in fault.", "correlationId": "ca000000-0000-4000-8000-000000000008" }
+      ],
+      "recordInfo": { "creationTime": "2026-10-18T15:39:00Z", "creator": { "id": "a1…0001", "className": "Organisation" }, "creationUser": "agent:j.okafor" }
+    }
+  ],
+  "placeRates": { "b1…0001": ["d5…0001"] },
+  "rateTables": [
+    {
+      "id": "d5…0001", "version": 7, "rateTableName": [ { "language": "en", "string": "Standard deck" } ], "availability": "public",
+      "rateLineCollections": [
+        {
+          "id": "d5…0101", "version": 1, "collectionSequence": 1, "applicableCurrency": "USD", "resetTime": "00:00:00", "validStart": "2026-01-01T00:00:00Z", "relativeTimes": true, "taxIncluded": true,
+          "rateLines": [
+            { "id": "d5…0111", "version": 1, "sequence": 1, "rateLineType": "incrementingRate", "description": [ { "language": "en", "string": "per hour" } ], "incrementPeriod": "PT1H", "value": 3 },
+            { "id": "d5…0112", "version": 1, "sequence": 2, "rateLineType": "flatRate", "description": [ { "language": "en", "string": "lostTicketFee" } ], "value": 32 }
+          ]
+        }
+      ]
+    }
+  ],
+  "sessions": [
+    {
+      "id": "c4…0099", "version": 1, "actualStart": "2026-10-18T11:40:12Z",
+      "initiator": { "id": "a1…0001", "version": 1, "className": "Organisation" },
+      "hierarchyElement": { "id": "b1…0001", "version": 7, "className": "Place" },
+      "identifiedCredentials": [ { "type": "ticket", "credentialAssignedType": "other", "identifier": { "id": "T-61099", "className": "Credential" } } ],
+      "segments": [],
+      "_place": "b1…0001", "_ticketNumber": "T-61099", "_entryLane": "b2…0001", "_amountDue": { "currencyType": "USD", "currencyValue": 8 }
+    }
+  ]
+}

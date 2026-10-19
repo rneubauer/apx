@@ -1,0 +1,175 @@
+{
+  "name": "After hours at the lobby door: a paid ticket, a permit holder, an expired permit",
+  "description": "Lakeside is locked at 23:30 and parkers get back to their cars through the lobby door. The door's intercom is a comms point that serves the door, so the call platform resolves the call by the device id it holds (Part 26 §26.4), the agent sees the door and its camera, and opens it with vendGate exactly as a gate (§26.8). A permit holder's card opens it without a call. An expired permit puts the on-call supervisor behind the door, asked through the API (Part 17 §17.3a).",
+  "world": "apx-site-config",
+  "token": "default",
+  "steps": [
+    {
+      "name": "Lakeside Garage, 23:30",
+      "narration": "The vehicle lanes are closed. The ground-floor lobby door has a card reader, an intercom in its call box, and a ceiling camera. None of them is on a lane; APX describes them as place-level equipment (Part 26 §26.1).",
+      "clock": { "now": "2026-10-18T23:30:00Z" }
+    },
+    {
+      "name": "A transient parker presses the door intercom",
+      "narration": "They paid T-61120 at the pay-on-foot three minutes ago and have no card. The call platform holds only the intercom's device id; it resolves the call with it and the ticket number. The comms point serves the door, so the context is about the door: paid, no credential, after hours.",
+      "request": {
+        "method": "POST",
+        "path": "/v1/resolution/contexts",
+        "body": {
+          "interactionId": "interaction-951031",
+          "correlationId": "ca000000-0000-4000-8000-000000000131",
+          "channel": "intercom",
+          "commsDeviceId": "dev-a0b1c2d3",
+          "ticketNumber": "T-61120"
+        }
+      },
+      "expect": {
+        "status": 201,
+        "body": {
+          "issue": { "code": "authorizedVisitor" },
+          "allowedActions": [ { "action": "vendGate", "allowed": true, "target": { "id": "c1000000-0000-4000-8000-000000000010", "className": "SupplementalEquipment" } } ]
+        }
+      },
+      "save": { "ctx": "$.id" }
+    },
+    {
+      "name": "The agent looks at the door",
+      "narration": "A still from the lobby camera, through a single-use link that lives five minutes and is bound to the agent. The camera's password never leaves the site (Part 26 §26.3).",
+      "request": {
+        "method": "POST",
+        "path": "/v1/cameras/c1000000-0000-4000-8000-000000000013/views",
+        "body": { "kind": "snapshot", "agent": "agent:j.okafor", "agentType": "human", "correlationId": "ca000000-0000-4000-8000-000000000131", "interactionId": "interaction-951031" }
+      },
+      "expect": { "status": 201, "body": { "kind": "snapshot", "protocol": "snapshot", "issuedTo": "agent:j.okafor" } }
+    },
+    {
+      "name": "The agent opens the door",
+      "narration": "vendGate, targeting the door as the device. Same Command, same lifecycle as a barrier.",
+      "request": {
+        "method": "POST",
+        "path": "/v1/commands",
+        "headers": { "Idempotency-Key": "cc-951031-door" },
+        "body": {
+          "commandType": "vendGate",
+          "target": { "id": "c1000000-0000-4000-8000-000000000010", "className": "SupplementalEquipment" },
+          "agent": "agent:j.okafor",
+          "agentType": "human",
+          "reason": "after-hours pedestrian access; ticket T-61120 paid",
+          "resolutionContext": { "id": "{ctx}", "className": "ResolutionContext" },
+          "correlationId": "ca000000-0000-4000-8000-000000000131",
+          "expiryTime": "2026-10-18T23:33:00Z"
+        }
+      },
+      "expect": { "status": 202, "body": { "status": "accepted" } },
+      "save": { "cmd": "$.id" }
+    },
+    {
+      "name": "Five seconds later",
+      "clock": { "advance": "PT5S" }
+    },
+    {
+      "name": "The door released",
+      "request": { "method": "GET", "path": "/v1/commands/{cmd}" },
+      "expect": { "status": 200, "body": { "status": "succeeded", "confirmationLevel": "physicallyConfirmed" } }
+    },
+    {
+      "name": "23:40: a permit holder's card at the reader",
+      "narration": "Nothing is asked of an agent. The reader opens the door and the PARCS records the entry against the door the way it records a lane access: a Command with the reader as the actor.",
+      "request": {
+        "method": "POST",
+        "path": "/v1/commands",
+        "token": "lakeside-parcs",
+        "headers": { "Idempotency-Key": "reader-c1-0011-234012" },
+        "body": {
+          "commandType": "vendGate",
+          "target": { "id": "c1000000-0000-4000-8000-000000000010", "className": "SupplementalEquipment" },
+          "reason": "credential accepted at reader c1000000-0000-4000-8000-000000000011"
+        }
+      },
+      "expect": { "status": 202 }
+    },
+    {
+      "name": "23:52: an expired permit is refused at the reader; the parker presses the intercom",
+      "narration": "The context carries the denial from the reader (permit ended yesterday) and offers the door behind the on-call supervisor.",
+      "request": {
+        "method": "POST",
+        "path": "/v1/resolution/contexts",
+        "body": {
+          "interactionId": "interaction-951033",
+          "correlationId": "ca000000-0000-4000-8000-000000000133",
+          "channel": "intercom",
+          "commsDeviceId": "dev-a0b1c2d3",
+          "credential": { "id": "c3000000-0000-4000-8000-000000000003", "className": "Credential" }
+        }
+      },
+      "expect": {
+        "status": 201,
+        "body": {
+          "issue": { "code": "credentialDisabled" },
+          "accessDecision": { "status": "denied", "reasonCode": "permitExpired" },
+          "allowedActions": [ { "action": "vendGate", "allowed": true, "requiresApproval": true, "approvalRole": "supervisor" } ]
+        }
+      },
+      "save": { "ctx2": "$.id" }
+    },
+    {
+      "name": "The agent asks the supervisor through the API",
+      "narration": "Part 17 §17.3a: an approval request addressed to the role, not a phone tree. The roles that can be asked come from the place's escalation contacts (Part 26 §26.5).",
+      "request": {
+        "method": "POST",
+        "path": "/v1/approvals",
+        "headers": { "Idempotency-Key": "cc-951033-approval" },
+        "body": {
+          "id": "ec000000-0000-4000-8000-000000000133",
+          "version": 1,
+          "place": { "id": "b1…0001", "className": "Place" },
+          "action": "vendGate",
+          "target": { "id": "c1000000-0000-4000-8000-000000000010", "className": "SupplementalEquipment" },
+          "requestedBy": "agent:j.okafor",
+          "agentType": "human",
+          "role": "supervisor",
+          "interactionId": "interaction-951033",
+          "correlationId": "ca000000-0000-4000-8000-000000000133",
+          "reason": "permit ended 2026-10-17; parker needs their car tonight",
+          "expiresAt": "2026-10-19T00:05:00Z"
+        }
+      },
+      "expect": { "status": 201, "body": { "status": "pending", "role": "supervisor" } },
+      "save": { "appr": "$.id" }
+    },
+    {
+      "name": "The supervisor decides from their console",
+      "request": {
+        "method": "POST",
+        "path": "/v1/approvals/{appr}/decide",
+        "body": { "outcome": "approved", "decidedBy": "sup:m.reyes", "note": "let them through; renew the permit in the morning" }
+      },
+      "expect": { "status": 200, "body": { "status": "approved", "decision": { "decidedBy": "sup:m.reyes", "outcome": "approved" } } }
+    },
+    {
+      "name": "The agent opens the door with the decision as evidence",
+      "narration": "The command's approval cites the request, so the audit is one hop.",
+      "request": {
+        "method": "POST",
+        "path": "/v1/commands",
+        "headers": { "Idempotency-Key": "cc-951033-door" },
+        "body": {
+          "commandType": "vendGate",
+          "target": { "id": "c1000000-0000-4000-8000-000000000010", "className": "SupplementalEquipment" },
+          "agent": "agent:j.okafor",
+          "agentType": "human",
+          "reason": "permit expired; supervisor approved after-hours access",
+          "resolutionContext": { "id": "{ctx2}", "className": "ResolutionContext" },
+          "correlationId": "ca000000-0000-4000-8000-000000000133",
+          "approval": { "approvedBy": "sup:m.reyes", "approvalRequest": { "id": "{appr}", "className": "ApprovalRequest" } },
+          "expiryTime": "2026-10-19T00:05:00Z"
+        }
+      },
+      "expect": { "status": 202, "body": { "status": "accepted" } }
+    },
+    {
+      "name": "The supervisor's console was told at every step",
+      "events": { "type": "apx.approvals.changed.v1", "min": 2 }
+    }
+  ]
+}
