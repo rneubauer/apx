@@ -9576,6 +9576,17 @@
               }
             ],
             "properties": {
+              "id": {
+                "type": "string",
+                "format": "uuid",
+                "readOnly": true
+              },
+              "version": {
+                "type": "integer",
+                "minimum": 1,
+                "readOnly": true,
+                "description": "Server-managed; bodies carry it only for a versioned replace (Part 4 §4.2a)."
+              },
               "type": {
                 "type": "string",
                 "description": "definedValue from apx-comms-point-types.",
