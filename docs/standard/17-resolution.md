@@ -134,6 +134,11 @@ is the policy layer's interoperable surface:
    taken on the vendor's own screen, launched for this agent, and what is
    done there comes back as APX data (Part 25 §25.4). The policy decision
    binds a launch exactly as it binds a command.
+6. **Unknown execution types.** The set of `execution.type` values grows
+   additively (Part 3 §3.2); `ui` was added in Part 25. A client MUST NOT
+   fail on an allowed action whose `execution.type` it does not
+   recognise: it MUST skip that action (or show it as not executable from
+   this client) and process the rest of the context as normal.
 
 ## 17.3a Approval requests (normative)
 

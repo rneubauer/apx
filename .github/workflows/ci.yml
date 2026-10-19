@@ -92,3 +92,5 @@ jobs:
           base: .oasdiff/base-apx-v1.yaml
           revision: spec/dist/apx-v1.yaml
           fail-on: ERR
+          # Scoped, reviewed exceptions only; see the file's header.
+          err-ignore: spec/oasdiff/err-ignore.txt

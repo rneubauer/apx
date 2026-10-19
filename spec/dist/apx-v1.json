@@ -27824,7 +27824,7 @@
           },
           "execution": {
             "type": "object",
-            "description": "How to execute (RECOMMENDED). Exactly one of command/operationId/\nsurface per type. `ui` says the action is done in the vendor's own\nscreen (Part 25): the agent launches `surface` on `subject` and\nthe implementation reports what was done as the module's native\nresource or a UiActionRecord carrying the launch's correlation id.",
+            "description": "How to execute (RECOMMENDED). Exactly one of command/operationId/\nsurface per type. `ui` says the action is done in the vendor's own\nscreen (Part 25): the agent launches `surface` on `subject` and\nthe implementation reports what was done as the module's native\nresource or a UiActionRecord carrying the launch's correlation id.\nThe value set grows additively: a client MUST skip an action whose\n`type` it does not recognise rather than fail (Part 17 §17.3).",
             "required": [
               "type"
             ],

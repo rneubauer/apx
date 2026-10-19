@@ -20309,6 +20309,8 @@ components:
             screen (Part 25): the agent launches `surface` on `subject` and
             the implementation reports what was done as the module's native
             resource or a UiActionRecord carrying the launch's correlation id.
+            The value set grows additively: a client MUST skip an action whose
+            `type` it does not recognise rather than fail (Part 17 §17.3).
           required:
             - type
           allOf:

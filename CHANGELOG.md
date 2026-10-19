@@ -17,6 +17,15 @@ adopted in 0.14.0, and the vetting suite cites every APX-VIO row. Part 12's
 problem-type table loses a stray merge-conflict marker (editorial; no row
 changed).
 
+
+**Compatibility.** Part 25 adds the value `ui` to
+`AllowedAction.execution.type`, which appears in three resolution-context
+responses. The oasdiff gate counts a new response enum value as breaking, so
+the three findings are listed, with this reason, in
+`spec/oasdiff/err-ignore.txt`. Part 17 §17.3 gains rule 6: a client MUST
+skip an execution type it does not recognise, so the value set can keep
+growing additively.
+
 **Added.**
 - **Part 25, UI launch** (optional class `apx-ui-launch`, Annex A.23).
   A vendor's own screens, named per module in the new `apx-ui-surfaces`
