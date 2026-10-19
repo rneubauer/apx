@@ -71,17 +71,24 @@ AllowedAction:
       examples: [supervisor]
     execution:
       type: object
-      description: How to execute (RECOMMENDED). Exactly one of command/operationId per type.
+      description: |-
+        How to execute (RECOMMENDED). Exactly one of command/operationId/
+        surface per type. `ui` says the action is done in the vendor's own
+        screen (Part 25): the agent launches `surface` on `subject` and
+        the implementation reports what was done as the module's native
+        resource or a UiActionRecord carrying the launch's correlation id.
       required: [type]
       allOf:
         - if: { required: [type], properties: { type: { const: control } } }
           then: { required: [command] }
         - if: { required: [type], properties: { type: { const: domain } } }
           then: { required: [operationId] }
+        - if: { required: [type], properties: { type: { const: ui } } }
+          then: { required: [surface] }
       properties:
         type:
           type: string
-          enum: [control, domain]
+          enum: [control, domain, ui]
         command:
           type: string
           description: For type=control — the apx-command-types value for POST /v1/commands.
@@ -90,6 +97,13 @@ AllowedAction:
           type: string
           description: For type=domain — the operationId of the executing operation in the effective OpenAPI description.
           examples: [post-apx-v1-payment-links]
+        surface:
+          type: string
+          description: For type=ui — the apx-ui-surfaces value to launch (Part 25 §25.5).
+          examples: [lane.console]
+        subject:
+          description: For type=ui — the entity to open the surface on; defaults to the action's `target`.
+          $ref: "../../../vendor/apds/4.1/apds-api-4.1.yaml#/components/schemas/Reference"
     reason:
       type: object
       description: Why the action is denied or gated. REQUIRED when allowed=false or requiresApproval=true.
@@ -279,6 +293,7 @@ SupportInteraction:
       properties:
         code:
           type: string
+          description: A definedValue of apx-interaction-outcomes (Part 11) or an implementer code (Part 17 §17.5).
           examples: [resolved]
         display:
           type: string
@@ -297,19 +312,22 @@ ResolutionResolveRequest:
     Whatever PARKING-DOMAIN identifiers are currently known — the server
     resolves every relationship it can (Part 17 §17.2). At least one
     IDENTIFYING member is required — `device`, `place`, `lane`,
-    `session`, `holder`, `credential`, `plate`, `ticketNumber`, or
-    `reservationCode`; all are optional individually. `interactionId`,
-    `correlationId`, and `channel` are correlation metadata and do not
-    count: a body without an identifying member is 400 `invalid-request`
-    (Part 17 §17.1). Unknown members are ignored (tolerant reader) and
-    never used for resolution. (`minProperties: 1` is the only part of
-    this rule the schema states; the full rule is enforced by the
-    server.)
+    `session`, `holder`, `credential`, `plate`, `ticketNumber`,
+    `reservationCode`, `guestReference`, `commsPoint`, `callerId`,
+    `dialedNumber`, or `commsDeviceId`; all are optional individually.
+    `interactionId`, `correlationId`, `channel`, and `reservationIssuer`
+    are metadata and do not count: a body without an identifying member
+    is 400 `invalid-request` (Part 17 §17.1). Unknown members are ignored
+    (tolerant reader) and never used for resolution. (`minProperties: 1`
+    is the only part of this rule the schema states; the full rule is
+    enforced by the server.)
 
-    Deliberately NO telephony identifiers (SIP URIs, phone numbers): the
-    call platform that owns the intercom maps call → lane/device on its
-    side before calling APX (Part 17 §17.1). PARCS implementations never
-    need to understand telephony.
+    Telephony values appear in exactly two places in APX: on a Part 26
+    CommsPoint, and in the `callerId`, `dialedNumber` and `commsDeviceId`
+    members here, which the call platform supplies to find the comms
+    point. A PARCS implementation never has to hold, return or understand
+    them; one that holds no comms points answers these members with 422
+    `comms-point-unknown` (Part 17 §17.1). No SIP identifiers, anywhere.
   type: object
   minProperties: 1
   properties:
@@ -345,6 +363,131 @@ ResolutionResolveRequest:
     plate: { type: string }
     ticketNumber: { type: string }
     reservationCode: { type: string }
+    reservationIssuer:
+      type: string
+      description: Who sold the reservation, when the code alone is ambiguous across sellers (Part 17 §17.2, ReservationSummary.issuer). Metadata, not an identifier.
+      examples: [spothero.example]
+    guestReference:
+      type: object
+      description: A guest without a plate or ticket — a hotel room, a company, a tenant's employee, an event (Part 17 §17.2). The server resolves it through the place's guest arrangements.
+      required: [kind, value]
+      properties:
+        kind:
+          type: string
+          enum: [hotelRoom, company, tenant, event, other]
+        value:
+          type: string
+          examples: ["1412"]
+    commsPoint:
+      description: The Part 26 CommsPoint the contact came from, when the call platform already knows it.
+      $ref: "../../../vendor/apds/4.1/apds-api-4.1.yaml#/components/schemas/Reference"
+    callerId:
+      type: string
+      pattern: "^\\+[1-9][0-9]{1,14}$"
+      description: E.164. The number the contact came from; matched against `CommsPoint.callerId` (Part 26 §26.4). A parker's own mobile number resolves to nothing and is not stored.
+      examples: ["+15555550199"]
+    dialedNumber:
+      type: string
+      pattern: "^\\+[1-9][0-9]{1,14}$"
+      description: E.164. The number the contact called; matched against `CommsPoint.phoneNumber`. A posted number shared by many lanes resolves to the place only.
+      examples: ["+15555550142"]
+    commsDeviceId:
+      type: string
+      description: The call platform's device id; matched against `CommsPoint.commsDeviceId`.
+      examples: [dev-51cc-ae16]
+
+ApprovalRequest:
+  title: ApprovalRequest
+  description: |-
+    Asking someone with authority to approve an action before it runs
+    (Part 17 §17.3a). An agent whose AllowedAction said `requiresApproval`
+    creates one, addressed to a `role` (an escalation role of the place,
+    Part 26 §26.5, or the AllowedAction's `approvalRole`); the approver
+    decides through `POST /v1/approvals/{id}/decide`; the resulting
+    `Approval` evidence on the write cites the request. Every change is
+    published as `apx.approvals.changed.v1`.
+  allOf:
+    - $ref: "../common/schemas.yaml#/ApxResourceCore"
+    - type: object
+      required: [place, action, requestedBy, role, correlationId, status]
+      properties:
+        place:
+          $ref: "../../../vendor/apds/4.1/apds-api-4.1.yaml#/components/schemas/Reference"
+        action:
+          type: string
+          description: The apx-command-types value or effective-spec operationId to be approved (the AllowedAction.action).
+          examples: [post-apx-v1-payments-id-refund]
+        target:
+          description: What the action is to be executed against.
+          $ref: "../../../vendor/apds/4.1/apds-api-4.1.yaml#/components/schemas/Reference"
+        requestedBy:
+          type: string
+          description: The agent asking.
+          examples: [agent-4471]
+        agentType:
+          type: string
+          enum: [human, ai]
+        role:
+          type: string
+          description: The role asked to decide (apx-escalation-roles value or the AllowedAction's approvalRole).
+          examples: [siteManager]
+        interactionId:
+          type: string
+          examples: [interaction-938383]
+        correlationId:
+          type: string
+          format: uuid
+          description: The interaction's correlation id (Part 17 §17.7).
+        reason:
+          type: string
+          description: Why the agent is asking, in one line.
+          examples: ["Customer double charged at the exit; refund of 12.00 USD"]
+        status:
+          type: string
+          enum: [pending, approved, denied, expired]
+          readOnly: true
+        expiresAt:
+          description: When a pending request lapses to `expired`. Settable on create; the server MAY default it by policy.
+          $ref: "../../../vendor/apds/4.1/apds-api-4.1.yaml#/components/schemas/DateTime"
+        decision:
+          readOnly: true
+          $ref: "#/ApprovalDecision"
+  examples:
+    - {
+        "id": "d7000000-0000-4000-8000-000000000001",
+        "version": 2,
+        "place": { "id": "b1000000-0000-4000-8000-000000000001", "className": "Place" },
+        "action": "post-apx-v1-payments-id-refund",
+        "target": { "id": "e6000000-0000-4000-8000-000000000002", "className": "PaymentRecord" },
+        "requestedBy": "agent-4471",
+        "agentType": "human",
+        "role": "siteManager",
+        "interactionId": "interaction-938383",
+        "correlationId": "6a1f3c2e-7b4d-4e8f-9a0b-1c2d3e4f5a6b",
+        "reason": "Customer double charged at the exit; refund of 12.00 USD",
+        "status": "approved",
+        "expiresAt": "2026-10-18T14:30:00Z",
+        "decision": { "outcome": "approved", "decidedBy": "mgr-lakeside-02", "decidedAt": "2026-10-18T14:09:12Z", "note": "Confirmed on the payment history" }
+      }
+
+ApprovalDecision:
+  title: ApprovalDecision
+  description: The decision on an ApprovalRequest (Part 17 §17.3a), also the body of `POST /v1/approvals/{id}/decide`.
+  type: object
+  required: [outcome, decidedBy]
+  properties:
+    outcome:
+      type: string
+      enum: [approved, denied]
+    decidedBy:
+      type: string
+      description: The approving principal, in the role the request named.
+      examples: [mgr-lakeside-02]
+    decidedAt:
+      readOnly: true
+      $ref: "../../../vendor/apds/4.1/apds-api-4.1.yaml#/components/schemas/DateTime"
+    note:
+      type: string
 
 ResolutionContext:
   title: ResolutionContext

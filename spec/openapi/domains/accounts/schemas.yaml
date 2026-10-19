@@ -343,6 +343,52 @@ PostingRequest:
       $ref: "../../../vendor/apds/4.1/apds-api-4.1.yaml#/components/schemas/Reference"
     note: { type: string }
 
+ReceiptRequest:
+  title: ReceiptRequest
+  description: |-
+    Asks the implementation to send the receipt for a settled payment
+    again (Part 13 §13.1a). The `destination` travels in the body, never
+    in a URL, and is not stored beyond the delivery.
+  type: object
+  required: [channel]
+  properties:
+    channel:
+      type: string
+      enum: [email, sms, print, link]
+      description: "`print` re-prints at the device the payment was taken on; `link` returns a short-lived URL for the agent to read out or forward."
+    destination:
+      type: string
+      description: The e-mail address or E.164 number for `email` and `sms`; ignored for `print` and `link`.
+      examples: ["parker@example.com"]
+    agent:
+      type: string
+      examples: [agent-4471]
+    correlationId:
+      type: string
+      format: uuid
+
+ReceiptDelivery:
+  title: ReceiptDelivery
+  description: The outcome of a receipt request (Part 13 §13.1a).
+  type: object
+  required: [payment, channel, status, requestedAt]
+  properties:
+    payment:
+      $ref: "../../../vendor/apds/4.1/apds-api-4.1.yaml#/components/schemas/Reference"
+    channel:
+      type: string
+      enum: [email, sms, print, link]
+    status:
+      type: string
+      enum: [queued, sent, failed]
+    link:
+      type: string
+      format: uri
+      description: For `channel` = `link`, the receipt's short-lived URL.
+      examples: ["https://pay.example/r/8c1d…"]
+    requestedAt:
+      $ref: "../../../vendor/apds/4.1/apds-api-4.1.yaml#/components/schemas/DateTime"
+
 PaymentLinkCancel:
   title: PaymentLinkCancel
   description: |-

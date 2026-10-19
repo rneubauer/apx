@@ -72,6 +72,42 @@ DiscoveryDocument:
         scope of the class, so a read-only client can see it too.
       items: { type: string }
       examples: [["negotiatedRates", "ticketMatching"]]
+    uiSurfaces:
+      type: array
+      description: |-
+        The vendor screens this client may launch (Part 25 §25.1), each
+        with its display and launch modes and the actions it reports back.
+        Present only when the host implements `apx-ui-launch` and the
+        client holds `apx.ui:launch`.
+      items:
+        $ref: "../ui/schemas.yaml#/UiSurface"
+    placeCapabilities:
+      type: array
+      description: |-
+        What each granted place can do, before a call (Part 16 §16.2):
+        the command types the site executes, the surfaces offered there,
+        and the optional features it supports. A site with no revenue
+        control link lists no command types, so an agent knows to use the
+        vendor's screen instead. Absent when every place offers the same
+        as the document-level `commandTypes`, `uiSurfaces` and `features`.
+      items:
+        type: object
+        required: [place]
+        properties:
+          place:
+            type: string
+            format: uuid
+            description: The HierarchyElement subtree root the row applies to.
+          commandTypes:
+            type: array
+            items: { type: string }
+          uiSurfaces:
+            type: array
+            description: apx-ui-surfaces values offered at this place.
+            items: { type: string }
+          features:
+            type: array
+            items: { type: string }
     topics:
       type: array
       description: |-

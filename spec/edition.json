@@ -16,12 +16,12 @@
   },
   "normativeArtifacts": {
     "bundle": {
-      "spec/dist/apx-v1.yaml": "e32961a11aff9b089911831730853459bc90f8fba47fe434593151e13e099b77",
-      "spec/dist/apx-v1.json": "2bc11732c7e1c88a7703f90987730b783f3f10bf056ac31a87ebc61cd7a4a2b1"
+      "spec/dist/apx-v1.yaml": "be10aa88eb0d614422ca768aca36d9474ed75de4ed8e8ab87722733f2e90709d",
+      "spec/dist/apx-v1.json": "d7c97dd801879be5a210cbf9116cc86c91e5a2f8f55a3a8e460c28140ea708ea"
     },
     "overlays": {
       "spec/openapi/overlays/apx-data-overlay.yaml": "d3a508f17703d41813cf18ba4df8a8c07c7ffc80010ef00aafc3e69c3c041a4a",
-      "spec/openapi/overlays/apx-docs-overlay.yaml": "2e140c3f8bfe26ffaf85c36586ef7790522d6e37da73e7a20cc8f6f817d38e64",
+      "spec/openapi/overlays/apx-docs-overlay.yaml": "349b7e8114f346b06d4d674441a23569ce6b093a386ec15aaa486880dbc83cae",
       "spec/openapi/overlays/apx-examples-overlay.yaml": "eba9a810147c95091a6c8efef69ecaa7280e6513a09f46fc0a5736998cd239b6"
     },
     "registries": {
@@ -32,22 +32,34 @@
         "sha256": "73e735f93b7ab73531e28adc0ae5e9fc2e2f1204d9b14850a7e0537dc6a36fee"
       },
       "apx-alert-types": {
-        "version": 5,
-        "entries": 18,
+        "version": 6,
+        "entries": 24,
         "locator": "https://apx-standard.org/registries/apx-alert-types.json",
-        "sha256": "34dcb0053d587cb3f649ec373cdad5f375c5b1136a10f62660f9ba6cfd6f16b3"
+        "sha256": "f1222de970073e6a372977cd0aa5f10dfd145524da104c4c429b2fed27c5aaa7"
+      },
+      "apx-area-types": {
+        "version": 1,
+        "entries": 19,
+        "locator": "https://apx-standard.org/registries/apx-area-types.json",
+        "sha256": "8e3e7796fe10241feb60aa0cf32f876ea571cd1246ec45f4950a5fa7fc550c8a"
       },
       "apx-command-types": {
-        "version": 5,
-        "entries": 18,
+        "version": 6,
+        "entries": 21,
         "locator": "https://apx-standard.org/registries/apx-command-types.json",
-        "sha256": "1ba48792ab096650a96f60b52952f32e5d59d1fedfb0bee2e60ad966a0d8d794"
+        "sha256": "885f1927397a1b8997641bb4ca284cc30fa63ffbf40f7441fc5560ff2920c042"
+      },
+      "apx-comms-point-types": {
+        "version": 1,
+        "entries": 7,
+        "locator": "https://apx-standard.org/registries/apx-comms-point-types.json",
+        "sha256": "91e41a462678395d756098de3292278a20d603ed1551c0b228527c66fbf17698"
       },
       "apx-conformance-classes": {
-        "version": 8,
-        "entries": 20,
+        "version": 9,
+        "entries": 22,
         "locator": "https://apx-standard.org/registries/apx-conformance-classes.json",
-        "sha256": "ccaa46eb20df690b49d211530138579bb179b8527bf5b6d6582ec5631972e7d2"
+        "sha256": "8db68dd10d269be24930d36cc902508abe2f7d95cee86ad1387dd14e5ec28020"
       },
       "apx-device-states": {
         "version": 1,
@@ -55,17 +67,35 @@
         "locator": "https://apx-standard.org/registries/apx-device-states.json",
         "sha256": "5a3f968e5a2c8249b2acbd415c706ccfe77db9bdfd624be779bb3bfe56b5b90f"
       },
+      "apx-equipment-roles": {
+        "version": 1,
+        "entries": 30,
+        "locator": "https://apx-standard.org/registries/apx-equipment-roles.json",
+        "sha256": "51f59b70c6d7e90762744f28ea6e924d7cb9f52043e78a62f75b3a10a698601b"
+      },
+      "apx-escalation-roles": {
+        "version": 1,
+        "entries": 6,
+        "locator": "https://apx-standard.org/registries/apx-escalation-roles.json",
+        "sha256": "af2ab78c820151b4db4d0b150a2cbd118d66328e3cba7de76c8948c65862affc"
+      },
       "apx-features": {
-        "version": 2,
-        "entries": 3,
+        "version": 3,
+        "entries": 5,
         "locator": "https://apx-standard.org/registries/apx-features.json",
-        "sha256": "9cb641e3f82cabd77e09060aeaa1c62218ed6e212cabcdf0743de30d3aaa2dc7"
+        "sha256": "a3352758f2c87d37a6369e66cd7046c9839f09f602b9d6d05c2bf024a6b23ba2"
+      },
+      "apx-interaction-outcomes": {
+        "version": 1,
+        "entries": 7,
+        "locator": "https://apx-standard.org/registries/apx-interaction-outcomes.json",
+        "sha256": "ea7b2ab686e036215aaf60eb2b5c7de99549cdbb61ed81e1f521e2332e31e553"
       },
       "apx-issue-types": {
-        "version": 1,
-        "entries": 11,
+        "version": 2,
+        "entries": 34,
         "locator": "https://apx-standard.org/registries/apx-issue-types.json",
-        "sha256": "edea6df16a2f5710e7d3315f5b62d7520813accf9d834fe74ef9bd73092946f9"
+        "sha256": "de92053623afb2aba905c93425ab521cea475c1c7b46fe2213ce82b59836c9a2"
       },
       "apx-payment-line-codes": {
         "version": 1,
@@ -84,6 +114,12 @@
         "entries": 6,
         "locator": "https://apx-standard.org/registries/apx-read-review-reasons.json",
         "sha256": "37dfb642488417bfd242fbf2b9f066dd699904c42583b3b343e1a159c59f987c"
+      },
+      "apx-refund-reasons": {
+        "version": 1,
+        "entries": 5,
+        "locator": "https://apx-standard.org/registries/apx-refund-reasons.json",
+        "sha256": "23e7d0edddf5781efc81d432734164a564bb1b76f53ae49971e8ba200deb7cb0"
       },
       "apx-session-end-reasons": {
         "version": 1,
@@ -104,10 +140,16 @@
         "sha256": "98fe00e1b7255f7dda5932be828cf1ca8a08541a6f4d9e62e3cde7218b20857b"
       },
       "apx-topics": {
-        "version": 12,
-        "entries": 29,
+        "version": 13,
+        "entries": 34,
         "locator": "https://apx-standard.org/registries/apx-topics.json",
-        "sha256": "fadc367df917d2144597123f0410d6c815b27ca2d3b58c1f2b033f67b9d601f3"
+        "sha256": "2bbd055ea4efeba55c93fb2347b01eb5a47749a8749537ce3ec0ba008232ff10"
+      },
+      "apx-ui-surfaces": {
+        "version": 1,
+        "entries": 15,
+        "locator": "https://apx-standard.org/registries/apx-ui-surfaces.json",
+        "sha256": "84a74d3aecb648125f046d30be13979af5a9eba4dc982741fb9a680159c46896"
       },
       "apx-violation-types": {
         "version": 2,
@@ -218,14 +260,22 @@
         "title": "APX Part 24 — Plate Lists (optional class `apx-plate-lists`)"
       },
       {
+        "file": "25-ui-launch.md",
+        "title": "APX Part 25 — UI Launch (optional class `apx-ui-launch`)"
+      },
+      {
+        "file": "26-site-configuration.md",
+        "title": "APX Part 26 — Site Configuration (optional class `apx-site-config`)"
+      },
+      {
         "file": "annex-a-ics.md",
         "title": "APX Annex A — Conformance Requirements and ICS Template (normative)"
       }
     ]
   },
   "surface": {
-    "paths": 137,
-    "schemas": 325,
+    "paths": 151,
+    "schemas": 354,
     "conformanceClasses": [
       "apx-data",
       "apx-events",
@@ -246,7 +296,9 @@
       "apx-credentials",
       "apx-valet",
       "apx-charging",
-      "apx-plate-lists"
+      "apx-plate-lists",
+      "apx-ui-launch",
+      "apx-site-config"
     ]
   }
 }

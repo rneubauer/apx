@@ -1,0 +1,479 @@
+# APX site configuration — everything a location's setup needs so that
+# APX alone describes it: what each piece of hardware is and does, where
+# it is, which cameras see what, how a parker reaches help, and the ids
+# other systems use for the same things (optional class apx-site-config,
+# Part 26).
+
+EquipmentDetail:
+  title: EquipmentDetail
+  description: |-
+    What a piece of hardware is, where it is, and what it does (Part 26
+    §26.1). Carried on an APDS SupplementalEquipment as the Level B
+    decoration `apds-ext:apx:equipment-detail@1.0` in its `extensions`
+    container (Part 4 §4.3). The equipment TYPE stays the APDS
+    `EquipmentTypeEnum` (often `paymentMachine` or `other`); `role` says
+    what the item does on the site, from the fixed code list
+    `apx-equipment-roles`.
+
+    `firmwareVersion` and `softwareVersion` are optional but RECOMMENDED,
+    and readable by every client of the place, because knowing what runs
+    on each device is what makes integration at scale possible. IP
+    addresses are deliberately left out in the interest of security:
+    together with model and firmware they map a site's network for an
+    attacker, and no APX flow connects to a device directly. They could
+    be added later, as an optional member behind a restricted scope, if a
+    real need arises. MAC addresses stay, as the hardware identity when
+    the serial label is gone or when the MAC is the serial.
+  type: object
+  required: [role]
+  properties:
+    role:
+      type: string
+      description: definedValue from apx-equipment-roles (a fixed list; `other` is a code, not free text).
+      examples: [exitVerifier]
+    manufacturer:
+      type: string
+      examples: [Amano McGann]
+    model:
+      type: string
+      examples: [AGP-1500]
+    firmwareVersion:
+      type: string
+      examples: ["4.2.1"]
+    softwareVersion:
+      type: string
+      description: The application software on the device, when distinct from its firmware.
+      examples: ["2026.3"]
+    serialNumber:
+      type: string
+      examples: [AMG-55-20318]
+    macAddresses:
+      type: array
+      description: One per network interface, lower-case hex without separators.
+      items:
+        type: string
+        pattern: "^[0-9a-f]{12}$"
+      examples: [["001a2b3c4d5e"]]
+    installedAt:
+      type: string
+      format: date
+      examples: ["2024-03-18"]
+    area:
+      type: string
+      description: Where on the site the item is, a definedValue from apx-area-types (Part 26 §26.2).
+      examples: [lane]
+    level:
+      type: string
+      description: The floor label as signed on site.
+      examples: [P1]
+    lane:
+      description: The VehicularAccess the item serves. Absent for place-level equipment (an access door, a pay-on-foot station, a server).
+      $ref: "../../../vendor/apds/4.1/apds-api-4.1.yaml#/components/schemas/Reference"
+    builtInto:
+      description: The host equipment this item is part of (an intercom in a door's call box, a camera in a pay station).
+      $ref: "../../../vendor/apds/4.1/apds-api-4.1.yaml#/components/schemas/Reference"
+    controls:
+      type: array
+      description: The barriers this device opens (an exit verifier that controls gate 2, a card reader that controls an access door).
+      items:
+        $ref: "../../../vendor/apds/4.1/apds-api-4.1.yaml#/components/schemas/Reference"
+    serviceProvider:
+      type: object
+      description: Who services the item. An organisation and a support reference, never a person.
+      properties:
+        organisation:
+          $ref: "../../../vendor/apds/4.1/apds-api-4.1.yaml#/components/schemas/Reference"
+        supportReference:
+          type: string
+          description: The provider's own reference for this unit or contract (an asset tag, a contract number).
+          examples: [SVC-2024-0918]
+  examples:
+    - {
+        "role": "exitVerifier",
+        "manufacturer": "Amano McGann",
+        "model": "AGP-1500",
+        "firmwareVersion": "4.2.1",
+        "softwareVersion": "2026.3",
+        "serialNumber": "AMG-55-20318",
+        "macAddresses": ["001a2b3c4d5e"],
+        "installedAt": "2024-03-18",
+        "area": "lane",
+        "level": "P1",
+        "lane": { "id": "b2000000-0000-4000-8000-000000000002", "className": "VehicularAccess" },
+        "controls": [{ "id": "c2000000-0000-4000-8000-000000000021", "className": "SupplementalEquipment" }],
+        "serviceProvider": { "organisation": { "id": "a1000000-0000-4000-8000-000000000009", "className": "Organisation" }, "supportReference": "SVC-2024-0918" }
+      }
+
+CameraDetail:
+  title: CameraDetail
+  description: |-
+    A camera anywhere on the site, not only on a lane (Part 26 §26.3).
+    Carried on a SupplementalEquipment whose EquipmentDetail `role` is
+    `camera`, as the Level B decoration `apds-ext:apx:camera@1.0`. Where
+    the camera is (`area`, `level`, `lane`) and what it is built into
+    (`builtInto`) are EquipmentDetail members, shared with every other
+    piece of hardware; this decoration adds how it is mounted, what it
+    looks at, and how it can be viewed. It holds no addresses, usernames
+    or passwords: a view is obtained through `POST /v1/cameras/{id}/views`
+    and the password never leaves the site (Part 26 §26.3). Camera models
+    and stream profiles follow ONVIF (Profile S, Profile T) and are not
+    redefined. `apds-ext:apx:lane-cameras@1.0` (Part 13) is unchanged.
+  type: object
+  required: [view]
+  properties:
+    mounting:
+      type: string
+      enum: [builtIn, overhead, pole, wall, ceiling, other]
+      description: When `builtIn`, EquipmentDetail `builtInto` names the host, for example a pay station's driver camera.
+    view:
+      type: array
+      minItems: 1
+      description: What the camera looks at; one camera may cover several.
+      items:
+        type: string
+        enum: [plate, vehicle, driver, equipmentInteraction, pedestrians, areaOverview, other]
+    faces:
+      type: string
+      enum: [inward, outward]
+      description: For lanes, plazas and ramps, relative to the facility (Part 13 §13.3a).
+    primary:
+      type: boolean
+      description: Show this camera first for its lane or area.
+    ptz:
+      type: boolean
+      description: Can pan, tilt and zoom.
+    recorder:
+      type: object
+      description: The DVR or NVR that records it (an equipment item with role `videoRecorder`) and the channel.
+      properties:
+        equipment:
+          $ref: "../../../vendor/apds/4.1/apds-api-4.1.yaml#/components/schemas/Reference"
+        channel:
+          type: string
+          examples: ["7"]
+    streams:
+      type: array
+      description: What the camera can deliver, so a host knows what kind of view to ask for.
+      items:
+        type: object
+        required: [protocol]
+        properties:
+          protocol:
+            type: string
+            enum: [webrtc, hls, rtsp, mjpeg, snapshot]
+          transport:
+            type: string
+            examples: [tcp]
+          resolution:
+            type: string
+            examples: [1920x1080]
+    retentionDays:
+      type: integer
+      minimum: 0
+      description: How long recordings are kept; stated per camera because `driver` and `pedestrians` views capture faces (Part 26 §26.3).
+      examples: [30]
+    credentialRef:
+      type: string
+      description: |-
+        For a camera that cannot sit behind a gateway, the label of the
+        credential the receiving system looks up in its own vault. NEVER
+        the secret itself; the secret is exchanged once, outside APX, at
+        onboarding (Part 9 §9.7).
+      examples: [site-0042/cam-door-1]
+  examples:
+    - {
+        "mounting": "wall",
+        "view": ["pedestrians"],
+        "primary": true,
+        "ptz": false,
+        "recorder": { "equipment": { "id": "c2000000-0000-4000-8000-000000000090", "className": "SupplementalEquipment" }, "channel": "7" },
+        "streams": [{ "protocol": "webrtc" }, { "protocol": "snapshot" }],
+        "retentionDays": 30
+      }
+
+ExternalIdentifiers:
+  title: ExternalIdentifiers
+  description: |-
+    The ids other systems use for the same place, lane or equipment
+    (Part 26 §26.6). Carried on any HierarchyElement as the Level B
+    decoration `apds-ext:apx:external-ids@1.0`. APDS
+    `SupplementalFacility.externalIdentifiers` holds untyped strings; here
+    each id says which system issued it. `system` is a URI the issuer
+    owns, usually its own domain, so APX names no products or platforms.
+    `POST /v1/identifiers:resolve` finds the APX record from such an id.
+  type: object
+  required: [identifiers]
+  properties:
+    identifiers:
+      type: array
+      minItems: 1
+      items:
+        type: object
+        required: [system, id]
+        properties:
+          system:
+            type: string
+            format: uri
+            description: A URI owned by the system that issued the id.
+            examples: ["https://parcs.example"]
+          id:
+            type: string
+            examples: [LOT-0042]
+  examples:
+    - { "identifiers": [{ "system": "https://parcs.example", "id": "LOT-0042" }, { "system": "https://calls.example", "id": "acct-7f31" }] }
+
+PlaceOperations:
+  title: PlaceOperations
+  description: |-
+    Operational facts about a place that a call centre needs before a
+    call (Part 26 §26.5). Carried on a place HierarchyElement as the
+    Level B decoration `apds-ext:apx:place-operations@1.0`.
+    `escalationContacts` lists roles in calling order, never names or
+    phone numbers: the call platform holds those, so APX carries no
+    personal contact data. A Part 17 approval request is addressed to a
+    role from this list.
+  type: object
+  properties:
+    commsAccountId:
+      type: string
+      description: The id the call platform uses for the whole site (its account), the site-level pair of `CommsPoint.commsDeviceId`.
+      examples: [acct-7f31]
+    escalationContacts:
+      type: array
+      description: Who to escalate to, by role, in order.
+      items:
+        type: object
+        required: [role, order]
+        properties:
+          role:
+            type: string
+            description: definedValue from apx-escalation-roles.
+            examples: [siteManager]
+          order:
+            type: integer
+            minimum: 1
+            description: Calling order; 1 is tried first.
+          hours:
+            description: When this role is reachable. Absent means always.
+            $ref: "../../../vendor/apds/4.1/apds-api-4.1.yaml#/components/schemas/Period"
+  examples:
+    - {
+        "commsAccountId": "acct-7f31",
+        "escalationContacts": [
+          { "role": "attendant", "order": 1 },
+          { "role": "siteManager", "order": 2 },
+          { "role": "operatorOnCall", "order": 3 }
+        ]
+      }
+
+CommsPoint:
+  title: CommsPoint
+  description: |-
+    Any way a parker reaches help from a lane or a location (Part 26
+    §26.4): an intercom, an analog dialler, a posted phone number, a
+    kiosk, a QR code, an app. A call platform matches an inbound contact
+    to a comms point by the number it calls out as (`callerId`), the
+    number it called (`phoneNumber`), or its own device id
+    (`commsDeviceId`), and APX then answers with the lane, or with the
+    location only when the comms point serves no single lane (a posted
+    number shared by many lanes can never name the lane by itself).
+
+    These are the only members of APX that carry telephony values, and
+    the call platform supplies them; a PARCS implementation never has to
+    hold, return or understand them (Part 17 §17.1). SIP usernames,
+    realms and passwords are deliberately left out: a username with its
+    realm is half of a line's login, they exist only for SIP devices, and
+    the call platform already maps its own SIP data to these ids. A SIP
+    password or any other credential MUST never appear in any member.
+  allOf:
+    - $ref: "../common/schemas.yaml#/ApxResourceCore"
+    - type: object
+      required: [type, place]
+      anyOf:
+        - required: [phoneNumber]
+        - required: [callerId]
+        - required: [commsDeviceId]
+      properties:
+        type:
+          type: string
+          description: definedValue from apx-comms-point-types.
+          examples: [intercom]
+        place:
+          description: The location it serves.
+          $ref: "../../../vendor/apds/4.1/apds-api-4.1.yaml#/components/schemas/Reference"
+        lane:
+          description: The VehicularAccess it serves, when it serves exactly one.
+          $ref: "../../../vendor/apds/4.1/apds-api-4.1.yaml#/components/schemas/Reference"
+        equipment:
+          description: The SupplementalEquipment it is, when it is inventoried hardware (role `intercom`, `analogDialer`, `emergencyPhone`).
+          $ref: "../../../vendor/apds/4.1/apds-api-4.1.yaml#/components/schemas/Reference"
+        serves:
+          description: The barrier an agent opens for this comms point, a gate or an access door, when there is one.
+          $ref: "../../../vendor/apds/4.1/apds-api-4.1.yaml#/components/schemas/Reference"
+        phoneNumber:
+          type: string
+          pattern: "^\\+[1-9][0-9]{1,14}$"
+          description: E.164. The number that is called when help is requested, dialled by the parker for a posted number, or by the intercom or dialler when its button is pushed.
+          examples: ["+15555550142"]
+        callerId:
+          type: string
+          pattern: "^\\+[1-9][0-9]{1,14}$"
+          description: E.164. The number the device calls out as.
+          examples: ["+15555550199"]
+        commsDeviceId:
+          type: string
+          description: The id the call platform uses for this comms point when it identifies it by neither caller id nor dialled number.
+          examples: [dev-51cc-ae16]
+        coverage:
+          type: array
+          description: When the comms point is answered and in which languages. The answering call centre itself is not named.
+          items:
+            type: object
+            properties:
+              period:
+                $ref: "../../../vendor/apds/4.1/apds-api-4.1.yaml#/components/schemas/Period"
+              languages:
+                type: array
+                description: BCP 47 language tags.
+                items: { type: string }
+                examples: [["en", "es"]]
+  examples:
+    - {
+        "id": "c3000000-0000-4000-8000-000000000001",
+        "version": 1,
+        "type": "intercom",
+        "place": { "id": "b1000000-0000-4000-8000-000000000001", "className": "Place" },
+        "lane": { "id": "b2000000-0000-4000-8000-000000000002", "className": "VehicularAccess" },
+        "equipment": { "id": "c2000000-0000-4000-8000-000000000023", "className": "SupplementalEquipment" },
+        "serves": { "id": "c2000000-0000-4000-8000-000000000021", "className": "SupplementalEquipment" },
+        "callerId": "+15555550199",
+        "commsDeviceId": "dev-51cc-ae16",
+        "coverage": [{ "languages": ["en", "es"] }]
+      }
+
+IdentifierResolveRequest:
+  title: IdentifierResolveRequest
+  description: An external id to look up (Part 26 §26.6), as it appears in an ExternalIdentifiers entry.
+  type: object
+  required: [system, id]
+  properties:
+    system:
+      type: string
+      format: uri
+      examples: ["https://parcs.example"]
+    id:
+      type: string
+      examples: [LOT-0042]
+
+IdentifierResolution:
+  title: IdentifierResolution
+  description: The APX record an external id names (Part 26 §26.6).
+  type: object
+  required: [target, className]
+  properties:
+    target:
+      description: The place, lane, equipment or comms point found.
+      $ref: "../../../vendor/apds/4.1/apds-api-4.1.yaml#/components/schemas/Reference"
+    className:
+      type: string
+      description: The target's class, repeated for convenience.
+      examples: [VehicularAccess]
+    place:
+      description: The place the target belongs to (the target itself when it is a place).
+      $ref: "../../../vendor/apds/4.1/apds-api-4.1.yaml#/components/schemas/Reference"
+
+CameraViewRequest:
+  title: CameraViewRequest
+  description: |-
+    Asks for a short-lived link to see a camera (Part 26 §26.3). Whoever
+    holds the camera answers, the PARCS, the video system or an on-site
+    gateway, and the camera's password never leaves the site. `playback`
+    needs `from` and `to` and the `cameraPlayback` feature.
+  type: object
+  required: [kind, agent, correlationId]
+  properties:
+    kind:
+      type: string
+      enum: [live, snapshot, playback]
+    from:
+      $ref: "../../../vendor/apds/4.1/apds-api-4.1.yaml#/components/schemas/DateTime"
+    to:
+      $ref: "../../../vendor/apds/4.1/apds-api-4.1.yaml#/components/schemas/DateTime"
+    agent:
+      type: string
+      description: The staff member the view is issued to; every view is logged against them.
+      examples: [agent-4471]
+    agentType:
+      type: string
+      enum: [human, ai]
+    correlationId:
+      type: string
+      format: uuid
+      description: The interaction the view belongs to; a view link MUST NOT be reused outside it.
+    interactionId:
+      type: string
+      examples: [interaction-938383]
+
+CameraView:
+  title: CameraView
+  description: |-
+    A single-use, short-lived link to a camera's live stream, a still, or
+    a recording (Part 26 §26.3). Bound to the agent it was issued to and
+    logged against the `correlationId`; it expires at `expiresAt`, never
+    more than 5 minutes after issue, and it never contains a camera
+    credential.
+  type: object
+  required: [id, camera, kind, url, expiresAt]
+  properties:
+    id:
+      type: string
+      format: uuid
+    camera:
+      $ref: "../../../vendor/apds/4.1/apds-api-4.1.yaml#/components/schemas/Reference"
+    kind:
+      type: string
+      enum: [live, snapshot, playback]
+    url:
+      type: string
+      format: uri
+      examples: ["https://video.example/v/9c2f…"]
+    protocol:
+      type: string
+      enum: [webrtc, hls, rtsp, mjpeg, snapshot]
+      description: What the link serves (`snapshot` is an image).
+    expiresAt:
+      $ref: "../../../vendor/apds/4.1/apds-api-4.1.yaml#/components/schemas/DateTime"
+    issuedTo:
+      type: string
+      description: The agent, echoed.
+      examples: [agent-4471]
+    from:
+      $ref: "../../../vendor/apds/4.1/apds-api-4.1.yaml#/components/schemas/DateTime"
+    to:
+      $ref: "../../../vendor/apds/4.1/apds-api-4.1.yaml#/components/schemas/DateTime"
+  examples:
+    - {
+        "id": "c4000000-0000-4000-8000-000000000001",
+        "camera": { "id": "c2000000-0000-4000-8000-000000000031", "className": "SupplementalEquipment" },
+        "kind": "live",
+        "url": "https://video.example/v/9c2f0e1a",
+        "protocol": "webrtc",
+        "expiresAt": "2026-10-18T14:12:00Z",
+        "issuedTo": "agent-4471"
+      }
+
+EquipmentRecord:
+  title: EquipmentRecord
+  description: |-
+    An APDS SupplementalEquipment as APX serves it (Part 26 §26.1): the
+    stock APDS record plus its `extensions` container, which carries the
+    `apds-ext:apx:equipment-detail@1.0` decoration (REQUIRED on every
+    record this class serves), `apds-ext:apx:camera@1.0` on a camera, and
+    `apds-ext:apx:external-ids@1.0` where other systems have ids for it.
+    The APDS record itself is never reshaped.
+  allOf:
+    - $ref: "../../../vendor/apds/4.1/apds-api-4.1.yaml#/components/schemas/SupplementalEquipment"
+    - type: object
+      properties:
+        extensions:
+          $ref: "../common/schemas.yaml#/Extensions"

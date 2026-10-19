@@ -1,0 +1,28 @@
+{
+  "id": "9e3a4b5c-6d7e-4f8a-9b0c-1d2e3f4a5b6c",
+  "version": 1,
+  "name": "apx-area-types",
+  "creator": { "id": "a1000000-0000-4000-8000-000000000001", "className": "Organisation" },
+  "locator": "https://apx-standard.org/registries/apx-area-types.json",
+  "userDefinedCodeListEntries": [
+    { "definedValue": "lane", "entryDescription": "Vehicle area: an entry or exit lane.", "entryIndex": 0 },
+    { "definedValue": "entryPlaza", "entryDescription": "Vehicle area: the approach to the entry lanes.", "entryIndex": 1 },
+    { "definedValue": "exitPlaza", "entryDescription": "Vehicle area: the approach to the exit lanes.", "entryIndex": 2 },
+    { "definedValue": "ramp", "entryDescription": "Vehicle area: a ramp between levels.", "entryIndex": 3 },
+    { "definedValue": "parkingLevel", "entryDescription": "Vehicle area: a drive aisle or parking area on a level.", "entryIndex": 4 },
+    { "definedValue": "roof", "entryDescription": "Vehicle area: an open roof level.", "entryIndex": 5 },
+    { "definedValue": "evChargingArea", "entryDescription": "Vehicle area: the EV charging bays.", "entryIndex": 6 },
+    { "definedValue": "loadingDock", "entryDescription": "Vehicle area: a loading or service area.", "entryIndex": 7 },
+    { "definedValue": "perimeter", "entryDescription": "Vehicle area: outside the facility, its fence line or the street.", "entryIndex": 8 },
+    { "definedValue": "elevator", "entryDescription": "Pedestrian area: inside an elevator car.", "entryIndex": 9 },
+    { "definedValue": "elevatorLobby", "entryDescription": "Pedestrian area: an elevator lobby.", "entryIndex": 10 },
+    { "definedValue": "lobby", "entryDescription": "Pedestrian area: the main or pedestrian lobby.", "entryIndex": 11 },
+    { "definedValue": "stairwell", "entryDescription": "Pedestrian area: a stairwell.", "entryIndex": 12 },
+    { "definedValue": "pedestrianEntrance", "entryDescription": "Pedestrian area: a street door or access door.", "entryIndex": 13 },
+    { "definedValue": "paymentArea", "entryDescription": "Pedestrian area: where the pay-on-foot stations are.", "entryIndex": 14 },
+    { "definedValue": "cashierBooth", "entryDescription": "Staff area: a cashier booth.", "entryIndex": 15 },
+    { "definedValue": "office", "entryDescription": "Staff area: an office or attendant room.", "entryIndex": 16 },
+    { "definedValue": "equipmentRoom", "entryDescription": "Staff area: a server or electrical room.", "entryIndex": 17 },
+    { "definedValue": "other", "entryDescription": "An area none of the other codes fit. A code, not free text.", "entryIndex": 18 }
+  ]
+}
