@@ -21,7 +21,7 @@
     },
     "overlays": {
       "spec/openapi/overlays/apx-data-overlay.yaml": "d3a508f17703d41813cf18ba4df8a8c07c7ffc80010ef00aafc3e69c3c041a4a",
-      "spec/openapi/overlays/apx-docs-overlay.yaml": "349b7e8114f346b06d4d674441a23569ce6b093a386ec15aaa486880dbc83cae",
+      "spec/openapi/overlays/apx-docs-overlay.yaml": "aebb1ec4bd522d4f8addb94c0d7e1f9df892a369763a3e3e98a466dba6e05236",
       "spec/openapi/overlays/apx-examples-overlay.yaml": "eba9a810147c95091a6c8efef69ecaa7280e6513a09f46fc0a5736998cd239b6"
     },
     "registries": {
