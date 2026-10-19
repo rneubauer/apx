@@ -35,6 +35,12 @@ See the `Alert` schema. Key rules:
   alert's `extensions` under `apds-ext:apx:alert-evidence@1.0` as
   `{ "observations": [Reference, …] }` (for example the LPR reads behind
   it).
+- **The call behind the alert.** An alert raised from a customer contact
+  (a receipt or refund request, a citation inquiry, reported damage, a
+  callback promised, §7.7) carries `supportInteraction`, a Reference to
+  the Part 17 §17.6 record of that call, so the site case and the call
+  record point at each other and the §17.7 correlation chain reaches the
+  alert.
 
 ## 7.2 Endpoints
 
@@ -102,3 +108,27 @@ evidence (`apds-ext:apx:alert-evidence@1.0`, §7.1); a refused-service
 alert SHOULD also reference the `displayMessage` command whose
 `result.display` proves what the lane showed (Part 6 §6.1a). Subscribers
 that want only these use `filters.alertTypes` (Part 8 §8.5a).
+
+## 7.7 Service-request and consumable alert types (Parts 6, 17)
+
+Registered in `apx-alert-types` v6:
+
+- `consumableLow` — a device reports a consumable (`tickets`,
+  `receiptPaper`, `cash`, `coins`) at `low` or `empty` (Part 6 §6.4);
+  `source.device` is the device and `description` names the consumable;
+- `receiptRequested` — a customer asked for a receipt that the agent
+  could not send during the call (Part 13 §13.1a);
+- `refundRequested` — a customer asked for a refund the agent could not
+  grant during the call; the refund, when made, is the Part 13 §13.1a
+  action, and its `reasonCode` comes from `apx-refund-reasons`;
+- `citationInquiry` — a customer asked about a citation or notice (Part
+  19) that the call center does not handle;
+- `damageReported` — a customer reported damage to, or a break-in of, a
+  vehicle on site;
+- `customerCallbackRequested` — the customer is owed a call back.
+
+Each is a site case opened from a call: `relatedEntity` is what the site
+acts on (the payment, the violation, the session) and `supportInteraction`
+(§7.1) is the call it came from. They are the alerts a call center hands
+to the operator, so the operator's queue and the call record agree on
+what is still open.

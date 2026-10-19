@@ -18,6 +18,77 @@ problem-type table loses a stray merge-conflict marker (editorial; no row
 changed).
 
 **Added.**
+- **Part 25, UI launch** (optional class `apx-ui-launch`, Annex A.23).
+  A vendor's own screens, named per module in the new `apx-ui-surfaces`
+  registry (`lane.console`, `reservation.detail`, `violation.appeal`,
+  `toll.dispute`, …), opened for an agent with automatic login: a
+  handshake (`POST /v1/ui/launches` returns a single-use URL valid 60 s)
+  or a signed JWS token (`ES256`/`RS256`, `exp` ≤ 60 s, form POST or URL
+  fragment). The `UiLaunch` lifecycle `issued → opened → closed |
+  expired`, and the loopback rule: everything done on the screen comes
+  back as the native APX record (command, refund, redemption…) carrying
+  the launch's `correlationId` and agent, or, where no APX operation
+  exists, as a `UiActionRecord` with the `returnFields` the host asked
+  for and `unavailable[]` for the rest. `AllowedAction.execution.type`
+  gains `ui`; discovery gains `uiSurfaces[]`; topics
+  `apx.ui.launch.changed.v1` and `apx.ui.action.recorded.v1`; scopes
+  `apx.ui:launch`, `:read`, `:record`; problem types
+  `ui-surface-unknown`, `ui-display-mode-unsupported`,
+  `ui-launch-expired`, `ui-launch-closed`.
+- **Part 26, Site configuration** (optional class `apx-site-config`,
+  Annex A.24): a location described from APX alone. Four Level B
+  decorations: `apds-ext:apx:equipment-detail@1.0` on every
+  SupplementalEquipment, with a `role` from the fixed
+  `apx-equipment-roles` list (thirty codes: `gate`, `accessDoor`,
+  `ticketDispenser`, `exitVerifier`, `cardReader`, `camera`, `intercom`,
+  `videoGateway`, …) beside the untouched APDS `equipmentType`, plus
+  manufacturer, model, firmware and software versions (RECOMMENDED),
+  serial, MAC addresses, `area` (`apx-area-types`, nineteen codes from
+  `lane` to `elevator`), `level`, `lane`, `builtInto`, `controls[]` and
+  `serviceProvider`, and a note on why IP addresses are left out;
+  `apds-ext:apx:camera@1.0` (mounting, `view[]` from `plate` to
+  `equipmentInteraction`, facing, recorder, streams, retention, a
+  `credentialRef` that is never a secret); `apds-ext:apx:external-ids@1.0`
+  (typed `{system, id}`, the issuer names itself by URI);
+  `apds-ext:apx:place-operations@1.0` (`commsAccountId`, escalation
+  contacts as roles only). The `CommsPoint` resource: intercom, analog
+  dialer, posted number, kiosk, QR code or app, with `phoneNumber` (the
+  number called when help is requested), `callerId` (the number the
+  device calls out as) and `commsDeviceId`, the gate or door it `serves`,
+  and coverage; SIP data deliberately left out. Routes `GET /v1/equipment`,
+  `GET/POST/PUT/DELETE /v1/comms-points`, `POST /v1/identifiers:resolve`,
+  `POST /v1/cameras/{id}/views` (live, snapshot, playback as single-use
+  links ≤ 5 min; features `cameraViews`, `cameraPlayback`); topics
+  `apx.equipment.changed.v1`, `apx.commspoints.changed.v1`; registries
+  `apx-equipment-roles`, `apx-area-types`, `apx-comms-point-types`,
+  `apx-escalation-roles`; problem types `camera-view-unavailable`,
+  `playback-range-unavailable`, `comms-point-unknown`. The after-hours
+  access door is walked through in §26.8.
+- Part 9: §9.7 integration secrets (no read, event or feed carries a
+  PARCS key, camera or device password, in any member or nested text;
+  secrets are named, never carried; a write that carries one is refused)
+  and §9.8 launch material and view links.
+- Part 17: §17.1 resolve request gains `reservationIssuer`,
+  `guestReference` (hotel room, company, tenant, event), `commsPoint`,
+  `callerId`, `dialedNumber`, `commsDeviceId`, and the telephony layering
+  rule is amended for comms points; §17.3a approval requests
+  (`POST /v1/approvals`, `…/{id}/decide`, `apx.approvals.changed.v1`,
+  `approval-closed`), the decided request cited as `approvalRequest`
+  evidence; §17.6 `apx-interaction-outcomes` for
+  `SupportInteraction.resolution.code`; `apx-issue-types` v2 adds the
+  twenty-three issues at least five of ten operator call centers share,
+  from a six-month sample of 176,860 calls.
+- Part 6: `DeviceStatus` gains `fault`, `consumables[]` and
+  `maintenanceMode`; `apx-command-types` v6 adds `ejectTicket`,
+  `cancelTransaction`, `reprintReceipt`.
+- Part 7: §7.7 alert types `consumableLow`, `receiptRequested`,
+  `refundRequested`, `citationInquiry`, `damageReported`,
+  `customerCallbackRequested` (`apx-alert-types` v6); `Alert` gains
+  `supportInteraction`.
+- Part 13: `POST /v1/payments/{id}/receipt` (`receipt-channel-unsupported`)
+  and refund `reasonCode` from `apx-refund-reasons`. Part 14:
+  `ReservationSummary` gains `issuer` and `amountPaid`. Part 16:
+  `placeCapabilities[]`.
 - Native routes `GET`, `PUT` and `DELETE /observations/{id}` and
   `GET /quotes/{id}`, mounted verbatim from APDS 4.1. Earlier text (LPR
   findings F-LPR-12 and F-LPR-16, and the `observation` parameter of

@@ -457,7 +457,56 @@ of what the lane displayed when it refused service.
 
 ---
 
-## 18. Room to grow: the vendor space
+## 18. UI launch: the vendor's own screen, with the record kept straight
+
+Most remote-assistance actions still happen in a vendor's web portal,
+not through an API: the agent opens it in another window, issues the
+lost ticket there, and types a note. The call record and the vendor's
+record never agree again. APX lets a vendor offer that screen today,
+logged in automatically, and makes whatever is done on it come back as
+APX data.
+
+| Route | What it does |
+|---|---|
+| `POST /v1/ui/launches` | The host asks for a screen (`surface`: `lane.console`, `reservation.detail`, `violation.appeal`, …) for one agent and one subject; back comes a single-use URL that lives 60 seconds and logs the agent in |
+| Signed token to the surface's `launchUrl` | The same request as a short-lived JWS, for hosts that would rather sign than call |
+| `POST …/{id}/actions` · `…/close` | The screen reports what was done when no APX operation covers it (`UiActionRecord`, with the fields the host asked for), and when it was closed |
+| `apx.ui.launch.changed.v1` · `apx.ui.action.recorded.v1` | The host's record follows along |
+
+**Why this way:** vendors will take years to implement every module, and
+they already have good screens. Loopback is the rule that makes the
+screen safe to offer: a vend done on the vendor's console is the same
+Part 6 Command, with the same agent and correlation id, as one sent by
+API. The screen is a front end, never a side door.
+
+---
+
+## 19. Site configuration: the location, described from APX alone
+
+Today a system joining a location learns its layout from three places:
+the PARCS portal for lanes and devices, the call platform for which
+intercom rings where, and a spreadsheet for the cameras. APX makes one
+source enough.
+
+| Route | What it does |
+|---|---|
+| `GET /v1/equipment?place=&role=` | Every device with a role from a fixed list (`gate`, `accessDoor`, `ticketDispenser`, `exitVerifier`, `cardReader`, `camera`, `intercom`, …), its make, model, firmware and software versions, serial and MAC, where it stands (`area`, `level`, `lane`), what it is built into and what it controls |
+| `apds-ext:apx:camera@1.0` · `POST /v1/cameras/{id}/views` | What each camera looks at (plate, vehicle, driver, hands at the machine, pedestrians, an area) and a single-use link to see it live, as a still, or played back; the password stays on site |
+| `GET /v1/comms-points?callerId=` | How a parker reaches help at any point: intercom, analog dialer, posted number, kiosk, QR code; the number called, the number it calls out as, the platform's device id, and the gate or door it serves |
+| `apds-ext:apx:external-ids@1.0` · `POST /v1/identifiers:resolve` | The ids other systems know the place, lane or device by, typed by the issuer's own URI, and the lookup from one of them to the APX record |
+| `apds-ext:apx:place-operations@1.0` | The call platform's account for the site and whom to escalate to, as roles, in order, with hours |
+| `apx.equipment.changed.v1` · `apx.commspoints.changed.v1` | A wake-up when the setup changes, so no one re-reads the whole place |
+
+**Why this way:** no IP addresses, no SIP user names, no passwords,
+anywhere. Together with model and firmware they would map a site's
+network for an attacker, and no APX flow needs them. The MAC stays,
+because it is sometimes the serial and labels fall off; the versions
+stay, because at scale there is no other way to learn what runs on a
+device.
+
+---
+
+## 20. Room to grow: the vendor space
 
 Partner companies extend APX without asking permission and without breaking
 anyone:
@@ -478,12 +527,13 @@ systems unharmed, and the core API means the same thing everywhere.
 
 ---
 
-## 19. Not everything is mandatory: conformance classes
+## 21. Not everything is mandatory: conformance classes
 
 APX is sliced into named, independently claimable feature sets — `apx-data`
 and `apx-events` are the base; control, alerts, discovery, accounts,
 payment-history, LPR, reservations, permits, tolling, violations,
-validations, credentials, and valet are each optional.
+validations, credentials, valet, charging, plate lists, UI launch, and
+site configuration are each optional.
 A server advertises its classes in its bootstrap document, and the
 written standard defines objective conformance requirements for each
 class an implementation claims.

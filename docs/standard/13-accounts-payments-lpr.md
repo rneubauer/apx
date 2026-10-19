@@ -62,6 +62,22 @@ control commands (Part 17 §17.4):
 - `POST /v1/payments/{id}/refund` — full, or partial per `amount`.
   Refunds SHOULD require approval by default operator policy; approval
   evidence rides the request when the resolution context demanded it.
+  `reasonCode` (a definedValue of `apx-refund-reasons`:
+  `changeNotDispensed`, `doubleCharge`, `overcharge`, `serviceFailure`,
+  `courtesy`, or an implementer code) says why, so refunds can be
+  counted by cause across operators; `reason` stays the free text.
+- `POST /v1/payments/{id}/receipt` — send the receipt of a settled
+  payment again: `channel` (`email`, `sms`, `print`, `link`) and
+  `destination` (the address or number, in the body, never the URL, Part
+  9 §9.6 rule 7), with `agent` and `correlationId`. The answer is `202`
+  with a `ReceiptDelivery` (`status` `queued`, `sent` or `failed`; a
+  `link` for the `link` channel). A channel the implementation does not
+  deliver on is `422 receipt-channel-unsupported`; a payment that is not
+  settled (a hold, a decline) is `409 payment-state-illegal`. `print`
+  prints at the device the payment was taken on, which is the Part 6
+  `reprintReceipt` command behind a payment-keyed façade. Where the
+  receipt cannot be sent during the call, the agent raises a
+  `receiptRequested` alert (Part 7 §7.7).
 - `POST /v1/payments/{id}/void` / `POST /v1/payments/{id}/capture` —
   release or settle a hold, where the implementation models an
   authorization lifecycle.

@@ -19,7 +19,16 @@ actuation. This Part adds it, referencing APDS entities throughout.
   `holdGateOpen`, `closeLane`, `lostTicket`, `pushRate`, `applyValidation`,
   `setDeviceState`, `displayMessage`, `restartDevice`; the Part 17
   passback and courtesy entries (registry v2); `pushNegotiatedRate` and
-  `matchTicket` (registry v3, §6.6–6.7).
+  `matchTicket` (registry v3, §6.6–6.7); the Part 23 charger commands
+  (registry v5); and, from registry v6, `ejectTicket` (return the ticket
+  or card the machine holds), `cancelTransaction` (abandon the
+  transaction in progress at the device and return its media) and
+  `reprintReceipt` (print the last receipt at the device), all targeting
+  a device. They are the three actions agents take on a stuck machine
+  that no earlier command covered; a device that cannot perform one
+  reports it `failed` in `statusHistory`. Re-sending a receipt to a
+  customer, as opposed to printing it at the device, is a Part 13 §13.1a
+  domain operation.
 - Normative parameters per type: `lostTicket.method` (string, operator code
   list); `pushRate.rateTable` (VersionedReference to RateTable);
   `applyValidation.ticket` + `applyValidation.provider` (Reference);
@@ -194,8 +203,20 @@ screenshot link — an APDS Observation), and monthly-credential context
   outside the token's grant is `403 insufficient-grant`.
 - State changes publish `apx.control.device.state.v1`. A transition to
   `fault` SHOULD auto-raise a `deviceFault` alert (Part 7).
+- **What is wrong, and what is running out.** A `DeviceStatus` in
+  `fault` SHOULD carry `fault`: the device's own `code`, its
+  `displayText` as the device or vendor shows it, and `since`. A device
+  that holds consumables carries `consumables[]`: `kind` (`tickets`,
+  `receiptPaper`, `cash`, `coins`) and `level` (`ok`, `low`, `empty`,
+  `unknown`); a level reaching `low` or `empty` SHOULD raise a
+  `consumableLow` alert (Part 7 §7.7). `maintenanceMode` marks a device
+  under test or service, so its events and the calls about it can be
+  kept out of service figures. "When was it last seen" is the existing
+  `lastCommunication`; no second member is added for it.
 - The same object may decorate APDS payloads as
-  `apds-ext:apx:devicestatus@1.0` (Level B).
+  `apds-ext:apx:devicestatus@1.0` (Level B). What the device *is* (its
+  role, make, model, versions, where it stands) is the Part 26 §26.1
+  equipment detail on the SupplementalEquipment, never repeated here.
 
 ## 6.5 Conformance
 

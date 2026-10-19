@@ -16,8 +16,8 @@ builds on them. `apx-control`, `apx-alerts`, `apx-events-sse`,
 `apx-discovery`, `apx-accounts`, `apx-payment-history`, `apx-lpr`,
 `apx-reservations`, `apx-permits`, `apx-tolling`, `apx-resolution`
 (requires `apx-control`), `apx-violations`, `apx-validations`,
-`apx-credentials`, `apx-valet`, `apx-charging`, `apx-plate-lists`, and
-`apx-mtls` are optional.
+`apx-credentials`, `apx-valet`, `apx-charging`, `apx-plate-lists`,
+`apx-ui-launch`, `apx-site-config`, and `apx-mtls` are optional.
 
 **Dependency table (normative).** A claimed class requires every class in
 its row:
@@ -31,6 +31,8 @@ its row:
 | `apx-resolution` | `apx-control` |
 | `apx-charging` | base classes; `apx-control` when the Part 23 §23.9 charger commands are offered |
 | `apx-plate-lists` | base classes |
+| `apx-ui-launch` | base classes; `apx-resolution` when the Part 25 §25.5 execution descriptor is offered |
+| `apx-site-config` | base classes |
 | `apx-mtls` | — (composable with any set) |
 
 A claim that is not closed under this table is non-conforming; a client
