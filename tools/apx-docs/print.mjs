@@ -12,6 +12,7 @@ import { createServer } from 'node:net';
 import { spawn } from 'node:child_process';
 import { existsSync, readFileSync, writeFileSync } from 'node:fs';
 import { marked } from 'marked';
+import { PDFDocument } from 'pdf-lib';
 
 export const MERMAID = 'https://cdn.jsdelivr.net/npm/mermaid@10.9.1/dist/mermaid.min.js';
 
@@ -52,15 +53,21 @@ export const MERMAID_INIT = {
     labelBoxBkgColor: '#f6ecd8',
     labelBoxBorderColor: '#8a7b5c',
   },
-  class: { useMaxWidth: true },
-  sequence: { useMaxWidth: true },
-  state: { useMaxWidth: true },
-  flowchart: { useMaxWidth: true, htmlLabels: false },
+  // Diagrams keep their natural size, as in the APDS documents; the
+  // stylesheet only shrinks one that is wider or taller than the page.
+  // With useMaxWidth a three-class figure was stretched to fill a page.
+  class: { useMaxWidth: false },
+  sequence: { useMaxWidth: false },
+  state: { useMaxWidth: false },
+  flowchart: { useMaxWidth: false, htmlLabels: false },
 };
 
 // Print stylesheet. Screen rendering adds SCREEN_CSS on top.
 export const CSS = `
 @page { size: A4; margin: 24mm 18mm 22mm; }
+/* The APDS Data Dictionary prints its tables on landscape pages. */
+@page wide { size: A4 landscape; margin: 24mm 18mm 22mm; }
+.wide { page: wide; }
 html { font-size: 10.5pt; }
 body { font-family: Arial, Helvetica, "Liberation Sans", sans-serif; font-size: 10.5pt; line-height: 1.42; color: #000; margin: 0; }
 h1, h2, h3, h4, h5 { font-family: Arial, Helvetica, sans-serif; color: #000; line-height: 1.25; break-after: avoid; page-break-after: avoid; }
@@ -80,6 +87,8 @@ th, td { border: 1px solid #000; padding: 3px 5px; vertical-align: top; text-ali
 th { font-weight: 700; background: #f2f2f2; }
 tr { break-inside: avoid; page-break-inside: avoid; }
 thead { display: table-header-group; }
+table.apds { table-layout: fixed; }
+table.apds td { overflow-wrap: anywhere; }
 code { font-family: Consolas, "Courier New", monospace; font-size: 8.5pt; }
 pre { font-family: Consolas, "Courier New", monospace; font-size: 8pt; line-height: 1.3; background: #f6f6f6; border: 1px solid #ddd; padding: 6px 8px; overflow: hidden; white-space: pre-wrap; word-break: break-word; break-inside: avoid; }
 pre code { font-size: inherit; background: none; }
@@ -87,7 +96,8 @@ blockquote { margin: 0 0 .75em 1.2em; padding-left: .8em; border-left: 2px solid
 hr { border: 0; border-top: 1px solid #999; margin: 1.5em 0; }
 img { max-width: 100%; }
 .mermaid { text-align: center; margin: .8em 0 .3em; break-inside: avoid; page-break-inside: avoid; }
-.mermaid svg { max-width: 100% !important; max-height: 228mm; width: auto !important; height: auto; }
+.mermaid svg { max-width: 100% !important; max-height: 215mm; height: auto; }
+.wide .mermaid svg { max-height: 160mm; }
 .mermaid .classGroup rect, .mermaid g.classGroup > rect, .mermaid .classGroup .label-container { fill: #fbf3e4 !important; stroke: #8a7b5c !important; }
 .mermaid .classGroup .divider { stroke: #8a7b5c !important; }
 .mermaid .classTitle { font-weight: 700; }
@@ -128,10 +138,49 @@ export const SCREEN_CSS = `
 @media print { nav.toc, .topbar { display: none; } .page { max-width: none; padding: 0; box-shadow: none; } }
 `;
 
+// Column widths (percent) of the Data Dictionary and Information Model
+// tables, keyed by their header row. They follow the APDS 4.1 Data
+// Dictionary, which gives Definition the widest column; APX adds a Notes
+// column and an APDS status column that APDS does not have.
+const TABLE_WIDTHS = {
+  'Class name|Designation|Definition|Kind|APDS status': [16, 13, 49, 10, 12],
+  'Class name|Parent class name': [37, 63],
+  'Class name|Association end|Designation|Definition|Multiplicity|Target|Notes': [14, 13, 11, 28, 8, 16, 10],
+  'Class name|Attribute name|Designation|Definition|Multiplicity|Type|Notes': [14, 14, 11, 29, 8, 14, 10],
+  'Enumerated value name|Designation|Definition': [22, 22, 56],
+  'definedValue|Description': [30, 70],
+  'Datatype|Definition|Nearest APDS 4.1 datatype': [18, 57, 25],
+  'Class|Definition|Members|APDS status': [23, 51, 9, 17],
+  'Enumeration|Values': [25, 75],
+  'Code list|Entries|Examples': [30, 10, 60],
+};
+// Tables whose rows are grouped by the class in the first column. As in
+// APDS, the class name is printed on its first row only.
+const GROUPED = /^Class name\|(Association end|Attribute name)\|/;
+
+const cellText = (html) => html.replace(/<[^>]+>/g, '').trim();
+
+/** Gives the known tables the APDS column widths and grouped class names. */
+export function apdsTables(html) {
+  return html.replace(/<table[^>]*>\s*<thead>\s*<tr>([\s\S]*?)<\/tr>\s*<\/thead>([\s\S]*?)<\/table>/g, (whole, head, rest) => {
+    const key = [...head.matchAll(/<th[^>]*>([\s\S]*?)<\/th>/g)].map((m) => cellText(m[1])).join('|');
+    const widths = TABLE_WIDTHS[key];
+    if (!widths) return whole;
+    let previous = null;
+    const body = GROUPED.test(key) ? rest.replace(/<tr>\s*(<td[^>]*>)([\s\S]*?)<\/td>/g, (row, open, first) => {
+      if (first === previous) return `<tr>\n${open}</td>`;
+      previous = first;
+      return row;
+    }) : rest;
+    const cols = widths.map((w) => `<col style="width:${w}%">`).join('');
+    return `<table class="apds"><colgroup>${cols}</colgroup><thead><tr>${head}</tr></thead>${body}</table>`;
+  });
+}
+
 /** Markdown to body HTML, with mermaid fences turned into <div class="mermaid">. */
 export function markdownToHtml(md) {
-  return marked.parse(md.replace(/^<!--.*?-->\s*/s, ''), { mangle: false, headerIds: true })
-    .replace(/<pre><code class="language-mermaid">([\s\S]*?)<\/code><\/pre>/g, (_, code) => `<div class="mermaid">${code}</div>`);
+  return apdsTables(marked.parse(md.replace(/^<!--.*?-->\s*/s, ''), { mangle: false, headerIds: true })
+    .replace(/<pre><code class="language-mermaid">([\s\S]*?)<\/code><\/pre>/g, (_, code) => `<div class="mermaid">${code}</div>`));
 }
 
 /** Title and edition line of a document: "# Title" then "*edition*". */
@@ -243,12 +292,68 @@ class Session {
   }
 }
 
+/** Prints one page and returns the PDF bytes. */
+async function printPage(browserSession, port, url, templates, log) {
+  log(`open ${url}`);
+  const { targetId } = await browserSession.send('Target.createTarget', { url: 'about:blank' });
+  const targets = await waitFor(`http://127.0.0.1:${port}/json/list`);
+  const target = targets.find((t) => t.id === targetId);
+  if (!target) throw new Error('the new page did not appear in the browser target list');
+  const ws = new WebSocket(target.webSocketDebuggerUrl);
+  await new Promise((res, rej) => { ws.addEventListener('open', res); ws.addEventListener('error', rej); });
+  const page = new Session(ws);
+  await page.send('Page.enable');
+  await page.send('Runtime.enable');
+  await page.send('Emulation.setEmulatedMedia', { media: 'print' });
+  await page.send('Page.navigate', { url });
+  await page.until('Page.loadEventFired', 60000);
+  log('loaded; waiting for diagrams');
+  await page.evalUntilTrue('typeof window.__apxDiagramsDone === "function" && window.__apxDiagramsDone()', 180000);
+  log('diagrams drawn; printing');
+  await sleep(300);
+  // The page size comes from the stylesheet (@page), so a document can
+  // mix portrait and landscape pages. The PDF comes back as a stream read
+  // in chunks: a long document returned in one message is too large for
+  // the DevTools socket and the call never completes.
+  const { stream } = await page.send('Page.printToPDF', {
+    printBackground: true, preferCSSPageSize: true,
+    paperWidth: 8.27, paperHeight: 11.69, marginTop: 0.95, marginBottom: 0.87, marginLeft: 0.71, marginRight: 0.71,
+    displayHeaderFooter: !!(templates.headerTemplate || templates.footerTemplate), headerTemplate: templates.headerTemplate ?? '<span></span>', footerTemplate: templates.footerTemplate ?? '<span></span>',
+    transferMode: 'ReturnAsStream',
+  });
+  const chunks = [];
+  for (;;) {
+    const { data, base64Encoded, eof } = await page.send('IO.read', { handle: stream, size: 1 << 20 });
+    chunks.push(Buffer.from(data, base64Encoded ? 'base64' : 'utf8'));
+    if (eof) break;
+  }
+  await page.send('IO.close', { handle: stream });
+  ws.close();
+  await browserSession.send('Target.closeTarget', { targetId });
+  return Buffer.concat(chunks);
+}
+
+// Chrome draws the running header and footer over every page, cover
+// included, and no stylesheet rule can hide them. The APDS covers carry
+// neither, so the cover is printed again on its own without them and put
+// in place of the first page; page numbers still count the cover.
+async function withCleanCover(pdf, cover) {
+  const doc = await PDFDocument.load(pdf);
+  const coverDoc = await PDFDocument.load(cover);
+  if (coverDoc.getPageCount() !== 1) throw new Error(`the cover printed on ${coverDoc.getPageCount()} pages; it must fit on one`);
+  const [page] = await doc.copyPages(coverDoc, [0]);
+  doc.removePage(0);
+  doc.insertPage(0, page);
+  return Buffer.from(await doc.save());
+}
+
 /**
- * Opens a browser once and prints each (htmlPath, pdfPath, templates) job
- * with a running header and footer. Diagrams are drawn by Mermaid on the
- * page, so each job waits until every .mermaid holds an svg.
+ * Opens a browser once and prints each (url, pdfPath, templates) job
+ * with a running header and footer. A job with a coverUrl gets a first
+ * page without them. Diagrams are drawn by Mermaid on the page, so each
+ * job waits until every .mermaid holds an svg.
  */
-export async function printJobs(jobs, { landscape = false } = {}) {
+export async function printJobs(jobs) {
   const browser = findBrowser();
   const port = await freePort();
   const proc = spawn(browser, [`--remote-debugging-port=${port}`, '--headless=new', '--disable-gpu', '--no-first-run', '--no-default-browser-check',
@@ -260,42 +365,9 @@ export async function printJobs(jobs, { landscape = false } = {}) {
     const browserSession = new Session(browserWs);
     const log = (m) => { if (process.env.APX_PRINT_DEBUG) console.error(`[print] ${new Date().toISOString().slice(11, 19)} ${m}`); };
     for (const job of jobs) {
-      log(`open ${job.url}`);
-      const { targetId } = await browserSession.send('Target.createTarget', { url: 'about:blank' });
-      const targets = await waitFor(`http://127.0.0.1:${port}/json/list`);
-      const target = targets.find((t) => t.id === targetId);
-      if (!target) throw new Error('the new page did not appear in the browser target list');
-      const ws = new WebSocket(target.webSocketDebuggerUrl);
-      await new Promise((res, rej) => { ws.addEventListener('open', res); ws.addEventListener('error', rej); });
-      const page = new Session(ws);
-      await page.send('Page.enable');
-      await page.send('Runtime.enable');
-      await page.send('Emulation.setEmulatedMedia', { media: 'print' });
-      await page.send('Page.navigate', { url: job.url });
-      await page.until('Page.loadEventFired', 60000);
-      log('loaded; waiting for diagrams');
-      await page.evalUntilTrue('typeof window.__apxDiagramsDone === "function" && window.__apxDiagramsDone()', 180000);
-      log('diagrams drawn; printing');
-      await sleep(300);
-      // The PDF comes back as a stream read in chunks: a long document
-      // returned in one message is too large for the DevTools socket and
-      // the call never completes.
-      const { stream } = await page.send('Page.printToPDF', {
-        printBackground: true, landscape, preferCSSPageSize: false,
-        paperWidth: 8.27, paperHeight: 11.69, marginTop: 0.95, marginBottom: 0.87, marginLeft: 0.71, marginRight: 0.71,
-        displayHeaderFooter: !!(job.headerTemplate || job.footerTemplate), headerTemplate: job.headerTemplate ?? '<span></span>', footerTemplate: job.footerTemplate ?? '<span></span>',
-        transferMode: 'ReturnAsStream',
-      });
-      const chunks = [];
-      for (;;) {
-        const { data, base64Encoded, eof } = await page.send('IO.read', { handle: stream, size: 1 << 20 });
-        chunks.push(Buffer.from(data, base64Encoded ? 'base64' : 'utf8'));
-        if (eof) break;
-      }
-      await page.send('IO.close', { handle: stream });
-      writeFileSync(job.pdfPath, Buffer.concat(chunks));
-      ws.close();
-      await browserSession.send('Target.closeTarget', { targetId });
+      let pdf = await printPage(browserSession, port, job.url, job, log);
+      if (job.coverUrl) pdf = await withCleanCover(pdf, await printPage(browserSession, port, job.coverUrl, {}, log));
+      writeFileSync(job.pdfPath, pdf);
       job.onDone?.();
     }
     try { await browserSession.send('Browser.close'); } catch { /* already gone */ }
