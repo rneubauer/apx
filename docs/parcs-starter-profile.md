@@ -13,8 +13,9 @@ what this profile needs and is byte-identical to the full standard.
 
 Alerts, accounts/payments, LPR lookup, reservations, permits, tolling,
 violations/enforcement, validation programs, credential lifecycle, valet,
-EV charging, plate lists, resolution, SSE streaming, credential-scoped discovery — **all optional
-classes**.
+EV charging, plate lists, resolution, UI launch, SSE streaming, credential-scoped discovery — **all optional
+classes**. (The profile does include the read side of site configuration,
+Step 5, because a PARCS is the system that knows what is on its lanes.)
 Add any of them later without touching what you build here.
 
 ## Build order (five steps, each independently testable)
@@ -74,7 +75,9 @@ must not fire), **append every state change to `statusHistory`**
 |---|---|
 | `GET /v1/lanes/{id}/current` | The ticket in the machine now: amount due, validations, paid-in-full (+ monthly-credential context if presented) |
 | `GET /v1/validations/providers?place=` | Who may validate here, and what each validation is worth |
-| `GET /v1/devices` · `/{id}` | Live state per device: `available / occupied / inoperative / outOfService / fault / unknown` |
+| `GET /v1/devices` · `/{id}` | Live state per device: `available / occupied / inoperative / outOfService / fault / unknown`, plus the fault code and the consumable levels (tickets, receipt paper) when you have them |
+| `GET /v1/equipment?place=` · `/{id}` | What is on each lane: every device with its role (`gate`, `ticketDispenser`, `exitVerifier`, `camera`, …), make, model, firmware and serial (Part 26 §26.1). Read-only; the type stays APDS |
+| `GET /v1/comms-points?place=` · `/{id}` | The intercoms, dialers and posted numbers a parker reaches help from, each tied to its lane (Part 26 §26.4). Read-only here; the call platform maintains them |
 | `GET /v1/places/{id}/occupancy` | "How full is it right now": supply, latest demand count, derived `available` (required only if you hold occupancy data) |
 
 ## Prove it

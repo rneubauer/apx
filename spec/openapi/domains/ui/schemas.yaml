@@ -1,0 +1,286 @@
+# APX UI launch — opening a vendor's own screen for staff, with automatic
+# login and a closed loop back into the record (optional class
+# apx-ui-launch, Part 25).
+
+UiSurface:
+  title: UiSurface
+  description: |-
+    One screen an implementation offers for launch (Part 25 §25.1). Listed
+    in the discovery document's `uiSurfaces[]`, so a host learns which
+    screens exist, how each may be shown, which launch modes it accepts,
+    and which actions it reports back. The `surface` name is a
+    definedValue of `apx-ui-surfaces` (`<module>.<view>`, Part 11); its
+    registry entry names the subject class the surface opens.
+  type: object
+  required: [surface, displayModes, launchModes]
+  properties:
+    surface:
+      type: string
+      description: definedValue from apx-ui-surfaces.
+      examples: [lane.console]
+    subjectClass:
+      type: string
+      description: |-
+        The APDS or APX class a launch of this surface opens
+        (`VehicularAccess`, `Session`, `Violation`…). Absent for a general
+        surface such as `place.console` or `module.home`.
+      examples: [VehicularAccess]
+    displayModes:
+      type: array
+      minItems: 1
+      description: |-
+        How the host may show the surface. `embed` needs the host's origin
+        registered with the implementation (Part 25 §25.6); `popup` is the
+        fallback every surface MUST support.
+      items:
+        type: string
+        enum: [embed, popup, tab]
+    launchModes:
+      type: array
+      minItems: 1
+      description: |-
+        `handshake` — the host calls `POST /v1/ui/launches` and opens the
+        returned single-use `url`. `signedToken` — the host signs a
+        UiLaunchToken and sends it to `launchUrl` (Part 25 §25.3).
+      items:
+        type: string
+        enum: [handshake, signedToken]
+    launchUrl:
+      type: string
+      format: uri
+      description: Where a signed launch token is sent (signedToken mode only). HTTPS only.
+      examples: ["https://parcs.example/apx/launch"]
+    actions:
+      type: array
+      description: |-
+        What the surface can report back (Part 25 §25.4): apx-command-types
+        values and effective-spec operationIds. A host uses it to decide
+        which `returnFields` to ask for.
+      items: { type: string }
+      examples: [["lostTicket", "applyValidation", "vendGate"]]
+    places:
+      type: array
+      description: The HierarchyElement subtrees where the surface is offered. Absent means everywhere the credential is granted.
+      items:
+        $ref: "../../../vendor/apds/4.1/apds-api-4.1.yaml#/components/schemas/Reference"
+
+UiLaunchRequest:
+  title: UiLaunchRequest
+  description: |-
+    What the host sends to open a surface for one agent (Part 25 §25.2).
+    The same members are the claims of a signed launch token
+    (UiLaunchToken). `correlationId` ties everything the agent does in
+    the screen back to the host's record; `returnFields` lists the APX
+    paths the host wants back when the implementation has to answer with
+    a UiActionRecord instead of a native resource.
+  type: object
+  required: [surface, place, agent, agentType, correlationId, displayMode]
+  properties:
+    surface:
+      type: string
+      description: definedValue from apx-ui-surfaces.
+      examples: [lane.console]
+    subject:
+      description: The entity the surface opens on (its class per the surface's registry entry). Required unless the surface is general.
+      $ref: "../../../vendor/apds/4.1/apds-api-4.1.yaml#/components/schemas/Reference"
+    place:
+      description: The facility the launch concerns; MUST lie inside the caller's grant.
+      $ref: "../../../vendor/apds/4.1/apds-api-4.1.yaml#/components/schemas/Reference"
+    lane:
+      description: The VehicularAccess, when the launch concerns one lane.
+      $ref: "../../../vendor/apds/4.1/apds-api-4.1.yaml#/components/schemas/Reference"
+    agent:
+      type: string
+      description: The staff member the screen is opened for; the implementation logs them in as this agent.
+      examples: [agent-4471]
+    agentType:
+      type: string
+      enum: [human, ai]
+    interactionId:
+      type: string
+      description: The host's opaque interaction identifier (Part 17 §17.7), echoed on every record the launch produces.
+      examples: [interaction-938383]
+    correlationId:
+      type: string
+      format: uuid
+      description: Host-minted correlation id, carried by every native resource, Command, or UiActionRecord that results from the screen (Part 25 §25.4).
+    displayMode:
+      type: string
+      enum: [embed, popup, tab]
+    returnFields:
+      type: array
+      description: |-
+        JSON-pointer paths, relative to the module resource the surface's
+        actions produce, that the host wants back in `UiActionRecord.fields`
+        (`/amount`, `/session/id`). A value the implementation cannot
+        supply is listed in `unavailable[]` with a reason.
+      items: { type: string }
+      examples: [["/amount", "/session/id", "/validation/provider"]]
+    expiresIn:
+      type: integer
+      minimum: 1
+      maximum: 60
+      default: 60
+      description: Seconds the launch `url` stays usable. Never more than 60 (Part 25 §25.6).
+
+UiLaunch:
+  title: UiLaunch
+  description: |-
+    One opening of a surface for one agent (Part 25 §25.3). Created by the
+    handshake (`POST /v1/ui/launches`) or minted by the implementation when
+    a signed token is presented. `url` is single-use and expires at
+    `expiresAt`; the record itself stays readable for audit and carries
+    the `actions[]` the screen reported.
+  allOf:
+    - $ref: "../common/schemas.yaml#/ApxResourceCore"
+    - $ref: "#/UiLaunchRequest"
+    - type: object
+      required: [status, expiresAt]
+      properties:
+        id: { type: string, format: uuid, readOnly: true }
+        version: { type: integer, minimum: 1, readOnly: true, description: Server-managed; bodies carry it only for a versioned replace (Part 4 §4.2a). }
+        url:
+          type: string
+          format: uri
+          readOnly: true
+          description: |-
+            The single-use HTTPS address the host opens for the agent.
+            Present only on the create response and the first read within
+            `expiresAt`; never carries personal data or secrets in its
+            query string (Part 25 §25.6).
+          examples: ["https://parcs.example/apx/launch/7f0c…?l=4a1e…"]
+        expiresAt:
+          description: When `url` (or the signed token) stops working. At most 60 s after issue.
+          $ref: "../../../vendor/apds/4.1/apds-api-4.1.yaml#/components/schemas/DateTime"
+        status:
+          type: string
+          enum: [issued, opened, closed, expired]
+          description: |-
+            `issued` → `opened` on first use of the url or token (single
+            use) → `closed` when the screen reports it is done, or
+            `expired` when `expiresAt` passes unused. An opened launch not
+            closed within the implementation's limit (RECOMMENDED 1 h)
+            also becomes `expired` (Part 25 §25.3).
+        openedAt:
+          $ref: "../../../vendor/apds/4.1/apds-api-4.1.yaml#/components/schemas/DateTime"
+        closedAt:
+          $ref: "../../../vendor/apds/4.1/apds-api-4.1.yaml#/components/schemas/DateTime"
+        actions:
+          type: array
+          readOnly: true
+          description: Every UiActionRecord reported for this launch, oldest first (Part 25 §25.4).
+          items:
+            $ref: "#/UiActionRecord"
+
+UiActionRecord:
+  title: UiActionRecord
+  description: |-
+    What an agent did in a launched screen when the implementation could
+    not express it as the module's own resource or Command (Part 25 §25.4).
+    The native resource is always preferred: a lost ticket issued in the
+    vendor's screen MUST appear as a `lostTicket` Command carrying the
+    launch's `correlationId`. Only an action with no APX operation on this
+    implementation is recorded here, with the `fields` the host asked for
+    in `returnFields`, and `unavailable[]` for the ones it could not
+    supply. Published as `apx.ui.action.recorded.v1`.
+  type: object
+  required: [action, outcome, occurredAt, summary]
+  properties:
+    id:
+      type: string
+      format: uuid
+      readOnly: true
+    launch:
+      readOnly: true
+      description: The UiLaunch this record belongs to.
+      $ref: "../../../vendor/apds/4.1/apds-api-4.1.yaml#/components/schemas/Reference"
+    action:
+      type: string
+      description: |-
+        The apx-command-types value or effective-spec operationId the
+        action corresponds to, or `other` when none does (Part 25 §25.4).
+      examples: [lostTicket]
+    outcome:
+      type: string
+      enum: [completed, failed, noAction]
+    occurredAt:
+      $ref: "../../../vendor/apds/4.1/apds-api-4.1.yaml#/components/schemas/DateTime"
+    agent:
+      type: string
+      description: The agent who acted; defaults to the launch's `agent`.
+      examples: [agent-4471]
+    summary:
+      type: string
+      description: One line a host can show in the call record. Carries no personal data beyond what the host already holds.
+      examples: ["Lost ticket issued at the exit lane, fee collected"]
+    result:
+      description: The native resource or Command the action produced, when one exists (then `fields` MAY be omitted).
+      $ref: "../../../vendor/apds/4.1/apds-api-4.1.yaml#/components/schemas/Reference"
+    fields:
+      type: object
+      description: The values the host asked for, keyed by the `returnFields` path.
+      additionalProperties: {}
+      examples: [{ "/amount": { "amount": 25.00, "currency": "USD" }, "/session/id": "e5000000-0000-4000-8000-000000000001" }]
+    unavailable:
+      type: array
+      description: Requested paths the implementation could not fill, and why.
+      items:
+        type: object
+        required: [field, reason]
+        properties:
+          field:
+            type: string
+            examples: ["/validation/provider"]
+          reason:
+            type: string
+            enum: [notSupported, notApplicable]
+    correlationId:
+      type: string
+      format: uuid
+      description: The launch's correlation id, echoed.
+  examples:
+    - {
+        "id": "d9000000-0000-4000-8000-000000000011",
+        "launch": { "id": "d9000000-0000-4000-8000-000000000001", "className": "UiLaunch" },
+        "action": "lostTicket",
+        "outcome": "completed",
+        "occurredAt": "2026-10-18T14:07:40Z",
+        "agent": "agent-4471",
+        "summary": "Lost ticket issued at the exit lane, fee collected",
+        "fields": { "/amount": { "amount": 25.00, "currency": "USD" }, "/session/id": "e5000000-0000-4000-8000-000000000001" },
+        "unavailable": [{ "field": "/validation/provider", "reason": "notApplicable" }],
+        "correlationId": "6a1f3c2e-7b4d-4e8f-9a0b-1c2d3e4f5a6b"
+      }
+
+UiLaunchToken:
+  title: UiLaunchToken
+  description: |-
+    INFORMATIVE. The claims of a signed launch token (JWS, ES256 or RS256)
+    in the `signedToken` launch mode (Part 25 §25.3). `aud` is the
+    implementation, `exp` is at most 60 s after `iat`, `jti` is unique and
+    single-use. The remaining claims are the UiLaunchRequest members. The
+    token travels by form POST or in the URL fragment, never in the query
+    string, and the implementation checks it against the host's keys
+    registered at onboarding (Part 25 §25.6).
+  allOf:
+    - $ref: "#/UiLaunchRequest"
+    - type: object
+      required: [iss, aud, exp, iat, jti]
+      properties:
+        iss:
+          type: string
+          description: The host's issuer identifier, as registered.
+          examples: ["https://callcenter.example"]
+        aud:
+          type: string
+          description: The implementation the token is for.
+          examples: ["https://parcs.example"]
+        exp:
+          type: integer
+          description: Expiry, seconds since the epoch; at most `iat` + 60.
+        iat:
+          type: integer
+          description: Issued at, seconds since the epoch.
+        jti:
+          type: string
+          description: Unique token id; the implementation refuses a replay.

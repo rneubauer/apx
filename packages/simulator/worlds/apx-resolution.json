@@ -1,7 +1,7 @@
 {
   "extends": "base-lakeside",
   "name": "apx-resolution",
-  "description": "The cast of docs/scenarios/by-module/apx-resolution: Lakeside Garage with entry lane 1, exit lane 2 (gate, pay-in-lane terminal, intercom); J. Smith (monthly, $185 balance hold, two courtesy exits in 48 h), M. Rivera (monthly, passback violation), R. Chen (monthly, balance hold, no courtesy yet); the prepaid reservation LKG-88214 with its misread plate, the barcode reservation LKG-90031; the tickets and sessions each scenario's lane shows; the operator's resolution policy.",
+  "description": "The cast of docs/scenarios/by-module/apx-resolution: Lakeside Garage with entry lane 1, exit lane 2 (gate, pay-in-lane terminal, intercom); J. Smith (monthly, $185 balance hold, two courtesy exits in 48 h), M. Rivera (monthly, passback violation), R. Chen (monthly, balance hold, no courtesy yet); the prepaid reservation LKG-88214 with its misread plate, the barcode reservation LKG-90031; the tickets and sessions each scenario's lane shows; the operator's resolution policy. Comms points for the exit-lane intercom and the posted number, the hotel arrangement for room 412, the ParkAhead issuer on LKG-88214, and a refund approval request nobody decided.",
   "credentials": {
     "default": {
       "scopes": [
@@ -1244,7 +1244,12 @@
       "_plate": "SVN-4821",
       "_reservationState": "confirmed",
       "plannedStart": "2026-09-24T17:30:00Z",
-      "plannedEnd": "2026-09-24T23:30:00Z"
+      "plannedEnd": "2026-09-24T23:30:00Z",
+      "_issuer": "parkahead",
+      "_amountPaid": {
+        "currencyType": "USD",
+        "currencyValue": 18
+      }
     },
     {
       "id": "e2…0015",
@@ -1261,6 +1266,19 @@
       "_reservationState": "confirmed",
       "plannedStart": "2026-09-24T19:00:00Z",
       "plannedEnd": "2026-09-25T02:00:00Z"
+    },
+    {
+      "id": "e2…0412",
+      "placeId": "b1…0001",
+      "_reservationCode": "HOTEL-412",
+      "_reservationState": "checkedIn",
+      "_issuer": "lakeside-hotel",
+      "_amountPaid": {
+        "currencyType": "USD",
+        "currencyValue": 0
+      },
+      "plannedStart": "2026-10-17T15:00:00Z",
+      "plannedEnd": "2026-10-19T12:00:00Z"
     }
   ],
   "supportInteractions": [
@@ -1386,6 +1404,82 @@
           "captureGroup": "cam-entry-1/20260924T134100/0188",
           "engine": "vendor-x/7.2"
         }
+      }
+    }
+  ],
+  "commsPoints": [
+    {
+      "id": "cc…0c01",
+      "version": 2,
+      "type": "intercom",
+      "place": {
+        "id": "b1…0001",
+        "className": "Place"
+      },
+      "lane": {
+        "id": "b2…0002",
+        "className": "VehicularAccess"
+      },
+      "equipment": {
+        "id": "c1…0005",
+        "className": "SupplementalEquipment"
+      },
+      "serves": {
+        "id": "c1…0002",
+        "className": "SupplementalEquipment"
+      },
+      "phoneNumber": "+15550100900",
+      "callerId": "+15550100201",
+      "commsDeviceId": "dev-51ccae16"
+    },
+    {
+      "id": "cc…0c02",
+      "version": 1,
+      "type": "postedNumber",
+      "place": {
+        "id": "b1…0001",
+        "className": "Place"
+      },
+      "phoneNumber": "+15550100042"
+    }
+  ],
+  "guestArrangements": [
+    {
+      "kind": "hotelRoom",
+      "value": "412",
+      "placeId": "b1…0001",
+      "assignedRight": "e2…0412",
+      "display": "Hotel guest, room 412",
+      "validationProvider": "a2…0012"
+    }
+  ],
+  "approvals": [
+    {
+      "id": "ec…0032",
+      "version": 2,
+      "place": {
+        "id": "b1…0001",
+        "className": "Place"
+      },
+      "action": "post-apx-v1-payments-id-refund",
+      "target": {
+        "id": "e8…0207",
+        "className": "PaymentRecord"
+      },
+      "requestedBy": "ai:lakeside-voicebot-02",
+      "agentType": "ai",
+      "role": "supervisor",
+      "correlationId": "ca000000-0000-4000-8000-000000000032",
+      "reason": "double charge reported by caller",
+      "status": "expired",
+      "expiresAt": "2026-10-18T16:50:00Z",
+      "recordInfo": {
+        "creationTime": "2026-10-18T16:35:00Z",
+        "creator": {
+          "id": "a1…0001",
+          "className": "Organisation"
+        },
+        "creationUser": "ai:lakeside-voicebot-02"
       }
     }
   ]

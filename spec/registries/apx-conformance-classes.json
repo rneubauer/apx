@@ -1,6 +1,6 @@
 {
   "id": "4f5a6b7c-8d9e-4f0a-1b2c-3d4e5f6a7b8c",
-  "version": 8,
+  "version": 9,
   "name": "apx-conformance-classes",
   "creator": { "id": "a1000000-0000-4000-8000-000000000001", "className": "Organisation" },
   "locator": "https://apx-standard.org/registries/apx-conformance-classes.json",
@@ -24,6 +24,8 @@
     { "definedValue": "apx-credentials", "entryDescription": "Implements credential lifecycle: issue, activate, suspend, resume, report lost, revoke, replace, access-event history; active records materialized as APDS CredentialAssigned on the holder's AssignedRights.", "entryIndex": 16 },
     { "definedValue": "apx-valet", "entryDescription": "Implements valet custody: drop-off with condition evidence, parked position and keys, the retrieval queue with ETA, staging, verified handback, and the customer request scope.", "entryIndex": 17 },
     { "definedValue": "apx-charging", "entryDescription": "Implements the parking-side view of EV charging: live charging-point status with bay-presence fusion, the ChargingSession referencing the APDS Session, idle after complete, three settlement modes, and the customer status scope. Requires the base classes; the charger-control commands (Part 23 §23.9) require apx-control.", "entryIndex": 18 },
-    { "definedValue": "apx-plate-lists", "entryDescription": "Implements plate lists: watch, scofflaw, allow, and enforcement-vehicle lists with per-place flags, their entries, the change feed on both, and the apx.platelists.changed.v1 topic. Requires the base classes.", "entryIndex": 19 }
+    { "definedValue": "apx-plate-lists", "entryDescription": "Implements plate lists: watch, scofflaw, allow, and enforcement-vehicle lists with per-place flags, their entries, the change feed on both, and the apx.platelists.changed.v1 topic. Requires the base classes.", "entryIndex": 19 },
+    { "definedValue": "apx-ui-launch", "entryDescription": "Implements UI launch (Part 25): the handshake launch with single-use urls, the signed-token launch, the UiLaunch record and lifecycle, the loopback rule (native resource or UiActionRecord carrying the correlationId), discovery uiSurfaces, and the apx.ui.launch.changed.v1 and apx.ui.action.recorded.v1 topics. Requires the base classes and apx-discovery.", "entryIndex": 20 },
+    { "definedValue": "apx-site-config", "entryDescription": "Implements site configuration (Part 26): the equipment-detail, camera, external-ids and place-operations decorations, the equipment and comms-point routes with their change feeds, identifier resolution, camera views by short-lived link, and the apx.equipment.changed.v1 and apx.commspoints.changed.v1 topics. Requires the base classes.", "entryIndex": 21 }
   ]
 }

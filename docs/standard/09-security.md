@@ -159,3 +159,50 @@ payment history — are subject to this clause:
 Regulatory compliance (lawful basis, data-subject rights, cross-border
 transfer) remains the Distributing Party's responsibility; this clause
 defines the interoperable floor the API contract itself enforces.
+
+## 9.7 Integration secrets (normative)
+
+A review of ten remote-assistance platforms found PARCS keys and camera
+passwords stored on location and lane records and returned by ordinary
+reads. APX closes that door at the contract:
+
+1. No APX response, request body, event payload, change-feed page, or
+   decoration MAY carry an integration secret: a PARCS or vendor API key,
+   client secret or password; a camera, recorder or device user name and
+   password; a SIP password; a webhook signing secret after creation
+   (§9.4); a launch signing key or handshake secret (Part 25); or a
+   stream address that embeds credentials. The rule applies to every
+   member and to any JSON or text nested inside a member.
+2. Where a consumer must reach a protected resource, APX names the
+   secret, never carries it: a subscription's `secretRef` (§9.4), a
+   camera's `credentialRef` (Part 26 §26.3), a key's `keyId` (§9.6 rule
+   6). The secret itself is exchanged once, outside APX, at onboarding,
+   and the receiver keeps it in its own vault.
+3. Every secret APX names is rotatable with an overlap window, as §9.4,
+   and the rotation never requires the secret to pass through APX.
+4. An implementation that finds a secret in a client's write MUST refuse
+   the write with 422 `personal-data-not-permitted` (the problem type
+   covers data the request must not carry) and MUST NOT persist or log
+   the value.
+
+## 9.8 Launch material and view links (normative)
+
+Two features hand a browser something that works without a token: a
+Part 25 launch `url` or signed token, and a Part 26 camera view link.
+Both are bearer material and follow the same rules:
+
+1. Single-use, bound to one agent and one subject, and short-lived: a
+   launch at most 60 seconds from issue to first use, a view link at
+   most 5 minutes. A later use is refused.
+2. HTTPS only; never in a query string, a referrer, or a log line. A
+   launch token travels in a form POST or the URL fragment; a launch
+   `url` and a view link identify their record by at least 128 bits of
+   entropy and carry no personal data.
+3. Every issue and every use is logged against the agent and the
+   `correlationId` of the interaction it served (Part 17 §17.7); a
+   consumer MUST NOT reuse or share the link outside that interaction.
+4. The session a launch opens ends when the launch closes or expires
+   (Part 25 §25.6); a view link stops working at `expiresAt`.
+5. Signed launch tokens are JWS with `ES256` or `RS256`; `none` and
+   symmetric algorithms are refused; `aud` names the implementation and
+   `jti` is unique for at least the token's lifetime.

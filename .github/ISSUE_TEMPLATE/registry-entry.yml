@@ -33,6 +33,13 @@ body:
         - apx-read-review-reasons
         - apx-payment-line-codes
         - apx-plate-list-categories
+        - apx-ui-surfaces
+        - apx-interaction-outcomes
+        - apx-refund-reasons
+        - apx-equipment-roles
+        - apx-area-types
+        - apx-comms-point-types
+        - apx-escalation-roles
     validations:
       required: true
   - type: input

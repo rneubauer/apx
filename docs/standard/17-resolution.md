@@ -31,24 +31,39 @@ know, omit what you don't.
 
 Callers present whatever parking-domain identifiers they have
 (`ResolutionResolveRequest`): lane, place, device, plate, ticket number,
-credential, reservation code, session, holder. Servers MUST resolve every
-relationship they can and MUST NOT fail because some identifiers are
-absent. At least one of those nine identifying members MUST be present;
-`interactionId`, `correlationId`, and `channel` are correlation metadata
-and do not count, so a body carrying only them is 400 `invalid-request`.
-Unknown members are ignored (tolerant reader) and never used for
-resolution. (The schema states only `minProperties: 1`; narrowing it to
-the identifying members would reject bodies existing clients send, so the
-rule is enforced by the server.)
+credential, reservation code, session, holder, and, where the server
+holds Part 26 comms points, a comms point or what identifies one (the
+caller id, the dialed number, the comms device id). Servers MUST resolve
+every relationship they can and MUST NOT fail because some identifiers
+are absent. At least one of those identifying members MUST be present;
+`interactionId`, `correlationId`, `channel`, `reservationIssuer` and
+`guestReference` qualify another member and do not count, so a body
+carrying only them is 400 `invalid-request`. Unknown members are ignored
+(tolerant reader) and never used for resolution. (The schema states only
+`minProperties: 1`; narrowing it to the identifying members would reject
+bodies existing clients send, so the rule is enforced by the server.)
 
-**Layering rule (normative):** APX resolution accepts NO telephony
-identifiers — no SIP URIs, no phone numbers. The intercom is typically a
-separate physical device owned by the call platform, not the PARCS; the
-platform that terminates the call maps call → lane/device from its own
-provisioning BEFORE calling APX. This keeps every PARCS implementation
-free of telephony concepts. (Where an intercom happens to be inventoried
-as a `SupplementalEquipment` in the Place hierarchy, the caller MAY pass
-it as `device`.)
+Two qualifiers help the lookup: `reservationIssuer` says which seller a
+`reservationCode` came from, because codes from several sellers collide
+(Part 14 rule 7); `guestReference` (`kind` `hotelRoom`, `company`,
+`tenant`, `event` or `other`, and `value`) names a visitor who has no
+plate or ticket to give: the hotel guest by room, the vendor by company,
+the tenant's employee by tenant, so the context can find the right or
+the validation program that covers them.
+
+**Layering rule (normative, amended by Part 26):** telephony values, a
+phone number or a caller id, appear in APX only on a Part 26 comms point
+and on the three resolve members that name one (`callerId`,
+`dialedNumber`, `commsDeviceId`). Whoever runs the calls, the call center
+or the voice platform, supplies them; a PARCS implementation never has
+to hold, return or understand them. A server that holds no comms points
+answers those members with `422 comms-point-unknown` and resolves the
+rest of the request as before; a server that holds them resolves a comms
+point to its lane when it has one and otherwise to its place only, since
+a posted number shared by many lanes can never name the lane by itself
+(Part 26 §26.4 rule 6). SIP identifiers are never accepted. (Where an
+intercom is inventoried as a `SupplementalEquipment` in the Place
+hierarchy, the caller MAY still pass it as `device`.)
 
 ## 17.2 Resolution contexts
 
@@ -114,7 +129,48 @@ is the policy layer's interoperable surface:
 5. **Descriptor consistency.** The schema enforces the conditional rules
    of `AllowedAction`: `reason` is present whenever `allowed` is false or
    `requiresApproval` is true; `execution.type: control` carries
-   `command`, `execution.type: domain` carries `operationId`.
+   `command`, `execution.type: domain` carries `operationId`, and
+   `execution.type: ui` carries `surface` (Part 25 §25.5): the action is
+   taken on the vendor's own screen, launched for this agent, and what is
+   done there comes back as APX data (Part 25 §25.4). The policy decision
+   binds a launch exactly as it binds a command.
+6. **Unknown execution types.** The set of `execution.type` values grows
+   additively (Part 3 §3.2); `ui` was added in Part 25. A client MUST NOT
+   fail on an allowed action whose `execution.type` it does not
+   recognise: it MUST skip that action (or show it as not executable from
+   this client) and process the rest of the context as normal.
+
+## 17.3a Approval requests (normative)
+
+An action that `requiresApproval` needs someone to ask. Today the agent
+calls a manager, waits, and types "approved by" into a note.
+`ApprovalRequest` makes the asking, the answer and the evidence one
+record:
+
+1. `POST /v1/approvals` (scope `apx.support:manage`) opens a request:
+   `place`, `action` (the command type or operationId), `target`,
+   `requestedBy` (the agent) and `agentType`, `role` (the
+   `AllowedAction.approvalRole` it was gated on, a definedValue of
+   `apx-escalation-roles` where the place's Part 26 §26.5 escalation
+   contacts apply), `reason`, `interactionId`, `correlationId`
+   (REQUIRED), and an optional `expiresAt`. It is `pending` on creation.
+   `Idempotency-Key` is optional (Part 4 §4.2a).
+2. The approver answers with `POST /v1/approvals/{id}/decide` (scope
+   `apx.support:manage`): `outcome` `approved` or `denied`, `decidedBy`,
+   and a `note`. A decision on a request that is no longer `pending`
+   (decided, or `expired` at `expiresAt`) is `409 approval-closed`.
+3. The decided request is approval evidence: the executing command's or
+   domain operation's `approval` member cites it as `approvalRequest`
+   (Reference) beside `approvedBy`, so "who allowed it, and why" is one
+   read, and the server MAY verify that the cited request is `approved`
+   for that action and target before executing (§17.3 rule 3).
+4. `GET /v1/approvals` (filters `place`, `status`, `role`) and
+   `GET /v1/approvals/{id}` (scope `apx.resolution:read`) read them; every
+   transition publishes `apx.approvals.changed.v1` (data: the request;
+   place-bound), which is how an approver's console learns there is
+   something to decide.
+5. How the approver is reached (a page, a chat, a call) is the operator's;
+   APX carries the request and the answer.
 
 ## 17.4 Action categories (normative)
 
@@ -138,13 +194,22 @@ and each category is owned by the module that already models it:
    `PUT /v1/sessions/{id}/plate` (§17.5); validations are §6.3; rates are
    the native `/rates` machinery.
 3. **Financial/customer-service → the payment surface (Part 13 §13.1a).**
-   `POST /v1/payment-links`, `POST /v1/payments/{id}/refund|void|capture`.
-   Refunds SHOULD require approval by default operator policy.
+   `POST /v1/payment-links`, `POST /v1/payments/{id}/refund|void|capture`,
+   and `POST /v1/payments/{id}/receipt` (send the receipt again).
+   Refunds SHOULD require approval by default operator policy, and carry
+   a `reasonCode` from `apx-refund-reasons`.
+4. **Anything else → the vendor's screen (Part 25).** An action the
+   implementation has no APX operation for is offered as
+   `execution.type: ui` with a surface; what the agent does there comes
+   back as the native record where one exists, or as a `UiActionRecord`
+   (Part 25 §25.4). Registry v6 adds the three device actions agents
+   took in those screens most, `ejectTicket`, `cancelTransaction` and
+   `reprintReceipt`, to category 1 (Part 6 §6.1).
 
 The consumer never needs this taxonomy: every `AllowedAction` carries an
-`execution` descriptor (`type: control` + command, or `type: domain` +
-operationId), so human and AI agents see one uniform action list and the
-right APX surface executes it.
+`execution` descriptor (`type: control` + command, `type: domain` +
+operationId, or `type: ui` + surface), so human and AI agents see one
+uniform action list and the right APX surface executes it.
 
 Commands gain four optional fields (additive): `resolutionContext`
 (Reference), `correlationId`, `approval` (evidence per §17.3), and
@@ -226,6 +291,16 @@ body's `approval` member (§17.3).
   `correlationId`, `interactionId`, and `credential`, each sufficient on
   its own, so the §17.7 chain can be walked from either end. A call with
   no filter is 400 `invalid-request`.
+- **How it ended.** `resolution.code` is a definedValue of
+  `apx-interaction-outcomes` (`resolved`, `vended`, `transferred`,
+  `escalated`, `noActionNeeded`, `abandoned`, `callbackScheduled`) or an
+  implementer code, with `resolution.display` as the text. The outcome is
+  what the call did, not what it was about; the issue is `issue`
+  (`apx-issue-types`). "No assistance needed", "manager assisted" and
+  "validation applied" are outcomes, and belong here, not in the issue
+  list. `actions[]` MAY reference Part 25 `UiLaunch` and
+  `UiActionRecord` records beside commands and payment links, so what was
+  done on a vendor's screen is listed with what was done by command.
 - New topics (registry v4): `apx.resolution.context.created.v1`,
   `apx.support.interaction.recorded.v1`. Place binding per Part 8 §8.5
   (the context's/interaction's `place`). The interaction topic is
@@ -258,5 +333,18 @@ implementation that serves the passback read answers a credential it
 knows but does not track (a transient ticket) with 200 and
 `state: unknown`; 404 `target-not-found` means the credential does not
 exist. The issue
-vocabulary is the open `apx-issue-types` registry (v1, 11 entries) —
-implementers extend per Part 11.
+vocabulary is the open `apx-issue-types` registry (v2, 34 entries) —
+implementers extend per Part 11. Registry v2 adds the twenty-three
+issues that at least five of ten operator call centers share, found in a
+six-month sample of 176,860 calls: `noResponse`, `callDropped`,
+`audioFault`, `generalInquiry`, `wrongLocation`, `facilityFull`,
+`ticketUnreadable`, `ticketNotAccepted`, `noTicketIssued`,
+`paidCannotExit`, `cardNotReading`, `paymentMethodUnavailable`,
+`mediaJam`, `gateStuckOpen`, `credentialForgotten`, `credentialDisabled`,
+`gracePeriod`, `validationExpired`, `authorizedVisitor`,
+`receiptRequest`, `refundRequest`, `vehicleIncident` and
+`equipmentTest`. `equipmentTest` marks a call that is not a customer's
+and is kept out of service figures; `authorizedVisitor` pairs with
+`guestReference` (§17.1). Approval requests (§17.3a) are REQUIRED where
+any offered action `requiresApproval`; an implementation whose policy
+never gates an action omits the route.

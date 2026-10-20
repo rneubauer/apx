@@ -120,6 +120,9 @@ export function summaryOf(r) {
     ...(ext.plannedStart ? { plannedStart: ext.plannedStart } : {}),
     ...(ext.plannedEnd ? { plannedEnd: ext.plannedEnd } : {}),
     ...(ext.noShowAfter ? { noShowAfter: ext.noShowAfter } : {}),
+    // Part 14 §14.1a: the seller that issued the code and what was paid through it.
+    ...(ext.issuer ?? r._issuer ? { issuer: ext.issuer ?? r._issuer } : {}),
+    ...(ext.amountPaid ?? r._amountPaid ? { amountPaid: ext.amountPaid ?? r._amountPaid } : {}),
   };
 }
 

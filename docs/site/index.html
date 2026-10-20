@@ -138,7 +138,7 @@
   <div class="cards">
     <a class="card" href="simulator/">
       <div class="card-h"><span class="tile"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="M8 5v14l11-7z"/></svg></span><div class="t">Try the simulator →</div></div>
-      <div class="d">The whole standard running in your browser: twenty narrated demos (operations, analytics, plate lists), the full vetting suite, a live view of event delivery and retries, and any request as any credential. Nothing leaves the page.</div>
+      <div class="d">The whole standard running in your browser: twenty-three narrated demos (operations, analytics, plate lists), the full vetting suite, a live view of event delivery and retries, and any request as any credential. Nothing leaves the page.</div>
     </a>
     <a class="card" href="reference.html">
       <div class="card-h"><span class="tile"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="M2 5h6a3 3 0 0 1 3 3v12a2 2 0 0 0-2-2H2z"/><path d="M22 5h-6a3 3 0 0 0-3 3v12a2 2 0 0 1 2-2h7z"/></svg></span><div class="t">API reference →</div></div>
@@ -151,6 +151,10 @@
     <a class="card" href="apx-standard.md">
       <div class="card-h"><span class="tile"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="M6 3h8l5 5v13H6z"/><path d="M14 3v5h5"/><path d="M9 13h6M9 17h6"/></svg></span><div class="t">The written standard →</div></div>
       <div class="d">Every part in one document: scope and the APDS-first prime directive, conformance classes, security, errors, and each domain. Compiled from the parts on every build.</div>
+    </a>
+    <a class="card" href="specification/">
+      <div class="card-h"><span class="tile"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="M4 4h7a3 3 0 0 1 3 3v13a2 2 0 0 0-2-2H4z"/><path d="M20 4h-4"/><path d="M17 8h3M17 12h3M17 16h3"/></svg></span><div class="t">Specification documents →</div></div>
+      <div class="d">APX in the form of the APDS 4.1 document set: Overview, Information Model with class diagrams, Data Dictionary, Use Cases, Interface Specification, and the requests APX makes of APDS. Read online or download as PDF.</div>
     </a>
     <a class="card" href="https://github.com/rneubauer/apx/tree/main/docs/scenarios">
       <div class="card-h"><span class="tile"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><circle cx="6" cy="18" r="2.5"/><circle cx="18" cy="6" r="2.5"/><path d="M8.5 18H12a3 3 0 0 0 3-3v-3.5a3 3 0 0 1 3-3"/></svg></span><div class="t">Worked scenarios →</div></div>
@@ -178,6 +182,7 @@
     <a href="apx-parcs.json"><code>apx-parcs.json</code><span>PARCS starter profile · JSON</span></a>
     <a href="registries/"><code>registries/</code><span>Code-list registries · Part 11</span></a>
     <a href="apx-standard.md"><code>apx-standard.md</code><span>The written standard · one document</span></a>
+    <a href="specification/"><code>specification/</code><span>The six specification documents · HTML and PDF</span></a>
     <a href="edition.json"><code>edition.json</code><span>What this edition pins, by checksum</span></a>
   </div>
   <p class="note">
@@ -204,7 +209,9 @@ npm run docs:build   # rebuild this site into site/</code></pre>
     <li><strong>Data profile</strong> — full and change update semantics, tombstones, and cursor-based change feeds on APDS's own routes.</li>
     <li><strong>Delivery fabric</strong> — HMAC-signed webhooks, a normative retry schedule, a delivery ledger, and server-sent events.</li>
     <li><strong>Control</strong> — an audited command plane for gates, pay stations, and devices, with perishable commands and honest confirmation levels.</li>
-    <li><strong>Business domains</strong> — accounts and payments, LPR, reservations, permits, tolling, customer-service resolution, violations, validations, credentials, and valet.</li>
+    <li><strong>Site configuration</strong> — every piece of equipment with its role, make, model and firmware; cameras anywhere in the facility with short-lived view links; the comms points a parker reaches help from; all described by APX alone, with no secrets in any read.</li>
+    <li><strong>UI launch</strong> — a vendor's own screen opened for an agent with automatic login, and everything done there reported back through APX against the same correlation id.</li>
+    <li><strong>Business domains</strong> — accounts and payments, LPR, reservations, permits, tolling, customer-service resolution with approvals, violations, validations, credentials, valet, EV charging, and plate lists.</li>
     <li><strong>Conformance classes</strong> — named, independently claimable feature sets, each with testable requirements in Annex A.</li>
   </ul>
 
@@ -215,6 +222,7 @@ npm run docs:build   # rebuild this site into site/</code></pre>
       <a href="https://github.com/rneubauer/apx">Source on GitHub</a> ·
       <a href="https://github.com/rneubauer/apx/blob/main/CHANGELOG.md">Changelog</a> ·
       <a href="https://github.com/rneubauer/apx/tree/main/docs/scenarios">Worked scenarios</a> ·
+      <a href="https://github.com/rneubauer/apx/blob/main/docs/partner-extension-guide.md">Partner and vendor guide</a> ·
       <a href="https://github.com/rneubauer/apx/blob/main/docs/apds-change-requests.md">Requested APDS changes</a>
     </p>
   </footer>

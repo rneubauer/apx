@@ -4,8 +4,13 @@ The use cases in this clause cover the commercial and service side of a
 parking operation: enforcement, merchant validation, credentials, valet,
 gateless LPR, tolling, negotiated rates, ticket matching, EV charging,
 session pairing, plate review, imported citations, catching up after an
-outage, and itemized payments. Each one is taken from a worked scenario in
-the APX repository (`docs/scenarios/17-…` to `32-…`). The request and
+outage, itemized payments, and, from APX 0.15, vendor screens opened with
+loopback, a location described from APX alone, calls resolved by caller id
+or posted number, remote approvals, and receipts and coded refunds. Use
+cases D.2.1 to D.2.16 are taken from the worked scenarios in the APX
+repository (`docs/scenarios/17-…` to `32-…`); D.2.17 to D.2.22 are taken
+from the module scenarios of `apx-ui-launch`, `apx-site-config`,
+`apx-resolution`, `apx-control` and `apx-accounts`. The request and
 response bodies in those scenarios are checked against the APX bundle
 (`spec/dist/apx-v1.yaml`) by the repository's test suite.
 
@@ -1849,10 +1854,609 @@ Part 13 §13.1a, §13.4, §13.6, §13.6a; Part 11 (registry
 `apx-payment-line-codes`); Annex A APX-ACC-07, APX-ACC-09. Scenario
 `docs/scenarios/32-payment-detail-revenue.md`.
 
+#### D.2.17 A help call answered in the vendor's own screen, with loopback
+
+**Summary.**
+
+A parker at the exit lane of a garage presses the intercom. The call
+centre's console resolves the lane and sees that the parking vendor
+offers no API operation for a lost-ticket fee at this site, but does
+offer its lane console as a surface. The agent opens the vendor's screen
+without logging in, issues the lost-ticket fee there, and the result
+comes back to the call record as an APX command carrying the call's
+correlation identifier. Nothing is typed into a note.
+
+**Parties.**
+
+| Party | Role |
+|---|---|
+| Call-centre console | Host: Receiving Party for the resolution context and the launch; scopes `apx.resolution:read`, `apx.ui:launch`, `apx.ui:read`, `apx.support:manage` |
+| Parking vendor's APX server | Implementation: Distributing Party; offers the surface `lane.console`; records the loopback with `apx.ui:record` from its own screen's back end |
+| Agent | A person at the console; named on every record the launch produces |
+
+**Preconditions.**
+
+- The vendor's discovery document lists `uiSurfaces[]` with
+  `lane.console` for the garage, display modes `popup` and `tab`, launch
+  mode `handshake`, and `actions` including `lostTicket`.
+- The call platform has mapped the intercom to the comms point of exit
+  lane 2 (D.2.20), so the console resolves by `commsPoint`.
+
+**Flow.**
+
+1. The console calls `POST /v1/resolution/contexts` with `commsPoint` and
+   a fresh `correlationId`. The context names the lane, the ticket in the
+   machine and the allowed actions. `lostTicket` is allowed, with
+   `execution: { type: ui, surface: lane.console, subject: <lane> }`,
+   because the vendor has no API for the fee at this site (Part 25 §25.5).
+2. The console calls `POST /v1/ui/launches` with the surface, the lane
+   as subject, the place, the agent, `agentType: human`, the
+   `correlationId`, `displayMode: popup` and
+   `returnFields: ["/amount", "/ticketNumber"]`. The server returns 201
+   `UiLaunch` with `status: issued`, a single-use `url` and `expiresAt`
+   sixty seconds away (§25.2).
+3. The console opens the URL in a pop-up. The vendor's screen opens on
+   exit lane 2 for that agent, already logged in. The launch becomes
+   `opened`; `apx.ui.launch.changed.v1` is published.
+4. The agent issues the lost-ticket fee on the vendor's screen. The
+   vendor's back end, which also runs the APX server, creates the Part 6
+   `lostTicket` Command itself, with `agent`, `agentType` and the launch's
+   `correlationId` (§25.4 rule 1). The command's events are published as
+   for any command.
+5. The agent closes the screen. The back end calls
+   `POST /v1/ui/launches/{id}/close`; the launch becomes `closed` and the
+   topic is published again.
+6. The console reads `GET /v1/ui/launches/{id}`: `status: closed`, no
+   usable `url`, and `actions[]` empty, because the action was native.
+   It follows the `correlationId` through `GET /v1/commands` and finds the
+   lost-ticket command with its amount, and records the
+   `SupportInteraction` with the command and the launch in `actions[]`
+   and `resolution.code: resolved`.
+7. A second agent, given the same URL by mistake, is refused by the
+   surface: the launch is single use (§25.3).
+
+```mermaid
+sequenceDiagram
+    participant CON as Call-centre console
+    participant APX as Vendor APX server
+    participant UI as Vendor screen
+    CON->>APX: POST /v1/resolution/contexts (commsPoint)
+    APX-->>CON: ResolutionContext, lostTicket execution.type=ui
+    CON->>APX: POST /v1/ui/launches (lane.console, agent, correlationId)
+    APX-->>CON: 201 UiLaunch issued, single-use url
+    CON->>UI: open url (popup)
+    UI->>APX: launch opened
+    APX-)CON: apx.ui.launch.changed.v1 (opened)
+    UI->>APX: lostTicket issued on screen → Command (correlationId, agent)
+    APX-)CON: apx.control.command.changed.v1
+    UI->>APX: POST /v1/ui/launches/{id}/close
+    APX-)CON: apx.ui.launch.changed.v1 (closed)
+    CON->>APX: GET /v1/commands?correlationId=…
+    APX-->>CON: the lostTicket Command
+```
+
+**Data exchanged.**
+
+| Object | Defined in | Notes |
+|---|---|---|
+| ResolutionContext, AllowedAction | APX Part 17 §17.2, §17.3 | `execution.type: ui` names the surface |
+| UiSurface | APX Part 25 §25.1 | In the discovery document |
+| UiLaunchRequest, UiLaunch | APX Part 25 §25.2, §25.3 | Single-use URL, sixty seconds |
+| Command | APX Part 6 §6.1; proposed to APDS | The native effect of the action on the screen |
+| SupportInteraction | APX Part 17 §17.6; proposed to APDS (Tier 3) | Lists the command and the launch |
+
+**Postconditions / outcome.**
+
+The call record and the vendor's record agree: one lost-ticket command,
+one agent, one correlation identifier. A report that joins calls to
+vendor transactions by `correlationId` finds the fee. Had the vendor's
+screen performed something APX has no operation for, the back end would
+have posted a `UiActionRecord` instead, with the two return fields
+filled or declared unavailable (D.2.18).
+
+**Example.**
+
+Step 2, the launch request:
+
+```json
+{
+  "surface": "lane.console",
+  "subject": { "id": "b1000000-0000-4000-8000-000000000012", "className": "VehicularAccess" },
+  "place": { "id": "b1000000-0000-4000-8000-000000000001", "className": "Place" },
+  "agent": "agent-417",
+  "agentType": "human",
+  "correlationId": "0f3d2c1b-7a6e-4d5c-9b8a-1e2f3a4b5c6d",
+  "displayMode": "popup",
+  "returnFields": ["/amount", "/ticketNumber"]
+}
+```
+
+**APX references.**
+
+Part 25 §25.1 to §25.5; Part 17 §17.3; Part 6 §6.1; Annex A APX-UIL-01
+to APX-UIL-06. Module scenarios `docs/scenarios/by-module/apx-ui-launch/`.
+
+#### D.2.18 A screen action APX has no operation for
+
+**Summary.**
+
+An agent opens a tolling vendor's dispute screen for a transaction and,
+on that screen, re-sends a statement to the customer by post. APX has no
+operation for posting a statement. The vendor records a `UiActionRecord`
+on the launch with the outcome and the fields the host asked for, and
+marks the one field it cannot supply as unavailable.
+
+**Parties.**
+
+| Party | Role |
+|---|---|
+| Operator's back office | Host; scopes `apx.ui:launch`, `apx.ui:read` |
+| Tolling vendor's APX server | Implementation; surface `toll.dispute`; its screen's back end holds `apx.ui:record` |
+
+**Preconditions.**
+
+- The vendor lists `toll.dispute` with `launchModes: [signedToken]` and a
+  `launchUrl`; the host's signing key is registered with the vendor.
+
+**Flow.**
+
+1. The host signs a launch token (`ES256`) whose claims are the launch
+   request members, `iss` the host, `aud` the vendor, `exp` sixty seconds
+   after `iat`, a unique `jti`, and `returnFields: ["/statementNumber",
+   "/sentAt"]`. It posts the token to the `launchUrl` by HTML form; the
+   token never appears in a query string (Part 25 §25.2 rule 2, §25.6).
+2. The vendor verifies the signature, refuses nothing (the `jti` is new),
+   creates the `UiLaunch` and opens the dispute screen for the agent.
+3. The agent re-sends the statement by post. The screen's back end calls
+   `POST /v1/ui/launches/{id}/actions` with `action: other`,
+   `outcome: completed`, `occurredAt`, `summary: "Statement re-sent by
+   post"`, `fields: { "/statementNumber": "ST-88213" }` and
+   `unavailable: [{ "field": "/sentAt", "reason": "notSupported" }]`,
+   because the postal queue does not report a send time (§25.4 rule 3).
+   `apx.ui.action.recorded.v1` is published.
+4. The host reads the launch: `actions[]` holds the record. Its report
+   shows the statement number and "sent time not supported by vendor",
+   never a blank.
+5. An hour later, with the screen still open, the launch outlives the
+   vendor's session limit and becomes `expired`; a late
+   `POST …/actions` is refused with `409 ui-launch-closed` (§25.3).
+
+```mermaid
+sequenceDiagram
+    participant HOST as Back office
+    participant UI as Vendor dispute screen
+    participant APX as Vendor APX server
+    HOST->>UI: form POST launchUrl (signed token, fragment never query)
+    UI->>APX: verify JWS, create UiLaunch (opened)
+    UI->>APX: POST /v1/ui/launches/{id}/actions (other, completed, fields, unavailable)
+    APX-)HOST: apx.ui.action.recorded.v1
+    HOST->>APX: GET /v1/ui/launches/{id}
+    APX-->>HOST: UiLaunch with actions[]
+    UI->>APX: POST …/actions after expiry
+    APX-->>UI: 409 ui-launch-closed
+```
+
+**Data exchanged.**
+
+| Object | Defined in | Notes |
+|---|---|---|
+| UiLaunchToken | APX Part 25 §25.2 (informative schema) | The JWS claim set |
+| UiLaunch, UiActionRecord | APX Part 25 §25.3, §25.4 | The fallback record with `fields` and `unavailable[]` |
+| Problem | APX Part 12 | `ui-launch-closed` |
+
+**Postconditions / outcome.**
+
+The host knows exactly what was done and what it cannot know. The
+implementation never inferred an action from the screen being opened,
+and never silently dropped a requested field.
+
+**APX references.**
+
+Part 25 §25.2 rule 2, §25.3, §25.4 rules 2 and 3, §25.6; Annex A
+APX-UIL-03, APX-UIL-05, APX-UIL-07.
+
+#### D.2.19 Reading a location's whole setup from APX alone
+
+**Summary.**
+
+A monitoring service joins a garage. Instead of the vendor's portal, the
+call platform's device list and a camera spreadsheet, it reads the
+equipment and the comms points of the place from the APX server, with
+each item's role, position, make, model, firmware and relations, and
+subscribes to the change notices so that its copy stays current.
+
+**Parties.**
+
+| Party | Role |
+|---|---|
+| Monitoring service | Receiving Party; scopes `apx.siteconfig:read`, `apx.subscriptions:manage` |
+| Garage APX server | Distributing Party; class `apx-site-config` |
+
+**Preconditions.**
+
+- Every SupplementalEquipment at the garage carries
+  `apds-ext:apx:equipment-detail@1.0`; cameras also carry
+  `apds-ext:apx:camera@1.0`; the place carries
+  `apds-ext:apx:place-operations@1.0`.
+
+**Flow.**
+
+1. `GET /v1/equipment?place=<garage>` returns every item of hardware in
+   the subtree with its decorations: on exit lane 2 a `gate`, an
+   `exitVerifier` that `controls` the gate, an `intercom`, an overhead
+   `camera` with `view: [equipmentInteraction]` and a pole-mounted camera
+   with `view: [plate, vehicle]`, `faces: outward`; a `payOnFoot` station
+   in the `paymentArea` on level G with a built-in driver camera; a
+   `videoRecorder` and a `videoGateway` in the `equipmentRoom` (Part 26
+   §26.1 to §26.3). Each item carries `manufacturer`, `model`,
+   `firmwareVersion`, `softwareVersion`, `serialNumber` and
+   `macAddresses[]`, and no network address.
+2. `GET /v1/equipment?place=<garage>&role=camera&level=P2` answers "every
+   camera on P2": one in the `elevatorLobby`, one on the `ramp`, one in
+   the `stairwell`.
+3. `GET /v1/comms-points?place=<garage>` returns the intercom of each
+   lane (`type: intercom`, `equipment`, `serves` the lane's gate,
+   `commsDeviceId`, `callerId`), the posted number on the pay-on-foot sign
+   (`type: postedNumber`, `phoneNumber`, no lane) and the street door's
+   intercom (`serves` the door) (§26.4).
+4. The place's `PlaceOperations` gives `commsAccountId` and the
+   escalation roles in calling order: `siteManager` by day,
+   `operatorOnCall` at night (§26.5).
+5. The service subscribes to `apx.equipment.changed.v1` and
+   `apx.commspoints.changed.v1`. When the vendor swaps the exit verifier,
+   the notice carries the new element with its decoration; the service
+   updates its copy. After an outage it reads
+   `GET /v1/equipment?place=…&mode=change&cursor=…` to catch up (§26.7).
+6. The service holds the vendor's own lane identifier from a work order.
+   `POST /v1/identifiers:resolve` with `{ system:
+   "https://parcs-vendor.example", id: "LOT-0042-L2" }` returns the
+   VehicularAccess reference and its place (§26.6).
+
+```mermaid
+sequenceDiagram
+    participant MON as Monitoring service
+    participant APX as Garage APX server
+    MON->>APX: GET /v1/equipment?place=garage
+    APX-->>MON: SupplementalEquipment[] with equipment-detail and camera decorations
+    MON->>APX: GET /v1/equipment?place=garage&role=camera&level=P2
+    APX-->>MON: three cameras
+    MON->>APX: GET /v1/comms-points?place=garage
+    APX-->>MON: CommsPoint[]
+    MON->>APX: POST /webhooks (apx.equipment.changed.v1, apx.commspoints.changed.v1)
+    APX-)MON: apx.equipment.changed.v1 (exit verifier replaced)
+    MON->>APX: POST /v1/identifiers:resolve (system, id)
+    APX-->>MON: IdentifierResolution (VehicularAccess, place)
+```
+
+**Data exchanged.**
+
+| Object | Defined in | Notes |
+|---|---|---|
+| SupplementalEquipment, VehicularAccess, Place | APDS 4.1 | Used as published; decorated, never redefined |
+| EquipmentDetail | APX Part 26 §26.1; proposed to APDS (Tier 2) | Role from the fixed `apx-equipment-roles` list |
+| CameraDetail | APX Part 26 §26.3; proposed to APDS (Camera, Tier 2) | Mounting, views, facing, recorder, streams |
+| CommsPoint | APX Part 26 §26.4; proposed to APDS (Tier 3) | Phone number, caller id, comms device id |
+| PlaceOperations | APX Part 26 §26.5 | Call-platform account and escalation roles |
+| ExternalIdentifiers, IdentifierResolution | APX Part 26 §26.6 | Typed ids and the lookup |
+
+**Postconditions / outcome.**
+
+The service describes the garage from one source and keeps it current
+without re-reading the place. It never received a password or a network
+address (Part 9 §9.7, Part 26 §26.1 rule 8).
+
+**Example.**
+
+One item from step 1, the exit verifier:
+
+```json
+{
+  "id": "b1000000-0000-4000-8000-000000000121",
+  "version": 3,
+  "className": "SupplementalEquipment",
+  "equipmentType": "other",
+  "extensions": {
+    "apds-ext:apx:equipment-detail@1.0": {
+      "role": "exitVerifier",
+      "manufacturer": "Example Parking Systems",
+      "model": "XV-200",
+      "firmwareVersion": "4.12.1",
+      "softwareVersion": "2026.3",
+      "serialNumber": "XV2-018823",
+      "macAddresses": ["3c5ab4120f9e"],
+      "installedAt": "2025-03-14",
+      "area": "lane",
+      "level": "G",
+      "lane": { "id": "b1000000-0000-4000-8000-000000000012", "className": "VehicularAccess" },
+      "controls": [{ "id": "b1000000-0000-4000-8000-000000000120", "className": "SupplementalEquipment" }]
+    }
+  }
+}
+```
+
+**APX references.**
+
+Part 26 §26.1 to §26.7; Part 5 §5.2; Part 9 §9.7; Annex A APX-SCF-01 to
+APX-SCF-05, APX-SCF-09 to APX-SCF-11. Module scenarios
+`docs/scenarios/by-module/apx-site-config/`.
+
+#### D.2.20 Which lane is calling: caller id, posted number and the street door
+
+**Summary.**
+
+Three help requests reach the same call centre from one garage. An
+intercom on exit lane 2 calls out with its own caller id; a parker at the
+pay-on-foot station dials the number posted on the sign from a mobile
+phone; a permit holder presses the intercom at the street door after
+hours. The console resolves each one from APX alone, and for the posted
+number learns that the lane cannot be known until the agent asks.
+
+**Parties.**
+
+| Party | Role |
+|---|---|
+| Call platform | Writes the comms points it runs: scope `apx.siteconfig:manage`; supplies the caller id or dialled number of each call |
+| Call-centre console | Resolves with `apx.resolution:read`; opens doors with `apx.control:execute` |
+| Garage APX server | Holds equipment, comms points and the resolution contexts |
+
+**Preconditions.**
+
+- The call platform has written the comms points (D.2.19) with
+  `callerId` on the lane intercoms, `phoneNumber` on the posted number,
+  and `commsDeviceId` on the street-door intercom. No SIP data is held in
+  APX (Part 26 §26.4 rule 4).
+- The street door is `role: accessDoor` with no lane, its reader
+  `controls` it, its intercom is `builtInto` it, and its comms point
+  `serves` it (§26.8).
+
+**Flow.**
+
+1. **Lane intercom.** The platform hands the console the call's caller
+   id. `POST /v1/resolution/contexts` with `callerId: "+15550101202"`
+   resolves the comms point, its `lane` and the ticket in the machine,
+   and lists `vendGate` on the lane's gate among the allowed actions
+   (§26.4 rule 6; Part 17 §17.1).
+2. **Posted number.** The platform hands over the dialled number and
+   the parker's own mobile number. The console resolves with
+   `dialedNumber: "+15550100900"`. The comms point is the posted number,
+   with `place` and no `lane`; the context names the place only. The
+   agent asks which machine the parker is at, and resolves again with
+   the `device`. The parker's mobile number is never sent to APX; it
+   identifies the parker, not the lane.
+3. **Street door.** The platform hands over the voice platform's device
+   id. The console resolves with `commsDeviceId`. The comms point
+   `serves` the door; the context lists `vendGate` with the door as
+   target. The permit holder's card had failed at the reader; the agent
+   checks the permit in the context, sees the door camera's view through
+   `POST /v1/cameras/{id}/views` (`kind: live`), and sends `vendGate` on
+   the door. The command is confirmed and the door opens.
+4. **Unknown number.** A call from a number the garage does not hold is
+   resolved by a server that keeps no comms points for that place: it
+   answers `422 comms-point-unknown`, and the console falls back to
+   asking the parker where they are.
+
+```mermaid
+sequenceDiagram
+    participant CP as Call platform
+    participant CON as Console
+    participant APX as Garage APX server
+    CP->>CON: call, callerId +1555…1202
+    CON->>APX: POST /v1/resolution/contexts (callerId)
+    APX-->>CON: context: exit lane 2, vendGate on gate
+    CP->>CON: call, dialedNumber +1555…0900
+    CON->>APX: POST /v1/resolution/contexts (dialedNumber)
+    APX-->>CON: context: place only, no lane
+    CP->>CON: call, commsDeviceId 51cc…
+    CON->>APX: POST /v1/resolution/contexts (commsDeviceId)
+    APX-->>CON: context: street door, vendGate on door
+    CON->>APX: POST /v1/cameras/{door camera}/views (live)
+    APX-->>CON: 201 CameraView url, expires in 5 min
+    CON->>APX: POST /v1/commands (vendGate, target door)
+    APX-->>CON: 202 Command → succeeded
+```
+
+**Data exchanged.**
+
+| Object | Defined in | Notes |
+|---|---|---|
+| CommsPoint | APX Part 26 §26.4 | Written by the call platform |
+| ResolutionResolveRequest, ResolutionContext | APX Part 17 §17.1, §17.2 | `callerId`, `dialedNumber`, `commsDeviceId`, `commsPoint` |
+| CameraViewRequest, CameraView | APX Part 26 §26.3 | Live view of the door camera |
+| Command | APX Part 6 §6.1 | `vendGate` with the door as target |
+| Problem | APX Part 12 | `comms-point-unknown` |
+
+**Postconditions / outcome.**
+
+Each call reached the right lane, place or door without any telephony
+concept reaching the parking system beyond a phone number on a comms
+point. The posted number resolved only to the place, as the standard
+says it must. The door opening is a command on the door, audited like a
+lane vend.
+
+**Example.**
+
+Step 3, the resolve request:
+
+```json
+{ "commsDeviceId": "51ccae163e847b7ed27811c900a231aa",
+  "correlationId": "8e1b0d2a-4c3f-4a6b-9e7d-2f1a0b3c4d5e",
+  "channel": "intercom" }
+```
+
+**APX references.**
+
+Part 26 §26.4 rule 6, §26.3 rule 2, §26.8; Part 17 §17.1; Part 6 §6.1;
+Annex A APX-SCF-06 to APX-SCF-08, APX-RES-01.
+
+#### D.2.21 Asking a remote manager before a courtesy exit
+
+**Summary.**
+
+An AI agent handling an intercom call finds that a courtesy exit is
+allowed only with a supervisor's approval. It raises an approval request
+addressed to the site's `operatorOnCall` role, the manager decides from a
+phone, and the agent sends the command with the decision as its approval
+evidence. A second request on the same decided approval is refused.
+
+**Parties.**
+
+| Party | Role |
+|---|---|
+| AI agent | Scopes `apx.resolution:read`, `apx.support:manage`, `apx.control:execute` |
+| On-call manager's app | Decides approvals: scope `apx.support:manage`; subscribed to `apx.approvals.changed.v1` |
+| Garage APX server | Evaluates policy, holds approval requests |
+
+**Preconditions.**
+
+- The place's `escalationContacts` list `operatorOnCall` for the night
+  hours (Part 26 §26.5).
+- The context's allowed action `courtesyExit` has `requiresApproval:
+  true` and `approvalRole: operatorOnCall`.
+
+**Flow.**
+
+1. The agent calls `POST /v1/approvals` with the place, `action:
+   courtesyExit`, the gate as `target`, `requestedBy`, `agentType: ai`,
+   `role: operatorOnCall`, the `correlationId`, a `reason` and
+   `expiresAt` ten minutes away. The server returns 201 `ApprovalRequest`
+   with `status: pending` and publishes `apx.approvals.changed.v1`
+   (Part 17 §17.3a).
+2. The manager's app, subscribed by role, shows the request. The manager
+   calls `POST /v1/approvals/{id}/decide` with `outcome: approved`,
+   `decidedBy` and a note. The request becomes `approved`; the topic is
+   published again.
+3. The agent sends `POST /v1/commands` (`courtesyExit`) with
+   `approval.approvalRequest` referencing the decided request. The server
+   checks the request is `approved`, for this action and target, and
+   dispatches the command.
+4. A later `decide` on the same request is refused with
+   `409 approval-closed`. A request that nobody decides by `expiresAt`
+   becomes `expired`, and a command citing it is refused with
+   `403 approval-required`.
+
+```mermaid
+sequenceDiagram
+    participant AI as AI agent
+    participant APX as Garage APX server
+    participant MGR as On-call manager
+    AI->>APX: POST /v1/approvals (courtesyExit, role operatorOnCall)
+    APX-->>AI: 201 ApprovalRequest pending
+    APX-)MGR: apx.approvals.changed.v1
+    MGR->>APX: POST /v1/approvals/{id}/decide (approved)
+    APX-->>MGR: ApprovalRequest approved
+    APX-)AI: apx.approvals.changed.v1
+    AI->>APX: POST /v1/commands (courtesyExit, approval.approvalRequest)
+    APX-->>AI: 202 Command accepted
+    MGR->>APX: POST /v1/approvals/{id}/decide (again)
+    APX-->>MGR: 409 approval-closed
+```
+
+**Data exchanged.**
+
+| Object | Defined in | Notes |
+|---|---|---|
+| AllowedAction | APX Part 17 §17.3 | `requiresApproval`, `approvalRole` |
+| ApprovalRequest, ApprovalDecision | APX Part 17 §17.3a | Addressed to a role, never a person |
+| Approval (on Command) | APX Part 6 §6.1 | Cites the request as evidence |
+| PlaceOperations | APX Part 26 §26.5 | The roles that may be asked |
+
+**Postconditions / outcome.**
+
+The courtesy exit happened with a recorded, attributable approval, and
+the manager was reached by role, so APX held no manager's name or phone
+number.
+
+**APX references.**
+
+Part 17 §17.3, §17.3a; Part 6 §6.1; Part 26 §26.5; Annex A APX-RES-10,
+APX-RES-11.
+
+#### D.2.22 Re-sending a receipt and recording why a refund was given
+
+**Summary.**
+
+A customer calls two days after paying at a pay station: the receipt
+printer was out of paper, and the machine did not return the change.
+The agent re-sends the receipt by e-mail and refunds the undispensed
+change with a coded reason, so that the operator's report can count
+"change not dispensed" across sites and the device's supply alert is
+checked.
+
+**Parties.**
+
+| Party | Role |
+|---|---|
+| Call-centre console | Scopes `apx.accounts:read`, `apx.payments:write`, `apx.control:read` |
+| Garage APX server | Holds payment records and device status |
+
+**Preconditions.**
+
+- The payment is a settled PaymentRecord found by
+  `POST /v1/payments:search` with the card's last four digits and the
+  time.
+- The pay station's `DeviceStatus` reports `consumables: [{ kind:
+  receiptPaper, level: empty }]` and an alert `consumableLow` was raised
+  that evening (Part 6 §6.4; Part 7).
+
+**Flow.**
+
+1. The agent calls `POST /v1/payments/{id}/receipt` with `channel:
+   email` and the customer's address as `destination` in the body, never
+   in the URL. The server answers 202 `ReceiptDelivery` with `status:
+   queued` (Part 13 §13.1a). A request with `channel: print` at a
+   station that is out of paper would be refused with
+   `422 receipt-channel-unsupported`.
+2. The agent calls `POST /v1/payments/{id}/refund` for the undispensed
+   change with `reasonCode: changeNotDispensed` from `apx-refund-reasons`
+   and a free-text `reason`. The record shows `refundedAmount`.
+3. The agent records the `SupportInteraction` with `issue.code:
+   receiptRequest`, the two actions, and `resolution.code: resolved`
+   from `apx-interaction-outcomes` (Part 17 §17.6).
+4. The operator's weekly report groups refunds by `reasonCode` and finds
+   the station's change dispenser among the sites with repeated
+   `changeNotDispensed`, which the `consumables` level on its device
+   status and the `consumableLow` alerts corroborate.
+
+```mermaid
+sequenceDiagram
+    participant CON as Console
+    participant APX as Garage APX server
+    CON->>APX: POST /v1/payments:search (last four, time)
+    APX-->>CON: PaymentRecord settled
+    CON->>APX: POST /v1/payments/{id}/receipt (email, destination)
+    APX-->>CON: 202 ReceiptDelivery queued
+    CON->>APX: POST /v1/payments/{id}/refund (reasonCode changeNotDispensed)
+    APX-->>CON: PaymentRecord refundedAmount
+    CON->>APX: POST /v1/support/interactions (receiptRequest, resolved)
+    APX-->>CON: 201 SupportInteraction
+```
+
+**Data exchanged.**
+
+| Object | Defined in | Notes |
+|---|---|---|
+| PaymentRecord | APX Part 13 §13.1a; proposed to APDS | Found by search, refunded with a coded reason |
+| ReceiptRequest, ReceiptDelivery | APX Part 13 §13.1a | Destination in the body |
+| DeviceStatus | APX Part 6 §6.4; proposed to APDS (EquipmentStatus, Tier 1) | `consumables[]`, `fault`, `maintenanceMode` |
+| SupportInteraction | APX Part 17 §17.6 | Issue type and outcome from the registries |
+
+**Postconditions / outcome.**
+
+The customer has the receipt and the change; the operator has a coded
+reason it can count, an issue type it can count, and a device whose
+empty paper and failing change dispenser show in its status rather than
+in a note.
+
+**APX references.**
+
+Part 13 §13.1a; Part 6 §6.4; Part 7 §7.7; Part 17 §17.6; Part 11
+(registries `apx-refund-reasons`, `apx-interaction-outcomes`,
+`apx-issue-types`); Annex A APX-ACC-10, APX-CTL-17, APX-ALT-08.
+
 ### D.3 Module conformance scenarios
 
 The use cases in D.1 and D.2 are end-to-end stories. Under them sits a
-second set: **386 scenarios**, one set for each conformance class, in
+second set: **416 scenarios**, one set for each conformance class, in
 `docs/scenarios/by-module/`. They were written to find the places where the
 specification could not say what a real deployment needs. Each module's
 scenarios follow the same method. Every Annex A row for the class gets a
@@ -1870,25 +2474,28 @@ Most have since been fixed, and the findings tables say how.
 
 | Module | Scenarios | What they exercise |
 |---|---|---|
-| `apx-accounts` (with `apx-payment-history`) | 26 | Account lookup by phone, plate, card and name; balance payment over IVR; declined payments and payment links; refunds needing a supervisor; card-in/card-out authorize and capture; keyed payment-history lookups; full card numbers never carried |
-| `apx-alerts` | 22 | Raising, acknowledging, resolving and expiring alerts; idempotent retries; forbidden transitions; the ops board and the place-subtree rule; space-status alerts; implementer alert types |
-| `apx-control` | 26 | Gate vends confirmed by sensor; retries and key reuse; perishable commands; cancellation; device rejection; lost ticket; validations; `pushRate`; device inventory; screen-pop; negotiated rates and amounts; ticket matching; passback corrections; courtesy exits |
+| `apx-accounts` (with `apx-payment-history`) | 27 | Account lookup by phone, plate, card and name; balance payment over IVR; declined payments and payment links; refunds needing a supervisor; card-in/card-out authorize and capture; keyed payment-history lookups; full card numbers never carried |
+| `apx-alerts` | 23 | Raising, acknowledging, resolving and expiring alerts; idempotent retries; forbidden transitions; the ops board and the place-subtree rule; space-status alerts; implementer alert types |
+| `apx-control` | 28 | Gate vends confirmed by sensor; retries and key reuse; perishable commands; cancellation; device rejection; lost ticket; validations; `pushRate`; device inventory; screen-pop; negotiated rates and amounts; ticket matching; passback corrections; courtesy exits |
 | `apx-credentials` | 26 | Issue, activate, suspend, resume, report lost or stolen, replace and revoke; access events at the gate; expiry; mobile upgrade with deposit refund; fleet onboarding; uniqueness across garages |
 | `apx-data` | 34 | Plain APDS reads; `modified_since` and tombstones; the cursor feed; full and change-mode writes; explicit null; stale versions in both error styles; rate, right specification, assigned right and contact writes; LPR ingest; quotes; occupancy; session detail written by a pairing client |
-| `apx-discovery` (with `apx-mtls`) | 16 | Bootstrapping from a hostname; per-client capability documents; class dependencies; grant changes; registry versions; advisory limits; mutual TLS |
+| `apx-discovery` (with `apx-mtls`) | 17 | Bootstrapping from a hostname; per-client capability documents; class dependencies; grant changes; registry versions; advisory limits; mutual TLS |
 | `apx-events` (with `apx-events-sse`) | 24 | Subscriptions at the APDS `/webhooks` route; signing; retry schedule and failure; secret rotation; place binding and grant filtering; SSE with `Last-Event-ID`; the topics of each optional class |
 | `apx-lpr` | 35 | Read ingest with the detail block; plate-to-ticket and ticket-to-plate; candidates; plate correction; lane cameras and facing; shared driveways and reversible lanes; revising `accessEvent`; late and re-sent reads; retention; multi-plate engines |
 | `apx-permits` | 15 | Pool availability and permit issue; empty pools; renewal; adding a vehicle; cancellation; a permit not yet started; a plate already on another permit |
-| `apx-reservations` | 24 | Quote, book, amend, check in, extend, cancel and no-show on the native routes; recent-reservation lookup; explicit session-to-right link and unlink |
-| `apx-resolution` | 28 | Resolution contexts from intercom, chat and phone; allowed actions; passback and plate corrections; partial reads when a service is slow; context expiry; recording support interactions by humans and AI agents |
+| `apx-reservations` | 25 | Quote, book, amend, check in, extend, cancel and no-show on the native routes; recent-reservation lookup; explicit session-to-right link and unlink |
+| `apx-resolution` | 32 | Resolution contexts from intercom, chat and phone; allowed actions; passback and plate corrections; partial reads when a service is slow; context expiry; recording support interactions by humans and AI agents |
 | `apx-tolling` | 24 | Gantry ingest and idempotency; settlement; asynchronous pricing; disputes and their four resolutions; voids; lookups by plate, tag and time |
 | `apx-valet` | 25 | Drop-off with condition reports; park; retrieval by every channel; scheduled pickups; staging; verified handback; the customer scope; dated condition corrections; cancelled drop-offs |
 | `apx-validations` | 25 | Program enrolment, suspension and end; code issuance; redemption and the closed rule set; reversal; month-end statements; merchant scope; voiding stolen codes |
 | `apx-violations` | 36 | Eligibility; automated, guided and manual detection; review; issuance under policy, cap and signage; payment; appeals; escalation; void; policy and signage versions; imports from external systems; part payments; linking the stay; evidence that cannot accuse |
-| **Total** | **386** | |
+| `apx-ui-launch` | 9 | Handshake and signed-token launches; single-use URLs; loopback as a native command and as a UiActionRecord with return fields; expired and closed launches; unknown surfaces and display modes; scope refusals; launch topics |
+| `apx-site-config` | 11 | Equipment with roles, areas and decorations; cameras and views (live, snapshot, playback) with their refusals; comms points by caller id, dialled number and comms device id; create, replace and delete with version conflicts and tombstones; identifier resolution; escalation contacts; change topics; the after-hours access door |
+| **Total** | **416** | |
 
 `apx-charging` and `apx-plate-lists` have no module folder yet. Several of
-the newer rules are shown in the worked scenarios 28 to 32 in D.2.
+the newer rules are shown in the worked scenarios 28 to 32 in D.2; the
+UI launch and site configuration suites are new with those Parts.
 
 A further **150 proposed operational cases** are in
 `docs/scenarios/proposed/`, ten for each of the 15 module files above. They

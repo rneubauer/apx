@@ -189,6 +189,9 @@ Approval:
       $ref: "../../../vendor/apds/4.1/apds-api-4.1.yaml#/components/schemas/DateTime"
     note:
       type: string
+    approvalRequest:
+      description: The Part 17 §17.3a ApprovalRequest whose decision this evidence cites, when the approval was asked for through APX.
+      $ref: "../../../vendor/apds/4.1/apds-api-4.1.yaml#/components/schemas/Reference"
 
 DeviceStatus:
   title: DeviceStatus
@@ -213,9 +216,41 @@ DeviceStatus:
       description: definedValue from apx-device-states.
       examples: [available]
     lastCommunication:
+      description: When the device last reported; an agent reads "offline since" from it (Part 6 §6.4).
       $ref: "../../../vendor/apds/4.1/apds-api-4.1.yaml#/components/schemas/DateTime"
     stateChangedTime:
       $ref: "../../../vendor/apds/4.1/apds-api-4.1.yaml#/components/schemas/DateTime"
+    fault:
+      type: object
+      description: The current fault, when `deviceState` is `fault` or `inoperative` and the device reports one (Part 6 §6.4).
+      required: [code]
+      properties:
+        code:
+          type: string
+          description: The implementation's fault code, as the device reports it.
+          examples: [E42]
+        displayText:
+          type: string
+          description: What the device shows or what the technician reads for the code.
+          examples: ["Ticket transport jammed"]
+        since:
+          $ref: "../../../vendor/apds/4.1/apds-api-4.1.yaml#/components/schemas/DateTime"
+    consumables:
+      type: array
+      description: Supply levels the device reports (Part 6 §6.4). `low` or `empty` raises the Part 7 `consumableLow` alert.
+      items:
+        type: object
+        required: [kind, level]
+        properties:
+          kind:
+            type: string
+            enum: [tickets, receiptPaper, cash, coins]
+          level:
+            type: string
+            enum: [ok, low, empty, unknown]
+    maintenanceMode:
+      type: boolean
+      description: The device is under test or maintenance; calls and events from it are excluded from service figures (Part 6 §6.4).
     extensions:
       $ref: "../common/schemas.yaml#/Extensions"
 

@@ -2,7 +2,8 @@
 /**
  * Generates slim, profile-scoped OpenAPI subsets from the full bundle so a
  * vendor implementing one profile never has to open the whole spec.
- * Currently: the PARCS Starter Profile (apx-data + apx-events + apx-control).
+ * Currently: the PARCS Starter Profile (apx-data + apx-events + apx-control,
+ * plus the apx-site-config reads a PARCS answers about its own site).
  * Run after `npm run spec:bundle`.
  */
 import { readFileSync, writeFileSync } from 'node:fs';
@@ -44,7 +45,18 @@ const PARCS_PATHS = [
   '/v1/validations/providers',
   '/v1/devices',
   '/v1/devices/{id}',
+  // apx-site-config, reads only: a PARCS describes its own site (Part 26) —
+  // the equipment on each lane with role, make, model and firmware, and the
+  // comms points a parker reaches help from. The writes stay out: the call
+  // platform maintains comms points, not the PARCS.
+  '/v1/equipment',
+  '/v1/equipment/{id}',
+  '/v1/comms-points',
+  '/v1/comms-points/{id}',
 ];
+
+// Paths copied with their GET operation only (the profile is read-only there).
+const READ_ONLY_PATHS = new Set(['/v1/comms-points', '/v1/comms-points/{id}']);
 
 const output = {
   openapi: bundle.openapi,
@@ -52,7 +64,8 @@ const output = {
     ...bundle.info,
     title: 'APX — PARCS Starter Profile',
     description:
-      'The MINIMUM APX surface for a PARCS vendor: apx-data + apx-events + apx-control. ' +
+      'The MINIMUM APX surface for a PARCS vendor: apx-data + apx-events + apx-control, ' +
+      'plus the read side of apx-site-config (equipment and comms points). ' +
       'A subset of the full APX specification (apx-v1) — every path and schema here is ' +
       'identical to the full spec. See docs/parcs-starter-profile.md for the build order.',
   },
@@ -71,7 +84,10 @@ for (const path of PARCS_PATHS) {
     missing += 1;
     continue;
   }
-  output.paths[path] = bundle.paths[path];
+  const item = bundle.paths[path];
+  output.paths[path] = READ_ONLY_PATHS.has(path)
+    ? Object.fromEntries(Object.entries(item).filter(([k]) => k === 'get' || k === 'parameters'))
+    : item;
 }
 if (missing > 0) process.exit(1);
 

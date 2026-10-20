@@ -54,7 +54,35 @@ images. Because each LaneCamera states which way it faces, a receiver can
 tell entering from exiting vehicles without knowing the camera vendor's
 own configuration.
 
-### C.3.2 Showing the sign at appeal
+### C.3.2 A monitoring service learns a garage from the Place data
+
+A monitoring service takes on a 400-space garage. It reads the Place
+hierarchy and, for each SupplementalEquipment, the role, manufacturer,
+model, firmware version and serial number, the lane it serves and the
+barriers it opens. It knows at once that exit lane 2 has a gate, an exit
+verifier that opens it, an intercom and two cameras, one reading plates
+outward and one overhead watching the card slot; that the pay-on-foot
+machine on level G has a camera built in that looks at the driver; and
+that the street door is opened by a card reader and has an intercom in
+its call box. The comms points tell it which number each intercom calls
+out as and which gate or door an agent opens for it, and that the number
+posted on the pay-on-foot sign serves the whole Place and no single
+lane. Nothing was read from the vendor's portal, and no address or
+password reached the service.
+
+### C.3.3 Which lane is calling
+
+A parker presses the intercom at exit lane 2. The call platform hands
+the answering agent the caller id. The agent's console matches it to the
+comms point, and from the comms point to the lane and the gate it
+serves. A second parker dials the number posted on the pay-on-foot sign
+from a mobile phone; that comms point serves the Place and no lane, so
+the agent asks which machine the parker is at. A third presses the
+intercom at the street door after hours; the comms point names the door
+it opens, and the agent, having checked the parker's permit, opens the
+door.
+
+### C.3.4 Showing the sign at appeal
 
 A surface lot changes its maximum stay from 3 hours to 2 hours on
 1 March. The entrance sign is replaced that morning. On 4 March a
@@ -74,7 +102,7 @@ the event. The appeals body selects the Signage record in force at that
 time and sees the wording and photo of the sign as it stood, which here
 shows the 2-hour limit.
 
-### C.3.3 Monthly occupancy report to a city
+### C.3.5 Monthly occupancy report to a city
 
 A city licenses private car parks and asks each operator for monthly
 occupancy reports: for each car park, the highest and average occupancy
@@ -96,7 +124,7 @@ of 0 and no counts, so the city can see the gap rather than mistake it
 for an empty garage. The month is about 720 records instead of 21,600,
 and every operator in the city reports in the same form.
 
-### C.3.4 Negotiated rate offered by a customer-service agent
+### C.3.6 Negotiated rate offered by a customer-service agent
 
 A city-centre garage publishes its rate deck to a remote customer-service
 provider and to an event-ticketing partner. Besides the hourly RateTables,
@@ -119,7 +147,7 @@ RateTable as it does today, and the resulting Payment can name the rate
 sold (see the Right additions), so revenue reports show which negotiated
 rate was used.
 
-### C.3.5 First two hours free at a cinema
+### C.3.7 First two hours free at a cinema
 
 A cinema validates parking at the shopping-centre car park: the first two
 hours are free for its customers.
@@ -135,7 +163,7 @@ amount actually removed (for a three-hour stay, the price of the first two
 hours at the applicable RateTable), and the Segment carries the validation
 reference as APDS 4.1 already provides.
 
-### C.3.6 Lost keycard at a monthly-parker garage
+### C.3.8 Lost keycard at a monthly-parker garage
 
 A tenant of an office building parks with an RFID keycard under a
 monthly AssignedRight. On Tuesday the tenant reports the card lost. The
@@ -161,7 +189,7 @@ reason "credential replaced". Because the card is still on file, the event
 references the credential; a card that matched nothing would instead be
 recorded as a PresentedCredential.
 
-### C.3.7 Multi-vehicle residential permit with a renewal
+### C.3.9 Multi-vehicle residential permit with a renewal
 
 A city issues annual residential permits. A household registers three
 vehicles under one permit but only two may be parked in the zone at once;
@@ -188,7 +216,7 @@ the car parks in the zone. PlateListPlaceFlags set `alertOnArrival` at
 every car park and `refuseService` at the city-owned ones only. Each entry
 carries the listed plate as a PresentedCredential with its jurisdiction.
 
-### C.3.8 Gated garage with plate recognition at entry and exit
+### C.3.10 Gated garage with plate recognition at entry and exit
 
 City Centre Garage has two entry lanes and two exit lanes, each with a
 plate recognition camera and a barrier. Monthly parkers hold a keycard;
@@ -223,7 +251,7 @@ the rule, so it is not mistaken for an observed exit.
 and exit observations, and any duplicate frames from a second camera
 marked `duplicate`, so a receiver never counts one passage twice.
 
-### C.3.9 Merchant validation at a shopping centre
+### C.3.11 Merchant validation at a shopping centre
 
 A cinema validates parking for its customers through a pay station code
 and through its own application. The car park operator invoices the
@@ -246,7 +274,7 @@ that the Segment was validated.
 `redemptionStatus` becomes `reversed` with the time and reason, so the
 monthly invoice and the audit trail agree.
 
-### C.3.10 Gateless car park with plate recognition and review
+### C.3.12 Gateless car park with plate recognition and review
 
 A supermarket car park has no barriers. One camera faces the shared
 entrance and exit. Customers may stay 90 minutes free; longer stays
@@ -275,7 +303,7 @@ and travels with the observation to the enforcement system.
 entry and exit (`SessionRead`), so the 128-minute stay can be checked
 against the observations it rests on.
 
-### C.3.11 Valet drop-off and a damage claim
+### C.3.13 Valet drop-off and a damage claim
 
 A hotel valet takes a guest's car at 18:30. The attendant photographs the
 car and notes a scuff on the rear bumper. At handback the next morning
@@ -293,7 +321,7 @@ evidence the claim is answered with.
 the APDS Session for the stay and the Space where the car was parked, so
 the operator can see who parked it, where, and when.
 
-### C.3.12 Charging inside a parking stay at a controlled garage
+### C.3.14 Charging inside a parking stay at a controlled garage
 
 A city-centre garage has twelve charging points on level 2, each over a
 marked bay with an overhead camera. Drivers enter through LPR-equipped
@@ -328,7 +356,7 @@ are APDS Observations. The bay presence references the camera
 Observation, and the charging session references the credential observed
 at entry.
 
-### C.3.13 A bay taken by a vehicle that is not charging
+### C.3.15 A bay taken by a vehicle that is not charging
 
 At the same garage, a vehicle parks in bay 2-09 and does not plug in. The
 camera sees a vehicle, while the charger reports no cable connected. After
@@ -349,7 +377,7 @@ Observation as evidence.
 condition can become a Violation of type `restrictedSpace`, with the camera
 Image as evidence.
 
-### C.3.14 Records arriving through a regional hub
+### C.3.16 Records arriving through a regional hub
 
 A regional parking hub collects Place and Session data from 40 operators
 and passes it to the city. One operator also sends its Place data to the
@@ -370,7 +398,7 @@ exchanged exactly as today, which is in line with the Overview's
 guidance that a Receiving Party should confirm data ownership when the
 same record arrives from different Distributing Parties.
 
-### C.3.15 C.2.2 continued: from transaction exception to notice and appeal
+### C.3.17 C.2.2 continued: from transaction exception to notice and appeal
 
 This example continues Use Case C.2.2. At Hangzhou Xiaoshan International
 Airport, garage P6 logs entry and exit by licence plate camera, and
@@ -430,7 +458,7 @@ SupplementalEquipment (cameras and handheld devices) that the rest of the
 model describes. The EnforcementPolicy applies to the whole of P6 through
 the Place hierarchy.
 
-### C.3.16 Escalation of an unpaid notice on street
+### C.3.18 Escalation of an unpaid notice on street
 
 A city issues a penalty charge notice for an on-street overstay. Its
 EnforcementPolicy sets a payment grace period of 14 days, an EscalationStep
@@ -449,7 +477,7 @@ step.
 had ended. That right is referenced as the related AssignedRight, with
 type `expiredRight`.
 
-### C.3.17 A barrier fault seen by every party that needs it
+### C.3.19 A barrier fault seen by every party that needs it
 
 A shopping-centre car park has its barriers and pay stations maintained by
 the equipment supplier, is watched overnight by a remote monitoring
@@ -474,7 +502,7 @@ dealt with.
 **Observation.** The waiting vehicle's plate read is an APDS Observation.
 The `laneBlocked` alert references it as the related record.
 
-### C.3.18 C.2.2 transaction exceptions as alerts
+### C.3.20 C.2.2 transaction exceptions as alerts
 
 At Hangzhou Xiaoshan International Airport (Use Case C.2.2), the system
 detects a vehicle occupying space P6-B-112 without a check-in, and another

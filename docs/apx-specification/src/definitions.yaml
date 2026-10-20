@@ -414,6 +414,7 @@ enumValues:
   AllowedAction.execution.type:
     control: "The action is executed as a Part 6 control command, named in command."
     domain: "The action is executed as a domain API operation, named in operationId."
+    ui: "Execute by opening the named vendor surface for the agent (Part 25 §25.5); surface is required, subject optional."
   PassbackStatus.state:
     normal: "The recorded presence agrees with the expected presence."
     violation: "The recorded presence contradicts the expected presence, so anti-passback refuses the credential."
@@ -468,6 +469,114 @@ enumValues:
   AccessEvent.outcome:
     granted: "Access was granted."
     denied: "Access was refused."
+  DeviceStatus.consumables.kind:
+    tickets: "Blank ticket stock in a dispenser or verifier (Part 6 §6.4)."
+    receiptPaper: "Receipt paper in a pay station or terminal."
+    cash: "Notes held for change in a pay station."
+    coins: "Coins held for change in a pay station."
+  DeviceStatus.consumables.level:
+    ok: "Enough of the consumable for normal operation."
+    low: "The consumable needs replenishing soon; service continues."
+    empty: "The consumable has run out; the function that needs it has stopped."
+    unknown: "The device does not report the level."
+  ResolutionResolveRequest.guestReference.kind:
+    hotelRoom: "A hotel room number, for a guest parking under a hotel arrangement (Part 17 §17.1)."
+    company: "A company or merchant name the parker claims to visit or work for."
+    tenant: "A tenant of the building the place serves, for a tenant's employee or visitor."
+    event: "An event name or booking, for an attendee."
+    other: "Another kind of reference, as the operator and the call platform agree."
+  ApprovalRequest.agentType:
+    human: "A person asked for the approval."
+    ai: "An AI agent asked for the approval."
+  ApprovalRequest.status:
+    pending: "Waiting for the named role to decide (Part 17 §17.3a)."
+    approved: "The role approved the action; the decision carries who and when."
+    denied: "The role refused the action; this is final."
+    expired: "No decision arrived before expiresAt; the request can no longer be decided."
+  ApprovalDecision.outcome:
+    approved: "The action may proceed; the decision is the approval evidence."
+    denied: "The action may not proceed."
+  ReceiptRequest.channel:
+    email: "Send the receipt by e-mail to the destination address (Part 13 §13.1a)."
+    sms: "Send the receipt by text message to the destination number."
+    print: "Print the receipt at the device that took the payment."
+    link: "Return a link from which the receipt can be fetched; no destination is needed."
+  ReceiptDelivery.channel:
+    email: "The receipt was sent, or queued, by e-mail."
+    sms: "The receipt was sent, or queued, by text message."
+    print: "The receipt was printed at the device."
+    link: "The receipt is available at the returned link."
+  ReceiptDelivery.status:
+    queued: "Accepted for delivery; not yet sent."
+    sent: "Delivered to the channel."
+    failed: "Delivery failed; the destination or the channel did not accept it."
+  UiSurface.displayModes:
+    embed: "The surface may be shown inside the host's page (the host's origin must be registered; Part 25 §25.6)."
+    popup: "The surface may be shown in a pop-up window."
+    tab: "The surface may be shown in a new browser tab."
+  UiSurface.launchModes:
+    handshake: "The host posts a launch request with its APX token and opens the single-use URL returned (Part 25 §25.2)."
+    signedToken: "The host signs a launch token and sends it to the surface's launch URL by form post or URL fragment (Part 25 §25.2)."
+  UiLaunchRequest.agentType:
+    human: "A person will use the surface."
+    ai: "An AI agent will use the surface."
+  UiLaunchRequest.displayMode:
+    embed: "Show the surface inside the host's page."
+    popup: "Show the surface in a pop-up window."
+    tab: "Show the surface in a new browser tab."
+  UiLaunch.status:
+    issued: "Created; the URL or token has not yet been used (Part 25 §25.3)."
+    opened: "The URL or token was used once and the surface is open for the agent."
+    closed: "The surface reported the end of the session, or the implementation observed it; final."
+    expired: "expiresAt passed while issued, or an opened launch outlived the session limit; final."
+  UiActionRecord.outcome:
+    completed: "The action was carried out on the surface."
+    failed: "The action was attempted on the surface and did not succeed."
+    noAction: "The agent took no action; recorded so that the launch is accounted for."
+  UiActionRecord.unavailable.reason:
+    notSupported: "The surface never knows this value (Part 25 §25.4)."
+    notApplicable: "The value does not apply to this action."
+  CameraDetail.mounting:
+    builtIn: "Inside another item of equipment, named by the equipment detail's builtInto (Part 26 §26.3)."
+    overhead: "Above the vehicle or the lane, looking down."
+    pole: "On a pole or an island."
+    wall: "On a wall or a column."
+    ceiling: "On a ceiling, as in lobbies and stairwells."
+    other: "Mounted in another way."
+  CameraDetail.view:
+    plate: "Reads licence plates."
+    vehicle: "An overview of the vehicle in the lane."
+    driver: "The driver's face at a pay station or lane device."
+    equipmentInteraction: "Hands, ticket and card at the machine."
+    pedestrians: "People at a door, in a lobby or on a stairwell."
+    areaOverview: "General surveillance of a ramp, a level or the perimeter."
+    other: "Another view."
+  CameraDetail.faces:
+    inward: "Looking into the facility, the way entering traffic travels (Part 13 §13.3a(5))."
+    outward: "Looking out of the facility, the way exiting traffic travels."
+  CameraDetail.streams.protocol:
+    webrtc: "WebRTC, for low-latency live viewing in a browser."
+    hls: "HTTP Live Streaming segments."
+    rtsp: "RTSP, as an on-site gateway or recorder consumes it."
+    mjpeg: "Motion JPEG over HTTP."
+    snapshot: "A single still image on request."
+  CameraViewRequest.kind:
+    live: "A live view; feature cameraViews (Part 26 §26.3)."
+    snapshot: "A single still taken now."
+    playback: "Recorded video between from and to; feature cameraPlayback."
+  CameraViewRequest.agentType:
+    human: "A person will view the camera."
+    ai: "An AI agent will view the camera."
+  CameraView.kind:
+    live: "The link plays a live view."
+    snapshot: "The link returns a single still."
+    playback: "The link plays the recorded range asked for."
+  CameraView.protocol:
+    webrtc: "The link is a WebRTC session."
+    hls: "The link is an HLS playlist."
+    rtsp: "The link is an RTSP URL served by a gateway."
+    mjpeg: "The link is a Motion JPEG stream."
+    snapshot: "The link returns an image."
 members:
   ChangeFeedPage.updateMode: "Marks the page as a change page; always `change` (Part 5 §5.2)."
   OccupancySnapshot.evCharging.pointsTotal: "The number of charging points under the element."
@@ -703,3 +812,35 @@ members:
   ObservationElementChangePayload.vehicleAncillaryIdentification: "Further identification of the observed vehicle, such as make, model and colour."
   ObservationElementChangePayload.observerOrganisation: "The organisation responsible for the observation."
   ObservationElementChangePayload.characterConfidence: "Per-character confidence in the observed identifier, such as a plate read."
+  DeviceStatus.consumables.kind: "Which consumable the level is reported for (Part 6 §6.4)."
+  DeviceStatus.consumables.level: "How much of the consumable is left, as a level, not a count."
+  DiscoveryDocument.placeCapabilities.commandTypes: "The apx-command-types values this client may send at this place (Part 16 §16.2)."
+  DiscoveryDocument.placeCapabilities.features: "The apx-features values the implementation offers at this place."
+  ResolutionResolveRequest.guestReference.kind: "What kind of reference the guest gave (Part 17 §17.1)."
+  ResolutionResolveRequest.guestReference.value: "The reference as the guest gave it, such as the room number or the company name."
+  ApprovalRequest.agentType: "Whether a person or an AI agent asked for the approval."
+  ApprovalRequest.interactionId: "The calling application's opaque interaction identifier (Part 17 §17.7)."
+  ApprovalRequest.status: "Where the request stands: pending, approved, denied or expired (Part 17 §17.3a)."
+  ApprovalDecision.outcome: "Whether the role approved or denied the action."
+  ReceiptRequest.agent: "The agent who asked for the receipt to be re-sent, for the audit record."
+  ReceiptDelivery.channel: "The channel the receipt was sent by."
+  ReceiptDelivery.status: "Whether the receipt is queued, sent or failed."
+  UiLaunchRequest.agentType: "Whether a person or an AI agent will use the surface (Part 25 §25.2)."
+  UiLaunchRequest.displayMode: "How the host will show the surface; must be one the surface lists."
+  UiActionRecord.outcome: "Whether the action completed, failed or was not taken (Part 25 §25.4)."
+  UiActionRecord.unavailable.field: "The return field, as a JSON pointer, that the implementation could not supply."
+  EquipmentDetail.manufacturer: "The maker of the item, as named on it (Part 26 §26.1)."
+  EquipmentDetail.firmwareVersion: "The firmware release running on the item; recommended."
+  EquipmentDetail.serialNumber: "The maker's serial number of the item."
+  EquipmentDetail.installedAt: "The date the item went into service."
+  CameraDetail.recorder.channel: "The channel on the recorder that keeps this camera."
+  CameraDetail.streams.protocol: "The stream protocol the camera can deliver (Part 26 §26.3)."
+  CameraDetail.streams.transport: "The transport of the stream, such as tcp or udp for RTSP."
+  CameraDetail.streams.resolution: "The picture size of the stream, such as 1920x1080."
+  ExternalIdentifiers.identifiers: "The identifiers other systems use for this element, each with the system that issued it (Part 26 §26.6)."
+  IdentifierResolveRequest.system: "The URI of the system that issued the identifier, as it appears in the element's external identifiers."
+  CameraViewRequest.kind: "Whether a live view, a snapshot or a playback is asked for (Part 26 §26.3)."
+  CameraViewRequest.agentType: "Whether a person or an AI agent will view the camera."
+  CameraViewRequest.interactionId: "The calling application's opaque interaction identifier (Part 17 §17.7)."
+  CameraView.kind: "The kind of view the link delivers."
+  CameraView.url: "The single-use link, bound to the agent, that delivers the view until expiresAt (Part 26 §26.3)."

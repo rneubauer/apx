@@ -1,7 +1,9 @@
 name: Docs
 
 # Publishes browsable API reference docs to GitHub Pages on every push to
-# main: the full APX standard at /, the PARCS starter profile at /parcs.html.
+# main: the full APX standard at /, the PARCS starter profile at /parcs.html,
+# the specification document set at /specification/ (HTML, plus PDFs when
+# the renderer succeeds), and the simulator at /simulator/.
 
 on:
   push:
@@ -29,10 +31,19 @@ jobs:
       - run: npm ci
       - name: Rebuild bundles (never trust, always verify)
         run: npm run spec:bundle && npm run spec:profile
-      - name: Render API reference docs
+      - name: Render API reference docs and the specification documents (site/specification/)
         run: npm run docs:build
       - name: Build the in-browser simulator (site/simulator/)
         run: npm run sim:web
+      # Print-ready PDFs of the six specification documents. Chrome is
+      # preinstalled on the Ubuntu runner and the diagrams need the network;
+      # a renderer hiccup must never block the site, so this step may fail.
+      - name: Render the specification documents to PDF
+        continue-on-error: true
+        run: |
+          npm run apxdocs:pdf
+          mkdir -p site/specification
+          cp site/apx-specification/*.pdf site/specification/
       - uses: actions/configure-pages@v5
         with:
           enablement: true

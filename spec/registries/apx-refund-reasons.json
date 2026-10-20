@@ -1,0 +1,14 @@
+{
+  "id": "d27e8f9a-0b1c-4d2e-9f4a-5b6c7d8e9fa0",
+  "version": 1,
+  "name": "apx-refund-reasons",
+  "creator": { "id": "a1000000-0000-4000-8000-000000000001", "className": "Organisation" },
+  "locator": "https://apx-standard.org/registries/apx-refund-reasons.json",
+  "userDefinedCodeListEntries": [
+    { "definedValue": "changeNotDispensed", "entryDescription": "The device kept money it should have returned.", "entryIndex": 0 },
+    { "definedValue": "doubleCharge", "entryDescription": "The customer was charged twice for one stay.", "entryIndex": 1 },
+    { "definedValue": "overcharge", "entryDescription": "The amount taken exceeded what the rate or validation said was due.", "entryIndex": 2 },
+    { "definedValue": "serviceFailure", "entryDescription": "The customer paid for something the facility did not deliver (a reservation not honoured, a stay cut short by a fault).", "entryIndex": 3 },
+    { "definedValue": "courtesy", "entryDescription": "A goodwill refund with no fault found.", "entryIndex": 4 }
+  ]
+}

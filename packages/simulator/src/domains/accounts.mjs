@@ -14,6 +14,7 @@
  * World sections read: accounts[], payments[], paymentLinks[], tickets[],
  * sessions[], resolutionContexts[], accountsPolicy{}.
  */
+import { createHash } from 'node:crypto';
 import { fail } from '../kernel/problems.mjs';
 import { validateRequestBody, ajvToErrors, fmtErrors } from '../kernel/spec.mjs';
 import { paginate, wire, refOf, getVisible, placeOfTarget, money, installChangeFeeds } from './common.mjs';
@@ -307,10 +308,50 @@ export default {
           fail('approval-required', `Refunds at this place require ${role} approval; the request carries no approval evidence.`);
         }
         const rec = ledger.refund(ctx.params.id, ctx.body?.amount, { actor: ctx.actor });
-        return { status: 200, body: paymentView(rec), idem: { collection: 'payments', id: rec.id } };
+        // Part 13 §13.1a: the counted reason (apx-refund-reasons) beside the free text, kept with the refund it explains.
+        if (ctx.body?.reasonCode || ctx.body?.reason) {
+          payments().update(rec.id, (p) => ({ ...p, _refunds: (p._refunds ?? []).map((r, i, all) => (i === all.length - 1 ? { ...r, ...(ctx.body.reasonCode ? { reasonCode: ctx.body.reasonCode } : {}), ...(ctx.body.reason ? { reason: ctx.body.reason } : {}) } : r)) }), { bump: false });
+        }
+        return { status: 200, body: paymentView(payments().get(rec.id)), idem: { collection: 'payments', id: rec.id } };
       },
       { allowEmptyBody: true }
     );
+
+    // ---------- receipts (Part 13 §13.1a) ----------
+
+    const RECEIPT_CHANNELS = ['email', 'sms', 'print', 'link'];
+    const receiptChannels = () => sim.world.accountsPolicy?.receiptChannels ?? ['email', 'sms', 'link'];
+    const receiptBase = () => (sim.world.accountsPolicy?.receiptBase ?? 'https://pay.lakeside-garage.example/r').replace(/\/$/, '');
+
+    sim.on('post-apx-v1-payments-id-receipt', (ctx) => {
+      const p = visiblePayment(ctx, ctx.params.id);
+      const b = ctx.body;
+      if (!RECEIPT_CHANNELS.includes(b.channel)) fail('invalid-request', `channel must be one of ${RECEIPT_CHANNELS.join(', ')}.`, { errors: [{ pointer: '/channel', detail: 'enum' }] });
+      if (p.paymentStatus !== 'approved') {
+        fail('payment-state-illegal', `Payment ${p.id} is ${p.paymentStatus}; only an approved payment has a receipt.`);
+      }
+      const offered = receiptChannels();
+      if (!offered.includes(b.channel)) {
+        fail('receipt-channel-unsupported', `No receipt ${b.channel === 'print' ? 'printer serves' : `${b.channel} delivery serves`} payment ${p.id}; this site offers ${offered.join(', ')}.`);
+      }
+      if ((b.channel === 'email' || b.channel === 'sms') && !b.destination) {
+        fail('invalid-request', `channel ${b.channel} needs destination (an address or a number), in the body and never in the URL.`, { errors: [{ pointer: '/destination', detail: 'required' }] });
+      }
+      const now = ctx.now();
+      const n = sim.store.next('receipt', 1);
+      const link = b.channel === 'link' ? `${receiptBase()}/${createHash('sha256').update(`${p.id}|${n}`).digest('hex').slice(0, 32)}` : undefined;
+      const delivery = { payment: refOf(p.id, 'PaymentRecord'), channel: b.channel, status: b.channel === 'link' ? 'sent' : 'queued', ...(link ? { link } : {}), requestedAt: now };
+      const rec = sim.store.collection('receiptDeliveries').insert({ ...delivery, _place: p._place, _destination: b.destination, _agent: b.agent, _correlationId: b.correlationId }, { actor: { org: ctx.actor.org, user: b.agent ?? ctx.actor.user } });
+      if (delivery.status === 'queued') {
+        sim.clock.schedule({ delay: 2000 }, () => sim.store.collection('receiptDeliveries').update(rec.id, (r) => ({ ...r, status: 'sent' }), { bump: false }), `receipt ${rec.id} sent`);
+      }
+      sim.hooks.emit('receipt.requested', { payment: p, delivery: rec });
+      return { status: 202, body: delivery, idem: { collection: 'receiptDeliveries', id: rec.id } };
+    });
+    sim.view('receiptDeliveries', (r) => {
+      const { id: _i, version: _v, recordInfo: _r, ...rest } = wire(r);
+      return rest;
+    });
 
     sim.on('post-apx-v1-payments-id-void', (ctx) => {
       visiblePayment(ctx, ctx.params.id);

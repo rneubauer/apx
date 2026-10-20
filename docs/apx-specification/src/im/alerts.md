@@ -87,6 +87,17 @@ retry schedule raises `webhookDeliveryFailed` (APX Part 8 §8.3), which
 must never itself be delivered to the failed subscription (APX Part 7
 §7.4).
 
+### Alerts raised from a call
+
+Some site cases begin as a customer call: a receipt is wanted, a refund
+is asked for, a citation is queried, damage is reported, or a customer
+asks to be called back. The alert types `receiptRequested`,
+`refundRequested`, `citationInquiry`, `damageReported` and
+`customerCallbackRequested` carry these to the people on site, and
+`consumableLow` carries a device's empty paper or ticket stock (APX Part
+7 §7.7). An alert raised during a call cites its `supportInteraction`, so
+the site sees the call it came from.
+
 ## Lifecycle
 
 ```mermaid

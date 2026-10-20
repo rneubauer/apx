@@ -1,0 +1,16 @@
+{
+  "id": "af4b5c6d-7e8f-4a9b-8c1d-2e3f4a5b6c7d",
+  "version": 1,
+  "name": "apx-comms-point-types",
+  "creator": { "id": "a1000000-0000-4000-8000-000000000001", "className": "Organisation" },
+  "locator": "https://apx-standard.org/registries/apx-comms-point-types.json",
+  "userDefinedCodeListEntries": [
+    { "definedValue": "intercom", "entryDescription": "A help button with two-way audio and/or video on a lane, a door or a pay station; the call platform knows it by its device id or caller id.", "entryIndex": 0 },
+    { "definedValue": "analogDialer", "entryDescription": "A help button on a phone line; known by the line's caller id.", "entryIndex": 1 },
+    { "definedValue": "postedNumber", "entryDescription": "A phone number on a sign that the parker dials from their own phone; known by the dialled number, and resolves to the place only unless the sign is for one lane.", "entryIndex": 2 },
+    { "definedValue": "kiosk", "entryDescription": "A help function on a kiosk or pay station screen.", "entryIndex": 3 },
+    { "definedValue": "qrCode", "entryDescription": "A printed code that opens a help page or chat for the place or lane it was printed for.", "entryIndex": 4 },
+    { "definedValue": "app", "entryDescription": "A help function in the operator's or vendor's app.", "entryIndex": 5 },
+    { "definedValue": "other", "entryDescription": "A way of reaching help none of the other codes fit. A code, not free text.", "entryIndex": 6 }
+  ]
+}

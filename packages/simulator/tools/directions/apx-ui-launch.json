@@ -1,0 +1,39 @@
+{
+  "_comment": "Stage directions for the replay of apx-ui-launch: what happens in the vendor's screen between the requests — the popup consuming the single-use url (uiLaunchOpen), the agent issuing the lost-ticket fee there (uiLaunchAction, which the implementation records as the lostTicket Command carrying the launch's correlationId). Keys are scenario ids; `at` is the 0-based exchange index the step runs before.",
+  "UIL-01": [
+    {
+      "at": 1,
+      "inject": {
+        "kind": "uiLaunchOpen",
+        "launch": "ea000000-0000-4000-8000-000000000a01"
+      }
+    },
+    {
+      "at": 2,
+      "inject": {
+        "kind": "uiLaunchAction",
+        "launch": "ea000000-0000-4000-8000-000000000a01",
+        "id": "eb000000-0000-4000-8000-000000000b01",
+        "action": "lostTicket",
+        "outcome": "completed",
+        "agent": "agent:j.okafor",
+        "summary": "Lost ticket issued at pay-in-lane 3 in the Gatewise lane console."
+      }
+    },
+    {
+      "at": 2,
+      "clock": {
+        "advance": "PT5S"
+      }
+    }
+  ],
+  "UIL-02": [
+    {
+      "at": 1,
+      "inject": {
+        "kind": "uiLaunchOpen",
+        "launch": "ea000000-0000-4000-8000-000000000a02"
+      }
+    }
+  ]
+}

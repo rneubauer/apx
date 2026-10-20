@@ -103,6 +103,18 @@ carries the same keys in a body. With `mode=change` the route is a change
 feed instead, delivering what the payment topic delivers to the same
 credential.
 
+### Receipts and refund reasons
+
+A **ReceiptRequest** asks for a settled payment's receipt to be sent
+again: by e-mail, text message, print at the device, or as a link, with
+the destination in the body and never in the URL. The answer is a
+**ReceiptDelivery**: the channel, whether it is queued, sent or failed,
+and the link where that was the channel (APX Part 13 §13.1a). A refund
+carries a `reasonCode` from the `apx-refund-reasons` code list beside its
+free-text reason (change not dispensed, double charge, overcharge,
+service failure, courtesy), so that refunds can be counted by cause
+across sites.
+
 ## Lifecycle
 
 The payment states and transitions are normative (APX Part 13 §13.1a).

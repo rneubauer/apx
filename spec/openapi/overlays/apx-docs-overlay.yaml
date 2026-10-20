@@ -6,7 +6,7 @@
 #   - `tags[].description` the per-domain narrative, rendered by Redoc and
 #     Swagger UI directly ABOVE the operations carrying that tag, so every
 #     group of routes explains itself before listing itself
-#   - `x-tagGroups`        nav grouping, so seventeen tags read as five areas
+#   - `x-tagGroups`        nav grouping, so eighteen tags read as five areas
 #
 # Applied to spec/dist/apx-v1.{yaml,json} by tools/apply-overlay.mjs as the
 # last step of `npm run spec:bundle`, after the data-profile overlay.
@@ -432,15 +432,66 @@ actions:
 
           Written standard:
           [Part 22](https://github.com/rneubauer/apx/blob/main/docs/standard/22-valet.md).
+      - name: UI launch
+        description: |-
+          **The vendor's own screen, without breaking the record.** Most
+          actions in a call centre still happen in a vendor's portal in
+          another window, and the two systems never agree afterwards. A
+          vendor will take years to implement every APX module, but it
+          already has good screens.
+
+          A host opens one of those screens for an agent in two ways. In the
+          **handshake**, it posts a launch with its normal APX token and gets
+          back a single-use URL that logs the agent in, valid for sixty
+          seconds, which also serves vendors who want header-based
+          authentication, since a browser cannot add headers to a page it
+          opens. In the **signed-token** mode, the host signs a short-lived
+          token and sends it to the vendor's launch address by form post or
+          URL fragment.
+
+          The rule that makes this worth having is the **loopback**: whatever
+          the agent does in the screen MUST come back as the module's own
+          resource or Command, carrying the launch's correlation id. Only when
+          the implementation has no APX operation for the action does it
+          record a `UiActionRecord` instead, with the fields the host asked
+          for. Defined once; every module adds screens through the
+          `apx-ui-surfaces` registry.
+
+          Written standard:
+          [Part 25](https://github.com/rneubauer/apx/blob/main/docs/standard/25-ui-launch.md).
+      - name: Site configuration
+        description: |-
+          **A location, described by APX alone.** Before a call, an agent or
+          a system should be able to learn what a site has without data from
+          any other system: which hardware is on each lane and what each
+          piece does, what it is, what runs on it, where the cameras are and
+          what they see, how a parker reaches help from each lane or door,
+          and who to escalate to.
+
+          APDS already models the place, its lanes and its equipment. This
+          domain adds what APDS leaves open: a fixed list of **equipment
+          roles** (gate, exit verifier, access door, camera, intercom…), the
+          make, model, firmware, serial and MAC of every unit, where it is by
+          **area** and level, what it is built into and what it controls; a
+          **camera** description for any camera on the site, with views
+          issued as short-lived links so a password never leaves the site; a
+          **comms point** for every way help is reached, whether an intercom,
+          an analog dialer, a posted number or a QR code; typed **external
+          ids** so other systems' identifiers resolve to APX records; and
+          change topics so a copy of the setup stays current. IP addresses
+          and SIP details are deliberately left out.
+
+          Written standard:
+          [Part 26](https://github.com/rneubauer/apx/blob/main/docs/standard/26-site-configuration.md).
 
   # ===== Navigation grouping ===============================================
   - target: $.x-tagGroups
-    description: Group seventeen domains into five readable areas (Redoc; ignored elsewhere).
+    description: Group eighteen domains into five readable areas (Redoc; ignored elsewhere).
     update:
       - name: Start here
         tags: [Discovery]
       - name: Platform
-        tags: [Data, Subscription, Control, Alerts]
+        tags: [Data, Subscription, Control, Alerts, Site configuration, UI launch]
       - name: Commerce
         tags: [Accounts, Reservations, Permits, Validations, Tolling]
       - name: Vehicles and access

@@ -109,6 +109,21 @@ registry or a reservation (`matchedBy`), with its evidence, confidence and
 terms and publishes `SessionUpdated`. APX keeps no parallel matching
 store: the match is the Session's exit.
 
+### Faults, supplies and maintenance
+
+A device status may carry the fault the device reports (`fault`: a code,
+a display text and since when), the level of each consumable it holds
+(`consumables[]`: tickets, receipt paper, cash and coins, each `ok`,
+`low`, `empty` or `unknown`), and whether it is in `maintenanceMode`, so
+that test calls can be kept out of service figures (APX Part 6 §6.4). The
+APDS-style `lastCommunication` already says when the device was last
+heard from, so no separate "last seen" member is added. A consumable that
+runs low raises a `consumableLow` alert. Three commands complete what an
+agent does at a device: `ejectTicket`, `cancelTransaction` and
+`reprintReceipt` (APX Part 6 §6.1). What a device *is*, its role, make,
+model and position, is the Site configuration module's equipment detail
+(APX Part 26 §26.1).
+
 ## Lifecycle
 
 ```mermaid

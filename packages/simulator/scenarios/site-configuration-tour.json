@@ -1,0 +1,101 @@
+{
+  "name": "Site configuration: a garage described from APX alone",
+  "description": "A call-center console onboards Lakeside Garage with nothing but APX: the equipment on each lane with its role, make, model, versions, serial and MAC; what is built into what and which barrier a reader opens; the cameras and where they look; the comms points a call reaches help through; the ids other systems know the garage by; and the change notice that keeps the console's copy current. Part 26 and Part 16.",
+  "world": "apx-site-config",
+  "token": "default",
+  "steps": [
+    {
+      "name": "Onboarding day",
+      "narration": "No spreadsheet from the PARCS vendor, no export from the phone system. The console asks APX.",
+      "clock": { "now": "2026-10-18T09:00:00Z" }
+    },
+    {
+      "name": "Everything on exit lane 2",
+      "narration": "Four APDS SupplementalEquipment records, each with the equipment-detail decoration: the barrier, the pay-in-lane terminal that is the exit verifier (it controls the barrier), the intercom built into it, and the overhead camera. The APDS equipment type stays APDS; the role says what each one is. No IP address, no username, no password anywhere (§26.1).",
+      "request": { "method": "GET", "path": "/v1/equipment?place=b1000000-0000-4000-8000-000000000001&lane=b2000000-0000-4000-8000-000000000002" },
+      "expect": {
+        "status": 200,
+        "body": {
+          "meta": { "total": 4 },
+          "data": [
+            { "extensions": { "apds-ext:apx:equipment-detail@1.0": { "role": "gate", "manufacturer": "Gatewise", "macAddresses": ["3c7a1e00b2a1"] } } },
+            { "extensions": { "apds-ext:apx:equipment-detail@1.0": { "role": "exitVerifier", "controls": [ { "id": "c1000000-0000-4000-8000-000000000002" } ] } } },
+            { "extensions": { "apds-ext:apx:equipment-detail@1.0": { "role": "intercom", "builtInto": { "id": "c1000000-0000-4000-8000-000000000003" } } } },
+            { "extensions": { "apds-ext:apx:camera@1.0": { "mounting": "overhead", "view": ["vehicle", "equipmentInteraction"] } } }
+          ]
+        }
+      }
+    },
+    {
+      "name": "Beyond the lanes: the lobby door",
+      "narration": "Filter by area. The pedestrian entrance has the access door, the card reader that controls it, the intercom in its call box, and a ceiling camera looking at pedestrians. Place-level equipment carries no lane.",
+      "request": { "method": "GET", "path": "/v1/equipment?place=b1000000-0000-4000-8000-000000000001&area=pedestrianEntrance" },
+      "expect": { "status": 200, "body": { "meta": { "total": 4 }, "data": [ { "extensions": { "apds-ext:apx:equipment-detail@1.0": { "role": "accessDoor" } } } ] } }
+    },
+    {
+      "name": "Every camera in the garage",
+      "narration": "One role, camera; the camera decoration says where each one is, how it is mounted and what it looks at: the lane, the lobby, the P2 ramp. The ramp camera still speaks RTSP with a password; APX names its vault label, never the password (§26.3 rule 3).",
+      "request": { "method": "GET", "path": "/v1/equipment?place=b1000000-0000-4000-8000-000000000001&role=camera" },
+      "expect": { "status": 200, "body": { "meta": { "total": 3 } } }
+    },
+    {
+      "name": "Which lane is calling: by the intercom's caller id",
+      "narration": "A comms point is any way a parker reaches help. The exit-lane intercom calls out as +1 555 010 0201; it resolves to the lane and to the barrier it serves (§26.4).",
+      "request": { "method": "GET", "path": "/v1/comms-points?callerId=%2B15550100201" },
+      "expect": { "status": 200, "body": { "meta": { "total": 1 }, "data": [ { "type": "intercom", "lane": { "id": "b2000000-0000-4000-8000-000000000002" }, "serves": { "id": "c1000000-0000-4000-8000-000000000002" } } ] } }
+    },
+    {
+      "name": "By the posted number a parker dialed",
+      "narration": "A sign cannot know where the caller stands: the posted number resolves to the place and to no lane. The agent asks.",
+      "request": { "method": "GET", "path": "/v1/comms-points?dialedNumber=%2B15550100042" },
+      "expect": { "status": 200, "body": { "meta": { "total": 1 }, "data": [ { "type": "postedNumber", "place": { "id": "b1000000-0000-4000-8000-000000000001" } } ] } }
+    },
+    {
+      "name": "Their id, our record",
+      "narration": "The PARCS calls the garage LOT-0042. A support tool holding only that asks APX what it is (§26.6).",
+      "request": { "method": "POST", "path": "/v1/identifiers:resolve", "body": { "system": "https://parcs.gatewise.example", "id": "LOT-0042" } },
+      "expect": { "status": 200, "body": { "target": { "id": "b1000000-0000-4000-8000-000000000001", "className": "Place" } } }
+    },
+    {
+      "name": "A live look at exit lane 2",
+      "narration": "A single-use WebRTC link that lives five minutes, bound to the agent and logged against the call.",
+      "request": {
+        "method": "POST",
+        "path": "/v1/cameras/c1000000-0000-4000-8000-000000000007/views",
+        "body": { "kind": "live", "agent": "agent:j.okafor", "agentType": "human", "correlationId": "ca000000-0000-4000-8000-000000000141" }
+      },
+      "expect": { "status": 201, "body": { "kind": "live", "protocol": "webrtc" } }
+    },
+    {
+      "name": "What this garage can do, before a call",
+      "narration": "Part 16: discovery now says, per place, which commands the site executes and which features it supports. Lakeside has no lostTicket through the API; a console knows that before the first call.",
+      "request": { "method": "GET", "path": "/v1/discovery" },
+      "expect": { "status": 200, "body": { "placeCapabilities": [ { "place": "b1000000-0000-4000-8000-000000000001" } ] } }
+    },
+    {
+      "name": "Overnight, the exit-lane terminal is swapped",
+      "narration": "New serial, new MACs, new firmware. The implementation updates the record and subscribers receive apx.equipment.changed.v1; nobody re-reads the garage (§26.7).",
+      "inject": {
+        "kind": "equipmentChanged",
+        "equipment": "c1000000-0000-4000-8000-000000000003",
+        "actor": "gatewise-field-service",
+        "detail": { "firmwareVersion": "7.1.0", "serialNumber": "GWX200-011207", "macAddresses": ["3c7a1e00c4e1", "3c7a1e00c4e2"], "installedAt": "2026-10-18" }
+      }
+    },
+    {
+      "name": "The console's copy is current",
+      "request": { "method": "GET", "path": "/v1/equipment/c1000000-0000-4000-8000-000000000003" },
+      "expect": { "status": 200, "body": { "extensions": { "apds-ext:apx:equipment-detail@1.0": { "firmwareVersion": "7.1.0", "serialNumber": "GWX200-011207" } } } }
+    },
+    {
+      "name": "Subscribers were told",
+      "events": { "type": "apx.equipment.changed.v1", "min": 1 }
+    },
+    {
+      "name": "A console that was offline catches up by change feed",
+      "narration": "Part 5 §5.2: the same list route, mode=change. Without a cursor it answers with the feed's head; from then on every change arrives whole, and a removal as a tombstone.",
+      "request": { "method": "GET", "path": "/v1/equipment?place=b1000000-0000-4000-8000-000000000001&mode=change" },
+      "expect": { "status": 200, "body": { "updateMode": "change" } }
+    }
+  ]
+}

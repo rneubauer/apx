@@ -19,11 +19,20 @@ and the record of a support interaction.
 
 A **ResolutionResolveRequest** carries whatever parking identifiers the
 caller has: device, place, lane, session, holder, credential, plate,
-ticket number or reservation code. At least one is required. The server
-MUST resolve every relationship it can and MUST NOT fail because some
-identifiers are missing (APX Part 17 §17.1). APX accepts no telephony
-identifiers. The call platform maps the call to a lane or device before
-it calls APX, so no parking system needs telephony concepts.
+ticket number or reservation code, and, since Part 26, the comms point a
+call came from, or the `callerId`, `dialedNumber` or `commsDeviceId` the
+call platform hands over. At least one is required. The server MUST
+resolve every relationship it can and MUST NOT fail because some
+identifiers are missing (APX Part 17 §17.1). Telephony values appear
+only on comms points and on these members, and only the party that runs
+the calls supplies them; a parking system never has to hold or
+understand them, and one that holds no comms points says so
+(`comms-point-unknown`). A comms point resolves to its lane when it has
+one and otherwise to its place only. Two further qualifiers help an
+agent find the right record: `reservationIssuer`, when several sellers'
+confirmation codes collide, and `guestReference` (a hotel room, a
+company, a tenant, an event), for a guest who has no plate or ticket to
+give.
 
 A **ResolutionContext** is the result. Its core is small: id, version,
 computation time, status, Place and the allowed actions. Every other
@@ -49,8 +58,25 @@ context, this credential and this moment (APX Part 17 §17.3). It says
 whether the action is allowed, whether it needs approval and by which
 role, and why when it is denied or gated. An `execution` descriptor says
 how to run it: a Part 6 control command, or a domain operation by its
-operationId. So the agent sees one list and never needs to know which
-module executes the action (APX Part 17 §17.4).
+operationId, or, since Part 25, a vendor surface to open (`type: ui`,
+with the surface and the subject), so an agent is offered "do it in the
+vendor's screen" when no API operation exists. So the agent sees one
+list and never needs to know which module executes the action (APX Part
+17 §17.4).
+
+### Approval requests
+
+An **ApprovalRequest** asks a role for permission to take an action the
+policy gates (APX Part 17 §17.3a): the place, the action and its target,
+who asks and whether that is a person or an AI agent, the role that may
+decide (a value of the `apx-escalation-roles` list where the place's
+escalation contacts apply), a reason, the correlation identifier, and an
+expiry. The decision (`ApprovalDecision`: approved or denied, by whom,
+when, with a note) is recorded on the request, and a command that needs
+approval cites the decided request as its approval evidence. A request
+is addressed to a role, never a person, so APX holds no manager's name
+or number. A decided or expired request cannot be decided again
+(`approval-closed`).
 
 The decisions are binding. A command or domain write that the current
 context does not allow is refused (`action-not-allowed`); one that needs
@@ -83,7 +109,13 @@ courtesy exit, from the Part 6 Command that performed it.
 A **SupportInteraction** records one customer-service contact: channel,
 agent type (human or AI), start and end, Place, issue, a short summary,
 the subjects it was about (Session, holder, account, credential,
-reservation, plate) and references to the actions taken. It holds a
+reservation, plate) and references to the actions taken, which may
+include the commands, payment links, UI launches and action records of
+the episode. Its resolution code comes from the `apx-interaction-outcomes`
+list (resolved, vended, transferred, escalated, no action needed,
+abandoned, callback scheduled) or is an implementer code, and its issue
+from `apx-issue-types`, which now carries the thirty-four types a
+six-month sample of ten call centres showed to be shared. It holds a
 summary, never a transcript (APX Part 17 §17.6). Recorded interactions
 appear in later contexts as `supportHistory`, so an agent can see that
 the customer called twice yesterday.
@@ -133,6 +165,21 @@ completed later with its end time, resolution, summary and actions (APX
 Part 17 §17.6). Every update increments `version`. `open` and `completed`
 are descriptive; the record has no status field.
 
+```mermaid
+stateDiagram-v2
+    [*] --> pending : request
+    pending --> approved : decide
+    pending --> denied : decide
+    pending --> expired : expiresAt passed
+    approved --> [*]
+    denied --> [*]
+    expired --> [*]
+```
+
+An approval request is `pending` until the role decides it `approved` or
+`denied`, or until it expires; the three are final (APX Part 17 §17.3a).
+Every transition publishes `apx.approvals.changed.v1`.
+
 ## Relationship to APDS
 
 APDS classes referenced: Place and its hierarchy, VehicularAccess (the
@@ -160,6 +207,7 @@ proposed as a class: it follows from the access events of a credential,
 and AccessEvent is proposed in the Session package.
 
 APX-only: ResolutionResolveRequest, ResolutionContext, AllowedAction,
-ResolutionIssue, PassbackStatus, PlateCandidate and OverrideRecord. They
-are aggregation, policy and workflow shapes over APDS data, not new
-parking data, so they are not proposed.
+ResolutionIssue, PassbackStatus, PlateCandidate, OverrideRecord,
+ApprovalRequest and ApprovalDecision. They are aggregation, policy and
+workflow shapes over APDS data, not new parking data, so they are not
+proposed.

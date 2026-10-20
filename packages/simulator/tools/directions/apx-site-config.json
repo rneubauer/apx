@@ -1,0 +1,76 @@
+{
+  "_comment": "Stage directions for the replay of apx-site-config: the comms point another admin bumped before the stale PUT, the change-feed cursors a console held from an earlier sync, the terminal swapped overnight, and the exit-lane camera going offline. Keys are scenario ids; `at` is the 0-based exchange index the step runs before ('start' = before the scenario).",
+  "SCF-04": [
+    {
+      "at": 1,
+      "inject": {
+        "kind": "siteFeedCursor",
+        "feed": "commsPoints",
+        "name": "cp-00000000000000000417"
+      }
+    },
+    {
+      "at": 1,
+      "inject": {
+        "kind": "commsPointChanged",
+        "commsPoint": "cc000000-0000-4000-8000-000000000c04",
+        "callerId": "+15550100233"
+      }
+    }
+  ],
+  "SCF-07": [
+    {
+      "at": 1,
+      "inject": {
+        "kind": "deviceState",
+        "device": "c1000000-0000-4000-8000-000000000007",
+        "state": "inoperative",
+        "actor": "camera watchdog"
+      }
+    }
+  ],
+  "SCF-08": [
+    {
+      "at": "start",
+      "inject": {
+        "kind": "siteFeedCursor",
+        "feed": "equipment",
+        "name": "eq-00000000000000000880",
+        "filters": {
+          "place": "b1000000-0000-4000-8000-000000000001"
+        }
+      }
+    },
+    {
+      "at": "start",
+      "clock": {
+        "now": "2026-10-18T03:40:00Z"
+      }
+    },
+    {
+      "at": "start",
+      "inject": {
+        "kind": "equipmentChanged",
+        "equipment": "c1000000-0000-4000-8000-000000000003",
+        "actor": "gatewise-field-service",
+        "detail": {
+          "firmwareVersion": "7.1.0",
+          "serialNumber": "GWX200-011207",
+          "macAddresses": [
+            "3c7a1e00c4e1",
+            "3c7a1e00c4e2"
+          ],
+          "installedAt": "2026-10-18"
+        }
+      }
+    }
+  ],
+  "SCF-09": [
+    {
+      "at": "start",
+      "clock": {
+        "now": "2026-10-18T23:30:00Z"
+      }
+    }
+  ]
+}

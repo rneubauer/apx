@@ -82,6 +82,15 @@ table below.
 | `charging-settlement-conflict` | 409 | `…/payment` on a `parkingSession`-settled session, on a `directPayment` session not yet `unplugged`, or on an already `closed` session (Part 23 §23.5) |
 | `read-already-bound` | 409 | A `session-detail` write binds a read as `entry` or `exit` that another Session of the same place already holds, and does not name that Session in `supersedes` (Part 5 §5.8) |
 | `not-authoritative` | 409 | A write to an entity class for which, at that place, the other replicated implementation is authoritative (Part 18 §18.6) |
+| `ui-surface-unknown` | 422 | A UI launch names a surface this implementation does not offer, or not at that place (Part 25 §25.2) |
+| `ui-display-mode-unsupported` | 422 | A UI launch asks for a display mode the surface does not support (Part 25 §25.2) |
+| `ui-launch-expired` | 409 | An action recorded against a launch whose url or token expired unused (Part 25 §25.3) |
+| `ui-launch-closed` | 409 | An action or close against a launch already closed (Part 25 §25.3) |
+| `approval-closed` | 409 | A decision on an approval request already decided or expired (Part 17 §17.8) |
+| `receipt-channel-unsupported` | 422 | A receipt re-send by a channel this implementation or device cannot serve (Part 13 §13.1b) |
+| `comms-point-unknown` | 422 | A resolve request names a comms point, caller id, dialled number or comms device id the implementation does not hold (Part 17 §17.1, Part 26 §26.7) |
+| `camera-view-unavailable` | 409 | A camera view cannot be issued now: the camera is offline, or has no recorder for playback (Part 26 §26.4) |
+| `playback-range-unavailable` | 422 | A playback view whose `from`/`to` is missing or outside the camera's retention (Part 26 §26.4) |
 
 Problem responses SHOULD include `detail` and MAY carry additional members
 (RFC 9457 extension members), including an `extensions` container.

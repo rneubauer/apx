@@ -90,6 +90,8 @@ implementation has the named capability).
 | APX-CTL-14 | A `succeeded` `lostTicket`, `matchTicket`, or `pushNegotiatedRate` carries `result` with the §6.1a members, consistent with the lane inquiry | §6.1a |
 | APX-CTL-16 **C** (negotiated amounts) | `pushNegotiatedRate` with `parameters.amount` sets the current ticket's `amountDue` to that amount, with no floor or ceiling; exactly one of `rateTable`/`amount`, `agent` and `reason` REQUIRED, the ticket's currency, no negative value (400 `invalid-request`); `amount` without the `negotiatedAmounts` feature → 422 `rate-not-negotiable`; the lane's `currentTicket.negotiatedAmount` carries `amount`, `reason`, `agent` and the command, and `currentTicket.negotiatedRate` (with its required `rateTable`) is absent | §6.6 |
 | APX-CTL-15 **C** (display reports what it showed) | A `succeeded` `displayMessage` carries `result.display` (shown time, content hash, wording version, screenshot link, acknowledgement); template parameters accepted | §6.1, §6.1a |
+| APX-CTL-17 **C** (offers them) | `ejectTicket`, `cancelTransaction`, `reprintReceipt` accepted as device-targeted commands with the §6.1 rules; a device that cannot perform one reports `failed` in `statusHistory`, never a silent success | §6.1 |
+| APX-CTL-18 | A `DeviceStatus` in `fault` carries `fault` (`code`, `displayText`, `since`) where the device reports one; `consumables[]` with `kind` and `level` where the device holds them, a `low` or `empty` level raising `consumableLow`; `maintenanceMode` honoured; last contact reported only as `lastCommunication` | §6.4, §7.7 |
 
 ## A.6 `apx-alerts`
 
@@ -102,6 +104,7 @@ implementation has the named capability).
 | APX-ALT-05 | An alert with no place binding is visible to every token of its organisation regardless of `apx_places`, never to other organisations, and excluded from `place`-filtered lists | §7.1 |
 | APX-ALT-06 | A `webhookDeliveryFailed` alert never generates webhook deliveries to the subscription whose failure it reports | §7.4 |
 | APX-ALT-07 **C** (claims `apx-plate-lists`) | List-arrival alerts (`watchListArrival`, `scofflawArrival`, `refusedServiceArrival`) carry the `PlateListEntry` as `relatedEntity` and the read as evidence | §7.6, §24.4 |
+| APX-ALT-08 **C** (claims `apx-resolution`) | Service-request alerts (`receiptRequested`, `refundRequested`, `citationInquiry`, `damageReported`, `customerCallbackRequested`) carry `supportInteraction` naming the call they came from and `relatedEntity` naming what the site acts on; `consumableLow` names the device and the consumable | §7.1, §7.7 |
 
 ## A.7 `apx-discovery`
 
@@ -111,6 +114,7 @@ implementation has the named capability).
 | APX-DSC-02 | Soundness: every listed endpoint/command callable for at least one target in the granted places; an unlisted endpoint the server implements → 403 `insufficient-scope`; an endpoint of an unclaimed class → 404 `target-not-found` | §16.2, §9.3a |
 | APX-DSC-03 | Two clients with different grants receive different documents | §16.2 |
 | APX-DSC-04 | Offered optional features listed in `features` of the bootstrap document and of every discovery document whose client holds a scope of the class | §16.1, §16.2, §6.5 |
+| APX-DSC-05 **C** (claims `apx-ui-launch`) | `uiSurfaces[]` lists only surfaces the client may launch at a granted place, with display modes, launch modes, actions and places; `placeCapabilities[]`, where present, lists per place a subset of the document's `commandTypes`, `uiSurfaces` and `features` | §16.2, §25.1 |
 
 ## A.8 `apx-accounts` / A.9 `apx-payment-history`
 
@@ -124,6 +128,7 @@ implementation has the named capability).
 | APX-ACC-06 | More than four card digits in any body member or query parameter → 422 `personal-data-not-permitted`, refused before persisting or logging | §13.1, §13.2 |
 | APX-ACC-07 **C** (persists APDS Payment) | Every `approved`, captured PaymentRecord is materialized as, or bound to, a native APDS `Payment` with a `paymentLines` entry of `paymentType: payment` and `value` = `amount` (or, for a record itemized per §13.6a, with its `lines` unchanged as `paymentLines` and its `rateSold` copied, never the lines a second time in the decoration); declined records and uncaptured holds are not | §13.6, §13.6a |
 | APX-ACC-08 | `POST /v1/accounts:search` and `POST /v1/payments:search` answer as their `GET`s, with the same key, window, hold, and grant rules | §13.1, §13.2 |
+| APX-ACC-10 | `POST /v1/payments/{id}/receipt` re-sends a settled payment's receipt by `channel` with `destination` in the body, answering 202 `ReceiptDelivery`; unsupported channel → 422 `receipt-channel-unsupported`; unsettled payment → 409 `payment-state-illegal`; refund `reasonCode` accepted and returned | §13.1a |
 | APX-ACC-09 **C** (itemizes payments) | `apds-ext:apx:payment-detail@1.0` accepted on `POST /v1/payments` with `lines` as APDS `PaymentLine`s, the code in `idCode` (from `apx-payment-line-codes` or the implementer's own list; `validation` ⇔ `paymentType: validation`); `paymentType: payment` lines that do not sum to `amount` (same `currencyType`) → 422 `request-unprocessable`, nothing charged; the decoration returned unchanged on the record, `GET /v1/payments`, and the recorded event; refunds never rewrite the lines; on a native `Payment` the decoration carries `rateSold` only (no `lines`); no invented lines and no zero-fee line inferred | §13.6a |
 | APX-PHX-01 | Truncated-key lookups without `date` constrained to last 8 hours, not configurable wider; `ticketNumber` and `account` exempt; a query with no key → 400 (except `mode=change`, APX-PHX-02) | §13.2, §9.6 |
 | APX-PHX-02 | `GET /v1/payments?mode=change` serves the payment feed without a key or window, exactly the records `apx.accounts.payment.recorded.v1` delivers (holds from capture, voided holds never); `ticketLast4`/`cardLast4` with `mode=change` → 400 `invalid-request` | §13.2, §5.2 r8 |
@@ -167,7 +172,7 @@ implementation has the named capability).
 
 | ID | Requirement | Source |
 |---|---|---|
-| APX-RES-01 | Context resolves from any parking-domain identifiers; never fails for absent ones; no telephony identifiers accepted | §17.1–17.2 |
+| APX-RES-01 | Context resolves from any parking-domain identifiers; never fails for absent ones; telephony values accepted only as the comms-point members (`callerId`, `dialedNumber`, `commsDeviceId`), never SIP identifiers; a server without comms points → 422 `comms-point-unknown` on those members | §17.1–17.2 |
 | APX-RES-02 | Partial results supported; context never includes sections the token couldn't read directly | §17.2 |
 | APX-RES-03 | AllowedActions evaluated server-side; denied/gated actions carry machine-readable reasons | §17.3 |
 | APX-RES-04 | Policy decisions BINDING on execution, on commands and on domain operations alike: 403 `action-not-allowed` / `approval-required`; a command type the named context does not offer → 403 `action-not-allowed` | §17.3 |
@@ -176,6 +181,9 @@ implementation has the named capability).
 | APX-RES-07 **C** (tracks passback) | Passback read + resetPassback/forceIn/forceOut commands; a known but untracked credential → 200 `state: unknown` | §17.4, §17.8 |
 | APX-RES-08 **C** (stores LPR) | Plate candidates read + `PUT /v1/sessions/{id}/plate` materializing into the APDS Session + SessionUpdated; stale `If-Match` → 409 `version-conflict`; closed session outside the dispute window → 422 `session-not-open` | §17.5 |
 | APX-RES-09 | `interactionId` treated as opaque (echoed on the context, recordable on support interactions, never interpreted); a caller's `correlationId` carried on the context, commands, payment links, events, and support interactions of the same episode (SHOULD) | §17.7 |
+| APX-RES-10 **C** (gates any action) | `POST /v1/approvals` opens a `pending` request with `role`, `action`, `target`, `requestedBy` and `correlationId`; `decide` records `approved`/`denied` with `decidedBy`; a decision on a non-pending request → 409 `approval-closed`; `expiresAt` honoured; every transition publishes `apx.approvals.changed.v1`; an `approval` citing `approvalRequest` is verifiable against the request | §17.3a |
+| APX-RES-11 | `reservationIssuer` and `guestReference` accepted as qualifiers (never counted as identifying members); `commsPoint`, `callerId`, `dialedNumber`, `commsDeviceId` resolved to the lane when the comms point has one, else the place only | §17.1, §26.4 |
+| APX-RES-12 **C** (claims `apx-ui-launch`) | `execution.type: ui` carries `surface`; the policy decision binds the launch; `SupportInteraction.resolution.code` from `apx-interaction-outcomes` or an implementer code; `actions[]` may reference `UiLaunch` and `UiActionRecord` | §17.3, §17.6, §25.5 |
 
 ## A.15 `apx-violations`
 
@@ -261,7 +269,8 @@ Classes claimed: [ ] apx-data  [ ] apx-events  [ ] apx-events-sse
   [ ] apx-payment-history  [ ] apx-lpr  [ ] apx-reservations
   [ ] apx-permits  [ ] apx-tolling  [ ] apx-resolution  [ ] apx-violations
   [ ] apx-validations  [ ] apx-credentials  [ ] apx-valet  [ ] apx-mtls
-  [ ] apx-charging  [ ] apx-plate-lists
+  [ ] apx-charging  [ ] apx-plate-lists  [ ] apx-ui-launch
+  [ ] apx-site-config
 
 For each requirement row of every claimed class (and A.1):
   <ID>: PASS | N/A (conditional not applicable) | DEVIATION (explain)
@@ -295,3 +304,33 @@ non-conforming (§3.1: no partial classes).
 | APX-PLL-04 | Plate values only under `apx.platelists:*`; digests MAY stand in (Part 9 §9.6 r6) | §24.2 |
 | APX-PLL-05 | Change feed on `/v1/plate-lists` and `/v1/plate-lists/{id}/entries`; entry removal tombstoned | §24.3, Part 5 §5.2 r8 |
 | APX-PLL-06 | `apx.platelists.changed.v1` on every list or entry change, carrying no plate values | §24.3 |
+
+## A.23 `apx-ui-launch` (Part 25)
+
+| ID | Requirement | Source |
+|---|---|---|
+| APX-UIL-01 | Offered surfaces are `apx-ui-surfaces` values listed in `uiSurfaces[]` of the bootstrap and discovery documents under the soundness rule; an unoffered surface → 422 `ui-surface-unknown`; an unlisted display mode → 422 `ui-display-mode-unsupported` | §25.1 |
+| APX-UIL-02 | Handshake mode: `POST /v1/ui/launches` returns 201 with a single-use `url` valid at most 60 s (`expiresIn` clamped), bound to the surface, subject, agent and place; the agent is logged in automatically; `Idempotency-Key` replay → 200 | §25.2 |
+| APX-UIL-03 **C** (offers signed tokens) | A JWS (`ES256`/`RS256`, never `none`) with `aud` the implementation, `exp` ≤ 60 s after `iat`, unique `jti`, and the request members as claims, delivered by form POST or URL fragment, opens the surface and creates the launch; expired, replayed or badly signed tokens refused | §25.2, §9.8 |
+| APX-UIL-04 | Lifecycle `issued → opened → closed \| expired` with `openedAt`/`closedAt`; a second use of the url or token refused; action or close on a terminal launch → 409 `ui-launch-closed`, on an expired issued launch → 409 `ui-launch-expired`; every transition publishes `apx.ui.launch.changed.v1`; reads never return a usable `url` after `issued` | §25.2, §25.3 |
+| APX-UIL-05 | Loopback, native first: every action with a supported APX operation produces that operation's own record and events, carrying the launch's `correlationId`, `agent` and `agentType` | §25.4 |
+| APX-UIL-06 | Every other action recorded as a `UiActionRecord` (`action`, `outcome`, `occurredAt`, `summary`, `result` where any) via `POST /v1/ui/launches/{id}/actions` or an equivalent internal record, publishing `apx.ui.action.recorded.v1`; no action inferred from an opened launch | §25.4 |
+| APX-UIL-07 | `returnFields[]` answered in `fields` by pointer, each unsupplied field listed in `unavailable[]` with `notSupported` or `notApplicable`, never omitted silently | §25.4 |
+| APX-UIL-08 | Launch material never in a query string, referrer or log; no personal data or secrets in a url or token; `embed` only for registered origins with `frame-ancestors` set, else `popup`/`tab`; the opened session ends with the launch; signing keys and handshake secrets rotatable and never returned by a read | §25.6, §9.7, §9.8 |
+| APX-UIL-09 **C** (claims `apx-resolution`) | `AllowedAction.execution.type: ui` offered with `surface` where no API operation exists; the decision binds the launch; launches and action records referenced from `SupportInteraction.actions[]` | §25.5 |
+
+## A.24 `apx-site-config` (Part 26)
+
+| ID | Requirement | Source |
+|---|---|---|
+| APX-SCF-01 | Every SupplementalEquipment served carries `apds-ext:apx:equipment-detail@1.0` with a `role` from `apx-equipment-roles` (a code, never free text); `equipmentType` still the nearest APDS value; `macAddresses[]` twelve lower-case hex digits; no IP address member | §26.1 |
+| APX-SCF-02 | `GET /v1/equipment?place=` with `role`, `area`, `lane`, `level` filters and the Part 5 change feed; `GET /v1/equipment/{id}`; a `place` outside the grant → 403 `insufficient-grant`; the same elements and decorations served on the native `/places` routes | §26.1 r9 |
+| APX-SCF-03 | `area` from `apx-area-types`; `level`, `lane`, `builtInto`, `controls[]`, `serviceProvider` as defined; `firmwareVersion`/`softwareVersion` readable by every client that may read the place | §26.1, §26.2 |
+| APX-SCF-04 **C** (inventories cameras) | A camera is `role: camera` with `apds-ext:apx:camera@1.0`: `view[]` (≥ 1), `mounting` (with `builtInto` when `builtIn`), `faces` on lanes/plazas/ramps, `recorder`, `streams[]`, `retentionDays`; no address, user name or password; `lane-cameras@1.0` unchanged | §26.3 |
+| APX-SCF-05 **C** (offers `cameraViews`/`cameraPlayback`) | `POST /v1/cameras/{id}/views` returns 201 with a single-use `url` bound to the agent, `expiresAt` ≤ 5 min; `playback` honours `from`/`to`; offline or unsupported kind → 409 `camera-view-unavailable`; range outside `retentionDays` → 422 `playback-range-unavailable`; every issue and use logged against agent and `correlationId`; the feature listed in discovery | §26.3, §9.8 |
+| APX-SCF-06 | `CommsPoint` with a registry `type`, `place`, optional `lane`/`equipment`/`serves`/`coverage[]`, and at least one of `phoneNumber` (E.164), `callerId` (E.164), `commsDeviceId`; no SIP user name, realm or password accepted (422 `personal-data-not-permitted` for a password) | §26.4, §9.7 |
+| APX-SCF-07 | `GET /v1/comms-points` honours `place`, `lane`, `type`, `callerId`, `dialedNumber` (= `phoneNumber`), `commsDeviceId` and serves the change feed; `POST`/`PUT`/`DELETE` under `apx.siteconfig:manage` with versioned `PUT` (409 `version-conflict`) and tombstoned `DELETE`; a comms point resolves to its lane when it has one, else its place only | §26.4 |
+| APX-SCF-08 | `apds-ext:apx:place-operations@1.0` carries `commsAccountId` and `escalationContacts[]` as `apx-escalation-roles` values with `order` and `hours`; no names or numbers | §26.4 r5, §26.5 |
+| APX-SCF-09 | `apds-ext:apx:external-ids@1.0` accepted and preserved on any HierarchyElement with `system` a URI; `POST /v1/identifiers:resolve` answers `target`, `className`, `place` for a held pair and 404 `target-not-found` otherwise, never confirming an element outside the grant | §26.6 |
+| APX-SCF-10 | `apx.equipment.changed.v1` on every create, change or removal of a decorated SupplementalEquipment; `apx.commspoints.changed.v1` on every comms-point change; removals carry the last representation; both lists serve the change feed | §26.7 |
+| APX-SCF-11 | No read, event or feed page of this Part carries a PARCS key, camera or device password, or credential-bearing stream address, in any member or nested text | §9.7 |

@@ -2624,3 +2624,233 @@ The same console after its token expires:
   "instance": "/v1/lanes/b2000000-0000-4000-8000-000000000002/current"
 }
 ```
+
+---
+
+## CTL-26 — What is wrong with it, and what it is running out of
+
+<!-- apx:scenario CTL-26 kind=happy ics=APX-CTL-06,APX-CTL-18 -->
+
+**Given** the pay station at exit lane 2 has jammed a card and its
+receipt roll is nearly out, and the entry barrier is under maintenance
+for the morning. **When** the console reads the device status and lists
+everything in fault at the place. **Then** `DeviceStatus` carries the
+`fault` the device reports, its `consumables` with a level each, and
+`maintenanceMode` on the barrier so a test vend is not counted as a
+service call (Part 6 §6.4). `lastCommunication` says when the device
+last spoke; no new member repeats it.
+
+<!-- apx:request GET /v1/devices/c1000000-0000-4000-8000-000000000003 -->
+<!-- apx:response 200 -->
+<!-- apx:validate DeviceStatus -->
+```json
+{
+  "device": { "id": "c1000000-0000-4000-8000-000000000003", "className": "SupplementalEquipment" },
+  "deviceState": "fault",
+  "lastCommunication": "2026-10-18T08:41:55Z",
+  "stateChangedTime": "2026-10-18T08:40:12Z",
+  "fault": { "code": "CARD_JAM", "displayText": "Card stuck in reader; eject or clear.", "since": "2026-10-18T08:40:12Z" },
+  "consumables": [
+    { "kind": "receiptPaper", "level": "low" },
+    { "kind": "tickets", "level": "ok" },
+    { "kind": "cash", "level": "ok" },
+    { "kind": "coins", "level": "empty" }
+  ],
+  "maintenanceMode": false
+}
+```
+
+<!-- apx:request GET /v1/devices?place=b1000000-0000-4000-8000-000000000001&deviceState=fault -->
+<!-- apx:response 200 -->
+<!-- apx:validate DeviceStatus at /data/0 -->
+```json
+{
+  "meta": { "referenceInstant": 1792312920, "offset": 0, "pageSize": 100, "total": 1 },
+  "data": [
+    {
+      "device": { "id": "c1000000-0000-4000-8000-000000000003", "className": "SupplementalEquipment" },
+      "deviceState": "fault",
+      "lastCommunication": "2026-10-18T08:41:55Z",
+      "stateChangedTime": "2026-10-18T08:40:12Z",
+      "fault": { "code": "CARD_JAM", "displayText": "Card stuck in reader; eject or clear.", "since": "2026-10-18T08:40:12Z" }
+    }
+  ]
+}
+```
+
+<!-- apx:request GET /v1/devices/c1000000-0000-4000-8000-000000000002 -->
+<!-- apx:response 200 -->
+<!-- apx:validate DeviceStatus -->
+```json
+{
+  "device": { "id": "c1000000-0000-4000-8000-000000000002", "className": "SupplementalEquipment" },
+  "deviceState": "outOfService",
+  "lastCommunication": "2026-10-18T08:41:50Z",
+  "stateChangedTime": "2026-10-18T06:00:00Z",
+  "maintenanceMode": true
+}
+```
+
+---
+
+## CTL-27 — Give the card back, start over, print it again
+
+<!-- apx:scenario CTL-27 kind=happy ics=APX-CTL-01,APX-CTL-03,APX-CTL-17 -->
+
+**Given** the jam of CTL-26, a parker who pressed the wrong buttons, and
+a parker whose receipt did not print. **When** the agent sends
+`ejectTicket`, `cancelTransaction` and `reprintReceipt` against the
+terminal. **Then** 202 each, with the usual history, and the device
+reports what it did in `statusHistory[].detail` (Part 6 §6.1).
+
+```http
+POST /v1/commands
+Idempotency-Key: cc-7820-eject
+```
+
+<!-- apx:request POST /v1/commands -->
+```json
+{
+  "commandType": "ejectTicket",
+  "target": { "id": "c1000000-0000-4000-8000-000000000003", "className": "SupplementalEquipment" },
+  "agent": "agent:j.okafor",
+  "agentType": "human",
+  "reason": "card jammed in the reader; customer waiting at lane 2",
+  "correlationId": "7c1d2e3f-4a5b-4c6d-8e7f-9a0b1c2d3e60",
+  "expiryTime": "2026-10-18T08:46:00Z"
+}
+```
+
+<!-- apx:response 202 -->
+```json
+{
+  "id": "d1000000-0000-4000-8000-000000000126",
+  "version": 2,
+  "commandType": "ejectTicket",
+  "target": { "id": "c1000000-0000-4000-8000-000000000003", "className": "SupplementalEquipment" },
+  "requestedBy": { "id": "a1000000-0000-4000-8000-000000000001", "className": "Organisation" },
+  "agent": "agent:j.okafor",
+  "agentType": "human",
+  "reason": "card jammed in the reader; customer waiting at lane 2",
+  "correlationId": "7c1d2e3f-4a5b-4c6d-8e7f-9a0b1c2d3e60",
+  "expiryTime": "2026-10-18T08:46:00Z",
+  "priority": "normal",
+  "status": "accepted",
+  "confirmationLevel": "accepted",
+  "statusHistory": [
+    { "state": "received", "time": "2026-10-18T08:44:02Z", "actor": "apx-operator" },
+    { "state": "accepted", "time": "2026-10-18T08:44:02Z", "actor": "lakeside-parcs" }
+  ]
+}
+```
+
+```http
+POST /v1/commands
+Idempotency-Key: cc-7821-cancel
+```
+
+<!-- apx:request POST /v1/commands -->
+```json
+{
+  "commandType": "cancelTransaction",
+  "target": { "id": "c1000000-0000-4000-8000-000000000003", "className": "SupplementalEquipment" },
+  "agent": "agent:j.okafor",
+  "agentType": "human",
+  "reason": "customer selected the wrong validation; start over",
+  "correlationId": "7c1d2e3f-4a5b-4c6d-8e7f-9a0b1c2d3e61",
+  "expiryTime": "2026-10-18T08:52:00Z"
+}
+```
+
+<!-- apx:response 202 -->
+```json
+{
+  "id": "d1000000-0000-4000-8000-000000000127",
+  "version": 2,
+  "commandType": "cancelTransaction",
+  "target": { "id": "c1000000-0000-4000-8000-000000000003", "className": "SupplementalEquipment" },
+  "requestedBy": { "id": "a1000000-0000-4000-8000-000000000001", "className": "Organisation" },
+  "agent": "agent:j.okafor",
+  "agentType": "human",
+  "reason": "customer selected the wrong validation; start over",
+  "correlationId": "7c1d2e3f-4a5b-4c6d-8e7f-9a0b1c2d3e61",
+  "expiryTime": "2026-10-18T08:52:00Z",
+  "priority": "normal",
+  "status": "accepted",
+  "confirmationLevel": "accepted",
+  "statusHistory": [
+    { "state": "received", "time": "2026-10-18T08:50:10Z", "actor": "apx-operator" },
+    { "state": "accepted", "time": "2026-10-18T08:50:10Z", "actor": "lakeside-parcs" }
+  ]
+}
+```
+
+```http
+POST /v1/commands
+Idempotency-Key: cc-7822-reprint
+```
+
+<!-- apx:request POST /v1/commands -->
+```json
+{
+  "commandType": "reprintReceipt",
+  "target": { "id": "c1000000-0000-4000-8000-000000000003", "className": "SupplementalEquipment" },
+  "agent": "ai:lakeside-voicebot-02",
+  "agentType": "ai",
+  "reason": "receipt did not print after payment of T-61077",
+  "correlationId": "7c1d2e3f-4a5b-4c6d-8e7f-9a0b1c2d3e62",
+  "expiryTime": "2026-10-18T09:02:00Z"
+}
+```
+
+<!-- apx:response 202 -->
+```json
+{
+  "id": "d1000000-0000-4000-8000-000000000128",
+  "version": 2,
+  "commandType": "reprintReceipt",
+  "target": { "id": "c1000000-0000-4000-8000-000000000003", "className": "SupplementalEquipment" },
+  "requestedBy": { "id": "a1000000-0000-4000-8000-000000000001", "className": "Organisation" },
+  "agent": "ai:lakeside-voicebot-02",
+  "agentType": "ai",
+  "reason": "receipt did not print after payment of T-61077",
+  "correlationId": "7c1d2e3f-4a5b-4c6d-8e7f-9a0b1c2d3e62",
+  "expiryTime": "2026-10-18T09:02:00Z",
+  "priority": "normal",
+  "status": "accepted",
+  "confirmationLevel": "accepted",
+  "statusHistory": [
+    { "state": "received", "time": "2026-10-18T09:00:30Z", "actor": "apx-operator" },
+    { "state": "accepted", "time": "2026-10-18T09:00:30Z", "actor": "lakeside-parcs" }
+  ]
+}
+```
+
+Polled, the reprint says what it did:
+
+<!-- apx:request GET /v1/commands/d1000000-0000-4000-8000-000000000128 -->
+<!-- apx:response 200 -->
+```json
+{
+  "id": "d1000000-0000-4000-8000-000000000128",
+  "version": 5,
+  "commandType": "reprintReceipt",
+  "target": { "id": "c1000000-0000-4000-8000-000000000003", "className": "SupplementalEquipment" },
+  "requestedBy": { "id": "a1000000-0000-4000-8000-000000000001", "className": "Organisation" },
+  "agent": "ai:lakeside-voicebot-02",
+  "agentType": "ai",
+  "reason": "receipt did not print after payment of T-61077",
+  "correlationId": "7c1d2e3f-4a5b-4c6d-8e7f-9a0b1c2d3e62",
+  "expiryTime": "2026-10-18T09:02:00Z",
+  "priority": "normal",
+  "status": "succeeded",
+  "confirmationLevel": "physicallyConfirmed",
+  "statusHistory": [
+    { "state": "received", "time": "2026-10-18T09:00:30Z", "actor": "apx-operator" },
+    { "state": "accepted", "time": "2026-10-18T09:00:30Z", "actor": "lakeside-parcs" },
+    { "state": "dispatched", "time": "2026-10-18T09:00:31Z", "actor": "lakeside-parcs" },
+    { "state": "executing", "time": "2026-10-18T09:00:31Z", "actor": "pay-c1000000-0003" },
+    { "state": "succeeded", "time": "2026-10-18T09:00:34Z", "actor": "pay-c1000000-0003", "detail": "receipt for T-61077 printed; paper sensor ok" }
+  ]
+}
+```

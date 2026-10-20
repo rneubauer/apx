@@ -1065,3 +1065,122 @@ throttled like any other route:
   "instance": "/.well-known/apx-configuration"
 }
 ```
+
+---
+
+## DSC-17 — Which screens the vendor offers, and what each garage can actually do
+
+<!-- apx:scenario DSC-17 kind=happy ics=APX-DSC-01,APX-DSC-04,APX-DSC-05 -->
+
+**Given** the host now claims `apx-ui-launch` and `apx-site-config`, and
+the Lakeside console holds `apx.ui:launch apx.ui:read
+apx.siteconfig:read apx.cameras:view` besides its control scopes. **When**
+it calls discovery. **Then** `uiSurfaces` lists the vendor screens it
+may launch, with their display and launch modes and the actions each
+can report back (Part 25 §25.2); `placeCapabilities` says, per granted
+place, which commands, surfaces and features actually work there, so a
+console knows before the call that Lakeside's exit level has no
+`lostTicket` through the API but has the lane console (Part 16 §16.2).
+The camera features are listed because the token holds
+`apx.cameras:view`.
+
+<!-- apx:request GET /v1/discovery -->
+<!-- apx:response 200 -->
+<!-- apx:validate UiSurface at /uiSurfaces/0 -->
+```json
+{
+  "client": "console-lakeside",
+  "organisation": { "id": "a1000000-0000-4000-8000-000000000001", "className": "Organisation" },
+  "conformanceClasses": ["apx-data", "apx-events", "apx-control", "apx-alerts", "apx-discovery", "apx-resolution", "apx-ui-launch", "apx-site-config"],
+  "scopes": ["apx.data:read", "apx.control:read", "apx.control:execute", "apx.resolution:read", "apx.ui:launch", "apx.ui:read", "apx.siteconfig:read", "apx.cameras:view", "apx.subscriptions:manage"],
+  "places": ["b1000000-0000-4000-8000-000000000001"],
+  "endpoints": [
+    { "path": "/v1/commands", "methods": ["GET", "POST"] },
+    { "path": "/v1/commands/{id}", "methods": ["GET"] },
+    { "path": "/v1/devices", "methods": ["GET"] },
+    { "path": "/v1/lanes/{id}/current", "methods": ["GET"] },
+    { "path": "/v1/resolution/contexts", "methods": ["POST"] },
+    { "path": "/v1/ui/launches", "methods": ["GET", "POST"] },
+    { "path": "/v1/ui/launches/{id}", "methods": ["GET"] },
+    { "path": "/v1/equipment", "methods": ["GET"] },
+    { "path": "/v1/equipment/{id}", "methods": ["GET"] },
+    { "path": "/v1/comms-points", "methods": ["GET"] },
+    { "path": "/v1/comms-points/{id}", "methods": ["GET"] },
+    { "path": "/v1/identifiers:resolve", "methods": ["POST"] },
+    { "path": "/v1/cameras/{id}/views", "methods": ["POST"] },
+    { "path": "/v1/discovery", "methods": ["GET"] }
+  ],
+  "commandTypes": ["vendGate", "holdGateOpen", "closeLane", "pushRate", "applyValidation", "displayMessage", "ejectTicket", "cancelTransaction", "reprintReceipt"],
+  "features": ["negotiatedRates", "ticketMatching", "cameraViews", "cameraPlayback"],
+  "uiSurfaces": [
+    {
+      "surface": "lane.console",
+      "subjectClass": "VehicularAccess",
+      "displayModes": ["popup", "tab", "embed"],
+      "launchModes": ["handshake", "signedToken"],
+      "launchUrl": "https://ui.gatewise.example/launch",
+      "actions": ["lostTicket", "applyValidation", "vendGate", "pushRate"],
+      "places": [ { "id": "b1000000-0000-4000-8000-000000000001", "className": "Place" } ]
+    },
+    {
+      "surface": "session.detail",
+      "subjectClass": "Session",
+      "displayModes": ["popup", "tab"],
+      "launchModes": ["handshake"],
+      "actions": ["other"]
+    },
+    {
+      "surface": "place.console",
+      "displayModes": ["tab"],
+      "launchModes": ["handshake"],
+      "actions": ["setDeviceState", "restartDevice", "other"]
+    }
+  ],
+  "placeCapabilities": [
+    {
+      "place": "b1000000-0000-4000-8000-000000000001",
+      "commandTypes": ["vendGate", "holdGateOpen", "closeLane", "pushRate", "applyValidation", "displayMessage", "ejectTicket", "cancelTransaction", "reprintReceipt"],
+      "uiSurfaces": ["lane.console", "session.detail", "place.console"],
+      "features": ["negotiatedRates", "ticketMatching", "cameraViews", "cameraPlayback"]
+    }
+  ],
+  "topics": ["apx.control.command.status.v1", "apx.alert.raised.v1", "apx.ui.launch.changed.v1", "apx.ui.action.recorded.v1", "apx.equipment.changed.v1", "apx.commspoints.changed.v1"],
+  "rateLimits": { "requestsPerMinute": 300, "burst": 10 }
+}
+```
+
+The wallboard with `apx.control:read` only sees no surfaces it could
+launch and no camera features, since it holds neither scope:
+
+<!-- apx:request GET /v1/discovery -->
+<!-- apx:response 200 -->
+```json
+{
+  "client": "wall-lakeside",
+  "organisation": { "id": "a1000000-0000-4000-8000-000000000001", "className": "Organisation" },
+  "conformanceClasses": ["apx-data", "apx-events", "apx-control", "apx-discovery", "apx-ui-launch", "apx-site-config"],
+  "scopes": ["apx.control:read"],
+  "places": ["b1000000-0000-4000-8000-000000000001"],
+  "endpoints": [
+    { "path": "/v1/commands", "methods": ["GET"] },
+    { "path": "/v1/commands/{id}", "methods": ["GET"] },
+    { "path": "/v1/devices", "methods": ["GET"] },
+    { "path": "/v1/devices/{id}", "methods": ["GET"] },
+    { "path": "/v1/lanes/{id}/current", "methods": ["GET"] },
+    { "path": "/v1/discovery", "methods": ["GET"] }
+  ],
+  "commandTypes": [],
+  "features": ["negotiatedRates", "ticketMatching"],
+  "uiSurfaces": [],
+  "placeCapabilities": [
+    {
+      "place": "b1000000-0000-4000-8000-000000000001",
+      "commandTypes": [],
+      "uiSurfaces": [],
+      "features": ["negotiatedRates", "ticketMatching"]
+    }
+  ],
+  "topics": [],
+  "rateLimits": { "requestsPerMinute": 300, "burst": 10 }
+}
+```

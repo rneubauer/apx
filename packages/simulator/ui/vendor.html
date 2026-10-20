@@ -1,0 +1,67 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="color-scheme" content="light dark">
+  <title>Gatewise lane console (mock vendor screen)</title>
+  <link rel="stylesheet" href="app.css">
+  <style>
+    /* The vendor's own look: a different brand from the simulator, on purpose. */
+    :root { --vendor: #0b7a5e; }
+    body.vendor { max-width: 980px; margin: 0 auto; padding: 0 16px 48px; }
+    .vendor-bar { display: flex; align-items: center; gap: 12px; padding: 14px 0; border-bottom: 3px solid var(--vendor); margin-bottom: 18px; }
+    .vendor-bar .mark { font-weight: 800; letter-spacing: .04em; color: var(--vendor); font-size: 1.25rem; }
+    .vendor-bar .who { margin-left: auto; font-size: .9rem; opacity: .8; }
+    .vendor-grid { display: grid; grid-template-columns: 1.1fr .9fr; gap: 18px; }
+    @media (max-width: 760px) { .vendor-grid { grid-template-columns: 1fr; } }
+    .card { border: 1px solid var(--border, #d0d7de); border-radius: 10px; padding: 14px 16px; margin-bottom: 14px; background: var(--panel, transparent); }
+    .card h2 { margin: 0 0 8px; font-size: 1rem; }
+    .kv { display: grid; grid-template-columns: max-content 1fr; gap: 4px 12px; font-size: .92rem; }
+    .kv dt { opacity: .7; } .kv dd { margin: 0; font-family: Consolas, ui-monospace, monospace; }
+    .actions button { margin: 4px 6px 4px 0; }
+    .vendor .primary { background: var(--vendor); color: #fff; border-color: var(--vendor); }
+    .log { font-family: Consolas, ui-monospace, monospace; font-size: .82rem; white-space: pre-wrap; max-height: 420px; overflow: auto; }
+    .state { font-weight: 700; } .state.opened { color: var(--vendor); } .state.closed, .state.expired { color: #b35a00; }
+    .hint { font-size: .85rem; opacity: .75; }
+  </style>
+</head>
+<body class="vendor">
+  <header class="vendor-bar">
+    <span class="mark">GATEWISE</span><span>Lane console</span>
+    <span class="who" id="who">signed in by APX launch</span>
+  </header>
+
+  <div class="vendor-grid">
+    <section>
+      <div class="card">
+        <h2>This launch</h2>
+        <p class="hint" id="intro">Opening the single-use launch url…</p>
+        <dl class="kv" id="launch-kv"></dl>
+      </div>
+      <div class="card">
+        <h2>What the agent does here</h2>
+        <p class="hint">Every button is something an agent would do in the vendor's own screen. The screen reports it back to APX under its own client (<code>apx.ui:record</code>), so the call record and the PARCS stay in step (Part 25 §25.4).</p>
+        <div class="actions">
+          <button class="primary" data-action="lostTicket" data-summary="Lost ticket fee issued at the pay-in-lane terminal.">Issue lost ticket fee</button>
+          <button data-action="vendGate" data-summary="Gate vended from the lane console.">Vend gate</button>
+          <button data-action="reprintReceipt" data-summary="Receipt reprinted at the terminal.">Reprint receipt</button>
+          <button data-action="applyValidation" data-summary="Lakeside Cinema validation applied: 2 hours free." data-fields='{"/validation/provider":"Lakeside Cinema","/validation/amount":{"currencyType":"USD","currencyValue":8}}' data-unavailable='[{"field":"/validation/providerCode","reason":"notSupported"}]'>Apply merchant validation</button>
+          <button data-action="other" data-outcome="noAction" data-summary="Checked the lane; nothing further needed.">Looked, did nothing</button>
+        </div>
+        <div class="actions">
+          <button class="ghost" id="close">Close the screen (end the launch)</button>
+        </div>
+      </div>
+    </section>
+    <section>
+      <div class="card">
+        <h2>Reported back to APX</h2>
+        <div class="log" id="log">—</div>
+      </div>
+    </section>
+  </div>
+
+  <script type="module" src="js/vendor.js"></script>
+</body>
+</html>

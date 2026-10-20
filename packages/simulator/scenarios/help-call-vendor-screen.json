@@ -1,0 +1,150 @@
+{
+  "name": "Help call, vendor screen: the lost ticket is issued in the PARCS console and the record still matches",
+  "description": "A driver at Lakeside's exit lane 2 has lost the ticket. The PARCS vendor has no lostTicket through APX yet, but it has a good lane console. Part 17 shows the agent that this action lives in the vendor's screen; Part 25 launches that screen signed in, in one click, and whatever the agent does there comes back as the Command it would have been through the API, carrying the call's correlationId. Parts 17, 25 and 6.",
+  "world": "apx-ui-launch",
+  "token": "default",
+  "steps": [
+    {
+      "name": "Lakeside Garage, 14:00 on a Saturday",
+      "narration": "Lakeside's PARCS speaks APX for gate vends and device status, but the vendor has not built lostTicket through the API yet. Its own lane console does it well. The call center's console is the host; the vendor's screen is the surface.",
+      "clock": { "now": "2026-10-18T14:00:00Z" }
+    },
+    {
+      "name": "A car with no ticket at exit lane 2",
+      "narration": "The world acts first: the lane camera reads KTY-4410, the reader has nothing, and the driver presses the intercom.",
+      "inject": { "kind": "vehicleArrives", "lane": "b2…0002", "plate": "KTY-4410", "confidence": 0.96, "credential": null }
+    },
+    {
+      "name": "The agent resolves the call",
+      "narration": "Part 17: one call gives the agent the lane, what the camera saw, and what they may do. No entry was found by plate, so the issue is a lost ticket. The lost-ticket action is offered with execution type ui: do it in the vendor's screen, because the API cannot.",
+      "request": {
+        "method": "POST",
+        "path": "/v1/resolution/contexts",
+        "body": {
+          "interactionId": "interaction-961001",
+          "correlationId": "ca000000-0000-4000-8000-000000000101",
+          "channel": "intercom",
+          "lane": { "id": "b2…0002", "className": "VehicularAccess" }
+        }
+      },
+      "expect": {
+        "status": 201,
+        "body": {
+          "issue": { "code": "lostTicket" },
+          "allowedActions": [
+            { "action": "lostTicket", "allowed": true, "execution": { "type": "ui", "surface": "lane.console" } }
+          ]
+        }
+      },
+      "save": { "ctx": "$.id" }
+    },
+    {
+      "name": "The host asks for a launch",
+      "narration": "Part 25 handshake: with its normal access token in the Authorization header, the console asks for the vendor's lane console on this lane, names the agent and the call's correlationId, and says which fields it wants back. The answer is a single-use url that lives 60 seconds. The agent is signed in by the launch; there is no second login.",
+      "request": {
+        "method": "POST",
+        "path": "/v1/ui/launches",
+        "headers": { "Idempotency-Key": "cc-961001-launch" },
+        "body": {
+          "surface": "lane.console",
+          "subject": { "id": "b2…0002", "className": "VehicularAccess" },
+          "place": { "id": "b1…0001", "className": "Place" },
+          "lane": { "id": "b2…0002", "className": "VehicularAccess" },
+          "agent": "agent:j.okafor",
+          "agentType": "human",
+          "interactionId": "interaction-961001",
+          "correlationId": "ca000000-0000-4000-8000-000000000101",
+          "displayMode": "popup",
+          "returnFields": ["/ticketNumber", "/amountDue"]
+        }
+      },
+      "expect": { "status": 201, "body": { "status": "issued", "surface": "lane.console" } },
+      "save": { "launch": "$.id", "url": "$.url" }
+    },
+    {
+      "name": "The popup opens the url",
+      "narration": "The vendor's screen consumes the url: the launch moves to opened and the url is dead. On a live run, click 'Open the vendor screen' on the step above to drive the mock screen yourself; here the stage does it.",
+      "inject": { "kind": "uiLaunchOpen", "launch": "{launch}" }
+    },
+    {
+      "name": "The host sees the screen was opened",
+      "request": { "method": "GET", "path": "/v1/ui/launches/{launch}" },
+      "expect": { "status": 200, "body": { "status": "opened" } }
+    },
+    {
+      "name": "In the vendor's screen, the agent issues the lost-ticket fee",
+      "narration": "The screen reports it under the vendor's own client (apx.ui:record). The implementation records what was done as the lostTicket Command it would have been through the API, carrying the launch's correlationId and the agent (§25.4 rule 1); the action record names that Command as its result.",
+      "request": {
+        "method": "POST",
+        "path": "/v1/ui/launches/{launch}/actions",
+        "token": "gatewise-ui",
+        "body": {
+          "action": "lostTicket",
+          "outcome": "completed",
+          "occurredAt": "2026-10-18T14:03:20Z",
+          "agent": "agent:j.okafor",
+          "summary": "Lost ticket fee issued at the pay-in-lane terminal."
+        }
+      },
+      "expect": { "status": 201, "body": { "action": "lostTicket", "outcome": "completed", "result": { "className": "Command" } } },
+      "save": { "cmd": "$.result.id" }
+    },
+    {
+      "name": "Five seconds later",
+      "narration": "The PARCS dispatches the Command and the terminal issues the ticket.",
+      "clock": { "advance": "PT5S" }
+    },
+    {
+      "name": "The Command is an ordinary Command",
+      "narration": "Same lifecycle, same history, same correlationId as the call. A report on the call side and a report on the PARCS side now name the same thing.",
+      "request": { "method": "GET", "path": "/v1/commands/{cmd}" },
+      "expect": { "status": 200, "body": { "commandType": "lostTicket", "status": "succeeded", "correlationId": "ca000000-0000-4000-8000-000000000101", "agent": "agent:j.okafor" } }
+    },
+    {
+      "name": "The launch record carries the fields the host asked for",
+      "narration": "The ticket number and the amount due were filled from the Command's result, keyed by the paths the host named in returnFields.",
+      "request": { "method": "GET", "path": "/v1/ui/launches/{launch}" },
+      "expect": { "status": 200, "body": { "actions": [ { "action": "lostTicket", "fields": {} } ] } }
+    },
+    {
+      "name": "The screen closes the launch",
+      "request": { "method": "POST", "path": "/v1/ui/launches/{launch}/close", "token": "gatewise-ui" },
+      "expect": { "status": 200, "body": { "status": "closed" } }
+    },
+    {
+      "name": "The call is recorded",
+      "narration": "Part 17 §17.6: the support interaction references the launch, its action record and the Command, and ends with an outcome every operator spells the same way.",
+      "request": {
+        "method": "POST",
+        "path": "/v1/support/interactions",
+        "body": {
+          "channel": "intercom",
+          "agentType": "human",
+          "agent": "agent:j.okafor",
+          "startedAt": "2026-10-18T14:00:30Z",
+          "endedAt": "2026-10-18T14:04:10Z",
+          "place": { "id": "b1…0001", "className": "Place" },
+          "issue": { "code": "lostTicket", "display": "Lost ticket" },
+          "summary": "Lost ticket at exit lane 2; fee issued in the Gatewise lane console; paid; exited.",
+          "actions": [
+            { "id": "{launch}", "className": "UiLaunch" },
+            { "id": "{cmd}", "className": "Command" }
+          ],
+          "interactionId": "interaction-961001",
+          "resolution": { "code": "resolved", "display": "Lost ticket issued and paid" },
+          "correlationId": "ca000000-0000-4000-8000-000000000101"
+        }
+      },
+      "expect": { "status": 201, "body": { "resolution": { "code": "resolved" } } }
+    },
+    {
+      "name": "Subscribers followed the launch",
+      "narration": "issued, opened, closed: every transition went out as apx.ui.launch.changed.v1, and the action as apx.ui.action.recorded.v1.",
+      "events": { "type": "apx.ui.launch.changed.v1", "min": 3 }
+    },
+    {
+      "name": "And the Command's own transitions",
+      "events": { "type": "apx.control.command.status.v1", "min": 3 }
+    }
+  ]
+}

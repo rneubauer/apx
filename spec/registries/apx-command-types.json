@@ -1,6 +1,6 @@
 {
   "id": "0b1f8a4e-1c2d-4e5f-9a6b-7c8d9e0f1a2b",
-  "version": 5,
+  "version": 6,
   "name": "apx-command-types",
   "creator": { "id": "a1000000-0000-4000-8000-000000000001", "className": "Organisation" },
   "locator": "https://apx-standard.org/registries/apx-command-types.json",
@@ -22,6 +22,9 @@
     { "definedValue": "matchTicket", "entryDescription": "Bind the current transaction at the target lane to the open Session referenced in parameters (ticket matching), pricing the exit from that session's true entry time; the command's agent is who made the match.", "entryIndex": 14 },
     { "definedValue": "startCharging", "entryDescription": "Remote-start charging on the target ElectricChargingEquipment for a plugged-in vehicle whose own authorization failed; parameters connectorIndex and chargingSession (Reference), or an authorization object for the server to open one (Part 23 §23.9).", "entryIndex": 15 },
     { "definedValue": "stopCharging", "entryDescription": "Remote-stop charging on the target ElectricChargingEquipment; parameters connectorIndex and chargingSession; the bridge reports chargingEnded with stopReason remote (Part 23 §23.9).", "entryIndex": 16 },
-    { "definedValue": "unlockConnector", "entryDescription": "Release a cable the target ElectricChargingEquipment will not let go of; parameter connectorIndex; physicallyConfirmed only when the charger reported the connector unlocked or the bay camera saw the cable move (Part 23 §23.9).", "entryIndex": 17 }
+    { "definedValue": "unlockConnector", "entryDescription": "Release a cable the target ElectricChargingEquipment will not let go of; parameter connectorIndex; physicallyConfirmed only when the charger reported the connector unlocked or the bay camera saw the cable move (Part 23 §23.9).", "entryIndex": 17 },
+    { "definedValue": "ejectTicket", "entryDescription": "Return the ticket or card held by the target device (a ticket stuck on cancel, a card the reader kept) to the customer (Part 6 §6.1).", "entryIndex": 18 },
+    { "definedValue": "cancelTransaction", "entryDescription": "Abandon the transaction in progress at the target device and return it to idle, releasing any media it holds (Part 6 §6.1).", "entryIndex": 19 },
+    { "definedValue": "reprintReceipt", "entryDescription": "Print the receipt of the last, or the referenced, payment again at the target device; parameter payment (Part 6 §6.1, Part 13 §13.1b).", "entryIndex": 20 }
   ]
 }
