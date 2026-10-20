@@ -28,7 +28,7 @@
     "submission:build": "node tools/build-apds-submission.mjs",
     "submission:check": "node tools/build-apds-submission.mjs --check",
     "apxdocs:build": "node tools/build-apx-docs.mjs",
-    "apxdocs:check": "node tools/build-apx-docs.mjs --check",
+    "apxdocs:check": "node tools/build-apx-docs.mjs --check && node tools/check-apx-docs-coverage.mjs",
     "apxdocs:pdf": "node tools/build-apds-submission-pdf.mjs apx-specification",
     "apxdocs:html": "node tools/build-apx-docs-html.mjs"
   },

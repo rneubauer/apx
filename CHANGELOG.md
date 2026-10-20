@@ -135,6 +135,17 @@ growing additively.
   and `docs/apx-specification/src/` by `tools/build-apx-docs.mjs`;
   `npm test` and CI run it with `--check`. `npm run apxdocs:pdf` renders
   print-ready PDFs.
+- `tools/check-apx-docs-coverage.mjs`, run by `apxdocs:check`: reads the
+  bundle and the registries directly and fails if 03 Data Dictionary lacks
+  any APX class, member, enumeration value or code-list entry (today 150
+  classes, 1,638 members, 515 values, 294 entries, all present).
+- Print editions closer to APDS 4.1: covers without running header or
+  footer, class diagrams at their natural size instead of stretched to the
+  page width, and Data Dictionary tables on landscape pages from clause
+  A.1 with the APDS column widths and each class name on its first row
+  only (the web edition gets the same widths).
+- Partner/vendor guide: a section on offering your own screens through
+  Part 25 UI launch (surfaces, automatic login, reporting actions back).
 - Docs overlay: the Charging tag joins the "Vehicles and access" group, so
   the reference navigation shows the charging routes (editorial).
 - APDS change requests: the suggestion to add `GET`/`PUT
