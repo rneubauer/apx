@@ -26,7 +26,9 @@ jobs:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
         with:
-          node-version: 20
+          # 22: the PDF printer talks to Chrome over the built-in WebSocket,
+          # which Node 20 does not have.
+          node-version: 22
           cache: npm
       - run: npm ci
       - name: Rebuild bundles (never trust, always verify)
@@ -35,15 +37,20 @@ jobs:
         run: npm run docs:build
       - name: Build the in-browser simulator (site/simulator/)
         run: npm run sim:web
-      # Print-ready PDFs of the six specification documents. Chrome is
-      # preinstalled on the Ubuntu runner and the diagrams need the network;
-      # a renderer hiccup must never block the site, so this step may fail.
-      - name: Render the specification documents to PDF
+      # Print editions of both document sets: site/apx-specification/ (the
+      # six APX Specification documents) and site/apds-submission/ (the APX
+      # Data Specification the specification index links to). Each set's
+      # HTML is written before printing, so the pages exist even when the
+      # PDFs do not. The index is built again afterwards so its Print
+      # column links the PDFs. Chrome is preinstalled on the Ubuntu runner
+      # and the diagrams need the network; a renderer hiccup must never
+      # block the site, so this step may fail.
+      - name: Render the document sets to PDF
         continue-on-error: true
         run: |
+          node tools/build-apds-submission-pdf.mjs apds-submission
           npm run apxdocs:pdf
-          mkdir -p site/specification
-          cp site/apx-specification/*.pdf site/specification/
+          npm run apxdocs:html
       - uses: actions/configure-pages@v5
         with:
           enablement: true

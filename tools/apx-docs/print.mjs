@@ -354,6 +354,7 @@ async function withCleanCover(pdf, cover) {
  * job waits until every .mermaid holds an svg.
  */
 export async function printJobs(jobs) {
+  if (typeof WebSocket === 'undefined') throw new Error('printing needs Node 22 or later (it uses the built-in WebSocket)');
   const browser = findBrowser();
   const port = await freePort();
   const proc = spawn(browser, [`--remote-debugging-port=${port}`, '--headless=new', '--disable-gpu', '--no-first-run', '--no-default-browser-check',
