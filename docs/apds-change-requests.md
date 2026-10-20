@@ -25,7 +25,7 @@ any item the group would like.
 
 ## Part A — Corrections to apds-api-4.1.yaml
 
-Fourteen items, each filed with the offending snippet and a minimal
+Fourteen items, each filed with the relevant snippet and a minimal
 suggested fix. Verified against `parkingdata/spec` at `e10dcfc`,
 byte-identical to the published 4.1 document.
 
@@ -62,7 +62,6 @@ a request and only `apds-api-4.1.yaml` lacks it, the row now says so.
 
 | Suggestion | Why it helps | APX today |
 | --- | --- | --- |
-| **Read and correct one Observation by id** (`GET` / `PUT /observations/{id}`) | APDS 4.1 has no route that returns or replaces a single Observation, so an LPR read cannot be fetched or corrected after the fact | `GET /v1/lpr/reads?observation=` and `PUT /v1/lpr/reads/{observation}/access-event` (Part 13 §13.3a) |
 | **Payment outcomes on `Payment`**: a status (approved / declined / reversed) and the means of payment per payment | APDS `Payment` records only collected money; declines and how a customer paid have no home. (A `refund` value is already in the Data Dictionary's `PaymentTypeEnum`; only the API document lacks it.) | `PaymentRecord` alongside, materialized into `Payment` once captured (Part 13 §13.6) |
 | **Event types for access and corrections** in `EventTypeEnum` (a credential presented or refused at a lane; an observation updated) | Subscribers cannot hear a lane denial or a corrected read through APDS events | APX topics `apx.credentials.access.v1`, `apx.data.observation.updated.v1` (Parts 8, 21) |
 | **`application/problem+json` (RFC 9457) as an error option** on native routes | Clients get one machine-readable error shape across APDS and APX; today native 409s carry only `ResponseStatus` | Offered when the client sends `Accept: application/problem+json` (Part 5 §5.1a, Part 12) |

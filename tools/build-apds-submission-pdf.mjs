@@ -1,11 +1,15 @@
 #!/usr/bin/env node
 /**
- * Renders docs/apds-submission/0[1-4]-*.md to print-ready HTML and PDF in
- * site/apds-submission/ (build output, not committed), for sending to the
- * APDS committee. Diagrams are drawn by Mermaid in a headless browser, so
- * the first run needs network access to cdn.jsdelivr.net.
+ * Renders a document set to print-ready HTML and PDF in site/<set>/ (build
+ * output, not committed), for sending to the APDS committee:
  *
- *   node tools/build-apds-submission-pdf.mjs
+ *   apds-submission    docs/apds-submission/0[1-4]-*.md (proposed data elements)
+ *   apx-specification  docs/apx-specification/0[1-6]-*.md (the full APX set)
+ *
+ * Diagrams are drawn by Mermaid in a headless browser, so the first run
+ * needs network access to cdn.jsdelivr.net.
+ *
+ *   node tools/build-apds-submission-pdf.mjs [apds-submission|apx-specification]
  *
  * Uses Edge or Chrome (set BROWSER to override the path). Optional: not
  * part of npm test.
@@ -17,8 +21,14 @@ import { execFileSync } from 'node:child_process';
 import { marked } from 'marked';
 
 const ROOT = join(dirname(fileURLToPath(import.meta.url)), '..');
-const SRC = join(ROOT, 'docs', 'apds-submission');
-const OUT = join(ROOT, 'site', 'apds-submission');
+const SETS = {
+  'apds-submission': { prefix: 'APX-Data-Specification', keepNumber: false },
+  'apx-specification': { prefix: 'APX-Specification', keepNumber: true },
+};
+const SET = process.argv[2] ?? 'apds-submission';
+if (!SETS[SET]) throw new Error(`Unknown document set "${SET}"; use one of ${Object.keys(SETS).join(', ')}.`);
+const SRC = join(ROOT, 'docs', SET);
+const OUT = join(ROOT, 'site', SET);
 const MERMAID = 'https://cdn.jsdelivr.net/npm/mermaid@10.9.1/dist/mermaid.min.js';
 const RENDER_BUDGET_MS = '20000';
 const BROWSERS = [
@@ -55,12 +65,12 @@ function findBrowser() {
 function toHtml(md) {
   const body = marked.parse(md.replace(/^<!--.*?-->\s*/s, ''), { mangle: false, headerIds: true })
     .replace(/<pre><code class="language-mermaid">([\s\S]*?)<\/code><\/pre>/g, (_, code) => `<div class="mermaid">${code}</div>`);
-  const title = (md.match(/^# (.+)$/m) ?? [, 'APX Data Specification'])[1];
-  const edition = (md.match(/^\*(Proposed additions.+)\*$/m) ?? [, ''])[1];
+  const title = (md.match(/^# (.+)$/m) ?? [, 'APX'])[1];
+  const edition = (md.match(/^# .+\n+\*(.+)\*$/m) ?? [, ''])[1];
   return `<!doctype html><html lang="en"><head><meta charset="utf-8"><title>${title}</title>
 <style>${CSS}</style></head><body>
-<section class="cover"><h1>${title.replace('APX Data Specification: ', 'APX Data Specification<br>')}</h1><p>${edition}</p></section>
-${body.replace(/<h1[^>]*>.*?<\/h1>\s*(<p><em>Proposed additions.*?<\/em><\/p>)?/s, '')}
+<section class="cover"><h1>${title.replace(': ', '<br>')}</h1><p>${edition}</p></section>
+${body.replace(/<h1[^>]*>.*?<\/h1>\s*(<p><em>.*?<\/em><\/p>)?/s, '')}
 <script src="${MERMAID}"></script>
 <script>mermaid.initialize({ startOnLoad: true, theme: 'neutral', securityLevel: 'strict' });</script>
 </body></html>`;
@@ -78,12 +88,13 @@ function main() {
   mkdirSync(OUT, { recursive: true });
   const browser = findBrowser();
   const docs = readdirSync(SRC).filter((f) => /^0\d-.*\.md$/.test(f)).sort();
+  const { prefix, keepNumber } = SETS[SET];
   for (const f of docs) {
     const html = join(OUT, `${basename(f, '.md')}.html`);
-    const pdf = join(OUT, `APX-Data-Specification-${basename(f, '.md').slice(3)}.pdf`);
+    const pdf = join(OUT, `${prefix}-${basename(f, '.md').slice(keepNumber ? 0 : 3)}.pdf`);
     writeFileSync(html, toHtml(readFileSync(join(SRC, f), 'utf8')));
     printPdf(browser, html, pdf);
-    console.log(`[apds-submission-pdf] ${pdf}`);
+    console.log(`[pdf] ${pdf}`);
   }
 }
 

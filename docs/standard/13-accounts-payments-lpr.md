@@ -399,7 +399,8 @@ LPR analytics. APX closes both gaps (registry `apx-topics`):
   through `PUT /v1/lpr/reads/{observation}/access-event` (§13.3a(4)),
   when a reviewer decides its plate through
   `PUT /v1/lpr/reads/{observation}/plate` (§13.3a(4a)), and on any other
-  replacement an implementation supports. Event `data`
+  replacement an implementation supports, including native
+  `PUT /observations/{id}` (Part 5). Event `data`
   is the APDS Observation as it now stands; `subject` and place binding
   are those of `observation.created.v1`. Implementations claiming
   `apx-lpr` MUST publish it; consumers key on the Observation id and keep
