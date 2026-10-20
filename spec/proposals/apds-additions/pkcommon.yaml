@@ -1,0 +1,105 @@
+domain: PkCommon
+order: 8
+summary: >-
+  One addition to RecordType: the system that first created a record, when the record reaches a
+  receiver through another system. Open code lists need no new element, because APDS
+  ReferencedCodeListEntry and UserDefinedCodeList already provide the pattern. Two shared enumerations are added: one
+  for the channel through which an action was taken, and one for why a record is no longer in use.
+  Two related gaps in APDS 4.1 common classes are offered in the separate list of suggested
+  corrections and are not repeated here.
+packages:
+  - name: CommonClasses
+    location: D2Payload/Extension/Parking/PkCommon/CommonClasses
+    status: existing
+    classes:
+      - name: RecordType
+        change: extend
+        designation: Record type
+        definition: A class defining information relating to a specific record.
+        stereotype: D2Class
+        abstract: false
+        parent: null
+        level: B
+        tier: 3
+        apx: APX Part 18 §18.6 RecordInfo.origin
+        rationale: >-
+          When records pass through an aggregator or a regional hub, a receiver can still tell which
+          system first created each one.
+        attributes:
+          - name: origin
+            designation: Origin
+            definition: >-
+              Identifier of the system that first created the record, when it differs from the
+              system distributing it.
+            multiplicity: 0..1
+            type: PkCommon.String
+        associations: []
+    enumerations:
+      - name: RecordEndReasonEnum
+        change: new
+        designation: Record end reason
+        definition: Why a record that was in use is no longer in use, beyond what its Validity already says.
+        tier: 2
+        apx: APX Parts 19, 20 and 24 status values
+        rationale: >-
+          One shared list for the end of signage, programmes, plate lists and policies, so the
+          active, planned and suspended states come from PkCommon.Validity and only the end needs a
+          code.
+        values:
+          - name: superseded
+            designation: Superseded
+            definition: Replaced by a newer record that now applies.
+          - name: retired
+            designation: Retired
+            definition: Withdrawn from use, or physically removed, without a replacement.
+      - name: InteractionChannelEnum
+        change: new
+        designation: Interaction channel
+        definition: >-
+          The channel through which a customer, merchant, member of staff or system carried out an
+          action such as a payment, a validation, a request or a contact.
+        tier: 1
+        apx: APX Parts 13, 17, 20 and 22 channel values
+        rationale: >-
+          One shared list replaces separate channel lists for payments, validations, valet requests
+          and customer contacts, so the same channel has the same code everywhere.
+        values:
+          - name: lane
+            designation: Lane
+            definition: At equipment in an entry or exit lane.
+          - name: payStation
+            designation: Pay station
+            definition: At a payment machine.
+          - name: kiosk
+            designation: Kiosk
+            definition: At a self-service kiosk other than a payment machine.
+          - name: attendant
+            designation: Attendant
+            definition: In person with a member of staff on site.
+          - name: contactCentre
+            designation: Contact centre
+            definition: With a person at a remote contact centre, by phone or other means.
+          - name: automatedVoice
+            designation: Automated voice
+            definition: With an automated voice service.
+          - name: mobileApp
+            designation: Mobile app
+            definition: In a mobile application, including a merchant application.
+          - name: web
+            designation: Web
+            definition: On a website.
+          - name: textMessage
+            designation: Text message
+            definition: By text message.
+          - name: chat
+            designation: Chat
+            definition: By online chat.
+          - name: email
+            designation: Email
+            definition: By email.
+          - name: systemInterface
+            designation: System interface
+            definition: By one system acting directly on another, without a person at a channel.
+          - name: other
+            designation: Other
+            definition: Any other channel.

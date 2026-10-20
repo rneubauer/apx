@@ -1,0 +1,301 @@
+domain: Place
+order: 1
+summary: >-
+  Adds what an operator needs to describe how the equipment in a Place is working right now, which
+  way the licence plate cameras on an access lane face, and what is posted on the signs at a Place.
+  It also suggests four lane-equipment values for EquipmentTypeEnum. Equipment status is kept in its
+  own record, apart from the static Place description, for the same reason APDS keeps Demand apart
+  from Supply: it changes far more often.
+packages:
+  - name: SupplementalFacility
+    location: D2Payload/Extension/Parking/Place/PlaceHierarchy/IdentifiedArea/SupplementalFacility
+    status: existing
+    classes:
+      - name: EquipmentStatus
+        change: new
+        designation: Equipment status
+        definition: >-
+          The operational state of one item of supplemental equipment at a point in time, reported
+          separately from the description of the equipment.
+        stereotype: D2Class
+        abstract: false
+        parent: null
+        level: B
+        tier: 1
+        apx: APX Part 6 §6.4 DeviceStatus
+        rationale: >-
+          Lets an operator, a monitoring service and an enforcement or customer-service partner
+          share whether a gate, pay machine, camera or charger is working, without resending the
+          Place hierarchy.
+        attributes:
+          - name: equipmentId
+            designation: Equipment id
+            definition: Reference to the supplemental equipment whose state is reported.
+            multiplicity: 1..1
+            type: PkCommon.Reference (Place.SupplementalEquipment)
+          - name: equipmentStatus
+            designation: Equipment status
+            definition: The operational state of the equipment.
+            multiplicity: 1..1
+            type: Place.EquipmentStatusEnum
+          - name: otherEquipmentStatus
+            designation: Other equipment status
+            definition: A state taken from a user-defined code list, used when equipmentStatus is 'other'.
+            multiplicity: 0..1
+            type: PkCommon.ReferencedCodeListEntry
+          - name: statusChangeTime
+            designation: Status change time
+            definition: The date/time at which the equipment entered the reported state.
+            multiplicity: 0..1
+            type: PkCommon.DateTime
+          - name: lastCommunicationTime
+            designation: Last communication
+            definition: The date/time at which the equipment was last heard from by the reporting system.
+            multiplicity: 0..1
+            type: PkCommon.DateTime
+        associations:
+          - end: recordType
+            designation: Record type
+            definition: Record type for the associated EquipmentStatus
+            multiplicity: 0..1
+            target: PkCommon.RecordType
+    enumerations:
+      - name: EquipmentStatusEnum
+        change: new
+        designation: Equipment status
+        definition: The operational state of an item of supplemental equipment.
+        tier: 1
+        apx: APX Part 11 code list (device states)
+        rationale: >-
+          APDS 4.1 defines RefillPointStatusEnum for refill points only. This list carries the same
+          idea to all equipment and reuses its literals (available, occupied, blocked, faulted,
+          unknown) where the meaning is the same.
+        values:
+          - name: available
+            designation: Available
+            definition: The equipment is operating and ready for use.
+          - name: occupied
+            designation: Occupied
+            definition: The equipment is operating and currently serving a vehicle or a transaction.
+          - name: blocked
+            designation: Blocked
+            definition: >-
+              The equipment is operating but cannot be reached or used because of a physical
+              obstruction, e.g. a vehicle.
+          - name: closed
+            designation: Closed
+            definition: >-
+              The equipment is not operating for a planned reason, such as closed hours or a
+              maintenance window.
+          - name: outOfService
+            designation: Out of service
+            definition: The equipment has been taken out of service by the operator.
+          - name: faulted
+            designation: Faulted
+            definition: The equipment reports a fault that needs attention.
+          - name: unknown
+            designation: Unknown
+            definition: >-
+              The state of the equipment cannot be determined, e.g. because communication with it
+              has been lost.
+          - name: other
+            designation: Other
+            definition: Some other state. Use 'otherEquipmentStatus' to specify it.
+      - name: EquipmentTypeEnum
+        change: extend
+        designation: Equipment type
+        definition: Types of equipment.
+        tier: 1
+        apx: APX Part 6 §6.4 device references
+        rationale: >-
+          Off-street sites could type their lane equipment with APDS names. APDS 4.1 already has
+          lprCamera, occupancySensor, paymentMachine and the door values; these four complete a
+          typical access lane.
+        values:
+          - name: barrier
+            designation: Barrier
+            definition: A lifting arm or similar barrier that opens and closes a vehicular access lane.
+          - name: gate
+            designation: Gate
+            definition: >-
+              A sliding, swinging or rolling gate or door that opens and closes a vehicular access
+              point.
+          - name: ticketDispenser
+            designation: Ticket dispenser
+            definition: >-
+              A machine at an entry lane that issues a ticket or other credential to start a
+              Session.
+          - name: intercom
+            designation: Intercom
+            definition: >-
+              A call point at a lane or machine that connects a customer with an attendant by voice
+              or video.
+  - name: VehicularAccess
+    location: D2Payload/Extension/Parking/Place/PlaceHierarchy/IdentifiedArea/VehicularAccess
+    status: existing
+    classes:
+      - name: VehicularAccess
+        change: extend
+        designation: Vehicular access
+        definition: A specialisation of an identifiedArea defining a VehicularAccess areas.
+        stereotype: D2Class
+        abstract: false
+        parent: Place.IdentifiedArea
+        level: B
+        tier: 2
+        apx: APX Part 13 §13.3a LaneCameras
+        rationale: >-
+          Lets a receiving system tell entering from exiting traffic from which camera read the
+          plate, without the camera vendor's own lane set-up.
+        attributes: []
+        associations:
+          - end: laneCamera
+            designation: Lane camera
+            definition: Lane camera for the associated VehicularAccess
+            multiplicity: 0..*
+            target: Place.LaneCamera
+      - name: LaneCamera
+        change: new
+        designation: Lane camera
+        definition: >-
+          A licence plate camera that observes a vehicular access, and the direction it faces
+          relative to the Place.
+        stereotype: D2Class
+        abstract: false
+        parent: null
+        level: B
+        tier: 2
+        apx: APX Part 13 §13.3a LaneCameras.cameras
+        rationale: >-
+          Ties the cameraID carried on Observation images to a lane and a facing, so the direction
+          of travel of an observed vehicle can be understood.
+        attributes:
+          - name: cameraId
+            designation: Camera id
+            definition: >-
+              Identification code of the camera, as given in Image.cameraID on its observations;
+              unique within the Place.
+            multiplicity: 1..1
+            type: PkCommon.String
+          - name: facing
+            designation: Facing
+            definition: Whether the camera looks into or out of the Place.
+            multiplicity: 1..1
+            type: Place.CameraFacingEnum
+        associations: []
+    enumerations:
+      - name: CameraFacingEnum
+        change: new
+        designation: Camera facing
+        definition: The direction a lane camera faces relative to the Place it serves.
+        tier: 2
+        apx: APX Part 13 §13.3a LaneCameras
+        rationale: >-
+          Facing is stated relative to the Place, not the lane mode, so it stays true on reversible
+          lanes.
+        values:
+          - name: inward
+            designation: Inward
+            definition: The camera looks into the Place, the way entering traffic travels.
+          - name: outward
+            designation: Outward
+            definition: The camera looks out of the Place, the way exiting traffic travels.
+  - name: Signage
+    location: D2Payload/Extension/Parking/Place/Signage
+    status: new
+    classes:
+      - name: Signage
+        change: new
+        designation: Signage
+        definition: >-
+          A record of a sign posted at a Place, its wording, where it stands and when it was in
+          force.
+        stereotype: D2VersionedIdentifiable
+        abstract: false
+        parent: null
+        level: B
+        tier: 2
+        apx: APX Part 19 §19.11 Signage
+        rationale: >-
+          Lets an operator show what a sign said on a given day, for customer information and as
+          evidence when a violation is appealed.
+        attributes:
+          - name: elementId
+            designation: Element id
+            definition: >-
+              Reference to the element within the Place hierarchy that the sign governs; the sign
+              applies to that element and the elements below it.
+            multiplicity: 1..1
+            type: PkCommon.VersionedReference (Place.HierarchyElementGeneral)
+          - name: signText
+            designation: Sign text
+            definition: The wording posted on the sign, verbatim, in each language shown.
+            multiplicity: 1..1
+            type: PkCommon.MultilingualString
+          - name: signType
+            designation: Sign type
+            definition: The kind of sign.
+            multiplicity: 0..1
+            type: Place.SignTypeEnum
+          - name: otherSignType
+            designation: Other sign type
+            definition: Any other kind of sign, if enumeration literal 'other' is used.
+            multiplicity: 0..1
+            type: PkCommon.MultilingualString
+          - name: photoUrl
+            designation: Photo URL
+            definition: >-
+              Specifies a Universal resource locator (URL) at which a photo of the sign as posted
+              can be found.
+            multiplicity: 0..1
+            type: PkCommon.Url
+          - name: endReason
+            designation: End reason
+            definition: Why the sign is no longer in use, when it has ended.
+            multiplicity: 0..1
+            type: PkCommon.RecordEndReasonEnum
+        associations:
+          - end: validity
+            designation: Validity
+            definition: >-
+              Validity for the associated Signage: when it applies and whether it is active, planned
+              or suspended.
+            multiplicity: 1..1
+            target: PkCommon.Validity
+          - end: location
+            designation: Location
+            definition: Location for the associated Signage
+            multiplicity: 0..1
+            target: PkCommon.PointLocation
+          - end: recordType
+            designation: Record type
+            definition: Record type for the associated Signage
+            multiplicity: 0..1
+            target: PkCommon.RecordType
+    enumerations:
+      - name: SignTypeEnum
+        change: new
+        designation: Sign type
+        definition: The kind of sign posted at a Place.
+        tier: 2
+        apx: APX Part 19 §19.11 Signage.signType
+        rationale: Lets receivers tell an entrance sign from a rates board or a tow-away notice.
+        values:
+          - name: entrance
+            designation: Entrance
+            definition: A sign at an entrance to the Place stating its terms of use.
+          - name: paymentMachine
+            designation: Payment machine
+            definition: A sign on or beside a payment machine.
+          - name: perSpace
+            designation: Per space
+            definition: A sign at an individual space or group of spaces.
+          - name: ratesBoard
+            designation: Rates board
+            definition: A sign showing the rates charged.
+          - name: towAway
+            designation: Tow away
+            definition: A sign warning that vehicles may be removed.
+          - name: other
+            designation: Other
+            definition: Some other kind of sign.

@@ -1,0 +1,327 @@
+domain: Operations
+order: 10
+summary: >-
+  Use Case C.2.2 lists transaction exceptions and space statuses that an operation must act on, and
+  APDS 4.1 describes the places, equipment, sessions and rights they concern, but it has no class
+  for the operational condition itself. This new domain adds the Alert: a condition at a place or
+  piece of equipment that needs attention, with its type, severity and lifecycle. It also offers,
+  for discussion only, a SupportInteraction record of one customer-service contact, which may sit
+  outside the scope APDS sets itself.
+packages:
+  - name: Operations
+    location: D2Payload/Extension/Parking/Operations
+    status: new
+    classes:
+      - name: Alert
+        change: new
+        designation: Alert
+        definition: >-
+          An operational condition at an element of a Place or a piece of equipment that needs
+          attention.
+        stereotype: D2VersionedIdentifiable
+        abstract: false
+        parent: null
+        level: C
+        tier: 2
+        apx: APX Part 7 §7.1 Alert
+        rationale: >-
+          Lets equipment, operators, enforcement providers and monitoring centres share the same
+          conditions, such as a device fault or a vehicle in the wrong space, and see when each was
+          dealt with.
+        attributes:
+          - name: alertType
+            designation: Alert type
+            definition: The kind of condition.
+            multiplicity: 1..1
+            type: Operations.AlertTypeEnum
+          - name: severity
+            designation: Severity
+            definition: How serious the condition is.
+            multiplicity: 1..1
+            type: Operations.AlertSeverityEnum
+          - name: alertStatus
+            designation: Alert status
+            definition: The current state of the alert in its lifecycle.
+            multiplicity: 1..1
+            type: Operations.AlertStatusEnum
+          - name: detectionTime
+            designation: Detection time
+            definition: The date/time the condition was detected.
+            multiplicity: 1..1
+            type: PkCommon.DateTime
+          - name: occurrenceTime
+            designation: Occurrence time
+            definition: The date/time the condition actually began, which may precede its detection.
+            multiplicity: 0..1
+            type: PkCommon.DateTime
+          - name: expiryTime
+            designation: Expiry time
+            definition: The date/time after which the alert lapses if it has not been resolved.
+            multiplicity: 0..1
+            type: PkCommon.DateTime
+          - name: elementId
+            designation: Place
+            definition: The element of the Place hierarchy where the condition was detected.
+            multiplicity: 0..1
+            type: PkCommon.VersionedReference (Place.HierarchyElementGeneral)
+          - name: equipmentId
+            designation: Source equipment
+            definition: The SupplementalEquipment that reported or is affected by the condition.
+            multiplicity: 0..1
+            type: PkCommon.Reference (Place.SupplementalEquipment)
+          - name: relatedEntityId
+            designation: Related entity
+            definition: The record the condition concerns, such as a Session, an AssignedRight or a Violation.
+            multiplicity: 0..1
+            type: PkCommon.Reference
+          - name: description
+            designation: Description
+            definition: A human-readable description of the condition.
+            multiplicity: 0..1
+            type: PkCommon.MultilingualString
+      - name: SupportInteraction
+        change: new
+        designation: Support interaction
+        definition: One customer-service contact with a person or an automated agent about a parking matter.
+        stereotype: D2VersionedIdentifiable
+        abstract: false
+        parent: null
+        level: C
+        tier: 3
+        apx: APX Part 17 §17.6 SupportInteraction
+        rationale: >-
+          Lets a help desk, an intercom service and an operator see earlier contacts about the same
+          session or customer; offered for discussion, as it may lie outside parking data.
+        attributes:
+          - name: channel
+            designation: Channel
+            definition: How the contact was made.
+            multiplicity: 1..1
+            type: PkCommon.InteractionChannelEnum
+          - name: agentType
+            designation: Agent type
+            definition: Whether the contact was handled by a person or an automated agent.
+            multiplicity: 1..1
+            type: Operations.SupportAgentTypeEnum
+          - name: startTime
+            designation: Start time
+            definition: The date/time the contact began.
+            multiplicity: 1..1
+            type: PkCommon.DateTime
+          - name: endTime
+            designation: End time
+            definition: The date/time the contact ended.
+            multiplicity: 0..1
+            type: PkCommon.DateTime
+          - name: elementId
+            designation: Place
+            definition: The element of the Place hierarchy the contact concerned.
+            multiplicity: 1..1
+            type: PkCommon.VersionedReference (Place.HierarchyElementGeneral)
+          - name: issueType
+            designation: Issue type
+            definition: The kind of problem the contact was about.
+            multiplicity: 0..1
+            type: Operations.SupportIssueTypeEnum
+          - name: summary
+            designation: Summary
+            definition: A short summary of the outcome, not a transcript.
+            multiplicity: 0..1
+            type: PkCommon.MultilingualString
+          - name: sessionId
+            designation: Session id
+            definition: The Session the contact concerned, if any.
+            multiplicity: 0..1
+            type: PkCommon.VersionedReference (Session.Session)
+          - name: assignedRightId
+            designation: Assigned right id
+            definition: The AssignedRight the contact concerned, if any.
+            multiplicity: 0..1
+            type: PkCommon.VersionedReference (Right.AssignedRight)
+          - name: rightHolderId
+            designation: Right holder id
+            definition: The RightHolder the contact concerned, if any.
+            multiplicity: 0..1
+            type: PkCommon.Reference (Right.RightHolder)
+          - name: resolved
+            designation: Resolved
+            definition: Whether the problem was resolved during the contact.
+            multiplicity: 0..1
+            type: PkCommon.Boolean
+          - name: externalIdentifier
+            designation: External identifier
+            definition: The identifier the contact centre's own system uses for the contact.
+            multiplicity: 0..1
+            type: PkCommon.ExternalIdentifier
+        associations:
+          - end: identifiedCredential
+            designation: Identified credential
+            definition: Identified credential for the associated SupportInteraction
+            multiplicity: 0..1
+            target: Right.Credential
+    enumerations:
+      - name: AlertTypeEnum
+        change: new
+        designation: Alert type
+        definition: The kinds of operational condition that need attention.
+        tier: 2
+        apx: APX Part 11 code list (alert types)
+        rationale: >-
+          A shared list lets monitoring systems route and count conditions alike; local kinds can
+          still be added through a user-defined code list.
+        values:
+          - name: noCheckOut
+            designation: No check-out
+            definition: A completed stay has no check-out.
+          - name: wrongSpace
+            designation: Wrong space
+            definition: A vehicle occupies a different space from the one reserved or checked in to.
+          - name: occupiedWithoutCheckIn
+            designation: Occupied without check-in
+            definition: A space is occupied with no matching check-in or Session.
+          - name: iceInEvSpace
+            designation: Combustion vehicle in EV space
+            definition: A vehicle that cannot charge occupies an EV charging space.
+          - name: evBayNotCharging
+            designation: EV bay not charging
+            definition: >-
+              A vehicle has occupied an EV charging bay without connecting beyond the place's grace
+              period.
+          - name: evBayBlocked
+            designation: EV bay blocked
+            definition: An EV charging bay is obstructed by something other than a parked vehicle.
+          - name: overstay
+            designation: Overstay
+            definition: A Session exceeds its right's validity or the maximum stay.
+          - name: deviceFault
+            designation: Device fault
+            definition: A piece of equipment reports a fault.
+          - name: deviceOffline
+            designation: Device offline
+            definition: A piece of equipment has stopped communicating.
+          - name: laneBlocked
+            designation: Lane blocked
+            definition: A lane is blocked, for example by a stuck vehicle or an obstructed barrier.
+          - name: occupancyThresholdExceeded
+            designation: Occupancy threshold exceeded
+            definition: Occupancy crossed a threshold set for an element of the Place.
+          - name: paymentException
+            designation: Payment exception
+            definition: A payment failed, was reversed or needs attention.
+          - name: intercomRequest
+            designation: Intercom request
+            definition: A customer asked for help at an intercom.
+          - name: wrongWayTravel
+            designation: Wrong-way travel
+            definition: >-
+              A vehicle travelled against the configured purpose of a lane, as defined by the
+              operator.
+          - name: watchListArrival
+            designation: Watch list arrival
+            definition: A credential on a watch list was observed at a place where arrival is to be reported.
+          - name: scofflawArrival
+            designation: Scofflaw arrival
+            definition: >-
+              A credential on a list of persistent non-payers was observed at a place where arrival
+              is to be reported.
+          - name: refusedServiceArrival
+            designation: Refused service arrival
+            definition: A credential on a list with service refused arrived at a lane and service was refused.
+      - name: AlertSeverityEnum
+        change: new
+        designation: Alert severity
+        definition: How serious an operational condition is.
+        tier: 2
+        apx: APX Part 7 Alert.severity
+        rationale: A fixed scale lets every receiver prioritise alerts the same way.
+        values:
+          - name: info
+            designation: Info
+            definition: For information; no action is expected.
+          - name: warning
+            designation: Warning
+            definition: A condition that may need action if it continues.
+          - name: minor
+            designation: Minor
+            definition: A condition that needs action but does not affect service.
+          - name: major
+            designation: Major
+            definition: A condition that affects service and needs prompt action.
+          - name: critical
+            designation: Critical
+            definition: A condition that stops service or affects safety and needs immediate action.
+      - name: AlertStatusEnum
+        change: new
+        designation: Alert status
+        definition: The states of an alert.
+        tier: 2
+        apx: APX Part 7 §7.2 Alert.status
+        rationale: Lets every party see whether someone has taken a condition in hand.
+        values:
+          - name: raised
+            designation: Raised
+            definition: The condition has been reported and no one has yet acknowledged it.
+          - name: acknowledged
+            designation: Acknowledged
+            definition: Someone has taken responsibility for the condition.
+          - name: resolved
+            designation: Resolved
+            definition: The condition has been dealt with.
+          - name: expired
+            designation: Expired
+            definition: The alert lapsed at its expiry time without being resolved.
+      - name: SupportAgentTypeEnum
+        change: new
+        designation: Support agent type
+        definition: Who handled a customer-service contact.
+        tier: 3
+        apx: APX Part 17 SupportInteraction.agentType
+        rationale: Offered for discussion with SupportInteraction.
+        values:
+          - name: human
+            designation: Human
+            definition: A person.
+          - name: automated
+            designation: Automated
+            definition: An automated agent, such as a voice or chat assistant.
+      - name: SupportIssueTypeEnum
+        change: new
+        designation: Support issue type
+        definition: The kinds of problem a customer-service contact is about.
+        tier: 3
+        apx: APX Part 11 code list (issue types)
+        rationale: Offered for discussion with SupportInteraction.
+        values:
+          - name: barrierOpenFailed
+            designation: Barrier open failed
+            definition: The barrier did not open for a customer entitled to pass.
+          - name: paymentDeclined
+            designation: Payment declined
+            definition: A payment was declined.
+          - name: validationMissing
+            designation: Validation missing
+            definition: An expected validation was not applied.
+          - name: rateDispute
+            designation: Rate dispute
+            definition: The customer disputes the amount charged.
+          - name: lostTicket
+            designation: Lost ticket
+            definition: The customer has lost their ticket.
+          - name: passbackViolation
+            designation: Passback violation
+            definition: A credential was refused because it was already recorded as inside or outside.
+          - name: accountBalanceDenied
+            designation: Account balance denied
+            definition: Access was refused because of an outstanding account balance.
+          - name: reservationMismatch
+            designation: Reservation mismatch
+            definition: A reservation does not match the vehicle, time or place.
+          - name: plateUnresolved
+            designation: Plate unresolved
+            definition: A plate could not be read or matched.
+          - name: equipmentFault
+            designation: Equipment fault
+            definition: A piece of equipment is not working.
+          - name: unknown
+            designation: Unknown
+            definition: The problem has not been classified.
