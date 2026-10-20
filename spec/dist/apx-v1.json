@@ -18569,7 +18569,7 @@
       },
       "DeviceStatus": {
         "title": "DeviceStatus",
-        "description": "Live state overlay keyed by Reference to an APDS SupplementalEquipment —\nnever duplicates its descriptive fields. deviceState values mirror the\nRefillPointStatusEnum style (registry apx-device-states). Attachable to\nAPDS payloads as apds-ext:apx:devicestatus@1.0.",
+        "description": "Live state overlay keyed by Reference to an APDS SupplementalEquipment —\nnever duplicates its descriptive fields. APDS 4.1 has no general\nequipment status list: its RefillPointStatusEnum (Data Dictionary\nA.3.53) covers refill points only and is absent from apds-api-4.1.yaml.\ndeviceState values come from the APX registry apx-device-states, which\nfollows that enumeration's style and shares its available, occupied,\ninoperative and unknown values. Attachable to\nAPDS payloads as apds-ext:apx:devicestatus@1.0.",
         "type": "object",
         "required": [
           "device",

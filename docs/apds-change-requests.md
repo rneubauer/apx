@@ -50,14 +50,20 @@ Full reports: [APX errata folder](errata/README.md).
 
 ## Part B — Additions APDS could consider
 
-Ten suggestions, not filed as errata, where APX currently fills a gap in
+Eleven suggestions, not filed as errata, where APX currently fills a gap in
 its own namespace. If APDS covered any of them natively, APX would move to
-the APDS form and retire its own.
+the APDS form and retire its own. For every APX data element placed on the
+APDS data map, with required and optional attributes, see
+[APX data elements by APDS domain](data-model-by-domain.md).
+
+On 2026-10-15 we checked each row against the APDS 4.1 Data Dictionary as
+well as the API document. Where the Data Dictionary already covers part of
+a request and only `apds-api-4.1.yaml` lacks it, the row now says so.
 
 | Suggestion | Why it helps | APX today |
 | --- | --- | --- |
 | **Read and correct one Observation by id** (`GET` / `PUT /observations/{id}`) | APDS 4.1 has no route that returns or replaces a single Observation, so an LPR read cannot be fetched or corrected after the fact | `GET /v1/lpr/reads?observation=` and `PUT /v1/lpr/reads/{observation}/access-event` (Part 13 §13.3a) |
-| **Payment outcomes on `Payment`**: a status (approved / declined / reversed), a refund value in `PaymentTypeEnum`, and the means of payment per payment | APDS `Payment` records only collected money; declines, refunds, and how a customer paid have no home | `PaymentRecord` alongside, materialized into `Payment` once captured (Part 13 §13.6) |
+| **Payment outcomes on `Payment`**: a status (approved / declined / reversed) and the means of payment per payment | APDS `Payment` records only collected money; declines and how a customer paid have no home. (A `refund` value is already in the Data Dictionary's `PaymentTypeEnum`; only the API document lacks it.) | `PaymentRecord` alongside, materialized into `Payment` once captured (Part 13 §13.6) |
 | **Event types for access and corrections** in `EventTypeEnum` (a credential presented or refused at a lane; an observation updated) | Subscribers cannot hear a lane denial or a corrected read through APDS events | APX topics `apx.credentials.access.v1`, `apx.data.observation.updated.v1` (Parts 8, 21) |
 | **`application/problem+json` (RFC 9457) as an error option** on native routes | Clients get one machine-readable error shape across APDS and APX; today native 409s carry only `ResponseStatus` | Offered when the client sends `Accept: application/problem+json` (Part 5 §5.1a, Part 12) |
 | **A valet right type** — `valet` in `RightSpecificationTypeEnum` | A pass for a vehicle in valet custody, valid from drop-off to handback, is told apart from a transient ticket by any APDS consumer — an enforcement vendor deciding how to treat a car in a `valetOnly` space, a report | The valet pass is typed `oneTimeUseParking`; APX clients learn it is valet from `ValetTicket.assignedRight` (Part 22) |
@@ -65,7 +71,8 @@ the APDS form and retire its own.
 | **`country` optional in `VehicleAncillaryIdentification`** | A read whose plate country the engine could not place could still carry make, model, and colour — often the reads that most need them | The attributes ride in the APX `detail` decoration and the APDS object is omitted (Part 13 §13.3a(1)) |
 | **A Session end reason** | Consumers could tell an exit read from a stale closure or an exit with no observed entry, and compute the same dwell and occupancy figures from the same Sessions | `apds-ext:apx:session-detail@1.0` with registry `apx-session-end-reasons` (Part 5 §5.8) |
 | **Payment detail**: a shared code list for `PaymentLine.idCode` (or a fee value in `PaymentTypeEnum`), and a member on `Payment` naming the rate sold | `idCode` is bilateral, so two parties cannot tell a price line from a fee or a tax, and nothing says which rate a payment bought | Registry `apx-payment-line-codes` for `idCode`, and decoration `apds-ext:apx:payment-detail@1.0` with `rateSold` (Part 13 §13.6a) |
-| **An identifiable holder** (see Part A, 014) | Rights, permits, accounts, and payments for one customer can be grouped | `className: "RightHolder"`, local id (Part 1 §1.3 item 14) |
+| **Lane equipment in `EquipmentTypeEnum`**: perhaps `gate`, `barrier`, `ticketDispenser` and `intercom` | Off-street sites could type their access equipment with APDS names; today the closest fits are `paymentMachine`, `tollTerminal`, `dsrcReceiver` and `other`. (The Data Dictionary already has `lprCamera`, `securityCamera` and `occupancySensor`; only the API document lacks them.) | Device references (`DeviceStatus.device`, `Command.target`, `Alert.source.device`) point at `SupplementalEquipment` without setting an equipment type (Part 6 §6.4) |
+| **An identifiable holder** (see Part A, 014) | Rights, permits, accounts, and payments for one customer can be grouped. (The Data Dictionary already defines `RightHolder` as versioned identifiable; only the API document lacks it.) | `className: "RightHolder"`, local id (Part 1 §1.3 item 14) |
 
 APX also defines surfaces APDS does not yet cover — alerts, lane control,
 tolling, valet, enforcement signage. Those are offered for adoption as a
