@@ -1,6 +1,6 @@
 # Design note: Nexus Core needs for APX 0.16
 
-- **Status:** Draft for the APX maintainer (Rick Neubauer). Nothing here is in the spec yet; each item waits on a decision.
+- **Status:** Decided 2026-10-22 (see "Decisions" at the end). Not in the spec yet; lands in one 0.16 PR.
 - **Date:** 2026-10-22
 - **Checked against:** `rneubauer/apx` main, edition **0.15.0** (Parts 0–26, Annex A).
 - **Source:** the Nexus Core project, after the 211 Commerce sign go-live (2026-10-21). Nexus references: ADR 0018
@@ -157,3 +157,14 @@ policy: {id: ..., version: 4}   # the EnforcementPolicy (with N1 stayGrace) the 
 
 Once decided, each item lands the usual way: prose, OpenAPI, registries, scenarios, simulator, Annex A rows and both
 document sets, in one 0.16 PR.
+
+## Decisions (Rick, 2026-10-22)
+
+| # | Decision |
+|---|---|
+| D1 | `stayGrace {entryMinutes, exitMinutes}` goes on `EnforcementPolicy` (Part 19 §19.10). |
+| D2 | Yes. `EligibilityResult.graceUntil` is derived from `stayGrace`. |
+| D3 | `DisplayRecord` goes in Part 26 Site configuration. |
+| D4 | Seed `apx-display-message-kinds` with the nine NexPark Edge scenario ids. **Not yet** for separate overstay or late-start exit messages: they stay `transientExitUnpaid`. Revisit when 211 Commerce data shows whether it matters. |
+| D5 | Seed `apx-stay-compliance-statuses` with the full Nexus list (all 16, including UNSCORED, REVIEW_REQUIRED, STALE and PAID_LATE). Check each definition against Nexus `Docs/Enforcement/Compliance-Rules-v1.md` before writing normative text. |
+| D6 | Yes. Per-stay compliance is read under its own scope `apx.compliance:read`. |
