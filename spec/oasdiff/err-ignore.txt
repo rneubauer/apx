@@ -1,9 +1,3 @@
 # Accepted oasdiff ERR findings. Each line names one method, path and change.
 # Add a line only for a change the PR description justifies as additive.
 # Empty this file after the release that ships the change.
-#
-# Part 25 (UI launch): AllowedAction.execution.type gains `ui`. Clients MUST
-# skip an execution type they do not recognise (Part 17 §17.3 rule 6).
-POST /v1/resolution/contexts added the new `ui` enum value to the `allowedActions/items/execution/type` response property for the response status `201`
-GET /v1/resolution/contexts/{id} added the new `ui` enum value to the `allowedActions/items/execution/type` response property for the response status `200`
-GET /v1/resolution/contexts/{id}/allowed-actions added the new `ui` enum value to the `data/items/execution/type` response property for the response status `200`
