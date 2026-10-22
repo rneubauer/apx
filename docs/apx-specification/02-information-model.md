@@ -2,7 +2,7 @@
 
 # APX Information Model
 
-*APX Specification · APX 0.14.0 · OpenAPI 0.14.0 · built on APDS 4.1 (2026-01-14) · Draft*
+*APX Specification · APX 0.15.0 · OpenAPI 0.15.0 · built on APDS 4.1 (2026-01-14) · Draft*
 
 ## Introduction
 

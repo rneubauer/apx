@@ -8,6 +8,8 @@ The machine-readable spec (`spec/openapi/apx.yaml`, bundled as
 
 ## [Unreleased]
 
+## [0.15.0] — 2026-10-21
+
 One additive normative change: the bundle now mounts the APDS 4.1 native
 routes `GET`/`PUT`/`DELETE /observations/{id}` and `GET /quotes/{id}`,
 which it had left out. The other bundle edit is editorial: the `DeviceStatus`
@@ -15,7 +17,9 @@ description now says exactly how device states relate to APDS
 `RefillPointStatusEnum`, which covers refill points only. The reference simulator now covers the Part 19 behaviour
 adopted in 0.14.0, and the vetting suite cites every APX-VIO row. Part 12's
 problem-type table loses a stray merge-conflict marker (editorial; no row
-changed).
+changed). A simulator test no longer saves its scratch scenario into the
+shared `scenarios/` folder (new `APX_SIM_SCENARIOS_DIR` override), which had
+made the web-bundle test fail now and then when the two ran in parallel.
 
 
 **Compatibility.** Part 25 adds the value `ui` to
