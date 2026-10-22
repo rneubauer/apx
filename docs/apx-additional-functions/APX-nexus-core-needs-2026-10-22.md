@@ -126,7 +126,7 @@ scores stays itself SHOULD write the same block.
 
 ```yaml
 status: overstay            # definedValue of new registry apx-stay-compliance-statuses
-family: violation           # compliant | violation | other | unscored
+family: violation           # compliant | violation | withheld | other
 pendingStatus: null         # only with reviewRequired
 flags: [paidAfterExit]      # definedValues of apx-stay-compliance-flags, or implementer codes
 evaluatedTime: 2026-10-21T14:05:00Z
@@ -168,3 +168,36 @@ document sets, in one 0.16 PR.
 | D4 | Seed `apx-display-message-kinds` with the nine NexPark Edge scenario ids. **Not yet** for separate overstay or late-start exit messages: they stay `transientExitUnpaid`. Revisit when 211 Commerce data shows whether it matters. |
 | D5 | Seed `apx-stay-compliance-statuses` with the full Nexus list (all 16, including UNSCORED, REVIEW_REQUIRED, STALE and PAID_LATE). Check each definition against Nexus `Docs/Enforcement/Compliance-Rules-v1.md` before writing normative text. |
 | D6 | Yes. Per-stay compliance is read under its own scope `apx.compliance:read`. |
+
+## Appendix: stay-compliance status definitions (source for the D5 registry)
+
+From Nexus `Docs/Enforcement/Compliance-Rules-v1.md` §2.4–2.5 (sent 2026-10-22), where the first matching rule wins.
+G = grace, U = uncovered time.
+
+The registry text will state each **outcome only**. The Nexus thresholds (48 h stale, 16 h policy limit, 15 min early
+arrival) and the rule order are engine configuration and stay out of APX, per the 2026-09-28 no-logic ruling.
+
+| Status | Family | Meaning (outcome) | Nexus rule |
+|---|---|---|---|
+| `unscored` | withheld | No evaluation has run yet | R28 |
+| `stale` | withheld | Open stay with no further read, closed with an inferred end; left out of rates | R29, R10 |
+| `fromList` | compliant | Exempt by a plate list entry (Part 24) covering the entry time | R30 |
+| `permit` | compliant | Covered, and a permit contributed | R31 |
+| `reservation` | compliant | Covered, and a reservation contributed (no permit) | R31 |
+| `paid` | compliant | Covered by payments only | R31 |
+| `grace` | compliant | Nothing paid, and the whole stay is within grace | R32 |
+| `valet` | compliant | In a valet area that is not enforced | Nexus ADR 0037 (not in Rules v1) |
+| `earlyArrival` | violation | Arrived before a reservation's start, beyond its early grace, uncovered | R33 |
+| `reservationOverstay` | violation | Stayed past a reservation's end by more than G, uncovered | R34 |
+| `unpaid` | violation | Closed, nothing paid, longer than grace | R35 |
+| `lateStart` | violation | Coverage began more than G after entry, or none yet while open | R36 |
+| `overstay` | violation | Coverage began in time, but U > G (stayed past the paid end) | R37 |
+| `policyOverstay` | violation | Longer than the place's maximum stay; never overrides `fromList` | R38 |
+| `reviewRequired` | withheld | Would be a violation, but a person must look first; `pendingStatus` holds which one | R39 |
+| `paidLate` | other | Paid after exit, settling the amount; paid but not compliant | R43 |
+
+Gaps to carry into the build:
+- `flags` seed: `paidAfterExit`, `matchedFuzzy`, `endInferred`, `onList` and `paid` (on `lateStart` with a late
+  payment).
+- `family` values become `compliant | violation | withheld | other`, replacing `unscored` from the N4 sketch.
+- Nexus still has one `graceMinutes` (default 10). The entry and exit split (D1) is ahead of the Nexus engine until it ships.
