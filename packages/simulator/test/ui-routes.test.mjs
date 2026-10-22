@@ -2,18 +2,22 @@
 // whole-scenario runs, the injector catalog, topics, and static serving.
 import { test, after } from 'node:test';
 import assert from 'node:assert/strict';
-import { existsSync, unlinkSync } from 'node:fs';
-import { join } from 'node:path';
-import { Simulator } from '../src/index.mjs';
-import { SCENARIOS_DIR } from '../src/kernel/scenario.mjs';
+import { cpSync, mkdtempSync, rmSync } from 'node:fs';
+import { tmpdir } from 'node:os';
+import { dirname, join } from 'node:path';
+import { fileURLToPath } from 'node:url';
+
+// Save into a private copy of scenarios/: web-bundle.test.mjs builds from the
+// real folder in a parallel process and would pick up the temporary file.
+const SCRATCH = mkdtempSync(join(tmpdir(), 'apx-sim-scenarios-'));
+cpSync(join(dirname(fileURLToPath(import.meta.url)), '..', 'scenarios'), SCRATCH, { recursive: true });
+process.env.APX_SIM_SCENARIOS_DIR = SCRATCH;
+const { Simulator } = await import('../src/index.mjs');
 
 const sim = new Simulator({ world: 'apx-control' });
 const call = async (method, path, body) => (await sim.dispatch({ method, path, headers: { 'content-type': 'application/json' }, body: body === undefined ? undefined : JSON.stringify(body) })).body;
 const TEMP_ID = 'zz-ui-routes-test';
-after(() => {
-  const f = join(SCENARIOS_DIR, `${TEMP_ID}.json`);
-  if (existsSync(f)) unlinkSync(f);
-});
+after(() => rmSync(SCRATCH, { recursive: true, force: true }));
 
 test('lists the scenario files on disk with their world and step count', async () => {
   const { scenarios } = await call('GET', '/sim/scenarios');

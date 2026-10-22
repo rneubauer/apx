@@ -8,12 +8,16 @@
  * `{var}` in any string substitutes a value saved by an earlier step.
  */
 import { readdirSync, readFileSync, writeFileSync, existsSync, mkdirSync } from 'node:fs';
-import { join, dirname } from 'node:path';
+import { join, dirname, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { expandIds } from './world.mjs';
 import { PROBLEM_BASE } from './spec.mjs';
 
-export const SCENARIOS_DIR = join(dirname(fileURLToPath(import.meta.url)), '..', '..', 'scenarios');
+// APX_SIM_SCENARIOS_DIR lets a test save scenarios into its own copy, so
+// test files running in parallel never see each other's temporary files.
+export const SCENARIOS_DIR = process.env.APX_SIM_SCENARIOS_DIR
+  ? resolve(process.env.APX_SIM_SCENARIOS_DIR)
+  : join(dirname(fileURLToPath(import.meta.url)), '..', '..', 'scenarios');
 const SCENARIO_NAME = /^[a-z0-9][a-z0-9-]{0,80}$/;
 
 export function substitute(value, vars) {
