@@ -73,12 +73,23 @@ sign text, not a per-vehicle dynamic message.
 | `id`, `version` | | server-assigned |
 | `display` | Reference (SupplementalEquipment) | the sign, a Part 26 device with role `laneDisplay` / `countSign` |
 | `shownTime`, `contentHash`, `wordingVersion`, `screenshot`, `acknowledgedBy` | | the §6.1a `display` shape, reused as is |
-| `messageKind` | definedValue of new registry `apx-display-message-kinds` | e.g. `entryWelcome`, `exitPaid`, `exitUnpaid`, `exitBalanceDue`, `idle`, `fallback`; or an implementer code |
+| `messageKind` | definedValue of new registry `apx-display-message-kinds`, or an implementer code | seeded from the NexPark Edge scenario registry (below) |
 | `observation` | Reference (Observation), optional | the read that triggered it |
 | `session` | Reference (Session), optional | the stay it was for |
 | `command` | Reference (Command), optional | when an APX command drove it; then it MUST agree with `CommandResult.display` |
 | `place` | Reference | derived from the device |
 
+- Seed for `apx-display-message-kinds`: the nine built-in NexPark Edge sign scenarios, ids kept as they are:
+
+  | Sign | Kinds |
+  |---|---|
+  | Entrance | `transientEntrance`, `monthlyEntrance`, `entranceRefused` (the refused-service message, Part 24 §24.4) |
+  | Exit | `transientExitPaid`, `transientExitUnpaid`, `monthlyExit`, `monthlyExitBalanceDue` |
+  | Either | `idle`, `fallback` |
+
+  A location's custom scenarios are implementer codes. Reservation kinds come later, added to the registry (add-only).
+  Separate overstay and late-start exit messages are held for Rick's ruling. Until then the edge knows only
+  paid/unpaid/balanceDue/unknown, and both cases show as `transientExitUnpaid`.
 - Routes: `POST /v1/display-records` and `GET /v1/display-records` with filters `place`, `display`, `messageKind`,
   `session` and `since`/`until`, plus the Part 5 change feed. Topic: `apx.display.shown.v1`.
 - No message text is stored, only its hash and wording version. The plate is never stored even when the sign shows it
@@ -135,8 +146,10 @@ policy: {id: ..., version: 4}   # the EnforcementPolicy (with N1 stayGrace) the 
 - **D1.** N1: two fields on `EnforcementPolicy` (recommended), or on Part 26 `PlaceOperations`?
 - **D2.** N1: should `EligibilityResult.graceUntil` be redefined as derived from `stayGrace`? (Recommended: yes.)
 - **D3.** N2: `DisplayRecord` in Part 26 (recommended) or Part 19?
-- **D4.** N2: is the starting `messageKind` list (from the 211 Commerce sign scenarios) right, or should it stay
-  implementer codes only, until a second deployment shows which kinds are shared?
+- **D4.** N2: seed the registry with the nine NexPark Edge scenario ids (recommended), or keep implementer codes only,
+  until a second deployment shows which kinds are shared? And should overstay and late-start get their own exit
+  messages (new kinds such as `transientExitOverstay` and `transientExitLateStart`)? The edge would then need those
+  standings from the N4 compliance status.
 - **D5.** N4: adopt the full Nexus status list as the registry seed, or only the compliant and violation families, with
   REVIEW_REQUIRED/STALE/UNSCORED left to implementer codes?
 - **D6.** N4: any concern about publishing per-stay compliance to parties beyond the operator (a city)? If so, gate it
