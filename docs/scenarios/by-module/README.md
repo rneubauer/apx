@@ -1,7 +1,7 @@
 # APX vetting scenarios, by module
 
 The worked scenarios one folder up tell 32 end-to-end stories. This
-folder is the test bench underneath them: **416 scenarios**, one set per
+folder is the test bench underneath them: **421 scenarios**, one set per
 conformance class, written to find the places the spec could not say what
 a real deployment needs. Every request and response in them is checked
 against the bundled spec (`spec/dist/apx-v1.json`), and what the spec
@@ -17,20 +17,20 @@ findings table says how.
 | [`apx-alerts`](apx-alerts/scenarios.md) | 23 | 5/5 | 30/31 | 6/8 | [9](apx-alerts/findings.md) |
 | [`apx-control`](apx-control/scenarios.md) | 28 | 8/8 | 41/42 | 17/18 | [10](apx-control/findings.md) |
 | [`apx-credentials`](apx-credentials/scenarios.md) | 26 | 11/11 | 71/73 | 6/6 | [11](apx-credentials/findings.md) |
-| [`apx-data`](apx-data/scenarios.md) | 34 | 35/36 | 202/212 | 9/11 | [16](apx-data/findings.md) |
+| [`apx-data`](apx-data/scenarios.md) | 36 | 35/40 | 202/234 | 11/13 | [16](apx-data/findings.md) |
 | [`apx-discovery`](apx-discovery/scenarios.md) (incl. `apx-mtls`) | 17 | 2/3 | 6/10 | 8/8 | [14](apx-discovery/findings.md) |
 | [`apx-events`](apx-events/scenarios.md) (incl. `apx-events-sse`) | 24 | 7/7 | 41/41 | 9/10 | [17](apx-events/findings.md) |
 | [`apx-lpr`](apx-lpr/scenarios.md) | 35 | 4/7 | 25/43 | 6/11 | [19](apx-lpr/findings.md) |
 | [`apx-permits`](apx-permits/scenarios.md) | 15 | 2/2 | 13/13 | 2/3 | [12](apx-permits/findings.md) |
 | [`apx-reservations`](apx-reservations/scenarios.md) | 25 | 3/3 | 21/21 | 3/3 | [16](apx-reservations/findings.md) |
 | [`apx-resolution`](apx-resolution/scenarios.md) | 32 | 16/16 | 79/97 | 12/12 | [14](apx-resolution/findings.md) |
-| [`apx-site-config`](apx-site-config/scenarios.md) | 11 | 9/9 | 37/55 | 11/11 | [7](apx-site-config/findings.md) |
+| [`apx-site-config`](apx-site-config/scenarios.md) | 13 | 12/12 | 44/73 | 13/13 | [7](apx-site-config/findings.md) |
 | [`apx-tolling`](apx-tolling/scenarios.md) | 24 | 8/8 | 52/53 | 3/3 | [14](apx-tolling/findings.md) |
 | [`apx-ui-launch`](apx-ui-launch/scenarios.md) | 9 | 5/5 | 24/30 | 9/9 | [4](apx-ui-launch/findings.md) |
 | [`apx-valet`](apx-valet/scenarios.md) | 25 | 12/12 | 78/79 | 8/8 | [16](apx-valet/findings.md) |
 | [`apx-validations`](apx-validations/scenarios.md) | 25 | 17/17 | 105/107 | 8/8 | [13](apx-validations/findings.md) |
-| [`apx-violations`](apx-violations/scenarios.md) | 36 | 22/24 | 133/155 | 17/17 | [17](apx-violations/findings.md) |
-| **total** | **416** | | | **154/194** | **233** |
+| [`apx-violations`](apx-violations/scenarios.md) | 37 | 22/24 | 133/155 | 18/18 | [17](apx-violations/findings.md) |
+| **total** | **421** | | | **159/199** | **233** |
 
 *Operations* and *Responses* count the routes and declared status codes
 each module's scenarios exercise; the total of the Annex A column
@@ -41,7 +41,9 @@ and `apx-plate-lists`, which have no module folder yet. `apx-ui-launch`
 the same work (comms points on the resolve request, approvals, receipt
 re-send, device faults and consumables, the new commands, alert types and
 interaction outcomes) are the last scenarios of the control, resolution,
-alerts, accounts, discovery and reservations modules. The rows not yet
+alerts, accounts, discovery and reservations modules. The 0.16
+additions (stay grace, display records, stay compliance) are VIO-37,
+SCF-12–13 and DATA-35–36, which cite every Annex A row they add. The rows not yet
 cited — mostly those added in 0.13.0 and in the unreleased gap work
 (`npm run vetting` lists them) — get scenarios in the next round, together
 with the [150 proposed operational cases](../proposed/README.md) under

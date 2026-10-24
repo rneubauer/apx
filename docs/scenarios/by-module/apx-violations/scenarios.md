@@ -6020,3 +6020,142 @@ If-Match: "4"
 ```
 
 ---
+
+---
+
+## VIO-37 — Fifteen minutes each way: the stay grace and the handheld's `graceUntil`
+
+<!-- apx:scenario VIO-37 kind=lifecycle ics=APX-VIO-18,APX-VIO-06,APX-VIO-10 -->
+
+**Given** Lot C's ruling is 15 minutes of grace after entry and 15 after
+the paid time ends, kept apart. **When** the back office adds
+`stayGrace` to the Lot C policy (v2 → v3), and the handheld then asks
+about two cars: `SYN-5150`, which entered at 10:02 and has paid nothing
+at 10:09; and `SYN-6262`, whose pay-by-plate session ended at 11:00, at
+11:06. **Then** 200 v3 with the grace; for `SYN-5150` `graceUntil` is
+10:17 (entry plus `entryMinutes`), for `SYN-6262` it is 11:15 (end of the
+right plus `exitMinutes`). Neither is entitled, and the officer waits
+until `graceUntil` passes: the handheld and the exit sign read the same
+policy (Part 19 §19.10 rule 7, §19.3 rule 5). How a stay past the grace
+is scored is the compliance engine's rule, not APX's.
+
+```http
+PUT /v1/enforcement/policies/d4000000-0000-4000-8000-000000000001
+If-Match: "2"
+```
+
+<!-- apx:request PUT /v1/enforcement/policies/d4000000-0000-4000-8000-000000000001 -->
+```json
+{
+  "id": "d4000000-0000-4000-8000-000000000001",
+  "version": 2,
+  "place": { "id": "b1000000-0000-4000-8000-000000000004", "className": "Place" },
+  "name": "State private-lot notice rules — Lot C",
+  "policyStatus": "active",
+  "effectiveFrom": "2026-07-01T00:00:00Z",
+  "authority": { "jurisdiction": "US-IL", "citation": "Synthetic Stat. §12-405 as amended 2026-10-01" },
+  "unreviewedIssuance": { "permitted": true, "minimumConfidence": 0.9 },
+  "penaltyCap": { "maximumMultipleOfUnpaid": 2, "onExceed": "refuse" },
+  "overallCeiling": { "maximumMultipleOfIssued": 3 },
+  "appealWindowDays": 30,
+  "paymentGraceDays": 14,
+  "signageRequired": true,
+  "stayGrace": { "entryMinutes": 15, "exitMinutes": 15 }
+}
+```
+
+<!-- apx:response 200 -->
+```json
+{
+  "id": "d4000000-0000-4000-8000-000000000001",
+  "version": 3,
+  "place": { "id": "b1000000-0000-4000-8000-000000000004", "className": "Place" },
+  "name": "State private-lot notice rules — Lot C",
+  "policyStatus": "active",
+  "effectiveFrom": "2026-07-01T00:00:00Z",
+  "authority": { "jurisdiction": "US-IL", "citation": "Synthetic Stat. §12-405 as amended 2026-10-01" },
+  "unreviewedIssuance": { "permitted": true, "minimumConfidence": 0.9 },
+  "penaltyCap": { "maximumMultipleOfUnpaid": 2, "onExceed": "refuse" },
+  "overallCeiling": { "maximumMultipleOfIssued": 3 },
+  "appealWindowDays": 30,
+  "paymentGraceDays": 14,
+  "signageRequired": true,
+  "stayGrace": { "entryMinutes": 15, "exitMinutes": 15 },
+  "statusHistory": [
+    { "state": "active", "time": "2026-06-20T14:00:00Z", "actor": "backoffice-jlee" },
+    { "state": "active", "time": "2026-09-30T16:00:00Z", "actor": "backoffice-jlee", "detail": "v2: appealWindowDays 21 → 30 per amendment" },
+    { "state": "active", "time": "2026-10-22T09:00:00Z", "actor": "backoffice-jlee", "detail": "v3: stayGrace 15 min entry, 15 min exit" }
+  ]
+}
+```
+
+`SYN-5150` entered at 10:02 and nothing covers it yet:
+
+<!-- apx:request GET /v1/enforcement/eligibility?credential=SYN-5150&place=b1000000-0000-4000-8000-000000000004&at=2026-10-22T10:09:00Z -->
+<!-- apx:response 200 -->
+```json
+{
+  "place": { "id": "b1000000-0000-4000-8000-000000000004", "className": "Place" },
+  "credential": { "credentialType": "licensePlate", "credentialIdentification": "SYN-5150" },
+  "checkedTime": "2026-10-22T10:09:00Z",
+  "entitled": false,
+  "basis": [],
+  "graceUntil": "2026-10-22T10:17:00Z",
+  "lastRead": {
+    "observation": { "id": "f2000000-0000-4000-8000-000000000371", "className": "Observation" },
+    "observationDateTime": "2026-10-22T10:02:00Z",
+    "confidence": 0.97,
+    "imageLink": "https://api.lakeside-garage.example/lpr/f2000000-0371.jpg"
+  }
+}
+```
+
+`SYN-6262` paid until 11:00 and is still parked at 11:06:
+
+<!-- apx:request GET /v1/enforcement/eligibility?credential=SYN-6262&place=b1000000-0000-4000-8000-000000000004&at=2026-10-22T11:06:00Z -->
+<!-- apx:response 200 -->
+```json
+{
+  "place": { "id": "b1000000-0000-4000-8000-000000000004", "className": "Place" },
+  "credential": { "credentialType": "licensePlate", "credentialIdentification": "SYN-6262" },
+  "checkedTime": "2026-10-22T11:06:00Z",
+  "entitled": false,
+  "basis": [
+    {
+      "session": { "id": "f1000000-0000-4000-8000-000000000262", "className": "Session" },
+      "rightType": "payByPlate",
+      "validFrom": "2026-10-22T09:00:00Z",
+      "validTo": "2026-10-22T11:00:00Z",
+      "status": "expired"
+    }
+  ],
+  "suggestedViolationType": "expiredRight",
+  "graceUntil": "2026-10-22T11:15:00Z"
+}
+```
+
+A grace below zero is not a grace; the body fails the schema:
+
+<!-- apx:request PUT /v1/enforcement/policies/d4000000-0000-4000-8000-000000000001 invalid -->
+```json
+{
+  "id": "d4000000-0000-4000-8000-000000000001",
+  "version": 3,
+  "place": { "id": "b1000000-0000-4000-8000-000000000004", "className": "Place" },
+  "policyStatus": "active",
+  "effectiveFrom": "2026-07-01T00:00:00Z",
+  "stayGrace": { "entryMinutes": -5 }
+}
+```
+
+<!-- apx:response 400 -->
+```json
+{
+  "type": "https://apx-standard.org/problems/invalid-request",
+  "title": "Invalid request",
+  "status": 400,
+  "detail": "stayGrace.entryMinutes must be an integer of at least 0.",
+  "instance": "/v1/enforcement/policies/d4000000-0000-4000-8000-000000000001",
+  "errors": [ { "pointer": "/stayGrace/entryMinutes", "detail": "must be >= 0" } ]
+}
+```

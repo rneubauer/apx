@@ -4469,3 +4469,294 @@ visit count still counts one car.
 ```json
 { "status": "ok", "code": 201, "message": "Session created successfully." }
 ```
+
+---
+
+## DATA-35 — The compliance engine scores a stay, and only the right readers see it
+
+<!-- apx:scenario DATA-35 kind=lifecycle ics=APX-DATA-12,APX-DATA-13 -->
+
+**Given** the operator's compliance engine runs apart from the APX server
+and holds `compliance-engine` (`apx.data:read apx.data:write
+apx.compliance:read apx.compliance:write`, same grant). The visit
+`c4…0201` of DATA-34 has ended. **When** the engine scores it `lateStart`
+(sequence 1), then, once a late payment arrives, `paidLate` with the
+`paidAfterExit` flag (sequence 2); the city platform (`city-platform`,
+`apx.data:read` only) reads the Session; and the owner's BI tool, given
+`apx.compliance:read` for this, reads it too. **Then** 200 twice; the
+city sees the Session with no `stay-compliance` block, the BI tool sees
+sequence 2 (Part 5 §5.9 rules 1, 3, 4, 7). `paidLate` is family `other`:
+paid, but not compliant, and no violation is issued by it (rule 6).
+
+```http
+PUT /sessions/c4000000-0000-4000-8000-000000000201
+Authorization: Bearer <compliance-engine>
+APX-Update-Mode: change
+```
+
+<!-- apx:request PUT /sessions/c4000000-0000-4000-8000-000000000201 -->
+<!-- apx:validate StayCompliance at /extensions/apds-ext:apx:stay-compliance@1.0 -->
+```json
+{
+  "id": "c4000000-0000-4000-8000-000000000201",
+  "version": 3,
+  "extensions": {
+    "apds-ext:apx:stay-compliance@1.0": {
+      "status": "lateStart",
+      "family": "violation",
+      "evaluatedTime": "2026-09-24T21:05:00Z",
+      "sequence": 1,
+      "final": false,
+      "policy": { "id": "d4000000-0000-4000-8000-000000000002", "className": "EnforcementPolicy", "version": 2 }
+    }
+  }
+}
+```
+
+<!-- apx:response 200 -->
+```json
+{ "status": "ok", "code": 200, "message": "Session updated successfully." }
+```
+
+<!-- apx:request PUT /sessions/c4000000-0000-4000-8000-000000000201 -->
+<!-- apx:validate StayCompliance at /extensions/apds-ext:apx:stay-compliance@1.0 -->
+```json
+{
+  "id": "c4000000-0000-4000-8000-000000000201",
+  "version": 4,
+  "extensions": {
+    "apds-ext:apx:stay-compliance@1.0": {
+      "status": "paidLate",
+      "family": "other",
+      "flags": ["paidAfterExit"],
+      "evaluatedTime": "2026-09-25T08:30:00Z",
+      "sequence": 2,
+      "final": false,
+      "policy": { "id": "d4000000-0000-4000-8000-000000000002", "className": "EnforcementPolicy", "version": 2 }
+    }
+  }
+}
+```
+
+<!-- apx:response 200 -->
+```json
+{ "status": "ok", "code": 200, "message": "Session updated successfully." }
+```
+
+The city platform has no `apx.compliance:read`; the block is left out and
+the rest of the Session is unchanged:
+
+```http
+GET /sessions/c4000000-0000-4000-8000-000000000201
+Authorization: Bearer <city-platform>
+```
+
+<!-- apx:request GET /sessions/c4000000-0000-4000-8000-000000000201 -->
+<!-- apx:response 200 -->
+```json
+{
+  "id": "c4000000-0000-4000-8000-000000000201",
+  "version": 5,
+  "actualStart": "2026-09-24T18:14:01Z",
+  "actualEnd": "2026-09-24T20:52:40Z",
+  "initiator": { "id": "a1000000-0000-4000-8000-000000000001", "version": 1, "className": "Organisation" },
+  "hierarchyElement": { "id": "b1000000-0000-4000-8000-000000000001", "version": 7, "className": "Place" },
+  "identifiedCredentials": [
+    { "type": "licensePlate", "credentialAssignedType": "vehicle", "identifier": { "id": "SYN-1234", "className": "USNumberPlate" } }
+  ],
+  "segments": [
+    {
+      "id": "c5000000-0000-4000-8000-000000000201",
+      "version": 2,
+      "actualStart": "2026-09-24T18:14:01Z",
+      "actualEnd": "2026-09-24T20:52:40Z",
+      "assignedRight": { "id": "e2000000-0000-4000-8000-000000000001", "version": 1, "className": "AssignedRight" },
+      "validationType": ["licensePlate"]
+    }
+  ]
+}
+```
+
+The BI tool holds `apx.compliance:read` and sees the latest evaluation:
+
+```http
+GET /sessions/c4000000-0000-4000-8000-000000000201
+Authorization: Bearer <owner-bi>
+```
+
+<!-- apx:request GET /sessions/c4000000-0000-4000-8000-000000000201 -->
+<!-- apx:response 200 -->
+<!-- apx:validate StayCompliance at /extensions/apds-ext:apx:stay-compliance@1.0 -->
+```json
+{
+  "id": "c4000000-0000-4000-8000-000000000201",
+  "version": 5,
+  "actualStart": "2026-09-24T18:14:01Z",
+  "actualEnd": "2026-09-24T20:52:40Z",
+  "initiator": { "id": "a1000000-0000-4000-8000-000000000001", "version": 1, "className": "Organisation" },
+  "hierarchyElement": { "id": "b1000000-0000-4000-8000-000000000001", "version": 7, "className": "Place" },
+  "identifiedCredentials": [
+    { "type": "licensePlate", "credentialAssignedType": "vehicle", "identifier": { "id": "SYN-1234", "className": "USNumberPlate" } }
+  ],
+  "segments": [
+    {
+      "id": "c5000000-0000-4000-8000-000000000201",
+      "version": 2,
+      "actualStart": "2026-09-24T18:14:01Z",
+      "actualEnd": "2026-09-24T20:52:40Z",
+      "assignedRight": { "id": "e2000000-0000-4000-8000-000000000001", "version": 1, "className": "AssignedRight" },
+      "validationType": ["licensePlate"]
+    }
+  ],
+  "extensions": {
+    "apds-ext:apx:stay-compliance@1.0": {
+      "status": "paidLate",
+      "family": "other",
+      "flags": ["paidAfterExit"],
+      "evaluatedTime": "2026-09-25T08:30:00Z",
+      "sequence": 2,
+      "final": false,
+      "policy": { "id": "d4000000-0000-4000-8000-000000000002", "className": "EnforcementPolicy", "version": 2 }
+    }
+  }
+}
+```
+
+---
+
+## DATA-36 — Stay-compliance writes refused: out of order, wrong family, no scope
+
+<!-- apx:scenario DATA-36 kind=refusal ics=APX-DATA-12,APX-DATA-13 -->
+
+**Given** the visit `c4…0201` holds the sequence-2 evaluation of DATA-35.
+**When** a delayed worker of the engine writes its sequence-1 result; a
+misconfigured engine writes `overstay` with family `compliant`; another
+writes `pendingStatus` beside `paid`; and the operator's PARCS
+(`lakeside-parcs`, no `apx.compliance:write`) sends a compliance block of
+its own. **Then** 409 `evaluation-out-of-order`, 422
+`request-unprocessable` twice, and 403 `insufficient-scope`; nothing is
+written (Part 5 §5.9 rules 1, 2, 4, 8). Problem bodies go to a client
+that sends `Accept: application/problem+json` (Part 5 §5.1a).
+
+```http
+PUT /sessions/c4000000-0000-4000-8000-000000000201
+Authorization: Bearer <compliance-engine>
+APX-Update-Mode: change
+Accept: application/problem+json
+```
+
+<!-- apx:request PUT /sessions/c4000000-0000-4000-8000-000000000201 -->
+```json
+{
+  "id": "c4000000-0000-4000-8000-000000000201",
+  "version": 5,
+  "extensions": {
+    "apds-ext:apx:stay-compliance@1.0": {
+      "status": "lateStart",
+      "family": "violation",
+      "evaluatedTime": "2026-09-24T21:05:00Z",
+      "sequence": 1
+    }
+  }
+}
+```
+
+<!-- apx:validate Problem -->
+```json
+{
+  "type": "https://apx-standard.org/problems/evaluation-out-of-order",
+  "title": "Evaluation out of order",
+  "status": 409,
+  "detail": "Session c4000000-0000-4000-8000-000000000201 holds stay-compliance sequence 2; the write carries sequence 1.",
+  "instance": "/sessions/c4000000-0000-4000-8000-000000000201"
+}
+```
+
+<!-- apx:request PUT /sessions/c4000000-0000-4000-8000-000000000201 -->
+```json
+{
+  "id": "c4000000-0000-4000-8000-000000000201",
+  "version": 5,
+  "extensions": {
+    "apds-ext:apx:stay-compliance@1.0": {
+      "status": "overstay",
+      "family": "compliant",
+      "evaluatedTime": "2026-09-25T09:00:00Z",
+      "sequence": 3
+    }
+  }
+}
+```
+
+<!-- apx:validate Problem -->
+```json
+{
+  "type": "https://apx-standard.org/problems/request-unprocessable",
+  "title": "Request unprocessable",
+  "status": 422,
+  "detail": "stay-compliance status overstay is family violation in apx-stay-compliance-statuses; the write says compliant.",
+  "instance": "/sessions/c4000000-0000-4000-8000-000000000201"
+}
+```
+
+<!-- apx:request PUT /sessions/c4000000-0000-4000-8000-000000000201 -->
+```json
+{
+  "id": "c4000000-0000-4000-8000-000000000201",
+  "version": 5,
+  "extensions": {
+    "apds-ext:apx:stay-compliance@1.0": {
+      "status": "paid",
+      "family": "compliant",
+      "pendingStatus": "overstay",
+      "evaluatedTime": "2026-09-25T09:00:00Z",
+      "sequence": 3
+    }
+  }
+}
+```
+
+<!-- apx:validate Problem -->
+```json
+{
+  "type": "https://apx-standard.org/problems/request-unprocessable",
+  "title": "Request unprocessable",
+  "status": 422,
+  "detail": "pendingStatus is allowed only with status reviewRequired.",
+  "instance": "/sessions/c4000000-0000-4000-8000-000000000201"
+}
+```
+
+```http
+PUT /sessions/c4000000-0000-4000-8000-000000000201
+Authorization: Bearer <lakeside-parcs>
+APX-Update-Mode: change
+Accept: application/problem+json
+```
+
+<!-- apx:request PUT /sessions/c4000000-0000-4000-8000-000000000201 -->
+```json
+{
+  "id": "c4000000-0000-4000-8000-000000000201",
+  "version": 5,
+  "extensions": {
+    "apds-ext:apx:stay-compliance@1.0": {
+      "status": "paid",
+      "family": "compliant",
+      "evaluatedTime": "2026-09-25T09:00:00Z",
+      "sequence": 3
+    }
+  }
+}
+```
+
+<!-- apx:validate Problem -->
+```json
+{
+  "type": "https://apx-standard.org/problems/insufficient-scope",
+  "title": "Insufficient scope",
+  "status": 403,
+  "detail": "Writing apds-ext:apx:stay-compliance@1.0 requires apx.compliance:write.",
+  "instance": "/sessions/c4000000-0000-4000-8000-000000000201"
+}
+```
