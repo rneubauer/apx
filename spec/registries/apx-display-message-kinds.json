@@ -1,0 +1,18 @@
+{
+  "id": "5d6e7f80-91a2-4b3c-8d4e-5f6071829304",
+  "version": 1,
+  "name": "apx-display-message-kinds",
+  "creator": { "id": "a1000000-0000-4000-8000-000000000001", "className": "Organisation" },
+  "locator": "https://apx-standard.org/registries/apx-display-message-kinds.json",
+  "userDefinedCodeListEntries": [
+    {"definedValue": "transientEntrance", "entryDescription": "Entrance sign: welcome for a vehicle with no standing right, which pays for its stay (Part 26 §26.9).", "entryIndex": 0},
+    {"definedValue": "monthlyEntrance", "entryDescription": "Entrance sign: welcome for a vehicle a permit or monthly right covers.", "entryIndex": 1},
+    {"definedValue": "entranceRefused", "entryDescription": "Entrance sign: service refused, the vend withheld (a plate list with refuseService, Part 24 §24.4). The record is the proof of display.", "entryIndex": 2},
+    {"definedValue": "transientExitPaid", "entryDescription": "Exit sign: the stay is paid; thank you.", "entryIndex": 3},
+    {"definedValue": "transientExitUnpaid", "entryDescription": "Exit sign: no payment found for the stay. Also shown for an overstay or a late start until kinds for those are added.", "entryIndex": 4},
+    {"definedValue": "monthlyExit", "entryDescription": "Exit sign: goodbye for a vehicle a permit or monthly right covers.", "entryIndex": 5},
+    {"definedValue": "monthlyExitBalanceDue", "entryDescription": "Exit sign: a permit or monthly holder with a balance due on the account.", "entryIndex": 6},
+    {"definedValue": "idle", "entryDescription": "Either sign: the resting message shown when no vehicle is being served.", "entryIndex": 7},
+    {"definedValue": "fallback", "entryDescription": "Either sign: the message shown when the system that drives the sign cannot decide which message applies (no read, no rights data).", "entryIndex": 8}
+  ]
+}

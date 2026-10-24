@@ -1,6 +1,6 @@
 {
   "id": "3e4f5a6b-7c8d-4e9f-0a1b-2c3d4e5f6a7b",
-  "version": 13,
+  "version": 14,
   "name": "apx-topics",
   "creator": { "id": "a1000000-0000-4000-8000-000000000001", "className": "Organisation" },
   "locator": "https://apx-standard.org/registries/apx-topics.json",
@@ -36,8 +36,9 @@
     { "definedValue": "apx.platelists.changed.v1", "entryDescription": "A plate list or one of its entries was created, changed, or removed (data: PlateList with entryCount; subject: the list). Consumers resync entries through the Part 5 feed on /v1/plate-lists/{id}/entries. Required for apx-plate-lists (Part 24 §24.3).", "entryIndex": 28 },
     { "definedValue": "apx.ui.launch.changed.v1", "entryDescription": "A UI launch was issued, opened, closed, or expired (data: UiLaunch without url; subject: the launch; place-bound on UiLaunch.place). Required for apx-ui-launch (Part 25 §25.3).", "entryIndex": 29 },
     { "definedValue": "apx.ui.action.recorded.v1", "entryDescription": "An action done in a launched vendor screen was recorded as a UiActionRecord because no native resource could express it (data: UiActionRecord; subject: the launch; carries the launch's correlationId). Required for apx-ui-launch (Part 25 §25.4).", "entryIndex": 30 },
-    { "definedValue": "apx.equipment.changed.v1", "entryDescription": "A piece of equipment or its APX decorations (equipment-detail, camera, external-ids) was added, changed, or removed (data: EquipmentRecord; subject: the SupplementalEquipment; place-bound). Lets other systems stay in sync without re-reading the place. Required for apx-site-config (Part 26 §26.8).", "entryIndex": 31 },
-    { "definedValue": "apx.commspoints.changed.v1", "entryDescription": "A comms point was added, changed, or removed (data: CommsPoint; subject: the comms point; place-bound). Required for apx-site-config (Part 26 §26.8).", "entryIndex": 32 },
-    { "definedValue": "apx.approvals.changed.v1", "entryDescription": "An approval request was created, decided, or expired (data: ApprovalRequest; subject: the request; place-bound). An approver's system subscribes to it for its queue. Required for apx-resolution when approvals are offered (Part 17 §17.8).", "entryIndex": 33 }
+    { "definedValue": "apx.equipment.changed.v1", "entryDescription": "A piece of equipment or its APX decorations (equipment-detail, camera, external-ids) was added, changed, or removed (data: EquipmentRecord; subject: the SupplementalEquipment; place-bound). Lets other systems stay in sync without re-reading the place. Required for apx-site-config (Part 26 §26.7).", "entryIndex": 31 },
+    { "definedValue": "apx.commspoints.changed.v1", "entryDescription": "A comms point was added, changed, or removed (data: CommsPoint; subject: the comms point; place-bound). Required for apx-site-config (Part 26 §26.7).", "entryIndex": 32 },
+    { "definedValue": "apx.approvals.changed.v1", "entryDescription": "An approval request was created, decided, or expired (data: ApprovalRequest; subject: the request; place-bound). An approver's system subscribes to it for its queue. Required for apx-resolution when approvals are offered (Part 17 §17.8).", "entryIndex": 33 },
+    { "definedValue": "apx.displays.shown.v1", "entryDescription": "A sign showed a message and the system that drove it recorded it (data: DisplayRecord; subject: the display; place-bound on its place). Carries no message text and no plate. Required for apx-site-config (Part 26 §26.9).", "entryIndex": 34 }
   ]
 }

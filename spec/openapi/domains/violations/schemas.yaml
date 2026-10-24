@@ -310,7 +310,13 @@ EligibilityResult:
       description: When not entitled — the `apx-violation-types` value the server's rules suggest (never binding on the officer).
       examples: [expiredRight]
     graceUntil:
-      description: When a grace period on the nearest basis ends, if the operator's policy grants one.
+      description: |-
+        When the grace on the stay ends, derived from the `stayGrace` of the
+        EnforcementPolicy in force at `checkedTime` (Part 19 §19.3 rule 5):
+        the stay's start plus `entryMinutes` while no right covers it, or
+        the end of its last covering right plus `exitMinutes` once its
+        rights have ended. Absent when that side has no grace, no policy is
+        in force, or a right covers the stay.
       $ref: "../../../vendor/apds/4.1/apds-api-4.1.yaml#/components/schemas/DateTime"
     lastRead:
       type: object
@@ -977,6 +983,27 @@ EnforcementPolicy:
     signageRequired:
       type: boolean
       description: When true, `issue` is refused (422 `signage-required`) unless Signage was in force at the place at `detectedTime`.
+    stayGrace:
+      type: object
+      description: |-
+        How long a stay may go uncovered at each end before it needs a
+        right (Part 19 §19.10 rule 7). Both members are optional and
+        independent: absent means no grace on that side, `0` states
+        explicitly that there is none. The policy states the minutes only;
+        how they combine with the rights into a stay's outcome is the
+        evaluating system's rule. The source of
+        `EligibilityResult.graceUntil` (§19.3 rule 5).
+      properties:
+        entryMinutes:
+          type: integer
+          minimum: 0
+          description: Minutes after entry before a right (a payment, a permit, a reservation) must cover the stay.
+          examples: [15]
+        exitMinutes:
+          type: integer
+          minimum: 0
+          description: Minutes after the end of the last covering right before the stay must be over.
+          examples: [15]
     statusHistory:
       type: array
       description: Immutable, append-only lifecycle audit (Part 4 §4.2).

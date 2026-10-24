@@ -12242,6 +12242,188 @@ paths:
                 $ref: '#/components/schemas/Problem'
         '429':
           $ref: '#/components/responses/TooManyRequests'
+  /v1/display-records:
+    get:
+      operationId: get-apx-v1-display-records
+      security:
+        - apxOAuth:
+            - apx.siteconfig:read
+      tags:
+        - Site configuration
+      summary: List the messages signs showed
+      description: |-
+        The records that a sign showed a message, newest first (Part 26
+        §26.9): which sign, which kind of message, when, and for which read
+        or stay. An operator measures the signs with them; an appeal finds
+        the proof of display. `mode=change&cursor=` serves the Part 5 §5.2
+        feed. A `place` outside the grant is 403 `insufficient-grant`.
+      parameters:
+        - $ref: '#/components/parameters/ModeParam'
+        - $ref: '#/components/parameters/CursorParam'
+        - name: place
+          in: query
+          schema:
+            type: string
+            format: uuid
+          description: The HierarchyElement subtree root.
+        - name: display
+          in: query
+          schema:
+            type: string
+            format: uuid
+          description: The sign's SupplementalEquipment id.
+        - name: messageKind
+          in: query
+          schema:
+            type: string
+          description: An apx-display-message-kinds value or implementer code.
+        - name: session
+          in: query
+          schema:
+            type: string
+            format: uuid
+          description: Records for this stay.
+        - name: observation
+          in: query
+          schema:
+            type: string
+            format: uuid
+          description: Records triggered by this read.
+        - name: since
+          in: query
+          description: Inclusive lower bound on `shownTime`.
+          schema:
+            type: string
+            format: date-time
+        - name: until
+          in: query
+          description: Exclusive upper bound on `shownTime`.
+          schema:
+            type: string
+            format: date-time
+        - $ref: '#/components/parameters/page'
+      responses:
+        '200':
+          description: Paginated display records; with `mode=change`, the changes after `cursor` in the same envelope (Part 5 §5.2 rule 8).
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  meta:
+                    $ref: '#/components/schemas/PaginatedListMeta'
+                  data:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/DisplayRecord'
+                  updateMode:
+                    $ref: '#/components/schemas/ChangeFeedUpdateMode'
+                  cursor:
+                    $ref: '#/components/schemas/ChangeFeedCursor'
+                  deleted:
+                    $ref: '#/components/schemas/ChangeFeedTombstones'
+                  grantAdditions:
+                    $ref: '#/components/schemas/ChangeFeedGrantAdditions'
+                  next:
+                    $ref: '#/components/schemas/ChangeFeedNext'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/CursorRefused'
+        '429':
+          $ref: '#/components/responses/TooManyRequests'
+    post:
+      operationId: post-apx-v1-display-records
+      security:
+        - apxOAuth:
+            - apx.displays:record
+      tags:
+        - Site configuration
+      summary: Record that a sign showed a message
+      description: |-
+        Written by whichever system drove the display, the edge
+        controller, the PARCS or the sign's player, usually with no APX
+        command involved (Part 26 §26.9). `display` must be a
+        SupplementalEquipment (422 `reference-unknown`); the server derives
+        `place` from it. No message text and no plate are stored. With
+        `command`, `shownTime` and `contentHash` must agree with that
+        command's `CommandResult.display`. Immutable once written.
+        `Idempotency-Key` optional. Publishes `apx.displays.shown.v1`.
+      parameters:
+        - $ref: '#/components/parameters/IdempotencyKeyOptional'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/DisplayRecord'
+      responses:
+        '200':
+          description: Idempotent replay.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DisplayRecord'
+        '201':
+          description: Recorded.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DisplayRecord'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '409':
+          description: '`Idempotency-Key` replayed with a different body (`idempotency-conflict`).'
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+        '422':
+          description: A `display`, `observation`, `session` or `command` that names nothing visible (`reference-unknown`); a body `place` that disagrees with the display's, or a record that disagrees with its command's result (`request-unprocessable`).
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+        '429':
+          $ref: '#/components/responses/TooManyRequests'
+  /v1/display-records/{id}:
+    get:
+      operationId: get-apx-v1-display-records-id
+      security:
+        - apxOAuth:
+            - apx.siteconfig:read
+      tags:
+        - Site configuration
+      summary: Read a display record
+      description: What a sign showed, when, and for which read or stay (Part 26 §26.9).
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: The display record.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DisplayRecord'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '429':
+          $ref: '#/components/responses/TooManyRequests'
   /v1/approvals:
     get:
       operationId: get-apx-v1-approvals
@@ -13225,9 +13407,12 @@ components:
             apx.ui:launch: Open a vendor screen for an agent and read the launches it issued (Part 25)
             apx.ui:read: Read UI launches and the actions recorded in them (Part 25)
             apx.ui:record: The surface's own scope; record actions done in a launched screen and close it (Part 25)
-            apx.siteconfig:read: Read a place's equipment, cameras, comms points and external ids; resolve another system's id (Part 26)
+            apx.siteconfig:read: Read a place's equipment, cameras, comms points, display records and external ids; resolve another system's id (Part 26)
             apx.siteconfig:manage: Add, replace and remove comms points (Part 26)
             apx.cameras:view: Obtain short-lived camera view links, logged against the agent (Part 26)
+            apx.displays:record: The scope of the system that drives a sign; record that a message was shown (Part 26 §26.9)
+            apx.compliance:read: Read the stay-compliance status on Sessions; without it the decoration is left out (Part 5 §5.9)
+            apx.compliance:write: Write the stay-compliance status on Sessions, beside the Session write scope (Part 5 §5.9)
             apx.digest:use: Receive the credential digest keys (Part 9 §9.6 rule 6)
             apx.replication:write: Replay another implementation's records with their original provenance and lifecycle times (Part 18 §18.6)
             apx.charging:read: read charging-point status (with bay presence) and charging sessions
@@ -13295,6 +13480,8 @@ components:
           $ref: '#/components/schemas/SessionDetail'
         apds-ext:apx:match-evidence@1.0:
           $ref: '#/components/schemas/MatchEvidence'
+        apds-ext:apx:stay-compliance@1.0:
+          $ref: '#/components/schemas/StayCompliance'
         apds-ext:apx:violation-source@1.0:
           $ref: '#/components/schemas/ViolationSource'
         apds-ext:apx:payment-detail@1.0:
@@ -16109,7 +16296,13 @@ components:
           examples:
             - expiredRight
         graceUntil:
-          description: When a grace period on the nearest basis ends, if the operator's policy grants one.
+          description: |-
+            When the grace on the stay ends, derived from the `stayGrace` of the
+            EnforcementPolicy in force at `checkedTime` (Part 19 §19.3 rule 5):
+            the stay's start plus `entryMinutes` while no right covers it, or
+            the end of its last covering right plus `exitMinutes` once its
+            rights have ended. Absent when that side has no grace, no policy is
+            in force, or a right covers the stay.
           $ref: '#/components/schemas/DateTime'
         lastRead:
           type: object
@@ -16512,6 +16705,29 @@ components:
         signageRequired:
           type: boolean
           description: When true, `issue` is refused (422 `signage-required`) unless Signage was in force at the place at `detectedTime`.
+        stayGrace:
+          type: object
+          description: |-
+            How long a stay may go uncovered at each end before it needs a
+            right (Part 19 §19.10 rule 7). Both members are optional and
+            independent: absent means no grace on that side, `0` states
+            explicitly that there is none. The policy states the minutes only;
+            how they combine with the rights into a stay's outcome is the
+            evaluating system's rule. The source of
+            `EligibilityResult.graceUntil` (§19.3 rule 5).
+          properties:
+            entryMinutes:
+              type: integer
+              minimum: 0
+              description: Minutes after entry before a right (a payment, a permit, a reservation) must cover the stay.
+              examples:
+                - 15
+            exitMinutes:
+              type: integer
+              minimum: 0
+              description: Minutes after the end of the last covering right before the stay must be over.
+              examples:
+                - 15
         statusHistory:
           type: array
           description: Immutable, append-only lifecycle audit (Part 4 §4.2).
@@ -18951,6 +19167,81 @@ components:
         decidedTime:
           description: When the link was made.
           $ref: '#/components/schemas/DateTime'
+    StayCompliance:
+      title: StayCompliance
+      description: |-
+        The `apds-ext:apx:stay-compliance@1.0` decoration on an APDS Session
+        (Part 5 §5.9): the outcome a compliance engine scored for the stay,
+        and the policy it measured against. Written with the native Session
+        POST/PUT by the engine; a server that scores stays itself SHOULD write
+        the same block. The rules that produce the outcome stay in the engine.
+
+        A status is not a Violation: a `violation`-family status issues
+        nothing (Part 19 issues violations). Served only to tokens with
+        `apx.compliance:read`, and written only with `apx.compliance:write`
+        (403 `insufficient-scope`); a write that omits it keeps the stored
+        block. It carries no plate characters.
+      type: object
+      required:
+        - status
+        - family
+        - evaluatedTime
+        - sequence
+      properties:
+        status:
+          type: string
+          description: definedValue of apx-stay-compliance-statuses, or an implementer code.
+          examples:
+            - overstay
+        family:
+          type: string
+          enum:
+            - compliant
+            - violation
+            - withheld
+            - other
+          description: |-
+            `compliant`, `violation`, `withheld` (not scored, or held for
+            review) or `other` (neither, as `paidLate`). For a registry status
+            it MUST be the family the registry gives (422
+            `request-unprocessable`).
+        pendingStatus:
+          type: string
+          description: The status the stay would have once a person confirms it; present only with `status` `reviewRequired` (422 `request-unprocessable` otherwise).
+          examples:
+            - overstay
+        flags:
+          type: array
+          description: Facts behind the status — definedValues of apx-stay-compliance-flags, or implementer codes.
+          items:
+            type: string
+          examples:
+            - - paidAfterExit
+        evaluatedTime:
+          description: When the evaluation ran.
+          $ref: '#/components/schemas/DateTime'
+        sequence:
+          type: integer
+          minimum: 1
+          description: Orders the evaluations of one Session. A write with a lower `sequence` than the one held is 409 `evaluation-out-of-order`; an equal one replaces it.
+        final:
+          type: boolean
+          description: The writer's statement that no further evaluation is expected; never a lock.
+        policy:
+          description: The EnforcementPolicy, at its version, the evaluation used (Part 19 §19.10), whose `stayGrace` explains the result. Naming no policy visible to the caller is 422 `reference-unknown`.
+          $ref: '#/components/schemas/VersionedReference'
+      examples:
+        - status: overstay
+          family: violation
+          flags:
+            - paidAfterExit
+          evaluatedTime: '2026-10-21T14:05:00Z'
+          sequence: 3
+          final: false
+          policy:
+            id: d1900000-0000-4000-8000-000000000010
+            className: EnforcementPolicy
+            version: 4
     OccupancyHistoryPage:
       title: OccupancyHistoryPage
       description: |-
@@ -21809,6 +22100,104 @@ components:
           protocol: webrtc
           expiresAt: '2026-10-18T14:12:00Z'
           issuedTo: agent-4471
+    DisplayRecord:
+      title: DisplayRecord
+      description: |-
+        The record that a sign showed a message (Part 26 §26.9): which sign,
+        which kind of message, when, and for which read or stay. Written by
+        whichever system drove the display, the edge controller, the PARCS or
+        the sign's own player, often with no APX command involved; immutable
+        once written. It is the proof of display a refused-service message
+        needs (Part 24 §24.4), and the data an operator measures the signs by.
+
+        The proof members are the Part 6 §6.1a `CommandResult.display` shape,
+        unchanged. The message text is never stored, only its hash and wording
+        version, and the plate is never stored even when the sign shows it
+        (Part 9 §9.6 rule 8). When a `displayMessage` command drove the sign,
+        `command` names it and the record MUST agree with its result.
+      allOf:
+        - $ref: '#/components/schemas/ApxResourceCore'
+        - $ref: '#/components/schemas/DisplayProof'
+        - type: object
+          required:
+            - display
+            - messageKind
+            - shownTime
+          properties:
+            id:
+              type: string
+              format: uuid
+              readOnly: true
+            version:
+              type: integer
+              minimum: 1
+              readOnly: true
+            display:
+              description: The sign, a SupplementalEquipment of §26.1 (role `laneDisplay` or `countSign`).
+              $ref: '#/components/schemas/Reference'
+            place:
+              description: The place of the display; the server derives it from the device, and a body value that disagrees is 422 `request-unprocessable`.
+              $ref: '#/components/schemas/Reference'
+            messageKind:
+              type: string
+              description: definedValue of apx-display-message-kinds, or an implementer code for a location's own messages.
+              examples:
+                - transientExitUnpaid
+            observation:
+              description: The read that triggered the message (className `ObservationElement`), when there was one.
+              $ref: '#/components/schemas/Reference'
+            session:
+              description: The stay the message was for (className `Session`), when there was one.
+              $ref: '#/components/schemas/Reference'
+            command:
+              description: The Part 6 `displayMessage` command that drove the sign, when one did; `shownTime` and `contentHash` then agree with its `CommandResult.display`.
+              $ref: '#/components/schemas/Reference'
+      examples:
+        - id: c5000000-0000-4000-8000-000000000001
+          version: 1
+          display:
+            id: c2000000-0000-4000-8000-000000000041
+            className: SupplementalEquipment
+          place:
+            id: b1000000-0000-4000-8000-000000000001
+            className: Place
+          messageKind: transientExitUnpaid
+          observation:
+            id: f3000000-0000-4000-8000-000000000140
+            className: ObservationElement
+          session:
+            id: c4000000-0000-4000-8000-000000000077
+            className: Session
+          shownTime: '2026-10-21T14:03:12Z'
+          contentHash: sha256:9f2c1e0b7a4d
+          wordingVersion: exit-2026-10
+          acknowledgedBy: player
+    DisplayProof:
+      title: DisplayProof
+      description: |-
+        What a sign or display confirmed it showed, and when (Part 6 §6.1a):
+        `CommandResult.display` for a commanded message, and the proof members
+        of a Part 26 §26.9 DisplayRecord for any message. Carries a hash and
+        the wording version, never the message text.
+      type: object
+      properties:
+        shownTime:
+          $ref: '#/components/schemas/DateTime'
+        contentHash:
+          type: string
+          description: Hash of the rendered content, so a dispute can prove what was shown.
+        wordingVersion:
+          type: string
+          description: The wording version the template was rendered under.
+        screenshot:
+          description: Access-controlled link to a capture of the display (Part 9 §9.6).
+          $ref: '#/components/schemas/Url'
+        acknowledgedBy:
+          type: string
+          enum:
+            - player
+            - operator
+            - none
     ApxConfiguration:
       type: object
       description: Unauthenticated bootstrap configuration document.
@@ -25999,29 +26388,12 @@ components:
           description: The RateTable at the exact version applied (pushNegotiatedRate with a table; absent for a stated amount).
           $ref: '#/components/schemas/VersionedReference'
         display:
-          type: object
           description: |-
             Proof of display for `displayMessage` (Part 6 §6.1a): what the
             device confirmed it showed, when, and whether the player or an
-            operator acknowledged it.
-          properties:
-            shownTime:
-              $ref: '#/components/schemas/DateTime'
-            contentHash:
-              type: string
-              description: Hash of the rendered content, so a dispute can prove what was shown.
-            wordingVersion:
-              type: string
-              description: The wording version the template was rendered under.
-            screenshot:
-              description: Access-controlled link to a capture of the display (Part 9 §9.6).
-              $ref: '#/components/schemas/Url'
-            acknowledgedBy:
-              type: string
-              enum:
-                - player
-                - operator
-                - none
+            operator acknowledged it. A Part 26 §26.9 DisplayRecord that names
+            this command MUST agree with it.
+          $ref: '#/components/schemas/DisplayProof'
         extensions:
           $ref: '#/components/schemas/Extensions'
     TollPricing:
@@ -27616,6 +27988,11 @@ tags:
       garage, level, or zone is right now, without walking the whole Place
       hierarchy.
 
+      Two decorations on the APDS Session carry what other systems
+      decided about a stay: the pairing of reads behind it
+      (`session-detail`), and the compliance outcome an engine scored for
+      it (`stay-compliance`), which is served only under its own scope.
+
       Written standard:
       [Part 5](https://github.com/rneubauer/apx/blob/main/docs/standard/05-data.md).
   - name: Subscription
@@ -27942,7 +28319,9 @@ tags:
       issued as short-lived links so a password never leaves the site; a
       **comms point** for every way help is reached, whether an intercom,
       an analog dialer, a posted number or a QR code; typed **external
-      ids** so other systems' identifiers resolve to APX records; and
+      ids** so other systems' identifiers resolve to APX records;
+      **display records**, the proof that a sign showed a message for a
+      read or a stay, written by whichever system drove the sign; and
       change topics so a copy of the setup stays current. IP addresses
       and SIP details are deliberately left out.
 
