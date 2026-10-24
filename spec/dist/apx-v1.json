@@ -26537,7 +26537,7 @@
               "withheld",
               "other"
             ],
-            "description": "`compliant`, `violation`, `withheld` (not scored, or held for\nreview) or `other` (neither, as `paidLate`). For a registry status\nit MUST be the family the registry gives (422\n`request-unprocessable`)."
+            "description": "The family of the status. For a registry status it MUST be the\nfamily the registry gives (422 `request-unprocessable`).\n`compliant` — rights or an exemption covered the stay\n`violation` — the stay was not covered as the policy requires\n`withheld` — not scored, or held back for review\n`other` — an outcome none of the other families fits, for example paid after exit"
           },
           "pendingStatus": {
             "type": "string",

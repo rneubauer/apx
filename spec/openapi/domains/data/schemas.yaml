@@ -482,10 +482,12 @@ StayCompliance:
       type: string
       enum: [compliant, violation, withheld, other]
       description: |-
-        `compliant`, `violation`, `withheld` (not scored, or held for
-        review) or `other` (neither, as `paidLate`). For a registry status
-        it MUST be the family the registry gives (422
-        `request-unprocessable`).
+        The family of the status. For a registry status it MUST be the
+        family the registry gives (422 `request-unprocessable`).
+        `compliant` — rights or an exemption covered the stay
+        `violation` — the stay was not covered as the policy requires
+        `withheld` — not scored, or held back for review
+        `other` — an outcome none of the other families fits, for example paid after exit
     pendingStatus:
       type: string
       description: The status the stay would have once a person confirms it; present only with `status` `reviewRequired` (422 `request-unprocessable` otherwise).

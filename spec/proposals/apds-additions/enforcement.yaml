@@ -352,6 +352,20 @@ packages:
             definition: Whether a notice may be issued for an automated finding without review by a person.
             multiplicity: 0..1
             type: PkCommon.Boolean
+          - name: entryGracePeriod
+            designation: Entry grace period
+            definition: >-
+              The period after entry before a right must cover a stay. Absent means no grace after
+              entry; zero states that there is none.
+            multiplicity: 0..1
+            type: PkCommon.Duration
+          - name: exitGracePeriod
+            designation: Exit grace period
+            definition: >-
+              The period after the last right covering a stay ends before the stay must be over.
+              Absent means no grace before exit; zero states that there is none.
+            multiplicity: 0..1
+            type: PkCommon.Duration
           - name: endReason
             designation: End reason
             definition: Why the policy is no longer in use, when it has ended.
