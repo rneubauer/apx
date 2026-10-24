@@ -24,10 +24,13 @@ roles), `camera` (what a camera looks at and how it streams),
 `external-ids` (typed ids in other systems) and `place-operations` (the
 call platform's account for the site and the escalation roles). One new
 resource, `CommsPoint`: any way a parker reaches help from a lane or a
-location. The routes `GET /v1/equipment`, `/v1/comms-points`,
+location. A second new resource, `DisplayRecord`: the record that a sign showed a
+message, for which read or stay (§26.9). The routes `GET /v1/equipment`,
+`/v1/comms-points`, `/v1/display-records`,
 `POST /v1/identifiers:resolve` and `POST /v1/cameras/{id}/views`, the
-change feed on equipment and comms points, and the topics
-`apx.equipment.changed.v1` and `apx.commspoints.changed.v1`. Equipment
+change feed on equipment, comms points and display records, and the
+topics `apx.equipment.changed.v1`, `apx.commspoints.changed.v1` and
+`apx.displays.shown.v1`. Equipment
 *type* stays the APDS `EquipmentTypeEnum`; this Part never redefines it.
 
 ## 26.1 Equipment detail (normative)
@@ -303,7 +306,67 @@ A call from the intercom resolves (Part 17 §17.1) through
 allowed actions include `vendGate` on the door, with the door camera's
 view a click away.
 
-## 26.9 Conformance
+## 26.9 Display records (normative)
+
+A sign at a lane or a door shows a message for a vehicle: "Welcome",
+"Payment not found", "Thank you, your permit is valid". Who drove the
+sign often decided locally, from its own copy of the rights, and no APX
+command was involved. A `DisplayRecord` is that system's record that the
+message was shown: which sign, which kind of message, when, and for which
+read or stay. It is the proof of display a refused-service message needs
+(Part 24 §24.4), and it lets an operator measure whether the signs change
+what parkers do.
+
+1. **Who writes it.** Whichever system drove the display: the edge
+   controller, the PARCS, the sign's own player. `POST /v1/display-records`
+   (scope `apx.displays:record`, `Idempotency-Key` optional) creates one;
+   the record is immutable once written. APX records that the message was
+   shown; whether showing it changed anything is analysis, outside APX.
+2. **The sign.** `display` (REQUIRED) is a Reference to the
+   SupplementalEquipment that showed it, a device of §26.1 whose `role`
+   is `laneDisplay` or `countSign` (or `other`); a reference to anything
+   else is 422 `reference-unknown`. The server derives `place` from the
+   device; a `place` in the body that disagrees is 422
+   `request-unprocessable`.
+3. **What was shown.** `messageKind` (REQUIRED) is a definedValue of
+   `apx-display-message-kinds` (Part 11) or an implementer code (a
+   location's own messages). The proof members are the
+   `CommandResult.display` shape of Part 6 §6.1a, reused unchanged:
+   `shownTime` (REQUIRED), `contentHash`, `wordingVersion`, `screenshot`
+   and `acknowledgedBy`. The message text itself is never stored, only
+   its hash and wording version, and the plate is never stored even when
+   the sign shows it (Part 9 §9.6 rule 8).
+4. **For whom.** `observation` names the read that triggered the message
+   and `session` the stay it was for; both are OPTIONAL (an idle or a
+   welcome message is for nobody). A reference naming nothing visible to
+   the caller is 422 `reference-unknown`.
+5. **Commanded displays.** When a Part 6 `displayMessage` command drove
+   the sign, `command` names it, and the record MUST agree with that
+   command's `CommandResult.display`: a different `shownTime` or
+   `contentHash` is 422 `request-unprocessable`. A server that executes
+   `displayMessage` itself SHOULD write the record.
+6. **Reading.** `GET /v1/display-records` (scope `apx.siteconfig:read`;
+   filters `place`, `display`, `messageKind`, `session`, `observation`,
+   `since` and `until` on `shownTime`; the Part 5 §5.2 change feed) and
+   `GET /v1/display-records/{id}`. A `place` outside the grant is 403
+   `insufficient-grant`.
+7. **Notice.** Every record publishes `apx.displays.shown.v1` (data: the
+   `DisplayRecord`; subject: the display; place-bound on its place).
+
+The seed of `apx-display-message-kinds` is the set of nine messages an
+edge controller deployed in 2026 already shows:
+
+| Sign | Kinds |
+|---|---|
+| Entrance | `transientEntrance`, `monthlyEntrance`, `entranceRefused` (the refused-service message, Part 24 §24.4) |
+| Exit | `transientExitPaid`, `transientExitUnpaid`, `monthlyExit`, `monthlyExitBalanceDue` |
+| Either | `idle`, `fallback` |
+
+An exit for an overstay or a late start shows `transientExitUnpaid`;
+the registry is add-only (Part 11), so kinds for those, and for
+reservations, can be added later.
+
+## 26.10 Conformance
 
 `apx-site-config` requires the base classes and: §26.1 the equipment
 detail with a registry `role` on every SupplementalEquipment it serves,
@@ -312,10 +375,11 @@ the camera decoration where a camera is inventoried, the view route
 where `cameraViews` or `cameraPlayback` is offered, and the privacy
 rules; §26.4 comms points, their routes and the resolution rule; §26.5
 place operations; §26.6 external identifiers and the resolve route;
-§26.7 the two topics and the feeds. The Part 9 §9.7 secrets rule applies
+§26.7 the two topics and the feeds; §26.9 display records, their routes
+and topic. The Part 9 §9.7 secrets rule applies
 to every read of this Part. Annex A.24.
 
-## 26.10 Registry entries
+## 26.11 Registry entries
 
 | Registry | Entries |
 |---|---|
@@ -326,5 +390,8 @@ to every read of this Part. Annex A.24.
 | `apx-escalation-roles` v1 | `siteManager`, `attendant`, `security`, `operatorOnCall`, `maintenance`, `other` |
 | `apx-features` v3 | `cameraViews`, `cameraPlayback` |
 | `apx-topics` v13 | `apx.equipment.changed.v1`, `apx.commspoints.changed.v1` |
+| `apx-topics` v14 | `apx.displays.shown.v1` |
+| `apx-display-message-kinds` v1 | the nine kinds of §26.9 |
 
-Scopes: `apx.siteconfig:read`, `apx.siteconfig:manage`, `apx.cameras:view`.
+Scopes: `apx.siteconfig:read`, `apx.siteconfig:manage`, `apx.cameras:view`,
+`apx.displays:record`.

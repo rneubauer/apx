@@ -40,6 +40,9 @@ body:
         - apx-area-types
         - apx-comms-point-types
         - apx-escalation-roles
+        - apx-display-message-kinds
+        - apx-stay-compliance-statuses
+        - apx-stay-compliance-flags
     validations:
       required: true
   - type: input

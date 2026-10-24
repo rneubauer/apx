@@ -316,7 +316,9 @@ endpoint entirely (discovery then does not list it); the same holds for
 decoration on Sessions (Part 4 §4.3) and refuses a write that breaks
 its rules 1, 3, or 6 with the 422 they name; one that also claims `apx-lpr`
 enforces its `read-already-bound` rule and answers
-`GET /v1/lpr/reads?session=` from it. Rule 8 of §5.2 is an obligation of
+`GET /v1/lpr/reads?session=` from it. Every `apx-data` implementation
+likewise accepts and preserves the §5.9 decoration, refuses a write that
+breaks its rules 1, 2, 4, 5 or 8, and applies its scope rules 7 and 8. Rule 8 of §5.2 is an obligation of
 the class that owns each route.
 
 ## 5.7 Known APDS 4.1 behaviour on the native routes (informative)
@@ -461,6 +463,84 @@ The same evidence on a Violation that cites this stay, as the decoration
     "vehicle": { "level": "strong" },
     "applied": true,
     "decidedBy": "person"
+  }
+}
+```
+
+## 5.9 Stay compliance written by a compliance engine (normative)
+
+A compliance engine scores every stay: paid, inside the grace, an
+overstay, waiting for review. Other systems need the same answer —
+reporting, a city, a call-centre console — without running the engine's
+rules again. The engine writes its result with the Level B decoration
+`apds-ext:apx:stay-compliance@1.0` (`StayCompliance`) on the APDS
+Session, through the native `POST /sessions` and `PUT /sessions/{id}`
+(§5.1), as §5.8 does for the pairing. A server that scores stays itself
+SHOULD write the same block on its own Sessions. APX carries the
+outcome and the policy it was measured against; the rules that turn one
+into the other stay in the engine. A write that breaks a rule below is
+refused with the problem type the rule names, and nothing is written.
+
+1. **One status.** `status` (REQUIRED) is a definedValue of
+   `apx-stay-compliance-statuses` (Part 11) or an implementer code.
+   `family` (REQUIRED) is `compliant`, `violation`, `withheld` (not
+   scored, or held back for review) or `other` (an outcome that is
+   neither, such as `paidLate`). For a registry status, `family` MUST be
+   the family the registry gives it; a disagreement is 422
+   `request-unprocessable`.
+2. **Held for review.** `pendingStatus` names the status the stay would
+   have once a person confirms it, and is present only with `status:
+   reviewRequired`; a `pendingStatus` with any other status is 422
+   `request-unprocessable`.
+3. **Flags.** `flags[]` records facts behind the status
+   (`paidAfterExit`, `matchedFuzzy`, `endInferred`, `onList`, `paid`): a
+   definedValue of `apx-stay-compliance-flags` or an implementer code.
+4. **Re-evaluation.** A stay is scored again as reads and payments
+   arrive. `evaluatedTime` (REQUIRED) says when, and `sequence`
+   (REQUIRED, an integer of at least 1) orders the evaluations of one
+   Session. A write whose `sequence` is lower than the one the Session
+   holds is 409 `evaluation-out-of-order`; an equal one replaces it.
+   `final: true` is the writer's statement that no further evaluation is
+   expected, never a lock: a server MUST NOT refuse a later evaluation
+   on that ground (as `lifecycle: final` in §5.8).
+5. **The policy measured against.** `policy` is a VersionedReference to
+   the EnforcementPolicy (Part 19 §19.10) the evaluation used, so its
+   `stayGrace` explains the result. One naming no policy visible to the
+   caller is 422 `reference-unknown`. It is OPTIONAL: a server without
+   `apx-violations` holds no policy.
+6. **A status is not a Violation.** A `violation`-family status issues
+   nothing and starts no enforcement clock. A Violation is issued only
+   under Part 19, with its own evidence and policy rules; it MAY name the
+   Session as `relatedSession`, whose status then explains it.
+7. **Reading needs `apx.compliance:read`.** Per-stay compliance may go
+   to parties beyond the operator, so it has its own scope. A server
+   MUST leave the decoration out of every Session it returns to a token
+   without `apx.compliance:read` — the native reads, the §5.2 change
+   feed and the native `SessionCreated` / `SessionUpdated` deliveries to
+   a subscription created without it. The rest of the Session is
+   unchanged.
+8. **Writing needs `apx.compliance:write`**, beside the scope the
+   Session write itself needs. A write that carries the decoration
+   without it is 403 `insufficient-scope`, and nothing is written. A
+   write that omits the decoration leaves the stored block as it was,
+   so a client that cannot see the block cannot erase it. There is no
+   removal: an engine that withdraws its score writes `status:
+   unscored`.
+9. **Events and privacy.** Writes publish the native Session events; the
+   decoration adds no topic. It carries codes and references only, never
+   plate characters, so it is personal data only through the Session it
+   decorates (Part 9 §9.6).
+
+```json
+"extensions": {
+  "apds-ext:apx:stay-compliance@1.0": {
+    "status": "overstay",
+    "family": "violation",
+    "flags": ["paidAfterExit"],
+    "evaluatedTime": "2026-10-21T14:05:00Z",
+    "sequence": 3,
+    "final": false,
+    "policy": { "id": "d1900000-0000-4000-8000-000000000010", "className": "EnforcementPolicy", "version": 4 }
   }
 }
 ```

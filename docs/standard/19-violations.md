@@ -158,7 +158,9 @@ counterpart of Part 6's lane inquiry. It returns an `EligibilityResult`:
 - `suggestedViolationType` — when not entitled, the `apx-violation-types`
   value the server's rules suggest. **Advisory**: the officer decides at
   `review`; the server's suggestion is never binding.
-- `graceUntil` — when operator policy grants a grace period.
+- `graceUntil` — when the grace on the stay ends, derived from the
+  `stayGrace` of the policy in force (§19.10 rule 7, normative rule 5
+  below).
 - `lastRead` — the latest plate read of the credential at the place.
 
 **Normative rules.**
@@ -178,6 +180,16 @@ counterpart of Part 6's lane inquiry. It returns an `EligibilityResult`:
    were at that instant (a backdated payment does not retroactively
    entitle an already-detected violation unless operator policy says so
    at `review`).
+5. **`graceUntil` comes from `stayGrace`.** The server derives it from
+   the `stayGrace` of the EnforcementPolicy in force at `place` at
+   `checkedTime` (§19.10 rule 7). With no right covering the stay, it is
+   the stay's start plus `entryMinutes`; once the stay has outlived its
+   covering rights, it is the end of the last of them plus
+   `exitMinutes`. It is absent when that side has no grace (the member
+   absent, or no policy in force), and absent while a right covers the
+   stay. The handheld and the sign then agree on the grace, because both
+   read the same policy. Which outcome a stay inside or past the grace
+   has is the evaluating system's rule, not APX's (Part 5 §5.9).
 
 ## 19.4 Automated and guided enforcement (normative)
 
@@ -397,6 +409,23 @@ principle Part 17 applies to allowed actions.
    inconsistent policy (an inverted effective window, the fixed step of
    rule 3) is 422 `request-unprocessable`; a body that fails the schema
    is 400 `invalid-request` (Part 12 §12.4).
+7. **Stay grace.** `stayGrace` states how long a stay may go uncovered
+   at each end before it needs a right, as two independent members:
+   - `entryMinutes`: the time after entry before a right (a payment, a
+     permit, a reservation) must cover the stay;
+   - `exitMinutes`: the time after the end of the last covering right
+     before the stay must be over.
+   Both are OPTIONAL integers of at least 0. An absent member means no
+   grace on that side; `0` states explicitly that there is none. The
+   policy carries the minutes only. How they combine with the rights
+   into a stay's outcome (a late start, an overstay) is the evaluating
+   system's rule and stays out of APX. Because the grace sits on the
+   policy, it inherits down the place tree (rule 1) and keeps its
+   versions (rule 5), so an appeal can show which grace applied on the
+   day. It is the source of `EligibilityResult.graceUntil` (§19.3 rule
+   5) and of the `policy` a stay-compliance evaluation names (Part 5
+   §5.9). Charging idle grace (Part 23) and reservation no-show grace
+   (Part 14 §14.1) are separate and unchanged.
 
 ## 19.11 Signage (normative)
 

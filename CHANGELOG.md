@@ -8,6 +8,46 @@ The machine-readable spec (`spec/openapi/apx.yaml`, bundled as
 
 ## [Unreleased]
 
+Three additions asked for by an edge-and-cloud deployment after its first
+sign go-live. Each carries the configured policy or the recorded outcome,
+never the rule that turns one into the other.
+
+### Added
+- **Stay grace** (Part 19 §19.10 rule 7). `EnforcementPolicy.stayGrace`
+  carries `entryMinutes` and `exitMinutes`, independent and optional
+  (absent means no grace on that side, `0` means none). It inherits and
+  keeps versions with the policy. `EligibilityResult.graceUntil` is now
+  defined as derived from it (§19.3 rule 5).
+- **Display records** (Part 26 §26.9). New resource `DisplayRecord`: the
+  system that drove a sign records which sign, which `messageKind`, when,
+  and for which read or stay, with the Part 6 §6.1a proof members
+  (`shownTime`, `contentHash`, `wordingVersion`, `screenshot`,
+  `acknowledgedBy`). No message text and no plate. Routes
+  `GET`/`POST /v1/display-records` and `GET /v1/display-records/{id}`
+  with the change feed; topic `apx.displays.shown.v1`; scope
+  `apx.displays:record`. The §6.1a shape is now the named schema
+  `DisplayProof`, which `CommandResult.display` references (no wire
+  change).
+- **Stay compliance** (Part 5 §5.9). Decoration
+  `apds-ext:apx:stay-compliance@1.0` (`StayCompliance`) on the APDS
+  Session: one `status` with its `family`, `pendingStatus` for a stay held
+  for review, `flags[]`, `evaluatedTime`, `sequence`, `final` and the
+  `policy` version measured against. A compliance status is never a
+  Violation. Read only under the new scope `apx.compliance:read` (the
+  block is left out otherwise), written only under `apx.compliance:write`.
+  New problem type `evaluation-out-of-order` (409).
+- Registries: `apx-display-message-kinds` v1 (nine kinds),
+  `apx-stay-compliance-statuses` v1 (sixteen statuses, each with its
+  family), `apx-stay-compliance-flags` v1 (five flags); `apx-topics` v14.
+- Part 9 §9.6 rule 8 on per-stay outcomes; Annex A rows APX-DATA-12–13,
+  APX-VIO-18, APX-SCF-12–13.
+
+### Changed (editorial)
+- Part 26: Conformance and Registry entries are now §26.10 and §26.11.
+- `apx-topics`: the equipment and comms-point topics cite Part 26 §26.7
+  (they said §26.8). Part 12: the camera and comms-point rows cite
+  §26.3 and §26.4.
+
 ## [0.15.0] — 2026-10-21
 
 One additive normative change: the bundle now mounts the APDS 4.1 native
