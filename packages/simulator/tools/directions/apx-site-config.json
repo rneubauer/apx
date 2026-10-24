@@ -1,5 +1,5 @@
 {
-  "_comment": "Stage directions for the replay of apx-site-config: the comms point another admin bumped before the stale PUT, the change-feed cursors a console held from an earlier sync, the terminal swapped overnight, and the exit-lane camera going offline. Keys are scenario ids; `at` is the 0-based exchange index the step runs before ('start' = before the scenario).",
+  "_comment": "Stage directions for the replay of apx-site-config: the comms point another admin bumped before the stale PUT, the change-feed cursors a console held from an earlier sync, the terminal swapped overnight, and the exit-lane camera going offline; and the edge-controller token (with the Idempotency-Key of its retry) for the display records the prose has the edge write. Keys are scenario ids; `at` is the 0-based exchange index the step runs before ('start' = before the scenario).",
   "SCF-04": [
     {
       "at": 1,
@@ -70,6 +70,35 @@
       "at": "start",
       "clock": {
         "now": "2026-10-18T23:30:00Z"
+      }
+    }
+  ],
+  "SCF-12": [
+    {
+      "at": 1,
+      "headers": {
+        "Authorization": "Bearer <edge-controller>",
+        "Idempotency-Key": "sign-c1-0040-2026-10-21T14:03:12Z"
+      }
+    }
+  ],
+  "SCF-13": [
+    {
+      "at": 0,
+      "headers": {
+        "Authorization": "Bearer <edge-controller>"
+      }
+    },
+    {
+      "at": 1,
+      "headers": {
+        "Authorization": "Bearer <edge-controller>"
+      }
+    },
+    {
+      "at": 2,
+      "headers": {
+        "Authorization": "Bearer <edge-controller>"
       }
     }
   ]

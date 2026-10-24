@@ -1,7 +1,7 @@
 {
   "extends": "apx-resolution",
   "name": "apx-site-config",
-  "description": "The cast of docs/scenarios/by-module/apx-site-config: Lakeside Garage described from APX alone. Exit lane 2 with its barrier, pay-in-lane terminal (the exit verifier), the intercom built into it and the overhead camera; the ground-floor lobby door with its card reader, call-box intercom and ceiling camera; the P1 pay-on-foot station; the P2 ramp camera that still speaks RTSP; the NVR in the equipment room. The comms points a call reaches help through, the PARCS and call-platform ids the garage is known by, the escalation roles, and the after-hours ticket and permit the lobby door scenarios turn on.",
+  "description": "The cast of docs/scenarios/by-module/apx-site-config: Lakeside Garage described from APX alone. Exit lane 2 with its barrier, pay-in-lane terminal (the exit verifier), the intercom built into it and the overhead camera; the ground-floor lobby door with its card reader, call-box intercom and ceiling camera; the P1 pay-on-foot station; the P2 ramp camera that still speaks RTSP; the NVR in the equipment room. The comms points a call reaches help through, the PARCS and call-platform ids the garage is known by, the escalation roles, and the after-hours ticket and permit the lobby door scenarios turn on. The exit and entrance signs of lanes 2 and 1 (laneDisplay) with the messages they recorded showing (Part 26 §26.9), the displayMessage command the exit sign once ran, and the stay the unpaid-exit message was for, scored by the compliance engine (Part 5 §5.9).",
   "conformanceClasses": [
     "apx-data",
     "apx-events",
@@ -43,7 +43,8 @@
         "apx.accounts:read",
         "apx.data:read",
         "apx.alerts:read",
-        "apx.subscriptions:manage"
+        "apx.subscriptions:manage",
+        "apx.compliance:read"
       ],
       "apx_org": {
         "id": "a1…0001",
@@ -84,6 +85,49 @@
         "b1…0001"
       ],
       "user": "wall:lakeside"
+    },
+    "edge-controller": {
+      "scopes": [
+        "apx.displays:record",
+        "apx.siteconfig:read"
+      ],
+      "apx_org": {
+        "id": "a1…0001",
+        "className": "Organisation"
+      },
+      "apx_places": [
+        "b1…0001"
+      ],
+      "user": "svc:edge-lakeside"
+    },
+    "city-platform": {
+      "scopes": [
+        "apx.siteconfig:read"
+      ],
+      "apx_org": {
+        "id": "a1…0003",
+        "className": "Organisation"
+      },
+      "apx_places": [
+        "b1…0001"
+      ],
+      "user": "city-platform"
+    },
+    "compliance-engine": {
+      "scopes": [
+        "apx.data:read",
+        "apx.data:write",
+        "apx.compliance:read",
+        "apx.compliance:write"
+      ],
+      "apx_org": {
+        "id": "a1…0001",
+        "className": "Organisation"
+      },
+      "apx_places": [
+        "b1…0001"
+      ],
+      "user": "svc:compliance-engine"
     }
   },
   "control": {
@@ -204,6 +248,26 @@
       "name": "Harbor Deck exit camera",
       "equipmentType": "camera",
       "state": "available"
+    },
+    {
+      "id": "c1…0040",
+      "placeId": "b1…0001",
+      "laneId": "b2…0002",
+      "name": "exit lane 2 sign",
+      "equipmentType": "other",
+      "state": "available",
+      "lastCommunication": "2026-10-18T13:59:57Z",
+      "stateChangedTime": "2026-10-18T06:00:00Z"
+    },
+    {
+      "id": "c1…0041",
+      "placeId": "b1…0001",
+      "laneId": "b2…0001",
+      "name": "entry lane 1 sign",
+      "equipmentType": "other",
+      "state": "available",
+      "lastCommunication": "2026-10-18T13:59:57Z",
+      "stateChangedTime": "2026-10-18T06:00:00Z"
     }
   ],
   "equipment": [
@@ -562,6 +626,50 @@
         ],
         "retentionDays": 30
       }
+    },
+    {
+      "id": "c1…0040",
+      "version": 1,
+      "placeId": "b1…0001",
+      "laneId": "b2…0002",
+      "name": "Exit lane 2 sign",
+      "equipmentType": "other",
+      "installed": "2026-04-02T09:00:00Z",
+      "detail": {
+        "role": "laneDisplay",
+        "manufacturer": "Signwell",
+        "model": "SW-LED32",
+        "firmwareVersion": "3.4.0",
+        "serialNumber": "SWL32-40211",
+        "macAddresses": [
+          "70b3d5a10040"
+        ],
+        "installedAt": "2026-04-02",
+        "area": "lane",
+        "level": "G"
+      }
+    },
+    {
+      "id": "c1…0041",
+      "version": 1,
+      "placeId": "b1…0001",
+      "laneId": "b2…0001",
+      "name": "Entry lane 1 sign",
+      "equipmentType": "other",
+      "installed": "2026-04-02T09:00:00Z",
+      "detail": {
+        "role": "laneDisplay",
+        "manufacturer": "Signwell",
+        "model": "SW-LED32",
+        "firmwareVersion": "3.4.0",
+        "serialNumber": "SWL32-40212",
+        "macAddresses": [
+          "70b3d5a10041"
+        ],
+        "installedAt": "2026-04-02",
+        "area": "lane",
+        "level": "G"
+      }
     }
   ],
   "commsPoints": [
@@ -787,6 +895,58 @@
         "currencyValue": 0
       },
       "_paid": true
+    },
+    {
+      "id": "c4…0077",
+      "version": 2,
+      "actualStart": "2026-10-21T11:40:22Z",
+      "initiator": {
+        "id": "a1…0001",
+        "version": 1,
+        "className": "Organisation"
+      },
+      "hierarchyElement": {
+        "id": "b1…0001",
+        "version": 7,
+        "className": "Place"
+      },
+      "identifiedCredentials": [
+        {
+          "type": "licensePlate",
+          "credentialAssignedType": "vehicle",
+          "identifier": {
+            "id": "SYN-7720",
+            "className": "USNumberPlate"
+          }
+        }
+      ],
+      "segments": [
+        {
+          "id": "c4…1077",
+          "version": 1,
+          "actualStart": "2026-10-21T11:40:22Z",
+          "validationType": [
+            "licensePlate"
+          ],
+          "assignedRight": {
+            "id": "e2…0077",
+            "version": 1,
+            "className": "AssignedRight"
+          }
+        }
+      ],
+      "extensions": {
+        "apds-ext:apx:stay-compliance@1.0": {
+          "status": "lateStart",
+          "family": "violation",
+          "evaluatedTime": "2026-10-21T14:03:05Z",
+          "sequence": 2,
+          "final": false
+        }
+      },
+      "_place": "b1…0001",
+      "_plate": "SYN-7720",
+      "_entryLane": "b2…0001"
     }
   ],
   "payments": [
@@ -849,6 +1009,132 @@
       "direction": "entry",
       "outcome": "denied",
       "denialReason": "permitExpired"
+    }
+  ],
+  "observations": [
+    {
+      "id": "f3…0140",
+      "version": 1,
+      "type": "licensePlate",
+      "method": "anpr",
+      "observedCredentialId": "SYN-7720",
+      "observationStartTime": "2026-10-21T14:03:10Z",
+      "creationDateTime": "2026-10-21T14:03:11Z",
+      "elementIds": {
+        "id": "b2…0002",
+        "version": 3,
+        "className": "VehicularAccess"
+      },
+      "observerOrganisation": {
+        "id": "a1…0001",
+        "version": 1,
+        "className": "Organisation"
+      },
+      "confidence": {
+        "overallConfidence": 0.96
+      }
+    }
+  ],
+  "commands": [
+    {
+      "id": "cb…0031",
+      "version": 3,
+      "commandType": "displayMessage",
+      "target": {
+        "id": "c1…0040",
+        "className": "SupplementalEquipment"
+      },
+      "parameters": {
+        "message": [
+          {
+            "language": "en",
+            "string": "See attendant"
+          }
+        ]
+      },
+      "requestedBy": {
+        "id": "a1…0001",
+        "className": "Organisation"
+      },
+      "agent": "agent:t.vance",
+      "agentType": "human",
+      "reason": "plate on the refuse-service list at exit lane 2",
+      "status": "succeeded",
+      "confirmationLevel": "deviceAcknowledged",
+      "statusHistory": [
+        {
+          "state": "received",
+          "time": "2026-10-21T14:20:01Z",
+          "actor": "apx-operator"
+        },
+        {
+          "state": "accepted",
+          "time": "2026-10-21T14:20:02Z",
+          "actor": "lakeside-parcs"
+        },
+        {
+          "state": "succeeded",
+          "time": "2026-10-21T14:20:05Z",
+          "actor": "sign-c1000000-0040"
+        }
+      ],
+      "result": {
+        "display": {
+          "shownTime": "2026-10-21T14:20:05Z",
+          "contentHash": "sha256:77d0c5e1f2a8",
+          "wordingVersion": "attendant-2026-10",
+          "acknowledgedBy": "player"
+        }
+      },
+      "_place": "b1…0001"
+    }
+  ],
+  "displayRecords": [
+    {
+      "id": "c5…0010",
+      "version": 1,
+      "display": {
+        "id": "c1…0041",
+        "className": "SupplementalEquipment"
+      },
+      "messageKind": "transientEntrance",
+      "session": {
+        "id": "c4…0077",
+        "className": "Session"
+      },
+      "shownTime": "2026-10-21T11:40:24Z",
+      "contentHash": "sha256:4d1a0c77e9b2",
+      "wordingVersion": "entry-2026-10",
+      "acknowledgedBy": "player",
+      "recordInfo": {
+        "creationTime": "2026-10-21T11:40:25Z",
+        "creator": {
+          "id": "a1…0001",
+          "className": "Organisation"
+        },
+        "creationUser": "svc:edge-lakeside"
+      }
+    },
+    {
+      "id": "c5…0011",
+      "version": 1,
+      "display": {
+        "id": "c1…0040",
+        "className": "SupplementalEquipment"
+      },
+      "messageKind": "idle",
+      "shownTime": "2026-10-21T14:00:00Z",
+      "contentHash": "sha256:0c9e5b31d7f4",
+      "wordingVersion": "idle-2026-10",
+      "acknowledgedBy": "player",
+      "recordInfo": {
+        "creationTime": "2026-10-21T14:00:01Z",
+        "creator": {
+          "id": "a1…0001",
+          "className": "Organisation"
+        },
+        "creationUser": "svc:edge-lakeside"
+      }
     }
   ]
 }

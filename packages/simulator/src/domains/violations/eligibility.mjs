@@ -12,7 +12,8 @@
  *   observations:   _plate, _credentialType, _place, _time, _confidence, _imageLink
  */
 import { refOf } from '../common.mjs';
-import { config, toMs, iso, sameCredential, fromAssigned, DAY_MS } from './model.mjs';
+import { toMs, iso, sameCredential, fromAssigned, DAY_MS } from './model.mjs';
+import { policyInForce } from './policy.mjs';
 
 const STATUS_TO_TYPE = {
   expired: 'expiredRight',
@@ -85,19 +86,41 @@ export function evaluateEligibility(sim, { credential, placeId, atMs, principal 
   if (!entitled) {
     const best = PRIORITY.map((st) => basis.find((b) => b.status === st)).find(Boolean);
     out.suggestedViolationType = best ? STATUS_TO_TYPE[best.status] : 'noValidRight';
-    const grace = config(sim).graceMinutes * 60_000;
-    if (grace && best?.status === 'expired' && best.validTo) out.graceUntil = iso(toMs(best.validTo) + grace);
-    if (grace && best?.status === 'notYetValid' && best.validFrom) out.graceUntil = iso(toMs(best.validFrom) - grace);
   }
-  const read = lastRead(sim, { credential, placeId, atMs, readable });
+  const reads = readsOf(sim, { credential, placeId, atMs, readable });
+  const grace = entitled ? null : graceUntil(sim, { placeId, atMs, basis, reads });
+  if (grace) out.graceUntil = grace;
+  const read = lastRead(reads);
   if (read) out.lastRead = read;
   return out;
 }
 
-/** The latest plate read of the credential at the place (its subtree or ancestors) no later than `atMs`. */
-function lastRead(sim, { credential, placeId, atMs, readable }) {
+/**
+ * §19.3 rule 5: `graceUntil` from the `stayGrace` of the policy in force
+ * at the place at `atMs` (§19.10 rule 7). Called only when no right
+ * covers the stay now. Exit side: the stay has outlived its rights (one
+ * ended within the last day), so the end of the last of them plus
+ * `exitMinutes`. Entry side: nothing has covered the stay, so its start
+ * (the earliest read of the credential there within the last day) plus
+ * `entryMinutes`. Null when that side has no grace or no policy is in
+ * force. How a stay inside or past the grace is scored is not APX's rule.
+ */
+function graceUntil(sim, { placeId, atMs, basis, reads }) {
+  const grace = policyInForce(sim, placeId, atMs)?.stayGrace;
+  if (!grace) return null;
+  const ended = basis
+    .filter((b) => b.status === 'expired' && b.validTo && atMs - toMs(b.validTo) <= DAY_MS)
+    .map((b) => toMs(b.validTo));
+  if (ended.length) return grace.exitMinutes === undefined ? null : iso(Math.max(...ended) + grace.exitMinutes * 60_000);
+  const start = reads.map((o) => toMs(o._time)).filter((t) => atMs - t <= DAY_MS).at(-1);
+  if (start === undefined || grace.entryMinutes === undefined) return null;
+  return iso(start + grace.entryMinutes * 60_000);
+}
+
+/** The plate reads of the credential at the place (its subtree or ancestors) no later than `atMs`, newest first. */
+function readsOf(sim, { credential, placeId, atMs, readable }) {
   const h = sim.hierarchy;
-  const reads = sim.store
+  return sim.store
     .collection('observations')
     .find((o) => {
       if (!o._plate || !o._place || !o._time) return false;
@@ -107,6 +130,10 @@ function lastRead(sim, { credential, placeId, atMs, readable }) {
       return readable(o._place);
     })
     .sort((a, b) => toMs(b._time) - toMs(a._time));
+}
+
+/** The latest of those reads, as EligibilityResult.lastRead. */
+function lastRead(reads) {
   const o = reads[0];
   if (!o) return null;
   return {

@@ -2,7 +2,7 @@
   "openapi": "3.1.0",
   "info": {
     "title": "APX — PARCS Starter Profile",
-    "version": "0.15.0",
+    "version": "0.16.0",
     "summary": "An open companion standard to APDS 4.1",
     "license": {
       "name": "MIT",
@@ -6149,7 +6149,7 @@
             "type": "string",
             "description": "The APX edition implemented (Part 3 §3.4), as named in its `spec/edition.json`.",
             "examples": [
-              "0.15.0"
+              "0.16.0"
             ]
           },
           "apdsVersion": {
@@ -12437,7 +12437,7 @@
               "withheld",
               "other"
             ],
-            "description": "`compliant`, `violation`, `withheld` (not scored, or held for\nreview) or `other` (neither, as `paidLate`). For a registry status\nit MUST be the family the registry gives (422\n`request-unprocessable`)."
+            "description": "The family of the status. For a registry status it MUST be the\nfamily the registry gives (422 `request-unprocessable`).\n`compliant` — rights or an exemption covered the stay\n`violation` — the stay was not covered as the policy requires\n`withheld` — not scored, or held back for review\n`other` — an outcome none of the other families fits, for example paid after exit"
           },
           "pendingStatus": {
             "type": "string",

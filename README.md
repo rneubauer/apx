@@ -101,11 +101,12 @@ Version history: [CHANGELOG.md](CHANGELOG.md).
 
 ## Status
 
-**v0.15.0 — complete v1 draft, vetted.** All domains specified: data profile,
+**v0.16.0 — complete v1 draft, vetted.** All domains specified: data profile,
 delivery fabric, control, alerts, discovery, accounts & payments, LPR,
 reservations, permits, tolling, customer service & resolution, violations
 (enforcement), validation programs, credential lifecycle, valet, EV charging,
-plate lists, UI launch and site configuration. This repository contains the specification,
+plate lists, UI launch and site configuration, with display records,
+stay compliance and separate entry and exit grace. This repository contains the specification,
 the written standard, and a non-normative simulator for trying them out;
 production implementations live elsewhere.
 

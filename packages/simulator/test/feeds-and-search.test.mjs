@@ -101,8 +101,9 @@ describe('Part 13 body-form lookups', () => {
 });
 
 describe('Part 5 §5.2 rule 8 change feed on APX list routes', () => {
-  test('the rule-8 table is read from the bundle: all 20 routes', () => {
-    assert.equal(APX_FEED_ROUTES.size, 20);
+  test('the rule-8 table is read from the bundle: all 21 routes', () => {
+    assert.equal(APX_FEED_ROUTES.size, 21);
+    assert.equal(APX_FEED_ROUTES.get('get-apx-v1-display-records'), 'DisplayRecord');
     assert.equal(APX_FEED_ROUTES.get('get-apx-v1-violations'), 'Violation');
     assert.equal(APX_FEED_ROUTES.get('get-apx-v1-payments'), 'PaymentRecord');
   });

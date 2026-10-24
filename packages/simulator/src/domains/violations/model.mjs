@@ -22,7 +22,6 @@ export const TOPIC = {
 /** world.enforcement, with defaults. */
 export function config(sim) {
   return {
-    graceMinutes: 15,
     refundWindowDays: 30,
     noticePrefix: 'LG-2026-',
     noticeStart: 18301,

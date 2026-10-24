@@ -8,6 +8,8 @@ The machine-readable spec (`spec/openapi/apx.yaml`, bundled as
 
 ## [Unreleased]
 
+## [0.16.0] — 2026-10-23
+
 Three additions asked for by an edge-and-cloud deployment after its first
 sign go-live. Each carries the configured policy or the recorded outcome,
 never the rule that turns one into the other.

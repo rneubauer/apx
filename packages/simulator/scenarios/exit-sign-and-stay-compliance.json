@@ -1,0 +1,81 @@
+{
+  "name": "The exit sign said \"Payment not found\": the record, and the stay's score",
+  "description": "SYN-7720 reaches exit lane 2 at Lakeside with nothing paid. The edge controller that drives the exit sign decides on its own copy of the rights, shows the unpaid message and records over APX that it did: which sign, which kind of message, when, for which read and stay, with a hash of the wording and never the text or the plate. A console finds every message the stay was shown; the compliance engine's score sits on the Session, refused when a delayed worker writes an older evaluation, and left out for a reader without the compliance scope. Part 26 §26.9 and Part 5 §5.9.",
+  "world": "apx-site-config",
+  "token": "default",
+  "steps": [
+    {
+      "name": "Exit lane 2, 21 October, 14:03",
+      "narration": "Read f3…0140: SYN-7720, in since 11:40, nothing paid. The sign is driven by the edge on site; no APX command is involved.",
+      "clock": { "now": "2026-10-21T14:03:13Z" }
+    },
+    {
+      "name": "The edge records what the sign showed",
+      "narration": "messageKind transientExitUnpaid from apx-display-message-kinds. The server derives the place from the sign. The record holds a hash and the wording version, never the message text, never the plate (§26.9 rules 1-4).",
+      "request": {
+        "method": "POST",
+        "path": "/v1/display-records",
+        "token": "edge-controller",
+        "headers": { "Idempotency-Key": "sign-c1-0040-2026-10-21T14:03:12Z" },
+        "body": {
+          "id": "c5000000-0000-4000-8000-000000000012",
+          "version": 1,
+          "display": { "id": "c1000000-0000-4000-8000-000000000040", "className": "SupplementalEquipment" },
+          "messageKind": "transientExitUnpaid",
+          "observation": { "id": "f3000000-0000-4000-8000-000000000140", "className": "ObservationElement" },
+          "session": { "id": "c4000000-0000-4000-8000-000000000077", "className": "Session" },
+          "shownTime": "2026-10-21T14:03:12Z",
+          "contentHash": "sha256:9f2c1e0b7a4d",
+          "wordingVersion": "exit-2026-10",
+          "acknowledgedBy": "player"
+        }
+      },
+      "expect": { "status": 201, "body": { "place": { "id": "b1000000-0000-4000-8000-000000000001", "className": "Place" }, "messageKind": "transientExitUnpaid" } }
+    },
+    {
+      "name": "Subscribers are told once",
+      "events": { "type": "apx.displays.shown.v1", "exactly": 1 }
+    },
+    {
+      "name": "Not a sign",
+      "narration": "The barrier is not a display: a record naming it is refused (§26.9 rule 2).",
+      "request": {
+        "method": "POST",
+        "path": "/v1/display-records",
+        "token": "edge-controller",
+        "body": { "id": "c5000000-0000-4000-8000-000000000013", "version": 1, "display": { "id": "c1000000-0000-4000-8000-000000000002", "className": "SupplementalEquipment" }, "messageKind": "idle", "shownTime": "2026-10-21T14:10:00Z" }
+      },
+      "expect": { "status": 422, "problem": "reference-unknown" }
+    },
+    {
+      "name": "Every message this stay was shown",
+      "narration": "The welcome at entry lane 1 at 11:40, and the unpaid exit now, newest first. An appeal finds its proof of display here (§26.9 rule 6).",
+      "request": { "method": "GET", "path": "/v1/display-records?session=c4000000-0000-4000-8000-000000000077" },
+      "expect": { "status": 200, "body": { "meta": { "total": 2 }, "data": [ { "messageKind": "transientExitUnpaid" }, { "messageKind": "transientEntrance" } ] } }
+    },
+    {
+      "name": "The engine's score on the stay",
+      "narration": "The compliance engine wrote its evaluation on the Session: lateStart, family violation, sequence 2. It is a status, not a Violation; nothing is issued by it (§5.9 rules 1, 6).",
+      "request": { "method": "GET", "path": "/sessions/c4000000-0000-4000-8000-000000000077" },
+      "expect": { "status": 200, "body": { "extensions": { "apds-ext:apx:stay-compliance@1.0": { "status": "lateStart", "family": "violation", "sequence": 2 } } } }
+    },
+    {
+      "name": "A delayed worker writes an older evaluation",
+      "narration": "Sequence 1 arrives after sequence 2: refused, and nothing is written (§5.9 rule 4).",
+      "request": {
+        "method": "PUT",
+        "path": "/sessions/c4000000-0000-4000-8000-000000000077",
+        "token": "compliance-engine",
+        "headers": { "APX-Update-Mode": "change", "Accept": "application/problem+json" },
+        "body": { "id": "c4000000-0000-4000-8000-000000000077", "extensions": { "apds-ext:apx:stay-compliance@1.0": { "status": "unscored", "family": "withheld", "evaluatedTime": "2026-10-21T11:41:00Z", "sequence": 1 } } }
+      },
+      "expect": { "status": 409, "problem": "evaluation-out-of-order" }
+    },
+    {
+      "name": "A reader without apx.compliance:read",
+      "narration": "A city platform reads the same Session: everything but the stay-compliance block, which goes only to tokens holding apx.compliance:read (§5.9 rule 7).",
+      "request": { "method": "GET", "path": "/sessions/c4000000-0000-4000-8000-000000000077", "token": "<apx.data:read only>" },
+      "expect": { "status": 200, "body": { "id": "c4000000-0000-4000-8000-000000000077", "actualStart": "2026-10-21T11:40:22Z" } }
+    }
+  ]
+}

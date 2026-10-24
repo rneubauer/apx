@@ -147,8 +147,7 @@ id nobody has is 404.
       "status": "notYetValid"
     }
   ],
-  "suggestedViolationType": "notYetValidRight",
-  "graceUntil": "2026-09-24T11:45:00Z"
+  "suggestedViolationType": "notYetValidRight"
 }
 ```
 

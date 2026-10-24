@@ -11,12 +11,13 @@
  * `_place`, `_lane`), commsPoints (`_place`), cameraViews (the audit log
  * of every view issued; `_agent`, `_correlationId`), placeDecorations
  * (`_target`: the external-ids and place-operations decorations of a
- * place or lane).
+ * place or lane), displayRecords (§26.9, immutable; `_place`).
  *
  * World sections read: equipment[] ({ id, placeId, laneId?, name,
  * equipmentType, version?, installed?, detail{}, camera{}, externalIds[] }),
  * commsPoints[] (wire shape), placeDecorations[] ({ target, className,
- * externalIds[], operations{} }), video{ base, viewTtlSeconds }.
+ * externalIds[], operations{} }), displayRecords[] (wire shape; `place`
+ * derived from the display when absent), video{ base, viewTtlSeconds }.
  *
  * Never holds an IP address, a username or a password: Part 26 §26.1 and
  * Part 9 §9.7.
@@ -40,8 +41,15 @@ const EQUIPMENT = 'equipment';
 const COMMS = 'commsPoints';
 const VIEWS = 'cameraViews';
 const DECOR = 'placeDecorations';
+const DISPLAYS = 'displayRecords';
 const TOPIC_EQUIPMENT = 'apx.equipment.changed.v1';
 const TOPIC_COMMS = 'apx.commspoints.changed.v1';
+const TOPIC_DISPLAY = 'apx.displays.shown.v1';
+
+const SIGN_ROLES = new Set(['laneDisplay', 'countSign', 'other']);
+const DISPLAY_FILTERS = ['place', 'display', 'messageKind', 'session', 'observation', 'since', 'until'];
+// The members a DisplayRecord keeps: never message text, never a plate (§26.9 rule 3, Part 9 §9.6 rule 8).
+const DISPLAY_MEMBERS = ['display', 'messageKind', 'observation', 'session', 'command', 'shownTime', 'contentHash', 'wordingVersion', 'screenshot', 'acknowledgedBy', 'extensions'];
 
 const BARRIER_ROLES = new Set(['gate', 'overheadDoor', 'bollard', 'trafficSpikes', 'accessDoor', 'turnstile']);
 const OFFLINE = new Set(['fault', 'inoperative', 'outOfService', 'unknown']);
@@ -68,6 +76,7 @@ export default {
     const comms = () => sim.store.collection(COMMS);
     const views = () => sim.store.collection(VIEWS);
     const decorations = () => sim.store.collection(DECOR);
+    const displays = () => sim.store.collection(DISPLAYS);
     const equipmentFeed = createApxFeed(sim, { collection: EQUIPMENT, prefix: 'eq', className: 'SupplementalEquipment' });
     const commsFeed = createApxFeed(sim, { collection: COMMS, prefix: 'cp', className: 'CommsPoint' });
 
@@ -132,9 +141,14 @@ export default {
           _target: d.target,
         });
       }
+      for (const r of world.displayRecords ?? []) {
+        const place = r.place?.id ?? equipment().get(r.display?.id)?._place ?? sim.hierarchy.placeOf(r.display?.id)?.id;
+        displays().put({ version: 1, ...r, ...(place ? { place: refOf(place, 'Place') } : {}), _place: place });
+      }
     });
 
     sim.view(COMMS, (c) => wire(c));
+    sim.view(DISPLAYS, (r) => wire(r));
 
     // ---------- lookups other domains use ----------
 
@@ -377,9 +391,102 @@ export default {
       return { status: 201, body };
     });
 
+    // ---------- display records (§26.9) ----------
+
+    /** A body reference that must name something the caller can see (rule 4): 422 reference-unknown otherwise. */
+    const requireVisible = (ctx, reference, collection, what) => {
+      if (!reference) return;
+      const rec = sim.store.collection(collection).get(reference.id);
+      const place = rec?._lane ?? rec?._place ?? rec?.hierarchyElement?.id;
+      if (!rec || (place && !covered(ctx, place))) fail('reference-unknown', `${what} ${reference.id} names nothing visible to this credential.`);
+    };
+
+    /** Rule 5: a record naming a displayMessage command agrees with that command's CommandResult.display. */
+    const checkCommand = (ctx, b) => {
+      if (!b.command) return;
+      const cmd = sim.store.collection('commands').get(b.command.id);
+      if (!cmd || (cmd._place && !covered(ctx, cmd._place))) fail('reference-unknown', `command ${b.command.id} names no Command visible to this credential.`);
+      if (cmd.commandType !== 'displayMessage') fail('request-unprocessable', `Command ${cmd.id} is a ${cmd.commandType}, not a displayMessage.`);
+      const shown = cmd.result?.display;
+      if (!shown) return;
+      const timeDiffers = shown.shownTime && Date.parse(shown.shownTime) !== Date.parse(b.shownTime);
+      const hashDiffers = shown.contentHash && shown.contentHash !== b.contentHash;
+      if (timeDiffers || hashDiffers) {
+        fail('request-unprocessable', `Command ${cmd.id} recorded shownTime ${shown.shownTime ?? '(none)'} and contentHash ${shown.contentHash ?? '(none)'}; the record disagrees.`);
+      }
+    };
+
+    /** The sign a record names (rule 2): a SupplementalEquipment of §26.1 whose role is a sign; its place. */
+    const checkDisplayBody = (ctx, b) => {
+      const sign = equipment().get(b.display.id);
+      if (!sign) fail('reference-unknown', `display ${b.display.id} names no SupplementalEquipment visible to this credential.`);
+      if (!covered(ctx, sign.id)) fail('insufficient-grant', `display ${sign.id} is at ${placeName(sign._place)}, outside the token's apx_places grant.`);
+      const role = sign.extensions?.[DETAIL]?.role;
+      if (!SIGN_ROLES.has(role)) fail('reference-unknown', `display ${sign.id} is a ${role ?? 'device with no role'}, not a sign (role laneDisplay or countSign).`);
+      if (b.place && b.place.id !== sign._place) fail('request-unprocessable', `place ${b.place.id} is not the place of display ${sign.id} (${sign._place}).`);
+      requireVisible(ctx, b.observation, 'observations', 'observation');
+      requireVisible(ctx, b.session, 'sessions', 'session');
+      checkCommand(ctx, b);
+      return sign._place;
+    };
+
+    /** Store a record and publish its notice (rule 7). Immutable once written: there is no update path. */
+    const recordDisplay = (b, place, { assignedId, actor }) => {
+      const content = Object.fromEntries(DISPLAY_MEMBERS.filter((k) => b[k] !== undefined).map((k) => [k, b[k]]));
+      const rec = displays().insert({ ...(b.id ? { id: b.id } : {}), ...content, place: refOf(place, 'Place'), _place: place }, { assignedId, actor });
+      sim.events.publish({ type: TOPIC_DISPLAY, data: wire(rec), subject: refOf(rec.display.id, 'SupplementalEquipment'), place });
+      sim.hooks.emit('display.shown', { record: rec });
+      return rec;
+    };
+
+    sim.on('post-apx-v1-display-records', (ctx) => {
+      const place = checkDisplayBody(ctx, ctx.body);
+      const rec = recordDisplay(ctx.body, place, { assignedId: ctx.assignId, actor: ctx.actor });
+      return { status: 201, body: wire(rec), idem: { collection: DISPLAYS, id: rec.id } };
+    });
+
+    const displayMatches = (rec, f) => {
+      if (f.place && !(rec._place === f.place || sim.hierarchy.within(rec._place, f.place))) return false;
+      if (f.display && rec.display?.id !== f.display) return false;
+      if (f.messageKind && rec.messageKind !== f.messageKind) return false;
+      if (f.session && rec.session?.id !== f.session) return false;
+      if (f.observation && rec.observation?.id !== f.observation) return false;
+      const shown = Date.parse(rec.shownTime);
+      if (f.since !== undefined && shown < f.since) return false;
+      if (f.until !== undefined && shown >= f.until) return false;
+      return true;
+    };
+
+    // The §5.2 change feed on this route is the shared one (common.mjs installChangeFeeds).
+    sim.on('get-apx-v1-display-records', (ctx) => {
+      const f = filterOf(ctx.query, DISPLAY_FILTERS);
+      if (f.place) requirePlace(ctx, f.place);
+      const bounds = { ...f, since: parseInstant(f.since, 'since'), until: parseInstant(f.until, 'until') };
+      const rows = displays()
+        .find((rec) => covered(ctx, rec._place) && displayMatches(rec, bounds))
+        .sort((a, b) => b.shownTime.localeCompare(a.shownTime) || a.id.localeCompare(b.id));
+      return paginate(ctx, rows);
+    });
+
+    sim.on('get-apx-v1-display-records-id', (ctx) => wire(getVisible(ctx, DISPLAYS, ctx.params.id, { what: 'display record' })));
+
     // ---------- injectors ----------
 
     sim.injector('equipmentChanged', (args) => changeEquipment(args));
+
+    /**
+     * The edge that drives a sign records a message it showed, off-API
+     * (a stage direction standing in for the edge's own POST): { display,
+     * messageKind, shownTime?, session?, observation?, contentHash?,
+     * wordingVersion?, acknowledgedBy? }.
+     */
+    sim.injector('displayShown', ({ display, ...rest }) => {
+      const sign = equipment().get(display);
+      if (!sign) throw new Error(`no equipment ${display}`);
+      const b = { display: refOf(display, 'SupplementalEquipment'), shownTime: sim.clock.now(), ...rest };
+      for (const [k, className] of [['session', 'Session'], ['observation', 'ObservationElement'], ['command', 'Command']]) if (typeof b[k] === 'string') b[k] = refOf(b[k], className);
+      return wire(recordDisplay(b, sign._place, { actor: { user: 'edge-controller' } }));
+    });
 
     /** A call platform's comms point changes off-API (a line re-provisioned). */
     sim.injector('commsPointChanged', ({ commsPoint, ...patch }) => {
@@ -406,6 +513,6 @@ export default {
       return { feed, cursor: name, position: sim.store.changeSeq };
     });
 
-    sim.siteconfig = { commsPointBy, detailOf, roleOf, isBarrier, decorationsOf, changeEquipment, equipment, comms, DETAIL, CAMERA, EXT_IDS, PLACE_OPS };
+    sim.siteconfig = { commsPointBy, detailOf, roleOf, isBarrier, decorationsOf, changeEquipment, equipment, comms, displays, DETAIL, CAMERA, EXT_IDS, PLACE_OPS };
   },
 };
