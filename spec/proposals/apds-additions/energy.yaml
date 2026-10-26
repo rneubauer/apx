@@ -7,7 +7,8 @@ summary: >-
   status of each connector, what is physically in the bay in front of a charging point, and one
   charge of one vehicle (a ChargingSession) linked to the parking Session it happened inside. Status
   values reuse RefillPointStatusEnum; nothing here restates the static description or the charging
-  network's own protocols. All of it is experimental in APX (Part 23) and is offered for discussion.
+  network's own protocols. All of it is in use in APX (Part 23). It is optional and offered for
+  discussion, and nothing else in this package depends on it.
 packages:
   - name: EnergyInfrastructure
     location: D2Payload/Extension/Parking/EnergyInfrastructure/Classes

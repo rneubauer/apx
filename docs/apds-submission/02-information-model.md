@@ -1195,7 +1195,7 @@ it yet.
 
 ### EnergyInfrastructure
 
-APDS 4.1 describes charging infrastructure as it is built: the SupplementalEquipment, its RefillPoints and ElectricChargingPoints, the Connectors, and a RefillPointStatusEnum for the point as a whole. APX adds only the live, parking-side view that operators exchange every day: the status of each connector, what is physically in the bay in front of a charging point, and one charge of one vehicle (a ChargingSession) linked to the parking Session it happened inside. Status values reuse RefillPointStatusEnum; nothing here restates the static description or the charging network's own protocols. All of it is experimental in APX (Part 23) and is offered for discussion.
+APDS 4.1 describes charging infrastructure as it is built: the SupplementalEquipment, its RefillPoints and ElectricChargingPoints, the Connectors, and a RefillPointStatusEnum for the point as a whole. APX adds only the live, parking-side view that operators exchange every day: the status of each connector, what is physically in the bay in front of a charging point, and one charge of one vehicle (a ChargingSession) linked to the parking Session it happened inside. Status values reuse RefillPointStatusEnum; nothing here restates the static description or the charging network's own protocols. All of it is in use in APX (Part 23). It is optional and offered for discussion, and nothing else in this package depends on it.
 
 The proposed classes sit in the existing `EnergyInfrastructure` package
 beside RefillPoint, ElectricChargingPoint and Connector. None of them

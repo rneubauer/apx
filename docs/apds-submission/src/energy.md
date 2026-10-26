@@ -18,8 +18,9 @@ themselves using their own protocols. What parking systems lack is a
 common, parking-side way to describe it alongside Places, Spaces, Sessions
 and AssignedRights.
 
-All of these additions are experimental in APX and are offered for
-discussion rather than for immediate adoption.
+All of these additions are in use in APX (Part 23). They are optional
+and offered for discussion rather than for immediate adoption, and
+nothing else in this package depends on them.
 
 ### What a charging point status holds
 
