@@ -95,12 +95,14 @@ that opens an object or array to fold it, and use Copy or Expand at the
 block's top right. The UI is plain HTML, CSS and JavaScript with no external
 assets, so it works offline. Browser zoom (Ctrl/Cmd and +) scales it
 for the back of a room; above 1800 px wide it already sets larger type.
-`scenarios/` holds twenty-three narrated demos: the core story, everyday
+`scenarios/` holds twenty-four narrated demos: the core story, everyday
 operations (card in/out, monthly fobs and permit pools, find-and-book,
 lost ticket, valet, tolling, plate lists), the vendor screen and site
 configuration of Parts 25 and 26 (a lost ticket issued in the PARCS
 vendor's own console and still on the record, the lobby door after
-hours, a garage described from APX alone), and analytics in the
+hours, a garage described from APX alone, the exit sign's "Payment not
+found" recorded as a display record beside the stay's compliance score),
+and analytics in the
 `analytics-lakeside` world (transient transactions, monthly parkers,
 plate reads, occupancy, change-feed sync); [DEMO.md](DEMO.md) is the
 runbook for showing them on a call (checks to run first, which demos for

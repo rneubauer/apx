@@ -149,6 +149,7 @@ export default {
             ...(s.filters ? { filters: s.filters } : {}),
             status: s.status ?? 'active',
             _grant: cred.apx_places ? [...cred.apx_places] : undefined,
+            _scopes: [...(cred.scopes ?? [])],
             _org: cred.apx_org?.id ?? null,
             _keys: [{ keyId: 'k1', secret: s.secret ?? 'simulated-secret-of-at-least-32-bytes!!' }],
           });

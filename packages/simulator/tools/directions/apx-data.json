@@ -72,5 +72,47 @@
         }
       }
     }
+  ],
+  "DATA-35": [
+    {
+      "at": "start",
+      "inject": {
+        "kind": "dataWrite",
+        "collection": "sessions",
+        "op": "change",
+        "id": "c4000000-0000-4000-8000-000000000201",
+        "record": {
+          "id": "c4000000-0000-4000-8000-000000000201",
+          "actualEnd": "2026-09-24T20:52:40Z",
+          "segments": [{ "id": "c5000000-0000-4000-8000-000000000201", "actualEnd": "2026-09-24T20:52:40Z" }]
+        }
+      }
+    },
+    {
+      "at": "start",
+      "inject": {
+        "kind": "dataWrite",
+        "collection": "sessions",
+        "op": "change",
+        "id": "c4000000-0000-4000-8000-000000000201",
+        "record": {
+          "id": "c4000000-0000-4000-8000-000000000201",
+          "extensions": {
+            "apds-ext:apx:session-detail@1.0": {
+              "reads": [
+                { "observation": { "id": "f2000000-0000-4000-8000-000000000901", "className": "ObservationElement" }, "role": "entry", "representative": true },
+                { "observation": { "id": "f2000000-0000-4000-8000-000000000902", "className": "ObservationElement" }, "role": "duplicate" }
+              ],
+              "lifecycle": "ended"
+            }
+          }
+        }
+      }
+    },
+    { "at": 1, "headers": { "Authorization": "Bearer <compliance-engine>", "APX-Update-Mode": "change" } }
+  ],
+  "DATA-36": [
+    { "at": 1, "headers": { "Authorization": "Bearer <compliance-engine>", "APX-Update-Mode": "change", "Accept": "application/problem+json" } },
+    { "at": 2, "headers": { "Authorization": "Bearer <compliance-engine>", "APX-Update-Mode": "change", "Accept": "application/problem+json" } }
   ]
 }

@@ -28,6 +28,9 @@ APX open vocabularies are published as **APDS UserDefinedCodeList documents**
 | `apx-area-types` | Where an item stands in a location (fixed) | `EquipmentDetail.area` (Part 26 §26.2) |
 | `apx-comms-point-types` | How a parker reaches help at a point (fixed) | `CommsPoint.type` (Part 26 §26.4) |
 | `apx-escalation-roles` | Whom an agent escalates to, as roles (fixed) | `PlaceOperations.escalationContacts[].role`, `ApprovalRequest.role` (Part 26 §26.5, Part 17 §17.3a) |
+| `apx-display-message-kinds` | Which message a sign showed (open: a location's own messages are implementer codes) | `DisplayRecord.messageKind` (Part 26 §26.9) |
+| `apx-stay-compliance-statuses` | The outcome of scoring a stay, each with its family (open: other engines add their own) | `StayCompliance.status`, `StayCompliance.pendingStatus` (Part 5 §5.9) |
+| `apx-stay-compliance-flags` | Facts behind a stay's compliance status (open) | `StayCompliance.flags[]` (Part 5 §5.9) |
 
 Registries marked **fixed** still follow §11.1: entries are added, never
 removed or re-meant. They differ from the open ones in that an

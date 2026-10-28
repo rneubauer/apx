@@ -155,6 +155,14 @@ payment history — are subject to this clause:
    corresponding `GET`. Implementations MUST serve the body form of every
    lookup they serve, and a deployment whose calls cross a network
    boundary SHOULD use it.
+8. **Per-stay outcomes (normative).** A stay's compliance status (Part
+   5 §5.9) and the messages a sign showed for it (Part 26 §26.9) carry
+   no plate, but they describe one person's visit. The status is served
+   only under `apx.compliance:read` and written only under
+   `apx.compliance:write`; a display record never stores the message
+   text or the plate, even when the sign showed the plate, and its
+   `screenshot` is an access-controlled link (rule 2) that MUST follow
+   the retention published for plate imagery (rule 3).
 
 Regulatory compliance (lawful basis, data-subject rights, cross-border
 transfer) remains the Distributing Party's responsibility; this clause

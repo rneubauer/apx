@@ -2,7 +2,7 @@
 
 # APX Interface Specification
 
-*APX Specification · APX 0.15.0 · OpenAPI 0.15.0 · built on APDS 4.1 (2026-01-14) · Draft*
+*APX Specification · APX 0.16.0 · OpenAPI 0.16.0 · built on APDS 4.1 (2026-01-14) · Draft*
 
 ## Introduction
 
@@ -52,7 +52,7 @@ can be read on its own.
 
 ## Operations at a glance
 
-The APX OpenAPI document declares 204 operations and 6 webhooks. 40 operations are APDS 4.1 native routes that APX carries; the rest are defined by APX.
+The APX OpenAPI document declares 207 operations and 6 webhooks. 40 operations are APDS 4.1 native routes that APX carries; the rest are defined by APX.
 
 | Group | Tag | Operations |
 | --- | --- | --- |
@@ -61,7 +61,7 @@ The APX OpenAPI document declares 204 operations and 6 webhooks. 40 operations a
 | Platform | Subscription | 7 |
 | Platform | Control | 8 |
 | Platform | Alerts | 5 |
-| Platform | Site configuration | 9 |
+| Platform | Site configuration | 12 |
 | Platform | UI launch | 5 |
 | Commerce | Accounts | 14 |
 | Commerce | Reservations | 3 |
@@ -772,6 +772,9 @@ The APX OpenAPI document declares 204 operations and 6 webhooks. 40 operations a
 | DELETE | `/v1/comms-points/{id}` | Remove a comms point | `apx.siteconfig:manage` |
 | POST | `/v1/identifiers:resolve` | Find the APX record behind another system's id | `apx.siteconfig:read` |
 | POST | `/v1/cameras/{id}/views` | Get a short-lived link to see a camera | `apx.cameras:view` |
+| GET | `/v1/display-records` | List the messages signs showed | `apx.siteconfig:read` |
+| POST | `/v1/display-records` | Record that a sign showed a message | `apx.displays:record` |
+| GET | `/v1/display-records/{id}` | Read a display record | `apx.siteconfig:read` |
 
 #### 2.5.1 GET /v1/equipment
 
@@ -1000,6 +1003,87 @@ The APX OpenAPI document declares 204 operations and 6 webhooks. 40 operations a
 | 404 | Problem | The addressed resource does not exist (problem type `target-not-found`). A resource at a place outside the caller's `apx_places` grant is 403 `insufficient-grant` instead (Part 9 §9.3). A resource that exists but lies outside a narrower ownership scope (a merchant's own programs, a valet customer's own ticket) is reported as 404, so the answer never confirms another party's record exists (Part 9 §9.3a). |
 | 409 | Problem | The camera is offline, has no recorder for `playback`, or the implementation cannot issue a view now (`camera-view-unavailable`). |
 | 422 | Problem | `playback` with a `from`/`to` outside the camera's retention or missing (`playback-range-unavailable`), or a `kind` the camera's `streams` cannot serve (`request-unprocessable`). |
+| 429 | Problem | Rate limited (problem type `rate-limited`, Part 12). |
+
+#### 2.5.10 GET /v1/display-records
+
+**List the messages signs showed.** The records that a sign showed a message, newest first (Part 26 §26.9): which sign, which kind of message, when, and for which read or stay. An operator measures the signs with them; an appeal finds the proof of display. `mode=change&cursor=` serves the Part 5 §5.2 feed. A `place` outside the grant is 403 `insufficient-grant`.
+
+| Item | Value |
+| --- | --- |
+| Operation id | `get-apx-v1-display-records` |
+| Origin | APX |
+| Scopes | `apx.siteconfig:read` |
+| Request body | — |
+
+| Parameter | In | Required | Type | Description |
+| --- | --- | --- | --- | --- |
+| `mode` | query | no | string (full, change) | APX change feed (Part 5 §5.2): `full` (default — the route's ordinary list; on a native APDS route, exactly stock APDS 4.1) or `change` (the changes after `cursor`: a ChangeFeedPage on a native route, the route's own list envelope with the change-page members on an APX list route, rule 8; on an APX list route without a cursor, an empty page holding the current head cursor). |
+| `cursor` | query | no | string | Opaque change-feed cursor from a previous change page. Only meaningful with `mode=change`; a refused cursor is 404 `target-not-found` (Part 5 §5.2 rules 2 and 5). |
+| `place` | query | no | string uuid | The HierarchyElement subtree root. |
+| `display` | query | no | string uuid | The sign's SupplementalEquipment id. |
+| `messageKind` | query | no | string | An apx-display-message-kinds value or implementer code. |
+| `session` | query | no | string uuid | Records for this stay. |
+| `observation` | query | no | string uuid | Records triggered by this read. |
+| `since` | query | no | string date-time | Inclusive lower bound on `shownTime`. |
+| `until` | query | no | string date-time | Exclusive upper bound on `shownTime`. |
+| `page` | query | no | integer | The page number for paginated responses. |
+
+| Response | Body | Meaning |
+| --- | --- | --- |
+| 200 | object | Paginated display records; with `mode=change`, the changes after `cursor` in the same envelope (Part 5 §5.2 rule 8). |
+| 401 | Problem | Missing, malformed, expired, or revoked access token (problem type `unauthenticated`, Part 12). |
+| 403 | Problem | Insufficient scope (problem type `insufficient-scope`) or place grant (`insufficient-grant`) for this operation (Part 9). |
+| 404 | Problem | `mode=change` only (Part 5 §5.2): the cursor is unknown, older than the retention window, or was issued for another (class, credential, filter set). Problem type `target-not-found`; re-sync with `mode=full`. The cursor is an APX parameter, so this refusal is always a Problem (Part 5 §5.2 rules 2 and 5). |
+| 429 | Problem | Rate limited (problem type `rate-limited`, Part 12). |
+
+#### 2.5.11 POST /v1/display-records
+
+**Record that a sign showed a message.** Written by whichever system drove the display, the edge controller, the PARCS or the sign's player, usually with no APX command involved (Part 26 §26.9). `display` must be a SupplementalEquipment (422 `reference-unknown`); the server derives `place` from it. No message text and no plate are stored. With `command`, `shownTime` and `contentHash` must agree with that command's `CommandResult.display`. Immutable once written. `Idempotency-Key` optional. Publishes `apx.displays.shown.v1`.
+
+| Item | Value |
+| --- | --- |
+| Operation id | `post-apx-v1-display-records` |
+| Origin | APX |
+| Scopes | `apx.displays:record` |
+| Request body | DisplayRecord |
+
+| Parameter | In | Required | Type | Description |
+| --- | --- | --- | --- | --- |
+| `Idempotency-Key` | header | no | string | When given, the operation is idempotent per Part 4 §4.2a: a replay with the same body returns the current representation (200), a different body is 409 `idempotency-conflict`. Clients that retry SHOULD send it. |
+
+| Response | Body | Meaning |
+| --- | --- | --- |
+| 200 | DisplayRecord | Idempotent replay. |
+| 201 | DisplayRecord | Recorded. |
+| 400 | Problem | The request is malformed: the body or a parameter fails the operation's schema or a normative field rule (problem type `invalid-request`, with an `errors[]` member naming each offending JSON Pointer), or a REQUIRED Idempotency-Key is absent (`idempotency-key-required`). Part 12. |
+| 401 | Problem | Missing, malformed, expired, or revoked access token (problem type `unauthenticated`, Part 12). |
+| 403 | Problem | Insufficient scope (problem type `insufficient-scope`) or place grant (`insufficient-grant`) for this operation (Part 9). |
+| 409 | Problem | `Idempotency-Key` replayed with a different body (`idempotency-conflict`). |
+| 422 | Problem | A `display`, `observation`, `session` or `command` that names nothing visible (`reference-unknown`); a body `place` that disagrees with the display's, or a record that disagrees with its command's result (`request-unprocessable`). |
+| 429 | Problem | Rate limited (problem type `rate-limited`, Part 12). |
+
+#### 2.5.12 GET /v1/display-records/{id}
+
+**Read a display record.** What a sign showed, when, and for which read or stay (Part 26 §26.9).
+
+| Item | Value |
+| --- | --- |
+| Operation id | `get-apx-v1-display-records-id` |
+| Origin | APX |
+| Scopes | `apx.siteconfig:read` |
+| Request body | — |
+
+| Parameter | In | Required | Type | Description |
+| --- | --- | --- | --- | --- |
+| `id` | path | yes | string uuid |  |
+
+| Response | Body | Meaning |
+| --- | --- | --- |
+| 200 | DisplayRecord | The display record. |
+| 401 | Problem | Missing, malformed, expired, or revoked access token (problem type `unauthenticated`, Part 12). |
+| 403 | Problem | Insufficient scope (problem type `insufficient-scope`) or place grant (`insufficient-grant`) for this operation (Part 9). |
+| 404 | Problem | The addressed resource does not exist (problem type `target-not-found`). A resource at a place outside the caller's `apx_places` grant is 403 `insufficient-grant` instead (Part 9 §9.3). A resource that exists but lies outside a narrower ownership scope (a merchant's own programs, a valet customer's own ticket) is reported as 404, so the answer never confirms another party's record exists (Part 9 §9.3a). |
 | 429 | Problem | Rate limited (problem type `rate-limited`, Part 12). |
 
 ### 2.6 UI launch
@@ -5855,9 +5939,12 @@ Scopes are defined in the OpenAPI security schemes below and explained in APX Pa
 | apxOAuth | `apx.ui:launch` | Open a vendor screen for an agent and read the launches it issued (Part 25) |
 | apxOAuth | `apx.ui:read` | Read UI launches and the actions recorded in them (Part 25) |
 | apxOAuth | `apx.ui:record` | The surface's own scope; record actions done in a launched screen and close it (Part 25) |
-| apxOAuth | `apx.siteconfig:read` | Read a place's equipment, cameras, comms points and external ids; resolve another system's id (Part 26) |
+| apxOAuth | `apx.siteconfig:read` | Read a place's equipment, cameras, comms points, display records and external ids; resolve another system's id (Part 26) |
 | apxOAuth | `apx.siteconfig:manage` | Add, replace and remove comms points (Part 26) |
 | apxOAuth | `apx.cameras:view` | Obtain short-lived camera view links, logged against the agent (Part 26) |
+| apxOAuth | `apx.displays:record` | The scope of the system that drives a sign; record that a message was shown (Part 26 §26.9) |
+| apxOAuth | `apx.compliance:read` | Read the stay-compliance status on Sessions; without it the decoration is left out (Part 5 §5.9) |
+| apxOAuth | `apx.compliance:write` | Write the stay-compliance status on Sessions, beside the Session write scope (Part 5 §5.9) |
 | apxOAuth | `apx.digest:use` | Receive the credential digest keys (Part 9 §9.6 rule 6) |
 | apxOAuth | `apx.replication:write` | Replay another implementation's records with their original provenance and lifecycle times (Part 18 §18.6) |
 | apxOAuth | `apx.charging:read` | read charging-point status (with bay presence) and charging sessions |

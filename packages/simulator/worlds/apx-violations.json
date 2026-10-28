@@ -1,9 +1,8 @@
 {
   "extends": "base-lakeside",
   "name": "apx-violations",
-  "description": "The cast of docs/scenarios/by-module/apx-violations: Lakeside Garage with Level 2 (bay 218), Level 3, Lot C and Level 4; Lot D under its own root; the LPR van and officer Okafor's handheld; the Lot C and garage enforcement policies; the Lot C and Level 2 signs; the permits, reservation, pay-by-plate sessions and plate reads the eligibility checks consult;; the violations the prose finds already on file; and, for VIO-30 to VIO-36, the stays a later import links to, reads still in plate review, and a Session whose own match to a violation is a shadow match.",
+  "description": "The cast of docs/scenarios/by-module/apx-violations: Lakeside Garage with Level 2 (bay 218), Level 3, Lot C and Level 4; Lot D under its own root; the LPR van and officer Okafor's handheld; the Lot C and garage enforcement policies (each with its stayGrace, Part 19 §19.10 rule 7); the Lot C and Level 2 signs; the permits, reservation, pay-by-plate sessions and plate reads the eligibility checks consult;; the violations the prose finds already on file; and, for VIO-30 to VIO-36, the stays a later import links to, reads still in plate review, and a Session whose own match to a violation is a shadow match; and, for VIO-37, SYN-5150 entering Lot C at 10:02 on 22 October with nothing paid and SYN-6262 paid until 11:00.",
   "enforcement": {
-    "graceMinutes": 15,
     "refundWindowDays": 30,
     "noticePrefix": "LG-2026-",
     "noticeStart": 18301,
@@ -146,6 +145,14 @@
       "identifiedCredentials": [{ "type": "licensePlate", "credentialAssignedType": "vehicle", "identifier": { "id": "SYN-5520", "className": "VehicleCredential" } }],
       "segments": [{ "id": "f1…1090", "version": 1 }],
       "_place": "b1…0005", "_plate": "SYN-5520", "_rightType": "payByPlate"
+    },
+    {
+      "id": "f1…0262", "version": 1, "actualStart": "2026-10-22T09:00:00Z", "actualEnd": "2026-10-22T11:00:00Z",
+      "initiator": { "id": "a1…0001", "version": 1, "className": "Organisation" },
+      "hierarchyElement": { "id": "b1…0004", "version": 1, "className": "Place" },
+      "identifiedCredentials": [{ "type": "licensePlate", "credentialAssignedType": "vehicle", "identifier": { "id": "SYN-6262", "className": "VehicleCredential" } }],
+      "segments": [{ "id": "f1…1262", "version": 1 }],
+      "_place": "b1…0004", "_plate": "SYN-6262", "_rightType": "payByPlate", "_note": "VIO-37: paid until 11:00, still parked at 11:06"
     }
   ],
   "observations": [
@@ -157,6 +164,7 @@
     { "id": "f2…0052", "version": 1, "_place": "b1…0001", "_plate": "SYN-8820", "_time": "2026-09-24T08:31:47Z", "_confidence": 0.96, "_imageLink": "https://api.lakeside-garage.example/lpr/f2000000-0052.jpg" },
     { "id": "f2…0061", "version": 1, "_place": "b1…0003", "_plate": "PM-4410", "_credentialType": "permit", "_time": "2026-09-24T10:30:05Z", "_confidence": 0.92, "_imageLink": "https://api.lakeside-garage.example/lpr/f2000000-0061.jpg" },
     { "id": "f2…0070", "version": 1, "_place": "b1…0004", "_plate": "SYN-9031", "_time": "2026-09-23T06:15:40Z", "_confidence": 0.9, "_imageLink": "https://api.lakeside-garage.example/lpr/f2000000-0070.jpg", "_device": "b2…0031" },
+    { "id": "f2…0371", "version": 1, "_place": "b1…0004", "_plate": "SYN-5150", "_time": "2026-10-22T10:02:00Z", "_confidence": 0.97, "_imageLink": "https://api.lakeside-garage.example/lpr/f2000000-0371.jpg", "_device": "b2…0031" },
     { "id": "f2…0080", "version": 1, "_place": "b1…0004", "_plate": "SYN-5150", "_time": "2026-09-24T14:00:00Z", "_confidence": 0.9, "_imageLink": "https://api.lakeside-garage.example/lpr/f2000000-0080.jpg", "_device": "b2…0031" },
     { "id": "f2…0071", "version": 1, "_place": "b1…0004", "_plate": "SYN-5528", "_time": "2026-09-25T11:02:40Z", "_confidence": 0.71, "_imageLink": "https://api.lakeside-garage.example/lpr/f2000000-0071.jpg", "_device": "b2…0031" },
     { "id": "f2…0072", "version": 1, "_place": "b1…0004", "_plate": "SYN-5533", "_time": "2026-10-06T07:12:00Z", "_confidence": 0.71, "_imageLink": "https://api.lakeside-garage.example/lpr/f2000000-0072.jpg", "_device": "b2…0031", "extensions": { "apds-ext:apx:lpr-read@1.0": { "review": { "state": "pending", "reasons": ["lowConfidence", "jurisdictionRequiresReview"] } } } },
@@ -190,6 +198,7 @@
       "appealWindowDays": 21,
       "paymentGraceDays": 14,
       "signageRequired": true,
+      "stayGrace": { "entryMinutes": 15, "exitMinutes": 15 },
       "statusHistory": [{ "state": "active", "time": "2026-06-20T14:00:00Z", "actor": "backoffice-jlee", "detail": "loaded from counsel's summary of §12-405" }],
       "recordInfo": { "creationTime": "2026-06-20T14:00:00Z", "creator": { "id": "a1…0001", "className": "Organisation" }, "creationUser": "backoffice-jlee", "lastUpdate": "2026-06-20T14:00:00Z" },
       "extensions": { "apds-ext:lakeside:enforcement-ops@1.0": { "handheldProfile": "lot-c-surface", "reviewQueue": "lot-c" } }
@@ -210,6 +219,7 @@
       "overallCeiling": { "maximumAmount": { "currencyType": "USD", "currencyValue": 100.0 } },
       "appealWindowDays": 30,
       "signageRequired": true,
+      "stayGrace": { "entryMinutes": 10, "exitMinutes": 15 },
       "statusHistory": [
         { "state": "active", "time": "2025-12-15T10:00:00Z", "actor": "backoffice-jlee" },
         { "state": "active", "time": "2026-03-01T09:00:00Z", "actor": "backoffice-jlee", "detail": "v2: Level 2 signage programme" },

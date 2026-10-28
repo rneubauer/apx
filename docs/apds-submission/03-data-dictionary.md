@@ -2,7 +2,7 @@
 
 # APX Data Specification: Data Dictionary
 
-*Proposed additions to the APDS data model · Draft for the APDS committee · based on APDS 4.1 (2026-01-14) · APX 0.15.0*
+*Proposed additions to the APDS data model · Draft for the APDS committee · based on APDS 4.1 (2026-01-14) · APX 0.16.0*
 
 ## Introduction
 
@@ -303,6 +303,8 @@ There are no proposed specializations in the "Enforcement" package.
 | EnforcementPolicy | paymentGracePeriod | Payment grace period | The period after a notice is issued before any escalation may apply. | 0..1 | PkCommon.Duration |
 | EnforcementPolicy | signageRequired | Signage required | Whether a notice may be issued only where Signage was in force when the violation was observed. | 0..1 | PkCommon.Boolean |
 | EnforcementPolicy | unreviewedIssuancePermitted | Unreviewed issuance permitted | Whether a notice may be issued for an automated finding without review by a person. | 0..1 | PkCommon.Boolean |
+| EnforcementPolicy | entryGracePeriod | Entry grace period | The period after entry before a right must cover a stay. Absent means no grace after entry; zero states that there is none. | 0..1 | PkCommon.Duration |
+| EnforcementPolicy | exitGracePeriod | Exit grace period | The period after the last right covering a stay ends before the stay must be over. Absent means no grace before exit; zero states that there is none. | 0..1 | PkCommon.Duration |
 | EnforcementPolicy | endReason | End reason | Why the policy is no longer in use, when it has ended. | 0..1 | PkCommon.RecordEndReasonEnum |
 | EnforcementPolicy | signageId | Signage | The signs posted to give notice of this policy. | 0..* | PkCommon.VersionedReference (Place.Signage) |
 | EscalationStep | stepIdentifier | Step identifier | A stable identifier for the step. | 1..1 | PkCommon.String |

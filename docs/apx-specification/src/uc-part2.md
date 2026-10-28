@@ -6,11 +6,13 @@ gateless LPR, tolling, negotiated rates, ticket matching, EV charging,
 session pairing, plate review, imported citations, catching up after an
 outage, itemized payments, and, from APX 0.15, vendor screens opened with
 loopback, a location described from APX alone, calls resolved by caller id
-or posted number, remote approvals, and receipts and coded refunds. Use
-cases D.2.1 to D.2.16 are taken from the worked scenarios in the APX
-repository (`docs/scenarios/17-…` to `32-…`); D.2.17 to D.2.22 are taken
-from the module scenarios of `apx-ui-launch`, `apx-site-config`,
-`apx-resolution`, `apx-control` and `apx-accounts`. The request and
+or posted number, remote approvals, and receipts and coded refunds, and,
+from APX 0.16, a lane sign's message recorded beside the stay's
+compliance, and the stay grace on a handheld. Use cases D.2.1 to D.2.16
+are taken from the worked scenarios in the APX repository
+(`docs/scenarios/17-…` to `32-…`); D.2.17 to D.2.24 are taken from the
+module scenarios of `apx-ui-launch`, `apx-site-config`, `apx-resolution`,
+`apx-control`, `apx-accounts`, `apx-data` and `apx-violations`. The request and
 response bodies in those scenarios are checked against the APX bundle
 (`spec/dist/apx-v1.yaml`) by the repository's test suite.
 
@@ -2453,10 +2455,196 @@ Part 13 §13.1a; Part 6 §6.4; Part 7 §7.7; Part 17 §17.6; Part 11
 (registries `apx-refund-reasons`, `apx-interaction-outcomes`,
 `apx-issue-types`); Annex A APX-ACC-10, APX-CTL-17, APX-ALT-08.
 
+#### D.2.23 "Payment not found": the exit sign's message and the stay's compliance
+
+**Summary.**
+
+A car with no payment reaches the exit of a gated garage. The edge
+controller on site, deciding from its own copy of the rights, shows
+"Payment not found" on the lane sign; no APX command is involved. It
+records what the sign showed. Later the compliance engine scores the
+stay, and the operator's analyst counts how often the sign showed the
+unpaid message, to see whether the signs change what parkers do.
+
+**Parties.**
+
+| Party | Role |
+|---|---|
+| Edge controller | Drives the lane signs; scope `apx.displays:record` |
+| Compliance engine | Scores stays; scopes `apx.data:write`, `apx.compliance:write` |
+| Operator's analyst | Reads display records under `apx.siteconfig:read` and compliance under `apx.compliance:read` |
+| City platform | Reads Sessions under `apx.data:read` only |
+| Garage APX server | Classes `apx-site-config`, `apx-data`, `apx-violations` |
+
+**Preconditions.**
+
+- The exit sign is a SupplementalEquipment with `role: laneDisplay` on
+  exit lane 2 (Part 26 §26.1).
+- The garage's EnforcementPolicy carries `stayGrace` with
+  `entryMinutes: 15` and `exitMinutes: 15` (Part 19 §19.10 rule 7).
+
+**Flow.**
+
+1. The exit camera reads the plate. The edge finds no payment for the
+   stay and shows its unpaid message on the sign.
+2. The edge writes `POST /v1/display-records` with the sign as
+   `display`, `messageKind: transientExitUnpaid`, the read and the Session,
+   `shownTime`, the content hash and the wording version. The server
+   derives the place from the sign, stores no text and no plate, and
+   publishes `apx.displays.shown.v1` (Part 26 §26.9). A retry after a lost
+   answer returns the same record.
+3. The compliance engine scores the stay as `lateStart` (sequence 1) and
+   writes `apds-ext:apx:stay-compliance@1.0` on the Session with the
+   policy version it used. When a late payment arrives the next morning
+   it writes `paidLate` with the flag `paidAfterExit` (sequence 2). An
+   older evaluation arriving late is refused with 409
+   `evaluation-out-of-order` (Part 5 §5.9).
+4. The city platform reads the Session and receives it without the
+   compliance block, because its token has no `apx.compliance:read`.
+5. The analyst lists `GET /v1/display-records?place=…&messageKind=
+   transientExitUnpaid&since=…&until=…` for the month, and reads the
+   compliance of the same stays, to compare the weeks before and after
+   the signs went live.
+
+```mermaid
+sequenceDiagram
+    participant EDGE as Edge controller
+    participant ENG as Compliance engine
+    participant APX as Garage APX server
+    participant AN as Analyst
+    EDGE->>EDGE: no payment found, sign shows unpaid message
+    EDGE->>APX: POST /v1/display-records (transientExitUnpaid)
+    APX-->>EDGE: 201 DisplayRecord; event apx.displays.shown.v1
+    ENG->>APX: PUT /sessions/{id} (stay-compliance lateStart, seq 1)
+    APX-->>ENG: 200
+    ENG->>APX: PUT /sessions/{id} (stay-compliance paidLate, seq 2)
+    APX-->>ENG: 200
+    AN->>APX: GET /v1/display-records?messageKind=transientExitUnpaid
+    APX-->>AN: display records for the month
+    AN->>APX: GET /sessions/{id}
+    APX-->>AN: Session with stay-compliance (scope apx.compliance:read)
+```
+
+**Data exchanged.**
+
+| Object | Defined in | Notes |
+|---|---|---|
+| DisplayRecord, DisplayProof | APX Part 26 §26.9, Part 6 §6.1a | Written by the edge; no text, no plate |
+| Session | APDS 4.1 | With the `stay-compliance` decoration |
+| StayCompliance | APX Part 5 §5.9 | Status, family, flags, sequence, policy version |
+| EnforcementPolicy | APX Part 19 §19.10 | `stayGrace` the evaluation measured against |
+| EventEnvelope | APX Part 8 | `apx.displays.shown.v1` |
+
+**Postconditions / outcome.**
+
+The operator holds proof of what the sign told the driver and when, and
+a compliance status any authorised system reads the same way. Neither
+record issued anything: a violation, if one follows, is issued under the
+Violations module with its own evidence rules.
+
+**Example.**
+
+Step 2, the display record:
+
+```json
+{ "display": { "id": "c1000000-0000-4000-8000-000000000040", "className": "SupplementalEquipment" },
+  "messageKind": "transientExitUnpaid",
+  "session": { "id": "c4000000-0000-4000-8000-000000000077", "className": "Session" },
+  "shownTime": "2026-10-21T14:03:12Z",
+  "contentHash": "sha256:9f2c1e0b7a4d",
+  "wordingVersion": "exit-2026-10" }
+```
+
+**APX references.**
+
+Part 26 §26.9; Part 5 §5.9; Part 6 §6.1a; Part 9 §9.6 rule 8; Part 11
+(registries `apx-display-message-kinds`, `apx-stay-compliance-statuses`,
+`apx-stay-compliance-flags`); Annex A APX-SCF-12, APX-SCF-13,
+APX-DATA-12, APX-DATA-13.
+
+#### D.2.24 Fifteen minutes each way: the stay grace on a handheld
+
+**Summary.**
+
+A surface lot's ruling is 15 minutes of grace after entry and 15 after
+the paid time ends, kept apart. The back office adds the grace to the
+lot's enforcement policy. An officer's handheld then shows, for each
+uncovered car, the time its grace runs out, and the officer waits until
+it has passed.
+
+**Parties.**
+
+| Party | Role |
+|---|---|
+| Back office | Maintains the policy; scope `apx.violations:manage` |
+| Officer's handheld | Asks the eligibility check; scope `apx.violations:read` |
+| Lot APX server | Class `apx-violations` |
+
+**Preconditions.**
+
+- The lot has an active EnforcementPolicy (version 2) without
+  `stayGrace`.
+
+**Flow.**
+
+1. The back office replaces the policy with `If-Match: "2"`, adding
+   `stayGrace: { entryMinutes: 15, exitMinutes: 15 }`. The server answers
+   200 with version 3 (Part 19 §19.10 rules 5 and 7).
+2. At 10:09 the handheld asks about a car that entered at 10:02 and has
+   paid nothing. The answer is not entitled, with `graceUntil` 10:17: the
+   entry plus `entryMinutes` (Part 19 §19.3 rule 5).
+3. At 11:06 it asks about a car whose pay-by-plate session ended at
+   11:00. The answer is not entitled, the session `expired`, with
+   `graceUntil` 11:15: the end of the right plus `exitMinutes`.
+4. A policy with a negative grace is refused with 400 `invalid-request`.
+
+```mermaid
+sequenceDiagram
+    participant BO as Back office
+    participant HH as Handheld
+    participant APX as Lot APX server
+    BO->>APX: PUT /v1/enforcement/policies/{id} (stayGrace 15/15)
+    APX-->>BO: 200 version 3
+    HH->>APX: GET /v1/enforcement/eligibility (SYN-5150)
+    APX-->>HH: entitled false, graceUntil 10:17
+    HH->>APX: GET /v1/enforcement/eligibility (SYN-6262)
+    APX-->>HH: entitled false, expired, graceUntil 11:15
+```
+
+**Data exchanged.**
+
+| Object | Defined in | Notes |
+|---|---|---|
+| EnforcementPolicy | APX Part 19 §19.10 | `stayGrace.entryMinutes`, `stayGrace.exitMinutes` |
+| EligibilityResult | APX Part 19 §19.3 | `graceUntil` derived from the policy in force |
+
+**Postconditions / outcome.**
+
+The handheld, the exit sign and the compliance engine read the same
+grace from the same policy, and its versions show which grace applied
+on any day an appeal asks about. How a stay past the grace is scored
+stays with the engine.
+
+**Example.**
+
+Step 2, the answer:
+
+```json
+{ "credential": { "credentialType": "licensePlate", "credentialIdentification": "SYN-5150" },
+  "checkedTime": "2026-10-22T10:09:00Z",
+  "entitled": false,
+  "basis": [],
+  "graceUntil": "2026-10-22T10:17:00Z" }
+```
+
+**APX references.**
+
+Part 19 §19.3 rule 5, §19.10 rule 7; Annex A APX-VIO-18, APX-VIO-06.
+
 ### D.3 Module conformance scenarios
 
 The use cases in D.1 and D.2 are end-to-end stories. Under them sits a
-second set: **416 scenarios**, one set for each conformance class, in
+second set: **421 scenarios**, one set for each conformance class, in
 `docs/scenarios/by-module/`. They were written to find the places where the
 specification could not say what a real deployment needs. Each module's
 scenarios follow the same method. Every Annex A row for the class gets a
@@ -2478,7 +2666,7 @@ Most have since been fixed, and the findings tables say how.
 | `apx-alerts` | 23 | Raising, acknowledging, resolving and expiring alerts; idempotent retries; forbidden transitions; the ops board and the place-subtree rule; space-status alerts; implementer alert types |
 | `apx-control` | 28 | Gate vends confirmed by sensor; retries and key reuse; perishable commands; cancellation; device rejection; lost ticket; validations; `pushRate`; device inventory; screen-pop; negotiated rates and amounts; ticket matching; passback corrections; courtesy exits |
 | `apx-credentials` | 26 | Issue, activate, suspend, resume, report lost or stolen, replace and revoke; access events at the gate; expiry; mobile upgrade with deposit refund; fleet onboarding; uniqueness across garages |
-| `apx-data` | 34 | Plain APDS reads; `modified_since` and tombstones; the cursor feed; full and change-mode writes; explicit null; stale versions in both error styles; rate, right specification, assigned right and contact writes; LPR ingest; quotes; occupancy; session detail written by a pairing client |
+| `apx-data` | 36 | Plain APDS reads; `modified_since` and tombstones; the cursor feed; full and change-mode writes; explicit null; stale versions in both error styles; rate, right specification, assigned right and contact writes; LPR ingest; quotes; occupancy; session detail written by a pairing client; stay compliance written by an engine and hidden without its scope |
 | `apx-discovery` (with `apx-mtls`) | 17 | Bootstrapping from a hostname; per-client capability documents; class dependencies; grant changes; registry versions; advisory limits; mutual TLS |
 | `apx-events` (with `apx-events-sse`) | 24 | Subscriptions at the APDS `/webhooks` route; signing; retry schedule and failure; secret rotation; place binding and grant filtering; SSE with `Last-Event-ID`; the topics of each optional class |
 | `apx-lpr` | 35 | Read ingest with the detail block; plate-to-ticket and ticket-to-plate; candidates; plate correction; lane cameras and facing; shared driveways and reversible lanes; revising `accessEvent`; late and re-sent reads; retention; multi-plate engines |
@@ -2488,10 +2676,10 @@ Most have since been fixed, and the findings tables say how.
 | `apx-tolling` | 24 | Gantry ingest and idempotency; settlement; asynchronous pricing; disputes and their four resolutions; voids; lookups by plate, tag and time |
 | `apx-valet` | 25 | Drop-off with condition reports; park; retrieval by every channel; scheduled pickups; staging; verified handback; the customer scope; dated condition corrections; cancelled drop-offs |
 | `apx-validations` | 25 | Program enrolment, suspension and end; code issuance; redemption and the closed rule set; reversal; month-end statements; merchant scope; voiding stolen codes |
-| `apx-violations` | 36 | Eligibility; automated, guided and manual detection; review; issuance under policy, cap and signage; payment; appeals; escalation; void; policy and signage versions; imports from external systems; part payments; linking the stay; evidence that cannot accuse |
+| `apx-violations` | 37 | Eligibility; automated, guided and manual detection; review; issuance under policy, cap and signage; payment; appeals; escalation; void; policy and signage versions; imports from external systems; part payments; linking the stay; evidence that cannot accuse; the stay grace and `graceUntil` |
 | `apx-ui-launch` | 9 | Handshake and signed-token launches; single-use URLs; loopback as a native command and as a UiActionRecord with return fields; expired and closed launches; unknown surfaces and display modes; scope refusals; launch topics |
-| `apx-site-config` | 11 | Equipment with roles, areas and decorations; cameras and views (live, snapshot, playback) with their refusals; comms points by caller id, dialled number and comms device id; create, replace and delete with version conflicts and tombstones; identifier resolution; escalation contacts; change topics; the after-hours access door |
-| **Total** | **416** | |
+| `apx-site-config` | 13 | Equipment with roles, areas and decorations; cameras and views (live, snapshot, playback) with their refusals; comms points by caller id, dialled number and comms device id; create, replace and delete with version conflicts and tombstones; identifier resolution; escalation contacts; change topics; the after-hours access door; display records written by the edge, and their refusals |
+| **Total** | **421** | |
 
 `apx-charging` and `apx-plate-lists` have no module folder yet. Several of
 the newer rules are shown in the worked scenarios 28 to 32 in D.2; the
@@ -2519,19 +2707,29 @@ and some example values.
 | Registry | Extends / used by | Number of values | Example values |
 |---|---|---|---|
 | `apx-access-denial-reasons` | `CredentialAccessEvent.denialReason`, `AccessEvent.denialReason` (Part 21); lane inquiry `monthlyCredential.denialReason` (Part 6) | 11 | `credentialSuspended`, `credentialReplaced`, `passback`, `outsideValidity` |
-| `apx-alert-types` | `Alert.alertType` (Part 7); seeded from the APDS Use Case C.2.2 transaction exceptions | 18 | `noCheckOut`, `wrongSpace`, `iceInEvSpace`, `intercomRequest` |
-| `apx-command-types` | `Command.commandType` (Part 6) | 18 | `vendGate`, `lostTicket`, `matchTicket`, `unlockConnector` |
-| `apx-conformance-classes` | `/.well-known/apx-configuration` (Part 16) | 20 | `apx-data`, `apx-control`, `apx-violations`, `apx-charging` |
+| `apx-alert-types` | `Alert.alertType` (Part 7); seeded from the APDS Use Case C.2.2 transaction exceptions | 24 | `noCheckOut`, `wrongSpace`, `iceInEvSpace`, `intercomRequest` |
+| `apx-area-types` | `EquipmentDetail.area` (Part 26 §26.2) | 19 | `lane`, `entryPlaza`, `exitPlaza`, `ramp` |
+| `apx-command-types` | `Command.commandType` (Part 6) | 21 | `vendGate`, `lostTicket`, `matchTicket`, `unlockConnector` |
+| `apx-comms-point-types` | `CommsPoint.type` (Part 26 §26.4) | 7 | `intercom`, `analogDialer`, `postedNumber`, `kiosk` |
+| `apx-conformance-classes` | `/.well-known/apx-configuration` (Part 16) | 22 | `apx-data`, `apx-control`, `apx-violations`, `apx-charging` |
 | `apx-device-states` | `DeviceStatus.deviceState` (Part 6 §6.4); in the style of APDS `RefillPointStatusEnum` | 6 | `available`, `occupied`, `outOfService`, `fault` |
-| `apx-features` | `features` in `/.well-known/apx-configuration` and discovery documents (Part 6 §6.5, Part 16) | 3 | `negotiatedRates`, `ticketMatching`, `negotiatedAmounts` |
-| `apx-issue-types` | `ResolutionIssue.code` (Part 17) | 11 | `gateVendFailed`, `paymentDeclined`, `lostTicket`, `rateDispute` |
+| `apx-display-message-kinds` | `DisplayRecord.messageKind` (Part 26 §26.9) | 9 | `transientEntrance`, `monthlyEntrance`, `entranceRefused`, `transientExitPaid` |
+| `apx-equipment-roles` | `EquipmentDetail.role` (Part 26 §26.1) | 30 | `gate`, `overheadDoor`, `bollard`, `trafficSpikes` |
+| `apx-escalation-roles` | `PlaceOperations.escalationContacts[].role`, `ApprovalRequest.role` (Part 26 §26.5, Part 17 §17.3a) | 6 | `siteManager`, `attendant`, `security`, `operatorOnCall` |
+| `apx-features` | `features` in `/.well-known/apx-configuration` and discovery documents (Part 6 §6.5, Part 16) | 5 | `negotiatedRates`, `ticketMatching`, `negotiatedAmounts` |
+| `apx-interaction-outcomes` | `SupportInteraction.resolution.code` (Part 17 §17.6) | 7 | `resolved`, `vended`, `transferred`, `escalated` |
+| `apx-issue-types` | `ResolutionIssue.code` (Part 17) | 34 | `gateVendFailed`, `paymentDeclined`, `lostTicket`, `rateDispute` |
 | `apx-payment-line-codes` | APDS `PaymentLine.idCode` in `PaymentDetail.lines[]` (Part 13 §13.6a) | 8 | `base`, `convenienceFee`, `tax`, `validation` |
 | `apx-plate-list-categories` | `PlateList.category` (Part 24) | 4 | `allow`, `watch`, `scofflaw`, `enforcementVehicle` |
 | `apx-read-review-reasons` | `LprReadDetail.review.reasons` (Part 13 §13.3a(4a)) | 6 | `lowConfidence`, `ambiguousCharacters`, `conflictingReads` |
+| `apx-refund-reasons` | Refund request `reasonCode` (Part 13 §13.1a) | 5 | `changeNotDispensed`, `doubleCharge`, `overcharge`, `serviceFailure` |
 | `apx-session-end-reasons` | `SessionDetail.closure.endReason` (Part 5 §5.8) | 10 | `exitRead`, `stale`, `valetHandback`, `exitOnly` |
+| `apx-stay-compliance-flags` | `StayCompliance.flags[]` (Part 5 §5.9) | 5 | `paidAfterExit`, `matchedFuzzy`, `endInferred`, `onList` |
+| `apx-stay-compliance-statuses` | `StayCompliance.status`, `StayCompliance.pendingStatus` (Part 5 §5.9) | 16 | `unscored`, `stale`, `fromList`, `permit` |
 | `apx-toll-dispute-reasons` | `TollTransaction.dispute.reason` (Part 15) | 5 | `wrongVehicle`, `duplicateCharge`, `wrongClass`, `notLiable` |
 | `apx-toll-dispute-resolutions` | `TollTransaction.dispute.resolution` (Part 15) | 4 | `upheld`, `refunded`, `adjusted`, `withdrawn` |
-| `apx-topics` | `EventEnvelope.type` and subscription topics (Part 8) | 29 | `apx.control.command.status.v1`, `apx.violations.issued.v1`, `apx.credentials.access.v1` |
+| `apx-topics` | `EventEnvelope.type` and subscription topics (Part 8) | 35 | `apx.control.command.status.v1`, `apx.violations.issued.v1`, `apx.credentials.access.v1` |
+| `apx-ui-surfaces` | `UiSurface.surface`, `UiLaunch.surface`, `AllowedAction.execution.surface` (Part 25) | 15 | `lane.console`, `session.detail`, `reservation.detail`, `reservation.search` |
 | `apx-violation-types` | `Violation.violationType`, `EligibilityResult.suggestedViolationType` (Part 19) | 11 | `noValidRight`, `expiredRight`, `wrongPlace`, `chargingBayIdle` |
 
 These registries follow the APDS user-defined code list approach described

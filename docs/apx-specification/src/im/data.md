@@ -122,6 +122,39 @@ the Session as target; both ends of one link must agree. Lenient or
 unapplied evidence may excuse a stay but never accuse one (APX Part 5
 §5.8 rule 5, Part 19 §19.4).
 
+### Stay compliance
+
+A compliance engine scores every stay: paid, inside the grace, an
+overstay, waiting for review. It writes its result as the Level B
+decoration `apds-ext:apx:stay-compliance@1.0` (`StayCompliance`) on the
+APDS Session, through the native Session routes, as a pairing service
+writes session detail (APX Part 5 §5.9). A server that scores stays
+itself should write the same block. APX carries the outcome and the
+policy it was measured against; the rules that turn one into the other
+stay in the engine.
+
+- `status` is one value from the `apx-stay-compliance-statuses` code
+  list (or an implementer code), and `family` groups it: `compliant`,
+  `violation`, `withheld` (not scored, or held back for review) or
+  `other` (such as paid after exit). A registry status carries the family
+  the code list gives it.
+- `pendingStatus` names the status a stay held for review would have, and
+  appears only with `reviewRequired`. `flags[]` records the facts behind
+  the status, such as `paidAfterExit` or `endInferred`.
+- `evaluatedTime` and `sequence` order the evaluations of one Session; an
+  older evaluation cannot replace a newer one (409
+  `evaluation-out-of-order`). `final` is the writer's statement, never a
+  lock.
+- `policy` names the EnforcementPolicy, at its version, whose stay grace
+  explains the result.
+
+A compliance status is never a violation: a `violation`-family status
+issues nothing, and violations are issued only by the Violations module.
+Per-stay compliance may go to parties beyond the operator, so it has its
+own scopes: a token without `apx.compliance:read` receives the Session
+without the block, and only a token with `apx.compliance:write` may
+write it. A write that leaves the block out keeps the stored one.
+
 ## Lifecycle
 
 `SessionDetail.lifecycle` records where the writer considers the Session
@@ -179,4 +212,6 @@ APX-only: the change-feed pages and parameters, the change payloads, the
 `APX-Update-Mode` header and the occupancy snapshot. They are interface
 behaviour. The snapshot needs nothing new from APDS: it is made of Supply
 and DemandType plus an `available` figure any receiver can calculate (APX
-Data Specification, Occupancy).
+Data Specification, Occupancy). The stay compliance decoration is also
+APX-only for now: its status list comes from one compliance engine, and
+it can be proposed once a second engine shows which statuses are shared.
