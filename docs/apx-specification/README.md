@@ -34,8 +34,9 @@ documents. 06 summarizes it and links to it.
   `site/apx-specification/`, in the form of the APDS 4.1 documents: a
   centred cover, the APX mark on every page, a footer naming the document
   and its release beside the page number, Arial text, and class diagrams
-  drawn as beige «D2Class» boxes. It needs Edge or Chrome and network
-  access for the diagrams, and is not part of `npm test`.
+  drawn as beige «D2Class» boxes, plus an `index.html` linking them so
+  the folder link works. It needs Edge or Chrome and network access for
+  the diagrams, and is not part of `npm test`.
 
 The page furniture (stylesheet, cover, header and footer, diagram theme)
 is `tools/apx-docs/print.mjs`, shared by both renderers.

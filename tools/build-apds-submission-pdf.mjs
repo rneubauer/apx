@@ -21,7 +21,7 @@
  * Uses Edge or Chrome (set BROWSER to override the path). Optional: not
  * part of npm test.
  */
-import { writeFileSync, mkdirSync, readdirSync, readFileSync } from 'node:fs';
+import { writeFileSync, mkdirSync, readdirSync, readFileSync, existsSync } from 'node:fs';
 import { join, dirname, basename } from 'node:path';
 import { fileURLToPath, pathToFileURL } from 'node:url';
 import { CSS, coverHtml, documentMeta, markdownToHtml, mermaidScript, pageTemplates, printJobs, stripTitle, escapeHtml, readText } from './apx-docs/print.mjs';
@@ -61,6 +61,22 @@ ${mermaidScript()}
   return { title, edition, release, html: page(`${cover}\n${body}`), coverOnly: page(cover) };
 }
 
+// The page served at site/<set>/: each document's web page and, once
+// printed, its PDF.
+function folderIndex(jobs) {
+  const rows = jobs.map((j) => {
+    const pdf = existsSync(j.pdfPath) ? `<a href="${basename(j.pdfPath)}">PDF</a>` : '—';
+    return `<tr><td><a href="${basename(j.htmlPath)}">${escapeHtml(j.title)}</a></td><td>${pdf}</td></tr>`;
+  }).join('\n');
+  return `<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><title>${escapeHtml(SETS[SET].set)}</title>
+<style>${CSS}</style></head><body>
+<h1>${escapeHtml(SETS[SET].set)}</h1>
+<p>Version ${escapeHtml(version)} (draft), built ${today}.</p>
+<table><thead><tr><th>Document</th><th>Print</th></tr></thead><tbody>${rows}</tbody></table>
+<p><a href="../index.html">APX site</a></p>
+</body></html>`;
+}
+
 async function main() {
   mkdirSync(OUT, { recursive: true });
   const docs = readdirSync(SRC).filter((f) => /^0\d-.*\.md$/.test(f)).sort();
@@ -72,9 +88,15 @@ async function main() {
     const { title, release, html, coverOnly } = toHtml(readText(join(SRC, f)));
     writeFileSync(htmlPath, html);
     writeFileSync(coverPath, coverOnly);
-    return { url: pathToFileURL(htmlPath).href, coverUrl: pathToFileURL(coverPath).href, pdfPath, ...pageTemplates({ docTitle: title, release: `Version Release ${today}, ${release}`, copyright: COPYRIGHT }), onDone: () => console.log(`[pdf] ${pdfPath}`) };
+    return { title, htmlPath, url: pathToFileURL(htmlPath).href, coverUrl: pathToFileURL(coverPath).href, pdfPath, ...pageTemplates({ docTitle: title, release: `Version Release ${today}, ${release}`, copyright: COPYRIGHT }), onDone: () => console.log(`[pdf] ${pdfPath}`) };
   });
-  await printJobs(jobs);
+  // The folder link (site/<set>/) must not 404, so the index is written
+  // even when printing fails; a PDF is listed only once it exists.
+  try {
+    await printJobs(jobs);
+  } finally {
+    writeFileSync(join(OUT, 'index.html'), folderIndex(jobs));
+  }
 }
 
 main().catch((e) => { console.error(`[pdf] FAIL ${e.message}`); process.exit(1); });
