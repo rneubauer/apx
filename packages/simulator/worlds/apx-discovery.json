@@ -11,11 +11,15 @@
       "apx-alerts",
       "apx-discovery",
       "apx-resolution",
-      "apx-lpr"
+      "apx-lpr",
+      "apx-ui-launch",
+      "apx-site-config"
     ],
     "features": [
       "negotiatedRates",
-      "ticketMatching"
+      "ticketMatching",
+      "cameraViews",
+      "cameraPlayback"
     ]
   },
   "registryBase": "https://api.lakeside-garage.example/registries",
@@ -161,7 +165,11 @@
         "apx.control:read",
         "apx.control:execute",
         "apx.resolution:read",
-        "apx.subscriptions:manage"
+        "apx.subscriptions:manage",
+        "apx.ui:launch",
+        "apx.ui:read",
+        "apx.siteconfig:read",
+        "apx.cameras:view"
       ],
       "apx_org": {
         "id": "a1…0001",
@@ -178,7 +186,11 @@
         "apx.control:read",
         "apx.control:execute",
         "apx.resolution:read",
-        "apx.subscriptions:manage"
+        "apx.subscriptions:manage",
+        "apx.ui:launch",
+        "apx.ui:read",
+        "apx.siteconfig:read",
+        "apx.cameras:view"
       ],
       "apx_org": {
         "id": "a1…0001",
@@ -263,5 +275,68 @@
         "b1…0001"
       ]
     }
-  }
+  },
+  "control": {
+    "unsupportedCommandTypes": [
+      "lostTicket"
+    ]
+  },
+  "uiSurfaces": [
+    {
+      "surface": "lane.console",
+      "subjectClass": "VehicularAccess",
+      "displayModes": [
+        "popup",
+        "tab",
+        "embed"
+      ],
+      "launchModes": [
+        "handshake",
+        "signedToken"
+      ],
+      "launchUrl": "https://ui.gatewise.example/launch",
+      "actions": [
+        "lostTicket",
+        "applyValidation",
+        "vendGate",
+        "pushRate"
+      ],
+      "places": [
+        {
+          "id": "b1…0001",
+          "className": "Place"
+        }
+      ]
+    },
+    {
+      "surface": "session.detail",
+      "subjectClass": "Session",
+      "displayModes": [
+        "popup",
+        "tab"
+      ],
+      "launchModes": [
+        "handshake"
+      ],
+      "launchUrl": "https://ui.gatewise.example/session",
+      "actions": [
+        "other"
+      ]
+    },
+    {
+      "surface": "place.console",
+      "displayModes": [
+        "tab"
+      ],
+      "launchModes": [
+        "handshake"
+      ],
+      "launchUrl": "https://ui.gatewise.example/site",
+      "actions": [
+        "setDeviceState",
+        "restartDevice",
+        "other"
+      ]
+    }
+  ]
 }

@@ -17,6 +17,9 @@ const DEVICE_STATES = registryValues('apx-device-states');
 const CANCELLABLE = new Set(['received', 'accepted']);
 const TERMINAL = new Set(['succeeded', 'failed', 'expired', 'cancelled', 'rejected']);
 const GATE_COMMANDS = new Set(['vendGate', 'holdGateOpen', 'closeLane']);
+const FAULTED = new Set(['fault', 'inoperative', 'outOfService']);
+const CONSUMABLE_KINDS = ['tickets', 'receiptPaper', 'cash', 'coins'];
+const CONSUMABLE_LEVELS = ['ok', 'low', 'empty', 'unknown'];
 
 const DEFAULT_TIMING = { dispatch: 1000, execute: 0, succeed: 2000 };
 
@@ -47,6 +50,9 @@ export default {
           deviceState: d.state ?? 'available',
           lastCommunication: d.lastCommunication ?? world.clock?.start,
           stateChangedTime: d.stateChangedTime ?? world.clock?.start,
+          ...(d.fault ? { fault: d.fault } : {}),
+          ...(d.consumables ? { consumables: d.consumables } : {}),
+          ...(d.maintenanceMode !== undefined ? { maintenanceMode: d.maintenanceMode } : {}),
         });
       }
       for (const l of world.lanes ?? []) {
@@ -153,7 +159,7 @@ export default {
       switch (cmd.commandType) {
         case 'vendGate':
           confirmationLevel = forced?.confirmationLevel ?? 'physicallyConfirmed';
-          detail = 'barrier raised; loop sensor cleared';
+          detail = sim.siteconfig?.roleOf(cmd.target.id) === 'accessDoor' ? 'door released; closed again after 7 s' : 'barrier raised; loop sensor cleared';
           if (lane?.current?.session) closeSession(lane.current.session.id, cmd);
           if (lane && sim.world.control?.clearLaneOnVend) lanes().update(lane.id, (l) => ({ ...l, current: null }), { bump: false });
           break;
@@ -257,6 +263,24 @@ export default {
           sim.hooks.emit('courtesyExit', { command: cmd });
           detail = `courtesy exit granted for holder ${p.holder?.id ?? p.account?.id}`;
           break;
+        case 'ejectTicket': {
+          // Part 6 §6.1: give the media back; a jam the device reported is cleared with it.
+          const d = devices().get(cmd.target.id);
+          const jammed = d?.fault && /jam|stuck/i.test(`${d.fault.code} ${d.fault.displayText ?? ''}`);
+          if (jammed) clearFault(cmd.target.id, actor);
+          detail = jammed ? `${d.fault.code} cleared; ${/card/i.test(d.fault.displayText ?? '') ? 'card' : 'ticket'} returned to the customer` : 'media ejected';
+          break;
+        }
+        case 'cancelTransaction':
+          detail = lane?.current ? `transaction on ticket ${lane.current.ticketNumber ?? '(none)'} cancelled; terminal idle` : 'transaction cancelled; terminal idle';
+          break;
+        case 'reprintReceipt': {
+          const d = devices().get(cmd.target.id);
+          const paper = (d?.consumables ?? []).find((c) => c.kind === 'receiptPaper');
+          const ticket = lane?.current?.ticketNumber ?? cmd.reason?.match(/\b(T-\d+|LT-\d+)\b/)?.[1];
+          detail = `receipt${ticket ? ` for ${ticket}` : ''} printed; paper sensor ${paper?.level ?? 'ok'}`;
+          break;
+        }
         default:
           detail = `${cmd.commandType} executed`;
       }
@@ -468,6 +492,12 @@ export default {
       } else if (policy?._default?.allowed === false && !(policy._allowed ?? []).includes(b.commandType)) {
         fail('action-not-allowed', `Context ${b.resolutionContext.id} did not offer ${b.commandType}.`);
       }
+      // Part 17 §17.3a: approval evidence that cites a request must cite one that was approved.
+      if (isRef(b.approval?.approvalRequest) && sim.approvals) {
+        const req = sim.approvals.get(b.approval.approvalRequest.id);
+        if (!req) fail('reference-unknown', `approval.approvalRequest ${b.approval.approvalRequest.id} names no approval request known here.`);
+        if (req.status !== 'approved') fail('approval-required', `Approval request ${req.id} is ${req.status}; only an approved request is evidence for ${b.commandType}.`);
+      }
       // per-type synchronous checks
       const lane = lanes().get(node.id);
       const needsAgent = b.commandType === 'pushNegotiatedRate' || b.commandType === 'matchTicket';
@@ -632,8 +662,44 @@ export default {
       deviceState: d.deviceState,
       ...(d.lastCommunication ? { lastCommunication: d.lastCommunication } : {}),
       ...(d.stateChangedTime ? { stateChangedTime: d.stateChangedTime } : {}),
+      // Part 6 §6.4: the fault the device reports (while it is in a faulted state), its supply levels, and maintenance mode.
+      ...(d.fault && FAULTED.has(d.deviceState) ? { fault: d.fault } : {}),
+      ...(d.consumables?.length ? { consumables: d.consumables } : {}),
+      ...(typeof d.maintenanceMode === 'boolean' ? { maintenanceMode: d.maintenanceMode } : {}),
       ...(d.extensions ? { extensions: d.extensions } : {}),
     });
+
+    /** The device reports a fault code (Part 6 §6.4); the state moves with it unless the caller pins one. */
+    const setFault = (deviceId, { code, displayText, state = 'fault', since }, actor = 'device') => {
+      const now = sim.clock.now();
+      devices().update(deviceId, (d) => ({ ...d, fault: { code, ...(displayText ? { displayText } : {}), since: since ?? now } }), { bump: false });
+      return setDeviceState(deviceId, state, actor) ?? devices().get(deviceId);
+    };
+
+    const clearFault = (deviceId, actor = 'device', state = 'available') => {
+      devices().update(deviceId, (d) => ({ ...d, fault: undefined }), { bump: false });
+      return setDeviceState(deviceId, state, actor) ?? devices().get(deviceId);
+    };
+
+    /** A supply level changes; the alerts module raises consumableLow on low/empty and resolves it on ok. */
+    const setConsumable = (deviceId, kind, level, actor = 'device') => {
+      const before = devices().get(deviceId);
+      const previous = (before.consumables ?? []).find((c) => c.kind === kind)?.level ?? 'unknown';
+      const after = devices().update(
+        deviceId,
+        (d) => ({ ...d, lastCommunication: sim.clock.now(), consumables: [...(d.consumables ?? []).filter((c) => c.kind !== kind), { kind, level }] }),
+        { bump: false }
+      );
+      if (previous !== level) sim.hooks.emit('device.consumables', { device: after, kind, level, previous, actor });
+      return after;
+    };
+
+    const unsupportedAt = (placeId) => {
+      const u = sim.world.control?.unsupportedCommandTypes;
+      if (Array.isArray(u)) return u;
+      if (u && typeof u === 'object') return u[placeId] ?? u['*'] ?? [];
+      return [];
+    };
 
     sim.on('get-apx-v1-devices', (ctx) => {
       const places = ctx.query.list('place');
@@ -755,6 +821,26 @@ export default {
       if (!DEVICE_STATES.includes(state)) throw new Error(`state must be one of ${DEVICE_STATES.join(', ')}`);
       return deviceStatus(setDeviceState(device, state, actor));
     });
+    sim.injector('deviceFault', ({ device, code, displayText, state = 'fault', clear = false, actor = 'device' }) => {
+      if (!devices().has(device)) throw new Error(`no device ${device}`);
+      if (clear) return deviceStatus(clearFault(device, actor));
+      if (!code) throw new Error('deviceFault needs code (or clear: true)');
+      if (!DEVICE_STATES.includes(state)) throw new Error(`state must be one of ${DEVICE_STATES.join(', ')}`);
+      return deviceStatus(setFault(device, { code, displayText, state }, actor));
+    });
+    sim.injector('deviceConsumable', ({ device, kind, level, actor = 'device' }) => {
+      if (!devices().has(device)) throw new Error(`no device ${device}`);
+      if (!CONSUMABLE_KINDS.includes(kind)) throw new Error(`kind must be one of ${CONSUMABLE_KINDS.join(', ')}`);
+      if (!CONSUMABLE_LEVELS.includes(level)) throw new Error(`level must be one of ${CONSUMABLE_LEVELS.join(', ')}`);
+      return deviceStatus(setConsumable(device, kind, level, actor));
+    });
+    sim.injector('deviceMaintenance', ({ device, on = true, state, actor = 'technician' }) => {
+      if (!devices().has(device)) throw new Error(`no device ${device}`);
+      devices().update(device, (d) => ({ ...d, maintenanceMode: Boolean(on) }), { bump: false });
+      const target = state ?? (on ? 'outOfService' : 'available');
+      if (!DEVICE_STATES.includes(target)) throw new Error(`state must be one of ${DEVICE_STATES.join(', ')}`);
+      return deviceStatus(setDeviceState(device, target, actor));
+    });
     sim.injector('deviceHeartbeat', ({ device }) => {
       if (!devices().has(device)) throw new Error(`no device ${device}`);
       return deviceStatus(devices().update(device, (d) => ({ ...d, lastCommunication: sim.clock.now() }), { bump: false }));
@@ -813,7 +899,7 @@ export default {
     });
 
     // exposed for other domains (resolution, validations, alerts)
-    sim.control = { transition, setDeviceState, deviceStatus, providersAt, tablesAtPlace, lanes, devices, commands, candidatesFor, TERMINAL };
+    sim.control = { transition, setDeviceState, setFault, clearFault, setConsumable, unsupportedAt, deviceStatus, providersAt, tablesAtPlace, lanes, devices, commands, candidatesFor, TERMINAL };
   },
 };
 

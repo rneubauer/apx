@@ -1,0 +1,3 @@
+# Accepted oasdiff ERR findings. Each line names one method, path and change.
+# Add a line only for a change the PR description justifies as additive.
+# Empty this file after the release that ships the change.

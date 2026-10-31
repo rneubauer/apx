@@ -33,6 +33,7 @@ export const NATIVE_PUTS = {
   '/rates/{id}': 'RateTable',
   '/sessions/{id}': 'Session',
   '/rights/assigned/{id}': 'AssignedRight',
+  '/observations/{id}': 'ObservationElement',
 };
 
 function deref(schemas, node) {

@@ -11,11 +11,13 @@
 # Scope (Part 5 §5.6, §5.1a):
 #  - the change feed (mode/cursor, ChangeFeedPage) on the five feed routes,
 #    and the 404 a stale or foreign cursor gets;
-#  - APX-Update-Mode and the ChangePayload body on the six native PUTs;
+#  - APX-Update-Mode and the ChangePayload body on the seven native PUTs;
 #  - the problem+json alternative on native 400/404/409, and the shared
 #    401/403/429 on every native operation (Part 12 §12.1, §12.3);
 #  - narrow workarounds for APDS 4.1 defects, each naming its erratum in
-#    docs/errata/ (004–012). Remove a workaround in the same change that
+#    docs/errata/ (004–012), or, for `PUT /observations/{id}`, candidate
+#    C-026 in docs/apx-specification/06-apds-requests.md (not yet filed).
+#    Remove a workaround in the same change that
 #    vendors a corrected APDS release.
 # Everything here is additive for a stock APDS client: parameters are
 # optional with stock defaults, the stock body and response shapes remain
@@ -28,7 +30,7 @@
 overlay: 1.0.0
 info:
   title: APX data-profile overlay (Part 5 data profile over the native APDS routes)
-  version: 0.14.0
+  version: 0.15.0
 
 actions:
   # ----- /places -----
@@ -258,6 +260,22 @@ actions:
         anyOf:
           - $ref: "#/components/schemas/AssignedRight"
           - $ref: "#/components/schemas/ChangePayload"
+  - target: $.paths['/observations/{id}'].put.parameters
+    description: "Declare APX-Update-Mode (optional, default full)."
+    update:
+      - *updateMode
+  - target: $.paths['/observations/{id}'].put
+    description: "Declare the request body the vendored operation omits (optional, so no stock client is refused; candidate C-026). Full mode validates against ObservationElement; change mode against the typed <Class>ChangePayload derived at build time by tools/change-payloads.mjs (Part 5 §5.1a)."
+    update:
+      requestBody:
+        required: false
+        description: "The Observation as it now stands (full mode) or its identity plus the changed members (change mode). Undeclared in APDS 4.1 (candidate C-026, not yet filed)."
+        content:
+          application/json:
+            schema:
+              anyOf:
+                - $ref: "#/components/schemas/ObservationElement"
+                - $ref: "#/components/schemas/ChangePayload"
 
   # ----- POST /observations (F-DATA-08, F-DATA-09; errata 005, 006) -----
   - target: $.paths['/observations'].post.requestBody.content['application/json'].schema
@@ -339,6 +357,18 @@ actions:
     update:
       '404':
         description: "AssignedRight can not be updated as it has not been found (servers that upsert answer 201 instead). APX: with `Accept: application/problem+json`, problem type `target-not-found`."
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ResponseStatus"
+          application/problem+json:
+            schema:
+              $ref: "#/components/schemas/Problem"
+  - target: $.paths['/observations/{id}'].put.responses
+    description: "PUT /observations/{id} declares no 400, unlike every other native PUT (candidate C-026)."
+    update:
+      '400':
+        description: "Observation can not be updated due to invalid or missing data. APX: with `Accept: application/problem+json`, problem type `invalid-request`."
         content:
           application/json:
             schema:
@@ -684,6 +714,41 @@ actions:
         application/problem+json:
           schema:
             $ref: "#/components/schemas/Problem"
+  - target: $.paths['/observations/{id}'].get.responses['404']
+    update:
+      description: "Not Found. APX (Part 5 §5.1a, Part 12 §12.1): a client sending `Accept: application/problem+json` receives problem type `target-not-found` instead of ResponseStatus."
+      content:
+        application/problem+json:
+          schema:
+            $ref: "#/components/schemas/Problem"
+  - target: $.paths['/observations/{id}'].put.responses['404']
+    update:
+      description: "Not Found. APX (Part 5 §5.1a, Part 12 §12.1): a client sending `Accept: application/problem+json` receives problem type `target-not-found` instead of ResponseStatus."
+      content:
+        application/problem+json:
+          schema:
+            $ref: "#/components/schemas/Problem"
+  - target: $.paths['/observations/{id}'].put.responses['409']
+    update:
+      description: "Conflict. APX (Part 5 §5.1a, Part 12 §12.1): a client sending `Accept: application/problem+json` receives problem type `version-conflict` (stale `version`) instead of ResponseStatus."
+      content:
+        application/problem+json:
+          schema:
+            $ref: "#/components/schemas/Problem"
+  - target: $.paths['/observations/{id}'].delete.responses['404']
+    update:
+      description: "Not Found. APX (Part 5 §5.1a, Part 12 §12.1): a client sending `Accept: application/problem+json` receives problem type `target-not-found` instead of ResponseStatus."
+      content:
+        application/problem+json:
+          schema:
+            $ref: "#/components/schemas/Problem"
+  - target: $.paths['/quotes/{id}'].get.responses['404']
+    update:
+      description: "Not Found. APX (Part 5 §5.1a, Part 12 §12.1): a client sending `Accept: application/problem+json` receives problem type `target-not-found` instead of ResponseStatus."
+      content:
+        application/problem+json:
+          schema:
+            $ref: "#/components/schemas/Problem"
 
   # ----- Every native operation (F-DATA-03): the shared auth and throttling responses (Part 9, Part 12 §12.3) -----
   - target: $.paths['/places'].get.responses
@@ -951,6 +1016,38 @@ actions:
       '429':
         $ref: "#/components/responses/TooManyRequests"
   - target: $.paths['/quotes'].post.responses
+    update:
+      '401':
+        $ref: "#/components/responses/Unauthorized"
+      '403':
+        $ref: "#/components/responses/Forbidden"
+      '429':
+        $ref: "#/components/responses/TooManyRequests"
+  - target: $.paths['/observations/{id}'].get.responses
+    update:
+      '401':
+        $ref: "#/components/responses/Unauthorized"
+      '403':
+        $ref: "#/components/responses/Forbidden"
+      '429':
+        $ref: "#/components/responses/TooManyRequests"
+  - target: $.paths['/observations/{id}'].put.responses
+    update:
+      '401':
+        $ref: "#/components/responses/Unauthorized"
+      '403':
+        $ref: "#/components/responses/Forbidden"
+      '429':
+        $ref: "#/components/responses/TooManyRequests"
+  - target: $.paths['/observations/{id}'].delete.responses
+    update:
+      '401':
+        $ref: "#/components/responses/Unauthorized"
+      '403':
+        $ref: "#/components/responses/Forbidden"
+      '429':
+        $ref: "#/components/responses/TooManyRequests"
+  - target: $.paths['/quotes/{id}'].get.responses
     update:
       '401':
         $ref: "#/components/responses/Unauthorized"

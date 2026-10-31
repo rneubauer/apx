@@ -61,6 +61,7 @@ add `?mode=change&cursor=…` (Part 5 §5.2).
 | `{type: setRate}` | `commandType: pushRate` (`parameters.rateTable` = VersionedReference) |
 | `{type: validate}` | `commandType: applyValidation` (`parameters.ticket` + `parameters.provider`) |
 | `{type: restartDevice}` | `commandType: restartDevice` ✓ |
+| `{type: ejectTicket}` / `{type: cancel}` / `{type: reprint}` | `commandType: ejectTicket` / `cancelTransaction` / `reprintReceipt` (registry v6) — the three stuck-machine actions agents used to take in the vendor portal |
 
 ```bash
 curl -X POST https://api.example.com/v1/commands \
@@ -114,3 +115,10 @@ response is `202` — poll `GET /v1/commands/{id}` or subscribe to
 | `POST /plates/search` · `POST /observation-lookups` | `POST /v1/lpr/reads:search` (and `/v1/accounts:search`, `/v1/payments:search`, `/v1/violations:search`) — the lookups with the plate in a body, never a URL (Part 9 §9.6) |
 | `POST /plate-review/{id}/decision` | `PUT /v1/lpr/reads/{observation}/plate` — confirm, correct, or reject a read; `detail.review` shows the state (Part 13 §13.3a(4a)) |
 | `GET /occupancy/hourly` | `GET /v1/places/{id}/occupancy/history?interval=PT1H` (Part 5 §5.5a) |
+| `GET /vendor-portal?ticket=…&user=…` (an iframe with a stored login) | `POST /v1/ui/launches` — a one-time URL that logs the agent in for 60 s, bound to one screen (`surface`) and one subject; what they do there comes back as APX records or a `UiActionRecord` (Part 25) |
+| `GET /locations/{id}/equipment` · `/lanes/{id}/devices` | `GET /v1/equipment?place=&role=&lane=` — every device with its role (`gate`, `accessDoor`, `ticketDispenser`, `camera`…), make, model, versions, serial, MAC, area and level; live state stays on `GET /v1/devices` (Part 26 §26.1) |
+| `GET /intercoms` · `GET /lanes/{id}/phone` | `GET /v1/comms-points?place=` — intercoms, analog dialers, posted numbers, kiosks, QR codes, with caller id, dialed number and the gate or door they serve; `?callerId=` or `?dialedNumber=` finds the lane from a call (Part 26 §26.4) |
+| `GET /cameras/{id}/stream` (an RTSP URL with the password in it) | `POST /v1/cameras/{id}/views {kind: live\|snapshot\|playback}` — a single-use link that lasts 5 minutes; the password never leaves the site (Part 26 §26.3) |
+| `GET /lookup?externalId=…` | `POST /v1/identifiers:resolve {system, id}` — the APX record for an id another system holds (Part 26 §26.6) |
+| `POST /escalations` · "called the manager" in a note | `POST /v1/approvals` · `…/{id}/decide` — the ask, the answer and the evidence a gated action cites (Part 17 §17.3a) |
+| `POST /receipts/resend` | `POST /v1/payments/{id}/receipt {channel, destination}` (Part 13 §13.1a) |

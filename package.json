@@ -1,6 +1,6 @@
 {
   "name": "apx-standard",
-  "version": "0.14.0",
+  "version": "0.15.0",
   "private": true,
   "description": "APX — APDS Parking eXtensions: an open companion standard to APDS 4.1 adding data push/pull profiles, control, alerts, discovery, accounts/payments, LPR, reservations, permits, tolling, violations/enforcement, validation programs, credential lifecycle, and valet.",
   "license": "MIT",
@@ -19,12 +19,18 @@
     "spec:profile": "node tools/build-profile-spec.mjs",
     "examples:check": "node tools/validate-examples.mjs",
     "mock": "prism mock spec/dist/apx-v1.yaml --port 4010",
-    "docs:build": "node tools/build-reference-input.mjs && redocly build-docs node_modules/.cache/apx-reference-input.json -o site/reference.html && redocly build-docs spec/dist/apx-parcs.json -o site/parcs.html && node tools/build-standard.mjs && node tools/build-site.mjs",
+    "docs:build": "node tools/build-reference-input.mjs && redocly build-docs node_modules/.cache/apx-reference-input.json -o site/reference.html && redocly build-docs spec/dist/apx-parcs.json -o site/parcs.html && node tools/build-standard.mjs && node tools/build-site.mjs && npm run apxdocs:html",
     "sim": "node packages/simulator/bin/apx-sim.mjs serve",
     "sim:web": "node packages/simulator/web/build.mjs",
     "scenarios:check": "node tools/validate-scenarios.mjs",
-    "test": "npm run vendor:check && npm run registries:check && npm run spec:lint && npm run spec:bundle && npm run spec:profile && npm run spec:style && npm run spec:smoke && npm run examples:check && npm run scenarios:check",
-    "vetting": "node tools/vetting-scenarios.mjs"
+    "test": "npm run vendor:check && npm run registries:check && npm run spec:lint && npm run spec:bundle && npm run spec:profile && npm run spec:style && npm run spec:smoke && npm run examples:check && npm run scenarios:check && npm run submission:check && npm run apxdocs:check",
+    "vetting": "node tools/vetting-scenarios.mjs",
+    "submission:build": "node tools/build-apds-submission.mjs",
+    "submission:check": "node tools/build-apds-submission.mjs --check",
+    "apxdocs:build": "node tools/build-apx-docs.mjs",
+    "apxdocs:check": "node tools/build-apx-docs.mjs --check && node tools/check-apx-docs-coverage.mjs",
+    "apxdocs:pdf": "node tools/build-apds-submission-pdf.mjs apx-specification",
+    "apxdocs:html": "node tools/build-apx-docs-html.mjs"
   },
   "devDependencies": {
     "@noble/hashes": "^1.6.1",
@@ -34,6 +40,7 @@
     "ajv": "^8.17.0",
     "ajv-formats": "^3.0.0",
     "esbuild": "^0.24.2",
-    "openapi-typescript": "^7.13.0"
+    "openapi-typescript": "^7.13.0",
+    "pdf-lib": "^1.17.1"
   }
 }

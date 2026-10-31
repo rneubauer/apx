@@ -38,6 +38,14 @@ The reservation lifecycle rides entirely on native routes:
    grace period is operator policy; the server exposes its effect as the
    read-only `noShowAfter` on the extension (and on `ReservationSummary`),
    so a platform can tell the customer when the booking lapses.
+7. **Issuer and amount paid.** `ReservationSummary` carries `issuer` (the
+   seller the code came from, as an implementer code or the seller's
+   organisation name) and `amountPaid` (APDS `AmountInCurrency`, what the
+   customer already paid the seller), because reservation codes from
+   several sellers collide and because the first question at the lane is
+   whether the stay is already paid. A Part 17 §17.1 resolve request that
+   carries `reservationCode` MAY carry `reservationIssuer` to say which
+   seller's code it is.
 
 **Planned times.** `plannedUses[0].startTime`/`endTime` are authoritative;
 the extension's `plannedStart`/`plannedEnd` MUST mirror them on every

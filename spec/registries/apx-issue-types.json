@@ -1,6 +1,6 @@
 {
   "id": "5a6b7c8d-9e0f-4a1b-8c2d-3e4f5a6b7c8d",
-  "version": 1,
+  "version": 2,
   "name": "apx-issue-types",
   "creator": { "id": "a1000000-0000-4000-8000-000000000001", "className": "Organisation" },
   "locator": "https://apx-standard.org/registries/apx-issue-types.json",
@@ -15,6 +15,29 @@
     { "definedValue": "reservationMismatch", "entryDescription": "A prepaid reservation exists but is not linked to the current session (wrong or unread plate, unscanned code).", "entryIndex": 7 },
     { "definedValue": "plateUnresolved", "entryDescription": "The session has no plate or a low-confidence/incorrect plate association.", "entryIndex": 8 },
     { "definedValue": "equipmentFault", "entryDescription": "A lane device (payment terminal, ticket reader, gate, intercom, camera) is offline or faulted.", "entryIndex": 9 },
-    { "definedValue": "unknown", "entryDescription": "The issue could not be classified from available signals.", "entryIndex": 10 }
+    { "definedValue": "unknown", "entryDescription": "The issue could not be classified from available signals.", "entryIndex": 10 },
+    { "definedValue": "noResponse", "entryDescription": "The help button was pressed or the number dialled, but nobody answered the agent.", "entryIndex": 11 },
+    { "definedValue": "callDropped", "entryDescription": "The contact ended before the issue was stated or resolved.", "entryIndex": 12 },
+    { "definedValue": "audioFault", "entryDescription": "The agent cannot hear the parker or the parker cannot hear the agent; a fault in the lane's call equipment.", "entryIndex": 13 },
+    { "definedValue": "generalInquiry", "entryDescription": "A question about rates, hours, directions or the facility, with no transaction problem.", "entryIndex": 14 },
+    { "definedValue": "wrongLocation", "entryDescription": "The parker is at the wrong garage, dialled the wrong number, or the vehicle does not fit.", "entryIndex": 15 },
+    { "definedValue": "facilityFull", "entryDescription": "No space is available for the arriving vehicle.", "entryIndex": 16 },
+    { "definedValue": "ticketUnreadable", "entryDescription": "The entry ticket is present but the device cannot read it (damaged, demagnetized, faded).", "entryIndex": 17 },
+    { "definedValue": "ticketNotAccepted", "entryDescription": "The device refuses or will not return a readable ticket, including a ticket stuck on cancel.", "entryIndex": 18 },
+    { "definedValue": "noTicketIssued", "entryDescription": "The entry station issued no ticket, typically because it is out of tickets (see DeviceStatus.consumables).", "entryIndex": 19 },
+    { "definedValue": "paidCannotExit", "entryDescription": "The ticket is paid, but the exit does not open; a payment-status lookup is the first step.", "entryIndex": 20 },
+    { "definedValue": "cardNotReading", "entryDescription": "The card reader does not read the payment card at all, as distinct from a decline.", "entryIndex": 21 },
+    { "definedValue": "paymentMethodUnavailable", "entryDescription": "The parker cannot pay with what they have (card-only device, no money, needs change).", "entryIndex": 22 },
+    { "definedValue": "mediaJam", "entryDescription": "A ticket, bill or card is jammed or stuck in the device.", "entryIndex": 23 },
+    { "definedValue": "gateStuckOpen", "entryDescription": "The barrier is stuck open and vehicles pass without a transaction.", "entryIndex": 24 },
+    { "definedValue": "credentialForgotten", "entryDescription": "A holder arrived without their card, transponder or fob.", "entryIndex": 25 },
+    { "definedValue": "credentialDisabled", "entryDescription": "The holder's credential is present but disabled or deactivated.", "entryIndex": 26 },
+    { "definedValue": "gracePeriod", "entryDescription": "A dispute about the grace period, for example a fee charged just after it ended.", "entryIndex": 27 },
+    { "definedValue": "validationExpired", "entryDescription": "A validation was applied but has expired, so an amount is due.", "entryIndex": 28 },
+    { "definedValue": "authorizedVisitor", "entryDescription": "A hotel guest, vendor, employee, police officer or security staff needing entry under the place's guest arrangements (resolve with guestReference).", "entryIndex": 29 },
+    { "definedValue": "receiptRequest", "entryDescription": "The customer needs a receipt sent or printed again (Part 13 receipt re-send).", "entryIndex": 30 },
+    { "definedValue": "refundRequest", "entryDescription": "The customer asks for a refund or credit (reason from apx-refund-reasons).", "entryIndex": 31 },
+    { "definedValue": "vehicleIncident", "entryDescription": "A vehicle was damaged, broken into or towed at the place; raises a damageReported alert.", "entryIndex": 32 },
+    { "definedValue": "equipmentTest", "entryDescription": "A technician testing the equipment, not a customer; excluded from service figures.", "entryIndex": 33 }
   ]
 }

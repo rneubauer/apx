@@ -1,0 +1,16 @@
+{
+  "id": "c16d7e8f-9a0b-4c1d-8e3f-4a5b6c7d8e9f",
+  "version": 1,
+  "name": "apx-interaction-outcomes",
+  "creator": { "id": "a1000000-0000-4000-8000-000000000001", "className": "Organisation" },
+  "locator": "https://apx-standard.org/registries/apx-interaction-outcomes.json",
+  "userDefinedCodeListEntries": [
+    { "definedValue": "resolved", "entryDescription": "The issue was resolved during the interaction, by an action or an answer.", "entryIndex": 0 },
+    { "definedValue": "vended", "entryDescription": "The gate or door was opened for the customer as the resolution.", "entryIndex": 1 },
+    { "definedValue": "transferred", "entryDescription": "The interaction was handed to another agent or system.", "entryIndex": 2 },
+    { "definedValue": "escalated", "entryDescription": "A manager, attendant or other role took over or was asked to act (see escalationContacts and ApprovalRequest).", "entryIndex": 3 },
+    { "definedValue": "noActionNeeded", "entryDescription": "The customer needed no assistance by the time the agent answered.", "entryIndex": 4 },
+    { "definedValue": "abandoned", "entryDescription": "The customer left or the contact ended before a resolution.", "entryIndex": 5 },
+    { "definedValue": "callbackScheduled", "entryDescription": "The customer will be called back; raises customerCallbackRequested when the site must do it.", "entryIndex": 6 }
+  ]
+}

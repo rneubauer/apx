@@ -257,6 +257,32 @@ export default {
       }
     });
 
+    // Control (Part 6 §6.4): a supply crossing its low mark raises consumableLow; a refill resolves it.
+    sim.hooks.on('device.consumables', ({ device, kind, level, actor }) => {
+      const node = sim.hierarchy.get(device.id);
+      const name = node?.name ?? `device ${shortId(device.id)}`;
+      const who = actor === 'device' ? `${(node?.equipmentType ?? 'device').replace(/Station$/, '')}-${shortId(device.id)}` : actor ?? actors().parcs;
+      const open = alerts().find((a) => a.alertType === 'consumableLow' && a.source?.device?.id === device.id && a._kind === kind && OPEN.has(a.status));
+      if (level === 'low' || level === 'empty') {
+        if (open.length) return;
+        raise(
+          {
+            alertType: 'consumableLow',
+            severity: level === 'empty' ? 'major' : 'minor',
+            source: { device: refOf(device.id, 'SupplementalEquipment'), ...(node?.parentId ? { place: node.parentId } : {}) },
+            occurrenceTime: device.lastCommunication ?? sim.clock.now(),
+            detectionTime: sim.clock.now(),
+            description: mls(`${kind} ${level} at ${name} (DeviceStatus.consumables)`),
+            _kind: kind,
+          },
+          who,
+          `${kind} ${level}`
+        );
+        return;
+      }
+      if (level === 'ok') for (const a of open) transition(a.id, 'resolved', who, `${kind} refilled`);
+    });
+
     // The fabric (Part 8 §8.3): a subscription exhausted its retries. The alert is
     // bound to the subscription's organisation; the fabric already excludes the
     // failed subscription from every delivery (§7.4 self-referential rule).

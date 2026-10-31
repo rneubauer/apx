@@ -93,6 +93,14 @@ Extensions:
       $ref: "../accounts/schemas.yaml#/PaymentDetail"
     "apds-ext:apx:credential-digest@1.0":
       $ref: "#/CredentialDigest"
+    "apds-ext:apx:equipment-detail@1.0":
+      $ref: "../siteconfig/schemas.yaml#/EquipmentDetail"
+    "apds-ext:apx:camera@1.0":
+      $ref: "../siteconfig/schemas.yaml#/CameraDetail"
+    "apds-ext:apx:external-ids@1.0":
+      $ref: "../siteconfig/schemas.yaml#/ExternalIdentifiers"
+    "apds-ext:apx:place-operations@1.0":
+      $ref: "../siteconfig/schemas.yaml#/PlaceOperations"
   additionalProperties:
     type: object
 

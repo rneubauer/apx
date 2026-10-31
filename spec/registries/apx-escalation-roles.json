@@ -1,0 +1,15 @@
+{
+  "id": "b05c6d7e-8f9a-4b0c-9d2e-3f4a5b6c7d8e",
+  "version": 1,
+  "name": "apx-escalation-roles",
+  "creator": { "id": "a1000000-0000-4000-8000-000000000001", "className": "Organisation" },
+  "locator": "https://apx-standard.org/registries/apx-escalation-roles.json",
+  "userDefinedCodeListEntries": [
+    { "definedValue": "siteManager", "entryDescription": "The manager responsible for the place.", "entryIndex": 0 },
+    { "definedValue": "attendant", "entryDescription": "Staff on site at the time.", "entryIndex": 1 },
+    { "definedValue": "security", "entryDescription": "The place's security desk or patrol.", "entryIndex": 2 },
+    { "definedValue": "operatorOnCall", "entryDescription": "The operator's on-call duty manager or supervisor.", "entryIndex": 3 },
+    { "definedValue": "maintenance", "entryDescription": "The maintenance or service provider for the equipment.", "entryIndex": 4 },
+    { "definedValue": "other", "entryDescription": "A role none of the other codes fit. A code, not free text.", "entryIndex": 5 }
+  ]
+}

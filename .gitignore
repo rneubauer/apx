@@ -7,3 +7,7 @@ coverage/
 
 # Local Claude Code session state (settings.local.json, scratch)
 .claude/
+
+# Local working folders that may hold credentials or customer exports; never publish them.
+/creds/
+/inputs/

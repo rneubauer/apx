@@ -1,0 +1,854 @@
+{
+  "extends": "apx-resolution",
+  "name": "apx-site-config",
+  "description": "The cast of docs/scenarios/by-module/apx-site-config: Lakeside Garage described from APX alone. Exit lane 2 with its barrier, pay-in-lane terminal (the exit verifier), the intercom built into it and the overhead camera; the ground-floor lobby door with its card reader, call-box intercom and ceiling camera; the P1 pay-on-foot station; the P2 ramp camera that still speaks RTSP; the NVR in the equipment room. The comms points a call reaches help through, the PARCS and call-platform ids the garage is known by, the escalation roles, and the after-hours ticket and permit the lobby door scenarios turn on.",
+  "conformanceClasses": [
+    "apx-data",
+    "apx-events",
+    "apx-events-sse",
+    "apx-control",
+    "apx-alerts",
+    "apx-discovery",
+    "apx-accounts",
+    "apx-payment-history",
+    "apx-lpr",
+    "apx-reservations",
+    "apx-permits",
+    "apx-tolling",
+    "apx-resolution",
+    "apx-violations",
+    "apx-validations",
+    "apx-credentials",
+    "apx-valet",
+    "apx-ui-launch",
+    "apx-site-config"
+  ],
+  "features": [
+    "negotiatedRates",
+    "negotiatedAmounts",
+    "ticketMatching",
+    "cameraViews",
+    "cameraPlayback"
+  ],
+  "credentials": {
+    "default": {
+      "scopes": [
+        "apx.siteconfig:read",
+        "apx.siteconfig:manage",
+        "apx.cameras:view",
+        "apx.control:read",
+        "apx.control:execute",
+        "apx.resolution:read",
+        "apx.support:manage",
+        "apx.accounts:read",
+        "apx.data:read",
+        "apx.alerts:read",
+        "apx.subscriptions:manage"
+      ],
+      "apx_org": {
+        "id": "a1…0001",
+        "className": "Organisation"
+      },
+      "apx_places": [
+        "b1…0001"
+      ],
+      "user": "console-lakeside"
+    },
+    "callplatform": {
+      "scopes": [
+        "apx.siteconfig:read",
+        "apx.siteconfig:manage",
+        "apx.resolution:read",
+        "apx.support:manage",
+        "apx.control:read"
+      ],
+      "apx_org": {
+        "id": "a1…0001",
+        "className": "Organisation"
+      },
+      "apx_places": [
+        "b1…0001"
+      ],
+      "user": "svc:callplatform"
+    },
+    "wall-lakeside": {
+      "scopes": [
+        "apx.siteconfig:read",
+        "apx.control:read"
+      ],
+      "apx_org": {
+        "id": "a1…0001",
+        "className": "Organisation"
+      },
+      "apx_places": [
+        "b1…0001"
+      ],
+      "user": "wall:lakeside"
+    }
+  },
+  "control": {
+    "unsupportedCommandTypes": [
+      "lostTicket"
+    ]
+  },
+  "video": {
+    "base": "https://video.lakeside-garage.example",
+    "viewTtlSeconds": 300
+  },
+  "organisations": [
+    {
+      "id": "a2…0021",
+      "name": "Gatewise (PARCS vendor)"
+    },
+    {
+      "id": "a2…0022",
+      "name": "Viewline Services (camera maintenance)"
+    }
+  ],
+  "devices": [
+    {
+      "id": "c1…0007",
+      "placeId": "b1…0001",
+      "laneId": "b2…0002",
+      "name": "exit lane 2 overhead camera",
+      "equipmentType": "camera",
+      "state": "available",
+      "lastCommunication": "2026-10-18T13:59:50Z",
+      "stateChangedTime": "2026-10-18T06:00:00Z"
+    },
+    {
+      "id": "c1…0010",
+      "placeId": "b1…0001",
+      "name": "lobby pedestrian door",
+      "equipmentType": "door",
+      "state": "available",
+      "lastCommunication": "2026-10-18T13:59:55Z",
+      "stateChangedTime": "2026-10-18T06:00:00Z"
+    },
+    {
+      "id": "c1…0011",
+      "placeId": "b1…0001",
+      "name": "lobby door card reader",
+      "equipmentType": "reader",
+      "state": "available",
+      "lastCommunication": "2026-10-18T13:59:55Z",
+      "stateChangedTime": "2026-10-18T06:00:00Z"
+    },
+    {
+      "id": "c1…0012",
+      "placeId": "b1…0001",
+      "name": "lobby door intercom",
+      "equipmentType": "intercom",
+      "state": "available",
+      "lastCommunication": "2026-10-18T13:59:55Z",
+      "stateChangedTime": "2026-10-18T06:00:00Z"
+    },
+    {
+      "id": "c1…0013",
+      "placeId": "b1…0001",
+      "name": "lobby camera",
+      "equipmentType": "camera",
+      "state": "available",
+      "lastCommunication": "2026-10-18T13:59:52Z",
+      "stateChangedTime": "2026-10-18T06:00:00Z"
+    },
+    {
+      "id": "c1…0014",
+      "placeId": "b1…0001",
+      "name": "P2 ramp camera",
+      "equipmentType": "camera",
+      "state": "available",
+      "lastCommunication": "2026-10-18T13:59:40Z",
+      "stateChangedTime": "2026-10-18T06:00:00Z"
+    },
+    {
+      "id": "c1…0020",
+      "placeId": "b1…0001",
+      "name": "P1 pay-on-foot station",
+      "equipmentType": "payStation",
+      "state": "available",
+      "lastCommunication": "2026-10-18T13:59:58Z",
+      "stateChangedTime": "2026-10-18T06:00:00Z",
+      "consumables": [
+        {
+          "kind": "tickets",
+          "level": "ok"
+        },
+        {
+          "kind": "receiptPaper",
+          "level": "ok"
+        },
+        {
+          "kind": "cash",
+          "level": "ok"
+        },
+        {
+          "kind": "coins",
+          "level": "ok"
+        }
+      ]
+    },
+    {
+      "id": "c1…0030",
+      "placeId": "b1…0001",
+      "name": "equipment room NVR",
+      "equipmentType": "recorder",
+      "state": "available",
+      "lastCommunication": "2026-10-18T13:59:59Z",
+      "stateChangedTime": "2026-10-18T06:00:00Z"
+    },
+    {
+      "id": "c1…0097",
+      "placeId": "b1…0002",
+      "laneId": "b2…0003",
+      "name": "Harbor Deck exit camera",
+      "equipmentType": "camera",
+      "state": "available"
+    }
+  ],
+  "equipment": [
+    {
+      "id": "c1…0002",
+      "version": 3,
+      "placeId": "b1…0001",
+      "laneId": "b2…0002",
+      "name": "Exit lane 2 barrier",
+      "equipmentType": "other",
+      "installed": "2024-03-01T10:00:00Z",
+      "detail": {
+        "role": "gate",
+        "manufacturer": "Gatewise",
+        "model": "GW-B40",
+        "firmwareVersion": "4.2.1",
+        "serialNumber": "GWB40-002211",
+        "macAddresses": [
+          "3c7a1e00b2a1"
+        ],
+        "installedAt": "2024-03-01",
+        "area": "lane",
+        "level": "G",
+        "serviceProvider": {
+          "organisation": "a2…0021",
+          "supportReference": "LAKESIDE-EXIT2"
+        }
+      }
+    },
+    {
+      "id": "c1…0003",
+      "version": 5,
+      "placeId": "b1…0001",
+      "laneId": "b2…0002",
+      "name": "Exit lane 2 pay-in-lane terminal",
+      "equipmentType": "paymentMachine",
+      "installed": "2024-03-01T10:00:00Z",
+      "detail": {
+        "role": "exitVerifier",
+        "manufacturer": "Gatewise",
+        "model": "GW-X200",
+        "firmwareVersion": "7.0.3",
+        "softwareVersion": "LaneOS 2026.3",
+        "serialNumber": "GWX200-010884",
+        "macAddresses": [
+          "3c7a1e00b2a2",
+          "3c7a1e00b2a3"
+        ],
+        "installedAt": "2024-03-01",
+        "area": "lane",
+        "level": "G",
+        "controls": [
+          "c1…0002"
+        ],
+        "serviceProvider": {
+          "organisation": "a2…0021",
+          "supportReference": "LAKESIDE-EXIT2"
+        }
+      },
+      "externalIds": [
+        {
+          "system": "https://parcs.gatewise.example",
+          "id": "DEV-X200-010884"
+        }
+      ]
+    },
+    {
+      "id": "c1…0005",
+      "version": 2,
+      "placeId": "b1…0001",
+      "laneId": "b2…0002",
+      "name": "Exit lane 2 intercom",
+      "equipmentType": "other",
+      "installed": "2024-03-01T10:00:00Z",
+      "detail": {
+        "role": "intercom",
+        "manufacturer": "Talkpoint",
+        "model": "TP-SIP2",
+        "firmwareVersion": "2.14.0",
+        "serialNumber": "TPS2-77120",
+        "macAddresses": [
+          "b827eb44c1d0"
+        ],
+        "installedAt": "2024-03-01",
+        "area": "lane",
+        "level": "G",
+        "builtInto": "c1…0003"
+      }
+    },
+    {
+      "id": "c1…0007",
+      "version": 2,
+      "placeId": "b1…0001",
+      "laneId": "b2…0002",
+      "name": "Exit lane 2 overhead camera",
+      "equipmentType": "other",
+      "installed": "2025-06-12T09:00:00Z",
+      "detail": {
+        "role": "camera",
+        "manufacturer": "Viewline",
+        "model": "VL-D4",
+        "firmwareVersion": "5.80.2",
+        "serialNumber": "VLD4-331902",
+        "macAddresses": [
+          "00e0ac10f0a7"
+        ],
+        "installedAt": "2025-06-12",
+        "area": "lane",
+        "level": "G",
+        "serviceProvider": {
+          "organisation": "a2…0022"
+        }
+      },
+      "camera": {
+        "mounting": "overhead",
+        "view": [
+          "vehicle",
+          "equipmentInteraction"
+        ],
+        "faces": "outward",
+        "primary": true,
+        "ptz": false,
+        "recorder": {
+          "equipment": "c1…0030",
+          "channel": "4"
+        },
+        "streams": [
+          {
+            "protocol": "webrtc"
+          },
+          {
+            "protocol": "snapshot",
+            "resolution": "1920x1080"
+          }
+        ],
+        "retentionDays": 30
+      }
+    },
+    {
+      "id": "c1…0010",
+      "version": 1,
+      "placeId": "b1…0001",
+      "name": "Lobby pedestrian door",
+      "equipmentType": "other",
+      "installed": "2024-03-01T10:00:00Z",
+      "detail": {
+        "role": "accessDoor",
+        "manufacturer": "Doorsafe",
+        "model": "DS-E1",
+        "firmwareVersion": "1.9.4",
+        "serialNumber": "DSE1-40021",
+        "area": "pedestrianEntrance",
+        "level": "G"
+      }
+    },
+    {
+      "id": "c1…0011",
+      "version": 1,
+      "placeId": "b1…0001",
+      "name": "Lobby door card reader",
+      "equipmentType": "other",
+      "installed": "2024-03-01T10:00:00Z",
+      "detail": {
+        "role": "cardReader",
+        "manufacturer": "Doorsafe",
+        "model": "DS-R10",
+        "firmwareVersion": "1.9.4",
+        "serialNumber": "DSR10-40022",
+        "macAddresses": [
+          "b827eb44c1e4"
+        ],
+        "area": "pedestrianEntrance",
+        "level": "G",
+        "controls": [
+          "c1…0010"
+        ]
+      }
+    },
+    {
+      "id": "c1…0012",
+      "version": 1,
+      "placeId": "b1…0001",
+      "name": "Lobby door intercom",
+      "equipmentType": "other",
+      "installed": "2024-03-01T10:00:00Z",
+      "detail": {
+        "role": "intercom",
+        "manufacturer": "Talkpoint",
+        "model": "TP-SIP2",
+        "firmwareVersion": "2.14.0",
+        "serialNumber": "TPS2-77131",
+        "macAddresses": [
+          "b827eb44c1e5"
+        ],
+        "area": "pedestrianEntrance",
+        "level": "G",
+        "builtInto": "c1…0010"
+      }
+    },
+    {
+      "id": "c1…0013",
+      "version": 1,
+      "placeId": "b1…0001",
+      "name": "Lobby camera",
+      "equipmentType": "other",
+      "installed": "2025-06-12T09:00:00Z",
+      "detail": {
+        "role": "camera",
+        "manufacturer": "Viewline",
+        "model": "VL-C2",
+        "firmwareVersion": "5.80.2",
+        "serialNumber": "VLC2-331950",
+        "area": "pedestrianEntrance",
+        "level": "G"
+      },
+      "camera": {
+        "mounting": "ceiling",
+        "view": [
+          "pedestrians"
+        ],
+        "primary": true,
+        "recorder": {
+          "equipment": "c1…0030",
+          "channel": "9"
+        },
+        "streams": [
+          {
+            "protocol": "hls"
+          },
+          {
+            "protocol": "snapshot"
+          }
+        ],
+        "retentionDays": 14
+      }
+    },
+    {
+      "id": "c1…0014",
+      "version": 1,
+      "placeId": "b1…0001",
+      "name": "P2 ramp camera",
+      "equipmentType": "other",
+      "installed": "2021-11-02T09:00:00Z",
+      "detail": {
+        "role": "camera",
+        "manufacturer": "Viewline",
+        "model": "VL-A1",
+        "firmwareVersion": "2.0.9",
+        "serialNumber": "VLA1-100233",
+        "macAddresses": [
+          "00e0ac0a1b2c"
+        ],
+        "area": "ramp",
+        "level": "P2"
+      },
+      "camera": {
+        "mounting": "wall",
+        "view": [
+          "areaOverview"
+        ],
+        "faces": "inward",
+        "recorder": {
+          "equipment": "c1…0030",
+          "channel": "12"
+        },
+        "streams": [
+          {
+            "protocol": "rtsp",
+            "transport": "tcp",
+            "resolution": "1280x720"
+          }
+        ],
+        "retentionDays": 30,
+        "credentialRef": "site-0042/cam-p2-ramp"
+      }
+    },
+    {
+      "id": "c1…0020",
+      "version": 4,
+      "placeId": "b1…0001",
+      "name": "P1 pay-on-foot station",
+      "equipmentType": "paymentMachine",
+      "installed": "2024-03-01T10:00:00Z",
+      "detail": {
+        "role": "payOnFoot",
+        "manufacturer": "Gatewise",
+        "model": "GW-P500",
+        "firmwareVersion": "7.0.3",
+        "softwareVersion": "LaneOS 2026.3",
+        "serialNumber": "GWP500-020417",
+        "macAddresses": [
+          "3c7a1e00b2c9"
+        ],
+        "installedAt": "2024-03-01",
+        "area": "paymentArea",
+        "level": "P1",
+        "serviceProvider": {
+          "organisation": "a2…0021",
+          "supportReference": "LAKESIDE-POF1"
+        }
+      }
+    },
+    {
+      "id": "c1…0030",
+      "version": 2,
+      "placeId": "b1…0001",
+      "name": "Equipment room NVR",
+      "equipmentType": "other",
+      "installed": "2025-06-12T09:00:00Z",
+      "detail": {
+        "role": "videoRecorder",
+        "manufacturer": "Viewline",
+        "model": "VL-NVR16",
+        "firmwareVersion": "3.2.0",
+        "softwareVersion": "ViewStore 11.4",
+        "serialNumber": "VLN16-88201",
+        "macAddresses": [
+          "00e0ac10f1b0"
+        ],
+        "installedAt": "2025-06-12",
+        "area": "equipmentRoom",
+        "level": "G",
+        "serviceProvider": {
+          "organisation": "a2…0022",
+          "supportReference": "SVC-LKS-NVR"
+        }
+      }
+    },
+    {
+      "id": "c1…0097",
+      "version": 1,
+      "placeId": "b1…0002",
+      "laneId": "b2…0003",
+      "name": "Harbor Deck exit camera",
+      "equipmentType": "other",
+      "installed": "2025-02-01T09:00:00Z",
+      "detail": {
+        "role": "camera",
+        "manufacturer": "Viewline",
+        "model": "VL-D4",
+        "firmwareVersion": "5.80.2",
+        "serialNumber": "VLD4-440011",
+        "area": "lane",
+        "level": "G"
+      },
+      "camera": {
+        "mounting": "pole",
+        "view": [
+          "vehicle"
+        ],
+        "faces": "outward",
+        "streams": [
+          {
+            "protocol": "webrtc"
+          }
+        ],
+        "retentionDays": 30
+      }
+    }
+  ],
+  "commsPoints": [
+    {
+      "id": "cc…0c01",
+      "version": 2,
+      "type": "intercom",
+      "place": {
+        "id": "b1…0001",
+        "className": "Place"
+      },
+      "lane": {
+        "id": "b2…0002",
+        "className": "VehicularAccess"
+      },
+      "equipment": {
+        "id": "c1…0005",
+        "className": "SupplementalEquipment"
+      },
+      "serves": {
+        "id": "c1…0002",
+        "className": "SupplementalEquipment"
+      },
+      "phoneNumber": "+15550100900",
+      "callerId": "+15550100201",
+      "commsDeviceId": "dev-51ccae16",
+      "coverage": [
+        {
+          "period": {
+            "periodName": [
+              {
+                "language": "en",
+                "string": "Always"
+              }
+            ]
+          },
+          "languages": [
+            "en",
+            "es"
+          ]
+        }
+      ]
+    },
+    {
+      "id": "cc…0c02",
+      "version": 1,
+      "type": "postedNumber",
+      "place": {
+        "id": "b1…0001",
+        "className": "Place"
+      },
+      "phoneNumber": "+15550100042",
+      "coverage": [
+        {
+          "period": {
+            "periodName": [
+              {
+                "language": "en",
+                "string": "Staffed hours"
+              }
+            ],
+            "recurringTimePeriodOfDay": [
+              {
+                "startTimeOfPeriod": "06:00",
+                "endTimeOfPeriod": "22:00"
+              }
+            ]
+          },
+          "languages": [
+            "en"
+          ]
+        },
+        {
+          "period": {
+            "periodName": [
+              {
+                "language": "en",
+                "string": "Overnight, answered remotely"
+              }
+            ],
+            "recurringTimePeriodOfDay": [
+              {
+                "startTimeOfPeriod": "22:00",
+                "endTimeOfPeriod": "06:00"
+              }
+            ]
+          },
+          "languages": [
+            "en",
+            "es"
+          ]
+        }
+      ]
+    },
+    {
+      "id": "cc…0c03",
+      "version": 1,
+      "type": "intercom",
+      "place": {
+        "id": "b1…0001",
+        "className": "Place"
+      },
+      "equipment": {
+        "id": "c1…0012",
+        "className": "SupplementalEquipment"
+      },
+      "serves": {
+        "id": "c1…0010",
+        "className": "SupplementalEquipment"
+      },
+      "phoneNumber": "+15550100900",
+      "callerId": "+15550100210",
+      "commsDeviceId": "dev-a0b1c2d3"
+    }
+  ],
+  "placeDecorations": [
+    {
+      "target": "b1…0001",
+      "className": "Place",
+      "externalIds": [
+        {
+          "system": "https://parcs.gatewise.example",
+          "id": "LOT-0042"
+        },
+        {
+          "system": "https://calls.lakeside-oncall.example",
+          "id": "acct-7f3a9"
+        },
+        {
+          "system": "https://assets.lakeside-parking.example",
+          "id": "LKS-G-001"
+        }
+      ],
+      "operations": {
+        "commsAccountId": "acct-7f3a9",
+        "escalationContacts": [
+          {
+            "role": "attendant",
+            "order": 1,
+            "hours": {
+              "recurringTimePeriodOfDay": [
+                {
+                  "startTimeOfPeriod": "06:00",
+                  "endTimeOfPeriod": "22:00"
+                }
+              ]
+            }
+          },
+          {
+            "role": "siteManager",
+            "order": 2
+          },
+          {
+            "role": "operatorOnCall",
+            "order": 3,
+            "hours": {
+              "recurringTimePeriodOfDay": [
+                {
+                  "startTimeOfPeriod": "22:00",
+                  "endTimeOfPeriod": "06:00"
+                }
+              ]
+            }
+          },
+          {
+            "role": "security",
+            "order": 4
+          }
+        ]
+      }
+    },
+    {
+      "target": "b2…0002",
+      "className": "VehicularAccess",
+      "externalIds": [
+        {
+          "system": "https://parcs.gatewise.example",
+          "id": "60601b08-3f1f-4b9c-9500-c9889e0d1a2b"
+        }
+      ]
+    }
+  ],
+  "resolutionPolicy": {
+    "denialReasons": {
+      "permitExpired": {
+        "reasonCode": "permitExpired",
+        "reasonDisplay": "Monthly permit ended 2026-10-17.",
+        "issue": "credentialDisabled"
+      }
+    }
+  },
+  "sessions": [
+    {
+      "id": "c4…0120",
+      "version": 1,
+      "actualStart": "2026-10-18T19:02:10Z",
+      "initiator": {
+        "id": "a1…0001",
+        "version": 1,
+        "className": "Organisation"
+      },
+      "hierarchyElement": {
+        "id": "b1…0001",
+        "version": 7,
+        "className": "Place"
+      },
+      "identifiedCredentials": [
+        {
+          "type": "ticket",
+          "credentialAssignedType": "other",
+          "identifier": {
+            "id": "T-61120",
+            "className": "Credential"
+          }
+        }
+      ],
+      "segments": [],
+      "_place": "b1…0001",
+      "_ticketNumber": "T-61120",
+      "_entryLane": "b2…0001",
+      "_amountDue": {
+        "currencyType": "USD",
+        "currencyValue": 0
+      },
+      "_paid": true
+    }
+  ],
+  "payments": [
+    {
+      "id": "e8…0231",
+      "transactionID": "PARIS-20261018-00912",
+      "place": {
+        "id": "b1…0001",
+        "className": "Place"
+      },
+      "dateCollected": "2026-10-18T23:27:40Z",
+      "amount": {
+        "currencyType": "USD",
+        "currencyValue": 14
+      },
+      "meansOfPayment": "paymentCreditCard",
+      "channel": "payStation",
+      "paymentStatus": "approved",
+      "captureStatus": "captured",
+      "ticketNumber": "T-61120",
+      "cardLast4": "2210",
+      "_session": "c4…0120"
+    }
+  ],
+  "accessEvents": [
+    {
+      "id": "d7…0231",
+      "credential": {
+        "id": "c3…0003",
+        "className": "CredentialRecord"
+      },
+      "occurredAt": "2026-10-18T23:51:58Z",
+      "place": {
+        "id": "b1…0001",
+        "className": "Place"
+      },
+      "device": {
+        "id": "c1…0011",
+        "className": "SupplementalEquipment"
+      },
+      "direction": "entry",
+      "outcome": "denied",
+      "denialReason": "permitExpired"
+    },
+    {
+      "id": "d7…0232",
+      "credential": {
+        "id": "c3…0002",
+        "className": "CredentialRecord"
+      },
+      "occurredAt": "2026-10-18T23:51:58Z",
+      "place": {
+        "id": "b1…0001",
+        "className": "Place"
+      },
+      "device": {
+        "id": "c1…0011",
+        "className": "SupplementalEquipment"
+      },
+      "direction": "entry",
+      "outcome": "denied",
+      "denialReason": "permitExpired"
+    }
+  ]
+}

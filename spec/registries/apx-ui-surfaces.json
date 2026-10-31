@@ -1,0 +1,24 @@
+{
+  "id": "7c1e2d3f-4a5b-4c6d-8e7f-9a0b1c2d3e4f",
+  "version": 1,
+  "name": "apx-ui-surfaces",
+  "creator": { "id": "a1000000-0000-4000-8000-000000000001", "className": "Organisation" },
+  "locator": "https://apx-standard.org/registries/apx-ui-surfaces.json",
+  "userDefinedCodeListEntries": [
+    { "definedValue": "lane.console", "entryDescription": "The vendor's lane console: the transaction in the machine, the devices, and the actions an agent takes at a lane. Subject: VehicularAccess.", "entryIndex": 0 },
+    { "definedValue": "session.detail", "entryDescription": "One parking session, its reads, payments and validations. Subject: Session.", "entryIndex": 1 },
+    { "definedValue": "reservation.detail", "entryDescription": "One reservation, with redeem, amend and cancel. Subject: AssignedRight (the reservation).", "entryIndex": 2 },
+    { "definedValue": "reservation.search", "entryDescription": "Find a reservation by code, plate, name or time. General surface, no subject.", "entryIndex": 3 },
+    { "definedValue": "lpr.read.review", "entryDescription": "Review and correct one plate read. Subject: Observation.", "entryIndex": 4 },
+    { "definedValue": "violation.detail", "entryDescription": "One violation, its evidence and status. Subject: Violation.", "entryIndex": 5 },
+    { "definedValue": "violation.appeal", "entryDescription": "Open or decide an appeal on a violation. Subject: Violation.", "entryIndex": 6 },
+    { "definedValue": "validation.redeem", "entryDescription": "Apply a validation to the current session or ticket. Subject: Session.", "entryIndex": 7 },
+    { "definedValue": "credential.detail", "entryDescription": "One credential and its holder, with suspend, resume and replace. Subject: CredentialRecord.", "entryIndex": 8 },
+    { "definedValue": "toll.transaction", "entryDescription": "One toll transaction and its payment. Subject: TollTransaction.", "entryIndex": 9 },
+    { "definedValue": "toll.dispute", "entryDescription": "Open or resolve a dispute on a toll transaction. Subject: TollTransaction.", "entryIndex": 10 },
+    { "definedValue": "valet.ticket", "entryDescription": "One valet ticket: position, keys, retrieval and handback. Subject: ValetTicket.", "entryIndex": 11 },
+    { "definedValue": "charging.session", "entryDescription": "One charging session and its charger. Subject: ChargingSession.", "entryIndex": 12 },
+    { "definedValue": "place.console", "entryDescription": "The vendor's console for one place: lanes, devices, counts. Subject: HierarchyElement (the place).", "entryIndex": 13 },
+    { "definedValue": "module.home", "entryDescription": "The vendor's home screen for a module, with no subject. General surface.", "entryIndex": 14 }
+  ]
+}

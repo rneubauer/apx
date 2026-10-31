@@ -8,7 +8,7 @@ APX open vocabularies are published as **APDS UserDefinedCodeList documents**
 |---|---|---|
 | `apx-command-types` | Command plane verbs | `Command.commandType` |
 | `apx-alert-types` | Alert taxonomies (seeded from APDS Use Case C.2.2 exceptions/space statuses) | `Alert.alertType` |
-| `apx-device-states` | Device state values (RefillPointStatusEnum style) | `DeviceStatus.deviceState` |
+| `apx-device-states` | Device state values (in the style of APDS `RefillPointStatusEnum`, which covers refill points only) | `DeviceStatus.deviceState` |
 | `apx-topics` | APX event topics | `EventEnvelope.type`, subscriptions |
 | `apx-conformance-classes` | Conformance classes | `.well-known/apx-configuration` |
 | `apx-issue-types` | Resolution issue classification | `ResolutionIssue.code` (Part 17) |
@@ -21,6 +21,18 @@ APX open vocabularies are published as **APDS UserDefinedCodeList documents**
 | `apx-read-review-reasons` | Why a read was sent to human review (open) | `LprReadDetail.review.reasons` (Part 13 §13.3a(4a)) |
 | `apx-payment-line-codes` | The lines a payment total is made of (open) | APDS `PaymentLine.idCode` in `PaymentDetail.lines[]` (Part 13 §13.6a) |
 | `apx-plate-list-categories` | Plate list categories (open) | `PlateList.category` (Part 24) |
+| `apx-ui-surfaces` | The screens an implementation may offer to staff, named `<module>.<view>`, each naming the subject class it opens (open: modules add surfaces) | `UiSurface.surface`, `UiLaunch.surface`, `AllowedAction.execution.surface` (Part 25) |
+| `apx-interaction-outcomes` | How a support interaction ended (open) | `SupportInteraction.resolution.code` (Part 17 §17.6) |
+| `apx-refund-reasons` | Why a payment was refunded (open) | Refund request `reasonCode` (Part 13 §13.1a) |
+| `apx-equipment-roles` | What a piece of hardware does on a lane or in a place (fixed: implementations use the codes, only the maintainers add) | `EquipmentDetail.role` (Part 26 §26.1) |
+| `apx-area-types` | Where an item stands in a location (fixed) | `EquipmentDetail.area` (Part 26 §26.2) |
+| `apx-comms-point-types` | How a parker reaches help at a point (fixed) | `CommsPoint.type` (Part 26 §26.4) |
+| `apx-escalation-roles` | Whom an agent escalates to, as roles (fixed) | `PlaceOperations.escalationContacts[].role`, `ApprovalRequest.role` (Part 26 §26.5, Part 17 §17.3a) |
+
+Registries marked **fixed** still follow §11.1: entries are added, never
+removed or re-meant. They differ from the open ones in that an
+implementer does not extend them with a list of its own; a value that is
+missing is requested per §11.3 and used as `other` meanwhile.
 
 ## 11.1 Rules
 

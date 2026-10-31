@@ -2038,3 +2038,195 @@ Authorization: Bearer <apx.alerts:read only>
   "instance": "/v1/alerts/e7000000-0000-4000-8000-000000000706/resolve"
 }
 ```
+
+---
+
+## ALT-23 — The call becomes a case: receipt wanted, paper running out, a dented bumper
+
+<!-- apx:scenario ALT-23 kind=happy ics=APX-ALT-02,APX-ALT-03,APX-ALT-08 -->
+
+**Given** three things a call center used to leave in free-text notes.
+**When** the agent raises a `receiptRequested` alert citing the support
+interaction it came from, the pay station raises `consumableLow` on its
+own, and an agent raises `damageReported` against the session of the
+car that was hit. **Then** 201 each, typed from `apx-alert-types`, with
+`supportInteraction` tying the case back to the call so the site team
+and the call center read the same record (Part 7 §7.6). A
+`customerCallbackRequested` alert carries the callback as a case, not
+the customer's number.
+
+```http
+POST /v1/alerts
+Idempotency-Key: al-receipt-T61077
+```
+
+<!-- apx:request POST /v1/alerts -->
+```json
+{
+  "alertType": "receiptRequested",
+  "severity": "minor",
+  "source": {
+    "place": "b1000000-0000-4000-8000-000000000001"
+  },
+  "relatedEntity": { "id": "e8000000-0000-4000-8000-000000000204", "className": "PaymentRecord" },
+  "supportInteraction": { "id": "e7000000-0000-4000-8000-000000000701", "className": "SupportInteraction" },
+  "occurrenceTime": "2026-10-18T10:15:00Z",
+  "detectionTime": "2026-10-18T10:15:00Z",
+  "description": [{ "language": "en", "string": "Customer asks for an emailed receipt for ticket T-61077; no e-mail delivery at this site." }]
+}
+```
+
+<!-- apx:response 201 -->
+```json
+{
+  "id": "e7000000-0000-4000-8000-000000000723",
+  "version": 1,
+  "alertType": "receiptRequested",
+  "severity": "minor",
+  "status": "raised",
+  "source": {
+    "place": "b1000000-0000-4000-8000-000000000001"
+  },
+  "relatedEntity": { "id": "e8000000-0000-4000-8000-000000000204", "className": "PaymentRecord" },
+  "supportInteraction": { "id": "e7000000-0000-4000-8000-000000000701", "className": "SupportInteraction" },
+  "occurrenceTime": "2026-10-18T10:15:00Z",
+  "detectionTime": "2026-10-18T10:15:00Z",
+  "description": [{ "language": "en", "string": "Customer asks for an emailed receipt for ticket T-61077; no e-mail delivery at this site." }],
+  "statusHistory": [
+    { "state": "raised", "time": "2026-10-18T10:15:02Z", "actor": "agent:j.okafor" }
+  ],
+  "recordInfo": {
+    "creationTime": "2026-10-18T10:15:02Z",
+    "creator": { "id": "a1000000-0000-4000-8000-000000000001", "className": "Organisation" },
+    "creationUser": "agent:j.okafor"
+  }
+}
+```
+
+The pay station's receipt roll crosses its low mark; the server raises
+the alert itself and subscribers receive it:
+
+<!-- apx:validate EventEnvelope -->
+<!-- apx:validate Alert at /data -->
+```json
+{
+  "id": "9e000000-0000-4000-8000-000000000923",
+  "type": "apx.alert.raised.v1",
+  "source": "https://api.lakeside-garage.example/v1",
+  "time": "2026-10-18T10:20:00Z",
+  "subject": { "id": "e7000000-0000-4000-8000-000000000724", "className": "Alert" },
+  "data": {
+    "id": "e7000000-0000-4000-8000-000000000724",
+    "version": 1,
+    "alertType": "consumableLow",
+    "severity": "minor",
+    "status": "raised",
+    "source": {
+      "device": { "id": "c1000000-0000-4000-8000-000000000003", "className": "SupplementalEquipment" },
+      "place": "b2000000-0000-4000-8000-000000000002"
+    },
+    "occurrenceTime": "2026-10-18T10:19:58Z",
+    "detectionTime": "2026-10-18T10:19:58Z",
+    "description": [{ "language": "en", "string": "receiptPaper low at pay station 3 (DeviceStatus.consumables)" }],
+    "statusHistory": [
+      { "state": "raised", "time": "2026-10-18T10:20:00Z", "actor": "pay-c1000000-0003" }
+    ]
+  }
+}
+```
+
+```http
+POST /v1/alerts
+Idempotency-Key: al-damage-c4-0022
+```
+
+<!-- apx:request POST /v1/alerts -->
+```json
+{
+  "alertType": "damageReported",
+  "severity": "major",
+  "source": {
+    "place": "b1000000-0000-4000-8000-000000000001"
+  },
+  "relatedEntity": { "id": "c4000000-0000-4000-8000-000000000022", "className": "Session" },
+  "supportInteraction": { "id": "e7000000-0000-4000-8000-000000000702", "className": "SupportInteraction" },
+  "occurrenceTime": "2026-10-18T11:02:00Z",
+  "detectionTime": "2026-10-18T11:30:00Z",
+  "description": [{ "language": "en", "string": "Customer reports rear bumper damage on level P2 between 09:00 and 11:00; camera playback requested." }]
+}
+```
+
+<!-- apx:response 201 -->
+```json
+{
+  "id": "e7000000-0000-4000-8000-000000000725",
+  "version": 1,
+  "alertType": "damageReported",
+  "severity": "major",
+  "status": "raised",
+  "source": {
+    "place": "b1000000-0000-4000-8000-000000000001"
+  },
+  "relatedEntity": { "id": "c4000000-0000-4000-8000-000000000022", "className": "Session" },
+  "supportInteraction": { "id": "e7000000-0000-4000-8000-000000000702", "className": "SupportInteraction" },
+  "occurrenceTime": "2026-10-18T11:02:00Z",
+  "detectionTime": "2026-10-18T11:30:00Z",
+  "description": [{ "language": "en", "string": "Customer reports rear bumper damage on level P2 between 09:00 and 11:00; camera playback requested." }],
+  "statusHistory": [
+    { "state": "raised", "time": "2026-10-18T11:30:05Z", "actor": "agent:j.okafor" }
+  ],
+  "recordInfo": {
+    "creationTime": "2026-10-18T11:30:05Z",
+    "creator": { "id": "a1000000-0000-4000-8000-000000000001", "className": "Organisation" },
+    "creationUser": "agent:j.okafor"
+  }
+}
+```
+
+```http
+POST /v1/alerts
+Idempotency-Key: al-callback-e7-0703
+```
+
+<!-- apx:request POST /v1/alerts -->
+```json
+{
+  "alertType": "customerCallbackRequested",
+  "severity": "minor",
+  "source": {
+    "place": "b1000000-0000-4000-8000-000000000001"
+  },
+  "supportInteraction": { "id": "e7000000-0000-4000-8000-000000000703", "className": "SupportInteraction" },
+  "occurrenceTime": "2026-10-18T11:45:00Z",
+  "detectionTime": "2026-10-18T11:45:00Z",
+  "expiryTime": "2026-10-19T11:45:00Z",
+  "description": [{ "language": "en", "string": "Customer asks the site manager to call back about a monthly rate; contact details are on the support interaction." }]
+}
+```
+
+<!-- apx:response 201 -->
+```json
+{
+  "id": "e7000000-0000-4000-8000-000000000726",
+  "version": 1,
+  "alertType": "customerCallbackRequested",
+  "severity": "minor",
+  "status": "raised",
+  "source": {
+    "place": "b1000000-0000-4000-8000-000000000001"
+  },
+  "supportInteraction": { "id": "e7000000-0000-4000-8000-000000000703", "className": "SupportInteraction" },
+  "occurrenceTime": "2026-10-18T11:45:00Z",
+  "detectionTime": "2026-10-18T11:45:00Z",
+  "expiryTime": "2026-10-19T11:45:00Z",
+  "description": [{ "language": "en", "string": "Customer asks the site manager to call back about a monthly rate; contact details are on the support interaction." }],
+  "statusHistory": [
+    { "state": "raised", "time": "2026-10-18T11:45:03Z", "actor": "agent:j.okafor" }
+  ],
+  "recordInfo": {
+    "creationTime": "2026-10-18T11:45:03Z",
+    "creator": { "id": "a1000000-0000-4000-8000-000000000001", "className": "Organisation" },
+    "creationUser": "agent:j.okafor"
+  }
+}
+```

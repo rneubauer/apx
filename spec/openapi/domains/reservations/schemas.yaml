@@ -55,6 +55,13 @@ ReservationSummary:
     noShowAfter:
       description: When a reservation not yet checked in lapses to `noShow` (see ReservationExtension.noShowAfter).
       $ref: "../../../vendor/apds/4.1/apds-api-4.1.yaml#/components/schemas/DateTime"
+    issuer:
+      type: string
+      description: Who sold the reservation, so a code that several sellers could have issued is read against the right one (Part 14 §14.1, Part 17 §17.2). An operator code or the seller's domain.
+      examples: [spothero.example]
+    amountPaid:
+      description: What the customer prepaid, so an agent at the lane sees it without a payment lookup.
+      $ref: "../../../vendor/apds/4.1/apds-api-4.1.yaml#/components/schemas/AmountInCurrency"
 
 PoolAvailability:
   title: PoolAvailability

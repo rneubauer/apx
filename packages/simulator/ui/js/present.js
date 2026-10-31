@@ -492,6 +492,10 @@ function outcome(r) {
       body?.detail ? h('div', { class: 'muted' }, body.detail) : null,
       checks.length ? checklist(checks, 'Expected vs actual') : null,
       r.response ? jsonView(body) : null,
+      // A UiLaunch (Part 25) answers with a single-use url; the mock vendor screen opens it in a new tab.
+      body?.surface && body?.url && body?.status === 'issued'
+        ? h('a', { class: 'vendor-link', target: '_blank', rel: 'noopener', href: `vendor.html?launch=${encodeURIComponent(body.id)}&u=${encodeURIComponent(body.url)}` }, 'Open the vendor screen ↗ (the agent, signed in by this launch)')
+        : null,
       r.inject?.result ? jsonView(r.inject.result) : null,
       r.eventCount !== undefined ? h('div', {}, `${r.eventCount} matching event${r.eventCount === 1 ? '' : 's'} in the outbox.`) : null,
       r.clock ? h('div', {}, `The clock now reads ${fmtClock(r.clock.now)}.`) : null));

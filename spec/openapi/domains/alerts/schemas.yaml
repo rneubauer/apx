@@ -53,6 +53,9 @@ Alert:
     relatedEntity:
       description: The APDS/APX entity this alert concerns (Session, AssignedRight, Command…).
       $ref: "../../../vendor/apds/4.1/apds-api-4.1.yaml#/components/schemas/Reference"
+    supportInteraction:
+      description: The Part 17 SupportInteraction the alert was raised from, when a call produced it (a receipt request, a refund request, a damage report; Part 7 §7.6).
+      $ref: "../../../vendor/apds/4.1/apds-api-4.1.yaml#/components/schemas/Reference"
     occurrenceTime:
       description: When the condition actually occurred (may precede detection).
       $ref: "../../../vendor/apds/4.1/apds-api-4.1.yaml#/components/schemas/DateTime"

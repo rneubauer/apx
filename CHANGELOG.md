@@ -8,14 +8,164 @@ The machine-readable spec (`spec/openapi/apx.yaml`, bundled as
 
 ## [Unreleased]
 
-No change to the spec or the bundle. The reference simulator now covers the
-Part 19 behaviour adopted in 0.14.0, and the vetting suite cites every
-APX-VIO row. Part 12's problem-type table loses a stray merge-conflict
-marker (editorial; no row changed).
+## [0.15.0] — 2026-10-21
+
+One additive normative change: the bundle now mounts the APDS 4.1 native
+routes `GET`/`PUT`/`DELETE /observations/{id}` and `GET /quotes/{id}`,
+which it had left out. The other bundle edit is editorial: the `DeviceStatus`
+description now says exactly how device states relate to APDS
+`RefillPointStatusEnum`, which covers refill points only. The reference simulator now covers the Part 19 behaviour
+adopted in 0.14.0, and the vetting suite cites every APX-VIO row. Part 12's
+problem-type table loses a stray merge-conflict marker (editorial; no row
+changed). A simulator test no longer saves its scratch scenario into the
+shared `scenarios/` folder (new `APX_SIM_SCENARIOS_DIR` override), which had
+made the web-bundle test fail now and then when the two ran in parallel.
+
+
+**Compatibility.** Part 25 adds the value `ui` to
+`AllowedAction.execution.type`, which appears in three resolution-context
+responses. The oasdiff gate counts a new response enum value as breaking, so
+the three findings are listed, with this reason, in
+`spec/oasdiff/err-ignore.txt`. Part 17 §17.3 gains rule 6: a client MUST
+skip an execution type it does not recognise, so the value set can keep
+growing additively.
 
 **Added.**
+- **Part 25, UI launch** (optional class `apx-ui-launch`, Annex A.23).
+  A vendor's own screens, named per module in the new `apx-ui-surfaces`
+  registry (`lane.console`, `reservation.detail`, `violation.appeal`,
+  `toll.dispute`, …), opened for an agent with automatic login: a
+  handshake (`POST /v1/ui/launches` returns a single-use URL valid 60 s)
+  or a signed JWS token (`ES256`/`RS256`, `exp` ≤ 60 s, form POST or URL
+  fragment). The `UiLaunch` lifecycle `issued → opened → closed |
+  expired`, and the loopback rule: everything done on the screen comes
+  back as the native APX record (command, refund, redemption…) carrying
+  the launch's `correlationId` and agent, or, where no APX operation
+  exists, as a `UiActionRecord` with the `returnFields` the host asked
+  for and `unavailable[]` for the rest. `AllowedAction.execution.type`
+  gains `ui`; discovery gains `uiSurfaces[]`; topics
+  `apx.ui.launch.changed.v1` and `apx.ui.action.recorded.v1`; scopes
+  `apx.ui:launch`, `:read`, `:record`; problem types
+  `ui-surface-unknown`, `ui-display-mode-unsupported`,
+  `ui-launch-expired`, `ui-launch-closed`.
+- **Part 26, Site configuration** (optional class `apx-site-config`,
+  Annex A.24): a location described from APX alone. Four Level B
+  decorations: `apds-ext:apx:equipment-detail@1.0` on every
+  SupplementalEquipment, with a `role` from the fixed
+  `apx-equipment-roles` list (thirty codes: `gate`, `accessDoor`,
+  `ticketDispenser`, `exitVerifier`, `cardReader`, `camera`, `intercom`,
+  `videoGateway`, …) beside the untouched APDS `equipmentType`, plus
+  manufacturer, model, firmware and software versions (RECOMMENDED),
+  serial, MAC addresses, `area` (`apx-area-types`, nineteen codes from
+  `lane` to `elevator`), `level`, `lane`, `builtInto`, `controls[]` and
+  `serviceProvider`, and a note on why IP addresses are left out;
+  `apds-ext:apx:camera@1.0` (mounting, `view[]` from `plate` to
+  `equipmentInteraction`, facing, recorder, streams, retention, a
+  `credentialRef` that is never a secret); `apds-ext:apx:external-ids@1.0`
+  (typed `{system, id}`, the issuer names itself by URI);
+  `apds-ext:apx:place-operations@1.0` (`commsAccountId`, escalation
+  contacts as roles only). The `CommsPoint` resource: intercom, analog
+  dialer, posted number, kiosk, QR code or app, with `phoneNumber` (the
+  number called when help is requested), `callerId` (the number the
+  device calls out as) and `commsDeviceId`, the gate or door it `serves`,
+  and coverage; SIP data deliberately left out. Routes `GET /v1/equipment`,
+  `GET/POST/PUT/DELETE /v1/comms-points`, `POST /v1/identifiers:resolve`,
+  `POST /v1/cameras/{id}/views` (live, snapshot, playback as single-use
+  links ≤ 5 min; features `cameraViews`, `cameraPlayback`); topics
+  `apx.equipment.changed.v1`, `apx.commspoints.changed.v1`; registries
+  `apx-equipment-roles`, `apx-area-types`, `apx-comms-point-types`,
+  `apx-escalation-roles`; problem types `camera-view-unavailable`,
+  `playback-range-unavailable`, `comms-point-unknown`. The after-hours
+  access door is walked through in §26.8.
+- Part 9: §9.7 integration secrets (no read, event or feed carries a
+  PARCS key, camera or device password, in any member or nested text;
+  secrets are named, never carried; a write that carries one is refused)
+  and §9.8 launch material and view links.
+- Part 17: §17.1 resolve request gains `reservationIssuer`,
+  `guestReference` (hotel room, company, tenant, event), `commsPoint`,
+  `callerId`, `dialedNumber`, `commsDeviceId`, and the telephony layering
+  rule is amended for comms points; §17.3a approval requests
+  (`POST /v1/approvals`, `…/{id}/decide`, `apx.approvals.changed.v1`,
+  `approval-closed`), the decided request cited as `approvalRequest`
+  evidence; §17.6 `apx-interaction-outcomes` for
+  `SupportInteraction.resolution.code`; `apx-issue-types` v2 adds the
+  twenty-three issues at least five of ten operator call centers share,
+  from a six-month sample of 176,860 calls.
+- Part 6: `DeviceStatus` gains `fault`, `consumables[]` and
+  `maintenanceMode`; `apx-command-types` v6 adds `ejectTicket`,
+  `cancelTransaction`, `reprintReceipt`.
+- Part 7: §7.7 alert types `consumableLow`, `receiptRequested`,
+  `refundRequested`, `citationInquiry`, `damageReported`,
+  `customerCallbackRequested` (`apx-alert-types` v6); `Alert` gains
+  `supportInteraction`.
+- Part 13: `POST /v1/payments/{id}/receipt` (`receipt-channel-unsupported`)
+  and refund `reasonCode` from `apx-refund-reasons`. Part 14:
+  `ReservationSummary` gains `issuer` and `amountPaid`. Part 16:
+  `placeCapabilities[]`.
+- Native routes `GET`, `PUT` and `DELETE /observations/{id}` and
+  `GET /quotes/{id}`, mounted verbatim from APDS 4.1. Earlier text (LPR
+  findings F-LPR-12 and F-LPR-16, and the `observation` parameter of
+  `GET /v1/lpr/reads`) said APDS lacked them; it does not. The data
+  overlay gives them the shared 401/403/429 and the problem+json
+  alternative, and gives `PUT /observations/{id}` the §5.1 update modes,
+  a request body and a 400, which APDS leaves out (candidate C-026 in
+  `docs/apx-specification/06-apds-requests.md`, not yet filed). A
+  replacement through the native `PUT` publishes
+  `apx.data.observation.updated.v1`. `PUT
+  /v1/lpr/reads/{observation}/access-event` and `?observation=` stay. Both
+  routes join the PARCS Starter Profile, and the simulator implements
+  them.
+- `docs/apds-submission/`: the APX Data Specification for the APDS
+  committee, in the form of the APDS 4.1 documents: an Overview, an
+  Information Model, a Data Dictionary in the APDS table format, and a Use
+  Case Document numbered C.3. It covers every data element and enumeration
+  the APX API needs, in three tiers, and no API. The documents are
+  generated from `spec/proposals/apds-additions/*.yaml` and prose in
+  `docs/apds-submission/src/` by `tools/build-apds-submission.mjs`, which
+  checks every type against the names in the APDS 4.1 Data Dictionary and
+  refuses anything APDS already defines. `npm test` and CI run it with
+  `--check`. The README now says the API is APX's preferred implementation
+  specification, kept separate from the data-element proposals.
+- `docs/apx-specification/`: the APX Specification document set, in the
+  form of the APDS 4.1 documentation, covering everything in the API and
+  everything APX asks of APDS: 01 Overview, 02 Information Model (module
+  narratives with generated class diagrams), 03 Data Dictionary (every
+  class, attribute, association, enumeration and code list, in the APDS
+  table format), 04 Use Case Document (the 32 scenarios), 05 Interface
+  Specification (every operation and webhook) and 06 Requests to APDS
+  (errata, Data Dictionary differences C-015 to C-026 as unfiled
+  candidates, new enumeration values, the proposed data elements and other
+  suggestions). 02, 03, 05 and 06 are built from `spec/dist/apx-v1.yaml`
+  and `docs/apx-specification/src/` by `tools/build-apx-docs.mjs`;
+  `npm test` and CI run it with `--check`. `npm run apxdocs:pdf` renders
+  print-ready PDFs.
+- `tools/check-apx-docs-coverage.mjs`, run by `apxdocs:check`: reads the
+  bundle and the registries directly and fails if 03 Data Dictionary lacks
+  any APX class, member, enumeration value or code-list entry (today 150
+  classes, 1,638 members, 515 values, 294 entries, all present).
+- Print editions closer to APDS 4.1: covers without running header or
+  footer, class diagrams at their natural size instead of stretched to the
+  page width, and Data Dictionary tables on landscape pages from clause
+  A.1 with the APDS column widths and each class name on its first row
+  only (the web edition gets the same widths).
+- Partner/vendor guide: a section on offering your own screens through
+  Part 25 UI launch (surfaces, automatic login, reporting actions back).
+- Docs overlay: the Charging tag joins the "Vehicles and access" group, so
+  the reference navigation shows the charging routes (editorial).
+- APDS change requests: the suggestion to add `GET`/`PUT
+  /observations/{id}` is withdrawn; APDS 4.1 already defines both.
+- `docs/data-model-by-domain.md`: every APX schema placed on the APDS
+  high-level data map (APDS, extension, new element, or API-only), with
+  exact required fields, plus a proposed Tier 1 shortlist of data elements
+  for ISO TS 5206-1 with required and optional attributes.
+- APDS change requests, Part B: a suggestion to add lane equipment
+  (`gate`, `barrier`, `ticketDispenser`, `intercom`) to
+  `EquipmentTypeEnum`. Part B rows are now checked against the APDS 4.1
+  Data Dictionary as well as the API document: `lprCamera`, a `refund`
+  payment type and an identifiable `RightHolder` are already in the
+  Dictionary, and the rows say so.
 - `packages/simulator` now implements every operation in the bundle
-  (181/181): Part 24 plate lists (lists, entries, the change feed on both,
+  (185/185): Part 24 plate lists (lists, entries, the change feed on both,
   `apx.platelists.changed.v1`, arrival alerts), the LPR read routes
   (`GET /v1/lpr/reads/{observation}`, `POST /v1/lpr/reads:search`,
   `PUT /v1/lpr/reads/{observation}/plate`), `GET /v1/digest-keys`,
@@ -68,6 +218,12 @@ marker (editorial; no row changed).
   read, and `test/violations.test.mjs` adds 24 unit tests.
 
 **Fixed.**
+- `DeviceStatus` (spec), Part 6 §6.4, Part 11 and the `apx-device-states`
+  registry said device states mirror an APDS `RefillPointStatusEnum`
+  without saying where it lives. It is in the APDS 4.1 Data Dictionary
+  (A.3.53, on `RefillPoint.status`) but not in `apds-api-4.1.yaml`, and it
+  covers refill points only. They now say so, and that APX device states
+  follow its style and share four of its values. No value changed.
 - Simulator: `PUT /v1/sessions/{id}/assigned-right` refused a right
   already linked to another open session only when the right carried the
   reservations extension (RES-13).

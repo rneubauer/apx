@@ -1,7 +1,7 @@
 openapi: 3.1.0
 info:
   title: APX — APDS Parking eXtensions
-  version: 0.14.0
+  version: 0.15.0
   summary: An open companion standard to APDS 4.1
   license:
     name: MIT
@@ -563,6 +563,168 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/ResponseStatus'
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+        '429':
+          $ref: '#/components/responses/TooManyRequests'
+  /observations/{id}:
+    get:
+      summary: get a specific observation element
+      tags:
+        - Observation
+      operationId: get-observation-id
+      description: get the latest version of a given `Observation` by its identifier (or a particular previous version when provided as a query parameter)
+      parameters:
+        - schema:
+            type: string
+          name: id
+          in: path
+          required: true
+          description: unique observation identifier
+        - $ref: '#/components/parameters/version'
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ObservationElement'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          description: 'Not Found. APX (Part 5 §5.1a, Part 12 §12.1): a client sending `Accept: application/problem+json` receives problem type `target-not-found` instead of ResponseStatus.'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ResponseStatus'
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+        '429':
+          $ref: '#/components/responses/TooManyRequests'
+    put:
+      summary: update a specific observation element
+      tags:
+        - Observation
+      operationId: update-observation-id
+      description: update the given  `Observation`
+      parameters:
+        - schema:
+            type: string
+          name: id
+          in: path
+          required: true
+          description: unique observation identifier
+        - name: APX-Update-Mode
+          in: header
+          required: false
+          description: 'APX data profile (Part 5 §5.1). `full` (default, stock APDS behavior): the body is the complete current state. `change`: the body is a ChangePayload — identity plus only the changed members; absent = unchanged, explicit null = clear. A stale `version` in change mode is 409 `version-conflict`.'
+          schema:
+            type: string
+            enum:
+              - full
+              - change
+            default: full
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ResponseStatus'
+        '400':
+          description: 'Observation can not be updated due to invalid or missing data. APX: with `Accept: application/problem+json`, problem type `invalid-request`.'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ResponseStatus'
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          description: 'Not Found. APX (Part 5 §5.1a, Part 12 §12.1): a client sending `Accept: application/problem+json` receives problem type `target-not-found` instead of ResponseStatus.'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ResponseStatus'
+              examples:
+                not-found:
+                  value:
+                    status: error
+                    code: 404
+                    message: observation with given id does not exist
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+        '409':
+          description: 'Conflict. APX (Part 5 §5.1a, Part 12 §12.1): a client sending `Accept: application/problem+json` receives problem type `version-conflict` (stale `version`) instead of ResponseStatus.'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ResponseStatus'
+              examples:
+                not-found:
+                  value:
+                    status: error
+                    code: 409
+                    message: outdated version number provided
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+        '429':
+          $ref: '#/components/responses/TooManyRequests'
+      requestBody:
+        required: false
+        description: The Observation as it now stands (full mode) or its identity plus the changed members (change mode). Undeclared in APDS 4.1 (candidate C-026, not yet filed).
+        content:
+          application/json:
+            schema:
+              anyOf:
+                - $ref: '#/components/schemas/ObservationElement'
+                - $ref: '#/components/schemas/ObservationElementChangePayload'
+    delete:
+      summary: delete a specific observation element
+      tags:
+        - Observation
+      operationId: delete-observation-id
+      description: delete the given  `Observation`
+      parameters:
+        - schema:
+            type: string
+          name: id
+          in: path
+          required: true
+          description: unique observation identifier
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ResponseStatus'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          description: 'Not Found. APX (Part 5 §5.1a, Part 12 §12.1): a client sending `Accept: application/problem+json` receives problem type `target-not-found` instead of ResponseStatus.'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ResponseStatus'
+              examples:
+                not-found:
+                  value:
+                    status: error
+                    code: 404
+                    message: observation with given id does not exist
             application/problem+json:
               schema:
                 $ref: '#/components/schemas/Problem'
@@ -2291,6 +2453,52 @@ paths:
               oneOf:
                 - $ref: '#/components/schemas/QuoteRightRequest'
                 - $ref: '#/components/schemas/QuoteSessionExtensionRequest'
+  /quotes/{id}:
+    parameters:
+      - schema:
+          type: string
+        name: id
+        in: path
+        required: true
+        description: unique id of the quote
+    get:
+      summary: get details of a specific quote
+      description: get details of quote identified by `id`
+      operationId: get-quote-id
+      tags:
+        - Quote
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                oneOf:
+                  - $ref: '#/components/schemas/QuoteRightRequest'
+                  - $ref: '#/components/schemas/QuoteRightResponse'
+                  - $ref: '#/components/schemas/QuoteSessionExtensionRequest'
+                  - $ref: '#/components/schemas/QuoteSessionExtensionResponse'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          description: 'Not Found. APX (Part 5 §5.1a, Part 12 §12.1): a client sending `Accept: application/problem+json` receives problem type `target-not-found` instead of ResponseStatus.'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ResponseStatus'
+              examples:
+                not-found:
+                  value:
+                    status: error
+                    code: 404
+                    message: requested item does not exist
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+        '429':
+          $ref: '#/components/responses/TooManyRequests'
   /v1/places/{id}/occupancy:
     get:
       operationId: get-apx-v1-places-id-occupancy
@@ -9819,6 +10027,11 @@ paths:
               properties:
                 amount:
                   $ref: '#/components/schemas/AmountInCurrency'
+                reasonCode:
+                  type: string
+                  description: Why, as a definedValue of apx-refund-reasons (Part 11) so refunds can be reported by cause across operators; `reason` stays the free-text note.
+                  examples:
+                    - doubleCharge
                 reason:
                   type: string
                 approval:
@@ -10322,9 +10535,9 @@ paths:
         - name: observation
           in: query
           description: |-
-            Lookup by the underlying APDS Observation id — the read-back
-            route for one ingested read (APDS 4.1 has no GET
-            /observations/{id}).
+            Lookup by the underlying APDS Observation id. Returns the
+            LprRead projection of one ingested read; the stored
+            ObservationElement itself is native GET /observations/{id}.
           schema:
             type: string
             format: uuid
@@ -10820,6 +11033,12 @@ paths:
             application/problem+json:
               schema:
                 $ref: '#/components/schemas/Problem'
+        '422':
+          description: A `commsPoint`, `callerId`, `dialedNumber` or `commsDeviceId` this implementation does not hold (`comms-point-unknown`, Part 17 §17.1 and Part 26 §26.4), or a registered code value outside the served registries (`reference-unknown`).
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
         '429':
           $ref: '#/components/responses/TooManyRequests'
   /v1/resolution/contexts/{id}:
@@ -10988,7 +11207,7 @@ paths:
         A credential the server knows but does not track for passback (a
         transient ticket at a site without anti-passback) is 200 with
         `state: unknown`, not 404; 404 means the credential does not
-        exist (Part 17 §17.8).
+        exist (Part 17 §17.3a).
       parameters:
         - name: id
           in: path
@@ -11306,6 +11525,964 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/ApxConfiguration'
+        '429':
+          $ref: '#/components/responses/TooManyRequests'
+  /v1/ui/launches:
+    get:
+      operationId: get-apx-v1-ui-launches
+      security:
+        - apxOAuth:
+            - apx.ui:read
+      tags:
+        - UI launch
+      summary: List launches
+      description: |-
+        The launch records visible to the caller, newest first (Part 25
+        §25.3). `url` is never included on a list read.
+      parameters:
+        - name: place
+          in: query
+          schema:
+            type: string
+            format: uuid
+          description: Launches at this place or its subtree.
+        - name: agent
+          in: query
+          schema:
+            type: string
+        - name: status
+          in: query
+          schema:
+            type: string
+            enum:
+              - issued
+              - opened
+              - closed
+              - expired
+        - name: correlationId
+          in: query
+          schema:
+            type: string
+            format: uuid
+        - name: interactionId
+          in: query
+          schema:
+            type: string
+        - $ref: '#/components/parameters/page'
+      responses:
+        '200':
+          description: Paginated launches.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  meta:
+                    $ref: '#/components/schemas/PaginatedListMeta'
+                  data:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/UiLaunch'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '429':
+          $ref: '#/components/responses/TooManyRequests'
+    post:
+      operationId: post-apx-v1-ui-launches
+      security:
+        - apxOAuth:
+            - apx.ui:launch
+      tags:
+        - UI launch
+      summary: Open a vendor screen for an agent (handshake launch)
+      description: |-
+        The host sends its normal APX token and gets back a single-use
+        `url` that logs the named agent into the surface, valid for at
+        most 60 seconds (Part 25 §25.2). This is the launch mode for
+        vendors who want header-based authentication, since a browser
+        cannot add headers when it opens a page. `place` must lie inside
+        the grant (403 `insufficient-grant`). `Idempotency-Key` optional
+        (Part 4 §4.2a). Publishes `apx.ui.launch.changed.v1`.
+      parameters:
+        - $ref: '#/components/parameters/IdempotencyKeyOptional'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UiLaunchRequest'
+      responses:
+        '200':
+          description: Idempotent replay.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/UiLaunch'
+        '201':
+          description: Issued. `url` and `expiresAt` are set; `status` is `issued`.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/UiLaunch'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '409':
+          description: '`Idempotency-Key` replayed with a different body (`idempotency-conflict`).'
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+        '422':
+          description: |-
+            A `surface` this implementation does not offer, or not at this
+            place (`ui-surface-unknown`); a `displayMode` the surface does
+            not support (`ui-display-mode-unsupported`); or a `subject`,
+            `place` or `lane` that does not exist (`reference-unknown`).
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+        '429':
+          $ref: '#/components/responses/TooManyRequests'
+  /v1/ui/launches/{id}:
+    get:
+      operationId: get-apx-v1-ui-launches-id
+      security:
+        - apxOAuth:
+            - apx.ui:read
+      tags:
+        - UI launch
+      summary: Read a launch and what was done in it
+      description: |-
+        The launch with its `actions[]` (Part 25 §25.3). `url` is present
+        only while the launch is `issued` and before `expiresAt`.
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: The launch.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/UiLaunch'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '429':
+          $ref: '#/components/responses/TooManyRequests'
+  /v1/ui/launches/{id}/actions:
+    post:
+      operationId: post-apx-v1-ui-launches-id-actions
+      security:
+        - apxOAuth:
+            - apx.ui:record
+      tags:
+        - UI launch
+      summary: Record an action done in the screen (loopback fallback)
+      description: |-
+        The surface, or the service behind it, records what the agent did
+        when the implementation could not express it as the module's own
+        resource or Command (Part 25 §25.4). The record carries the
+        launch's `correlationId` and is published as
+        `apx.ui.action.recorded.v1`. A launch that was never opened and
+        has expired refuses with `ui-launch-expired`; a closed one with
+        `ui-launch-closed`.
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UiActionRecord'
+      responses:
+        '201':
+          description: Recorded.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/UiActionRecord'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '409':
+          description: The launch is `expired` (`ui-launch-expired`) or `closed` (`ui-launch-closed`).
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+        '429':
+          $ref: '#/components/responses/TooManyRequests'
+  /v1/ui/launches/{id}/close:
+    post:
+      operationId: post-apx-v1-ui-launches-id-close
+      security:
+        - apxOAuth:
+            - apx.ui:record
+      tags:
+        - UI launch
+      summary: Close a launch
+      description: |-
+        The screen reports it is done: `opened` (or `issued`) → `closed`
+        (Part 25 §25.3). No body. Publishes `apx.ui.launch.changed.v1`.
+        Already closed is 409 `ui-launch-closed`.
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: The closed launch.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/UiLaunch'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '409':
+          description: Already closed (`ui-launch-closed`).
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+        '429':
+          $ref: '#/components/responses/TooManyRequests'
+  /v1/equipment:
+    get:
+      operationId: get-apx-v1-equipment
+      security:
+        - apxOAuth:
+            - apx.siteconfig:read
+      tags:
+        - Site configuration
+      summary: List a place's equipment with its roles, makes, versions and areas
+      description: |-
+        Every SupplementalEquipment at the place, each with its
+        `apds-ext:apx:equipment-detail@1.0` decoration, so a reader learns
+        what the site has from APX alone (Part 26 §26.1). Distinct from
+        `GET /v1/devices`, which serves live state; this serves the
+        description. `mode=change&cursor=` serves the Part 5 §5.2 feed,
+        so an edge or call-centre system keeps a local copy current.
+        Naming a `place` outside the grant is 403 `insufficient-grant`.
+      parameters:
+        - $ref: '#/components/parameters/ModeParam'
+        - $ref: '#/components/parameters/CursorParam'
+        - name: place
+          in: query
+          required: true
+          schema:
+            type: string
+            format: uuid
+          description: The HierarchyElement subtree root.
+        - name: role
+          in: query
+          schema:
+            type: string
+          description: An apx-equipment-roles value.
+        - name: area
+          in: query
+          schema:
+            type: string
+          description: An apx-area-types value.
+        - name: lane
+          in: query
+          schema:
+            type: string
+            format: uuid
+          description: Equipment serving this VehicularAccess.
+        - name: level
+          in: query
+          schema:
+            type: string
+        - $ref: '#/components/parameters/page'
+      responses:
+        '200':
+          description: Paginated equipment; with `mode=change`, the changes after `cursor` in the same envelope (Part 5 §5.2 rule 8).
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  meta:
+                    $ref: '#/components/schemas/PaginatedListMeta'
+                  data:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/EquipmentRecord'
+                  updateMode:
+                    $ref: '#/components/schemas/ChangeFeedUpdateMode'
+                  cursor:
+                    $ref: '#/components/schemas/ChangeFeedCursor'
+                  deleted:
+                    $ref: '#/components/schemas/ChangeFeedTombstones'
+                  grantAdditions:
+                    $ref: '#/components/schemas/ChangeFeedGrantAdditions'
+                  next:
+                    $ref: '#/components/schemas/ChangeFeedNext'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/CursorRefused'
+        '429':
+          $ref: '#/components/responses/TooManyRequests'
+  /v1/equipment/{id}:
+    get:
+      operationId: get-apx-v1-equipment-id
+      security:
+        - apxOAuth:
+            - apx.siteconfig:read
+      tags:
+        - Site configuration
+      summary: Read one piece of equipment
+      description: The SupplementalEquipment with its APX decorations (Part 26 §26.1).
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: The equipment record.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/EquipmentRecord'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '429':
+          $ref: '#/components/responses/TooManyRequests'
+  /v1/comms-points:
+    get:
+      operationId: get-apx-v1-comms-points
+      security:
+        - apxOAuth:
+            - apx.siteconfig:read
+      tags:
+        - Site configuration
+      summary: List or look up comms points
+      description: |-
+        The ways a parker reaches help at the caller's places (Part 26
+        §26.4). A call platform finds the comms point of an inbound
+        contact with `callerId`, `dialedNumber` or `commsDeviceId`; the
+        answer carries the lane, or the place only. `mode=change&cursor=`
+        serves the Part 5 §5.2 feed.
+      parameters:
+        - $ref: '#/components/parameters/ModeParam'
+        - $ref: '#/components/parameters/CursorParam'
+        - name: place
+          in: query
+          schema:
+            type: string
+            format: uuid
+        - name: lane
+          in: query
+          schema:
+            type: string
+            format: uuid
+        - name: type
+          in: query
+          schema:
+            type: string
+          description: An apx-comms-point-types value.
+        - name: callerId
+          in: query
+          schema:
+            type: string
+          description: E.164; matches `callerId`.
+        - name: dialedNumber
+          in: query
+          schema:
+            type: string
+          description: E.164; matches `phoneNumber`.
+        - name: commsDeviceId
+          in: query
+          schema:
+            type: string
+        - $ref: '#/components/parameters/page'
+      responses:
+        '200':
+          description: Paginated comms points; with `mode=change`, the changes after `cursor` in the same envelope.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  meta:
+                    $ref: '#/components/schemas/PaginatedListMeta'
+                  data:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/CommsPoint'
+                  updateMode:
+                    $ref: '#/components/schemas/ChangeFeedUpdateMode'
+                  cursor:
+                    $ref: '#/components/schemas/ChangeFeedCursor'
+                  deleted:
+                    $ref: '#/components/schemas/ChangeFeedTombstones'
+                  grantAdditions:
+                    $ref: '#/components/schemas/ChangeFeedGrantAdditions'
+                  next:
+                    $ref: '#/components/schemas/ChangeFeedNext'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/CursorRefused'
+        '429':
+          $ref: '#/components/responses/TooManyRequests'
+    post:
+      operationId: post-apx-v1-comms-points
+      security:
+        - apxOAuth:
+            - apx.siteconfig:manage
+      tags:
+        - Site configuration
+      summary: Add a comms point
+      description: |-
+        Whoever runs the calls adds the comms point, the call centre or
+        the call platform (Part 26 §26.4). `place` must lie inside the
+        grant (403 `insufficient-grant`); `lane`, `equipment` and `serves`
+        must exist (422 `reference-unknown`). `Idempotency-Key` optional.
+        Publishes `apx.commspoints.changed.v1`.
+      parameters:
+        - $ref: '#/components/parameters/IdempotencyKeyOptional'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CommsPoint'
+      responses:
+        '200':
+          description: Idempotent replay.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CommsPoint'
+        '201':
+          description: Created.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CommsPoint'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '409':
+          description: '`Idempotency-Key` replayed with a different body (`idempotency-conflict`).'
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+        '422':
+          description: A `type` outside the registry, or a `place`, `lane`, `equipment` or `serves` that does not exist (`reference-unknown`).
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+        '429':
+          $ref: '#/components/responses/TooManyRequests'
+  /v1/comms-points/{id}:
+    get:
+      operationId: get-apx-v1-comms-points-id
+      security:
+        - apxOAuth:
+            - apx.siteconfig:read
+      tags:
+        - Site configuration
+      summary: Read a comms point
+      description: The comms point with the lane or place it serves and the barrier an agent opens for it (Part 26 §26.4).
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: The comms point.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CommsPoint'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '429':
+          $ref: '#/components/responses/TooManyRequests'
+    put:
+      operationId: put-apx-v1-comms-points-id
+      security:
+        - apxOAuth:
+            - apx.siteconfig:manage
+      tags:
+        - Site configuration
+      summary: Replace a comms point
+      description: |-
+        Full replacement with the version last read as `If-Match` or body
+        `version` (409 `version-conflict`, Part 4 §4.2a). Publishes
+        `apx.commspoints.changed.v1`.
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+        - $ref: '#/components/parameters/IfMatch'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CommsPoint'
+      responses:
+        '200':
+          description: Replaced.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CommsPoint'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '409':
+          description: Stale version (`version-conflict`).
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+        '422':
+          description: A `type` outside the registry, or a reference that does not exist (`reference-unknown`).
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+        '429':
+          $ref: '#/components/responses/TooManyRequests'
+    delete:
+      operationId: delete-apx-v1-comms-points-id
+      security:
+        - apxOAuth:
+            - apx.siteconfig:manage
+      tags:
+        - Site configuration
+      summary: Remove a comms point
+      description: The feed emits a tombstone (Part 5 §5.2); publishes `apx.commspoints.changed.v1`.
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '204':
+          description: Removed.
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '429':
+          $ref: '#/components/responses/TooManyRequests'
+  /v1/identifiers:resolve:
+    post:
+      operationId: post-apx-v1-identifiers-resolve
+      security:
+        - apxOAuth:
+            - apx.siteconfig:read
+      tags:
+        - Site configuration
+      summary: Find the APX record behind another system's id
+      description: |-
+        Looks up a `{system, id}` pair from any
+        `apds-ext:apx:external-ids@1.0` decoration the caller may see
+        (Part 26 §26.6), so a PARCS, a call platform or an aggregator goes
+        from its own id to the place, lane, equipment or comms point
+        without a table of its own. A read, as a POST so the id never sits
+        in a URL. No match is 404 `target-not-found`.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/IdentifierResolveRequest'
+      responses:
+        '200':
+          description: The record the id names.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/IdentifierResolution'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          description: No visible record carries this id (`target-not-found`).
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+        '429':
+          $ref: '#/components/responses/TooManyRequests'
+  /v1/cameras/{id}/views:
+    post:
+      operationId: post-apx-v1-cameras-id-views
+      security:
+        - apxOAuth:
+            - apx.cameras:view
+      tags:
+        - Site configuration
+      summary: Get a short-lived link to see a camera
+      description: |-
+        A live stream, a still, or a recording of the camera (the
+        SupplementalEquipment with role `camera`), as a single-use link
+        bound to the agent and valid for at most 5 minutes (Part 26
+        §26.3). Whoever holds the camera answers; its password never
+        leaves the site. Every view is logged against the agent and
+        `correlationId`. Offered under the `cameraViews` feature;
+        `playback` also needs `cameraPlayback`.
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+          description: The camera's SupplementalEquipment id.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CameraViewRequest'
+      responses:
+        '201':
+          description: The link.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CameraView'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '409':
+          description: The camera is offline, has no recorder for `playback`, or the implementation cannot issue a view now (`camera-view-unavailable`).
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+        '422':
+          description: '`playback` with a `from`/`to` outside the camera''s retention or missing (`playback-range-unavailable`), or a `kind` the camera''s `streams` cannot serve (`request-unprocessable`).'
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+        '429':
+          $ref: '#/components/responses/TooManyRequests'
+  /v1/approvals:
+    get:
+      operationId: get-apx-v1-approvals
+      security:
+        - apxOAuth:
+            - apx.resolution:read
+      tags:
+        - Resolution
+      summary: List approval requests
+      description: Approval requests at the caller's places, newest first (Part 17 §17.3a); an approver's queue is `status=pending&role=…`.
+      parameters:
+        - name: place
+          in: query
+          schema:
+            type: string
+            format: uuid
+        - name: status
+          in: query
+          schema:
+            type: string
+            enum:
+              - pending
+              - approved
+              - denied
+              - expired
+        - name: role
+          in: query
+          schema:
+            type: string
+        - $ref: '#/components/parameters/page'
+      responses:
+        '200':
+          description: Paginated approval requests.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  meta:
+                    $ref: '#/components/schemas/PaginatedListMeta'
+                  data:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/ApprovalRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '429':
+          $ref: '#/components/responses/TooManyRequests'
+    post:
+      operationId: post-apx-v1-approvals
+      security:
+        - apxOAuth:
+            - apx.support:manage
+      tags:
+        - Resolution
+      summary: Ask for approval of an action
+      description: |-
+        An agent whose AllowedAction said `requiresApproval` asks the
+        named role to decide (Part 17 §17.3a). `place` must lie inside the
+        grant. `Idempotency-Key` optional. Publishes
+        `apx.approvals.changed.v1`; the approver's system subscribes to it
+        or reads the queue.
+      parameters:
+        - $ref: '#/components/parameters/IdempotencyKeyOptional'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ApprovalRequest'
+      responses:
+        '200':
+          description: Idempotent replay.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApprovalRequest'
+        '201':
+          description: Created, `status` = `pending`.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApprovalRequest'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '409':
+          description: '`Idempotency-Key` replayed with a different body (`idempotency-conflict`).'
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+        '422':
+          description: A `place` or `target` that does not exist (`reference-unknown`).
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+        '429':
+          $ref: '#/components/responses/TooManyRequests'
+  /v1/approvals/{id}:
+    get:
+      operationId: get-apx-v1-approvals-id
+      security:
+        - apxOAuth:
+            - apx.resolution:read
+      tags:
+        - Resolution
+      summary: Read an approval request
+      description: The request with its `decision` once made, or its `expired` status once `expiresAt` has passed (Part 17 §17.3a).
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: The request with its decision, if made.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApprovalRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '429':
+          $ref: '#/components/responses/TooManyRequests'
+  /v1/approvals/{id}/decide:
+    post:
+      operationId: post-apx-v1-approvals-id-decide
+      security:
+        - apxOAuth:
+            - apx.support:manage
+      tags:
+        - Resolution
+      summary: Approve or deny
+      description: |-
+        The approver decides: `pending` → `approved` or `denied` (Part 17
+        §17.3a). The agent then executes the action with `Approval`
+        evidence citing the request. A request already decided or expired
+        is 409 `approval-closed`. Publishes `apx.approvals.changed.v1`.
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ApprovalDecision'
+      responses:
+        '200':
+          description: The decided request.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApprovalRequest'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '409':
+          description: Already decided or expired (`approval-closed`).
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+        '429':
+          $ref: '#/components/responses/TooManyRequests'
+  /v1/payments/{id}/receipt:
+    post:
+      operationId: post-apx-v1-payments-id-receipt
+      security:
+        - apxOAuth:
+            - apx.payments:write
+      tags:
+        - Accounts
+      summary: Send the receipt again
+      description: |-
+        Re-sends the receipt of a settled payment by e-mail, SMS, a
+        re-print at the device, or a short-lived link (Part 13 §13.1a).
+        The destination travels in the body, never in a URL. Accepted for
+        delivery (202); the outcome is in the returned ReceiptDelivery.
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ReceiptRequest'
+      responses:
+        '202':
+          description: Queued or sent.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ReceiptDelivery'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '409':
+          description: The payment is not settled (`payment-state-illegal`, Part 13 §13.1a).
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+        '422':
+          description: A `channel` this implementation or device cannot serve (`receipt-channel-unsupported`), or a `destination` missing for `email`/`sms` (`request-unprocessable`).
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
         '429':
           $ref: '#/components/responses/TooManyRequests'
 webhooks:
@@ -12045,6 +13222,12 @@ components:
             apx.valet:request: Customer scope — request or cancel retrieval and read status/ETA for the caller's own ticket (text, app, web, voice bot)
             apx.platelists:read: Read plate lists and their entries, plate values included (Part 24)
             apx.platelists:manage: Create and maintain plate lists and entries (Part 24)
+            apx.ui:launch: Open a vendor screen for an agent and read the launches it issued (Part 25)
+            apx.ui:read: Read UI launches and the actions recorded in them (Part 25)
+            apx.ui:record: The surface's own scope; record actions done in a launched screen and close it (Part 25)
+            apx.siteconfig:read: Read a place's equipment, cameras, comms points and external ids; resolve another system's id (Part 26)
+            apx.siteconfig:manage: Add, replace and remove comms points (Part 26)
+            apx.cameras:view: Obtain short-lived camera view links, logged against the agent (Part 26)
             apx.digest:use: Receive the credential digest keys (Part 9 §9.6 rule 6)
             apx.replication:write: Replay another implementation's records with their original provenance and lifecycle times (Part 18 §18.6)
             apx.charging:read: read charging-point status (with bay presence) and charging sessions
@@ -12118,6 +13301,14 @@ components:
           $ref: '#/components/schemas/PaymentDetail'
         apds-ext:apx:credential-digest@1.0:
           $ref: '#/components/schemas/CredentialDigest'
+        apds-ext:apx:equipment-detail@1.0:
+          $ref: '#/components/schemas/EquipmentDetail'
+        apds-ext:apx:camera@1.0:
+          $ref: '#/components/schemas/CameraDetail'
+        apds-ext:apx:external-ids@1.0:
+          $ref: '#/components/schemas/ExternalIdentifiers'
+        apds-ext:apx:place-operations@1.0:
+          $ref: '#/components/schemas/PlaceOperations'
       additionalProperties:
         type: object
     ApxResourceCore:
@@ -12667,6 +13858,9 @@ components:
         relatedEntity:
           description: The APDS/APX entity this alert concerns (Session, AssignedRight, Command…).
           $ref: '#/components/schemas/Reference'
+        supportInteraction:
+          description: The Part 17 SupportInteraction the alert was raised from, when a call produced it (a receipt request, a refund request, a damage report; Part 7 §7.6).
+          $ref: '#/components/schemas/Reference'
         occurrenceTime:
           description: When the condition actually occurred (may precede detection).
           $ref: '#/components/schemas/DateTime'
@@ -12921,12 +14115,19 @@ components:
           $ref: '#/components/schemas/DateTime'
         note:
           type: string
+        approvalRequest:
+          description: The Part 17 §17.3a ApprovalRequest whose decision this evidence cites, when the approval was asked for through APX.
+          $ref: '#/components/schemas/Reference'
     DeviceStatus:
       title: DeviceStatus
       description: |-
         Live state overlay keyed by Reference to an APDS SupplementalEquipment —
-        never duplicates its descriptive fields. deviceState values mirror the
-        RefillPointStatusEnum style (registry apx-device-states). Attachable to
+        never duplicates its descriptive fields. APDS 4.1 has no general
+        equipment status list: its RefillPointStatusEnum (Data Dictionary
+        A.3.53) covers refill points only and is absent from apds-api-4.1.yaml.
+        deviceState values come from the APX registry apx-device-states, which
+        follows that enumeration's style and shares its available, occupied,
+        inoperative and unknown values. Attachable to
         APDS payloads as apds-ext:apx:devicestatus@1.0.
       type: object
       required:
@@ -12941,9 +14142,54 @@ components:
           examples:
             - available
         lastCommunication:
+          description: When the device last reported; an agent reads "offline since" from it (Part 6 §6.4).
           $ref: '#/components/schemas/DateTime'
         stateChangedTime:
           $ref: '#/components/schemas/DateTime'
+        fault:
+          type: object
+          description: The current fault, when `deviceState` is `fault` or `inoperative` and the device reports one (Part 6 §6.4).
+          required:
+            - code
+          properties:
+            code:
+              type: string
+              description: The implementation's fault code, as the device reports it.
+              examples:
+                - E42
+            displayText:
+              type: string
+              description: What the device shows or what the technician reads for the code.
+              examples:
+                - Ticket transport jammed
+            since:
+              $ref: '#/components/schemas/DateTime'
+        consumables:
+          type: array
+          description: Supply levels the device reports (Part 6 §6.4). `low` or `empty` raises the Part 7 `consumableLow` alert.
+          items:
+            type: object
+            required:
+              - kind
+              - level
+            properties:
+              kind:
+                type: string
+                enum:
+                  - tickets
+                  - receiptPaper
+                  - cash
+                  - coins
+              level:
+                type: string
+                enum:
+                  - ok
+                  - low
+                  - empty
+                  - unknown
+        maintenanceMode:
+          type: boolean
+          description: The device is under test or maintenance; calls and events from it are excluded from service figures (Part 6 §6.4).
         extensions:
           $ref: '#/components/schemas/Extensions'
       examples:
@@ -14157,6 +15403,14 @@ components:
         noShowAfter:
           description: When a reservation not yet checked in lapses to `noShow` (see ReservationExtension.noShowAfter).
           $ref: '#/components/schemas/DateTime'
+        issuer:
+          type: string
+          description: Who sold the reservation, so a code that several sellers could have issued is read against the right one (Part 14 §14.1, Part 17 §17.2). An operator code or the seller's domain.
+          examples:
+            - spothero.example
+        amountPaid:
+          description: What the customer prepaid, so an agent at the lane sees it without a payment lookup.
+          $ref: '#/components/schemas/AmountInCurrency'
       examples:
         - reservation:
             id: e2000000-0000-4000-8000-000000000002
@@ -18549,6 +19803,46 @@ components:
           examples:
             - - negotiatedRates
               - ticketMatching
+        uiSurfaces:
+          type: array
+          description: |-
+            The vendor screens this client may launch (Part 25 §25.1), each
+            with its display and launch modes and the actions it reports back.
+            Present only when the host implements `apx-ui-launch` and the
+            client holds `apx.ui:launch`.
+          items:
+            $ref: '#/components/schemas/UiSurface'
+        placeCapabilities:
+          type: array
+          description: |-
+            What each granted place can do, before a call (Part 16 §16.2):
+            the command types the site executes, the surfaces offered there,
+            and the optional features it supports. A site with no revenue
+            control link lists no command types, so an agent knows to use the
+            vendor's screen instead. Absent when every place offers the same
+            as the document-level `commandTypes`, `uiSurfaces` and `features`.
+          items:
+            type: object
+            required:
+              - place
+            properties:
+              place:
+                type: string
+                format: uuid
+                description: The HierarchyElement subtree root the row applies to.
+              commandTypes:
+                type: array
+                items:
+                  type: string
+              uiSurfaces:
+                type: array
+                description: apx-ui-surfaces values offered at this place.
+                items:
+                  type: string
+              features:
+                type: array
+                items:
+                  type: string
         topics:
           type: array
           description: |-
@@ -18824,19 +20118,22 @@ components:
         Whatever PARKING-DOMAIN identifiers are currently known — the server
         resolves every relationship it can (Part 17 §17.2). At least one
         IDENTIFYING member is required — `device`, `place`, `lane`,
-        `session`, `holder`, `credential`, `plate`, `ticketNumber`, or
-        `reservationCode`; all are optional individually. `interactionId`,
-        `correlationId`, and `channel` are correlation metadata and do not
-        count: a body without an identifying member is 400 `invalid-request`
-        (Part 17 §17.1). Unknown members are ignored (tolerant reader) and
-        never used for resolution. (`minProperties: 1` is the only part of
-        this rule the schema states; the full rule is enforced by the
-        server.)
+        `session`, `holder`, `credential`, `plate`, `ticketNumber`,
+        `reservationCode`, `guestReference`, `commsPoint`, `callerId`,
+        `dialedNumber`, or `commsDeviceId`; all are optional individually.
+        `interactionId`, `correlationId`, `channel`, and `reservationIssuer`
+        are metadata and do not count: a body without an identifying member
+        is 400 `invalid-request` (Part 17 §17.1). Unknown members are ignored
+        (tolerant reader) and never used for resolution. (`minProperties: 1`
+        is the only part of this rule the schema states; the full rule is
+        enforced by the server.)
 
-        Deliberately NO telephony identifiers (SIP URIs, phone numbers): the
-        call platform that owns the intercom maps call → lane/device on its
-        side before calling APX (Part 17 §17.1). PARCS implementations never
-        need to understand telephony.
+        Telephony values appear in exactly two places in APX: on a Part 26
+        CommsPoint, and in the `callerId`, `dialedNumber` and `commsDeviceId`
+        members here, which the call platform supplies to find the comms
+        point. A PARCS implementation never has to hold, return or understand
+        them; one that holds no comms points answers these members with 422
+        `comms-point-unknown` (Part 17 §17.1). No SIP identifiers, anywhere.
       type: object
       minProperties: 1
       properties:
@@ -18877,6 +20174,50 @@ components:
           type: string
         reservationCode:
           type: string
+        reservationIssuer:
+          type: string
+          description: Who sold the reservation, when the code alone is ambiguous across sellers (Part 17 §17.2, ReservationSummary.issuer). Metadata, not an identifier.
+          examples:
+            - spothero.example
+        guestReference:
+          type: object
+          description: A guest without a plate or ticket — a hotel room, a company, a tenant's employee, an event (Part 17 §17.2). The server resolves it through the place's guest arrangements.
+          required:
+            - kind
+            - value
+          properties:
+            kind:
+              type: string
+              enum:
+                - hotelRoom
+                - company
+                - tenant
+                - event
+                - other
+            value:
+              type: string
+              examples:
+                - '1412'
+        commsPoint:
+          description: The Part 26 CommsPoint the contact came from, when the call platform already knows it.
+          $ref: '#/components/schemas/Reference'
+        callerId:
+          type: string
+          pattern: ^\+[1-9][0-9]{1,14}$
+          description: E.164. The number the contact came from; matched against `CommsPoint.callerId` (Part 26 §26.4). A parker's own mobile number resolves to nothing and is not stored.
+          examples:
+            - '+15555550199'
+        dialedNumber:
+          type: string
+          pattern: ^\+[1-9][0-9]{1,14}$
+          description: E.164. The number the contact called; matched against `CommsPoint.phoneNumber`. A posted number shared by many lanes resolves to the place only.
+          examples:
+            - '+15555550142'
+        commsDeviceId:
+          type: string
+          description: The call platform's device id; matched against `CommsPoint.commsDeviceId`.
+          examples:
+            - dev-51cc-ae16
     ResolutionIssue:
       title: ResolutionIssue
       description: |-
@@ -18962,7 +20303,14 @@ components:
             - supervisor
         execution:
           type: object
-          description: How to execute (RECOMMENDED). Exactly one of command/operationId per type.
+          description: |-
+            How to execute (RECOMMENDED). Exactly one of command/operationId/
+            surface per type. `ui` says the action is done in the vendor's own
+            screen (Part 25): the agent launches `surface` on `subject` and
+            the implementation reports what was done as the module's native
+            resource or a UiActionRecord carrying the launch's correlation id.
+            The value set grows additively: a client MUST skip an action whose
+            `type` it does not recognise rather than fail (Part 17 §17.3).
           required:
             - type
           allOf:
@@ -18984,12 +20332,22 @@ components:
               then:
                 required:
                   - operationId
+            - if:
+                required:
+                  - type
+                properties:
+                  type:
+                    const: ui
+              then:
+                required:
+                  - surface
           properties:
             type:
               type: string
               enum:
                 - control
                 - domain
+                - ui
             command:
               type: string
               description: For type=control — the apx-command-types value for POST /v1/commands.
@@ -19000,6 +20358,14 @@ components:
               description: For type=domain — the operationId of the executing operation in the effective OpenAPI description.
               examples:
                 - post-apx-v1-payment-links
+            surface:
+              type: string
+              description: For type=ui — the apx-ui-surfaces value to launch (Part 25 §25.5).
+              examples:
+                - lane.console
+            subject:
+              description: For type=ui — the entity to open the surface on; defaults to the action's `target`.
+              $ref: '#/components/schemas/Reference'
         reason:
           type: object
           description: Why the action is denied or gated. REQUIRED when allowed=false or requiresApproval=true.
@@ -19261,6 +20627,7 @@ components:
           properties:
             code:
               type: string
+              description: A definedValue of apx-interaction-outcomes (Part 11) or an implementer code (Part 17 §17.5).
               examples:
                 - resolved
             display:
@@ -19304,6 +20671,1144 @@ components:
             code: resolved
             display: Paid and exited
           correlationId: 7c9e6679-7425-40de-944b-e07fc1f90ae7
+    ApprovalRequest:
+      title: ApprovalRequest
+      description: |-
+        Asking someone with authority to approve an action before it runs
+        (Part 17 §17.3a). An agent whose AllowedAction said `requiresApproval`
+        creates one, addressed to a `role` (an escalation role of the place,
+        Part 26 §26.5, or the AllowedAction's `approvalRole`); the approver
+        decides through `POST /v1/approvals/{id}/decide`; the resulting
+        `Approval` evidence on the write cites the request. Every change is
+        published as `apx.approvals.changed.v1`.
+      allOf:
+        - $ref: '#/components/schemas/ApxResourceCore'
+        - type: object
+          required:
+            - place
+            - action
+            - requestedBy
+            - role
+            - correlationId
+            - status
+          properties:
+            id:
+              type: string
+              format: uuid
+              readOnly: true
+            version:
+              type: integer
+              minimum: 1
+              readOnly: true
+              description: Server-managed; bodies carry it only for a versioned replace (Part 4 §4.2a).
+            place:
+              $ref: '#/components/schemas/Reference'
+            action:
+              type: string
+              description: The apx-command-types value or effective-spec operationId to be approved (the AllowedAction.action).
+              examples:
+                - post-apx-v1-payments-id-refund
+            target:
+              description: What the action is to be executed against.
+              $ref: '#/components/schemas/Reference'
+            requestedBy:
+              type: string
+              description: The agent asking.
+              examples:
+                - agent-4471
+            agentType:
+              type: string
+              enum:
+                - human
+                - ai
+            role:
+              type: string
+              description: The role asked to decide (apx-escalation-roles value or the AllowedAction's approvalRole).
+              examples:
+                - siteManager
+            interactionId:
+              type: string
+              examples:
+                - interaction-938383
+            correlationId:
+              type: string
+              format: uuid
+              description: The interaction's correlation id (Part 17 §17.7).
+            reason:
+              type: string
+              description: Why the agent is asking, in one line.
+              examples:
+                - Customer double charged at the exit; refund of 12.00 USD
+            status:
+              type: string
+              enum:
+                - pending
+                - approved
+                - denied
+                - expired
+              readOnly: true
+            expiresAt:
+              description: When a pending request lapses to `expired`. Settable on create; the server MAY default it by policy.
+              $ref: '#/components/schemas/DateTime'
+            decision:
+              readOnly: true
+              $ref: '#/components/schemas/ApprovalDecision'
+      examples:
+        - id: d7000000-0000-4000-8000-000000000001
+          version: 2
+          place:
+            id: b1000000-0000-4000-8000-000000000001
+            className: Place
+          action: post-apx-v1-payments-id-refund
+          target:
+            id: e6000000-0000-4000-8000-000000000002
+            className: PaymentRecord
+          requestedBy: agent-4471
+          agentType: human
+          role: siteManager
+          interactionId: interaction-938383
+          correlationId: 6a1f3c2e-7b4d-4e8f-9a0b-1c2d3e4f5a6b
+          reason: Customer double charged at the exit; refund of 12.00 USD
+          status: approved
+          expiresAt: '2026-10-18T14:30:00Z'
+          decision:
+            outcome: approved
+            decidedBy: mgr-lakeside-02
+            decidedAt: '2026-10-18T14:09:12Z'
+            note: Confirmed on the payment history
+    ApprovalDecision:
+      title: ApprovalDecision
+      description: The decision on an ApprovalRequest (Part 17 §17.3a), also the body of `POST /v1/approvals/{id}/decide`.
+      type: object
+      required:
+        - outcome
+        - decidedBy
+      properties:
+        outcome:
+          type: string
+          enum:
+            - approved
+            - denied
+        decidedBy:
+          type: string
+          description: The approving principal, in the role the request named.
+          examples:
+            - mgr-lakeside-02
+        decidedAt:
+          readOnly: true
+          $ref: '#/components/schemas/DateTime'
+        note:
+          type: string
+    ReceiptRequest:
+      title: ReceiptRequest
+      description: |-
+        Asks the implementation to send the receipt for a settled payment
+        again (Part 13 §13.1a). The `destination` travels in the body, never
+        in a URL, and is not stored beyond the delivery.
+      type: object
+      required:
+        - channel
+      properties:
+        channel:
+          type: string
+          enum:
+            - email
+            - sms
+            - print
+            - link
+          description: '`print` re-prints at the device the payment was taken on; `link` returns a short-lived URL for the agent to read out or forward.'
+        destination:
+          type: string
+          description: The e-mail address or E.164 number for `email` and `sms`; ignored for `print` and `link`.
+          examples:
+            - parker@example.com
+        agent:
+          type: string
+          examples:
+            - agent-4471
+        correlationId:
+          type: string
+          format: uuid
+    ReceiptDelivery:
+      title: ReceiptDelivery
+      description: The outcome of a receipt request (Part 13 §13.1a).
+      type: object
+      required:
+        - payment
+        - channel
+        - status
+        - requestedAt
+      properties:
+        payment:
+          $ref: '#/components/schemas/Reference'
+        channel:
+          type: string
+          enum:
+            - email
+            - sms
+            - print
+            - link
+        status:
+          type: string
+          enum:
+            - queued
+            - sent
+            - failed
+        link:
+          type: string
+          format: uri
+          description: For `channel` = `link`, the receipt's short-lived URL.
+          examples:
+            - https://pay.example/r/8c1d…
+        requestedAt:
+          $ref: '#/components/schemas/DateTime'
+    UiSurface:
+      title: UiSurface
+      description: |-
+        One screen an implementation offers for launch (Part 25 §25.1). Listed
+        in the discovery document's `uiSurfaces[]`, so a host learns which
+        screens exist, how each may be shown, which launch modes it accepts,
+        and which actions it reports back. The `surface` name is a
+        definedValue of `apx-ui-surfaces` (`<module>.<view>`, Part 11); its
+        registry entry names the subject class the surface opens.
+      type: object
+      required:
+        - surface
+        - displayModes
+        - launchModes
+      properties:
+        surface:
+          type: string
+          description: definedValue from apx-ui-surfaces.
+          examples:
+            - lane.console
+        subjectClass:
+          type: string
+          description: |-
+            The APDS or APX class a launch of this surface opens
+            (`VehicularAccess`, `Session`, `Violation`…). Absent for a general
+            surface such as `place.console` or `module.home`.
+          examples:
+            - VehicularAccess
+        displayModes:
+          type: array
+          minItems: 1
+          description: |-
+            How the host may show the surface. `embed` needs the host's origin
+            registered with the implementation (Part 25 §25.6); `popup` is the
+            fallback every surface MUST support.
+          items:
+            type: string
+            enum:
+              - embed
+              - popup
+              - tab
+        launchModes:
+          type: array
+          minItems: 1
+          description: |-
+            `handshake` — the host calls `POST /v1/ui/launches` and opens the
+            returned single-use `url`. `signedToken` — the host signs a
+            UiLaunchToken and sends it to `launchUrl` (Part 25 §25.3).
+          items:
+            type: string
+            enum:
+              - handshake
+              - signedToken
+        launchUrl:
+          type: string
+          format: uri
+          description: Where a signed launch token is sent (signedToken mode only). HTTPS only.
+          examples:
+            - https://parcs.example/apx/launch
+        actions:
+          type: array
+          description: |-
+            What the surface can report back (Part 25 §25.4): apx-command-types
+            values and effective-spec operationIds. A host uses it to decide
+            which `returnFields` to ask for.
+          items:
+            type: string
+          examples:
+            - - lostTicket
+              - applyValidation
+              - vendGate
+        places:
+          type: array
+          description: The HierarchyElement subtrees where the surface is offered. Absent means everywhere the credential is granted.
+          items:
+            $ref: '#/components/schemas/Reference'
+    UiLaunchRequest:
+      title: UiLaunchRequest
+      description: |-
+        What the host sends to open a surface for one agent (Part 25 §25.2).
+        The same members are the claims of a signed launch token
+        (UiLaunchToken). `correlationId` ties everything the agent does in
+        the screen back to the host's record; `returnFields` lists the APX
+        paths the host wants back when the implementation has to answer with
+        a UiActionRecord instead of a native resource.
+      type: object
+      required:
+        - surface
+        - place
+        - agent
+        - agentType
+        - correlationId
+        - displayMode
+      properties:
+        surface:
+          type: string
+          description: definedValue from apx-ui-surfaces.
+          examples:
+            - lane.console
+        subject:
+          description: The entity the surface opens on (its class per the surface's registry entry). Required unless the surface is general.
+          $ref: '#/components/schemas/Reference'
+        place:
+          description: The facility the launch concerns; MUST lie inside the caller's grant.
+          $ref: '#/components/schemas/Reference'
+        lane:
+          description: The VehicularAccess, when the launch concerns one lane.
+          $ref: '#/components/schemas/Reference'
+        agent:
+          type: string
+          description: The staff member the screen is opened for; the implementation logs them in as this agent.
+          examples:
+            - agent-4471
+        agentType:
+          type: string
+          enum:
+            - human
+            - ai
+        interactionId:
+          type: string
+          description: The host's opaque interaction identifier (Part 17 §17.7), echoed on every record the launch produces.
+          examples:
+            - interaction-938383
+        correlationId:
+          type: string
+          format: uuid
+          description: Host-minted correlation id, carried by every native resource, Command, or UiActionRecord that results from the screen (Part 25 §25.4).
+        displayMode:
+          type: string
+          enum:
+            - embed
+            - popup
+            - tab
+        returnFields:
+          type: array
+          description: |-
+            JSON-pointer paths, relative to the module resource the surface's
+            actions produce, that the host wants back in `UiActionRecord.fields`
+            (`/amount`, `/session/id`). A value the implementation cannot
+            supply is listed in `unavailable[]` with a reason.
+          items:
+            type: string
+          examples:
+            - - /amount
+              - /session/id
+              - /validation/provider
+        expiresIn:
+          type: integer
+          minimum: 1
+          maximum: 60
+          default: 60
+          description: Seconds the launch `url` stays usable. Never more than 60 (Part 25 §25.6).
+    UiLaunch:
+      title: UiLaunch
+      description: |-
+        One opening of a surface for one agent (Part 25 §25.3). Created by the
+        handshake (`POST /v1/ui/launches`) or minted by the implementation when
+        a signed token is presented. `url` is single-use and expires at
+        `expiresAt`; the record itself stays readable for audit and carries
+        the `actions[]` the screen reported.
+      allOf:
+        - $ref: '#/components/schemas/ApxResourceCore'
+        - $ref: '#/components/schemas/UiLaunchRequest'
+        - type: object
+          required:
+            - status
+            - expiresAt
+          properties:
+            id:
+              type: string
+              format: uuid
+              readOnly: true
+            version:
+              type: integer
+              minimum: 1
+              readOnly: true
+              description: Server-managed; bodies carry it only for a versioned replace (Part 4 §4.2a).
+            url:
+              type: string
+              format: uri
+              readOnly: true
+              description: |-
+                The single-use HTTPS address the host opens for the agent.
+                Present only on the create response and the first read within
+                `expiresAt`; never carries personal data or secrets in its
+                query string (Part 25 §25.6).
+              examples:
+                - https://parcs.example/apx/launch/7f0c…?l=4a1e…
+            expiresAt:
+              description: When `url` (or the signed token) stops working. At most 60 s after issue.
+              $ref: '#/components/schemas/DateTime'
+            status:
+              type: string
+              enum:
+                - issued
+                - opened
+                - closed
+                - expired
+              description: |-
+                `issued` → `opened` on first use of the url or token (single
+                use) → `closed` when the screen reports it is done, or
+                `expired` when `expiresAt` passes unused. An opened launch not
+                closed within the implementation's limit (RECOMMENDED 1 h)
+                also becomes `expired` (Part 25 §25.3).
+            openedAt:
+              $ref: '#/components/schemas/DateTime'
+            closedAt:
+              $ref: '#/components/schemas/DateTime'
+            actions:
+              type: array
+              readOnly: true
+              description: Every UiActionRecord reported for this launch, oldest first (Part 25 §25.4).
+              items:
+                $ref: '#/components/schemas/UiActionRecord'
+    UiActionRecord:
+      title: UiActionRecord
+      description: |-
+        What an agent did in a launched screen when the implementation could
+        not express it as the module's own resource or Command (Part 25 §25.4).
+        The native resource is always preferred: a lost ticket issued in the
+        vendor's screen MUST appear as a `lostTicket` Command carrying the
+        launch's `correlationId`. Only an action with no APX operation on this
+        implementation is recorded here, with the `fields` the host asked for
+        in `returnFields`, and `unavailable[]` for the ones it could not
+        supply. Published as `apx.ui.action.recorded.v1`.
+      type: object
+      required:
+        - action
+        - outcome
+        - occurredAt
+        - summary
+      properties:
+        id:
+          type: string
+          format: uuid
+          readOnly: true
+        launch:
+          readOnly: true
+          description: The UiLaunch this record belongs to.
+          $ref: '#/components/schemas/Reference'
+        action:
+          type: string
+          description: |-
+            The apx-command-types value or effective-spec operationId the
+            action corresponds to, or `other` when none does (Part 25 §25.4).
+          examples:
+            - lostTicket
+        outcome:
+          type: string
+          enum:
+            - completed
+            - failed
+            - noAction
+        occurredAt:
+          $ref: '#/components/schemas/DateTime'
+        agent:
+          type: string
+          description: The agent who acted; defaults to the launch's `agent`.
+          examples:
+            - agent-4471
+        summary:
+          type: string
+          description: One line a host can show in the call record. Carries no personal data beyond what the host already holds.
+          examples:
+            - Lost ticket issued at the exit lane, fee collected
+        result:
+          description: The native resource or Command the action produced, when one exists (then `fields` MAY be omitted).
+          $ref: '#/components/schemas/Reference'
+        fields:
+          type: object
+          description: The values the host asked for, keyed by the `returnFields` path.
+          additionalProperties: {}
+          examples:
+            - /amount:
+                amount: 25
+                currency: USD
+              /session/id: e5000000-0000-4000-8000-000000000001
+        unavailable:
+          type: array
+          description: Requested paths the implementation could not fill, and why.
+          items:
+            type: object
+            required:
+              - field
+              - reason
+            properties:
+              field:
+                type: string
+                examples:
+                  - /validation/provider
+              reason:
+                type: string
+                enum:
+                  - notSupported
+                  - notApplicable
+        correlationId:
+          type: string
+          format: uuid
+          description: The launch's correlation id, echoed.
+      examples:
+        - id: d9000000-0000-4000-8000-000000000011
+          launch:
+            id: d9000000-0000-4000-8000-000000000001
+            className: UiLaunch
+          action: lostTicket
+          outcome: completed
+          occurredAt: '2026-10-18T14:07:40Z'
+          agent: agent-4471
+          summary: Lost ticket issued at the exit lane, fee collected
+          fields:
+            /amount:
+              amount: 25
+              currency: USD
+            /session/id: e5000000-0000-4000-8000-000000000001
+          unavailable:
+            - field: /validation/provider
+              reason: notApplicable
+          correlationId: 6a1f3c2e-7b4d-4e8f-9a0b-1c2d3e4f5a6b
+    UiLaunchToken:
+      title: UiLaunchToken
+      description: |-
+        INFORMATIVE. The claims of a signed launch token (JWS, ES256 or RS256)
+        in the `signedToken` launch mode (Part 25 §25.3). `aud` is the
+        implementation, `exp` is at most 60 s after `iat`, `jti` is unique and
+        single-use. The remaining claims are the UiLaunchRequest members. The
+        token travels by form POST or in the URL fragment, never in the query
+        string, and the implementation checks it against the host's keys
+        registered at onboarding (Part 25 §25.6).
+      allOf:
+        - $ref: '#/components/schemas/UiLaunchRequest'
+        - type: object
+          required:
+            - iss
+            - aud
+            - exp
+            - iat
+            - jti
+          properties:
+            iss:
+              type: string
+              description: The host's issuer identifier, as registered.
+              examples:
+                - https://callcenter.example
+            aud:
+              type: string
+              description: The implementation the token is for.
+              examples:
+                - https://parcs.example
+            exp:
+              type: integer
+              description: Expiry, seconds since the epoch; at most `iat` + 60.
+            iat:
+              type: integer
+              description: Issued at, seconds since the epoch.
+            jti:
+              type: string
+              description: Unique token id; the implementation refuses a replay.
+    EquipmentDetail:
+      title: EquipmentDetail
+      description: |-
+        What a piece of hardware is, where it is, and what it does (Part 26
+        §26.1). Carried on an APDS SupplementalEquipment as the Level B
+        decoration `apds-ext:apx:equipment-detail@1.0` in its `extensions`
+        container (Part 4 §4.3). The equipment TYPE stays the APDS
+        `EquipmentTypeEnum` (often `paymentMachine` or `other`); `role` says
+        what the item does on the site, from the fixed code list
+        `apx-equipment-roles`.
+
+        `firmwareVersion` and `softwareVersion` are optional but RECOMMENDED,
+        and readable by every client of the place, because knowing what runs
+        on each device is what makes integration at scale possible. IP
+        addresses are deliberately left out in the interest of security:
+        together with model and firmware they map a site's network for an
+        attacker, and no APX flow connects to a device directly. They could
+        be added later, as an optional member behind a restricted scope, if a
+        real need arises. MAC addresses stay, as the hardware identity when
+        the serial label is gone or when the MAC is the serial.
+      type: object
+      required:
+        - role
+      properties:
+        role:
+          type: string
+          description: definedValue from apx-equipment-roles (a fixed list; `other` is a code, not free text).
+          examples:
+            - exitVerifier
+        manufacturer:
+          type: string
+          examples:
+            - Amano McGann
+        model:
+          type: string
+          examples:
+            - AGP-1500
+        firmwareVersion:
+          type: string
+          examples:
+            - 4.2.1
+        softwareVersion:
+          type: string
+          description: The application software on the device, when distinct from its firmware.
+          examples:
+            - '2026.3'
+        serialNumber:
+          type: string
+          examples:
+            - AMG-55-20318
+        macAddresses:
+          type: array
+          description: One per network interface, lower-case hex without separators.
+          items:
+            type: string
+            pattern: ^[0-9a-f]{12}$
+          examples:
+            - - 001a2b3c4d5e
+        installedAt:
+          type: string
+          format: date
+          examples:
+            - '2024-03-18'
+        area:
+          type: string
+          description: Where on the site the item is, a definedValue from apx-area-types (Part 26 §26.2).
+          examples:
+            - lane
+        level:
+          type: string
+          description: The floor label as signed on site.
+          examples:
+            - P1
+        lane:
+          description: The VehicularAccess the item serves. Absent for place-level equipment (an access door, a pay-on-foot station, a server).
+          $ref: '#/components/schemas/Reference'
+        builtInto:
+          description: The host equipment this item is part of (an intercom in a door's call box, a camera in a pay station).
+          $ref: '#/components/schemas/Reference'
+        controls:
+          type: array
+          description: The barriers this device opens (an exit verifier that controls gate 2, a card reader that controls an access door).
+          items:
+            $ref: '#/components/schemas/Reference'
+        serviceProvider:
+          type: object
+          description: Who services the item. An organisation and a support reference, never a person.
+          properties:
+            organisation:
+              $ref: '#/components/schemas/Reference'
+            supportReference:
+              type: string
+              description: The provider's own reference for this unit or contract (an asset tag, a contract number).
+              examples:
+                - SVC-2024-0918
+      examples:
+        - role: exitVerifier
+          manufacturer: Amano McGann
+          model: AGP-1500
+          firmwareVersion: 4.2.1
+          softwareVersion: '2026.3'
+          serialNumber: AMG-55-20318
+          macAddresses:
+            - 001a2b3c4d5e
+          installedAt: '2024-03-18'
+          area: lane
+          level: P1
+          lane:
+            id: b2000000-0000-4000-8000-000000000002
+            className: VehicularAccess
+          controls:
+            - id: c2000000-0000-4000-8000-000000000021
+              className: SupplementalEquipment
+          serviceProvider:
+            organisation:
+              id: a1000000-0000-4000-8000-000000000009
+              className: Organisation
+            supportReference: SVC-2024-0918
+    CameraDetail:
+      title: CameraDetail
+      description: |-
+        A camera anywhere on the site, not only on a lane (Part 26 §26.3).
+        Carried on a SupplementalEquipment whose EquipmentDetail `role` is
+        `camera`, as the Level B decoration `apds-ext:apx:camera@1.0`. Where
+        the camera is (`area`, `level`, `lane`) and what it is built into
+        (`builtInto`) are EquipmentDetail members, shared with every other
+        piece of hardware; this decoration adds how it is mounted, what it
+        looks at, and how it can be viewed. It holds no addresses, usernames
+        or passwords: a view is obtained through `POST /v1/cameras/{id}/views`
+        and the password never leaves the site (Part 26 §26.3). Camera models
+        and stream profiles follow ONVIF (Profile S, Profile T) and are not
+        redefined. `apds-ext:apx:lane-cameras@1.0` (Part 13) is unchanged.
+      type: object
+      required:
+        - view
+      properties:
+        mounting:
+          type: string
+          enum:
+            - builtIn
+            - overhead
+            - pole
+            - wall
+            - ceiling
+            - other
+          description: When `builtIn`, EquipmentDetail `builtInto` names the host, for example a pay station's driver camera.
+        view:
+          type: array
+          minItems: 1
+          description: What the camera looks at; one camera may cover several.
+          items:
+            type: string
+            enum:
+              - plate
+              - vehicle
+              - driver
+              - equipmentInteraction
+              - pedestrians
+              - areaOverview
+              - other
+        faces:
+          type: string
+          enum:
+            - inward
+            - outward
+          description: For lanes, plazas and ramps, relative to the facility (Part 13 §13.3a).
+        primary:
+          type: boolean
+          description: Show this camera first for its lane or area.
+        ptz:
+          type: boolean
+          description: Can pan, tilt and zoom.
+        recorder:
+          type: object
+          description: The DVR or NVR that records it (an equipment item with role `videoRecorder`) and the channel.
+          properties:
+            equipment:
+              $ref: '#/components/schemas/Reference'
+            channel:
+              type: string
+              examples:
+                - '7'
+        streams:
+          type: array
+          description: What the camera can deliver, so a host knows what kind of view to ask for.
+          items:
+            type: object
+            required:
+              - protocol
+            properties:
+              protocol:
+                type: string
+                enum:
+                  - webrtc
+                  - hls
+                  - rtsp
+                  - mjpeg
+                  - snapshot
+              transport:
+                type: string
+                examples:
+                  - tcp
+              resolution:
+                type: string
+                examples:
+                  - 1920x1080
+        retentionDays:
+          type: integer
+          minimum: 0
+          description: How long recordings are kept; stated per camera because `driver` and `pedestrians` views capture faces (Part 26 §26.3).
+          examples:
+            - 30
+        credentialRef:
+          type: string
+          description: |-
+            For a camera that cannot sit behind a gateway, the label of the
+            credential the receiving system looks up in its own vault. NEVER
+            the secret itself; the secret is exchanged once, outside APX, at
+            onboarding (Part 9 §9.7).
+          examples:
+            - site-0042/cam-door-1
+      examples:
+        - mounting: wall
+          view:
+            - pedestrians
+          primary: true
+          ptz: false
+          recorder:
+            equipment:
+              id: c2000000-0000-4000-8000-000000000090
+              className: SupplementalEquipment
+            channel: '7'
+          streams:
+            - protocol: webrtc
+            - protocol: snapshot
+          retentionDays: 30
+    ExternalIdentifiers:
+      title: ExternalIdentifiers
+      description: |-
+        The ids other systems use for the same place, lane or equipment
+        (Part 26 §26.6). Carried on any HierarchyElement as the Level B
+        decoration `apds-ext:apx:external-ids@1.0`. APDS
+        `SupplementalFacility.externalIdentifiers` holds untyped strings; here
+        each id says which system issued it. `system` is a URI the issuer
+        owns, usually its own domain, so APX names no products or platforms.
+        `POST /v1/identifiers:resolve` finds the APX record from such an id.
+      type: object
+      required:
+        - identifiers
+      properties:
+        identifiers:
+          type: array
+          minItems: 1
+          items:
+            type: object
+            required:
+              - system
+              - id
+            properties:
+              system:
+                type: string
+                format: uri
+                description: A URI owned by the system that issued the id.
+                examples:
+                  - https://parcs.example
+              id:
+                type: string
+                examples:
+                  - LOT-0042
+      examples:
+        - identifiers:
+            - system: https://parcs.example
+              id: LOT-0042
+            - system: https://calls.example
+              id: acct-7f31
+    PlaceOperations:
+      title: PlaceOperations
+      description: |-
+        Operational facts about a place that a call centre needs before a
+        call (Part 26 §26.5). Carried on a place HierarchyElement as the
+        Level B decoration `apds-ext:apx:place-operations@1.0`.
+        `escalationContacts` lists roles in calling order, never names or
+        phone numbers: the call platform holds those, so APX carries no
+        personal contact data. A Part 17 approval request is addressed to a
+        role from this list.
+      type: object
+      properties:
+        commsAccountId:
+          type: string
+          description: The id the call platform uses for the whole site (its account), the site-level pair of `CommsPoint.commsDeviceId`.
+          examples:
+            - acct-7f31
+        escalationContacts:
+          type: array
+          description: Who to escalate to, by role, in order.
+          items:
+            type: object
+            required:
+              - role
+              - order
+            properties:
+              role:
+                type: string
+                description: definedValue from apx-escalation-roles.
+                examples:
+                  - siteManager
+              order:
+                type: integer
+                minimum: 1
+                description: Calling order; 1 is tried first.
+              hours:
+                description: When this role is reachable. Absent means always.
+                $ref: '#/components/schemas/Period'
+      examples:
+        - commsAccountId: acct-7f31
+          escalationContacts:
+            - role: attendant
+              order: 1
+            - role: siteManager
+              order: 2
+            - role: operatorOnCall
+              order: 3
+    CommsPoint:
+      title: CommsPoint
+      description: |-
+        Any way a parker reaches help from a lane or a location (Part 26
+        §26.4): an intercom, an analog dialler, a posted phone number, a
+        kiosk, a QR code, an app. A call platform matches an inbound contact
+        to a comms point by the number it calls out as (`callerId`), the
+        number it called (`phoneNumber`), or its own device id
+        (`commsDeviceId`), and APX then answers with the lane, or with the
+        location only when the comms point serves no single lane (a posted
+        number shared by many lanes can never name the lane by itself).
+
+        These are the only members of APX that carry telephony values, and
+        the call platform supplies them; a PARCS implementation never has to
+        hold, return or understand them (Part 17 §17.1). SIP usernames,
+        realms and passwords are deliberately left out: a username with its
+        realm is half of a line's login, they exist only for SIP devices, and
+        the call platform already maps its own SIP data to these ids. A SIP
+        password or any other credential MUST never appear in any member.
+      allOf:
+        - $ref: '#/components/schemas/ApxResourceCore'
+        - type: object
+          required:
+            - type
+            - place
+          anyOf:
+            - required:
+                - phoneNumber
+            - required:
+                - callerId
+            - required:
+                - commsDeviceId
+          properties:
+            id:
+              type: string
+              format: uuid
+              readOnly: true
+            version:
+              type: integer
+              minimum: 1
+              readOnly: true
+              description: Server-managed; bodies carry it only for a versioned replace (Part 4 §4.2a).
+            type:
+              type: string
+              description: definedValue from apx-comms-point-types.
+              examples:
+                - intercom
+            place:
+              description: The location it serves.
+              $ref: '#/components/schemas/Reference'
+            lane:
+              description: The VehicularAccess it serves, when it serves exactly one.
+              $ref: '#/components/schemas/Reference'
+            equipment:
+              description: The SupplementalEquipment it is, when it is inventoried hardware (role `intercom`, `analogDialer`, `emergencyPhone`).
+              $ref: '#/components/schemas/Reference'
+            serves:
+              description: The barrier an agent opens for this comms point, a gate or an access door, when there is one.
+              $ref: '#/components/schemas/Reference'
+            phoneNumber:
+              type: string
+              pattern: ^\+[1-9][0-9]{1,14}$
+              description: E.164. The number that is called when help is requested, dialled by the parker for a posted number, or by the intercom or dialler when its button is pushed.
+              examples:
+                - '+15555550142'
+            callerId:
+              type: string
+              pattern: ^\+[1-9][0-9]{1,14}$
+              description: E.164. The number the device calls out as.
+              examples:
+                - '+15555550199'
+            commsDeviceId:
+              type: string
+              description: The id the call platform uses for this comms point when it identifies it by neither caller id nor dialled number.
+              examples:
+                - dev-51cc-ae16
+            coverage:
+              type: array
+              description: When the comms point is answered and in which languages. The answering call centre itself is not named.
+              items:
+                type: object
+                properties:
+                  period:
+                    $ref: '#/components/schemas/Period'
+                  languages:
+                    type: array
+                    description: BCP 47 language tags.
+                    items:
+                      type: string
+                    examples:
+                      - - en
+                        - es
+      examples:
+        - id: c3000000-0000-4000-8000-000000000001
+          version: 1
+          type: intercom
+          place:
+            id: b1000000-0000-4000-8000-000000000001
+            className: Place
+          lane:
+            id: b2000000-0000-4000-8000-000000000002
+            className: VehicularAccess
+          equipment:
+            id: c2000000-0000-4000-8000-000000000023
+            className: SupplementalEquipment
+          serves:
+            id: c2000000-0000-4000-8000-000000000021
+            className: SupplementalEquipment
+          callerId: '+15555550199'
+          commsDeviceId: dev-51cc-ae16
+          coverage:
+            - languages:
+                - en
+                - es
+    EquipmentRecord:
+      title: EquipmentRecord
+      description: |-
+        An APDS SupplementalEquipment as APX serves it (Part 26 §26.1): the
+        stock APDS record plus its `extensions` container, which carries the
+        `apds-ext:apx:equipment-detail@1.0` decoration (REQUIRED on every
+        record this class serves), `apds-ext:apx:camera@1.0` on a camera, and
+        `apds-ext:apx:external-ids@1.0` where other systems have ids for it.
+        The APDS record itself is never reshaped.
+      allOf:
+        - $ref: '#/components/schemas/SupplementalEquipment'
+        - type: object
+          properties:
+            extensions:
+              $ref: '#/components/schemas/Extensions'
+    IdentifierResolveRequest:
+      title: IdentifierResolveRequest
+      description: An external id to look up (Part 26 §26.6), as it appears in an ExternalIdentifiers entry.
+      type: object
+      required:
+        - system
+        - id
+      properties:
+        system:
+          type: string
+          format: uri
+          examples:
+            - https://parcs.example
+        id:
+          type: string
+          examples:
+            - LOT-0042
+    IdentifierResolution:
+      title: IdentifierResolution
+      description: The APX record an external id names (Part 26 §26.6).
+      type: object
+      required:
+        - target
+        - className
+      properties:
+        target:
+          description: The place, lane, equipment or comms point found.
+          $ref: '#/components/schemas/Reference'
+        className:
+          type: string
+          description: The target's class, repeated for convenience.
+          examples:
+            - VehicularAccess
+        place:
+          description: The place the target belongs to (the target itself when it is a place).
+          $ref: '#/components/schemas/Reference'
+    CameraViewRequest:
+      title: CameraViewRequest
+      description: |-
+        Asks for a short-lived link to see a camera (Part 26 §26.3). Whoever
+        holds the camera answers, the PARCS, the video system or an on-site
+        gateway, and the camera's password never leaves the site. `playback`
+        needs `from` and `to` and the `cameraPlayback` feature.
+      type: object
+      required:
+        - kind
+        - agent
+        - correlationId
+      properties:
+        kind:
+          type: string
+          enum:
+            - live
+            - snapshot
+            - playback
+        from:
+          $ref: '#/components/schemas/DateTime'
+        to:
+          $ref: '#/components/schemas/DateTime'
+        agent:
+          type: string
+          description: The staff member the view is issued to; every view is logged against them.
+          examples:
+            - agent-4471
+        agentType:
+          type: string
+          enum:
+            - human
+            - ai
+        correlationId:
+          type: string
+          format: uuid
+          description: The interaction the view belongs to; a view link MUST NOT be reused outside it.
+        interactionId:
+          type: string
+          examples:
+            - interaction-938383
+    CameraView:
+      title: CameraView
+      description: |-
+        A single-use, short-lived link to a camera's live stream, a still, or
+        a recording (Part 26 §26.3). Bound to the agent it was issued to and
+        logged against the `correlationId`; it expires at `expiresAt`, never
+        more than 5 minutes after issue, and it never contains a camera
+        credential.
+      type: object
+      required:
+        - id
+        - camera
+        - kind
+        - url
+        - expiresAt
+      properties:
+        id:
+          type: string
+          format: uuid
+        camera:
+          $ref: '#/components/schemas/Reference'
+        kind:
+          type: string
+          enum:
+            - live
+            - snapshot
+            - playback
+        url:
+          type: string
+          format: uri
+          examples:
+            - https://video.example/v/9c2f…
+        protocol:
+          type: string
+          enum:
+            - webrtc
+            - hls
+            - rtsp
+            - mjpeg
+            - snapshot
+          description: What the link serves (`snapshot` is an image).
+        expiresAt:
+          $ref: '#/components/schemas/DateTime'
+        issuedTo:
+          type: string
+          description: The agent, echoed.
+          examples:
+            - agent-4471
+        from:
+          $ref: '#/components/schemas/DateTime'
+        to:
+          $ref: '#/components/schemas/DateTime'
+      examples:
+        - id: c4000000-0000-4000-8000-000000000001
+          camera:
+            id: c2000000-0000-4000-8000-000000000031
+            className: SupplementalEquipment
+          kind: live
+          url: https://video.example/v/9c2f0e1a
+          protocol: webrtc
+          expiresAt: '2026-10-18T14:12:00Z'
+          issuedTo: agent-4471
     ApxConfiguration:
       type: object
       description: Unauthenticated bootstrap configuration document.
@@ -19325,7 +21830,7 @@ components:
           type: string
           description: The APX edition implemented (Part 3 §3.4), as named in its `spec/edition.json`.
           examples:
-            - 0.14.0
+            - 0.15.0
         apdsVersion:
           type: string
           description: APDS version this implementation extends.
@@ -23908,6 +26413,377 @@ components:
             - agent:j.okafor
         extensions:
           $ref: '#/components/schemas/Extensions'
+    IdentifiedArea:
+      title: IdentifiedArea
+      description: |-
+        An identifiable discrete bounded geographic zone that shares common characteristics and that may be used for 
+        parking related or other purposes. 
+        Identified Areas are segmented into two types : Vehicular Access class and Specific Area class.
+      type: object
+      x-package: place
+      allOf:
+        - $ref: '#/components/schemas/HierarchyElement'
+        - type: object
+          properties:
+            streetAddress:
+              type: array
+              description: Identified area street address.
+              items:
+                $ref: '#/components/schemas/Address'
+            areaBoundedZone:
+              type: array
+              description: Identified area bounded zone.
+              items:
+                $ref: '#/components/schemas/GeoJsonObject'
+            indicativePointLocation:
+              type: array
+              description: Indicative identified area point location.
+              items:
+                $ref: '#/components/schemas/GeoJsonObject'
+            times:
+              $ref: '#/components/schemas/Times'
+            operatingRestrictions:
+              type: array
+              description: Operating restrictions
+              items:
+                $ref: '#/components/schemas/OperatingRestrictions'
+    UserTypeEnum:
+      title: UserTypeEnum
+      description: |-
+        Types of different users,for example used in the context of parking.
+        * allUsers: All users.
+        * commuters: Commuters.
+        * customers: Customers.
+        * disabled: Physically impaired people.
+        * elderlyUsers: Elderly users.
+        * employees: Employees.
+        * families: Families.
+        * handicapped: Persons with deficiencies in their daily life.
+        * hearingImpaired: People with difficulties to hear.
+        * hotelGuests: Hotel guests.
+        * longTermParkers: Long-term parker.
+        * members: Members.
+        * men: Men.
+        * other: Other.
+        * overnightParkers: Overnight parker.
+        * parkAndCycleUser: Park and cycle user.
+        * parkAndRideUsers: Users that are exchanging into public transport at a park and ride station.
+        * parkAndWalkUser: Park and walk user.
+        * pensioners: Pensioners.
+        * pregnantWomen: Pregnant women.
+        * registeredDisabledUsers: Registered disabled persons.
+        * reservationHolders: Those who have a valid reservation, e.g. for the duration of parking.
+        * residents: Local residents.
+        * seasonTicketHolders: Season ticket holders.
+        * shoppers: Shoppers.
+        * shortTermParkers: Short-term parker.
+        * sportEventAwaySupporters: Sport event away supporters.
+        * sportEventHomeSupporters: Sport event home supporters.
+        * staff: Staff.
+        * students: Students.
+        * subscribers: Subscribers.
+        * unknown: Unknown.
+        * visitors: Visitors.
+        * visuallyImpaired: People with difficulties to see.
+        * wheelchairUsers: Wheelchair users.
+        * women: Women.
+      type: string
+      x-package: place.enums
+      enum:
+        - allUsers
+        - commuters
+        - customers
+        - disabled
+        - elderlyUsers
+        - employees
+        - families
+        - handicapped
+        - hearingImpaired
+        - hotelGuests
+        - longTermParkers
+        - members
+        - men
+        - other
+        - overnightParkers
+        - parkAndCycleUser
+        - parkAndRideUsers
+        - parkAndWalkUser
+        - pensioners
+        - pregnantWomen
+        - registeredDisabledUsers
+        - reservationHolders
+        - residents
+        - seasonTicketHolders
+        - shoppers
+        - shortTermParkers
+        - sportEventAwaySupporters
+        - sportEventHomeSupporters
+        - staff
+        - students
+        - subscribers
+        - unknown
+        - visitors
+        - visuallyImpaired
+        - wheelchairUsers
+        - women
+    SupplementalFacility:
+      title: SupplementalFacility
+      description: One type of supplemental facility which can be supplemental equipment or a supplemental service facility.
+      type: object
+      x-package: place
+      allOf:
+        - $ref: '#/components/schemas/IdentifiedArea'
+        - type: object
+          properties:
+            accessibilities:
+              type: array
+              description: Information on accessibility, easements and marking for handicapped people.
+              items:
+                $ref: '#/components/schemas/AccessibilityTypeEnum'
+            additionalDescription:
+              $ref: '#/components/schemas/MultilingualString'
+            applicableForUsers:
+              type: array
+              description: Limitation to a set of special users.
+              items:
+                $ref: '#/components/schemas/UserTypeEnum'
+            comment:
+              $ref: '#/components/schemas/MultilingualString'
+            externalIdentifiers:
+              type: array
+              description: An external identifier for the supplemental facility, e.g. an inventory number. This attribute has an unbounded multiplicity to support identifiers for multiple occurrences of this element.'
+              items:
+                type: string
+            nameOrBrand:
+              $ref: '#/components/schemas/MultilingualString'
+            otherSupplementalFacility:
+              type: array
+              items:
+                $ref: '#/components/schemas/MultilingualString'
+            photoUrl:
+              $ref: '#/components/schemas/Url'
+            quantity:
+              type: integer
+              minimum: 0
+              description: Number of the supplemental facility (e.g. number of toilets, restaurants, park & ride places, etc.) with respect to given restrictions. Dynamic overridable.
+            regularlyCleaned:
+              type: boolean
+              description: Indication, if the supplemental facility is cleaned on a regular basis.
+            rightSpecificationIds:
+              type: array
+              description: List of applicable right specifications
+              items:
+                $ref: '#/components/schemas/VersionedReference'
+            supplementalFacilityIndex:
+              type: integer
+              description: An index to link this supplemental facility between the static and dynamic publications.
+          required:
+            - supplementalFacilityIndex
+    EquipmentTypeEnum:
+      title: EquipmentTypeEnum
+      description: |-
+        Types of equipment.
+        * bikeParking: Bike parking.
+        * cashMachine: Cash machine.
+        * copyMachineOrService: A possibility to create copies of documents.
+        * defibrillator: Medical equipment to provide first aid after heart attacks.
+        * dsrcReceiver: A system to manage digital short range communication (radio beacon transceivers), e.g. for tolling roadside equipment.
+        * dumpingStation: Possibility to get rid of sewerage (especially for motorhomes).
+        * electricChargingStation: For charging vehicles, motorhome supply etc. The 'numberOf...' attribute specifies the number of charging stations.
+        * elevator: Indication of the availability of elevators.
+        * faxMachineOrService: A possibility to send and/or receive faxes.
+        * fireExtinguisher: Fire extinguisher
+        * fireHose: A hose for water transport in case of fire.
+        * fireHydrant: Fire hydrant
+        * firstAidEquipment: Equipment to support first aid on injured people. Note that 'defibrillator' is a separate literal.
+        * iceFreeScaffold: A technical equipment to remove ice and snow from the roof of lorries.
+        * informationPoint: An information point with employees.
+        * informationStele: An unmanned information point.
+        * internetTerminal: Public internet terminal. Charges may be specified using the TariffsAndPayment section.
+        * internetWireless: Public wireless internet. Specifying an amount would be the number of hotspots/access points. Charges may be specified using the TariffsAndPayment section.
+        * luggageLocker: Possibility to deposit luggage in a safe way.
+        * none: None.
+        * other: Some other equipment. Use 'otherSupplementalFacility' to specify it.
+        * paymentMachine: A payment machine, for example a parking ticket machine.
+        * picnicFacilities: Indication of whether any picnicking facilities, such as tables, chairs and shaded areas, are available.
+        * playground: A playground for children.
+        * publicCardPhone: Indicates, whether there's a public telephone available that can be used with a card.
+        * publicCoinPhone: Indicates, whether there's a public telephone available that can be used with coins.
+        * publicPhone: Indicates, whether there's a public telephone available.
+        * refuseBin: Refuse bins for small amounts of garbage (see also 'wasteDisposal').
+        * safeDeposit: A possibility to store valuable possession in a safe way. 
+        * shelter: A shelter (against wind, sun, ....).
+        * shower: Indicates, whether there are shower facilities available.
+        * snowAndIceRemovalEquipment: Equipment to remove snow and ice.nt
+        * toilet: Indicates, whether there are toilets available.
+        * tollTerminal: A terminal, where toll charges can be paid manually (this does not mean a toll gate on the road)
+        * tyreAirPressureEquipment: Equipment to measure and refill tyre air pressure.
+        * unknown: Unknown.
+        * vendingMachine: A vending machine for snacks, coffee etc. (without manpower).
+        * wasteDisposal: Possibility to get rid of waste in a legal way (e.g. for truckers or motorhomes). Normal refuse bins are not intended here.
+        * waterBasin: A water basin to wash hands, clothes or dishes.
+        * waterSupply: Supply of fresh water, e.g. for motorhomes.
+        * waterTap: Fresh water out of a tap.
+      type: string
+      x-package: place.service.enums
+      enum:
+        - bikeParking
+        - cashMachine
+        - copyMachineOrService
+        - defibrillator
+        - dsrcReceiver
+        - dumpingStation
+        - electricChargingStation
+        - elevator
+        - faxMachineOrService
+        - fireExtinguisher
+        - fireHose
+        - fireHydrant
+        - firstAidEquipment
+        - iceFreeScaffold
+        - informationPoint
+        - informationStele
+        - internetTerminal
+        - internetWireless
+        - luggageLocker
+        - none
+        - other
+        - paymentMachine
+        - picnicFacilities
+        - playground
+        - publicCardPhone
+        - publicCoinPhone
+        - publicPhone
+        - refuseBin
+        - safeDeposit
+        - shelter
+        - shower
+        - snowAndIceRemovalEquipment
+        - toilet
+        - tollTerminal
+        - tyreAirPressureEquipment
+        - unknown
+        - vendingMachine
+        - wasteDisposal
+        - waterBasin
+        - waterSupply
+        - waterTap
+    DeliveryUnitEnum:
+      title: DeliveryUnitEnum
+      description: |-
+        Table with different units in which the delivery is measured.
+        * gasGallonEquivalent: The amount of alternative fuel it takes to equal the energy content of one liquid gallon of gasoline. Used mostly in the US.
+        * imperialGallon: Imperial Gallon (4.54609 litres)
+        * kg: kilogram
+        * kWh: kilowatt hour
+        * litre: Litre
+        * m3: cubic meter
+        * usGallon: US-Gallon (3.785411784 litres)
+      type: string
+      x-package: place.service.enums
+      enum:
+        - gasGallonEquivalent
+        - imperialGallon
+        - kg
+        - kWh
+        - litre
+        - m3
+        - usGallon
+    Units:
+      title: Units
+      description: Amount in units, which are specified by unitTypeEnum.
+      type: number
+      x-package: common.units
+    ReservationTypeEnum:
+      title: ReservationTypeEnum
+      description: |-
+        Different types of reservation.
+        * mandatory: Reservation is mandatory.
+        * notAvailable: Reservation is not possible.
+        * optional: Reservation is optional.
+        * partly: There is a specific contingent, that can be reserved.
+        * unknown: Possibility of reservation is unknown,
+        * unspecified: Possibility of reservation is not specified.
+      type: string
+      x-package: place.service.enums
+      enum:
+        - mandatory
+        - notAvailable
+        - optional
+        - partly
+        - unknown
+        - unspecified
+    ServiceTypeEnum:
+      title: ServiceTypeEnum
+      description: |-
+        A table of different service levels to be expected for fuelling/charging and payment.
+        * fullService: Full fuelling service carried out by an employee.
+        * selfService: Self Service for fuelling
+        * unattended: Unattended station, fuelling and payment to be done without assistance.
+      type: string
+      x-package: place.service.enums
+      enum:
+        - fullService
+        - selfService
+        - unattended
+    RefillPoint:
+      title: RefillPoint
+      description: Technical infrastructure at a specific location that facilitates an energy refilling process being connected to maximum one vehicle at a time.
+      type: object
+      x-package: place.service
+      properties:
+        authenticationAndIdentificationMethods:
+          type: array
+          description: Information on what methods of identification and/or authentication are accepted
+          items:
+            $ref: '#/components/schemas/AuthenticationAndIdentificationEnum'
+        currencyOverride:
+          type: array
+          description: Information on which currency/currencies can be used to pay
+          items:
+            $ref: '#/components/schemas/CurrencyCode'
+        deliveryUnit:
+          $ref: '#/components/schemas/DeliveryUnitEnum'
+        minimumDeliveryAmount:
+          $ref: '#/components/schemas/Units'
+        maximumDeliveryAmount:
+          $ref: '#/components/schemas/Units'
+        modelType:
+          $ref: '#/components/schemas/MultilingualString'
+        refillPointIndex:
+          type: integer
+          description: An index to link this element between the static and dynamic publications.
+        reservability:
+          $ref: '#/components/schemas/ReservationTypeEnum'
+        serviceType:
+          type: array
+          description: Information on different service types for the fuelling/charging and payment process.
+          items:
+            $ref: '#/components/schemas/ServiceTypeEnum'
+        userInterfaceLanguage:
+          type: array
+          description: Languages, in which a user interface is available, if any
+          items:
+            $ref: '#/components/schemas/LanguageCode'
+      required:
+        - refillPointIndex
+    SupplementalEquipment:
+      title: SupplementalEquipment
+      description: One type of supplemental equipment, which is available on some site, for example on a rest area.
+      type: object
+      x-package: place
+      allOf:
+        - $ref: '#/components/schemas/SupplementalFacility'
+        - type: object
+          properties:
+            equipmentType:
+              $ref: '#/components/schemas/EquipmentTypeEnum'
+            refillPoints:
+              type: array
+              items:
+                $ref: '#/components/schemas/RefillPoint'
+          required:
+            - equipmentType
     EventTypeEnum:
       title: EventTypeEnum
       type: string
@@ -24600,6 +27476,103 @@ components:
             - $ref: '#/components/schemas/Extensions'
             - type: 'null'
       additionalProperties: false
+    ObservationElementChangePayload:
+      title: ObservationElementChangePayload
+      description: 'A change-mode body for native `PUT /observations/{id}` (Part 5 §5.1a): `id` plus only the ObservationElement members that changed; an absent member is unchanged and an explicit `null` clears it. Every member present is checked against the class, and a member the class does not define is refused. Generated at build time (tools/change-payloads.mjs); the generic ChangePayload remains the shape of change-feed items.'
+      type: object
+      required:
+        - id
+      properties:
+        id:
+          type: string
+          minLength: 1
+          description: The entity identifier (APDS VersionedIdentity.id).
+        version:
+          anyOf:
+            - type: integer
+              description: Positive integer representing the object version.
+              minimum: 1
+              examples:
+                - 1
+            - type: 'null'
+        method:
+          anyOf:
+            - $ref: '#/components/schemas/ObservationTypeEnum'
+            - type: 'null'
+        observer:
+          anyOf:
+            - type: string
+              description: The individual person making the observation recorded in this observation element.
+            - type: 'null'
+        type:
+          anyOf:
+            - $ref: '#/components/schemas/CredentialTypeEnum'
+            - type: 'null'
+        observedCredentialId:
+          anyOf:
+            - type: string
+              description: Specific identifier to the referenced observed credential.
+            - type: 'null'
+        observationStartTime:
+          anyOf:
+            - type: string
+              format: date-time
+              description: The initial date and time of the observation.
+            - type: 'null'
+        observationEndTime:
+          anyOf:
+            - type: string
+              format: date-time
+              description: The ending date and time of the observation, when it was continous since `observationStartTime`.
+            - type: 'null'
+        description:
+          type:
+            - array
+            - 'null'
+          minItems: 1
+          items:
+            type: object
+        creationDateTime:
+          anyOf:
+            - type: string
+              format: date-time
+              description: The date and time stamp for the creation of the observation element.
+            - type: 'null'
+        location:
+          type:
+            - object
+            - 'null'
+        images:
+          type:
+            - array
+            - 'null'
+          items:
+            type: object
+        elementIds:
+          type:
+            - object
+            - 'null'
+        vehicleAncillaryIdentification:
+          type:
+            - object
+            - 'null'
+        observerOrganisation:
+          type:
+            - object
+            - 'null'
+        confidence:
+          type:
+            - object
+            - 'null'
+        characterConfidence:
+          type:
+            - object
+            - 'null'
+        extensions:
+          anyOf:
+            - $ref: '#/components/schemas/Extensions'
+            - type: 'null'
+      additionalProperties: false
 tags:
   - name: Discovery
     description: |-
@@ -24924,6 +27897,57 @@ tags:
 
       Written standard:
       [Part 22](https://github.com/rneubauer/apx/blob/main/docs/standard/22-valet.md).
+  - name: UI launch
+    description: |-
+      **The vendor's own screen, without breaking the record.** Most
+      actions in a call centre still happen in a vendor's portal in
+      another window, and the two systems never agree afterwards. A
+      vendor will take years to implement every APX module, but it
+      already has good screens.
+
+      A host opens one of those screens for an agent in two ways. In the
+      **handshake**, it posts a launch with its normal APX token and gets
+      back a single-use URL that logs the agent in, valid for sixty
+      seconds, which also serves vendors who want header-based
+      authentication, since a browser cannot add headers to a page it
+      opens. In the **signed-token** mode, the host signs a short-lived
+      token and sends it to the vendor's launch address by form post or
+      URL fragment.
+
+      The rule that makes this worth having is the **loopback**: whatever
+      the agent does in the screen MUST come back as the module's own
+      resource or Command, carrying the launch's correlation id. Only when
+      the implementation has no APX operation for the action does it
+      record a `UiActionRecord` instead, with the fields the host asked
+      for. Defined once; every module adds screens through the
+      `apx-ui-surfaces` registry.
+
+      Written standard:
+      [Part 25](https://github.com/rneubauer/apx/blob/main/docs/standard/25-ui-launch.md).
+  - name: Site configuration
+    description: |-
+      **A location, described by APX alone.** Before a call, an agent or
+      a system should be able to learn what a site has without data from
+      any other system: which hardware is on each lane and what each
+      piece does, what it is, what runs on it, where the cameras are and
+      what they see, how a parker reaches help from each lane or door,
+      and who to escalate to.
+
+      APDS already models the place, its lanes and its equipment. This
+      domain adds what APDS leaves open: a fixed list of **equipment
+      roles** (gate, exit verifier, access door, camera, intercom…), the
+      make, model, firmware, serial and MAC of every unit, where it is by
+      **area** and level, what it is built into and what it controls; a
+      **camera** description for any camera on the site, with views
+      issued as short-lived links so a password never leaves the site; a
+      **comms point** for every way help is reached, whether an intercom,
+      an analog dialer, a posted number or a QR code; typed **external
+      ids** so other systems' identifiers resolve to APX records; and
+      change topics so a copy of the setup stays current. IP addresses
+      and SIP details are deliberately left out.
+
+      Written standard:
+      [Part 26](https://github.com/rneubauer/apx/blob/main/docs/standard/26-site-configuration.md).
 x-tagGroups:
   - name: Start here
     tags:
@@ -24934,6 +27958,8 @@ x-tagGroups:
       - Subscription
       - Control
       - Alerts
+      - Site configuration
+      - UI launch
   - name: Commerce
     tags:
       - Accounts
@@ -24946,6 +27972,7 @@ x-tagGroups:
       - LPR
       - Credentials
       - Valet
+      - Charging
   - name: Enforcement and service
     tags:
       - Violations

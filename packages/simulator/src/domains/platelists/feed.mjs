@@ -66,6 +66,14 @@ export function createApxFeed(sim, { collection, prefix, className }) {
     return c;
   }
 
+  /** Register a cursor by name at a position (a world's history, a stage direction standing in for an earlier sync). */
+  function issueAt({ name, scope, credential, filterKey, position, grant, issuedAt = sim.clock.now() }) {
+    const c = { scope, credential, filterKey, position, grant: grantOf(grant), name, issuedAt };
+    cursors.set(name, c);
+    byKey.set(keyOf(c), name);
+    return c;
+  }
+
   function resolve(ctx, name, scope, filterKey) {
     const c = cursors.get(name);
     if (!c || c.scope !== scope) fail('target-not-found', `Cursor ${name} is not known for this feed. Re-sync with mode=full.`);
@@ -131,5 +139,5 @@ export function createApxFeed(sim, { collection, prefix, className }) {
     };
   }
 
-  return { reset, track, bury, page, credentialOf };
+  return { reset, track, bury, page, credentialOf, issueAt };
 }

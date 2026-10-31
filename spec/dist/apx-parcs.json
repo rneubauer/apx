@@ -2,7 +2,7 @@
   "openapi": "3.1.0",
   "info": {
     "title": "APX — PARCS Starter Profile",
-    "version": "0.14.0",
+    "version": "0.15.0",
     "summary": "An open companion standard to APDS 4.1",
     "license": {
       "name": "MIT",
@@ -17,7 +17,7 @@
       "extensionVersion": "1.0",
       "apdsVersion": "4.1"
     },
-    "description": "The MINIMUM APX surface for a PARCS vendor: apx-data + apx-events + apx-control. A subset of the full APX specification (apx-v1) — every path and schema here is identical to the full spec. See docs/parcs-starter-profile.md for the build order."
+    "description": "The MINIMUM APX surface for a PARCS vendor: apx-data + apx-events + apx-control, plus the read side of apx-site-config (equipment and comms points). A subset of the full APX specification (apx-v1) — every path and schema here is identical to the full spec. See docs/parcs-starter-profile.md for the build order."
   },
   "servers": [
     {
@@ -94,6 +94,14 @@
     {
       "name": "Valet",
       "description": "**Custody.** A net-new domain: APDS has no valet entity, only a\nrestriction flag.\n\nThe stay and the money remain the APDS session. What APDS has no words\nfor is who has the keys, where the car is, when it was asked for, who\nit was handed to, and what condition it was in. A ticket records\ndrop-off with a condition report (notes, per-panel damage entries,\nwalk-around photographs, and the customer's acknowledgement), the\nparked position and key location, the retrieval request and its ETA,\nstaging, and a verified handback.\n\nRetrieval works from a text, an app, a web page, a voice bot, a kiosk,\nor the stand, through one customer-facing scope confined to the\ncaller's own ticket and minimized so it exposes status and ETA but\nnever where the car or the keys are.\n\nThe acknowledged drop-off report is what answers \"that scratch wasn't\nthere\" a week later.\n\nWritten standard:\n[Part 22](https://github.com/rneubauer/apx/blob/main/docs/standard/22-valet.md)."
+    },
+    {
+      "name": "UI launch",
+      "description": "**The vendor's own screen, without breaking the record.** Most\nactions in a call centre still happen in a vendor's portal in\nanother window, and the two systems never agree afterwards. A\nvendor will take years to implement every APX module, but it\nalready has good screens.\n\nA host opens one of those screens for an agent in two ways. In the\n**handshake**, it posts a launch with its normal APX token and gets\nback a single-use URL that logs the agent in, valid for sixty\nseconds, which also serves vendors who want header-based\nauthentication, since a browser cannot add headers to a page it\nopens. In the **signed-token** mode, the host signs a short-lived\ntoken and sends it to the vendor's launch address by form post or\nURL fragment.\n\nThe rule that makes this worth having is the **loopback**: whatever\nthe agent does in the screen MUST come back as the module's own\nresource or Command, carrying the launch's correlation id. Only when\nthe implementation has no APX operation for the action does it\nrecord a `UiActionRecord` instead, with the fields the host asked\nfor. Defined once; every module adds screens through the\n`apx-ui-surfaces` registry.\n\nWritten standard:\n[Part 25](https://github.com/rneubauer/apx/blob/main/docs/standard/25-ui-launch.md)."
+    },
+    {
+      "name": "Site configuration",
+      "description": "**A location, described by APX alone.** Before a call, an agent or\na system should be able to learn what a site has without data from\nany other system: which hardware is on each lane and what each\npiece does, what it is, what runs on it, where the cameras are and\nwhat they see, how a parker reaches help from each lane or door,\nand who to escalate to.\n\nAPDS already models the place, its lanes and its equipment. This\ndomain adds what APDS leaves open: a fixed list of **equipment\nroles** (gate, exit verifier, access door, camera, intercom…), the\nmake, model, firmware, serial and MAC of every unit, where it is by\n**area** and level, what it is built into and what it controls; a\n**camera** description for any camera on the site, with views\nissued as short-lived links so a password never leaves the site; a\n**comms point** for every way help is reached, whether an intercom,\nan analog dialer, a posted number or a QR code; typed **external\nids** so other systems' identifiers resolve to APX records; and\nchange topics so a copy of the setup stays current. IP addresses\nand SIP details are deliberately left out.\n\nWritten standard:\n[Part 26](https://github.com/rneubauer/apx/blob/main/docs/standard/26-site-configuration.md)."
     }
   ],
   "paths": {
@@ -889,6 +897,265 @@
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/ResponseStatus"
+                }
+              },
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "429": {
+            "$ref": "#/components/responses/TooManyRequests"
+          }
+        }
+      }
+    },
+    "/observations/{id}": {
+      "get": {
+        "summary": "get a specific observation element",
+        "tags": [
+          "Observation"
+        ],
+        "operationId": "get-observation-id",
+        "description": "get the latest version of a given `Observation` by its identifier (or a particular previous version when provided as a query parameter)",
+        "parameters": [
+          {
+            "schema": {
+              "type": "string"
+            },
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "description": "unique observation identifier"
+          },
+          {
+            "$ref": "#/components/parameters/version"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ObservationElement"
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "404": {
+            "description": "Not Found. APX (Part 5 §5.1a, Part 12 §12.1): a client sending `Accept: application/problem+json` receives problem type `target-not-found` instead of ResponseStatus.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ResponseStatus"
+                }
+              },
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "429": {
+            "$ref": "#/components/responses/TooManyRequests"
+          }
+        }
+      },
+      "put": {
+        "summary": "update a specific observation element",
+        "tags": [
+          "Observation"
+        ],
+        "operationId": "update-observation-id",
+        "description": "update the given  `Observation`",
+        "parameters": [
+          {
+            "schema": {
+              "type": "string"
+            },
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "description": "unique observation identifier"
+          },
+          {
+            "name": "APX-Update-Mode",
+            "in": "header",
+            "required": false,
+            "description": "APX data profile (Part 5 §5.1). `full` (default, stock APDS behavior): the body is the complete current state. `change`: the body is a ChangePayload — identity plus only the changed members; absent = unchanged, explicit null = clear. A stale `version` in change mode is 409 `version-conflict`.",
+            "schema": {
+              "type": "string",
+              "enum": [
+                "full",
+                "change"
+              ],
+              "default": "full"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ResponseStatus"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Observation can not be updated due to invalid or missing data. APX: with `Accept: application/problem+json`, problem type `invalid-request`.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ResponseStatus"
+                }
+              },
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "404": {
+            "description": "Not Found. APX (Part 5 §5.1a, Part 12 §12.1): a client sending `Accept: application/problem+json` receives problem type `target-not-found` instead of ResponseStatus.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ResponseStatus"
+                },
+                "examples": {
+                  "not-found": {
+                    "value": {
+                      "status": "error",
+                      "code": 404,
+                      "message": "observation with given id does not exist"
+                    }
+                  }
+                }
+              },
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Conflict. APX (Part 5 §5.1a, Part 12 §12.1): a client sending `Accept: application/problem+json` receives problem type `version-conflict` (stale `version`) instead of ResponseStatus.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ResponseStatus"
+                },
+                "examples": {
+                  "not-found": {
+                    "value": {
+                      "status": "error",
+                      "code": 409,
+                      "message": "outdated version number provided"
+                    }
+                  }
+                }
+              },
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "429": {
+            "$ref": "#/components/responses/TooManyRequests"
+          }
+        },
+        "requestBody": {
+          "required": false,
+          "description": "The Observation as it now stands (full mode) or its identity plus the changed members (change mode). Undeclared in APDS 4.1 (candidate C-026, not yet filed).",
+          "content": {
+            "application/json": {
+              "schema": {
+                "anyOf": [
+                  {
+                    "$ref": "#/components/schemas/ObservationElement"
+                  },
+                  {
+                    "$ref": "#/components/schemas/ObservationElementChangePayload"
+                  }
+                ]
+              }
+            }
+          }
+        }
+      },
+      "delete": {
+        "summary": "delete a specific observation element",
+        "tags": [
+          "Observation"
+        ],
+        "operationId": "delete-observation-id",
+        "description": "delete the given  `Observation`",
+        "parameters": [
+          {
+            "schema": {
+              "type": "string"
+            },
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "description": "unique observation identifier"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ResponseStatus"
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "404": {
+            "description": "Not Found. APX (Part 5 §5.1a, Part 12 §12.1): a client sending `Accept: application/problem+json` receives problem type `target-not-found` instead of ResponseStatus.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ResponseStatus"
+                },
+                "examples": {
+                  "not-found": {
+                    "value": {
+                      "status": "error",
+                      "code": 404,
+                      "message": "observation with given id does not exist"
+                    }
+                  }
                 }
               },
               "application/problem+json": {
@@ -3748,6 +4015,85 @@
         }
       }
     },
+    "/quotes/{id}": {
+      "parameters": [
+        {
+          "schema": {
+            "type": "string"
+          },
+          "name": "id",
+          "in": "path",
+          "required": true,
+          "description": "unique id of the quote"
+        }
+      ],
+      "get": {
+        "summary": "get details of a specific quote",
+        "description": "get details of quote identified by `id`",
+        "operationId": "get-quote-id",
+        "tags": [
+          "Quote"
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "oneOf": [
+                    {
+                      "$ref": "#/components/schemas/QuoteRightRequest"
+                    },
+                    {
+                      "$ref": "#/components/schemas/QuoteRightResponse"
+                    },
+                    {
+                      "$ref": "#/components/schemas/QuoteSessionExtensionRequest"
+                    },
+                    {
+                      "$ref": "#/components/schemas/QuoteSessionExtensionResponse"
+                    }
+                  ]
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "404": {
+            "description": "Not Found. APX (Part 5 §5.1a, Part 12 §12.1): a client sending `Accept: application/problem+json` receives problem type `target-not-found` instead of ResponseStatus.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ResponseStatus"
+                },
+                "examples": {
+                  "not-found": {
+                    "value": {
+                      "status": "error",
+                      "code": 404,
+                      "message": "requested item does not exist"
+                    }
+                  }
+                }
+              },
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "429": {
+            "$ref": "#/components/responses/TooManyRequests"
+          }
+        }
+      }
+    },
     "/v1/places/{id}/occupancy": {
       "get": {
         "operationId": "get-apx-v1-places-id-occupancy",
@@ -4953,6 +5299,355 @@
           }
         }
       }
+    },
+    "/v1/equipment": {
+      "get": {
+        "operationId": "get-apx-v1-equipment",
+        "security": [
+          {
+            "apxOAuth": [
+              "apx.siteconfig:read"
+            ]
+          }
+        ],
+        "tags": [
+          "Site configuration"
+        ],
+        "summary": "List a place's equipment with its roles, makes, versions and areas",
+        "description": "Every SupplementalEquipment at the place, each with its\n`apds-ext:apx:equipment-detail@1.0` decoration, so a reader learns\nwhat the site has from APX alone (Part 26 §26.1). Distinct from\n`GET /v1/devices`, which serves live state; this serves the\ndescription. `mode=change&cursor=` serves the Part 5 §5.2 feed,\nso an edge or call-centre system keeps a local copy current.\nNaming a `place` outside the grant is 403 `insufficient-grant`.",
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/ModeParam"
+          },
+          {
+            "$ref": "#/components/parameters/CursorParam"
+          },
+          {
+            "name": "place",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            },
+            "description": "The HierarchyElement subtree root."
+          },
+          {
+            "name": "role",
+            "in": "query",
+            "schema": {
+              "type": "string"
+            },
+            "description": "An apx-equipment-roles value."
+          },
+          {
+            "name": "area",
+            "in": "query",
+            "schema": {
+              "type": "string"
+            },
+            "description": "An apx-area-types value."
+          },
+          {
+            "name": "lane",
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            },
+            "description": "Equipment serving this VehicularAccess."
+          },
+          {
+            "name": "level",
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "$ref": "#/components/parameters/page"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Paginated equipment; with `mode=change`, the changes after `cursor` in the same envelope (Part 5 §5.2 rule 8).",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "meta": {
+                      "$ref": "#/components/schemas/PaginatedListMeta"
+                    },
+                    "data": {
+                      "type": "array",
+                      "items": {
+                        "$ref": "#/components/schemas/EquipmentRecord"
+                      }
+                    },
+                    "updateMode": {
+                      "$ref": "#/components/schemas/ChangeFeedUpdateMode"
+                    },
+                    "cursor": {
+                      "$ref": "#/components/schemas/ChangeFeedCursor"
+                    },
+                    "deleted": {
+                      "$ref": "#/components/schemas/ChangeFeedTombstones"
+                    },
+                    "grantAdditions": {
+                      "$ref": "#/components/schemas/ChangeFeedGrantAdditions"
+                    },
+                    "next": {
+                      "$ref": "#/components/schemas/ChangeFeedNext"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "404": {
+            "$ref": "#/components/responses/CursorRefused"
+          },
+          "429": {
+            "$ref": "#/components/responses/TooManyRequests"
+          }
+        }
+      }
+    },
+    "/v1/equipment/{id}": {
+      "get": {
+        "operationId": "get-apx-v1-equipment-id",
+        "security": [
+          {
+            "apxOAuth": [
+              "apx.siteconfig:read"
+            ]
+          }
+        ],
+        "tags": [
+          "Site configuration"
+        ],
+        "summary": "Read one piece of equipment",
+        "description": "The SupplementalEquipment with its APX decorations (Part 26 §26.1).",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The equipment record.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/EquipmentRecord"
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          },
+          "429": {
+            "$ref": "#/components/responses/TooManyRequests"
+          }
+        }
+      }
+    },
+    "/v1/comms-points": {
+      "get": {
+        "operationId": "get-apx-v1-comms-points",
+        "security": [
+          {
+            "apxOAuth": [
+              "apx.siteconfig:read"
+            ]
+          }
+        ],
+        "tags": [
+          "Site configuration"
+        ],
+        "summary": "List or look up comms points",
+        "description": "The ways a parker reaches help at the caller's places (Part 26\n§26.4). A call platform finds the comms point of an inbound\ncontact with `callerId`, `dialedNumber` or `commsDeviceId`; the\nanswer carries the lane, or the place only. `mode=change&cursor=`\nserves the Part 5 §5.2 feed.",
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/ModeParam"
+          },
+          {
+            "$ref": "#/components/parameters/CursorParam"
+          },
+          {
+            "name": "place",
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "lane",
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "type",
+            "in": "query",
+            "schema": {
+              "type": "string"
+            },
+            "description": "An apx-comms-point-types value."
+          },
+          {
+            "name": "callerId",
+            "in": "query",
+            "schema": {
+              "type": "string"
+            },
+            "description": "E.164; matches `callerId`."
+          },
+          {
+            "name": "dialedNumber",
+            "in": "query",
+            "schema": {
+              "type": "string"
+            },
+            "description": "E.164; matches `phoneNumber`."
+          },
+          {
+            "name": "commsDeviceId",
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "$ref": "#/components/parameters/page"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Paginated comms points; with `mode=change`, the changes after `cursor` in the same envelope.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "meta": {
+                      "$ref": "#/components/schemas/PaginatedListMeta"
+                    },
+                    "data": {
+                      "type": "array",
+                      "items": {
+                        "$ref": "#/components/schemas/CommsPoint"
+                      }
+                    },
+                    "updateMode": {
+                      "$ref": "#/components/schemas/ChangeFeedUpdateMode"
+                    },
+                    "cursor": {
+                      "$ref": "#/components/schemas/ChangeFeedCursor"
+                    },
+                    "deleted": {
+                      "$ref": "#/components/schemas/ChangeFeedTombstones"
+                    },
+                    "grantAdditions": {
+                      "$ref": "#/components/schemas/ChangeFeedGrantAdditions"
+                    },
+                    "next": {
+                      "$ref": "#/components/schemas/ChangeFeedNext"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "404": {
+            "$ref": "#/components/responses/CursorRefused"
+          },
+          "429": {
+            "$ref": "#/components/responses/TooManyRequests"
+          }
+        }
+      }
+    },
+    "/v1/comms-points/{id}": {
+      "get": {
+        "operationId": "get-apx-v1-comms-points-id",
+        "security": [
+          {
+            "apxOAuth": [
+              "apx.siteconfig:read"
+            ]
+          }
+        ],
+        "tags": [
+          "Site configuration"
+        ],
+        "summary": "Read a comms point",
+        "description": "The comms point with the lane or place it serves and the barrier an agent opens for it (Part 26 §26.4).",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The comms point.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CommsPoint"
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          },
+          "429": {
+            "$ref": "#/components/responses/TooManyRequests"
+          }
+        }
+      }
     }
   },
   "webhooks": {
@@ -5413,6 +6108,12 @@
               "apx.valet:request": "Customer scope — request or cancel retrieval and read status/ETA for the caller's own ticket (text, app, web, voice bot)",
               "apx.platelists:read": "Read plate lists and their entries, plate values included (Part 24)",
               "apx.platelists:manage": "Create and maintain plate lists and entries (Part 24)",
+              "apx.ui:launch": "Open a vendor screen for an agent and read the launches it issued (Part 25)",
+              "apx.ui:read": "Read UI launches and the actions recorded in them (Part 25)",
+              "apx.ui:record": "The surface's own scope; record actions done in a launched screen and close it (Part 25)",
+              "apx.siteconfig:read": "Read a place's equipment, cameras, comms points and external ids; resolve another system's id (Part 26)",
+              "apx.siteconfig:manage": "Add, replace and remove comms points (Part 26)",
+              "apx.cameras:view": "Obtain short-lived camera view links, logged against the agent (Part 26)",
               "apx.digest:use": "Receive the credential digest keys (Part 9 §9.6 rule 6)",
               "apx.replication:write": "Replay another implementation's records with their original provenance and lifecycle times (Part 18 §18.6)",
               "apx.charging:read": "read charging-point status (with bay presence) and charging sessions",
@@ -5445,7 +6146,7 @@
             "type": "string",
             "description": "The APX edition implemented (Part 3 §3.4), as named in its `spec/edition.json`.",
             "examples": [
-              "0.14.0"
+              "0.15.0"
             ]
           },
           "apdsVersion": {
@@ -6258,6 +6959,180 @@
         "x-tags": [
           "observation"
         ]
+      },
+      "ObservationElementChangePayload": {
+        "title": "ObservationElementChangePayload",
+        "description": "A change-mode body for native `PUT /observations/{id}` (Part 5 §5.1a): `id` plus only the ObservationElement members that changed; an absent member is unchanged and an explicit `null` clears it. Every member present is checked against the class, and a member the class does not define is refused. Generated at build time (tools/change-payloads.mjs); the generic ChangePayload remains the shape of change-feed items.",
+        "type": "object",
+        "required": [
+          "id"
+        ],
+        "properties": {
+          "id": {
+            "type": "string",
+            "minLength": 1,
+            "description": "The entity identifier (APDS VersionedIdentity.id)."
+          },
+          "version": {
+            "anyOf": [
+              {
+                "type": "integer",
+                "description": "Positive integer representing the object version.",
+                "minimum": 1,
+                "examples": [
+                  1
+                ]
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "method": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/ObservationTypeEnum"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "observer": {
+            "anyOf": [
+              {
+                "type": "string",
+                "description": "The individual person making the observation recorded in this observation element."
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "type": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/CredentialTypeEnum"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "observedCredentialId": {
+            "anyOf": [
+              {
+                "type": "string",
+                "description": "Specific identifier to the referenced observed credential."
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "observationStartTime": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date-time",
+                "description": "The initial date and time of the observation."
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "observationEndTime": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date-time",
+                "description": "The ending date and time of the observation, when it was continous since `observationStartTime`."
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "description": {
+            "type": [
+              "array",
+              "null"
+            ],
+            "minItems": 1,
+            "items": {
+              "type": "object"
+            }
+          },
+          "creationDateTime": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date-time",
+                "description": "The date and time stamp for the creation of the observation element."
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "location": {
+            "type": [
+              "object",
+              "null"
+            ]
+          },
+          "images": {
+            "type": [
+              "array",
+              "null"
+            ],
+            "items": {
+              "type": "object"
+            }
+          },
+          "elementIds": {
+            "type": [
+              "object",
+              "null"
+            ]
+          },
+          "vehicleAncillaryIdentification": {
+            "type": [
+              "object",
+              "null"
+            ]
+          },
+          "observerOrganisation": {
+            "type": [
+              "object",
+              "null"
+            ]
+          },
+          "confidence": {
+            "type": [
+              "object",
+              "null"
+            ]
+          },
+          "characterConfidence": {
+            "type": [
+              "object",
+              "null"
+            ]
+          },
+          "extensions": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/Extensions"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          }
+        },
+        "additionalProperties": false
       },
       "ContactPointTypeEnum": {
         "title": "ContactPointTypeEnum",
@@ -8552,7 +9427,7 @@
       },
       "DeviceStatus": {
         "title": "DeviceStatus",
-        "description": "Live state overlay keyed by Reference to an APDS SupplementalEquipment —\nnever duplicates its descriptive fields. deviceState values mirror the\nRefillPointStatusEnum style (registry apx-device-states). Attachable to\nAPDS payloads as apds-ext:apx:devicestatus@1.0.",
+        "description": "Live state overlay keyed by Reference to an APDS SupplementalEquipment —\nnever duplicates its descriptive fields. APDS 4.1 has no general\nequipment status list: its RefillPointStatusEnum (Data Dictionary\nA.3.53) covers refill points only and is absent from apds-api-4.1.yaml.\ndeviceState values come from the APX registry apx-device-states, which\nfollows that enumeration's style and shares its available, occupied,\ninoperative and unknown values. Attachable to\nAPDS payloads as apds-ext:apx:devicestatus@1.0.",
         "type": "object",
         "required": [
           "device",
@@ -8570,10 +9445,72 @@
             ]
           },
           "lastCommunication": {
+            "description": "When the device last reported; an agent reads \"offline since\" from it (Part 6 §6.4).",
             "$ref": "#/components/schemas/DateTime"
           },
           "stateChangedTime": {
             "$ref": "#/components/schemas/DateTime"
+          },
+          "fault": {
+            "type": "object",
+            "description": "The current fault, when `deviceState` is `fault` or `inoperative` and the device reports one (Part 6 §6.4).",
+            "required": [
+              "code"
+            ],
+            "properties": {
+              "code": {
+                "type": "string",
+                "description": "The implementation's fault code, as the device reports it.",
+                "examples": [
+                  "E42"
+                ]
+              },
+              "displayText": {
+                "type": "string",
+                "description": "What the device shows or what the technician reads for the code.",
+                "examples": [
+                  "Ticket transport jammed"
+                ]
+              },
+              "since": {
+                "$ref": "#/components/schemas/DateTime"
+              }
+            }
+          },
+          "consumables": {
+            "type": "array",
+            "description": "Supply levels the device reports (Part 6 §6.4). `low` or `empty` raises the Part 7 `consumableLow` alert.",
+            "items": {
+              "type": "object",
+              "required": [
+                "kind",
+                "level"
+              ],
+              "properties": {
+                "kind": {
+                  "type": "string",
+                  "enum": [
+                    "tickets",
+                    "receiptPaper",
+                    "cash",
+                    "coins"
+                  ]
+                },
+                "level": {
+                  "type": "string",
+                  "enum": [
+                    "ok",
+                    "low",
+                    "empty",
+                    "unknown"
+                  ]
+                }
+              }
+            }
+          },
+          "maintenanceMode": {
+            "type": "boolean",
+            "description": "The device is under test or maintenance; calls and events from it are excluded from service figures (Part 6 §6.4)."
           },
           "extensions": {
             "$ref": "#/components/schemas/Extensions"
@@ -8588,6 +9525,173 @@
             "deviceState": "fault",
             "lastCommunication": "2026-08-06T18:16:55Z",
             "stateChangedTime": "2026-08-06T18:17:40Z"
+          }
+        ]
+      },
+      "EquipmentRecord": {
+        "title": "EquipmentRecord",
+        "description": "An APDS SupplementalEquipment as APX serves it (Part 26 §26.1): the\nstock APDS record plus its `extensions` container, which carries the\n`apds-ext:apx:equipment-detail@1.0` decoration (REQUIRED on every\nrecord this class serves), `apds-ext:apx:camera@1.0` on a camera, and\n`apds-ext:apx:external-ids@1.0` where other systems have ids for it.\nThe APDS record itself is never reshaped.",
+        "allOf": [
+          {
+            "$ref": "#/components/schemas/SupplementalEquipment"
+          },
+          {
+            "type": "object",
+            "properties": {
+              "extensions": {
+                "$ref": "#/components/schemas/Extensions"
+              }
+            }
+          }
+        ]
+      },
+      "CommsPoint": {
+        "title": "CommsPoint",
+        "description": "Any way a parker reaches help from a lane or a location (Part 26\n§26.4): an intercom, an analog dialler, a posted phone number, a\nkiosk, a QR code, an app. A call platform matches an inbound contact\nto a comms point by the number it calls out as (`callerId`), the\nnumber it called (`phoneNumber`), or its own device id\n(`commsDeviceId`), and APX then answers with the lane, or with the\nlocation only when the comms point serves no single lane (a posted\nnumber shared by many lanes can never name the lane by itself).\n\nThese are the only members of APX that carry telephony values, and\nthe call platform supplies them; a PARCS implementation never has to\nhold, return or understand them (Part 17 §17.1). SIP usernames,\nrealms and passwords are deliberately left out: a username with its\nrealm is half of a line's login, they exist only for SIP devices, and\nthe call platform already maps its own SIP data to these ids. A SIP\npassword or any other credential MUST never appear in any member.",
+        "allOf": [
+          {
+            "$ref": "#/components/schemas/ApxResourceCore"
+          },
+          {
+            "type": "object",
+            "required": [
+              "type",
+              "place"
+            ],
+            "anyOf": [
+              {
+                "required": [
+                  "phoneNumber"
+                ]
+              },
+              {
+                "required": [
+                  "callerId"
+                ]
+              },
+              {
+                "required": [
+                  "commsDeviceId"
+                ]
+              }
+            ],
+            "properties": {
+              "id": {
+                "type": "string",
+                "format": "uuid",
+                "readOnly": true
+              },
+              "version": {
+                "type": "integer",
+                "minimum": 1,
+                "readOnly": true,
+                "description": "Server-managed; bodies carry it only for a versioned replace (Part 4 §4.2a)."
+              },
+              "type": {
+                "type": "string",
+                "description": "definedValue from apx-comms-point-types.",
+                "examples": [
+                  "intercom"
+                ]
+              },
+              "place": {
+                "description": "The location it serves.",
+                "$ref": "#/components/schemas/Reference"
+              },
+              "lane": {
+                "description": "The VehicularAccess it serves, when it serves exactly one.",
+                "$ref": "#/components/schemas/Reference"
+              },
+              "equipment": {
+                "description": "The SupplementalEquipment it is, when it is inventoried hardware (role `intercom`, `analogDialer`, `emergencyPhone`).",
+                "$ref": "#/components/schemas/Reference"
+              },
+              "serves": {
+                "description": "The barrier an agent opens for this comms point, a gate or an access door, when there is one.",
+                "$ref": "#/components/schemas/Reference"
+              },
+              "phoneNumber": {
+                "type": "string",
+                "pattern": "^\\+[1-9][0-9]{1,14}$",
+                "description": "E.164. The number that is called when help is requested, dialled by the parker for a posted number, or by the intercom or dialler when its button is pushed.",
+                "examples": [
+                  "+15555550142"
+                ]
+              },
+              "callerId": {
+                "type": "string",
+                "pattern": "^\\+[1-9][0-9]{1,14}$",
+                "description": "E.164. The number the device calls out as.",
+                "examples": [
+                  "+15555550199"
+                ]
+              },
+              "commsDeviceId": {
+                "type": "string",
+                "description": "The id the call platform uses for this comms point when it identifies it by neither caller id nor dialled number.",
+                "examples": [
+                  "dev-51cc-ae16"
+                ]
+              },
+              "coverage": {
+                "type": "array",
+                "description": "When the comms point is answered and in which languages. The answering call centre itself is not named.",
+                "items": {
+                  "type": "object",
+                  "properties": {
+                    "period": {
+                      "$ref": "#/components/schemas/Period"
+                    },
+                    "languages": {
+                      "type": "array",
+                      "description": "BCP 47 language tags.",
+                      "items": {
+                        "type": "string"
+                      },
+                      "examples": [
+                        [
+                          "en",
+                          "es"
+                        ]
+                      ]
+                    }
+                  }
+                }
+              }
+            }
+          }
+        ],
+        "examples": [
+          {
+            "id": "c3000000-0000-4000-8000-000000000001",
+            "version": 1,
+            "type": "intercom",
+            "place": {
+              "id": "b1000000-0000-4000-8000-000000000001",
+              "className": "Place"
+            },
+            "lane": {
+              "id": "b2000000-0000-4000-8000-000000000002",
+              "className": "VehicularAccess"
+            },
+            "equipment": {
+              "id": "c2000000-0000-4000-8000-000000000023",
+              "className": "SupplementalEquipment"
+            },
+            "serves": {
+              "id": "c2000000-0000-4000-8000-000000000021",
+              "className": "SupplementalEquipment"
+            },
+            "callerId": "+15555550199",
+            "commsDeviceId": "dev-51cc-ae16",
+            "coverage": [
+              {
+                "languages": [
+                  "en",
+                  "es"
+                ]
+              }
+            ]
           }
         ]
       },
@@ -8778,6 +9882,17 @@
           "noShowAfter": {
             "description": "When a reservation not yet checked in lapses to `noShow` (see ReservationExtension.noShowAfter).",
             "$ref": "#/components/schemas/DateTime"
+          },
+          "issuer": {
+            "type": "string",
+            "description": "Who sold the reservation, so a code that several sellers could have issued is read against the right one (Part 14 §14.1, Part 17 §17.2). An operator code or the seller's domain.",
+            "examples": [
+              "spothero.example"
+            ]
+          },
+          "amountPaid": {
+            "description": "What the customer prepaid, so an agent at the lane sees it without a payment lookup.",
+            "$ref": "#/components/schemas/AmountInCurrency"
           }
         },
         "examples": [
@@ -8835,6 +9950,18 @@
           },
           "apds-ext:apx:credential-digest@1.0": {
             "$ref": "#/components/schemas/CredentialDigest"
+          },
+          "apds-ext:apx:equipment-detail@1.0": {
+            "$ref": "#/components/schemas/EquipmentDetail"
+          },
+          "apds-ext:apx:camera@1.0": {
+            "$ref": "#/components/schemas/CameraDetail"
+          },
+          "apds-ext:apx:external-ids@1.0": {
+            "$ref": "#/components/schemas/ExternalIdentifiers"
+          },
+          "apds-ext:apx:place-operations@1.0": {
+            "$ref": "#/components/schemas/PlaceOperations"
           }
         },
         "additionalProperties": {
@@ -10475,6 +11602,10 @@
           },
           "note": {
             "type": "string"
+          },
+          "approvalRequest": {
+            "description": "The Part 17 §17.3a ApprovalRequest whose decision this evidence cites, when the approval was asked for through APX.",
+            "$ref": "#/components/schemas/Reference"
           }
         }
       },
@@ -10647,6 +11778,101 @@
             "imageLink": "https://api.lakeside-garage.example/lpr/f2000000-0911.jpg"
           }
         ]
+      },
+      "SupplementalEquipment": {
+        "title": "SupplementalEquipment",
+        "description": "One type of supplemental equipment, which is available on some site, for example on a rest area.",
+        "type": "object",
+        "x-package": "place",
+        "allOf": [
+          {
+            "$ref": "#/components/schemas/SupplementalFacility"
+          },
+          {
+            "type": "object",
+            "properties": {
+              "equipmentType": {
+                "$ref": "#/components/schemas/EquipmentTypeEnum"
+              },
+              "refillPoints": {
+                "type": "array",
+                "items": {
+                  "$ref": "#/components/schemas/RefillPoint"
+                }
+              }
+            },
+            "required": [
+              "equipmentType"
+            ]
+          }
+        ]
+      },
+      "ApxResourceCore": {
+        "title": "ApxResourceCore",
+        "description": "Identity core shared by every APX-defined resource. Shaped so any APX\nresource can itself be the target of an APDS Reference or\nVersionedReference (RFC 4122 UUID identifier + integer version).",
+        "type": "object",
+        "required": [
+          "id",
+          "version"
+        ],
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid",
+            "description": "RFC 4122 UUID, unique within the resource class."
+          },
+          "version": {
+            "type": "integer",
+            "minimum": 1,
+            "description": "Monotonically increasing object version."
+          },
+          "recordInfo": {
+            "$ref": "#/components/schemas/RecordInfo"
+          },
+          "extensions": {
+            "$ref": "#/components/schemas/Extensions"
+          }
+        }
+      },
+      "Period": {
+        "title": "Period",
+        "description": "Defines a continuous time period or a set of discontinuous time periods defined by the intersection of a set of criteria all within an overall delimiting interval.",
+        "type": "object",
+        "x-package": "time",
+        "properties": {
+          "periodName": {
+            "$ref": "#/components/schemas/MultilingualString"
+          },
+          "startOfPeriod": {
+            "description": "Start of the period.",
+            "$ref": "#/components/schemas/DateTime"
+          },
+          "endOfPeriod": {
+            "description": "End of the period.",
+            "$ref": "#/components/schemas/DateTime"
+          },
+          "recurringDayWeekMonthPeriod": {
+            "type": "array",
+            "description": "The list of days each month for the period. If empty, all year (7d/7).",
+            "items": {
+              "$ref": "#/components/schemas/DayWeekMonth"
+            }
+          },
+          "recurringSpecialDay": {
+            "type": "array",
+            "description": "The list of special days for the period.",
+            "items": {
+              "$ref": "#/components/schemas/SpecialDay"
+            }
+          },
+          "recurringTimePeriodOfDay": {
+            "type": "array",
+            "description": "The list of start and end time for each day. If empty, all day (24h/24).",
+            "items": {
+              "$ref": "#/components/schemas/TimePeriodOfDay"
+            }
+          }
+        }
       },
       "StructureTypeEnum": {
         "title": "StructureTypeEnum",
@@ -11328,6 +12554,410 @@
             "$ref": "#/components/schemas/CredentialTypeEnum"
           }
         }
+      },
+      "EquipmentDetail": {
+        "title": "EquipmentDetail",
+        "description": "What a piece of hardware is, where it is, and what it does (Part 26\n§26.1). Carried on an APDS SupplementalEquipment as the Level B\ndecoration `apds-ext:apx:equipment-detail@1.0` in its `extensions`\ncontainer (Part 4 §4.3). The equipment TYPE stays the APDS\n`EquipmentTypeEnum` (often `paymentMachine` or `other`); `role` says\nwhat the item does on the site, from the fixed code list\n`apx-equipment-roles`.\n\n`firmwareVersion` and `softwareVersion` are optional but RECOMMENDED,\nand readable by every client of the place, because knowing what runs\non each device is what makes integration at scale possible. IP\naddresses are deliberately left out in the interest of security:\ntogether with model and firmware they map a site's network for an\nattacker, and no APX flow connects to a device directly. They could\nbe added later, as an optional member behind a restricted scope, if a\nreal need arises. MAC addresses stay, as the hardware identity when\nthe serial label is gone or when the MAC is the serial.",
+        "type": "object",
+        "required": [
+          "role"
+        ],
+        "properties": {
+          "role": {
+            "type": "string",
+            "description": "definedValue from apx-equipment-roles (a fixed list; `other` is a code, not free text).",
+            "examples": [
+              "exitVerifier"
+            ]
+          },
+          "manufacturer": {
+            "type": "string",
+            "examples": [
+              "Amano McGann"
+            ]
+          },
+          "model": {
+            "type": "string",
+            "examples": [
+              "AGP-1500"
+            ]
+          },
+          "firmwareVersion": {
+            "type": "string",
+            "examples": [
+              "4.2.1"
+            ]
+          },
+          "softwareVersion": {
+            "type": "string",
+            "description": "The application software on the device, when distinct from its firmware.",
+            "examples": [
+              "2026.3"
+            ]
+          },
+          "serialNumber": {
+            "type": "string",
+            "examples": [
+              "AMG-55-20318"
+            ]
+          },
+          "macAddresses": {
+            "type": "array",
+            "description": "One per network interface, lower-case hex without separators.",
+            "items": {
+              "type": "string",
+              "pattern": "^[0-9a-f]{12}$"
+            },
+            "examples": [
+              [
+                "001a2b3c4d5e"
+              ]
+            ]
+          },
+          "installedAt": {
+            "type": "string",
+            "format": "date",
+            "examples": [
+              "2024-03-18"
+            ]
+          },
+          "area": {
+            "type": "string",
+            "description": "Where on the site the item is, a definedValue from apx-area-types (Part 26 §26.2).",
+            "examples": [
+              "lane"
+            ]
+          },
+          "level": {
+            "type": "string",
+            "description": "The floor label as signed on site.",
+            "examples": [
+              "P1"
+            ]
+          },
+          "lane": {
+            "description": "The VehicularAccess the item serves. Absent for place-level equipment (an access door, a pay-on-foot station, a server).",
+            "$ref": "#/components/schemas/Reference"
+          },
+          "builtInto": {
+            "description": "The host equipment this item is part of (an intercom in a door's call box, a camera in a pay station).",
+            "$ref": "#/components/schemas/Reference"
+          },
+          "controls": {
+            "type": "array",
+            "description": "The barriers this device opens (an exit verifier that controls gate 2, a card reader that controls an access door).",
+            "items": {
+              "$ref": "#/components/schemas/Reference"
+            }
+          },
+          "serviceProvider": {
+            "type": "object",
+            "description": "Who services the item. An organisation and a support reference, never a person.",
+            "properties": {
+              "organisation": {
+                "$ref": "#/components/schemas/Reference"
+              },
+              "supportReference": {
+                "type": "string",
+                "description": "The provider's own reference for this unit or contract (an asset tag, a contract number).",
+                "examples": [
+                  "SVC-2024-0918"
+                ]
+              }
+            }
+          }
+        },
+        "examples": [
+          {
+            "role": "exitVerifier",
+            "manufacturer": "Amano McGann",
+            "model": "AGP-1500",
+            "firmwareVersion": "4.2.1",
+            "softwareVersion": "2026.3",
+            "serialNumber": "AMG-55-20318",
+            "macAddresses": [
+              "001a2b3c4d5e"
+            ],
+            "installedAt": "2024-03-18",
+            "area": "lane",
+            "level": "P1",
+            "lane": {
+              "id": "b2000000-0000-4000-8000-000000000002",
+              "className": "VehicularAccess"
+            },
+            "controls": [
+              {
+                "id": "c2000000-0000-4000-8000-000000000021",
+                "className": "SupplementalEquipment"
+              }
+            ],
+            "serviceProvider": {
+              "organisation": {
+                "id": "a1000000-0000-4000-8000-000000000009",
+                "className": "Organisation"
+              },
+              "supportReference": "SVC-2024-0918"
+            }
+          }
+        ]
+      },
+      "CameraDetail": {
+        "title": "CameraDetail",
+        "description": "A camera anywhere on the site, not only on a lane (Part 26 §26.3).\nCarried on a SupplementalEquipment whose EquipmentDetail `role` is\n`camera`, as the Level B decoration `apds-ext:apx:camera@1.0`. Where\nthe camera is (`area`, `level`, `lane`) and what it is built into\n(`builtInto`) are EquipmentDetail members, shared with every other\npiece of hardware; this decoration adds how it is mounted, what it\nlooks at, and how it can be viewed. It holds no addresses, usernames\nor passwords: a view is obtained through `POST /v1/cameras/{id}/views`\nand the password never leaves the site (Part 26 §26.3). Camera models\nand stream profiles follow ONVIF (Profile S, Profile T) and are not\nredefined. `apds-ext:apx:lane-cameras@1.0` (Part 13) is unchanged.",
+        "type": "object",
+        "required": [
+          "view"
+        ],
+        "properties": {
+          "mounting": {
+            "type": "string",
+            "enum": [
+              "builtIn",
+              "overhead",
+              "pole",
+              "wall",
+              "ceiling",
+              "other"
+            ],
+            "description": "When `builtIn`, EquipmentDetail `builtInto` names the host, for example a pay station's driver camera."
+          },
+          "view": {
+            "type": "array",
+            "minItems": 1,
+            "description": "What the camera looks at; one camera may cover several.",
+            "items": {
+              "type": "string",
+              "enum": [
+                "plate",
+                "vehicle",
+                "driver",
+                "equipmentInteraction",
+                "pedestrians",
+                "areaOverview",
+                "other"
+              ]
+            }
+          },
+          "faces": {
+            "type": "string",
+            "enum": [
+              "inward",
+              "outward"
+            ],
+            "description": "For lanes, plazas and ramps, relative to the facility (Part 13 §13.3a)."
+          },
+          "primary": {
+            "type": "boolean",
+            "description": "Show this camera first for its lane or area."
+          },
+          "ptz": {
+            "type": "boolean",
+            "description": "Can pan, tilt and zoom."
+          },
+          "recorder": {
+            "type": "object",
+            "description": "The DVR or NVR that records it (an equipment item with role `videoRecorder`) and the channel.",
+            "properties": {
+              "equipment": {
+                "$ref": "#/components/schemas/Reference"
+              },
+              "channel": {
+                "type": "string",
+                "examples": [
+                  "7"
+                ]
+              }
+            }
+          },
+          "streams": {
+            "type": "array",
+            "description": "What the camera can deliver, so a host knows what kind of view to ask for.",
+            "items": {
+              "type": "object",
+              "required": [
+                "protocol"
+              ],
+              "properties": {
+                "protocol": {
+                  "type": "string",
+                  "enum": [
+                    "webrtc",
+                    "hls",
+                    "rtsp",
+                    "mjpeg",
+                    "snapshot"
+                  ]
+                },
+                "transport": {
+                  "type": "string",
+                  "examples": [
+                    "tcp"
+                  ]
+                },
+                "resolution": {
+                  "type": "string",
+                  "examples": [
+                    "1920x1080"
+                  ]
+                }
+              }
+            }
+          },
+          "retentionDays": {
+            "type": "integer",
+            "minimum": 0,
+            "description": "How long recordings are kept; stated per camera because `driver` and `pedestrians` views capture faces (Part 26 §26.3).",
+            "examples": [
+              30
+            ]
+          },
+          "credentialRef": {
+            "type": "string",
+            "description": "For a camera that cannot sit behind a gateway, the label of the\ncredential the receiving system looks up in its own vault. NEVER\nthe secret itself; the secret is exchanged once, outside APX, at\nonboarding (Part 9 §9.7).",
+            "examples": [
+              "site-0042/cam-door-1"
+            ]
+          }
+        },
+        "examples": [
+          {
+            "mounting": "wall",
+            "view": [
+              "pedestrians"
+            ],
+            "primary": true,
+            "ptz": false,
+            "recorder": {
+              "equipment": {
+                "id": "c2000000-0000-4000-8000-000000000090",
+                "className": "SupplementalEquipment"
+              },
+              "channel": "7"
+            },
+            "streams": [
+              {
+                "protocol": "webrtc"
+              },
+              {
+                "protocol": "snapshot"
+              }
+            ],
+            "retentionDays": 30
+          }
+        ]
+      },
+      "ExternalIdentifiers": {
+        "title": "ExternalIdentifiers",
+        "description": "The ids other systems use for the same place, lane or equipment\n(Part 26 §26.6). Carried on any HierarchyElement as the Level B\ndecoration `apds-ext:apx:external-ids@1.0`. APDS\n`SupplementalFacility.externalIdentifiers` holds untyped strings; here\neach id says which system issued it. `system` is a URI the issuer\nowns, usually its own domain, so APX names no products or platforms.\n`POST /v1/identifiers:resolve` finds the APX record from such an id.",
+        "type": "object",
+        "required": [
+          "identifiers"
+        ],
+        "properties": {
+          "identifiers": {
+            "type": "array",
+            "minItems": 1,
+            "items": {
+              "type": "object",
+              "required": [
+                "system",
+                "id"
+              ],
+              "properties": {
+                "system": {
+                  "type": "string",
+                  "format": "uri",
+                  "description": "A URI owned by the system that issued the id.",
+                  "examples": [
+                    "https://parcs.example"
+                  ]
+                },
+                "id": {
+                  "type": "string",
+                  "examples": [
+                    "LOT-0042"
+                  ]
+                }
+              }
+            }
+          }
+        },
+        "examples": [
+          {
+            "identifiers": [
+              {
+                "system": "https://parcs.example",
+                "id": "LOT-0042"
+              },
+              {
+                "system": "https://calls.example",
+                "id": "acct-7f31"
+              }
+            ]
+          }
+        ]
+      },
+      "PlaceOperations": {
+        "title": "PlaceOperations",
+        "description": "Operational facts about a place that a call centre needs before a\ncall (Part 26 §26.5). Carried on a place HierarchyElement as the\nLevel B decoration `apds-ext:apx:place-operations@1.0`.\n`escalationContacts` lists roles in calling order, never names or\nphone numbers: the call platform holds those, so APX carries no\npersonal contact data. A Part 17 approval request is addressed to a\nrole from this list.",
+        "type": "object",
+        "properties": {
+          "commsAccountId": {
+            "type": "string",
+            "description": "The id the call platform uses for the whole site (its account), the site-level pair of `CommsPoint.commsDeviceId`.",
+            "examples": [
+              "acct-7f31"
+            ]
+          },
+          "escalationContacts": {
+            "type": "array",
+            "description": "Who to escalate to, by role, in order.",
+            "items": {
+              "type": "object",
+              "required": [
+                "role",
+                "order"
+              ],
+              "properties": {
+                "role": {
+                  "type": "string",
+                  "description": "definedValue from apx-escalation-roles.",
+                  "examples": [
+                    "siteManager"
+                  ]
+                },
+                "order": {
+                  "type": "integer",
+                  "minimum": 1,
+                  "description": "Calling order; 1 is tried first."
+                },
+                "hours": {
+                  "description": "When this role is reachable. Absent means always.",
+                  "$ref": "#/components/schemas/Period"
+                }
+              }
+            }
+          }
+        },
+        "examples": [
+          {
+            "commsAccountId": "acct-7f31",
+            "escalationContacts": [
+              {
+                "role": "attendant",
+                "order": 1
+              },
+              {
+                "role": "siteManager",
+                "order": 2
+              },
+              {
+                "role": "operatorOnCall",
+                "order": 3
+              }
+            ]
+          }
+        ]
       },
       "PlaceInformation": {
         "title": "PlaceInformation",
@@ -12089,6 +13719,279 @@
           "verified"
         ]
       },
+      "SupplementalFacility": {
+        "title": "SupplementalFacility",
+        "description": "One type of supplemental facility which can be supplemental equipment or a supplemental service facility.",
+        "type": "object",
+        "x-package": "place",
+        "allOf": [
+          {
+            "$ref": "#/components/schemas/IdentifiedArea"
+          },
+          {
+            "type": "object",
+            "properties": {
+              "accessibilities": {
+                "type": "array",
+                "description": "Information on accessibility, easements and marking for handicapped people.",
+                "items": {
+                  "$ref": "#/components/schemas/AccessibilityTypeEnum"
+                }
+              },
+              "additionalDescription": {
+                "$ref": "#/components/schemas/MultilingualString"
+              },
+              "applicableForUsers": {
+                "type": "array",
+                "description": "Limitation to a set of special users.",
+                "items": {
+                  "$ref": "#/components/schemas/UserTypeEnum"
+                }
+              },
+              "comment": {
+                "$ref": "#/components/schemas/MultilingualString"
+              },
+              "externalIdentifiers": {
+                "type": "array",
+                "description": "An external identifier for the supplemental facility, e.g. an inventory number. This attribute has an unbounded multiplicity to support identifiers for multiple occurrences of this element.'",
+                "items": {
+                  "type": "string"
+                }
+              },
+              "nameOrBrand": {
+                "$ref": "#/components/schemas/MultilingualString"
+              },
+              "otherSupplementalFacility": {
+                "type": "array",
+                "items": {
+                  "$ref": "#/components/schemas/MultilingualString"
+                }
+              },
+              "photoUrl": {
+                "$ref": "#/components/schemas/Url"
+              },
+              "quantity": {
+                "type": "integer",
+                "minimum": 0,
+                "description": "Number of the supplemental facility (e.g. number of toilets, restaurants, park & ride places, etc.) with respect to given restrictions. Dynamic overridable."
+              },
+              "regularlyCleaned": {
+                "type": "boolean",
+                "description": "Indication, if the supplemental facility is cleaned on a regular basis."
+              },
+              "rightSpecificationIds": {
+                "type": "array",
+                "description": "List of applicable right specifications",
+                "items": {
+                  "$ref": "#/components/schemas/VersionedReference"
+                }
+              },
+              "supplementalFacilityIndex": {
+                "type": "integer",
+                "description": "An index to link this supplemental facility between the static and dynamic publications."
+              }
+            },
+            "required": [
+              "supplementalFacilityIndex"
+            ]
+          }
+        ]
+      },
+      "EquipmentTypeEnum": {
+        "title": "EquipmentTypeEnum",
+        "description": "Types of equipment.\n* bikeParking: Bike parking.\n* cashMachine: Cash machine.\n* copyMachineOrService: A possibility to create copies of documents.\n* defibrillator: Medical equipment to provide first aid after heart attacks.\n* dsrcReceiver: A system to manage digital short range communication (radio beacon transceivers), e.g. for tolling roadside equipment.\n* dumpingStation: Possibility to get rid of sewerage (especially for motorhomes).\n* electricChargingStation: For charging vehicles, motorhome supply etc. The 'numberOf...' attribute specifies the number of charging stations.\n* elevator: Indication of the availability of elevators.\n* faxMachineOrService: A possibility to send and/or receive faxes.\n* fireExtinguisher: Fire extinguisher\n* fireHose: A hose for water transport in case of fire.\n* fireHydrant: Fire hydrant\n* firstAidEquipment: Equipment to support first aid on injured people. Note that 'defibrillator' is a separate literal.\n* iceFreeScaffold: A technical equipment to remove ice and snow from the roof of lorries.\n* informationPoint: An information point with employees.\n* informationStele: An unmanned information point.\n* internetTerminal: Public internet terminal. Charges may be specified using the TariffsAndPayment section.\n* internetWireless: Public wireless internet. Specifying an amount would be the number of hotspots/access points. Charges may be specified using the TariffsAndPayment section.\n* luggageLocker: Possibility to deposit luggage in a safe way.\n* none: None.\n* other: Some other equipment. Use 'otherSupplementalFacility' to specify it.\n* paymentMachine: A payment machine, for example a parking ticket machine.\n* picnicFacilities: Indication of whether any picnicking facilities, such as tables, chairs and shaded areas, are available.\n* playground: A playground for children.\n* publicCardPhone: Indicates, whether there's a public telephone available that can be used with a card.\n* publicCoinPhone: Indicates, whether there's a public telephone available that can be used with coins.\n* publicPhone: Indicates, whether there's a public telephone available.\n* refuseBin: Refuse bins for small amounts of garbage (see also 'wasteDisposal').\n* safeDeposit: A possibility to store valuable possession in a safe way. \n* shelter: A shelter (against wind, sun, ....).\n* shower: Indicates, whether there are shower facilities available.\n* snowAndIceRemovalEquipment: Equipment to remove snow and ice.nt\n* toilet: Indicates, whether there are toilets available.\n* tollTerminal: A terminal, where toll charges can be paid manually (this does not mean a toll gate on the road)\n* tyreAirPressureEquipment: Equipment to measure and refill tyre air pressure.\n* unknown: Unknown.\n* vendingMachine: A vending machine for snacks, coffee etc. (without manpower).\n* wasteDisposal: Possibility to get rid of waste in a legal way (e.g. for truckers or motorhomes). Normal refuse bins are not intended here.\n* waterBasin: A water basin to wash hands, clothes or dishes.\n* waterSupply: Supply of fresh water, e.g. for motorhomes.\n* waterTap: Fresh water out of a tap.",
+        "type": "string",
+        "x-package": "place.service.enums",
+        "enum": [
+          "bikeParking",
+          "cashMachine",
+          "copyMachineOrService",
+          "defibrillator",
+          "dsrcReceiver",
+          "dumpingStation",
+          "electricChargingStation",
+          "elevator",
+          "faxMachineOrService",
+          "fireExtinguisher",
+          "fireHose",
+          "fireHydrant",
+          "firstAidEquipment",
+          "iceFreeScaffold",
+          "informationPoint",
+          "informationStele",
+          "internetTerminal",
+          "internetWireless",
+          "luggageLocker",
+          "none",
+          "other",
+          "paymentMachine",
+          "picnicFacilities",
+          "playground",
+          "publicCardPhone",
+          "publicCoinPhone",
+          "publicPhone",
+          "refuseBin",
+          "safeDeposit",
+          "shelter",
+          "shower",
+          "snowAndIceRemovalEquipment",
+          "toilet",
+          "tollTerminal",
+          "tyreAirPressureEquipment",
+          "unknown",
+          "vendingMachine",
+          "wasteDisposal",
+          "waterBasin",
+          "waterSupply",
+          "waterTap"
+        ]
+      },
+      "RefillPoint": {
+        "title": "RefillPoint",
+        "description": "Technical infrastructure at a specific location that facilitates an energy refilling process being connected to maximum one vehicle at a time.",
+        "type": "object",
+        "x-package": "place.service",
+        "properties": {
+          "authenticationAndIdentificationMethods": {
+            "type": "array",
+            "description": "Information on what methods of identification and/or authentication are accepted",
+            "items": {
+              "$ref": "#/components/schemas/AuthenticationAndIdentificationEnum"
+            }
+          },
+          "currencyOverride": {
+            "type": "array",
+            "description": "Information on which currency/currencies can be used to pay",
+            "items": {
+              "$ref": "#/components/schemas/CurrencyCode"
+            }
+          },
+          "deliveryUnit": {
+            "$ref": "#/components/schemas/DeliveryUnitEnum"
+          },
+          "minimumDeliveryAmount": {
+            "$ref": "#/components/schemas/Units"
+          },
+          "maximumDeliveryAmount": {
+            "$ref": "#/components/schemas/Units"
+          },
+          "modelType": {
+            "$ref": "#/components/schemas/MultilingualString"
+          },
+          "refillPointIndex": {
+            "type": "integer",
+            "description": "An index to link this element between the static and dynamic publications."
+          },
+          "reservability": {
+            "$ref": "#/components/schemas/ReservationTypeEnum"
+          },
+          "serviceType": {
+            "type": "array",
+            "description": "Information on different service types for the fuelling/charging and payment process.",
+            "items": {
+              "$ref": "#/components/schemas/ServiceTypeEnum"
+            }
+          },
+          "userInterfaceLanguage": {
+            "type": "array",
+            "description": "Languages, in which a user interface is available, if any",
+            "items": {
+              "$ref": "#/components/schemas/LanguageCode"
+            }
+          }
+        },
+        "required": [
+          "refillPointIndex"
+        ]
+      },
+      "DayWeekMonth": {
+        "title": "DayWeekMonth",
+        "description": "Specification of periods defined by the intersection of days, weeks and months.",
+        "type": "object",
+        "x-package": "time",
+        "properties": {
+          "applicableDay": {
+            "type": "array",
+            "uniqueItems": true,
+            "maxItems": 7,
+            "description": "Applicable day of the week (1 to 7). All days of the week is expressed by non-inclusion of this attribute.",
+            "items": {
+              "$ref": "#/components/schemas/DayEnum"
+            }
+          },
+          "applicableMonth": {
+            "type": "array",
+            "description": "Applicable month of the year (1 to 12). All months of the year is expressed by non-inclusion of this attribute.",
+            "uniqueItems": true,
+            "maxItems": 12,
+            "items": {
+              "$ref": "#/components/schemas/MonthEnum"
+            }
+          },
+          "applicableWeek": {
+            "type": "array",
+            "description": "Applicable week of the month (1 to 5). All weeks of the month is expressed by non-inclusion of this attribute.",
+            "uniqueItems": true,
+            "maxItems": 5,
+            "items": {
+              "$ref": "#/components/schemas/WeekOfMonthEnum"
+            }
+          }
+        }
+      },
+      "SpecialDay": {
+        "title": "SpecialDay",
+        "description": "Specification of a special type of day, possibly also a public holiday. Can be country or region specific.",
+        "type": "object",
+        "x-package": "time",
+        "discriminator": {
+          "propertyName": "specialDayType",
+          "mapping": {
+            "dayBeforePublicHoliday": "#/components/schemas/OtherSpecialDay",
+            "dayFollowingPublicHoliday": "#/components/schemas/OtherSpecialDay",
+            "inLieuOfPublicHoliday": "#/components/schemas/OtherSpecialDay",
+            "longWeekendDay": "#/components/schemas/OtherSpecialDay",
+            "other": "#/components/schemas/OtherSpecialDay",
+            "publicEventDay": "#/components/schemas/OtherSpecialDay",
+            "publicHoliday": "#/components/schemas/PublicHoliday",
+            "schoolDay": "#/components/schemas/OtherSpecialDay",
+            "schoolHolidays": "#/components/schemas/OtherSpecialDay"
+          }
+        },
+        "properties": {
+          "specialDayType": {
+            "$ref": "#/components/schemas/SpecialDayTypeEnum"
+          },
+          "intersectWithApplicableDays": {
+            "type": "boolean",
+            "description": "Indicates if the period is the intersection of applicable days and this special day (TRUE) or if it is the union of applicable days and this special day."
+          }
+        },
+        "required": [
+          "specialDayType",
+          "intersectWithApplicableDays"
+        ]
+      },
+      "TimePeriodOfDay": {
+        "title": "TimePeriodOfDay",
+        "description": "Specification of a continuous period of time within the same day.",
+        "type": "object",
+        "x-package": "time",
+        "properties": {
+          "startTimeOfPeriod": {
+            "description": "Start of time period.",
+            "$ref": "#/components/schemas/Time"
+          },
+          "endTimeOfPeriod": {
+            "description": "End time of period.",
+            "$ref": "#/components/schemas/Time"
+          }
+        },
+        "required": [
+          "startTimeOfPeriod",
+          "endTimeOfPeriod"
+        ]
+      },
       "AttributeRead": {
         "title": "AttributeRead",
         "description": "One recognized attribute with its own confidence (0–1, APDS Confidence scale).",
@@ -12498,46 +14401,6 @@
           "detectionUpdateTime"
         ]
       },
-      "Period": {
-        "title": "Period",
-        "description": "Defines a continuous time period or a set of discontinuous time periods defined by the intersection of a set of criteria all within an overall delimiting interval.",
-        "type": "object",
-        "x-package": "time",
-        "properties": {
-          "periodName": {
-            "$ref": "#/components/schemas/MultilingualString"
-          },
-          "startOfPeriod": {
-            "description": "Start of the period.",
-            "$ref": "#/components/schemas/DateTime"
-          },
-          "endOfPeriod": {
-            "description": "End of the period.",
-            "$ref": "#/components/schemas/DateTime"
-          },
-          "recurringDayWeekMonthPeriod": {
-            "type": "array",
-            "description": "The list of days each month for the period. If empty, all year (7d/7).",
-            "items": {
-              "$ref": "#/components/schemas/DayWeekMonth"
-            }
-          },
-          "recurringSpecialDay": {
-            "type": "array",
-            "description": "The list of special days for the period.",
-            "items": {
-              "$ref": "#/components/schemas/SpecialDay"
-            }
-          },
-          "recurringTimePeriodOfDay": {
-            "type": "array",
-            "description": "The list of start and end time for each day. If empty, all day (24h/24).",
-            "items": {
-              "$ref": "#/components/schemas/TimePeriodOfDay"
-            }
-          }
-        }
-      },
       "AddressLineTypeEnum": {
         "title": "AddressLineTypeEnum",
         "description": "A table of types of address lines\n * apartment: Element indicating a discrete element of a building forming the address\n * building: Element identifying the number or name and type of the edifice or construction relevant for the address [derived from ISO19160-4]\n * districtTerritory: Element specifying the geographic or administrative area of the country for the address [Source: 19160-4]\n * floor: Element indicating the floor or level on which a delivery point is located in a multi-storey building [Source:ISO19160-4]\n * poBox: A postal delivery location identifier, not necessarily a physical location.\n * region: Element indicating the name of the area within or adjacent to the town in which delivery address is.\n * street: Element indicating road or street identifier or name \n * town: Element indicating the name of the populated place in which a delivery point is located, or near to or via which the delivery point is accessed. [Source: ISO19160-4]\n * unit: An element representing a section of a building or organisation.Free-text description of the condition that leads to a surcharge being applied.",
@@ -12931,16 +14794,51 @@
           "unitOfTime"
         ]
       },
-      "CoveredTypeEnum": {
-        "title": "CoveredTypeEnum",
-        "description": "Defines the supported lists of different types describing roof coverage of the facility or entity\n* covered: Indicates that the facility or specific entity has a roof to provide protection from direct overhead sun or adverse weather\n* notCovered: Indicates that the facility or specific entity has no roof to provide protection from direct overhead sun or adverse weather\n* partiallyCovered: Indicates that the facility or specific entity has a roof offering partial coverage to provide protection from direct overhead sun or adverse weather\n* topLevelNotCovered: Indicates that in a multi-level facility or specific entity the top level(s) have no roof to provide protection from direct overhead sun or adverse weather",
-        "type": "string",
-        "x-package": "place.characteristics.enums",
-        "enum": [
-          "covered",
-          "notCovered",
-          "partiallyCovered",
-          "topLevelNotCovered"
+      "IdentifiedArea": {
+        "title": "IdentifiedArea",
+        "description": "An identifiable discrete bounded geographic zone that shares common characteristics and that may be used for \nparking related or other purposes. \nIdentified Areas are segmented into two types : Vehicular Access class and Specific Area class.",
+        "type": "object",
+        "x-package": "place",
+        "allOf": [
+          {
+            "$ref": "#/components/schemas/HierarchyElement"
+          },
+          {
+            "type": "object",
+            "properties": {
+              "streetAddress": {
+                "type": "array",
+                "description": "Identified area street address.",
+                "items": {
+                  "$ref": "#/components/schemas/Address"
+                }
+              },
+              "areaBoundedZone": {
+                "type": "array",
+                "description": "Identified area bounded zone.",
+                "items": {
+                  "$ref": "#/components/schemas/GeoJsonObject"
+                }
+              },
+              "indicativePointLocation": {
+                "type": "array",
+                "description": "Indicative identified area point location.",
+                "items": {
+                  "$ref": "#/components/schemas/GeoJsonObject"
+                }
+              },
+              "times": {
+                "$ref": "#/components/schemas/Times"
+              },
+              "operatingRestrictions": {
+                "type": "array",
+                "description": "Operating restrictions",
+                "items": {
+                  "$ref": "#/components/schemas/OperatingRestrictions"
+                }
+              }
+            }
+          }
         ]
       },
       "AccessibilityTypeEnum": {
@@ -12958,6 +14856,233 @@
           "other",
           "unknown",
           "wheelChairAccessible"
+        ]
+      },
+      "UserTypeEnum": {
+        "title": "UserTypeEnum",
+        "description": "Types of different users,for example used in the context of parking.\n* allUsers: All users.\n* commuters: Commuters.\n* customers: Customers.\n* disabled: Physically impaired people.\n* elderlyUsers: Elderly users.\n* employees: Employees.\n* families: Families.\n* handicapped: Persons with deficiencies in their daily life.\n* hearingImpaired: People with difficulties to hear.\n* hotelGuests: Hotel guests.\n* longTermParkers: Long-term parker.\n* members: Members.\n* men: Men.\n* other: Other.\n* overnightParkers: Overnight parker.\n* parkAndCycleUser: Park and cycle user.\n* parkAndRideUsers: Users that are exchanging into public transport at a park and ride station.\n* parkAndWalkUser: Park and walk user.\n* pensioners: Pensioners.\n* pregnantWomen: Pregnant women.\n* registeredDisabledUsers: Registered disabled persons.\n* reservationHolders: Those who have a valid reservation, e.g. for the duration of parking.\n* residents: Local residents.\n* seasonTicketHolders: Season ticket holders.\n* shoppers: Shoppers.\n* shortTermParkers: Short-term parker.\n* sportEventAwaySupporters: Sport event away supporters.\n* sportEventHomeSupporters: Sport event home supporters.\n* staff: Staff.\n* students: Students.\n* subscribers: Subscribers.\n* unknown: Unknown.\n* visitors: Visitors.\n* visuallyImpaired: People with difficulties to see.\n* wheelchairUsers: Wheelchair users.\n* women: Women.",
+        "type": "string",
+        "x-package": "place.enums",
+        "enum": [
+          "allUsers",
+          "commuters",
+          "customers",
+          "disabled",
+          "elderlyUsers",
+          "employees",
+          "families",
+          "handicapped",
+          "hearingImpaired",
+          "hotelGuests",
+          "longTermParkers",
+          "members",
+          "men",
+          "other",
+          "overnightParkers",
+          "parkAndCycleUser",
+          "parkAndRideUsers",
+          "parkAndWalkUser",
+          "pensioners",
+          "pregnantWomen",
+          "registeredDisabledUsers",
+          "reservationHolders",
+          "residents",
+          "seasonTicketHolders",
+          "shoppers",
+          "shortTermParkers",
+          "sportEventAwaySupporters",
+          "sportEventHomeSupporters",
+          "staff",
+          "students",
+          "subscribers",
+          "unknown",
+          "visitors",
+          "visuallyImpaired",
+          "wheelchairUsers",
+          "women"
+        ]
+      },
+      "AuthenticationAndIdentificationEnum": {
+        "title": "AuthenticationAndIdentificationEnum",
+        "description": "A table of authentication and/or identification methods: \n* activeRFIDChip: Phone (active RFID chip)\n* apps: Apps\n* calypso: RFID Calypso\n* cashPayment: No specific authentication by using cash\n* creditCard: Credit card\n* debitCard: Debit card\n* mifareClassic: RFID Card / Phone NFC - Mifare Classic\n* mifareDesfire: RFID Card / Phone NFC - Mifare Desfire\n* nfc: Nearfield communication\n* noAccess: No access granted\n* overTheAir: Over the air according to ISO 15118\n* phoneDialog: phone (dialog with platform)\n* phoneSMS: Phone (SMS)\n* pinpad: PINPAD\n* plc: PLC according to ISO 15118\n* prepaidCard: Pre-Paid card\n* rfid: RFID\n* unlimitedAccess: No authentication/identification required.\n* website: Using a website",
+        "type": "string",
+        "x-package": "place.service.enums",
+        "enum": [
+          "activeRFIDChip",
+          "apps",
+          "calypso",
+          "cashPayment",
+          "creditCard",
+          "debitCard",
+          "mifareClassic",
+          "mifareDesfire",
+          "nfc",
+          "noAccess",
+          "overTheAir",
+          "phoneDialog",
+          "phoneSMS",
+          "pinpad",
+          "plc",
+          "prepaidCard",
+          "rfid",
+          "unlimitedAccess",
+          "website"
+        ]
+      },
+      "DeliveryUnitEnum": {
+        "title": "DeliveryUnitEnum",
+        "description": "Table with different units in which the delivery is measured.\n* gasGallonEquivalent: The amount of alternative fuel it takes to equal the energy content of one liquid gallon of gasoline. Used mostly in the US.\n* imperialGallon: Imperial Gallon (4.54609 litres)\n* kg: kilogram\n* kWh: kilowatt hour\n* litre: Litre\n* m3: cubic meter\n* usGallon: US-Gallon (3.785411784 litres)",
+        "type": "string",
+        "x-package": "place.service.enums",
+        "enum": [
+          "gasGallonEquivalent",
+          "imperialGallon",
+          "kg",
+          "kWh",
+          "litre",
+          "m3",
+          "usGallon"
+        ]
+      },
+      "Units": {
+        "title": "Units",
+        "description": "Amount in units, which are specified by unitTypeEnum.",
+        "type": "number",
+        "x-package": "common.units"
+      },
+      "ReservationTypeEnum": {
+        "title": "ReservationTypeEnum",
+        "description": "Different types of reservation.\n* mandatory: Reservation is mandatory.\n* notAvailable: Reservation is not possible.\n* optional: Reservation is optional.\n* partly: There is a specific contingent, that can be reserved.\n* unknown: Possibility of reservation is unknown,\n* unspecified: Possibility of reservation is not specified.",
+        "type": "string",
+        "x-package": "place.service.enums",
+        "enum": [
+          "mandatory",
+          "notAvailable",
+          "optional",
+          "partly",
+          "unknown",
+          "unspecified"
+        ]
+      },
+      "ServiceTypeEnum": {
+        "title": "ServiceTypeEnum",
+        "description": "A table of different service levels to be expected for fuelling/charging and payment.\n* fullService: Full fuelling service carried out by an employee.\n* selfService: Self Service for fuelling\n* unattended: Unattended station, fuelling and payment to be done without assistance.",
+        "type": "string",
+        "x-package": "place.service.enums",
+        "enum": [
+          "fullService",
+          "selfService",
+          "unattended"
+        ]
+      },
+      "DayEnum": {
+        "title": "DayEnum",
+        "description": "Defines permissible enumerations of identification of days within a week.",
+        "type": "string",
+        "x-package": "time.enums",
+        "enum": [
+          "monday",
+          "tuesday",
+          "wednesday",
+          "thursday",
+          "friday",
+          "saturday",
+          "sunday"
+        ]
+      },
+      "MonthEnum": {
+        "title": "MonthEnum",
+        "description": "Defines permissible enumerations of identification of calendar months within a year.",
+        "type": "string",
+        "x-package": "time.enums",
+        "enum": [
+          "january",
+          "february",
+          "march",
+          "april",
+          "may",
+          "june",
+          "july",
+          "august",
+          "september",
+          "october",
+          "november",
+          "december"
+        ]
+      },
+      "WeekOfMonthEnum": {
+        "title": "WeekOfMonthEnum",
+        "description": "Weeks of the month\n\n* `firstWeekOfMonth`: First week of the month\n* `secondWeekOfMonth`: Second week of the month\n* `thirdWeekOfMonth`: Third week of the month\n* `fourthWeekOfMonth`: Fourth week of the month\n* `fifthWeekOfMonth`: Fifth week of the month (at most only 3 days and non in February when not a leap year)",
+        "type": "string",
+        "x-package": "time.enums",
+        "enum": [
+          "firstWeekOfMonth",
+          "secondWeekOfMonth",
+          "thirdWeekOfMonth",
+          "fourthWeekOfMonth",
+          "fifthWeekOfMonth"
+        ]
+      },
+      "OtherSpecialDay": {
+        "title": "OtherSpecialDay",
+        "description": "Specification of a other type of special day.",
+        "type": "object",
+        "x-package": "time",
+        "allOf": [
+          {
+            "$ref": "#/components/schemas/SpecialDay"
+          }
+        ]
+      },
+      "PublicHoliday": {
+        "title": "PublicHoliday",
+        "description": "Specification of a specific public holiday in case `specialDayType` is set to `publicHoliday`.",
+        "type": "object",
+        "x-package": "time",
+        "allOf": [
+          {
+            "$ref": "#/components/schemas/SpecialDay"
+          },
+          {
+            "type": "object",
+            "properties": {
+              "publicHolidayName": {
+                "$ref": "#/components/schemas/MultilingualString"
+              }
+            },
+            "required": [
+              "publicHolidayName"
+            ]
+          }
+        ]
+      },
+      "SpecialDayTypeEnum": {
+        "title": "SpecialDayTypeEnum",
+        "description": "Collection of special types of days\n* dayBeforePublicHoliday: The day preceding a public holiday\n* dayFollowingPublicHoliday: A day following a public holiday\n* inLieuOfPublicHoliday: A holiday in lieu of a public holiday that falls on a weekend\n* longWeekendDay: A day between a public holiday and the weekend\n* other: Some other special day\n* publicEventDay: A day of a public event. You may use the publicEvent attribute to specify the corresponding event\n* publicHoliday: Public holiday A public holiday in general. You may use the PublicHoliday class to refer on a specific public holiday\n* schoolDay: A school day\n* schoolHolidays: A day within the school holidays",
+        "type": "string",
+        "x-package": "time.enums",
+        "enum": [
+          "dayBeforePublicHoliday",
+          "dayFollowingPublicHoliday",
+          "inLieuOfPublicHoliday",
+          "longWeekendDay",
+          "other",
+          "publicEventDay",
+          "publicHoliday",
+          "schoolDay",
+          "schoolHolidays"
+        ]
+      },
+      "CoveredTypeEnum": {
+        "title": "CoveredTypeEnum",
+        "description": "Defines the supported lists of different types describing roof coverage of the facility or entity\n* covered: Indicates that the facility or specific entity has a roof to provide protection from direct overhead sun or adverse weather\n* notCovered: Indicates that the facility or specific entity has no roof to provide protection from direct overhead sun or adverse weather\n* partiallyCovered: Indicates that the facility or specific entity has a roof offering partial coverage to provide protection from direct overhead sun or adverse weather\n* topLevelNotCovered: Indicates that in a multi-level facility or specific entity the top level(s) have no roof to provide protection from direct overhead sun or adverse weather",
+        "type": "string",
+        "x-package": "place.characteristics.enums",
+        "enum": [
+          "covered",
+          "notCovered",
+          "partiallyCovered",
+          "topLevelNotCovered"
         ]
       },
       "OperatingModeTypeEnum": {
@@ -13142,94 +15267,6 @@
         "enum": [
           "poundsWeight",
           "tonnesMetric"
-        ]
-      },
-      "DayWeekMonth": {
-        "title": "DayWeekMonth",
-        "description": "Specification of periods defined by the intersection of days, weeks and months.",
-        "type": "object",
-        "x-package": "time",
-        "properties": {
-          "applicableDay": {
-            "type": "array",
-            "uniqueItems": true,
-            "maxItems": 7,
-            "description": "Applicable day of the week (1 to 7). All days of the week is expressed by non-inclusion of this attribute.",
-            "items": {
-              "$ref": "#/components/schemas/DayEnum"
-            }
-          },
-          "applicableMonth": {
-            "type": "array",
-            "description": "Applicable month of the year (1 to 12). All months of the year is expressed by non-inclusion of this attribute.",
-            "uniqueItems": true,
-            "maxItems": 12,
-            "items": {
-              "$ref": "#/components/schemas/MonthEnum"
-            }
-          },
-          "applicableWeek": {
-            "type": "array",
-            "description": "Applicable week of the month (1 to 5). All weeks of the month is expressed by non-inclusion of this attribute.",
-            "uniqueItems": true,
-            "maxItems": 5,
-            "items": {
-              "$ref": "#/components/schemas/WeekOfMonthEnum"
-            }
-          }
-        }
-      },
-      "SpecialDay": {
-        "title": "SpecialDay",
-        "description": "Specification of a special type of day, possibly also a public holiday. Can be country or region specific.",
-        "type": "object",
-        "x-package": "time",
-        "discriminator": {
-          "propertyName": "specialDayType",
-          "mapping": {
-            "dayBeforePublicHoliday": "#/components/schemas/OtherSpecialDay",
-            "dayFollowingPublicHoliday": "#/components/schemas/OtherSpecialDay",
-            "inLieuOfPublicHoliday": "#/components/schemas/OtherSpecialDay",
-            "longWeekendDay": "#/components/schemas/OtherSpecialDay",
-            "other": "#/components/schemas/OtherSpecialDay",
-            "publicEventDay": "#/components/schemas/OtherSpecialDay",
-            "publicHoliday": "#/components/schemas/PublicHoliday",
-            "schoolDay": "#/components/schemas/OtherSpecialDay",
-            "schoolHolidays": "#/components/schemas/OtherSpecialDay"
-          }
-        },
-        "properties": {
-          "specialDayType": {
-            "$ref": "#/components/schemas/SpecialDayTypeEnum"
-          },
-          "intersectWithApplicableDays": {
-            "type": "boolean",
-            "description": "Indicates if the period is the intersection of applicable days and this special day (TRUE) or if it is the union of applicable days and this special day."
-          }
-        },
-        "required": [
-          "specialDayType",
-          "intersectWithApplicableDays"
-        ]
-      },
-      "TimePeriodOfDay": {
-        "title": "TimePeriodOfDay",
-        "description": "Specification of a continuous period of time within the same day.",
-        "type": "object",
-        "x-package": "time",
-        "properties": {
-          "startTimeOfPeriod": {
-            "description": "Start of time period.",
-            "$ref": "#/components/schemas/Time"
-          },
-          "endTimeOfPeriod": {
-            "description": "End time of period.",
-            "$ref": "#/components/schemas/Time"
-          }
-        },
-        "required": [
-          "startTimeOfPeriod",
-          "endTimeOfPeriod"
         ]
       },
       "TriggerTypeEnum": {
@@ -13431,104 +15468,6 @@
         },
         "required": [
           "type"
-        ]
-      },
-      "DayEnum": {
-        "title": "DayEnum",
-        "description": "Defines permissible enumerations of identification of days within a week.",
-        "type": "string",
-        "x-package": "time.enums",
-        "enum": [
-          "monday",
-          "tuesday",
-          "wednesday",
-          "thursday",
-          "friday",
-          "saturday",
-          "sunday"
-        ]
-      },
-      "MonthEnum": {
-        "title": "MonthEnum",
-        "description": "Defines permissible enumerations of identification of calendar months within a year.",
-        "type": "string",
-        "x-package": "time.enums",
-        "enum": [
-          "january",
-          "february",
-          "march",
-          "april",
-          "may",
-          "june",
-          "july",
-          "august",
-          "september",
-          "october",
-          "november",
-          "december"
-        ]
-      },
-      "WeekOfMonthEnum": {
-        "title": "WeekOfMonthEnum",
-        "description": "Weeks of the month\n\n* `firstWeekOfMonth`: First week of the month\n* `secondWeekOfMonth`: Second week of the month\n* `thirdWeekOfMonth`: Third week of the month\n* `fourthWeekOfMonth`: Fourth week of the month\n* `fifthWeekOfMonth`: Fifth week of the month (at most only 3 days and non in February when not a leap year)",
-        "type": "string",
-        "x-package": "time.enums",
-        "enum": [
-          "firstWeekOfMonth",
-          "secondWeekOfMonth",
-          "thirdWeekOfMonth",
-          "fourthWeekOfMonth",
-          "fifthWeekOfMonth"
-        ]
-      },
-      "OtherSpecialDay": {
-        "title": "OtherSpecialDay",
-        "description": "Specification of a other type of special day.",
-        "type": "object",
-        "x-package": "time",
-        "allOf": [
-          {
-            "$ref": "#/components/schemas/SpecialDay"
-          }
-        ]
-      },
-      "PublicHoliday": {
-        "title": "PublicHoliday",
-        "description": "Specification of a specific public holiday in case `specialDayType` is set to `publicHoliday`.",
-        "type": "object",
-        "x-package": "time",
-        "allOf": [
-          {
-            "$ref": "#/components/schemas/SpecialDay"
-          },
-          {
-            "type": "object",
-            "properties": {
-              "publicHolidayName": {
-                "$ref": "#/components/schemas/MultilingualString"
-              }
-            },
-            "required": [
-              "publicHolidayName"
-            ]
-          }
-        ]
-      },
-      "SpecialDayTypeEnum": {
-        "title": "SpecialDayTypeEnum",
-        "description": "Collection of special types of days\n* dayBeforePublicHoliday: The day preceding a public holiday\n* dayFollowingPublicHoliday: A day following a public holiday\n* inLieuOfPublicHoliday: A holiday in lieu of a public holiday that falls on a weekend\n* longWeekendDay: A day between a public holiday and the weekend\n* other: Some other special day\n* publicEventDay: A day of a public event. You may use the publicEvent attribute to specify the corresponding event\n* publicHoliday: Public holiday A public holiday in general. You may use the PublicHoliday class to refer on a specific public holiday\n* schoolDay: A school day\n* schoolHolidays: A day within the school holidays",
-        "type": "string",
-        "x-package": "time.enums",
-        "enum": [
-          "dayBeforePublicHoliday",
-          "dayFollowingPublicHoliday",
-          "inLieuOfPublicHoliday",
-          "longWeekendDay",
-          "other",
-          "publicEventDay",
-          "publicHoliday",
-          "schoolDay",
-          "schoolHolidays"
         ]
       },
       "ValueRangeClassEnum": {

@@ -1,0 +1,798 @@
+domain: Place
+order: 1
+summary: >-
+  Adds what an operator needs to describe how the equipment in a Place is working right now, which
+  way the licence plate cameras on an access lane face, and what is posted on the signs at a Place.
+  It also suggests four lane-equipment values for EquipmentTypeEnum. Equipment status is kept in its
+  own record, apart from the static Place description, for the same reason APDS keeps Demand apart
+  from Supply: it changes far more often. A second group describes the equipment itself, so that a
+  Place can be understood from the data alone: what each item does (its role), where it stands, what
+  it is and what runs on it, which cameras look at what, and how a parker at any point of the Place
+  reaches help (a comms point).
+packages:
+  - name: SupplementalFacility
+    location: D2Payload/Extension/Parking/Place/PlaceHierarchy/IdentifiedArea/SupplementalFacility
+    status: existing
+    classes:
+      - name: EquipmentStatus
+        change: new
+        designation: Equipment status
+        definition: >-
+          The operational state of one item of supplemental equipment at a point in time, reported
+          separately from the description of the equipment.
+        stereotype: D2Class
+        abstract: false
+        parent: null
+        level: B
+        tier: 1
+        apx: APX Part 6 §6.4 DeviceStatus
+        rationale: >-
+          Lets an operator, a monitoring service and an enforcement or customer-service partner
+          share whether a gate, pay machine, camera or charger is working, without resending the
+          Place hierarchy.
+        attributes:
+          - name: equipmentId
+            designation: Equipment id
+            definition: Reference to the supplemental equipment whose state is reported.
+            multiplicity: 1..1
+            type: PkCommon.Reference (Place.SupplementalEquipment)
+          - name: equipmentStatus
+            designation: Equipment status
+            definition: The operational state of the equipment.
+            multiplicity: 1..1
+            type: Place.EquipmentStatusEnum
+          - name: otherEquipmentStatus
+            designation: Other equipment status
+            definition: A state taken from a user-defined code list, used when equipmentStatus is 'other'.
+            multiplicity: 0..1
+            type: PkCommon.ReferencedCodeListEntry
+          - name: statusChangeTime
+            designation: Status change time
+            definition: The date/time at which the equipment entered the reported state.
+            multiplicity: 0..1
+            type: PkCommon.DateTime
+          - name: lastCommunicationTime
+            designation: Last communication
+            definition: The date/time at which the equipment was last heard from by the reporting system.
+            multiplicity: 0..1
+            type: PkCommon.DateTime
+        associations:
+          - end: recordType
+            designation: Record type
+            definition: Record type for the associated EquipmentStatus
+            multiplicity: 0..1
+            target: PkCommon.RecordType
+    enumerations:
+      - name: EquipmentStatusEnum
+        change: new
+        designation: Equipment status
+        definition: The operational state of an item of supplemental equipment.
+        tier: 1
+        apx: APX Part 11 code list (device states)
+        rationale: >-
+          APDS 4.1 defines RefillPointStatusEnum for refill points only. This list carries the same
+          idea to all equipment and reuses its literals (available, occupied, blocked, faulted,
+          unknown) where the meaning is the same.
+        values:
+          - name: available
+            designation: Available
+            definition: The equipment is operating and ready for use.
+          - name: occupied
+            designation: Occupied
+            definition: The equipment is operating and currently serving a vehicle or a transaction.
+          - name: blocked
+            designation: Blocked
+            definition: >-
+              The equipment is operating but cannot be reached or used because of a physical
+              obstruction, e.g. a vehicle.
+          - name: closed
+            designation: Closed
+            definition: >-
+              The equipment is not operating for a planned reason, such as closed hours or a
+              maintenance window.
+          - name: outOfService
+            designation: Out of service
+            definition: The equipment has been taken out of service by the operator.
+          - name: faulted
+            designation: Faulted
+            definition: The equipment reports a fault that needs attention.
+          - name: unknown
+            designation: Unknown
+            definition: >-
+              The state of the equipment cannot be determined, e.g. because communication with it
+              has been lost.
+          - name: other
+            designation: Other
+            definition: Some other state. Use 'otherEquipmentStatus' to specify it.
+      - name: EquipmentTypeEnum
+        change: extend
+        designation: Equipment type
+        definition: Types of equipment.
+        tier: 1
+        apx: APX Part 6 §6.4 device references
+        rationale: >-
+          Off-street sites could type their lane equipment with APDS names. APDS 4.1 already has
+          lprCamera, occupancySensor, paymentMachine and the door values; these four complete a
+          typical access lane.
+        values:
+          - name: barrier
+            designation: Barrier
+            definition: A lifting arm or similar barrier that opens and closes a vehicular access lane.
+          - name: gate
+            designation: Gate
+            definition: >-
+              A sliding, swinging or rolling gate or door that opens and closes a vehicular access
+              point.
+          - name: ticketDispenser
+            designation: Ticket dispenser
+            definition: >-
+              A machine at an entry lane that issues a ticket or other credential to start a
+              Session.
+          - name: intercom
+            designation: Intercom
+            definition: >-
+              A call point at a lane or machine that connects a customer with an attendant by voice
+              or video.
+  - name: VehicularAccess
+    location: D2Payload/Extension/Parking/Place/PlaceHierarchy/IdentifiedArea/VehicularAccess
+    status: existing
+    classes:
+      - name: VehicularAccess
+        change: extend
+        designation: Vehicular access
+        definition: A specialisation of an identifiedArea defining a VehicularAccess areas.
+        stereotype: D2Class
+        abstract: false
+        parent: Place.IdentifiedArea
+        level: B
+        tier: 2
+        apx: APX Part 13 §13.3a LaneCameras
+        rationale: >-
+          Lets a receiving system tell entering from exiting traffic from which camera read the
+          plate, without the camera vendor's own lane set-up.
+        attributes: []
+        associations:
+          - end: laneCamera
+            designation: Lane camera
+            definition: Lane camera for the associated VehicularAccess
+            multiplicity: 0..*
+            target: Place.LaneCamera
+      - name: LaneCamera
+        change: new
+        designation: Lane camera
+        definition: >-
+          A licence plate camera that observes a vehicular access, and the direction it faces
+          relative to the Place.
+        stereotype: D2Class
+        abstract: false
+        parent: null
+        level: B
+        tier: 2
+        apx: APX Part 13 §13.3a LaneCameras.cameras
+        rationale: >-
+          Ties the cameraID carried on Observation images to a lane and a facing, so the direction
+          of travel of an observed vehicle can be understood.
+        attributes:
+          - name: cameraId
+            designation: Camera id
+            definition: >-
+              Identification code of the camera, as given in Image.cameraID on its observations;
+              unique within the Place.
+            multiplicity: 1..1
+            type: PkCommon.String
+          - name: facing
+            designation: Facing
+            definition: Whether the camera looks into or out of the Place.
+            multiplicity: 1..1
+            type: Place.CameraFacingEnum
+        associations: []
+    enumerations:
+      - name: CameraFacingEnum
+        change: new
+        designation: Camera facing
+        definition: The direction a lane camera faces relative to the Place it serves.
+        tier: 2
+        apx: APX Part 13 §13.3a LaneCameras
+        rationale: >-
+          Facing is stated relative to the Place, not the lane mode, so it stays true on reversible
+          lanes.
+        values:
+          - name: inward
+            designation: Inward
+            definition: The camera looks into the Place, the way entering traffic travels.
+          - name: outward
+            designation: Outward
+            definition: The camera looks out of the Place, the way exiting traffic travels.
+  - name: Signage
+    location: D2Payload/Extension/Parking/Place/Signage
+    status: new
+    classes:
+      - name: Signage
+        change: new
+        designation: Signage
+        definition: >-
+          A record of a sign posted at a Place, its wording, where it stands and when it was in
+          force.
+        stereotype: D2VersionedIdentifiable
+        abstract: false
+        parent: null
+        level: B
+        tier: 2
+        apx: APX Part 19 §19.11 Signage
+        rationale: >-
+          Lets an operator show what a sign said on a given day, for customer information and as
+          evidence when a violation is appealed.
+        attributes:
+          - name: elementId
+            designation: Element id
+            definition: >-
+              Reference to the element within the Place hierarchy that the sign governs; the sign
+              applies to that element and the elements below it.
+            multiplicity: 1..1
+            type: PkCommon.VersionedReference (Place.HierarchyElementGeneral)
+          - name: signText
+            designation: Sign text
+            definition: The wording posted on the sign, verbatim, in each language shown.
+            multiplicity: 1..1
+            type: PkCommon.MultilingualString
+          - name: signType
+            designation: Sign type
+            definition: The kind of sign.
+            multiplicity: 0..1
+            type: Place.SignTypeEnum
+          - name: otherSignType
+            designation: Other sign type
+            definition: Any other kind of sign, if enumeration literal 'other' is used.
+            multiplicity: 0..1
+            type: PkCommon.MultilingualString
+          - name: photoUrl
+            designation: Photo URL
+            definition: >-
+              Specifies a Universal resource locator (URL) at which a photo of the sign as posted
+              can be found.
+            multiplicity: 0..1
+            type: PkCommon.Url
+          - name: endReason
+            designation: End reason
+            definition: Why the sign is no longer in use, when it has ended.
+            multiplicity: 0..1
+            type: PkCommon.RecordEndReasonEnum
+        associations:
+          - end: validity
+            designation: Validity
+            definition: >-
+              Validity for the associated Signage: when it applies and whether it is active, planned
+              or suspended.
+            multiplicity: 1..1
+            target: PkCommon.Validity
+          - end: location
+            designation: Location
+            definition: Location for the associated Signage
+            multiplicity: 0..1
+            target: PkCommon.PointLocation
+          - end: recordType
+            designation: Record type
+            definition: Record type for the associated Signage
+            multiplicity: 0..1
+            target: PkCommon.RecordType
+    enumerations:
+      - name: SignTypeEnum
+        change: new
+        designation: Sign type
+        definition: The kind of sign posted at a Place.
+        tier: 2
+        apx: APX Part 19 §19.11 Signage.signType
+        rationale: Lets receivers tell an entrance sign from a rates board or a tow-away notice.
+        values:
+          - name: entrance
+            designation: Entrance
+            definition: A sign at an entrance to the Place stating its terms of use.
+          - name: paymentMachine
+            designation: Payment machine
+            definition: A sign on or beside a payment machine.
+          - name: perSpace
+            designation: Per space
+            definition: A sign at an individual space or group of spaces.
+          - name: ratesBoard
+            designation: Rates board
+            definition: A sign showing the rates charged.
+          - name: towAway
+            designation: Tow away
+            definition: A sign warning that vehicles may be removed.
+          - name: other
+            designation: Other
+            definition: Some other kind of sign.
+  - name: EquipmentDetail
+    location: D2Payload/Extension/Parking/Place/PlaceHierarchy/IdentifiedArea/SupplementalFacility/SupplementalEquipment
+    status: existing
+    classes:
+      - name: SupplementalEquipment
+        change: extend
+        designation: Supplemental equipment
+        definition: One type of supplemental equipment, which is available on some site.
+        stereotype: D2Class
+        abstract: false
+        parent: Place.SupplementalFacility
+        level: B
+        tier: 2
+        apx: APX Part 26 §26.1 EquipmentDetail (apds-ext:apx:equipment-detail@1.0)
+        rationale: >-
+          Lets any party describe a Place's hardware from the data alone: what each item does on the
+          lane or in the building, where it stands, what it is and what runs on it, and how it relates
+          to the barriers and hosts around it. Today a system joining a Place learns this from the
+          parking vendor's portal and a spreadsheet. Network addresses are deliberately not proposed,
+          in the interest of security.
+        attributes:
+          - name: equipmentRole
+            designation: Equipment role
+            definition: >-
+              What the item does on the lane or in the Place, from a fixed list; it adds to
+              equipmentType and never contradicts it.
+            multiplicity: 0..1
+            type: Place.EquipmentRoleEnum
+          - name: manufacturer
+            designation: Manufacturer
+            definition: The maker of the item, as named on it.
+            multiplicity: 0..1
+            type: PkCommon.String
+          - name: model
+            designation: Model
+            definition: The maker's model designation of the item.
+            multiplicity: 0..1
+            type: PkCommon.String
+          - name: serialNumber
+            designation: Serial number
+            definition: The maker's serial number of the item.
+            multiplicity: 0..1
+            type: PkCommon.String
+          - name: macAddress
+            designation: MAC address
+            definition: >-
+              A hardware address of the item, one per network interface, as twelve lower-case
+              hexadecimal digits without separators; a hardware identity, useful when the serial
+              label is missing.
+            multiplicity: 0..*
+            type: PkCommon.String
+          - name: firmwareVersion
+            designation: Firmware version
+            definition: The firmware release running on the item.
+            multiplicity: 0..1
+            type: PkCommon.String
+          - name: softwareVersion
+            designation: Software version
+            definition: The application software release running on the item, where it runs one.
+            multiplicity: 0..1
+            type: PkCommon.String
+          - name: installationDate
+            designation: Installation date
+            definition: The date the item went into service.
+            multiplicity: 0..1
+            type: PkCommon.Date
+          - name: areaType
+            designation: Area type
+            definition: The kind of area of the Place the item stands in.
+            multiplicity: 0..1
+            type: Place.AreaTypeEnum
+          - name: levelName
+            designation: Level name
+            definition: The label of the level the item stands on, as it is signed.
+            multiplicity: 0..1
+            type: PkCommon.String
+        associations:
+          - end: servesAccess
+            designation: Serves access
+            definition: The vehicular access (lane) the item serves, where it serves exactly one.
+            multiplicity: 0..1
+            target: PkCommon.Reference (Place.VehicularAccess)
+          - end: builtInto
+            designation: Built into
+            definition: The item of equipment this item is built into, such as a camera inside a payment machine.
+            multiplicity: 0..1
+            target: PkCommon.Reference (Place.SupplementalEquipment)
+          - end: controls
+            designation: Controls
+            definition: The barrier, door or gate this item opens, such as the exit verifier that opens a gate.
+            multiplicity: 0..*
+            target: PkCommon.Reference (Place.SupplementalEquipment)
+          - end: serviceProvider
+            designation: Service provider
+            definition: The organisation that services the item.
+            multiplicity: 0..1
+            target: PkCommon.Reference (PkCommon.Organisation)
+      - name: Camera
+        change: new
+        designation: Camera
+        definition: >-
+          An item of supplemental equipment that is a camera, anywhere in a Place: on a lane, a ramp,
+          a level, in a lobby, a stairwell or an elevator, or inside another item such as a payment
+          machine.
+        stereotype: D2Class
+        abstract: false
+        parent: Place.SupplementalEquipment
+        level: B
+        tier: 2
+        apx: APX Part 26 §26.3 CameraDetail (apds-ext:apx:camera@1.0)
+        rationale: >-
+          A customer-service agent, an enforcement officer and a monitoring service each need to know
+          which camera shows what, and which one to look at first. The description carries no stream
+          address and no credential; how a party sees the picture is a matter for the interface.
+        attributes:
+          - name: mounting
+            designation: Mounting
+            definition: How the camera is mounted.
+            multiplicity: 0..1
+            type: Place.CameraMountingEnum
+          - name: view
+            designation: View
+            definition: What the camera looks at; one camera may cover more than one.
+            multiplicity: 1..*
+            type: Place.CameraViewEnum
+          - name: facing
+            designation: Facing
+            definition: Whether a camera on a lane, plaza or ramp looks into or out of the Place.
+            multiplicity: 0..1
+            type: Place.CameraFacingEnum
+          - name: primary
+            designation: Primary
+            definition: Whether this is the camera to show first for its lane or area.
+            multiplicity: 0..1
+            type: PkCommon.Boolean
+          - name: panTiltZoom
+            designation: Pan, tilt and zoom
+            definition: Whether the camera can be panned, tilted and zoomed.
+            multiplicity: 0..1
+            type: PkCommon.Boolean
+          - name: retentionDays
+            designation: Retention days
+            definition: How many days the camera's recordings are kept.
+            multiplicity: 0..1
+            type: PkCommon.NonNegativeInteger
+        associations:
+          - end: recorder
+            designation: Recorder
+            definition: The video recorder that keeps this camera's pictures.
+            multiplicity: 0..1
+            target: PkCommon.Reference (Place.SupplementalEquipment)
+    enumerations:
+      - name: EquipmentRoleEnum
+        change: new
+        designation: Equipment role
+        definition: >-
+          What an item of supplemental equipment does on a lane or in a Place. Offered as an
+          extensible code list: a fixed starting set, extended by publication, never by free text.
+        tier: 2
+        apx: APX Part 11 code list apx-equipment-roles (Part 26 §26.1)
+        rationale: >-
+          EquipmentTypeEnum was written for rest areas and general parking. Even with the lane values
+          proposed in Tier 1, a reader cannot tell the exit verifier from the ticket dispenser, the
+          access door from the overhead door, or the video gateway from the facility server. The role
+          says what the item does; the type stays what it is.
+        values:
+          - name: gate
+            designation: Gate
+            definition: A barrier arm across a lane.
+          - name: overheadDoor
+            designation: Overhead door
+            definition: A rolling or overhead door across a vehicle entrance.
+          - name: bollard
+            designation: Bollard
+            definition: A retractable bollard.
+          - name: trafficSpikes
+            designation: Traffic spikes
+            definition: One-way tyre spikes.
+          - name: accessDoor
+            designation: Access door
+            definition: A pedestrian door a parker authenticates at to enter, for example after hours.
+          - name: turnstile
+            designation: Turnstile
+            definition: A pedestrian turnstile.
+          - name: ticketDispenser
+            designation: Ticket dispenser
+            definition: An entry station that issues a ticket or token.
+          - name: exitVerifier
+            designation: Exit verifier
+            definition: An exit station that reads the ticket or credential and opens the gate.
+          - name: exitPayStation
+            designation: Exit pay station
+            definition: A pay-in-lane station at the exit.
+          - name: payOnFoot
+            designation: Pay on foot
+            definition: A central pay station away from the lane.
+          - name: cashierBooth
+            designation: Cashier booth
+            definition: A staffed booth.
+          - name: validationTerminal
+            designation: Validation terminal
+            definition: A merchant's validation device.
+          - name: paymentTerminal
+            designation: Payment terminal
+            definition: A standalone card or contactless payment terminal.
+          - name: cardReader
+            designation: Card reader
+            definition: An access or proximity card reader.
+          - name: tagReader
+            designation: Tag reader
+            definition: An RFID, transponder or automatic vehicle identification tag reader.
+          - name: barcodeReader
+            designation: Barcode reader
+            definition: A QR or barcode reader, for reservations and mobile passes.
+          - name: loopDetector
+            designation: Loop detector
+            definition: An in-ground vehicle detection loop.
+          - name: presenceSensor
+            designation: Presence sensor
+            definition: A vehicle sensor other than a loop, such as radar, ultrasonic or magnetic.
+          - name: camera
+            designation: Camera
+            definition: A camera; what it looks at is described on the Camera class.
+          - name: intercom
+            designation: Intercom
+            definition: A help button with two-way audio, and possibly video.
+          - name: analogDialer
+            designation: Analog dialer
+            definition: A help button on a telephone line.
+          - name: emergencyPhone
+            designation: Emergency phone
+            definition: A dedicated emergency call box.
+          - name: laneDisplay
+            designation: Lane display
+            definition: A message screen at the lane.
+          - name: laneSignal
+            designation: Lane signal
+            definition: An open or closed light, or a traffic light, at the lane.
+          - name: countSign
+            designation: Count sign
+            definition: A spaces-available sign.
+          - name: laneController
+            designation: Lane controller
+            definition: The computer or controller that runs a lane.
+          - name: facilityServer
+            designation: Facility server
+            definition: The on-site parking system server.
+          - name: videoRecorder
+            designation: Video recorder
+            definition: A digital or network video recorder.
+          - name: videoGateway
+            designation: Video gateway
+            definition: A gateway that serves camera pictures to other parties on the cameras' behalf.
+          - name: other
+            designation: Other
+            definition: Hardware nothing above fits.
+      - name: AreaTypeEnum
+        change: new
+        designation: Area type
+        definition: The kind of area of a Place something stands in, for equipment, cameras and help points.
+        tier: 2
+        apx: APX Part 11 code list apx-area-types (Part 26 §26.2)
+        rationale: >-
+          Cameras, doors and payment machines stand in ramps, stairwells, lobbies and elevators as
+          well as on lanes. The place hierarchy names the elements; this list names the kind of area
+          an item stands in, without requiring a hierarchy element for every lobby.
+        values:
+          - name: lane
+            designation: Lane
+            definition: An entry or exit lane.
+          - name: entryPlaza
+            designation: Entry plaza
+            definition: The approach to the entry lanes.
+          - name: exitPlaza
+            designation: Exit plaza
+            definition: The approach to the exit lanes.
+          - name: ramp
+            designation: Ramp
+            definition: A ramp between levels.
+          - name: parkingLevel
+            designation: Parking level
+            definition: A drive aisle or parking area on a level.
+          - name: roof
+            designation: Roof
+            definition: An open roof level.
+          - name: evChargingArea
+            designation: EV charging area
+            definition: The bays with electric vehicle charging.
+          - name: loadingDock
+            designation: Loading dock
+            definition: A loading or service area.
+          - name: perimeter
+            designation: Perimeter
+            definition: Outside the structure, at the fence line or the street.
+          - name: elevator
+            designation: Elevator
+            definition: The inside of an elevator car.
+          - name: elevatorLobby
+            designation: Elevator lobby
+            definition: An elevator landing.
+          - name: lobby
+            designation: Lobby
+            definition: A main or pedestrian lobby.
+          - name: stairwell
+            designation: Stairwell
+            definition: A stairwell.
+          - name: pedestrianEntrance
+            designation: Pedestrian entrance
+            definition: A street door or access door for people.
+          - name: paymentArea
+            designation: Payment area
+            definition: Where the pay-on-foot machines stand.
+          - name: cashierBooth
+            designation: Cashier booth
+            definition: A staffed booth.
+          - name: office
+            designation: Office
+            definition: An office or attendant room.
+          - name: equipmentRoom
+            designation: Equipment room
+            definition: A server, electrical or equipment room.
+          - name: other
+            designation: Other
+            definition: An area nothing above fits.
+      - name: CameraMountingEnum
+        change: new
+        designation: Camera mounting
+        definition: How a camera is mounted.
+        tier: 2
+        apx: APX Part 26 §26.3 CameraDetail.mounting
+        rationale: Tells a viewer what to expect from the picture, and a technician where to find the unit.
+        values:
+          - name: builtIn
+            designation: Built in
+            definition: Inside another item of equipment, named by builtInto.
+          - name: overhead
+            designation: Overhead
+            definition: Above the vehicle or the lane, looking down.
+          - name: pole
+            designation: Pole
+            definition: On a pole or an island.
+          - name: wall
+            designation: Wall
+            definition: On a wall or a column.
+          - name: ceiling
+            designation: Ceiling
+            definition: On a ceiling.
+          - name: other
+            designation: Other
+            definition: Mounted in another way.
+      - name: CameraViewEnum
+        change: new
+        designation: Camera view
+        definition: What a camera looks at.
+        tier: 2
+        apx: APX Part 26 §26.3 CameraDetail.view
+        rationale: >-
+          Lets a party pick the right picture for the task: the plate reader for a read dispute, the
+          driver camera for a payment dispute, the overhead camera for a card stuck in a machine.
+        values:
+          - name: plate
+            designation: Plate
+            definition: Reads licence plates.
+          - name: vehicle
+            designation: Vehicle
+            definition: An overview of the vehicle in the lane.
+          - name: driver
+            designation: Driver
+            definition: The driver at a payment machine or lane device.
+          - name: equipmentInteraction
+            designation: Equipment interaction
+            definition: Hands, ticket and card at the machine.
+          - name: pedestrians
+            designation: Pedestrians
+            definition: People at a door, in a lobby or on a stairwell.
+          - name: areaOverview
+            designation: Area overview
+            definition: General surveillance of a ramp, a level or the perimeter.
+          - name: other
+            designation: Other
+            definition: Another view.
+  - name: CommsPoint
+    location: D2Payload/Extension/Parking/Place/CommsPoint
+    status: new
+    classes:
+      - name: CommsPoint
+        change: new
+        designation: Comms point
+        definition: >-
+          Any way a parker reaches help from a lane or a Place: an intercom, an analog dialer, a
+          posted telephone number, a kiosk, a QR code or an app.
+        stereotype: D2VersionedIdentifiable
+        abstract: false
+        parent: null
+        level: B
+        tier: 3
+        apx: APX Part 26 §26.4 CommsPoint
+        rationale: >-
+          When a parker calls for help, the answering party must know which lane or Place is calling.
+          Today that mapping lives only in the call platform. Carrying the number that is called, the
+          number the device calls out as, or the call system's identifier for the point, beside the
+          lane and the barrier it serves, lets any party resolve a call from the Place data. Offered
+          for discussion because it sits between parking data and telephony; no SIP data is proposed.
+        attributes:
+          - name: commsPointType
+            designation: Comms point type
+            definition: The kind of help point.
+            multiplicity: 1..1
+            type: Place.CommsPointTypeEnum
+          - name: phoneNumber
+            designation: Phone number
+            definition: >-
+              The number that is called when help is requested, in international format: dialled by the
+              parker for a posted number, or by the intercom or dialer itself when its button is pushed.
+            multiplicity: 0..1
+            type: PkCommon.String
+          - name: callerId
+            designation: Caller id
+            definition: The number the device calls out as, in international format.
+            multiplicity: 0..1
+            type: PkCommon.String
+          - name: commsDeviceId
+            designation: Comms device id
+            definition: >-
+              The identifier the call systems use for this point when they identify it by neither
+              caller id nor dialled number.
+            multiplicity: 0..1
+            type: PkCommon.String
+          - name: language
+            designation: Language
+            definition: The languages in which the point is answered.
+            multiplicity: 0..*
+            type: PkCommon.LanguageCode
+        associations:
+          - end: placeId
+            designation: Place
+            definition: The Place the point serves.
+            multiplicity: 1..1
+            target: PkCommon.Reference (Place.Place)
+          - end: servesAccess
+            designation: Serves access
+            definition: The vehicular access (lane) the point serves, where it serves exactly one.
+            multiplicity: 0..1
+            target: PkCommon.Reference (Place.VehicularAccess)
+          - end: equipmentId
+            designation: Equipment
+            definition: The item of supplemental equipment the point is, where it is inventoried hardware.
+            multiplicity: 0..1
+            target: PkCommon.Reference (Place.SupplementalEquipment)
+          - end: opensBarrier
+            designation: Opens barrier
+            definition: The gate or door an agent opens for a parker at this point.
+            multiplicity: 0..1
+            target: PkCommon.Reference (Place.SupplementalEquipment)
+          - end: coverage
+            designation: Coverage
+            definition: When the point is answered.
+            multiplicity: 0..*
+            target: PkCommon.Period
+          - end: recordType
+            designation: Record type
+            definition: Record type for the associated CommsPoint
+            multiplicity: 0..1
+            target: PkCommon.RecordType
+    enumerations:
+      - name: CommsPointTypeEnum
+        change: new
+        designation: Comms point type
+        definition: The kinds of help point.
+        tier: 3
+        apx: APX Part 11 code list apx-comms-point-types (Part 26 §26.4)
+        rationale: A help point is not always an intercom; the kind tells the answering party what the parker is using.
+        values:
+          - name: intercom
+            designation: Intercom
+            definition: A help button with two-way audio, and possibly video.
+          - name: analogDialer
+            designation: Analog dialer
+            definition: A help button on a telephone line.
+          - name: postedNumber
+            designation: Posted number
+            definition: A telephone number posted on a sign, dialled from the parker's own phone.
+          - name: kiosk
+            designation: Kiosk
+            definition: A self-service kiosk with a help function.
+          - name: qrCode
+            designation: QR code
+            definition: A code posted at the point that opens a help channel.
+          - name: app
+            designation: App
+            definition: A help function in a mobile application, tied to the Place.
+          - name: other
+            designation: Other
+            definition: Another kind of help point.

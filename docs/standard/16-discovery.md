@@ -21,7 +21,8 @@ locations. This is how a client with nothing but a hostname gets started.
   offered, and MUST ignore classes it does not recognise.
 - **Features.** `features` lists the optional features the implementation
   offers, as definedValues of the `apx-features` registry (Part 11; Part 6
-  §6.5: `negotiatedRates`, `negotiatedAmounts`, `ticketMatching`) or vendor features, named
+  §6.5: `negotiatedRates`, `negotiatedAmounts`, `ticketMatching`; Part 26
+  §26.3: `cameraViews`, `cameraPlayback`) or vendor features, named
   `<vendor-ns>-<feature>` like vendor classes (Part 3 §3.1). An offered
   feature MUST be listed; an unlisted one is not offered.
 - **Registries and edition.** `registries` is keyed by the registry `name`
@@ -62,6 +63,17 @@ locations. This is how a client with nothing but a hostname gets started.
   credential may subscribe to. `commandTypes` is the permission list and
   `features` the capability list; a feature is listed for any client
   holding a scope of its class, so a read-only client can see it.
+- **Surfaces.** `uiSurfaces[]` lists the Part 25 surfaces this client may
+  launch, each with its display and launch modes, the actions it reports,
+  and the places where it is offered; it appears for a client holding
+  `apx.ui:launch` or `apx.ui:read`, under the soundness rule.
+- **What each place can do.** `placeCapabilities[]` says, per granted
+  place, which `commandTypes`, `uiSurfaces` and `features` apply there,
+  for an implementation whose sites differ (a gated garage and a
+  gateless lot under one credential). Each entry is a subset of the
+  document's own lists; a place that is not listed has the document's
+  lists in full. A console reads it before a call, so an agent is never
+  offered a vend at a lot with no gate.
 - **Vendor extensions.** Vendor endpoints (`/apx/x/<vendor-ns>/…`), topics
   (`<vendor-ns>.…`), and conformance classes (Part 3 §3.1, §3.3) appear in
   the document under the same soundness rule as APX ones.

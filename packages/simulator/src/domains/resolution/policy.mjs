@@ -35,11 +35,17 @@ export const DEFAULT_POLICY = {
     paymentDeclined: [LINK, 'vendGate'],
     validationMissing: ['applyValidation', 'vendGate'],
     rateDispute: ['pushRate', 'holdGateOpen', LINK],
-    lostTicket: [LINK],
+    lostTicket: [LINK, 'lostTicket'],
     reservationMismatch: [PLATE, LINK_RIGHT, 'vendGate'],
     plateUnresolved: [PLATE],
     equipmentFault: ['vendGate', 'restartDevice'],
-    unknown: [],
+    authorizedVisitor: ['applyValidation', 'vendGate'],
+    credentialDisabled: ['vendGate', LINK],
+    credentialForgotten: ['vendGate'],
+    paidCannotExit: ['vendGate'],
+    generalInquiry: [],
+    noResponse: [],
+    unknown: ['vendGate'],
   },
   rules: [],
 };
@@ -55,6 +61,7 @@ const DISPLAY = {
   pushRate: 'Push corrected rate table',
   restartDevice: 'Restart device',
   resetPassback: 'Reset anti-passback state',
+  lostTicket: 'Issue lost ticket',
 };
 
 const RECOMMEND_REASON = {
@@ -68,6 +75,7 @@ const RECOMMEND_REASON = {
   reservationMismatch: 'A confirmed reservation exists for this visit; linking it settles the session.',
   plateUnresolved: 'The entry read is below the association threshold; review the candidates and confirm with the customer.',
   equipmentFault: 'Operator policy grants exit on equipment fault rather than holding the lane.',
+  authorizedVisitor: 'The visitor is covered by an arrangement at this place; apply it rather than charge the lane rate.',
 };
 
 /** The operator policy in force: world.resolutionPolicy over the defaults (objects merge one level deep). */
@@ -116,8 +124,19 @@ function decide(action, f, cfg) {
       return { target, ...allow() };
     }
     case 'vendGate': {
+      if (!f.lane && f.door) {
+        // Part 26 §26.8: the lobby door opens like a gate; a refused credential puts a supervisor behind it.
+        const target = refOf(f.door.id, 'SupplementalEquipment');
+        const display = `Open ${f.door.name ?? 'the door'}`;
+        if (f.accessDenied && f.credential) {
+          return { target, display, ...gate(cfg.balanceHold.approvalRole, reason(f.accessReason ?? 'accessDenied', `${f.accessReason === 'permitExpired' ? 'Permit expired' : 'Access was refused at the reader'}; after-hours pedestrian access needs a ${cfg.balanceHold.approvalRole}.`, 'after-hours-door-supervisor')) };
+        }
+        if (f.guest || !f.credential || f.sessionPaid) return { target, display, ...allow() };
+        return { target, display, ...gate(cfg.balanceHold.approvalRole, reason('doorRequiresApproval', `Opening ${f.door.name ?? 'the door'} for a credential the reader did not accept needs a ${cfg.balanceHold.approvalRole}.`, 'after-hours-door-supervisor')) };
+      }
       if (!f.lane) return null;
       const target = laneRef(f);
+      if (f.guest) return { target, ...allow(), display: 'Vend gate (arrangement on file)' };
       if (f.passbackViolation) return { target, ...deny(reason('passbackUncorrected', 'A blind vend would leave the credential in violation and strand it again tomorrow.', 'correct-state-before-vend')) };
       if (f.faults.length) return { target, ...allow(), display: 'Vend gate (equipment fault)' };
       if (balanceHeld) return { target, ...gate(cfg.balanceHold.approvalRole, reason('balanceHoldVendGated', `Vending for an account on balance hold needs a ${cfg.balanceHold.approvalRole}.`, cfg.balanceHold.policy)) };
@@ -138,7 +157,12 @@ function decide(action, f, cfg) {
       if (cfg.eventMode) return { target: laneRef(f), ...allow() };
       return { target: laneRef(f), ...deny(reason('holdOpenRestricted', 'Hold-open is reserved for supervised event-egress mode.', 'hold-open-event-mode-only')) };
     case 'applyValidation':
+      if (f.guest && f.lane) return { target: laneRef(f), ...allow(), display: `Apply ${f.guest.kind === 'hotelRoom' ? 'hotel' : 'arrangement'} validation` };
       if (!f.lane || !f.ticketNumber || !f.providers) return null;
+      return { target: laneRef(f), ...allow() };
+    case 'lostTicket':
+      // Offered beside the payment link: the fee is the operator's fallback when no entry can be found.
+      if (!f.lane) return null;
       return { target: laneRef(f), ...allow() };
     case 'pushRate':
       if (!f.lane) return null;
@@ -189,16 +213,23 @@ function applyRule(decision, rule, action, f) {
   return out;
 }
 
-function toAllowedAction(action, d) {
+/**
+ * The agent-facing decision. `surface` (Part 25 §25.5) says the action is
+ * done in the vendor's own screen: the host launches it on the target and
+ * the implementation reports what was done as the native resource or a
+ * UiActionRecord carrying the launch's correlation id.
+ */
+function toAllowedAction(action, d, surface = null) {
   const control = COMMAND_TYPES.has(action);
+  const display = d.display ?? DISPLAY[action] ?? action;
   return {
     action,
-    display: d.display ?? DISPLAY[action] ?? action,
+    display: surface ? `${display} (vendor console)` : display,
     target: d.target,
     allowed: d.allowed,
     ...(d.allowed === false ? {} : { requiresApproval: Boolean(d.requiresApproval) }),
     ...(d.requiresApproval && d.approvalRole ? { approvalRole: d.approvalRole } : {}),
-    execution: control ? { type: 'control', command: action } : { type: 'domain', operationId: action },
+    execution: surface ? { type: 'ui', surface: surface.surface, ...(d.target ? { subject: d.target } : {}) } : control ? { type: 'control', command: action } : { type: 'domain', operationId: action },
     ...(d.reason && (d.allowed === false || d.requiresApproval) ? { reason: d.reason } : {}),
   };
 }
@@ -209,7 +240,7 @@ function toAllowedAction(action, d) {
  * (`{ <action>: { allowed, requiresApproval: role, reason }, _default }`):
  * anything the context did not offer is not allowed.
  */
-export function evaluate(f, cfg, overrides = []) {
+export function evaluate(f, cfg, overrides = [], uiFor = () => null) {
   const offered = [...(cfg.offers[f.issue] ?? [])];
   const rules = [...(cfg.rules ?? []), ...overrides].filter((r) => (!r.issue || r.issue === f.issue) && (r.action ?? r.commandType));
   for (const r of rules) if (!offered.includes(r.action ?? r.commandType)) offered.push(r.action ?? r.commandType);
@@ -217,7 +248,7 @@ export function evaluate(f, cfg, overrides = []) {
   for (const action of offered) {
     let d = decide(action, f, cfg);
     for (const r of rules.filter((x) => (x.action ?? x.commandType) === action)) d = applyRule(d, r, action, f);
-    if (d && d.target) actions.push(toAllowedAction(action, d));
+    if (d && d.target) actions.push(toAllowedAction(action, d, uiFor(action)));
   }
   const policy = { _default: { allowed: false } };
   for (const a of actions) {

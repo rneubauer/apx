@@ -18,7 +18,9 @@ const FAULT_STATES = new Set(['fault', 'outOfService', 'inoperative', 'offline']
 const DEAD_COMMAND = new Set(['failed', 'rejected', 'cancelled', 'expired']);
 const OVERRIDE_TYPES = new Set(['courtesyExit', 'vendGate', 'holdGateOpen', 'resetPassback', 'forceIn', 'forceOut']);
 
-export const IDENTIFIERS = ['lane', 'device', 'place', 'session', 'holder', 'credential', 'plate', 'ticketNumber', 'reservationCode'];
+export const IDENTIFIERS = ['lane', 'device', 'place', 'session', 'holder', 'credential', 'plate', 'ticketNumber', 'reservationCode', 'commsPoint', 'callerId', 'dialedNumber', 'commsDeviceId', 'guestReference'];
+
+const GUEST_KINDS = { hotelRoom: 'Hotel guest, room', company: 'Company visitor', tenant: 'Tenant employee', event: 'Event guest', other: 'Guest' };
 
 const DENIALS = {
   'account past due': { reasonCode: 'outstandingBalance', reasonDisplay: 'Monthly account has an outstanding balance.', issue: 'accountBalanceDenied' },
@@ -46,7 +48,16 @@ export function createComposer(sim) {
     coll('sessions').first((s) => s._ticketNumber === ticket && (!placeId || !s._place || sim.hierarchy.within(s._place, placeId) || sim.hierarchy.within(placeId, s._place)));
   const openSessionByPlate = (plate, placeId) =>
     coll('sessions').first((s) => !s.actualEnd && norm(s._plate) === norm(plate) && (!placeId || !s._place || sim.hierarchy.within(s._place, placeId)));
-  const reservationByCode = (code) => coll('assignedRights').first((r) => r._reservationCode === code) ?? null;
+  /** By code, and by the seller that issued it when the caller names one (Part 14 §14.1a: two sellers may share a code). */
+  const reservationByCode = (code, issuer) => {
+    const all = coll('assignedRights').find((r) => r._reservationCode === code);
+    if (issuer) return all.find((r) => r._issuer === issuer) ?? null;
+    return all[0] ?? null;
+  };
+
+  /** The place's guest arrangements (world.guestArrangements[]): a hotel room, a company, a tenant — a right with no plate. */
+  const guestArrangement = (ref, placeId) =>
+    (sim.world.guestArrangements ?? []).find((a) => a.kind === ref.kind && String(a.value) === String(ref.value) && (!placeId || !a.placeId || a.placeId === placeId || sim.hierarchy.within(placeId, a.placeId))) ?? null;
 
   const refNode = (ref, what, kinds) => {
     const n = node(ref.id);
@@ -56,8 +67,21 @@ export function createComposer(sim) {
 
   /** §17.1: resolve every relationship we can; never fail because an identifier is absent. */
   const resolveSubjects = (input) => {
-    const s = { lane: null, device: null, place: null, session: null, ticketNumber: input.ticketNumber ?? null, credential: null, holder: null, account: null, reservation: null, plate: input.plate ?? null };
+    const s = { lane: null, device: null, place: null, session: null, ticketNumber: input.ticketNumber ?? null, credential: null, holder: null, account: null, reservation: null, plate: input.plate ?? null, commsPoint: null, commsPointType: null, guest: null };
     const unresolved = [];
+    // Part 26 §26.4: the call says where it came from; a server holding no such comms point refuses (422), never guesses.
+    if (input.commsPoint || input.callerId || input.dialedNumber || input.commsDeviceId) {
+      const q = input.commsPoint ? { id: input.commsPoint.id } : input.callerId ? { callerId: input.callerId } : input.dialedNumber ? { dialedNumber: input.dialedNumber } : { commsDeviceId: input.commsDeviceId };
+      const cp = sim.siteconfig?.commsPointBy?.(q) ?? null;
+      const [k, v] = Object.entries(q)[0];
+      if (!cp) fail('comms-point-unknown', `No comms point with ${k === 'id' ? 'id' : k} ${v} at any place in the token's grant.`);
+      s.commsPoint = cp.id;
+      s.commsPointType = cp.type;
+      if (cp.lane?.id) s.lane = cp.lane.id;
+      else if (cp.serves?.id) s.device = cp.serves.id;
+      else if (cp.equipment?.id) s.device = cp.equipment.id;
+      if (cp.place?.id) s.place = cp.place.id;
+    }
     if (input.device) {
       const d = refNode(input.device, 'device', ['device']);
       s.device = d.id;
@@ -95,9 +119,18 @@ export function createComposer(sim) {
       if (!sess && !lane) unresolved.push(`plate ${input.plate}`);
     }
     if (input.reservationCode) {
-      const r = reservationByCode(input.reservationCode);
+      const r = reservationByCode(input.reservationCode, input.reservationIssuer);
       if (r) s.reservation = r.id;
-      else unresolved.push(`reservationCode ${input.reservationCode}`);
+      else unresolved.push(`reservationCode ${input.reservationCode}${input.reservationIssuer ? ` (issuer ${input.reservationIssuer})` : ''}`);
+    }
+    if (input.guestReference) {
+      const g = input.guestReference;
+      const a = guestArrangement(g, s.place ?? (s.lane ? placeIdOf(s.lane) : null));
+      if (a) {
+        s.guest = { kind: g.kind, value: String(g.value), display: a.display ?? `${GUEST_KINDS[g.kind] ?? 'Guest'} ${g.value}`, validationProvider: a.validationProvider ?? null };
+        if (a.assignedRight) s.reservation ??= a.assignedRight;
+        if (a.placeId) s.place ??= a.placeId;
+      } else unresolved.push(`guestReference ${g.kind} ${g.value}`);
     }
     // what the lane itself knows right now
     const lane = s.lane ? coll('lanes').get(s.lane) : null;
@@ -119,7 +152,7 @@ export function createComposer(sim) {
     }
     s.account ??= accountOfHolder(s.holder)?.id ?? null;
     s.place = s.place ?? anchor() ?? (sess?._place ?? null) ?? credentialRecord(s.credential)?._place ?? coll('assignedRights').get(s.reservation)?._place ?? null;
-    const subjectFound = s.lane || s.device || s.session || s.credential || s.holder || s.reservation;
+    const subjectFound = s.lane || s.device || s.session || s.credential || s.holder || s.reservation || s.commsPoint || s.guest;
     if (unresolved.length && !subjectFound) {
       const where = s.place ? ` at ${node(s.place)?.name ?? s.place}` : '';
       fail('target-not-found', `No session, ticket, credential, or reservation${where} matches ${unresolved.join(', ')}.`);
@@ -199,7 +232,10 @@ export function createComposer(sim) {
     const reservation = s.reservation ? coll('assignedRights').get(s.reservation) : null;
     const laneHoldsSession = lane?.current?.session && session && lane.current.session.id === session.id;
     const due = laneHoldsSession && lane.current.amountDue ? lane.current.amountDue : session?._amountDue ?? null;
-    const devices = lane ? laneDevices(lane.id) : [];
+    // Part 26 §26.8: a barrier with no lane of its own (the lobby door) is the subject when a comms point serves it.
+    const doorNode = !lane && s.device && sim.siteconfig?.isBarrier?.(s.device) ? sim.hierarchy.get(s.device) : null;
+    const door = doorNode ? { id: doorNode.id, name: doorNode.name, role: sim.siteconfig.roleOf(doorNode.id), device: sim.control.devices().get(doorNode.id) ?? null } : null;
+    const devices = lane ? laneDevices(lane.id) : door?.device ? [door.device] : [];
     const faults = devices.filter((d) => FAULT_STATES.has(d.deviceState) && deviceInfo(d).equipmentType !== 'intercom').map((d) => ({ id: d.id, ...deviceInfo(d), deviceState: d.deviceState }));
     const payments = sim.accounts?.paymentsFor ? sim.accounts.paymentsFor({ ticketNumber: s.ticketNumber, account: s.account, session: s.session }) : [];
     const sortedPayments = [...payments].sort((a, b) => (a.dateCollected < b.dateCollected ? 1 : -1));
@@ -244,6 +280,11 @@ export function createComposer(sim) {
       rateMismatch: Boolean(session?._rateTable && scheduled && session._rateTable !== scheduled),
       plateConfidence: session?._plateConfidence ?? s.laneRead?.confidence ?? null,
       laneHoldsSession,
+      door,
+      guest: s.guest,
+      accessDenied: s.accessDecision?.status === 'denied',
+      accessReason: s.accessDecision?.reasonCode ?? null,
+      commsPointType: s.commsPointType,
     };
   };
 
@@ -252,7 +293,11 @@ export function createComposer(sim) {
   /** Classify the issue from the facts (apx-issue-types, first match wins). */
   const classify = (f, s, cfg) => {
     if (f.passbackViolation) return 'passbackViolation';
+    // An arrangement on file (a hotel guest, a tenant) outranks what the lane's reader last said about someone else.
+    if (s.guest) return 'authorizedVisitor';
     if (s.accessDecision?._issue && ISSUES.includes(s.accessDecision._issue)) return s.accessDecision._issue;
+    if (f.door && !s.credential) return 'authorizedVisitor';
+    if (s.commsPointType === 'postedNumber' && !s.lane && !f.session && !s.credential) return 'generalInquiry';
     if (f.account && f.balance > cfg.balanceHold.threshold && s.accessDecision?.status === 'denied') return 'accountBalanceDenied';
     if (f.reservation && !f.reservationLinked) return 'reservationMismatch';
     if (f.faults.length) return 'equipmentFault';
@@ -261,6 +306,7 @@ export function createComposer(sim) {
     if (f.rateMismatch) return 'rateDispute';
     if (f.laneHoldsSession && f.amountDue > 0 && f.noValidations && f.providers) return 'validationMissing';
     if (s.plate && !s.lane && f.session) return 'lostTicket';
+    if (f.lane && !f.session && !s.credential && !f.lane.current && (s.laneRead?.plate || s.plate)) return 'lostTicket';
     if (f.session && f.plateConfidence !== null && f.plateConfidence < cfg.plateThreshold) return 'plateUnresolved';
     return 'unknown';
   };
@@ -283,14 +329,24 @@ export function createComposer(sim) {
       case 'rateDispute':
         return 'Amount due does not match the expected rate calculation';
       case 'lostTicket':
-        return 'Customer cannot present the entry ticket; session found by plate';
+        return f.session ? 'Customer cannot present the entry ticket; session found by plate' : 'Vehicle at the lane without a ticket; no entry found by plate';
       case 'reservationMismatch':
         return `Prepaid reservation exists but is not linked to the current session (${f.plateRead ? 'misread plate' : 'code not scanned'})`;
       case 'plateUnresolved':
         return `Session carries a low-confidence plate association (${f.plateConfidence})`;
       case 'equipmentFault':
         return `${laneName} ${f.faults[0]?.name ?? 'device'} is reporting a fault`;
+      case 'authorizedVisitor':
+        return s.guest ? s.guest.display : f.door ? `After-hours pedestrian access at ${f.door.name ?? 'the door'}` : 'Authorized visitor without a ticket or plate';
+      case 'generalInquiry':
+        return 'Call to the posted number; lane unknown';
+      case 'credentialDisabled':
+        return s.accessDecision?.reasonDisplay ?? 'Credential disabled';
+      case 'credentialForgotten':
+        return 'Monthly parker without their credential';
       default:
+        if (!s.lane && f.door) return `Interaction at ${f.door.name ?? 'the door'}`;
+        if (!s.lane && s.commsPoint) return 'Intercom call, no event yet';
         return s.lane ? `Unclassified interaction at ${laneName}` : 'The issue could not be classified from available signals.';
     }
   };
@@ -344,6 +400,9 @@ export function createComposer(sim) {
     reservationState: linked ? 'checkedIn' : r._reservationState ?? 'confirmed',
     ...(r.plannedStart ? { plannedStart: r.plannedStart } : {}),
     ...(r.plannedEnd ? { plannedEnd: r.plannedEnd } : {}),
+    // Part 14 §14.1a: who sold it and what was paid, so a prepaid visitor is not charged twice.
+    ...(r._issuer ? { issuer: r._issuer } : {}),
+    ...(r._amountPaid ? { amountPaid: r._amountPaid } : {}),
   });
 
   const supportHistory = (rec, s, cfg, nowMs) => {

@@ -24,6 +24,7 @@ scenarios stay here.
 | F-RES-11 | resolution | medium | Executing a command type absent from the context's `allowedActions` is unspecified | fixed — §17.3(3): not offered = 403 `action-not-allowed`; no context = Part 9 only; registry wording widening asked of integrator |
 | F-RES-12 | resolution | medium | Support interactions cannot be updated: topic says "recorded or updated", `version` exists, no PUT/PATCH | fixed — new `GET` and `PUT /v1/support/interactions/{id}` (If-Match, 409); topic publishes on update |
 | F-RES-13 | resolution | low | `OverrideRecord` has no `agent` or `reason`; the console must dereference every Command | fixed — optional `agent`, `agentType`, `reason` on `OverrideRecord` |
+| F-RES-14 | resolution | low | `POST /v1/resolution/contexts` declares no 422 for `comms-point-unknown` (Part 17 §17.1 as amended by Part 26) | closed 2026-10-18 — the operation now declares 422 `comms-point-unknown`; RES-29 carries no gap marker |
 
 ---
 
@@ -273,3 +274,14 @@ on `OverrideRecord`, copied from the summarized Command, mirroring what
 - **`command types: 9/15`** in the coverage block counts against the
   whole registry, not the module's four Part 17 entries (`resetPassback`,
   `forceIn`, `forceOut`, `courtesyExit`), all of which appear. Cosmetic.
+
+## F-RES-14 — No 422 declared for an unknown comms point
+
+**Where it showed up.** RES-29: a resolve request naming a `commsDeviceId`
+the server does not hold. Part 12 registers `comms-point-unknown` at 422
+and Part 17 §17.1 (as amended by Part 26) says that is the answer, but
+`POST /v1/resolution/contexts` declares 201/400/401/403/404/429 only.
+
+**Fix.** Closed 2026-10-18: `POST /v1/resolution/contexts` now declares 422
+with `comms-point-unknown` named in its description; the gap marker on
+RES-29 was removed.

@@ -1,6 +1,6 @@
 {
   "id": "1c2d3e4f-5a6b-4c7d-8e9f-0a1b2c3d4e5f",
-  "version": 5,
+  "version": 6,
   "name": "apx-alert-types",
   "creator": { "id": "a1000000-0000-4000-8000-000000000001", "className": "Organisation" },
   "locator": "https://apx-standard.org/registries/apx-alert-types.json",
@@ -22,6 +22,12 @@
     { "definedValue": "evBayBlocked", "entryDescription": "An EV charging bay is obstructed by something other than a parked vehicle (cones, debris, a straddling vehicle), derived from the Part 23 §23.3 bay-presence fusion; the camera Observation is the evidence.", "entryIndex": 14 },
     { "definedValue": "watchListArrival", "entryDescription": "A credential on a watch plate list (Part 24) was read at a place where the list has alertOnArrival; relatedEntity is the PlateListEntry, the read is the evidence.", "entryIndex": 15 },
     { "definedValue": "scofflawArrival", "entryDescription": "A credential on a scofflaw plate list (Part 24) was read at a place where the list has alertOnArrival; relatedEntity is the PlateListEntry.", "entryIndex": 16 },
-    { "definedValue": "refusedServiceArrival", "entryDescription": "A credential on a plate list with refuseService arrived at a lane and service was refused (the refused-service sign shown, the gate not vended); relatedEntity is the PlateListEntry, the displayMessage command's result.display is the proof of display.", "entryIndex": 17 }
+    { "definedValue": "refusedServiceArrival", "entryDescription": "A credential on a plate list with refuseService arrived at a lane and service was refused (the refused-service sign shown, the gate not vended); relatedEntity is the PlateListEntry, the displayMessage command's result.display is the proof of display.", "entryIndex": 17 },
+    { "definedValue": "consumableLow", "entryDescription": "A device reports a supply at low or empty (tickets, receipt paper, cash, coins; DeviceStatus.consumables, Part 6 §6.4a); relatedEntity is the SupplementalEquipment.", "entryIndex": 18 },
+    { "definedValue": "receiptRequested", "entryDescription": "A customer asked for a receipt that could not be sent during the interaction; relatedEntity is the PaymentRecord, supportInteraction the call.", "entryIndex": 19 },
+    { "definedValue": "refundRequested", "entryDescription": "A customer asked for a refund that needs review or approval; relatedEntity is the PaymentRecord, supportInteraction the call.", "entryIndex": 20 },
+    { "definedValue": "citationInquiry", "entryDescription": "A customer asked about a citation or notice the agent could not resolve; relatedEntity is the Violation when known.", "entryIndex": 21 },
+    { "definedValue": "damageReported", "entryDescription": "A vehicle was reported damaged, broken into or towed at the place; relatedEntity is the Session when known, supportInteraction the call.", "entryIndex": 22 },
+    { "definedValue": "customerCallbackRequested", "entryDescription": "A customer asked to be called back by the site or operator; supportInteraction is the call, which holds the contact details under its own scope.", "entryIndex": 23 }
   ]
 }

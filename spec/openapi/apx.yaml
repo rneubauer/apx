@@ -2,7 +2,7 @@ openapi: 3.1.0
 
 info:
   title: APX — APDS Parking eXtensions
-  version: 0.14.0
+  version: 0.15.0
   summary: An open companion standard to APDS 4.1
   description: |-
     **APX (APDS Parking eXtensions)** is an additive companion standard to the
@@ -117,6 +117,23 @@ tags:
       arrival, refuse service), kept by a city or an operator and synced to
       the systems that screen arrivals through the change feed. Optional
       class apx-plate-lists. See written standard Part 24.
+  - name: UI launch
+    description: |-
+      Opening a vendor's own screen for staff (optional class
+      apx-ui-launch; Part 25): single-use launch URLs or signed launch
+      tokens with automatic login, a launch record, and the closed loop
+      that brings whatever the agent did in the screen back into the APX
+      record as the module's native resource or a UiActionRecord. Defined
+      once; every module adds screens through the apx-ui-surfaces registry.
+  - name: Site configuration
+    description: |-
+      Everything a location's setup needs so that APX alone describes it
+      (optional class apx-site-config; Part 26): what each piece of
+      hardware is and does (roles, make, model, versions, serial, MAC),
+      where it is (areas and levels), which cameras see what and how they
+      are viewed without sharing a password, how a parker reaches help
+      (comms points), who to escalate to, and the ids other systems use
+      for the same things.
   - name: Charging
     description: |-
       EV charging, the parking-side view (optional class apx-charging;
@@ -138,6 +155,8 @@ paths:
     $ref: "../vendor/apds/4.1/apds-api-4.1.yaml#/paths/~1places~1{id}"
   /observations:
     $ref: "../vendor/apds/4.1/apds-api-4.1.yaml#/paths/~1observations"
+  /observations/{id}:
+    $ref: "../vendor/apds/4.1/apds-api-4.1.yaml#/paths/~1observations~1{id}"
   /contacts:
     $ref: "../vendor/apds/4.1/apds-api-4.1.yaml#/paths/~1contacts"
   /contacts/{contactId}:
@@ -160,6 +179,8 @@ paths:
     $ref: "../vendor/apds/4.1/apds-api-4.1.yaml#/paths/~1rights~1assigned~1{id}"
   /quotes:
     $ref: "../vendor/apds/4.1/apds-api-4.1.yaml#/paths/~1quotes"
+  /quotes/{id}:
+    $ref: "../vendor/apds/4.1/apds-api-4.1.yaml#/paths/~1quotes~1{id}"
 
   # ===== Data profile: additive convenience reads (Part 5) ===== #
   /v1/places/{id}/occupancy:
@@ -5748,6 +5769,10 @@ paths:
               properties:
                 amount:
                   $ref: "../vendor/apds/4.1/apds-api-4.1.yaml#/components/schemas/AmountInCurrency"
+                reasonCode:
+                  type: string
+                  description: Why, as a definedValue of apx-refund-reasons (Part 11) so refunds can be reported by cause across operators; `reason` stays the free-text note.
+                  examples: [doubleCharge]
                 reason: { type: string }
                 approval:
                   $ref: "#/components/schemas/Approval"
@@ -6129,9 +6154,9 @@ paths:
         - name: observation
           in: query
           description: |-
-            Lookup by the underlying APDS Observation id — the read-back
-            route for one ingested read (APDS 4.1 has no GET
-            /observations/{id}).
+            Lookup by the underlying APDS Observation id. Returns the
+            LprRead projection of one ingested read; the stored
+            ObservationElement itself is native GET /observations/{id}.
           schema: { type: string, format: uuid }
         - name: session
           in: query
@@ -6530,6 +6555,11 @@ paths:
           content:
             application/problem+json:
               schema: { $ref: "#/components/schemas/Problem" }
+        "422":
+          description: A `commsPoint`, `callerId`, `dialedNumber` or `commsDeviceId` this implementation does not hold (`comms-point-unknown`, Part 17 §17.1 and Part 26 §26.4), or a registered code value outside the served registries (`reference-unknown`).
+          content:
+            application/problem+json:
+              schema: { $ref: "#/components/schemas/Problem" }
 
   /v1/resolution/contexts/{id}:
     get:
@@ -6650,7 +6680,7 @@ paths:
         A credential the server knows but does not track for passback (a
         transient ticket at a site without anti-passback) is 200 with
         `state: unknown`, not 404; 404 means the credential does not
-        exist (Part 17 §17.8).
+        exist (Part 17 §17.3a).
       parameters:
         - { name: id, in: path, required: true, schema: { type: string, format: uuid }, description: APDS Credential UUID. }
       responses:
@@ -6878,6 +6908,670 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/ApxConfiguration"
+        "429": { $ref: "#/components/responses/TooManyRequests" }
+
+  # ===== UI launch (Part 25, optional class apx-ui-launch) ===== #
+  /v1/ui/launches:
+    get:
+      operationId: get-apx-v1-ui-launches
+      security:
+        - apxOAuth: ["apx.ui:read"]
+      tags: [UI launch]
+      summary: List launches
+      description: |-
+        The launch records visible to the caller, newest first (Part 25
+        §25.3). `url` is never included on a list read.
+      parameters:
+        - { name: place, in: query, schema: { type: string, format: uuid }, description: Launches at this place or its subtree. }
+        - { name: agent, in: query, schema: { type: string } }
+        - { name: status, in: query, schema: { type: string, enum: [issued, opened, closed, expired] } }
+        - { name: correlationId, in: query, schema: { type: string, format: uuid } }
+        - { name: interactionId, in: query, schema: { type: string } }
+        - $ref: "../vendor/apds/4.1/apds-api-4.1.yaml#/components/parameters/page"
+      responses:
+        "200":
+          description: Paginated launches.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  meta:
+                    $ref: "../vendor/apds/4.1/apds-api-4.1.yaml#/components/schemas/PaginatedListMeta"
+                  data:
+                    type: array
+                    items: { $ref: "#/components/schemas/UiLaunch" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+        "429": { $ref: "#/components/responses/TooManyRequests" }
+    post:
+      operationId: post-apx-v1-ui-launches
+      security:
+        - apxOAuth: ["apx.ui:launch"]
+      tags: [UI launch]
+      summary: Open a vendor screen for an agent (handshake launch)
+      description: |-
+        The host sends its normal APX token and gets back a single-use
+        `url` that logs the named agent into the surface, valid for at
+        most 60 seconds (Part 25 §25.2). This is the launch mode for
+        vendors who want header-based authentication, since a browser
+        cannot add headers when it opens a page. `place` must lie inside
+        the grant (403 `insufficient-grant`). `Idempotency-Key` optional
+        (Part 4 §4.2a). Publishes `apx.ui.launch.changed.v1`.
+      parameters:
+        - $ref: "#/components/parameters/IdempotencyKeyOptional"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/UiLaunchRequest" }
+      responses:
+        "200":
+          description: Idempotent replay.
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/UiLaunch" }
+        "201":
+          description: Issued. `url` and `expiresAt` are set; `status` is `issued`.
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/UiLaunch" }
+        "400": { $ref: "#/components/responses/BadRequest" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+        "409":
+          description: "`Idempotency-Key` replayed with a different body (`idempotency-conflict`)."
+          content:
+            application/problem+json:
+              schema: { $ref: "#/components/schemas/Problem" }
+        "422":
+          description: |-
+            A `surface` this implementation does not offer, or not at this
+            place (`ui-surface-unknown`); a `displayMode` the surface does
+            not support (`ui-display-mode-unsupported`); or a `subject`,
+            `place` or `lane` that does not exist (`reference-unknown`).
+          content:
+            application/problem+json:
+              schema: { $ref: "#/components/schemas/Problem" }
+        "429": { $ref: "#/components/responses/TooManyRequests" }
+
+  /v1/ui/launches/{id}:
+    get:
+      operationId: get-apx-v1-ui-launches-id
+      security:
+        - apxOAuth: ["apx.ui:read"]
+      tags: [UI launch]
+      summary: Read a launch and what was done in it
+      description: |-
+        The launch with its `actions[]` (Part 25 §25.3). `url` is present
+        only while the launch is `issued` and before `expiresAt`.
+      parameters:
+        - { name: id, in: path, required: true, schema: { type: string, format: uuid } }
+      responses:
+        "200":
+          description: The launch.
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/UiLaunch" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+        "404": { $ref: "#/components/responses/NotFound" }
+        "429": { $ref: "#/components/responses/TooManyRequests" }
+
+  /v1/ui/launches/{id}/actions:
+    post:
+      operationId: post-apx-v1-ui-launches-id-actions
+      security:
+        - apxOAuth: ["apx.ui:record"]
+      tags: [UI launch]
+      summary: Record an action done in the screen (loopback fallback)
+      description: |-
+        The surface, or the service behind it, records what the agent did
+        when the implementation could not express it as the module's own
+        resource or Command (Part 25 §25.4). The record carries the
+        launch's `correlationId` and is published as
+        `apx.ui.action.recorded.v1`. A launch that was never opened and
+        has expired refuses with `ui-launch-expired`; a closed one with
+        `ui-launch-closed`.
+      parameters:
+        - { name: id, in: path, required: true, schema: { type: string, format: uuid } }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/UiActionRecord" }
+      responses:
+        "201":
+          description: Recorded.
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/UiActionRecord" }
+        "400": { $ref: "#/components/responses/BadRequest" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+        "404": { $ref: "#/components/responses/NotFound" }
+        "409":
+          description: The launch is `expired` (`ui-launch-expired`) or `closed` (`ui-launch-closed`).
+          content:
+            application/problem+json:
+              schema: { $ref: "#/components/schemas/Problem" }
+        "429": { $ref: "#/components/responses/TooManyRequests" }
+
+  /v1/ui/launches/{id}/close:
+    post:
+      operationId: post-apx-v1-ui-launches-id-close
+      security:
+        - apxOAuth: ["apx.ui:record"]
+      tags: [UI launch]
+      summary: Close a launch
+      description: |-
+        The screen reports it is done: `opened` (or `issued`) → `closed`
+        (Part 25 §25.3). No body. Publishes `apx.ui.launch.changed.v1`.
+        Already closed is 409 `ui-launch-closed`.
+      parameters:
+        - { name: id, in: path, required: true, schema: { type: string, format: uuid } }
+      responses:
+        "200":
+          description: The closed launch.
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/UiLaunch" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+        "404": { $ref: "#/components/responses/NotFound" }
+        "409":
+          description: Already closed (`ui-launch-closed`).
+          content:
+            application/problem+json:
+              schema: { $ref: "#/components/schemas/Problem" }
+        "429": { $ref: "#/components/responses/TooManyRequests" }
+
+  # ===== Site configuration (Part 26, optional class apx-site-config) ===== #
+  /v1/equipment:
+    get:
+      operationId: get-apx-v1-equipment
+      security:
+        - apxOAuth: ["apx.siteconfig:read"]
+      tags: [Site configuration]
+      summary: List a place's equipment with its roles, makes, versions and areas
+      description: |-
+        Every SupplementalEquipment at the place, each with its
+        `apds-ext:apx:equipment-detail@1.0` decoration, so a reader learns
+        what the site has from APX alone (Part 26 §26.1). Distinct from
+        `GET /v1/devices`, which serves live state; this serves the
+        description. `mode=change&cursor=` serves the Part 5 §5.2 feed,
+        so an edge or call-centre system keeps a local copy current.
+        Naming a `place` outside the grant is 403 `insufficient-grant`.
+      parameters:
+        - $ref: "#/components/parameters/ModeParam"
+        - $ref: "#/components/parameters/CursorParam"
+        - { name: place, in: query, required: true, schema: { type: string, format: uuid }, description: The HierarchyElement subtree root. }
+        - { name: role, in: query, schema: { type: string }, description: An apx-equipment-roles value. }
+        - { name: area, in: query, schema: { type: string }, description: An apx-area-types value. }
+        - { name: lane, in: query, schema: { type: string, format: uuid }, description: Equipment serving this VehicularAccess. }
+        - { name: level, in: query, schema: { type: string } }
+        - $ref: "../vendor/apds/4.1/apds-api-4.1.yaml#/components/parameters/page"
+      responses:
+        "200":
+          description: Paginated equipment; with `mode=change`, the changes after `cursor` in the same envelope (Part 5 §5.2 rule 8).
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  meta:
+                    $ref: "../vendor/apds/4.1/apds-api-4.1.yaml#/components/schemas/PaginatedListMeta"
+                  data:
+                    type: array
+                    items: { $ref: "#/components/schemas/EquipmentRecord" }
+                  updateMode: { $ref: "#/components/schemas/ChangeFeedUpdateMode" }
+                  cursor: { $ref: "#/components/schemas/ChangeFeedCursor" }
+                  deleted: { $ref: "#/components/schemas/ChangeFeedTombstones" }
+                  grantAdditions: { $ref: "#/components/schemas/ChangeFeedGrantAdditions" }
+                  next: { $ref: "#/components/schemas/ChangeFeedNext" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+        "404": { $ref: "#/components/responses/CursorRefused" }
+        "429": { $ref: "#/components/responses/TooManyRequests" }
+
+  /v1/equipment/{id}:
+    get:
+      operationId: get-apx-v1-equipment-id
+      security:
+        - apxOAuth: ["apx.siteconfig:read"]
+      tags: [Site configuration]
+      summary: Read one piece of equipment
+      description: The SupplementalEquipment with its APX decorations (Part 26 §26.1).
+      parameters:
+        - { name: id, in: path, required: true, schema: { type: string, format: uuid } }
+      responses:
+        "200":
+          description: The equipment record.
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/EquipmentRecord" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+        "404": { $ref: "#/components/responses/NotFound" }
+        "429": { $ref: "#/components/responses/TooManyRequests" }
+
+  /v1/comms-points:
+    get:
+      operationId: get-apx-v1-comms-points
+      security:
+        - apxOAuth: ["apx.siteconfig:read"]
+      tags: [Site configuration]
+      summary: List or look up comms points
+      description: |-
+        The ways a parker reaches help at the caller's places (Part 26
+        §26.4). A call platform finds the comms point of an inbound
+        contact with `callerId`, `dialedNumber` or `commsDeviceId`; the
+        answer carries the lane, or the place only. `mode=change&cursor=`
+        serves the Part 5 §5.2 feed.
+      parameters:
+        - $ref: "#/components/parameters/ModeParam"
+        - $ref: "#/components/parameters/CursorParam"
+        - { name: place, in: query, schema: { type: string, format: uuid } }
+        - { name: lane, in: query, schema: { type: string, format: uuid } }
+        - { name: type, in: query, schema: { type: string }, description: An apx-comms-point-types value. }
+        - { name: callerId, in: query, schema: { type: string }, description: E.164; matches `callerId`. }
+        - { name: dialedNumber, in: query, schema: { type: string }, description: E.164; matches `phoneNumber`. }
+        - { name: commsDeviceId, in: query, schema: { type: string } }
+        - $ref: "../vendor/apds/4.1/apds-api-4.1.yaml#/components/parameters/page"
+      responses:
+        "200":
+          description: Paginated comms points; with `mode=change`, the changes after `cursor` in the same envelope.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  meta:
+                    $ref: "../vendor/apds/4.1/apds-api-4.1.yaml#/components/schemas/PaginatedListMeta"
+                  data:
+                    type: array
+                    items: { $ref: "#/components/schemas/CommsPoint" }
+                  updateMode: { $ref: "#/components/schemas/ChangeFeedUpdateMode" }
+                  cursor: { $ref: "#/components/schemas/ChangeFeedCursor" }
+                  deleted: { $ref: "#/components/schemas/ChangeFeedTombstones" }
+                  grantAdditions: { $ref: "#/components/schemas/ChangeFeedGrantAdditions" }
+                  next: { $ref: "#/components/schemas/ChangeFeedNext" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+        "404": { $ref: "#/components/responses/CursorRefused" }
+        "429": { $ref: "#/components/responses/TooManyRequests" }
+    post:
+      operationId: post-apx-v1-comms-points
+      security:
+        - apxOAuth: ["apx.siteconfig:manage"]
+      tags: [Site configuration]
+      summary: Add a comms point
+      description: |-
+        Whoever runs the calls adds the comms point, the call centre or
+        the call platform (Part 26 §26.4). `place` must lie inside the
+        grant (403 `insufficient-grant`); `lane`, `equipment` and `serves`
+        must exist (422 `reference-unknown`). `Idempotency-Key` optional.
+        Publishes `apx.commspoints.changed.v1`.
+      parameters:
+        - $ref: "#/components/parameters/IdempotencyKeyOptional"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/CommsPoint" }
+      responses:
+        "200":
+          description: Idempotent replay.
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/CommsPoint" }
+        "201":
+          description: Created.
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/CommsPoint" }
+        "400": { $ref: "#/components/responses/BadRequest" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+        "409":
+          description: "`Idempotency-Key` replayed with a different body (`idempotency-conflict`)."
+          content:
+            application/problem+json:
+              schema: { $ref: "#/components/schemas/Problem" }
+        "422":
+          description: A `type` outside the registry, or a `place`, `lane`, `equipment` or `serves` that does not exist (`reference-unknown`).
+          content:
+            application/problem+json:
+              schema: { $ref: "#/components/schemas/Problem" }
+        "429": { $ref: "#/components/responses/TooManyRequests" }
+
+  /v1/comms-points/{id}:
+    get:
+      operationId: get-apx-v1-comms-points-id
+      security:
+        - apxOAuth: ["apx.siteconfig:read"]
+      tags: [Site configuration]
+      summary: Read a comms point
+      description: The comms point with the lane or place it serves and the barrier an agent opens for it (Part 26 §26.4).
+      parameters:
+        - { name: id, in: path, required: true, schema: { type: string, format: uuid } }
+      responses:
+        "200":
+          description: The comms point.
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/CommsPoint" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+        "404": { $ref: "#/components/responses/NotFound" }
+        "429": { $ref: "#/components/responses/TooManyRequests" }
+    put:
+      operationId: put-apx-v1-comms-points-id
+      security:
+        - apxOAuth: ["apx.siteconfig:manage"]
+      tags: [Site configuration]
+      summary: Replace a comms point
+      description: |-
+        Full replacement with the version last read as `If-Match` or body
+        `version` (409 `version-conflict`, Part 4 §4.2a). Publishes
+        `apx.commspoints.changed.v1`.
+      parameters:
+        - { name: id, in: path, required: true, schema: { type: string, format: uuid } }
+        - $ref: "#/components/parameters/IfMatch"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/CommsPoint" }
+      responses:
+        "200":
+          description: Replaced.
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/CommsPoint" }
+        "400": { $ref: "#/components/responses/BadRequest" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+        "404": { $ref: "#/components/responses/NotFound" }
+        "409":
+          description: Stale version (`version-conflict`).
+          content:
+            application/problem+json:
+              schema: { $ref: "#/components/schemas/Problem" }
+        "422":
+          description: A `type` outside the registry, or a reference that does not exist (`reference-unknown`).
+          content:
+            application/problem+json:
+              schema: { $ref: "#/components/schemas/Problem" }
+        "429": { $ref: "#/components/responses/TooManyRequests" }
+    delete:
+      operationId: delete-apx-v1-comms-points-id
+      security:
+        - apxOAuth: ["apx.siteconfig:manage"]
+      tags: [Site configuration]
+      summary: Remove a comms point
+      description: The feed emits a tombstone (Part 5 §5.2); publishes `apx.commspoints.changed.v1`.
+      parameters:
+        - { name: id, in: path, required: true, schema: { type: string, format: uuid } }
+      responses:
+        "204":
+          description: Removed.
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+        "404": { $ref: "#/components/responses/NotFound" }
+        "429": { $ref: "#/components/responses/TooManyRequests" }
+
+  /v1/identifiers:resolve:
+    post:
+      operationId: post-apx-v1-identifiers-resolve
+      security:
+        - apxOAuth: ["apx.siteconfig:read"]
+      tags: [Site configuration]
+      summary: Find the APX record behind another system's id
+      description: |-
+        Looks up a `{system, id}` pair from any
+        `apds-ext:apx:external-ids@1.0` decoration the caller may see
+        (Part 26 §26.6), so a PARCS, a call platform or an aggregator goes
+        from its own id to the place, lane, equipment or comms point
+        without a table of its own. A read, as a POST so the id never sits
+        in a URL. No match is 404 `target-not-found`.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/IdentifierResolveRequest" }
+      responses:
+        "200":
+          description: The record the id names.
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/IdentifierResolution" }
+        "400": { $ref: "#/components/responses/BadRequest" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+        "404":
+          description: No visible record carries this id (`target-not-found`).
+          content:
+            application/problem+json:
+              schema: { $ref: "#/components/schemas/Problem" }
+        "429": { $ref: "#/components/responses/TooManyRequests" }
+
+  /v1/cameras/{id}/views:
+    post:
+      operationId: post-apx-v1-cameras-id-views
+      security:
+        - apxOAuth: ["apx.cameras:view"]
+      tags: [Site configuration]
+      summary: Get a short-lived link to see a camera
+      description: |-
+        A live stream, a still, or a recording of the camera (the
+        SupplementalEquipment with role `camera`), as a single-use link
+        bound to the agent and valid for at most 5 minutes (Part 26
+        §26.3). Whoever holds the camera answers; its password never
+        leaves the site. Every view is logged against the agent and
+        `correlationId`. Offered under the `cameraViews` feature;
+        `playback` also needs `cameraPlayback`.
+      parameters:
+        - { name: id, in: path, required: true, schema: { type: string, format: uuid }, description: The camera's SupplementalEquipment id. }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/CameraViewRequest" }
+      responses:
+        "201":
+          description: The link.
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/CameraView" }
+        "400": { $ref: "#/components/responses/BadRequest" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+        "404": { $ref: "#/components/responses/NotFound" }
+        "409":
+          description: The camera is offline, has no recorder for `playback`, or the implementation cannot issue a view now (`camera-view-unavailable`).
+          content:
+            application/problem+json:
+              schema: { $ref: "#/components/schemas/Problem" }
+        "422":
+          description: "`playback` with a `from`/`to` outside the camera's retention or missing (`playback-range-unavailable`), or a `kind` the camera's `streams` cannot serve (`request-unprocessable`)."
+          content:
+            application/problem+json:
+              schema: { $ref: "#/components/schemas/Problem" }
+        "429": { $ref: "#/components/responses/TooManyRequests" }
+
+  # ===== Approvals (Part 17 §17.3a) ===== #
+  /v1/approvals:
+    get:
+      operationId: get-apx-v1-approvals
+      security:
+        - apxOAuth: ["apx.resolution:read"]
+      tags: [Resolution]
+      summary: List approval requests
+      description: Approval requests at the caller's places, newest first (Part 17 §17.3a); an approver's queue is `status=pending&role=…`.
+      parameters:
+        - { name: place, in: query, schema: { type: string, format: uuid } }
+        - { name: status, in: query, schema: { type: string, enum: [pending, approved, denied, expired] } }
+        - { name: role, in: query, schema: { type: string } }
+        - $ref: "../vendor/apds/4.1/apds-api-4.1.yaml#/components/parameters/page"
+      responses:
+        "200":
+          description: Paginated approval requests.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  meta:
+                    $ref: "../vendor/apds/4.1/apds-api-4.1.yaml#/components/schemas/PaginatedListMeta"
+                  data:
+                    type: array
+                    items: { $ref: "#/components/schemas/ApprovalRequest" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+        "429": { $ref: "#/components/responses/TooManyRequests" }
+    post:
+      operationId: post-apx-v1-approvals
+      security:
+        - apxOAuth: ["apx.support:manage"]
+      tags: [Resolution]
+      summary: Ask for approval of an action
+      description: |-
+        An agent whose AllowedAction said `requiresApproval` asks the
+        named role to decide (Part 17 §17.3a). `place` must lie inside the
+        grant. `Idempotency-Key` optional. Publishes
+        `apx.approvals.changed.v1`; the approver's system subscribes to it
+        or reads the queue.
+      parameters:
+        - $ref: "#/components/parameters/IdempotencyKeyOptional"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/ApprovalRequest" }
+      responses:
+        "200":
+          description: Idempotent replay.
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/ApprovalRequest" }
+        "201":
+          description: Created, `status` = `pending`.
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/ApprovalRequest" }
+        "400": { $ref: "#/components/responses/BadRequest" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+        "409":
+          description: "`Idempotency-Key` replayed with a different body (`idempotency-conflict`)."
+          content:
+            application/problem+json:
+              schema: { $ref: "#/components/schemas/Problem" }
+        "422":
+          description: A `place` or `target` that does not exist (`reference-unknown`).
+          content:
+            application/problem+json:
+              schema: { $ref: "#/components/schemas/Problem" }
+        "429": { $ref: "#/components/responses/TooManyRequests" }
+
+  /v1/approvals/{id}:
+    get:
+      operationId: get-apx-v1-approvals-id
+      security:
+        - apxOAuth: ["apx.resolution:read"]
+      tags: [Resolution]
+      summary: Read an approval request
+      description: The request with its `decision` once made, or its `expired` status once `expiresAt` has passed (Part 17 §17.3a).
+      parameters:
+        - { name: id, in: path, required: true, schema: { type: string, format: uuid } }
+      responses:
+        "200":
+          description: The request with its decision, if made.
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/ApprovalRequest" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+        "404": { $ref: "#/components/responses/NotFound" }
+        "429": { $ref: "#/components/responses/TooManyRequests" }
+
+  /v1/approvals/{id}/decide:
+    post:
+      operationId: post-apx-v1-approvals-id-decide
+      security:
+        - apxOAuth: ["apx.support:manage"]
+      tags: [Resolution]
+      summary: Approve or deny
+      description: |-
+        The approver decides: `pending` → `approved` or `denied` (Part 17
+        §17.3a). The agent then executes the action with `Approval`
+        evidence citing the request. A request already decided or expired
+        is 409 `approval-closed`. Publishes `apx.approvals.changed.v1`.
+      parameters:
+        - { name: id, in: path, required: true, schema: { type: string, format: uuid } }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/ApprovalDecision" }
+      responses:
+        "200":
+          description: The decided request.
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/ApprovalRequest" }
+        "400": { $ref: "#/components/responses/BadRequest" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+        "404": { $ref: "#/components/responses/NotFound" }
+        "409":
+          description: Already decided or expired (`approval-closed`).
+          content:
+            application/problem+json:
+              schema: { $ref: "#/components/schemas/Problem" }
+        "429": { $ref: "#/components/responses/TooManyRequests" }
+
+  # ===== Receipt re-send (Part 13 §13.1a) ===== #
+  /v1/payments/{id}/receipt:
+    post:
+      operationId: post-apx-v1-payments-id-receipt
+      security:
+        - apxOAuth: ["apx.payments:write"]
+      tags: [Accounts]
+      summary: Send the receipt again
+      description: |-
+        Re-sends the receipt of a settled payment by e-mail, SMS, a
+        re-print at the device, or a short-lived link (Part 13 §13.1a).
+        The destination travels in the body, never in a URL. Accepted for
+        delivery (202); the outcome is in the returned ReceiptDelivery.
+      parameters:
+        - { name: id, in: path, required: true, schema: { type: string, format: uuid } }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/ReceiptRequest" }
+      responses:
+        "202":
+          description: Queued or sent.
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/ReceiptDelivery" }
+        "400": { $ref: "#/components/responses/BadRequest" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+        "404": { $ref: "#/components/responses/NotFound" }
+        "409":
+          description: The payment is not settled (`payment-state-illegal`, Part 13 §13.1a).
+          content:
+            application/problem+json:
+              schema: { $ref: "#/components/schemas/Problem" }
+        "422":
+          description: A `channel` this implementation or device cannot serve (`receipt-channel-unsupported`), or a `destination` missing for `email`/`sms` (`request-unprocessable`).
+          content:
+            application/problem+json:
+              schema: { $ref: "#/components/schemas/Problem" }
         "429": { $ref: "#/components/responses/TooManyRequests" }
 
 security:
@@ -7194,6 +7888,12 @@ components:
             apx.valet:request: Customer scope — request or cancel retrieval and read status/ETA for the caller's own ticket (text, app, web, voice bot)
             apx.platelists:read: Read plate lists and their entries, plate values included (Part 24)
             apx.platelists:manage: Create and maintain plate lists and entries (Part 24)
+            apx.ui:launch: Open a vendor screen for an agent and read the launches it issued (Part 25)
+            apx.ui:read: Read UI launches and the actions recorded in them (Part 25)
+            apx.ui:record: The surface's own scope; record actions done in a launched screen and close it (Part 25)
+            apx.siteconfig:read: Read a place's equipment, cameras, comms points and external ids; resolve another system's id (Part 26)
+            apx.siteconfig:manage: Add, replace and remove comms points (Part 26)
+            apx.cameras:view: Obtain short-lived camera view links, logged against the agent (Part 26)
             apx.digest:use: Receive the credential digest keys (Part 9 §9.6 rule 6)
             apx.replication:write: Replay another implementation's records with their original provenance and lifecycle times (Part 18 §18.6)
             apx.charging:read: read charging-point status (with bay presence) and charging sessions
@@ -7411,6 +8111,44 @@ components:
       $ref: "./domains/resolution/schemas.yaml#/OverrideRecord"
     SupportInteraction:
       $ref: "./domains/resolution/schemas.yaml#/SupportInteraction"
+    ApprovalRequest:
+      $ref: "./domains/resolution/schemas.yaml#/ApprovalRequest"
+    ApprovalDecision:
+      $ref: "./domains/resolution/schemas.yaml#/ApprovalDecision"
+    ReceiptRequest:
+      $ref: "./domains/accounts/schemas.yaml#/ReceiptRequest"
+    ReceiptDelivery:
+      $ref: "./domains/accounts/schemas.yaml#/ReceiptDelivery"
+    UiSurface:
+      $ref: "./domains/ui/schemas.yaml#/UiSurface"
+    UiLaunchRequest:
+      $ref: "./domains/ui/schemas.yaml#/UiLaunchRequest"
+    UiLaunch:
+      $ref: "./domains/ui/schemas.yaml#/UiLaunch"
+    UiActionRecord:
+      $ref: "./domains/ui/schemas.yaml#/UiActionRecord"
+    UiLaunchToken:
+      $ref: "./domains/ui/schemas.yaml#/UiLaunchToken"
+    EquipmentDetail:
+      $ref: "./domains/siteconfig/schemas.yaml#/EquipmentDetail"
+    CameraDetail:
+      $ref: "./domains/siteconfig/schemas.yaml#/CameraDetail"
+    ExternalIdentifiers:
+      $ref: "./domains/siteconfig/schemas.yaml#/ExternalIdentifiers"
+    PlaceOperations:
+      $ref: "./domains/siteconfig/schemas.yaml#/PlaceOperations"
+    CommsPoint:
+      $ref: "./domains/siteconfig/schemas.yaml#/CommsPoint"
+    EquipmentRecord:
+      $ref: "./domains/siteconfig/schemas.yaml#/EquipmentRecord"
+    IdentifierResolveRequest:
+      $ref: "./domains/siteconfig/schemas.yaml#/IdentifierResolveRequest"
+    IdentifierResolution:
+      $ref: "./domains/siteconfig/schemas.yaml#/IdentifierResolution"
+    CameraViewRequest:
+      $ref: "./domains/siteconfig/schemas.yaml#/CameraViewRequest"
+    CameraView:
+      $ref: "./domains/siteconfig/schemas.yaml#/CameraView"
 
     ApxConfiguration:
       $ref: "./domains/discovery/schemas.yaml#/ApxConfiguration"

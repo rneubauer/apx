@@ -175,7 +175,7 @@ fixed in 0.12.1 except the upstream half of F-LPR-17:
 
 | IDs | Fix |
 |---|---|
-| F-LPR-16 | **High.** The `accessEvent` revision route (`PUT /observations/{id}`) does not exist in APDS 4.1; `observation.updated.v1` can never fire. Needs an APX route (or other mechanism). |
+| F-LPR-16 | **High.** The `accessEvent` revision route (`PUT /observations/{id}`) does not exist in APDS 4.1; `observation.updated.v1` can never fire. Needs an APX route (or other mechanism). (Corrected 2026-10-16: APDS 4.1 does define the route; the APX bundle had not mounted it, and now does.) |
 | F-LPR-17 | (upstream) `VehicularAccess` is unreachable through the `HierarchyElement` discriminator, so lanes and `lane-cameras` are never validated. Overlay fix plus candidate erratum 013. |
 | F-LPR-18 | No named refusal for a duplicate `cameraId` within a Place. |
 | F-LPR-19 | **High.** APX's own decorations (`lpr-read`, `lane-cameras`, …) were never validated inside `extensions`. |

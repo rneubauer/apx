@@ -503,7 +503,7 @@ function report(mod) {
 const args = process.argv.slice(2);
 const moduleFile = (m) => join(SUITE, m, 'scenarios.md');
 const files = args.length
-  ? args.map((a) => (/^apx-[a-z]+$/.test(a) ? moduleFile(a) : resolve(a)))
+  ? args.map((a) => (/^apx-[a-z-]+$/.test(a) ? moduleFile(a) : resolve(a)))
   : readdirSync(SUITE, { withFileTypes: true })
       .filter((d) => d.isDirectory() && d.name.startsWith('apx-'))
       .map((d) => d.name)
