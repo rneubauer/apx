@@ -19,7 +19,7 @@
     "spec:profile": "node tools/build-profile-spec.mjs",
     "examples:check": "node tools/validate-examples.mjs",
     "mock": "prism mock spec/dist/apx-v1.yaml --port 4010",
-    "docs:build": "redocly build-docs spec/dist/apx-v1.yaml -o site/reference.html && redocly build-docs spec/dist/apx-parcs.json -o site/parcs.html && node tools/build-standard.mjs && node tools/build-site.mjs && npm run apxdocs:html",
+    "docs:build": "node tools/build-reference-input.mjs && redocly build-docs node_modules/.cache/apx-reference-input.json -o site/reference.html && redocly build-docs spec/dist/apx-parcs.json -o site/parcs.html && node tools/build-standard.mjs && node tools/build-site.mjs && npm run apxdocs:html",
     "sim": "node packages/simulator/bin/apx-sim.mjs serve",
     "sim:web": "node packages/simulator/web/build.mjs",
     "scenarios:check": "node tools/validate-scenarios.mjs",
