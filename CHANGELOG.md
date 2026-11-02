@@ -8,7 +8,7 @@ The machine-readable spec (`spec/openapi/apx.yaml`, bundled as
 
 ## [Unreleased]
 
-## [0.16.0] — 2026-10-23
+## [0.16.0] — 2026-11-01
 
 Three additions asked for by an edge-and-cloud deployment after its first
 sign go-live. Each carries the configured policy or the recorded outcome,
@@ -49,6 +49,16 @@ never the rule that turns one into the other.
 - `apx-topics`: the equipment and comms-point topics cite Part 26 §26.7
   (they said §26.8). Part 12: the camera and comms-point rows cite
   §26.3 and §26.4.
+- APX Data Specification (APDS submission): the EnergyInfrastructure
+  proposals now say EV charging is in use in APX (Part 23), optional, and
+  that nothing else in the package depends on it (they said
+  "experimental").
+
+### Fixed
+- Site: `/apx-specification/` and `/apds-submission/` now have an index
+  page listing each document and its PDF (they returned 404).
+- API reference: APX and APDS schemas are listed in the reference
+  navigation, so the search finds them.
 
 ## [0.15.0] — 2026-10-21
 
