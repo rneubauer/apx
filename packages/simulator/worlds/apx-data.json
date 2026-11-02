@@ -1,13 +1,14 @@
 {
   "extends": "base-lakeside",
   "name": "apx-data",
-  "description": "The apx-data cast (docs/scenarios/by-module/apx-data): Lakeside Garage v7 with Level 2 and space L2-017, Marina Lot (later added to the city's grant), lanes 1-2, the standard / customer-service rate decks, the monthly and transient right specifications, assigned rights, sessions, plate reads, the operator contact, and the change-feed history behind the scenario cursors.",
-  "_credentials_note": "default is the city platform (cursor identity `client: city-platform`) with apx.data:write added because the file's unmarked write requests run under it. Three entries are named after the descriptive tokens the replay sends, so they mean what the prose says: the aggregator of DATA-16 (wildcard grant), the grant-pinned PARCS token of DATA-30 (the kernel's parser drops the scopes of a named token that mentions none), and the stand-in insufficient-scope token of DATA-32 (a token carrying only apx.alerts:read).",
+  "description": "The apx-data cast (docs/scenarios/by-module/apx-data): Lakeside Garage v7 with Level 2 and space L2-017, Marina Lot (later added to the city's grant), lanes 1-2, the standard / customer-service rate decks, the monthly and transient right specifications, assigned rights, sessions, plate reads, the operator contact, the change-feed history behind the scenario cursors, and (Part 5 §5.9) the garage's enforcement policy with its stayGrace, the compliance engine's credential and a scored stay.",
+  "_credentials_note": "default is the city platform (cursor identity `client: city-platform`) with apx.data:write added because the file's unmarked write requests run under it. Three entries are named after the descriptive tokens the replay sends, so they mean what the prose says: the aggregator of DATA-16 (wildcard grant), the grant-pinned PARCS token of DATA-30 (the kernel's parser drops the scopes of a named token that mentions none), and the stand-in insufficient-scope token of DATA-32 (a token carrying only apx.alerts:read). compliance-engine and owner-bi hold apx.compliance:read (DATA-35); only the engine writes the block.",
   "credentials": {
     "default": { "scopes": ["apx.data:read", "apx.data:write", "apx.subscriptions:manage"], "apx_org": { "id": "a1…0003", "className": "Organisation" }, "apx_places": ["b1…0001"], "client": "city-platform", "user": "city-platform" },
     "city-platform": { "scopes": ["apx.data:read", "apx.subscriptions:manage"], "apx_org": { "id": "a1…0003", "className": "Organisation" }, "apx_places": ["b1…0001"] },
     "lakeside-parcs": { "scopes": ["apx.data:read", "apx.data:write", "apx.control:read", "apx.control:execute", "apx.alerts:write", "apx.alerts:read", "apx.lpr:read"], "apx_org": { "id": "a1…0001", "className": "Organisation" }, "apx_places": ["b1…0001"] },
-    "owner-bi": { "scopes": ["apx.data:read"], "apx_org": { "id": "a1…0001", "className": "Organisation" }, "apx_places": ["b1…0001"] },
+    "owner-bi": { "scopes": ["apx.data:read", "apx.compliance:read"], "apx_org": { "id": "a1…0001", "className": "Organisation" }, "apx_places": ["b1…0001"] },
+    "compliance-engine": { "scopes": ["apx.data:read", "apx.data:write", "apx.compliance:read", "apx.compliance:write", "apx.violations:read"], "apx_org": { "id": "a1…0001", "className": "Organisation" }, "apx_places": ["b1…0001"], "user": "svc:compliance-engine" },
     "aggregator, apx.data:write": { "scopes": ["apx.data:read", "apx.data:write"], "apx_org": { "id": "a1…0009", "className": "Organisation" }, "apx_places": ["*"], "client": "aggregator" },
     "lakeside-parcs: apx_places [\"b1000000-0000-4000-8000-000000000001\"]": { "scopes": ["apx.data:read", "apx.data:write"], "apx_org": { "id": "a1…0001", "className": "Organisation" }, "apx_places": ["b1…0001"], "client": "lakeside-parcs" },
     "APDS role ep; no apx.* scopes": { "scopes": ["apx.alerts:read"], "apx_org": { "id": "a1…0003", "className": "Organisation" }, "apx_places": ["b1…0001"], "client": "warehouse-loader" }
@@ -197,6 +198,16 @@
       "segments": [
         { "id": "c5…0001", "version": 2, "actualStart": "2026-09-24T15:02:11Z", "actualEnd": "2026-09-24T18:14:34Z", "assignedRight": { "id": "e2…0098", "version": 1, "className": "AssignedRight" }, "validationType": ["ticket"] }
       ],
+      "extensions": {
+        "apds-ext:apx:stay-compliance@1.0": {
+          "status": "paid",
+          "family": "compliant",
+          "evaluatedTime": "2026-09-24T18:15:10Z",
+          "sequence": 1,
+          "final": true,
+          "policy": { "id": "d4…0002", "className": "EnforcementPolicy", "version": 2 }
+        }
+      },
       "_place": "b1…0001",
       "_ticketNumber": "T-1001",
       "_modified": "2026-09-24T18:14:34Z",
@@ -263,6 +274,24 @@
       "type": "operator",
       "organisationName": [{ "language": "en", "string": "Lakeside Parking LLC" }],
       "eMailCommonData": [{ "primaryFlag": true, "emailAddress": "ops@lakeside-garage.example" }]
+    }
+  ],
+  "enforcementPolicies": [
+    {
+      "id": "d4…0002",
+      "version": 2,
+      "place": { "id": "b1…0001", "className": "Place" },
+      "name": "Lakeside Garage structure rules",
+      "policyStatus": "active",
+      "effectiveFrom": "2026-01-01T00:00:00Z",
+      "unreviewedIssuance": { "permitted": false },
+      "appealWindowDays": 30,
+      "signageRequired": true,
+      "stayGrace": { "entryMinutes": 10, "exitMinutes": 15 },
+      "statusHistory": [
+        { "state": "active", "time": "2025-12-15T10:00:00Z", "actor": "backoffice-jlee" },
+        { "state": "active", "time": "2026-09-01T09:00:00Z", "actor": "backoffice-jlee", "detail": "v2: stayGrace 10 min entry, 15 min exit" }
+      ]
     }
   ],
   "occupancy": { "thresholds": [85, 90, 95, 100], "delta": 25 },

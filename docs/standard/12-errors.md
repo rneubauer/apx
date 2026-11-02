@@ -88,9 +88,10 @@ table below.
 | `ui-launch-closed` | 409 | An action or close against a launch already closed (Part 25 §25.3) |
 | `approval-closed` | 409 | A decision on an approval request already decided or expired (Part 17 §17.8) |
 | `receipt-channel-unsupported` | 422 | A receipt re-send by a channel this implementation or device cannot serve (Part 13 §13.1b) |
-| `comms-point-unknown` | 422 | A resolve request names a comms point, caller id, dialled number or comms device id the implementation does not hold (Part 17 §17.1, Part 26 §26.7) |
-| `camera-view-unavailable` | 409 | A camera view cannot be issued now: the camera is offline, or has no recorder for playback (Part 26 §26.4) |
-| `playback-range-unavailable` | 422 | A playback view whose `from`/`to` is missing or outside the camera's retention (Part 26 §26.4) |
+| `comms-point-unknown` | 422 | A resolve request names a comms point, caller id, dialled number or comms device id the implementation does not hold (Part 17 §17.1, Part 26 §26.4) |
+| `camera-view-unavailable` | 409 | A camera view cannot be issued now: the camera is offline, or has no recorder for playback (Part 26 §26.3) |
+| `playback-range-unavailable` | 422 | A playback view whose `from`/`to` is missing or outside the camera's retention (Part 26 §26.3) |
+| `evaluation-out-of-order` | 409 | A `stay-compliance` write whose `sequence` is lower than the one the Session holds (Part 5 §5.9 rule 4) |
 
 Problem responses SHOULD include `detail` and MAY carry additional members
 (RFC 9457 extension members), including an `extensions` container.

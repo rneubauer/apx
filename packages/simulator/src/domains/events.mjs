@@ -4,7 +4,8 @@
  * (matching, signing, the retry schedule, the failure cascade, SSE
  * buffers) is the kernel's EventFabric; this module owns the subscription
  * records it reads: the wire members of ApxEventSubscription plus `_grant`
- * (the creating token's apx_places), `_org`, `_keys`, `_held`, `_sseSeq`,
+ * (the creating token's apx_places), `_scopes` (its scopes, for the
+ * members a delivery may carry), `_org`, `_keys`, `_held`, `_sseSeq`,
  * `_sseBuffer`.
  *
  * World sections read: subscriptions[] (seeded, with `credential` naming
@@ -65,6 +66,7 @@ export default {
           recordInfo: { creationTime: since, ...(cred.apx_org ? { creator: cred.apx_org } : {}), creationUser: cred.user ?? s.credential ?? 'seed', lastUpdate: since },
           ...(s.extensions ? { extensions: s.extensions } : {}),
           _grant: cred.apx_places ? [...cred.apx_places] : undefined,
+          _scopes: [...(cred.scopes ?? [])],
           _org: cred.apx_org?.id ?? null,
           _keys: keys,
           _held: [],
@@ -149,6 +151,7 @@ export default {
           ...(transport === 'webhook' ? { activeKeyIds: activeKeyIds(keys) } : {}),
           status: pending ? 'paused' : body.status ?? 'active',
           _grant: ctx.principal.hasGrant ? [...ctx.principal.places] : undefined,
+          _scopes: [...ctx.principal.scopes],
           _org: orgOf(ctx.principal),
           _keys: keys,
           _held: [],

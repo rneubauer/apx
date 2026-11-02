@@ -75,7 +75,7 @@ official APDS extension mechanism (Use Case §C.2.5):
   `lpr-read`, `lane-cameras`, `reservation`, `permit`, `session-detail`,
   `match-evidence`, `violation-source`, `payment-detail`,
   `credential-digest`, `equipment-detail`, `camera`, `external-ids`,
-  `place-operations`), so a validator
+  `place-operations`, `stay-compliance`), so a validator
   checks them on every payload. `alert-evidence` and `correlation` are
   defined in prose only (Part 7 §7.1, Part 17) and are not yet bound.
 

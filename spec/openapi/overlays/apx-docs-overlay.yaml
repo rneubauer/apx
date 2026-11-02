@@ -20,7 +20,7 @@
 overlay: 1.0.0
 info:
   title: APX documentation overlay (orientation, domain narrative, nav grouping)
-  version: 0.15.0
+  version: 0.16.0
 
 actions:
   # ===== Orientation =======================================================
@@ -150,6 +150,11 @@ actions:
           The one net-new read here is the occupancy snapshot: how full a
           garage, level, or zone is right now, without walking the whole Place
           hierarchy.
+
+          Two decorations on the APDS Session carry what other systems
+          decided about a stay: the pairing of reads behind it
+          (`session-detail`), and the compliance outcome an engine scored for
+          it (`stay-compliance`), which is served only under its own scope.
 
           Written standard:
           [Part 5](https://github.com/rneubauer/apx/blob/main/docs/standard/05-data.md).
@@ -477,7 +482,9 @@ actions:
           issued as short-lived links so a password never leaves the site; a
           **comms point** for every way help is reached, whether an intercom,
           an analog dialer, a posted number or a QR code; typed **external
-          ids** so other systems' identifiers resolve to APX records; and
+          ids** so other systems' identifiers resolve to APX records;
+          **display records**, the proof that a sign showed a message for a
+          read or a stay, written by whichever system drove the sign; and
           change topics so a copy of the setup stays current. IP addresses
           and SIP details are deliberately left out.
 

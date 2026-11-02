@@ -28,15 +28,15 @@ The result: every PARCS, LPR, tolling, permitting, and reservations vendor still
 
 | Capability | What APX adds |
 |---|---|
-| **Data sync** | Full/Change updates, tombstones, gapless cursor change-feeds on APDS's own routes |
+| **Data sync** | Full/Change updates, tombstones, gapless cursor change-feeds on APDS's own routes; each stay's compliance status (paid, in grace, overstay) as the compliance engine scored it, behind its own scope |
 | **Push delivery** | Signed webhooks (HMAC), a normative retry schedule, delivery audit ledger, and live streaming (SSE) |
 | **Control** | A command plane: vend gate, lost ticket, push rates, apply validations, device state — idempotent, perishable, fully audited |
 | **Call-center support** | Lane inquiry "screen-pop": the ticket in the machine, amount due, plate photo, monthly-credential history; a call resolved to its lane from the comms point it came in on; approval requests to a remote manager |
-| **Site configuration** | The whole site described by APX alone: every device with its role, make, model, firmware and serial; cameras anywhere in the facility with short-lived live, snapshot and playback links; the intercoms, dialers and posted numbers a parker reaches help from — and no password or key in any read |
+| **Site configuration** | The whole site described by APX alone: every device with its role, make, model, firmware and serial; cameras anywhere in the facility with short-lived live, snapshot and playback links; the intercoms, dialers and posted numbers a parker reaches help from; proof of every message a lane sign showed — and no password or key in any read |
 | **UI launch** | A vendor's own screen opened for an agent with automatic login (handshake URL or signed token), and everything done there written back through APX against the same correlation id, so the call record and the vendor's record agree |
 | **Alerts** | Operational alerting with open taxonomies and severity filtering |
 | **Discovery** | Each connected credential can ask the API exactly what it may do — and the answer is contractually accurate |
-| **Business domains** | Accounts & payments (incl. accounting write-back), LPR plate↔ticket lookup, reservations, pooled permits, tolling with disputes, violations (automated and guided enforcement, notices/citations, appeals), validation programs (merchant enrolment, code issuance, redemption ledger, billing statements), credential lifecycle (keycards, tags, fobs, mobile — issue, suspend, replace, access history), valet (custody with condition evidence, retrieval queue and ETA from text/app/voice bot, verified handback) |
+| **Business domains** | Accounts & payments (incl. accounting write-back), LPR plate↔ticket lookup, reservations, pooled permits, tolling with disputes, violations (automated and guided enforcement, notices/citations, appeals, separate entry and exit grace), validation programs (merchant enrolment, code issuance, redemption ledger, billing statements), credential lifecycle (keycards, tags, fobs, mobile — issue, suspend, replace, access history), valet (custody with condition evidence, retrieval queue and ETA from text/app/voice bot, verified handback) |
 
 ## Built for multi-vendor adoption
 

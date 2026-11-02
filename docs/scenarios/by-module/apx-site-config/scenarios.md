@@ -12,7 +12,7 @@ lane 2 `b2…0002`. Equipment at exit lane 2: barrier `c1…0002`, pay-in-lane
 terminal with exit verifier `c1…0003`, the intercom built into it
 `c1…0005`, the overhead lane camera `c1…0007`. The after-hours pedestrian
 door on the ground floor: door `c1…0010`, its card reader `c1…0011`, the
-intercom in its call box `c1…0012`, the lobby camera `c1…0013`. The
+intercom in its call box `c1…0012`, the lobby camera `c1…0013`. The exit-lane sign at lane 2 is `c1…0040` (role `laneDisplay`). The
 pay-on-foot station in the P1 payment area `c1…0020`, the recorder in the
 equipment room `c1…0030`. Harbor Deck (`b1…0002`, exit lane `b2…0003`)
 belongs to another operator and is outside the token's grant. Operator
@@ -1807,5 +1807,297 @@ After the token expires:
   "status": 401,
   "detail": "Access token expired at 2026-10-18T23:00:00Z.",
   "instance": "/v1/cameras/c1000000-0000-4000-8000-000000000007/views"
+}
+```
+
+---
+
+## SCF-12 — "Payment not found": the exit sign's message, recorded by the edge that showed it
+
+<!-- apx:scenario SCF-12 kind=lifecycle ics=APX-SCF-12,APX-SCF-13 -->
+
+**Given** the exit-lane sign at Lakeside lane 2 (`c1…0040`, role
+`laneDisplay`) is driven by the edge controller on site, which decides
+from its own copy of the rights. No APX command is involved. The edge
+holds `edge-controller` (`apx.displays:record`, same grant). **When**
+read `f3…0140` of a car with no payment arrives at 14:03 and the sign
+shows the unpaid message; the edge records it, and retries the same POST
+after a network blip; the operator's analyst later lists the day's
+unpaid exits; and an appeal reads the record. **Then** 201, 200 on the
+replay (same record), the list and the read return it, and
+`apx.displays.shown.v1` is published once (Part 26 §26.9 rules 1–4, 6–7).
+Nothing in the record holds the message text or the plate.
+
+```http
+POST /v1/display-records
+Authorization: Bearer <edge-controller>
+Idempotency-Key: sign-c1-0040-2026-10-21T14:03:12Z
+```
+
+<!-- apx:request POST /v1/display-records -->
+```json
+{
+  "id": "c5000000-0000-4000-8000-000000000012",
+  "version": 1,
+  "display": { "id": "c1000000-0000-4000-8000-000000000040", "className": "SupplementalEquipment" },
+  "messageKind": "transientExitUnpaid",
+  "observation": { "id": "f3000000-0000-4000-8000-000000000140", "className": "ObservationElement" },
+  "session": { "id": "c4000000-0000-4000-8000-000000000077", "className": "Session" },
+  "shownTime": "2026-10-21T14:03:12Z",
+  "contentHash": "sha256:9f2c1e0b7a4d",
+  "wordingVersion": "exit-2026-10",
+  "acknowledgedBy": "player"
+}
+```
+
+<!-- apx:response 201 -->
+```json
+{
+  "id": "c5000000-0000-4000-8000-000000000012",
+  "version": 1,
+  "display": { "id": "c1000000-0000-4000-8000-000000000040", "className": "SupplementalEquipment" },
+  "place": { "id": "b1000000-0000-4000-8000-000000000001", "className": "Place" },
+  "messageKind": "transientExitUnpaid",
+  "observation": { "id": "f3000000-0000-4000-8000-000000000140", "className": "ObservationElement" },
+  "session": { "id": "c4000000-0000-4000-8000-000000000077", "className": "Session" },
+  "shownTime": "2026-10-21T14:03:12Z",
+  "contentHash": "sha256:9f2c1e0b7a4d",
+  "wordingVersion": "exit-2026-10",
+  "acknowledgedBy": "player",
+  "recordInfo": {
+    "creationTime": "2026-10-21T14:03:13Z",
+    "creator": { "id": "a1000000-0000-4000-8000-000000000001", "className": "Organisation" },
+    "creationUser": "svc:edge-lakeside"
+  }
+}
+```
+
+The same POST again, after the edge lost the first answer:
+
+<!-- apx:request POST /v1/display-records -->
+```json
+{
+  "id": "c5000000-0000-4000-8000-000000000012",
+  "version": 1,
+  "display": { "id": "c1000000-0000-4000-8000-000000000040", "className": "SupplementalEquipment" },
+  "messageKind": "transientExitUnpaid",
+  "observation": { "id": "f3000000-0000-4000-8000-000000000140", "className": "ObservationElement" },
+  "session": { "id": "c4000000-0000-4000-8000-000000000077", "className": "Session" },
+  "shownTime": "2026-10-21T14:03:12Z",
+  "contentHash": "sha256:9f2c1e0b7a4d",
+  "wordingVersion": "exit-2026-10",
+  "acknowledgedBy": "player"
+}
+```
+
+<!-- apx:response 200 -->
+```json
+{
+  "id": "c5000000-0000-4000-8000-000000000012",
+  "version": 1,
+  "display": { "id": "c1000000-0000-4000-8000-000000000040", "className": "SupplementalEquipment" },
+  "place": { "id": "b1000000-0000-4000-8000-000000000001", "className": "Place" },
+  "messageKind": "transientExitUnpaid",
+  "observation": { "id": "f3000000-0000-4000-8000-000000000140", "className": "ObservationElement" },
+  "session": { "id": "c4000000-0000-4000-8000-000000000077", "className": "Session" },
+  "shownTime": "2026-10-21T14:03:12Z",
+  "contentHash": "sha256:9f2c1e0b7a4d",
+  "wordingVersion": "exit-2026-10",
+  "acknowledgedBy": "player"
+}
+```
+
+<!-- apx:validate EventEnvelope -->
+<!-- apx:validate DisplayRecord at /data -->
+```json
+{
+  "id": "e9000000-0000-4000-8000-000000000e12",
+  "type": "apx.displays.shown.v1",
+  "source": "https://api.lakeside-garage.example",
+  "subject": { "id": "c1000000-0000-4000-8000-000000000040", "className": "SupplementalEquipment" },
+  "time": "2026-10-21T14:03:13Z",
+  "specversion": "1.0",
+  "datacontenttype": "application/json",
+  "data": {
+    "id": "c5000000-0000-4000-8000-000000000012",
+    "version": 1,
+    "display": { "id": "c1000000-0000-4000-8000-000000000040", "className": "SupplementalEquipment" },
+    "place": { "id": "b1000000-0000-4000-8000-000000000001", "className": "Place" },
+    "messageKind": "transientExitUnpaid",
+    "observation": { "id": "f3000000-0000-4000-8000-000000000140", "className": "ObservationElement" },
+    "session": { "id": "c4000000-0000-4000-8000-000000000077", "className": "Session" },
+    "shownTime": "2026-10-21T14:03:12Z",
+    "contentHash": "sha256:9f2c1e0b7a4d",
+    "wordingVersion": "exit-2026-10",
+    "acknowledgedBy": "player"
+  }
+}
+```
+
+The analyst counts the day's unpaid exits at Lakeside:
+
+<!-- apx:request GET /v1/display-records?place=b1000000-0000-4000-8000-000000000001&messageKind=transientExitUnpaid&since=2026-10-21T00:00:00Z&until=2026-10-22T00:00:00Z -->
+<!-- apx:response 200 -->
+```json
+{
+  "meta": { "referenceInstant": 1792627200, "offset": 0, "pageSize": 100, "total": 1 },
+  "data": [
+    {
+      "id": "c5000000-0000-4000-8000-000000000012",
+      "version": 1,
+      "display": { "id": "c1000000-0000-4000-8000-000000000040", "className": "SupplementalEquipment" },
+      "place": { "id": "b1000000-0000-4000-8000-000000000001", "className": "Place" },
+      "messageKind": "transientExitUnpaid",
+      "session": { "id": "c4000000-0000-4000-8000-000000000077", "className": "Session" },
+      "shownTime": "2026-10-21T14:03:12Z",
+      "contentHash": "sha256:9f2c1e0b7a4d",
+      "wordingVersion": "exit-2026-10",
+      "acknowledgedBy": "player"
+    }
+  ]
+}
+```
+
+An appeal of the stay finds what the sign told the driver:
+
+<!-- apx:request GET /v1/display-records/c5000000-0000-4000-8000-000000000012 -->
+<!-- apx:response 200 -->
+```json
+{
+  "id": "c5000000-0000-4000-8000-000000000012",
+  "version": 1,
+  "display": { "id": "c1000000-0000-4000-8000-000000000040", "className": "SupplementalEquipment" },
+  "place": { "id": "b1000000-0000-4000-8000-000000000001", "className": "Place" },
+  "messageKind": "transientExitUnpaid",
+  "observation": { "id": "f3000000-0000-4000-8000-000000000140", "className": "ObservationElement" },
+  "session": { "id": "c4000000-0000-4000-8000-000000000077", "className": "Session" },
+  "shownTime": "2026-10-21T14:03:12Z",
+  "contentHash": "sha256:9f2c1e0b7a4d",
+  "wordingVersion": "exit-2026-10",
+  "acknowledgedBy": "player"
+}
+```
+
+---
+
+## SCF-13 — Display records refused: not a sign, the wrong place, a command that disagrees, no scope
+
+<!-- apx:scenario SCF-13 kind=refusal ics=APX-SCF-12,APX-SCF-13 -->
+
+**Given** the edge of SCF-12. **When** it names the lane's barrier
+`c1…0002` as if it were a sign; names the sign but claims Harbor Deck as
+the place; names the `displayMessage` command `cb…0031`, whose result
+says the sign showed different content at 14:20:05; and the city
+platform (`apx.siteconfig:read` only) tries to write a record; and the
+city then lists records for Harbor Deck, outside its grant. **Then** 422
+`reference-unknown`, 422 `request-unprocessable` twice, 403
+`insufficient-scope`, and 403 `insufficient-grant` (Part 26 §26.9 rules
+1, 2, 5, 6).
+
+<!-- apx:request POST /v1/display-records -->
+```json
+{
+  "id": "c5000000-0000-4000-8000-000000000013",
+  "version": 1,
+  "display": { "id": "c1000000-0000-4000-8000-000000000002", "className": "SupplementalEquipment" },
+  "messageKind": "idle",
+  "shownTime": "2026-10-21T14:10:00Z"
+}
+```
+
+<!-- apx:response 422 -->
+```json
+{
+  "type": "https://apx-standard.org/problems/reference-unknown",
+  "title": "Reference unknown",
+  "status": 422,
+  "detail": "display c1000000-0000-4000-8000-000000000002 is a gate, not a sign (role laneDisplay or countSign).",
+  "instance": "/v1/display-records"
+}
+```
+
+<!-- apx:request POST /v1/display-records -->
+```json
+{
+  "id": "c5000000-0000-4000-8000-000000000014",
+  "version": 1,
+  "display": { "id": "c1000000-0000-4000-8000-000000000040", "className": "SupplementalEquipment" },
+  "place": { "id": "b1000000-0000-4000-8000-000000000002", "className": "Place" },
+  "messageKind": "idle",
+  "shownTime": "2026-10-21T14:10:00Z"
+}
+```
+
+<!-- apx:response 422 -->
+```json
+{
+  "type": "https://apx-standard.org/problems/request-unprocessable",
+  "title": "Request unprocessable",
+  "status": 422,
+  "detail": "place b1000000-0000-4000-8000-000000000002 is not the place of display c1000000-0000-4000-8000-000000000040 (b1000000-0000-4000-8000-000000000001).",
+  "instance": "/v1/display-records"
+}
+```
+
+<!-- apx:request POST /v1/display-records -->
+```json
+{
+  "id": "c5000000-0000-4000-8000-000000000015",
+  "version": 1,
+  "display": { "id": "c1000000-0000-4000-8000-000000000040", "className": "SupplementalEquipment" },
+  "messageKind": "entranceRefused",
+  "command": { "id": "cb000000-0000-4000-8000-000000000031", "className": "Command" },
+  "shownTime": "2026-10-21T14:20:00Z",
+  "contentHash": "sha256:1b7e42aa90c3"
+}
+```
+
+<!-- apx:response 422 -->
+```json
+{
+  "type": "https://apx-standard.org/problems/request-unprocessable",
+  "title": "Request unprocessable",
+  "status": 422,
+  "detail": "Command cb000000-0000-4000-8000-000000000031 recorded shownTime 2026-10-21T14:20:05Z and contentHash sha256:77d0c5e1f2a8; the record disagrees.",
+  "instance": "/v1/display-records"
+}
+```
+
+```http
+POST /v1/display-records
+Authorization: Bearer <city-platform>
+```
+
+<!-- apx:request POST /v1/display-records -->
+```json
+{
+  "id": "c5000000-0000-4000-8000-000000000016",
+  "version": 1,
+  "display": { "id": "c1000000-0000-4000-8000-000000000040", "className": "SupplementalEquipment" },
+  "messageKind": "idle",
+  "shownTime": "2026-10-21T14:30:00Z"
+}
+```
+
+<!-- apx:response 403 -->
+```json
+{
+  "type": "https://apx-standard.org/problems/insufficient-scope",
+  "title": "Insufficient scope",
+  "status": 403,
+  "detail": "POST /v1/display-records requires apx.displays:record.",
+  "instance": "/v1/display-records"
+}
+```
+
+<!-- apx:request GET /v1/display-records?place=b1000000-0000-4000-8000-000000000002 -->
+<!-- apx:response 403 -->
+```json
+{
+  "type": "https://apx-standard.org/problems/insufficient-grant",
+  "title": "Insufficient grant",
+  "status": 403,
+  "detail": "Place b1000000-0000-4000-8000-000000000002 is outside this token's apx_places.",
+  "instance": "/v1/display-records"
 }
 ```

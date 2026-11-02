@@ -2,7 +2,7 @@
 
 # APX Data Dictionary
 
-*APX Specification · APX 0.15.0 · OpenAPI 0.15.0 · built on APDS 4.1 (2026-01-14) · Draft*
+*APX Specification · APX 0.16.0 · OpenAPI 0.16.0 · built on APDS 4.1 (2026-01-14) · Draft*
 
 ## Introduction
 
@@ -109,6 +109,7 @@ There are no specializations in the "Common" package.
 | Extensions | apds-ext:apx:permit@1.1 | 1 | The `apds-ext:apx:permit@1.1` extension object (Part 14 §14.2; `@1.0` remains valid and carries the first two members only): links a renewal permit to the one it renews, so a portal can follow the chain, and caps how many of a multi-vehicle permit's vehicles may be parked at once (§14.2d). | 0..1 | Reservations.PermitExtension |  |
 | Extensions | apds-ext:apx:session-detail@1.0 | 0 | The `apds-ext:apx:session-detail@1.0` decoration on an APDS Session (Part 5 §5.8): what the pairing of reads decided and APDS has no members for — the reads behind the visit, why and how it ended, the matches it rests on, and the parent visit of an area Session. Written with the native Session POST/PUT by an external pairing engine; a server that pairs reads itself SHOULD write the same block on its own Sessions. A plain APDS client ignores it. It adds no event topic and carries no plate characters. A write that breaks a consistency rule of §5.8 is 422 and nothing is written. | 0..1 | Data.SessionDetail |  |
 | Extensions | apds-ext:apx:match-evidence@1.0 | 0 | How a link to a Session was established and how sure it is (Part 5 §5.8; shared by the `matches[]` member of `apds-ext:apx:session-detail@1.0` and the decoration `apds-ext:apx:match-evidence@1.0` on a Violation or ValetTicket). Carries no plate characters and no vehicle attribute values (Part 9 §9.6). Where both ends of one link carry evidence (the Session's `matches[]` entry and the decoration on the Violation or ValetTicket), the two MUST agree. Evidence with `plate.method: lenient` or `applied: false` may excuse a stay but never accuse one: `issue` on a Violation resting on it is 409 `violation-not-issuable` (Part 19 §19.4 rule 5). | 0..1 | Data.MatchEvidence |  |
+| Extensions | apds-ext:apx:stay-compliance@1.0 | 0 | The `apds-ext:apx:stay-compliance@1.0` decoration on an APDS Session (Part 5 §5.9): the outcome a compliance engine scored for the stay, and the policy it measured against. Written with the native Session POST/PUT by the engine; a server that scores stays itself SHOULD write the same block. The rules that produce the outcome stay in the engine. | 0..1 | Data.StayCompliance |  |
 | Extensions | apds-ext:apx:violation-source@1.0 | 0 | The `apds-ext:apx:violation-source@1.0` decoration (Part 19 §19.13): a violation issued by an external enforcement system and imported through `POST /v1/enforcement/violation-imports`, keyed on `system` + `recordId`. `sourceRevision`, or without one `sourceUpdatedTime`, orders the source's revisions. | 0..1 | Violations.ViolationSource |  |
 | Extensions | apds-ext:apx:payment-detail@1.0 | 0 | The `apds-ext:apx:payment-detail@1.0` decoration (Part 13 §13.6a) on a `PaymentRecord` or an APDS `Payment`: the rate sold and the lines that sum to the total, so revenue reports and the deck price check have the base amount, the fee, and the product without a bilateral code. On a `PaymentRecord` it carries `rateSold` and `lines`; on a native APDS `Payment` it carries `rateSold` only, because the Payment's own `paymentLines` are the itemization there. | 0..1 | Accounts.PaymentDetail |  |
 | Extensions | apds-ext:apx:credential-digest@1.0 | 0 | The `apds-ext:apx:credential-digest@1.0` decoration (Part 9 §9.6 rule 6): a keyed digest of a normalized credential identification (a plate), so a consumer that only needs "same plate?" can match without the plate itself. `value` is base64url(HMAC-SHA-256(key, normalized identification)); the key is named by `keyId` and distributed through `GET /v1/digest-keys`. Visible under `apx.data:read`. | 0..1 | Common.CredentialDigest |  |
@@ -247,6 +248,7 @@ There are no specializations in the "Discovery" package.
 | SessionClosure | Session closure | Why and how a Session ended (Part 5 §5.8). | class | Proposed: SessionClosure (Tier 1) |
 | SessionDetail | Session detail | The `apds-ext:apx:session-detail@1.0` decoration on an APDS Session (Part 5 §5.8): what the pairing of reads decided and APDS has no members for — the reads behind the visit, why and how it ended, the matches it rests on, and the parent visit of an area Session. Written with the native Session POST/PUT by an external pairing engine; a server that pairs reads itself SHOULD write the same block on its own Sessions. A plain APDS client ignores it. It adds no event topic and carries no plate characters. A write that breaks a consistency rule of §5.8 is 422 and nothing is written. | class | Proposed: Session (Tier 1); Proposed: SessionLifecycleEnum (Tier 2) |
 | SessionReadBinding | Session read binding | One LPR read attached to a Session by the pairing engine (Part 5 §5.8, member `reads[]` of `apds-ext:apx:session-detail@1.0`). | class | Proposed: SessionRead (Tier 1); Proposed: SessionReadRoleEnum (Tier 1) |
+| StayCompliance | Stay compliance | The `apds-ext:apx:stay-compliance@1.0` decoration on an APDS Session (Part 5 §5.9): the outcome a compliance engine scored for the stay, and the policy it measured against. Written with the native Session POST/PUT by the engine; a server that scores stays itself SHOULD write the same block. The rules that produce the outcome stay in the engine. | class | APX only |
 
 **A.1.3.3 Specializations of the "Data" package**
 
@@ -283,6 +285,7 @@ There are no specializations in the "Data" package.
 | SessionDetail | matches | Matches | How a link to a Session was established and how sure it is (Part 5 §5.8; shared by the `matches[]` member of `apds-ext:apx:session-detail@1.0` and the decoration `apds-ext:apx:match-evidence@1.0` on a Violation or ValetTicket). Carries no plate characters and no vehicle attribute values (Part 9 §9.6). Where both ends of one link carry evidence (the Session's `matches[]` entry and the decoration on the Violation or ValetTicket), the two MUST agree. Evidence with `plate.method: lenient` or `applied: false` may excuse a stay but never accuse one: `issue` on a Violation resting on it is 409 `violation-not-issuable` (Part 19 §19.4 rule 5). | 0..* | Data.MatchEvidence |  |
 | SessionDetail | parent | Parent | The visit this area Session is part of (className `Session`). The parent's `hierarchyElement` MUST be an ancestor of this Session's (422 `request-unprocessable` otherwise). Consumers count visits by Sessions without `parent`; children still open when the parent ends SHOULD be closed no later than its `actualEnd` with `endReason` `parentExit`. | 0..1 | PkCommon.Reference |  |
 | SessionReadBinding | observation | Observation | The APDS ObservationElement (className `ObservationElement`). | 1..1 | PkCommon.Reference |  |
+| StayCompliance | policy | Policy | The EnforcementPolicy, at its version, the evaluation used (Part 19 §19.10), whose `stayGrace` explains the result. Naming no policy visible to the caller is 422 `reference-unknown`. | 0..1 | PkCommon.VersionedReference |  |
 
 **A.1.3.5 Attributes of the "Data" package**
 
@@ -454,6 +457,13 @@ There are no specializations in the "Data" package.
 | SessionDetail | passThrough | Pass through | An area stay shorter than the area's minimum dwell — never scored or billed. | 0..1 | Boolean |  |
 | SessionReadBinding | role | Role | `entry` and `exit` are the passages that opened and closed the visit; `duplicate` is the same passage seen by another camera or frame; `activity` is the vehicle seen inside (a sweep, a bay camera). | 1..1 | SessionReadBinding.role (enumeration) |  |
 | SessionReadBinding | representative | Representative | The read that stands for the visit in lists and screen-pops. At most one per Session; two are 422 `request-unprocessable` (Part 5 §5.8 rule 1). | 0..1 | Boolean |  |
+| StayCompliance | status | Status | definedValue of apx-stay-compliance-statuses, or an implementer code. | 1..1 | String |  |
+| StayCompliance | family | Family | The family of the status. For a registry status it MUST be the family the registry gives (422 `request-unprocessable`). `compliant` — rights or an exemption covered the stay `violation` — the stay was not covered as the policy requires `withheld` — not scored, or held back for review `other` — an outcome none of the other families fits, for example paid after exit | 1..1 | StayCompliance.family (enumeration) |  |
+| StayCompliance | pendingStatus | Pending status | The status the stay would have once a person confirms it; present only with `status` `reviewRequired` (422 `request-unprocessable` otherwise). | 0..1 | String |  |
+| StayCompliance | flags | Flags | Facts behind the status — definedValues of apx-stay-compliance-flags, or implementer codes. | 0..* | String |  |
+| StayCompliance | evaluatedTime | Evaluated time | When the evaluation ran. | 1..1 | PkCommon.DateTime |  |
+| StayCompliance | sequence | Sequence | Orders the evaluations of one Session. A write with a lower `sequence` than the one held is 409 `evaluation-out-of-order`; an equal one replaces it. | 1..1 | Integer |  |
+| StayCompliance | final | Final | The writer's statement that no further evaluation is expected; never a lock. | 0..1 | Boolean |  |
 
 ### A.1.4 "Events" package
 
@@ -552,6 +562,7 @@ There are no specializations in the "Events" package.
 | Command | Command | A request for an operational action against a lane/device/place. Perishable (expiryTime), idempotent (Idempotency-Key), fully audited (immutable statusHistory). | class | APX only |
 | CommandResult | Command result | The structured outcome of a command, populated by the server when the command reaches `succeeded` (Part 6 §6.1a) and absent before then. Members are normative per command type: `lostTicket` → `ticketNumber`, `session`, `amountDue`; `matchTicket` → `session`, `amountDue`; `pushNegotiatedRate` → `amountDue`, and `rateTable` when a table was selected (absent for a stated amount, which the lane inquiry reports as `currentTicket.negotiatedAmount`). Other command types leave it absent unless a registry entry says otherwise. It restates what the lane inquiry shows, so a console can continue (print, take payment) without parsing `statusHistory[].detail` or making a second call. | class | APX only |
 | DeviceStatus | Device status | Live state overlay keyed by Reference to an APDS SupplementalEquipment — never duplicates its descriptive fields. APDS 4.1 has no general equipment status list: its RefillPointStatusEnum (Data Dictionary A.3.53) covers refill points only and is absent from apds-api-4.1.yaml. deviceState values come from the APX registry apx-device-states, which follows that enumeration's style and shares its available, occupied, inoperative and unknown values. Attachable to APDS payloads as apds-ext:apx:devicestatus@1.0. | class | Proposed: EquipmentStatus (Tier 1) |
+| DisplayProof | Display proof | What a sign or display confirmed it showed, and when (Part 6 §6.1a): `CommandResult.display` for a commanded message, and the proof members of a Part 26 §26.9 DisplayRecord for any message. Carries a hash and the wording version, never the message text. | class | APX only |
 | LaneStatus | Lane status | The transaction context at a lane right now (the call-center screen-pop). Composes APDS references and data; adds no parallel entities. | class | APX only |
 | MatchCandidate | Match candidate | An open session at the place that plausibly belongs to the vehicle in the lane (Part 6 §6.7). Produced by the lane inquiry from the lane's own LPR read, a presented credential, the account registry (by plate or phone), or a checked-in reservation. Composes APDS references; adds no parallel session store. Advisory until a matchTicket command binds one. | class | APX only |
 | RatePolicy | Rate policy | Level B decoration on an APDS RateTable, carried in its `extensions` container as `apds-ext:apx:ratepolicy@1.0` (Part 6 §6.6). APDS models the rate deck completely; it has no way to say which tables an agent may offer as a negotiated rate. This is that flag — and because it rides inside the RateTable, every consumer mirroring the deck through the native `/rates` route (Part 5 §5.2) receives it with the table, no second query. APX deliberately defines NO selection rules here (length of stay, time of day, caller type): the system presenting the deck to an agent or a third party applies its own guardrails. The server's only rule is enforcement — a pushNegotiatedRate naming a table that is not flagged negotiable is refused (422 rate-not-negotiable). | class | Proposed: RateTable (Tier 2) |
@@ -578,6 +589,7 @@ There are no specializations in the "Control" package.
 | CommandResult | session | Session | The APDS Session the ticket belongs to (lostTicket, matchTicket). | 0..1 | PkCommon.Reference |  |
 | CommandResult | amountDue | Amount due | The amount due on the ticket immediately after the command. | 0..1 | Rates.AmountInCurrency |  |
 | CommandResult | rateTable | Rate table | The RateTable at the exact version applied (pushNegotiatedRate with a table; absent for a stated amount). | 0..1 | PkCommon.VersionedReference |  |
+| CommandResult | display | Display | Proof of display for `displayMessage` (Part 6 §6.1a): what the device confirmed it showed, when, and whether the player or an operator acknowledged it. A Part 26 §26.9 DisplayRecord that names this command MUST agree with it. | 0..1 | Control.DisplayProof |  |
 | CommandResult | extensions | Extensions | Implementer extensions, keyed by a namespaced name (Part 10). | 0..1 | Common.Extensions |  |
 | DeviceStatus | device | Device | Represents a reference to an identifiable object where the identifier is unique. It is composed of an unique identifier and a string identifying the class of the referenced object. If multiple versions exists for the object, the latest version is considered. | 1..1 | PkCommon.Reference |  |
 | DeviceStatus | extensions | Extensions | Implementer extensions, keyed by a namespaced name (Part 10). | 0..1 | Common.Extensions |  |
@@ -632,12 +644,6 @@ There are no specializations in the "Control" package.
 | Command | statusHistory.actor | Actor | The person or system that performed the action. | 1..1 | String |  |
 | Command | statusHistory.detail | Detail | Further detail, in free text. | 0..1 | String |  |
 | CommandResult | ticketNumber | Ticket number | The ticket the command issued or bound (lostTicket). | 0..1 | String |  |
-| CommandResult | display | Display | Proof of display for `displayMessage` (Part 6 §6.1a): what the device confirmed it showed, when, and whether the player or an operator acknowledged it. | 0..1 | Structure (members below) |  |
-| CommandResult | display.shownTime | Shown time | ISO-8601 format definition of a date and time - format YYYY-MM-DDTHH:MM:SSZ. | 0..1 | PkCommon.DateTime |  |
-| CommandResult | display.contentHash | Content hash | Hash of the rendered content, so a dispute can prove what was shown. | 0..1 | String |  |
-| CommandResult | display.wordingVersion | Wording version | The wording version the template was rendered under. | 0..1 | String |  |
-| CommandResult | display.screenshot | Screenshot | Access-controlled link to a capture of the display (Part 9 §9.6). | 0..1 | PkCommon.Url |  |
-| CommandResult | display.acknowledgedBy | Acknowledged by | Who acknowledged the display: the player, an operator, or no one. † | 0..1 | CommandResult.display.acknowledgedBy (enumeration) |  |
 | DeviceStatus | deviceState | Device state | definedValue from apx-device-states. | 1..1 | String |  |
 | DeviceStatus | lastCommunication | Last communication | When the device last reported; an agent reads "offline since" from it (Part 6 §6.4). | 0..1 | PkCommon.DateTime |  |
 | DeviceStatus | stateChangedTime | State changed time | ISO-8601 format definition of a date and time - format YYYY-MM-DDTHH:MM:SSZ. | 0..1 | PkCommon.DateTime |  |
@@ -649,6 +655,11 @@ There are no specializations in the "Control" package.
 | DeviceStatus | consumables.kind | Kind | Which consumable the level is reported for (Part 6 §6.4). † | 1..1 | DeviceStatus.consumables.kind (enumeration) |  |
 | DeviceStatus | consumables.level | Level | How much of the consumable is left, as a level, not a count. † | 1..1 | DeviceStatus.consumables.level (enumeration) |  |
 | DeviceStatus | maintenanceMode | Maintenance mode | The device is under test or maintenance; calls and events from it are excluded from service figures (Part 6 §6.4). | 0..1 | Boolean |  |
+| DisplayProof | shownTime | Shown time | ISO-8601 format definition of a date and time - format YYYY-MM-DDTHH:MM:SSZ. | 0..1 | PkCommon.DateTime |  |
+| DisplayProof | contentHash | Content hash | Hash of the rendered content, so a dispute can prove what was shown. | 0..1 | String |  |
+| DisplayProof | wordingVersion | Wording version | The wording version the template was rendered under. | 0..1 | String |  |
+| DisplayProof | screenshot | Screenshot | Access-controlled link to a capture of the display (Part 9 §9.6). | 0..1 | PkCommon.Url |  |
+| DisplayProof | acknowledgedBy | Acknowledged by | Acknowledged by of the display proof. ‡ | 0..1 | DisplayProof.acknowledgedBy (enumeration) |  |
 | LaneStatus | currentTicket | Current ticket | The ticket/credential currently in the machine, if any. | 0..1 | Structure (members below) |  |
 | LaneStatus | currentTicket.ticketNumber | Ticket number | Number printed on, or encoded in, the parking ticket. | 0..1 | String |  |
 | LaneStatus | currentTicket.issuedTime | Issued time | ISO-8601 format definition of a date and time - format YYYY-MM-DDTHH:MM:SSZ. | 0..1 | PkCommon.DateTime |  |
@@ -707,6 +718,7 @@ There are no specializations in the "Control" package.
 | CameraView | Camera view | A single-use, short-lived link to a camera's live stream, a still, or a recording (Part 26 §26.3). Bound to the agent it was issued to and logged against the `correlationId`; it expires at `expiresAt`, never more than 5 minutes after issue, and it never contains a camera credential. | class | APX only |
 | CameraViewRequest | Camera view request | Asks for a short-lived link to see a camera (Part 26 §26.3). Whoever holds the camera answers, the PARCS, the video system or an on-site gateway, and the camera's password never leaves the site. `playback` needs `from` and `to` and the `cameraPlayback` feature. | class | APX only |
 | CommsPoint | Comms point | Any way a parker reaches help from a lane or a location (Part 26 §26.4): an intercom, an analog dialler, a posted phone number, a kiosk, a QR code, an app. A call platform matches an inbound contact to a comms point by the number it calls out as (`callerId`), the number it called (`phoneNumber`), or its own device id (`commsDeviceId`), and APX then answers with the lane, or with the location only when the comms point serves no single lane (a posted number shared by many lanes can never name the lane by itself). | class | Proposed: CommsPoint (Tier 3) |
+| DisplayRecord | Display record | The record that a sign showed a message (Part 26 §26.9): which sign, which kind of message, when, and for which read or stay. Written by whichever system drove the display, the edge controller, the PARCS or the sign's own player, often with no APX command involved; immutable once written. It is the proof of display a refused-service message needs (Part 24 §24.4), and the data an operator measures the signs by. | class | APX only |
 | EquipmentDetail | Equipment detail | What a piece of hardware is, where it is, and what it does (Part 26 §26.1). Carried on an APDS SupplementalEquipment as the Level B decoration `apds-ext:apx:equipment-detail@1.0` in its `extensions` container (Part 4 §4.3). The equipment TYPE stays the APDS `EquipmentTypeEnum` (often `paymentMachine` or `other`); `role` says what the item does on the site, from the fixed code list `apx-equipment-roles`. | class | Proposed: SupplementalEquipment (Tier 2) |
 | EquipmentRecord | Equipment record | An APDS SupplementalEquipment as APX serves it (Part 26 §26.1): the stock APDS record plus its `extensions` container, which carries the `apds-ext:apx:equipment-detail@1.0` decoration (REQUIRED on every record this class serves), `apds-ext:apx:camera@1.0` on a camera, and `apds-ext:apx:external-ids@1.0` where other systems have ids for it. The APDS record itself is never reshaped. | class | APX only |
 | ExternalIdentifiers | External identifiers | The ids other systems use for the same place, lane or equipment (Part 26 §26.6). Carried on any HierarchyElement as the Level B decoration `apds-ext:apx:external-ids@1.0`. APDS `SupplementalFacility.externalIdentifiers` holds untyped strings; here each id says which system issued it. `system` is a URI the issuer owns, usually its own domain, so APX names no products or platforms. `POST /v1/identifiers:resolve` finds the APX record from such an id. | class | APX only |
@@ -721,6 +733,8 @@ There are no specializations in the "Control" package.
 | Class name | Parent class name |
 | --- | --- |
 | CommsPoint | Common.ApxResourceCore |
+| DisplayRecord | Common.ApxResourceCore |
+| DisplayRecord | Control.DisplayProof |
 | EquipmentRecord | Place.SupplementalEquipment |
 
 **A.1.6.4 Associations of the "SiteConfiguration" package**
@@ -736,6 +750,11 @@ There are no specializations in the "Control" package.
 | CommsPoint | equipment | Equipment | The SupplementalEquipment it is, when it is inventoried hardware (role `intercom`, `analogDialer`, `emergencyPhone`). | 0..1 | PkCommon.Reference |  |
 | CommsPoint | serves | Serves | The barrier an agent opens for this comms point, a gate or an access door, when there is one. | 0..1 | PkCommon.Reference |  |
 | CommsPoint | coverage.period | Period | Defines a continuous time period or a set of discontinuous time periods defined by the intersection of a set of criteria all within an overall delimiting interval. | 0..1 | PkCommon.Period |  |
+| DisplayRecord | display | Display | The sign, a SupplementalEquipment of §26.1 (role `laneDisplay` or `countSign`). | 1..1 | PkCommon.Reference |  |
+| DisplayRecord | place | Place | The place of the display; the server derives it from the device, and a body value that disagrees is 422 `request-unprocessable`. | 0..1 | PkCommon.Reference |  |
+| DisplayRecord | observation | Observation | The read that triggered the message (className `ObservationElement`), when there was one. | 0..1 | PkCommon.Reference |  |
+| DisplayRecord | session | Session | The stay the message was for (className `Session`), when there was one. | 0..1 | PkCommon.Reference |  |
+| DisplayRecord | command | Command | The Part 6 `displayMessage` command that drove the sign, when one did; `shownTime` and `contentHash` then agree with its `CommandResult.display`. | 0..1 | PkCommon.Reference |  |
 | EquipmentDetail | lane | Lane | The VehicularAccess the item serves. Absent for place-level equipment (an access door, a pay-on-foot station, a server). | 0..1 | PkCommon.Reference |  |
 | EquipmentDetail | builtInto | Built into | The host equipment this item is part of (an intercom in a door's call box, a camera in a pay station). | 0..1 | PkCommon.Reference |  |
 | EquipmentDetail | controls | Controls | The barriers this device opens (an exit verifier that controls gate 2, a card reader that controls an access door). | 0..* | PkCommon.Reference |  |
@@ -787,6 +806,9 @@ There are no specializations in the "Control" package.
 | CommsPoint | commsDeviceId | Comms device id | The id the call platform uses for this comms point when it identifies it by neither caller id nor dialled number. | 0..1 | String |  |
 | CommsPoint | coverage | Coverage | When the comms point is answered and in which languages. The answering call centre itself is not named. | 0..* | Structure (members below) |  |
 | CommsPoint | coverage.languages | Languages | BCP 47 language tags. | 0..* | String |  |
+| DisplayRecord | id | Id | Unique identifier of the record (Part 4). | 0..1 | Uuid | read-only |
+| DisplayRecord | version | Version | Version number of the record; increases by one on each change (Part 4). | 0..1 | Integer | read-only |
+| DisplayRecord | messageKind | Message kind | definedValue of apx-display-message-kinds, or an implementer code for a location's own messages. | 1..1 | String |  |
 | EquipmentDetail | role | Role | definedValue from apx-equipment-roles (a fixed list; `other` is a code, not free text). | 1..1 | String |  |
 | EquipmentDetail | manufacturer | Manufacturer | The maker of the item, as named on it (Part 26 §26.1). † | 0..1 | String |  |
 | EquipmentDetail | model | Model | Vehicle model. | 0..1 | String |  |
@@ -1380,7 +1402,7 @@ There are no specializations in the "Violations" package.
 | EligibilityResult | basis.validTo | Valid to | ISO-8601 format definition of a date and time - format YYYY-MM-DDTHH:MM:SSZ. | 0..1 | PkCommon.DateTime |  |
 | EligibilityResult | basis.status | Status | Why this basis does or does not entitle the vehicle here, now. | 1..1 | EligibilityResult.basis.status (enumeration) |  |
 | EligibilityResult | suggestedViolationType | Suggested violation type | When not entitled — the `apx-violation-types` value the server's rules suggest (never binding on the officer). | 0..1 | String (code list apx-violation-types) |  |
-| EligibilityResult | graceUntil | Grace until | When a grace period on the nearest basis ends, if the operator's policy grants one. | 0..1 | PkCommon.DateTime |  |
+| EligibilityResult | graceUntil | Grace until | When the grace on the stay ends, derived from the `stayGrace` of the EnforcementPolicy in force at `checkedTime` (Part 19 §19.3 rule 5): the stay's start plus `entryMinutes` while no right covers it, or the end of its last covering right plus `exitMinutes` once its rights have ended. Absent when that side has no grace, no policy is in force, or a right covers the stay. | 0..1 | PkCommon.DateTime |  |
 | EligibilityResult | lastRead | Last read | The most recent plate read of this credential at the place (APDS Observation-derived). | 0..1 | Structure (members below) |  |
 | EligibilityResult | lastRead.observationDateTime | Observation date time | ISO-8601 format definition of a date and time - format YYYY-MM-DDTHH:MM:SSZ. | 0..1 | PkCommon.DateTime |  |
 | EligibilityResult | lastRead.confidence | Confidence | Confidence in the value, from 0 to 1. | 0..1 | Decimal |  |
@@ -1421,6 +1443,9 @@ There are no specializations in the "Violations" package.
 | EnforcementPolicy | appealWindowDays | Appeal window days | Days after `notice.issuedTime` during which an appeal MUST be accepted — from `issued`, or from `paid` (pay-then-appeal). After it, servers MAY refuse with 409 `appeal-closed`. | 0..1 | Integer |  |
 | EnforcementPolicy | paymentGraceDays | Payment grace days | Days after `notice.issuedTime` before the first escalation step MAY fire, regardless of `afterDays` (days spent `appealed` do not count). | 0..1 | Integer |  |
 | EnforcementPolicy | signageRequired | Signage required | When true, `issue` is refused (422 `signage-required`) unless Signage was in force at the place at `detectedTime`. | 0..1 | Boolean |  |
+| EnforcementPolicy | stayGrace | Stay grace | How long a stay may go uncovered at each end before it needs a right (Part 19 §19.10 rule 7). Both members are optional and independent: absent means no grace on that side, `0` states explicitly that there is none. The policy states the minutes only; how they combine with the rights into a stay's outcome is the evaluating system's rule. The source of `EligibilityResult.graceUntil` (§19.3 rule 5). | 0..1 | Structure (members below) |  |
+| EnforcementPolicy | stayGrace.entryMinutes | Entry minutes | Minutes after entry before a right (a payment, a permit, a reservation) must cover the stay. | 0..1 | Integer |  |
+| EnforcementPolicy | stayGrace.exitMinutes | Exit minutes | Minutes after the end of the last covering right before the stay must be over. | 0..1 | Integer |  |
 | EnforcementPolicy | statusHistory | Status history | Immutable, append-only lifecycle audit (Part 4 §4.2). | 0..* | Structure (members below) |  |
 | EnforcementPolicy | statusHistory.state | State | The policy status entered at this point in the lifecycle. † | 1..1 | String |  |
 | EnforcementPolicy | statusHistory.time | Time | ISO-8601 format definition of a date and time - format YYYY-MM-DDTHH:MM:SSZ. | 1..1 | PkCommon.DateTime |  |
@@ -3055,27 +3080,13 @@ Defined inline on `Command`; the API names it by its owner and attribute.
 | expired | expired | The command's expiry time passed before dispatch, so it was never carried out (Part 6 §6.1). † |
 | cancelled | cancelled | The command was cancelled before it was dispatched (Part 6 §6.1). † |
 
-### A.3.38 The <<D2Enumeration>> "CommandResult.display.acknowledgedBy"
-
-Values of display.acknowledgedBy on CommandResult.
-
-Defined inline on `CommandResult`; the API names it by its owner and attribute.
-
-*Table A.99 -- Values contained in the enumeration "CommandResult.display.acknowledgedBy"*
-
-| Enumerated value name | Designation | Definition |
-| --- | --- | --- |
-| player | player | The display player acknowledged showing the message. † |
-| operator | operator | An operator acknowledged that the message was shown. † |
-| none | none | No one acknowledged the display. † |
-
-### A.3.39 The <<D2Enumeration>> "ConditionReport.damage.severity"
+### A.3.38 The <<D2Enumeration>> "ConditionReport.damage.severity"
 
 Values of damage.severity on ConditionReport.
 
 Defined inline on `ConditionReport`; the API names it by its owner and attribute.
 
-*Table A.100 -- Values contained in the enumeration "ConditionReport.damage.severity"*
+*Table A.99 -- Values contained in the enumeration "ConditionReport.damage.severity"*
 
 | Enumerated value name | Designation | Definition |
 | --- | --- | --- |
@@ -3083,51 +3094,51 @@ Defined inline on `ConditionReport`; the API names it by its owner and attribute
 | moderate | moderate | Damage needing repair. † |
 | major | major | Serious damage. † |
 
-### A.3.40 The <<D2Enumeration>> "CredentialAccessEvent.direction"
+### A.3.39 The <<D2Enumeration>> "CredentialAccessEvent.direction"
 
 Values of direction on CredentialAccessEvent.
 
 Defined inline on `CredentialAccessEvent`; the API names it by its owner and attribute.
 
-*Table A.101 -- Values contained in the enumeration "CredentialAccessEvent.direction"*
+*Table A.100 -- Values contained in the enumeration "CredentialAccessEvent.direction"*
 
 | Enumerated value name | Designation | Definition |
 | --- | --- | --- |
 | entry | entry | The attempt was to enter. † |
 | exit | exit | The attempt was to leave. † |
 
-### A.3.41 The <<D2Enumeration>> "CredentialAccessEvent.outcome"
+### A.3.40 The <<D2Enumeration>> "CredentialAccessEvent.outcome"
 
 Values of outcome on CredentialAccessEvent.
 
 Defined inline on `CredentialAccessEvent`; the API names it by its owner and attribute.
 
-*Table A.102 -- Values contained in the enumeration "CredentialAccessEvent.outcome"*
+*Table A.101 -- Values contained in the enumeration "CredentialAccessEvent.outcome"*
 
 | Enumerated value name | Designation | Definition |
 | --- | --- | --- |
 | granted | granted | Access was granted. † |
 | denied | denied | Access was refused. † |
 
-### A.3.42 The <<D2Enumeration>> "CredentialDigest.alg"
+### A.3.41 The <<D2Enumeration>> "CredentialDigest.alg"
 
 Values of alg on CredentialDigest.
 
 Defined inline on `CredentialDigest`; the API names it by its owner and attribute.
 
-*Table A.103 -- Values contained in the enumeration "CredentialDigest.alg"*
+*Table A.102 -- Values contained in the enumeration "CredentialDigest.alg"*
 
 | Enumerated value name | Designation | Definition |
 | --- | --- | --- |
 | HS256 | hs256 | HMAC with SHA-256, keyed by the digest key named in keyId (Part 9 §9.6). † |
 
-### A.3.43 The <<D2Enumeration>> "CredentialRecord.credentialAssignedType"
+### A.3.42 The <<D2Enumeration>> "CredentialRecord.credentialAssignedType"
 
 APDS CredentialAssignedTypeEnum — what the credential identifies.
 
 Defined inline on `CredentialRecord`; the API names it by its owner and attribute.
 
-*Table A.104 -- Values contained in the enumeration "CredentialRecord.credentialAssignedType"*
+*Table A.103 -- Values contained in the enumeration "CredentialRecord.credentialAssignedType"*
 
 | Enumerated value name | Designation | Definition |
 | --- | --- | --- |
@@ -3135,13 +3146,13 @@ Defined inline on `CredentialRecord`; the API names it by its owner and attribut
 | customer | customer | The credential identifies a customer. † |
 | other | other | The credential identifies something other than a vehicle or a customer. † |
 
-### A.3.44 The <<D2Enumeration>> "CredentialRecord.credentialStatus"
+### A.3.43 The <<D2Enumeration>> "CredentialRecord.credentialStatus"
 
 Values of credentialStatus on CredentialRecord.
 
 Defined inline on `CredentialRecord`; the API names it by its owner and attribute.
 
-*Table A.105 -- Values contained in the enumeration "CredentialRecord.credentialStatus"*
+*Table A.104 -- Values contained in the enumeration "CredentialRecord.credentialStatus"*
 
 | Enumerated value name | Designation | Definition |
 | --- | --- | --- |
@@ -3153,13 +3164,13 @@ Defined inline on `CredentialRecord`; the API names it by its owner and attribut
 | expired | expired | The credential's validity period has ended. † |
 | replaced | replaced | The credential has been succeeded by another credential (Part 21 §21.1). † |
 
-### A.3.45 The <<D2Enumeration>> "CredentialRecord.media.depositStatus"
+### A.3.44 The <<D2Enumeration>> "CredentialRecord.media.depositStatus"
 
 Values of media.depositStatus on CredentialRecord.
 
 Defined inline on `CredentialRecord`; the API names it by its owner and attribute.
 
-*Table A.106 -- Values contained in the enumeration "CredentialRecord.media.depositStatus"*
+*Table A.105 -- Values contained in the enumeration "CredentialRecord.media.depositStatus"*
 
 | Enumerated value name | Designation | Definition |
 | --- | --- | --- |
@@ -3167,13 +3178,13 @@ Defined inline on `CredentialRecord`; the API names it by its owner and attribut
 | refunded | refunded | The deposit has been returned to the holder. † |
 | forfeited | forfeited | The deposit has been kept by the issuer. † |
 
-### A.3.46 The <<D2Enumeration>> "CredentialRecord.media.form"
+### A.3.45 The <<D2Enumeration>> "CredentialRecord.media.form"
 
 Values of media.form on CredentialRecord.
 
 Defined inline on `CredentialRecord`; the API names it by its owner and attribute.
 
-*Table A.107 -- Values contained in the enumeration "CredentialRecord.media.form"*
+*Table A.106 -- Values contained in the enumeration "CredentialRecord.media.form"*
 
 | Enumerated value name | Designation | Definition |
 | --- | --- | --- |
@@ -3186,13 +3197,13 @@ Defined inline on `CredentialRecord`; the API names it by its owner and attribut
 | ticket | ticket | A ticket issued for the stay. † |
 | virtual | virtual | A credential with no physical item, such as an account number. † |
 
-### A.3.47 The <<D2Enumeration>> "CredentialReplaceRequest.media.form"
+### A.3.46 The <<D2Enumeration>> "CredentialReplaceRequest.media.form"
 
 Values of media.form on CredentialReplaceRequest.
 
 Defined inline on `CredentialReplaceRequest`; the API names it by its owner and attribute.
 
-*Table A.108 -- Values contained in the enumeration "CredentialReplaceRequest.media.form"*
+*Table A.107 -- Values contained in the enumeration "CredentialReplaceRequest.media.form"*
 
 | Enumerated value name | Designation | Definition |
 | --- | --- | --- |
@@ -3205,13 +3216,13 @@ Defined inline on `CredentialReplaceRequest`; the API names it by its owner and 
 | ticket | ticket | A ticket issued for the stay. † |
 | virtual | virtual | A credential with no physical item, such as an account number. † |
 
-### A.3.48 The <<D2Enumeration>> "CredentialReplaceRequest.oldDepositStatus"
+### A.3.47 The <<D2Enumeration>> "CredentialReplaceRequest.oldDepositStatus"
 
 What happens to the old record's deposit.
 
 Defined inline on `CredentialReplaceRequest`; the API names it by its owner and attribute.
 
-*Table A.109 -- Values contained in the enumeration "CredentialReplaceRequest.oldDepositStatus"*
+*Table A.108 -- Values contained in the enumeration "CredentialReplaceRequest.oldDepositStatus"*
 
 | Enumerated value name | Designation | Definition |
 | --- | --- | --- |
@@ -3219,13 +3230,13 @@ Defined inline on `CredentialReplaceRequest`; the API names it by its owner and 
 | refunded | refunded | The old item's deposit is returned to the holder. † |
 | forfeited | forfeited | The old item's deposit is kept by the issuer. † |
 
-### A.3.49 The <<D2Enumeration>> "DeliveryRecord.status"
+### A.3.48 The <<D2Enumeration>> "DeliveryRecord.status"
 
 Values of status on DeliveryRecord.
 
 Defined inline on `DeliveryRecord`; the API names it by its owner and attribute.
 
-*Table A.110 -- Values contained in the enumeration "DeliveryRecord.status"*
+*Table A.109 -- Values contained in the enumeration "DeliveryRecord.status"*
 
 | Enumerated value name | Designation | Definition |
 | --- | --- | --- |
@@ -3233,13 +3244,13 @@ Defined inline on `DeliveryRecord`; the API names it by its owner and attribute.
 | retrying | retrying | Delivery has not yet succeeded and further attempts are scheduled (Part 8 §8.3). † |
 | failed | failed | Every attempt in the retry schedule failed (Part 8 §8.3). † |
 
-### A.3.50 The <<D2Enumeration>> "DeviceStatus.consumables.kind"
+### A.3.49 The <<D2Enumeration>> "DeviceStatus.consumables.kind"
 
 Values of consumables.kind on DeviceStatus.
 
 Defined inline on `DeviceStatus`; the API names it by its owner and attribute.
 
-*Table A.111 -- Values contained in the enumeration "DeviceStatus.consumables.kind"*
+*Table A.110 -- Values contained in the enumeration "DeviceStatus.consumables.kind"*
 
 | Enumerated value name | Designation | Definition |
 | --- | --- | --- |
@@ -3248,13 +3259,13 @@ Defined inline on `DeviceStatus`; the API names it by its owner and attribute.
 | cash | cash | Notes held for change in a pay station. † |
 | coins | coins | Coins held for change in a pay station. † |
 
-### A.3.51 The <<D2Enumeration>> "DeviceStatus.consumables.level"
+### A.3.50 The <<D2Enumeration>> "DeviceStatus.consumables.level"
 
 Values of consumables.level on DeviceStatus.
 
 Defined inline on `DeviceStatus`; the API names it by its owner and attribute.
 
-*Table A.112 -- Values contained in the enumeration "DeviceStatus.consumables.level"*
+*Table A.111 -- Values contained in the enumeration "DeviceStatus.consumables.level"*
 
 | Enumerated value name | Designation | Definition |
 | --- | --- | --- |
@@ -3263,18 +3274,32 @@ Defined inline on `DeviceStatus`; the API names it by its owner and attribute.
 | empty | empty | The consumable has run out; the function that needs it has stopped. † |
 | unknown | unknown | The device does not report the level. † |
 
-### A.3.52 The <<D2Enumeration>> "DiscoveryDocument.replication.authority"
+### A.3.51 The <<D2Enumeration>> "DiscoveryDocument.replication.authority"
 
 Values of replication.authority on DiscoveryDocument.
 
 Defined inline on `DiscoveryDocument`; the API names it by its owner and attribute.
 
-*Table A.113 -- Values contained in the enumeration "DiscoveryDocument.replication.authority"*
+*Table A.112 -- Values contained in the enumeration "DiscoveryDocument.replication.authority"*
 
 | Enumerated value name | Designation | Definition |
 | --- | --- | --- |
 | site | site | The site implementation is authoritative for the class at the place (Part 18 §18.6). † |
 | aggregator | aggregator | The aggregating implementation is authoritative for the class at the place (Part 18 §18.6). † |
+
+### A.3.52 The <<D2Enumeration>> "DisplayProof.acknowledgedBy"
+
+Values of acknowledgedBy on DisplayProof.
+
+Defined inline on `DisplayProof`; the API names it by its owner and attribute.
+
+*Table A.113 -- Values contained in the enumeration "DisplayProof.acknowledgedBy"*
+
+| Enumerated value name | Designation | Definition |
+| --- | --- | --- |
+| player | player | — |
+| operator | operator | — |
+| none | none | — |
 
 ### A.3.53 The <<D2Enumeration>> "EligibilityResult.basis.status"
 
@@ -3893,13 +3918,28 @@ Defined inline on `Signage`; the API names it by its owner and attribute.
 | superseded | superseded | Replaced by a newer sign record or version (Part 19 §19.11). † |
 | removed | removed | The sign has been taken down without a replacement. † |
 
-### A.3.95 The <<D2Enumeration>> "SubscriptionFilters.severityFloor"
+### A.3.95 The <<D2Enumeration>> "StayCompliance.family"
+
+The family of the status. For a registry status it MUST be the family the registry gives (422 `request-unprocessable`). `compliant` — rights or an exemption covered the stay `violation` — the stay was not covered as the policy requires `withheld` — not scored, or held back for review `other` — an outcome none of the other families fits, for example paid after exit
+
+Defined inline on `StayCompliance`; the API names it by its owner and attribute.
+
+*Table A.156 -- Values contained in the enumeration "StayCompliance.family"*
+
+| Enumerated value name | Designation | Definition |
+| --- | --- | --- |
+| compliant | compliant | rights or an exemption covered the stay |
+| violation | violation | the stay was not covered as the policy requires |
+| withheld | withheld | not scored, or held back for review |
+| other | other | an outcome none of the other families fits, for example paid after exit |
+
+### A.3.96 The <<D2Enumeration>> "SubscriptionFilters.severityFloor"
 
 For alert topics — minimum severity delivered.
 
 Defined inline on `SubscriptionFilters`; the API names it by its owner and attribute.
 
-*Table A.156 -- Values contained in the enumeration "SubscriptionFilters.severityFloor"*
+*Table A.157 -- Values contained in the enumeration "SubscriptionFilters.severityFloor"*
 
 | Enumerated value name | Designation | Definition |
 | --- | --- | --- |
@@ -3909,26 +3949,26 @@ Defined inline on `SubscriptionFilters`; the API names it by its owner and attri
 | major | major | Alerts of major severity and above are delivered. † |
 | critical | critical | Only critical alerts are delivered. † |
 
-### A.3.96 The <<D2Enumeration>> "SupportInteraction.agentType"
+### A.3.97 The <<D2Enumeration>> "SupportInteraction.agentType"
 
 Values of agentType on SupportInteraction.
 
 Defined inline on `SupportInteraction`; the API names it by its owner and attribute.
 
-*Table A.157 -- Values contained in the enumeration "SupportInteraction.agentType"*
+*Table A.158 -- Values contained in the enumeration "SupportInteraction.agentType"*
 
 | Enumerated value name | Designation | Definition |
 | --- | --- | --- |
 | human | human | A person handled the interaction. † |
 | ai | ai | An AI agent handled the interaction. † |
 
-### A.3.97 The <<D2Enumeration>> "TollTransaction.transactionStatus"
+### A.3.98 The <<D2Enumeration>> "TollTransaction.transactionStatus"
 
 Values of transactionStatus on TollTransaction.
 
 Defined inline on `TollTransaction`; the API names it by its owner and attribute.
 
-*Table A.158 -- Values contained in the enumeration "TollTransaction.transactionStatus"*
+*Table A.159 -- Values contained in the enumeration "TollTransaction.transactionStatus"*
 
 | Enumerated value name | Designation | Definition |
 | --- | --- | --- |
@@ -3939,13 +3979,13 @@ Defined inline on `TollTransaction`; the API names it by its owner and attribute
 | resolved | resolved | A dispute has been resolved. † |
 | voided | voided | Cancelled by the operator. † |
 
-### A.3.98 The <<D2Enumeration>> "UiActionRecord.outcome"
+### A.3.99 The <<D2Enumeration>> "UiActionRecord.outcome"
 
 Values of outcome on UiActionRecord.
 
 Defined inline on `UiActionRecord`; the API names it by its owner and attribute.
 
-*Table A.159 -- Values contained in the enumeration "UiActionRecord.outcome"*
+*Table A.160 -- Values contained in the enumeration "UiActionRecord.outcome"*
 
 | Enumerated value name | Designation | Definition |
 | --- | --- | --- |
@@ -3953,26 +3993,26 @@ Defined inline on `UiActionRecord`; the API names it by its owner and attribute.
 | failed | failed | The action was attempted on the surface and did not succeed. † |
 | noAction | no action | The agent took no action; recorded so that the launch is accounted for. † |
 
-### A.3.99 The <<D2Enumeration>> "UiActionRecord.unavailable.reason"
+### A.3.100 The <<D2Enumeration>> "UiActionRecord.unavailable.reason"
 
 Values of unavailable.reason on UiActionRecord.
 
 Defined inline on `UiActionRecord`; the API names it by its owner and attribute.
 
-*Table A.160 -- Values contained in the enumeration "UiActionRecord.unavailable.reason"*
+*Table A.161 -- Values contained in the enumeration "UiActionRecord.unavailable.reason"*
 
 | Enumerated value name | Designation | Definition |
 | --- | --- | --- |
 | notSupported | not supported | The surface never knows this value (Part 25 §25.4). † |
 | notApplicable | not applicable | The value does not apply to this action. † |
 
-### A.3.100 The <<D2Enumeration>> "UiLaunch.status"
+### A.3.101 The <<D2Enumeration>> "UiLaunch.status"
 
 `issued` → `opened` on first use of the url or token (single use) → `closed` when the screen reports it is done, or `expired` when `expiresAt` passes unused. An opened launch not closed within the implementation's limit (RECOMMENDED 1 h) also becomes `expired` (Part 25 §25.3).
 
 Defined inline on `UiLaunch`; the API names it by its owner and attribute.
 
-*Table A.161 -- Values contained in the enumeration "UiLaunch.status"*
+*Table A.162 -- Values contained in the enumeration "UiLaunch.status"*
 
 | Enumerated value name | Designation | Definition |
 | --- | --- | --- |
@@ -3981,26 +4021,26 @@ Defined inline on `UiLaunch`; the API names it by its owner and attribute.
 | closed | closed | The surface reported the end of the session, or the implementation observed it; final. † |
 | expired | expired | Part 25 §25.3). |
 
-### A.3.101 The <<D2Enumeration>> "UiLaunchRequest.agentType"
+### A.3.102 The <<D2Enumeration>> "UiLaunchRequest.agentType"
 
 Values of agentType on UiLaunchRequest.
 
 Defined inline on `UiLaunchRequest`; the API names it by its owner and attribute.
 
-*Table A.162 -- Values contained in the enumeration "UiLaunchRequest.agentType"*
+*Table A.163 -- Values contained in the enumeration "UiLaunchRequest.agentType"*
 
 | Enumerated value name | Designation | Definition |
 | --- | --- | --- |
 | human | human | A person will use the surface. † |
 | ai | ai | An AI agent will use the surface. † |
 
-### A.3.102 The <<D2Enumeration>> "UiLaunchRequest.displayMode"
+### A.3.103 The <<D2Enumeration>> "UiLaunchRequest.displayMode"
 
 Values of displayMode on UiLaunchRequest.
 
 Defined inline on `UiLaunchRequest`; the API names it by its owner and attribute.
 
-*Table A.163 -- Values contained in the enumeration "UiLaunchRequest.displayMode"*
+*Table A.164 -- Values contained in the enumeration "UiLaunchRequest.displayMode"*
 
 | Enumerated value name | Designation | Definition |
 | --- | --- | --- |
@@ -4008,13 +4048,13 @@ Defined inline on `UiLaunchRequest`; the API names it by its owner and attribute
 | popup | popup | Show the surface in a pop-up window. † |
 | tab | tab | Show the surface in a new browser tab. † |
 
-### A.3.103 The <<D2Enumeration>> "UiSurface.displayModes"
+### A.3.104 The <<D2Enumeration>> "UiSurface.displayModes"
 
 Values of displayModes on UiSurface.
 
 Defined inline on `UiSurface`; the API names it by its owner and attribute.
 
-*Table A.164 -- Values contained in the enumeration "UiSurface.displayModes"*
+*Table A.165 -- Values contained in the enumeration "UiSurface.displayModes"*
 
 | Enumerated value name | Designation | Definition |
 | --- | --- | --- |
@@ -4022,26 +4062,26 @@ Defined inline on `UiSurface`; the API names it by its owner and attribute.
 | popup | popup | The surface may be shown in a pop-up window. † |
 | tab | tab | The surface may be shown in a new browser tab. † |
 
-### A.3.104 The <<D2Enumeration>> "UiSurface.launchModes"
+### A.3.105 The <<D2Enumeration>> "UiSurface.launchModes"
 
 Values of launchModes on UiSurface.
 
 Defined inline on `UiSurface`; the API names it by its owner and attribute.
 
-*Table A.165 -- Values contained in the enumeration "UiSurface.launchModes"*
+*Table A.166 -- Values contained in the enumeration "UiSurface.launchModes"*
 
 | Enumerated value name | Designation | Definition |
 | --- | --- | --- |
 | handshake | handshake | The host posts a launch request with its APX token and opens the single-use URL returned (Part 25 §25.2). † |
 | signedToken | signed token | The host signs a launch token and sends it to the surface's launch URL by form post or URL fragment (Part 25 §25.2). † |
 
-### A.3.105 The <<D2Enumeration>> "ValetHandbackRequest.verificationMethod"
+### A.3.106 The <<D2Enumeration>> "ValetHandbackRequest.verificationMethod"
 
 Values of verificationMethod on ValetHandbackRequest.
 
 Defined inline on `ValetHandbackRequest`; the API names it by its owner and attribute.
 
-*Table A.166 -- Values contained in the enumeration "ValetHandbackRequest.verificationMethod"*
+*Table A.167 -- Values contained in the enumeration "ValetHandbackRequest.verificationMethod"*
 
 | Enumerated value name | Designation | Definition |
 | --- | --- | --- |
@@ -4051,13 +4091,13 @@ Defined inline on `ValetHandbackRequest`; the API names it by its owner and attr
 | id | id | An identity document was checked. † |
 | attendant | attendant | An attendant recognised the customer. † |
 
-### A.3.106 The <<D2Enumeration>> "ValetRetrievalRequest.channel"
+### A.3.107 The <<D2Enumeration>> "ValetRetrievalRequest.channel"
 
 Values of channel on ValetRetrievalRequest.
 
 Defined inline on `ValetRetrievalRequest`; the API names it by its owner and attribute.
 
-*Table A.167 -- Values contained in the enumeration "ValetRetrievalRequest.channel"*
+*Table A.168 -- Values contained in the enumeration "ValetRetrievalRequest.channel"*
 
 | Enumerated value name | Designation | Definition |
 | --- | --- | --- |
@@ -4069,13 +4109,13 @@ Defined inline on `ValetRetrievalRequest`; the API names it by its owner and att
 | attendant | attendant | An attendant raised the request at the stand. † |
 | callCenter | call center | An agent at a contact centre raised the request. † |
 
-### A.3.107 The <<D2Enumeration>> "ValetTicket.customer.contactChannel.type"
+### A.3.108 The <<D2Enumeration>> "ValetTicket.customer.contactChannel.type"
 
 Values of customer.contactChannel.type on ValetTicket.
 
 Defined inline on `ValetTicket`; the API names it by its owner and attribute.
 
-*Table A.168 -- Values contained in the enumeration "ValetTicket.customer.contactChannel.type"*
+*Table A.169 -- Values contained in the enumeration "ValetTicket.customer.contactChannel.type"*
 
 | Enumerated value name | Designation | Definition |
 | --- | --- | --- |
@@ -4086,13 +4126,13 @@ Defined inline on `ValetTicket`; the API names it by its owner and attribute.
 | email | email | The customer is reached by email. † |
 | none | none | The customer has given no channel to be reached on. † |
 
-### A.3.108 The <<D2Enumeration>> "ValetTicket.handback.verificationMethod"
+### A.3.109 The <<D2Enumeration>> "ValetTicket.handback.verificationMethod"
 
 Values of handback.verificationMethod on ValetTicket.
 
 Defined inline on `ValetTicket`; the API names it by its owner and attribute.
 
-*Table A.169 -- Values contained in the enumeration "ValetTicket.handback.verificationMethod"*
+*Table A.170 -- Values contained in the enumeration "ValetTicket.handback.verificationMethod"*
 
 | Enumerated value name | Designation | Definition |
 | --- | --- | --- |
@@ -4102,13 +4142,13 @@ Defined inline on `ValetTicket`; the API names it by its owner and attribute.
 | id | id | An identity document was checked. † |
 | attendant | attendant | An attendant recognised the customer. † |
 
-### A.3.109 The <<D2Enumeration>> "ValetTicket.retrieval.channel"
+### A.3.110 The <<D2Enumeration>> "ValetTicket.retrieval.channel"
 
 Values of retrieval.channel on ValetTicket.
 
 Defined inline on `ValetTicket`; the API names it by its owner and attribute.
 
-*Table A.170 -- Values contained in the enumeration "ValetTicket.retrieval.channel"*
+*Table A.171 -- Values contained in the enumeration "ValetTicket.retrieval.channel"*
 
 | Enumerated value name | Designation | Definition |
 | --- | --- | --- |
@@ -4120,13 +4160,13 @@ Defined inline on `ValetTicket`; the API names it by its owner and attribute.
 | attendant | attendant | An attendant raised the request at the stand. † |
 | callCenter | call center | An agent at a contact centre raised the request. † |
 
-### A.3.110 The <<D2Enumeration>> "ValetTicket.valetStatus"
+### A.3.111 The <<D2Enumeration>> "ValetTicket.valetStatus"
 
 Values of valetStatus on ValetTicket.
 
 Defined inline on `ValetTicket`; the API names it by its owner and attribute.
 
-*Table A.171 -- Values contained in the enumeration "ValetTicket.valetStatus"*
+*Table A.172 -- Values contained in the enumeration "ValetTicket.valetStatus"*
 
 | Enumerated value name | Designation | Definition |
 | --- | --- | --- |
@@ -4139,13 +4179,13 @@ Defined inline on `ValetTicket`; the API names it by its owner and attribute.
 | closed | closed | The stay is settled (Part 22 §22.1). † |
 | cancelled | cancelled | The ticket was cancelled before custody was taken; this is final (Part 22 §22.1). † |
 
-### A.3.111 The <<D2Enumeration>> "ValidationInstrument.instrumentStatus"
+### A.3.112 The <<D2Enumeration>> "ValidationInstrument.instrumentStatus"
 
 Values of instrumentStatus on ValidationInstrument.
 
 Defined inline on `ValidationInstrument`; the API names it by its owner and attribute.
 
-*Table A.172 -- Values contained in the enumeration "ValidationInstrument.instrumentStatus"*
+*Table A.173 -- Values contained in the enumeration "ValidationInstrument.instrumentStatus"*
 
 | Enumerated value name | Designation | Definition |
 | --- | --- | --- |
@@ -4154,26 +4194,26 @@ Defined inline on `ValidationInstrument`; the API names it by its owner and attr
 | void | void | The instrument has been withdrawn. † |
 | expired | expired | The instrument is past its validTo time (Part 20 §20.2). † |
 
-### A.3.112 The <<D2Enumeration>> "ValidationIssuance.issuanceStatus"
+### A.3.113 The <<D2Enumeration>> "ValidationIssuance.issuanceStatus"
 
 `void` after `POST …/issuances/{issuanceId}/void` (Part 20 §20.2 rule 5).
 
 Defined inline on `ValidationIssuance`; the API names it by its owner and attribute.
 
-*Table A.173 -- Values contained in the enumeration "ValidationIssuance.issuanceStatus"*
+*Table A.174 -- Values contained in the enumeration "ValidationIssuance.issuanceStatus"*
 
 | Enumerated value name | Designation | Definition |
 | --- | --- | --- |
 | issued | issued | The batch is in force. † |
 | void | void | The batch has been withdrawn; unredeemed instruments may not be used (Part 20 §20.2). † |
 
-### A.3.113 The <<D2Enumeration>> "ValidationIssuance.method"
+### A.3.114 The <<D2Enumeration>> "ValidationIssuance.method"
 
 Values of method on ValidationIssuance.
 
 Defined inline on `ValidationIssuance`; the API names it by its owner and attribute.
 
-*Table A.174 -- Values contained in the enumeration "ValidationIssuance.method"*
+*Table A.175 -- Values contained in the enumeration "ValidationIssuance.method"*
 
 | Enumerated value name | Designation | Definition |
 | --- | --- | --- |
@@ -4183,26 +4223,26 @@ Defined inline on `ValidationIssuance`; the API names it by its owner and attrib
 | digital | digital | A digital token held in an application. † |
 | api | api | Redemptions recorded directly by a merchant system, with no per-instrument code (Part 20 §20.2). † |
 
-### A.3.114 The <<D2Enumeration>> "ValidationIssuanceRequest.issuanceStatus"
+### A.3.115 The <<D2Enumeration>> "ValidationIssuanceRequest.issuanceStatus"
 
 Values of issuanceStatus on ValidationIssuanceRequest.
 
 Defined inline on `ValidationIssuanceRequest`; the API names it by its owner and attribute.
 
-*Table A.175 -- Values contained in the enumeration "ValidationIssuanceRequest.issuanceStatus"*
+*Table A.176 -- Values contained in the enumeration "ValidationIssuanceRequest.issuanceStatus"*
 
 | Enumerated value name | Designation | Definition |
 | --- | --- | --- |
 | issued | issued | The batch is in force. † |
 | void | void | The batch has been withdrawn; unredeemed instruments may not be used (Part 20 §20.2). † |
 
-### A.3.115 The <<D2Enumeration>> "ValidationIssuanceRequest.method"
+### A.3.116 The <<D2Enumeration>> "ValidationIssuanceRequest.method"
 
 Values of method on ValidationIssuanceRequest.
 
 Defined inline on `ValidationIssuanceRequest`; the API names it by its owner and attribute.
 
-*Table A.176 -- Values contained in the enumeration "ValidationIssuanceRequest.method"*
+*Table A.177 -- Values contained in the enumeration "ValidationIssuanceRequest.method"*
 
 | Enumerated value name | Designation | Definition |
 | --- | --- | --- |
@@ -4212,13 +4252,13 @@ Defined inline on `ValidationIssuanceRequest`; the API names it by its owner and
 | digital | digital | A digital token held in an application. † |
 | api | api | Redemptions recorded directly by a merchant system, with no per-instrument code (Part 20 §20.2). † |
 
-### A.3.116 The <<D2Enumeration>> "ValidationProgram.billing.billingCycle"
+### A.3.117 The <<D2Enumeration>> "ValidationProgram.billing.billingCycle"
 
 Values of billing.billingCycle on ValidationProgram.
 
 Defined inline on `ValidationProgram`; the API names it by its owner and attribute.
 
-*Table A.177 -- Values contained in the enumeration "ValidationProgram.billing.billingCycle"*
+*Table A.178 -- Values contained in the enumeration "ValidationProgram.billing.billingCycle"*
 
 | Enumerated value name | Designation | Definition |
 | --- | --- | --- |
@@ -4226,13 +4266,13 @@ Defined inline on `ValidationProgram`; the API names it by its owner and attribu
 | weekly | weekly | Billed once a week. † |
 | perRedemption | per redemption | Billed for each redemption as it is applied. † |
 
-### A.3.117 The <<D2Enumeration>> "ValidationProgram.billing.model"
+### A.3.118 The <<D2Enumeration>> "ValidationProgram.billing.model"
 
 Values of billing.model on ValidationProgram.
 
 Defined inline on `ValidationProgram`; the API names it by its owner and attribute.
 
-*Table A.178 -- Values contained in the enumeration "ValidationProgram.billing.model"*
+*Table A.179 -- Values contained in the enumeration "ValidationProgram.billing.model"*
 
 | Enumerated value name | Designation | Definition |
 | --- | --- | --- |
@@ -4240,13 +4280,13 @@ Defined inline on `ValidationProgram`; the API names it by its owner and attribu
 | operatorAbsorbs | operator absorbs | The operator bears the cost and nothing is billable (Part 20 §20.6). † |
 | split | split | The merchant pays a share of the amount reduced (Part 20 §20.6). † |
 
-### A.3.118 The <<D2Enumeration>> "ValidationProgram.issuanceMethods"
+### A.3.119 The <<D2Enumeration>> "ValidationProgram.issuanceMethods"
 
 Values of issuanceMethods on ValidationProgram.
 
 Defined inline on `ValidationProgram`; the API names it by its owner and attribute.
 
-*Table A.179 -- Values contained in the enumeration "ValidationProgram.issuanceMethods"*
+*Table A.180 -- Values contained in the enumeration "ValidationProgram.issuanceMethods"*
 
 | Enumerated value name | Designation | Definition |
 | --- | --- | --- |
@@ -4256,13 +4296,13 @@ Defined inline on `ValidationProgram`; the API names it by its owner and attribu
 | digital | digital | A digital token held in an application. † |
 | api | api | Redemptions recorded directly by a merchant system, with no per-instrument code (Part 20 §20.2). † |
 
-### A.3.119 The <<D2Enumeration>> "ValidationProgram.programStatus"
+### A.3.120 The <<D2Enumeration>> "ValidationProgram.programStatus"
 
 Values of programStatus on ValidationProgram.
 
 Defined inline on `ValidationProgram`; the API names it by its owner and attribute.
 
-*Table A.180 -- Values contained in the enumeration "ValidationProgram.programStatus"*
+*Table A.181 -- Values contained in the enumeration "ValidationProgram.programStatus"*
 
 | Enumerated value name | Designation | Definition |
 | --- | --- | --- |
@@ -4270,13 +4310,13 @@ Defined inline on `ValidationProgram`; the API names it by its owner and attribu
 | suspended | suspended | The program is temporarily stopped and redemptions are refused; it may be resumed (Part 20 §20.1). † |
 | ended | ended | The program has ended; this is final (Part 20 §20.1). † |
 
-### A.3.120 The <<D2Enumeration>> "ValidationRedemption.channel"
+### A.3.121 The <<D2Enumeration>> "ValidationRedemption.channel"
 
 Values of channel on ValidationRedemption.
 
 Defined inline on `ValidationRedemption`; the API names it by its owner and attribute.
 
-*Table A.181 -- Values contained in the enumeration "ValidationRedemption.channel"*
+*Table A.182 -- Values contained in the enumeration "ValidationRedemption.channel"*
 
 | Enumerated value name | Designation | Definition |
 | --- | --- | --- |
@@ -4286,26 +4326,26 @@ Defined inline on `ValidationRedemption`; the API names it by its owner and attr
 | callCenter | call center | Applied by an agent through the applyValidation command (Part 20 §20.3). † |
 | api | api | Recorded directly by a connected system. † |
 
-### A.3.121 The <<D2Enumeration>> "ValidationRedemption.redemptionStatus"
+### A.3.122 The <<D2Enumeration>> "ValidationRedemption.redemptionStatus"
 
 Values of redemptionStatus on ValidationRedemption.
 
 Defined inline on `ValidationRedemption`; the API names it by its owner and attribute.
 
-*Table A.182 -- Values contained in the enumeration "ValidationRedemption.redemptionStatus"*
+*Table A.183 -- Values contained in the enumeration "ValidationRedemption.redemptionStatus"*
 
 | Enumerated value name | Designation | Definition |
 | --- | --- | --- |
 | applied | applied | The validation is applied to the ticket or session. † |
 | reversed | reversed | The validation was reversed (Part 20 §20.4). † |
 
-### A.3.122 The <<D2Enumeration>> "ValidationStatement.billingModel"
+### A.3.123 The <<D2Enumeration>> "ValidationStatement.billingModel"
 
 Values of billingModel on ValidationStatement.
 
 Defined inline on `ValidationStatement`; the API names it by its owner and attribute.
 
-*Table A.183 -- Values contained in the enumeration "ValidationStatement.billingModel"*
+*Table A.184 -- Values contained in the enumeration "ValidationStatement.billingModel"*
 
 | Enumerated value name | Designation | Definition |
 | --- | --- | --- |
@@ -4313,39 +4353,39 @@ Defined inline on `ValidationStatement`; the API names it by its owner and attri
 | operatorAbsorbs | operator absorbs | The operator bears the cost and nothing is billable (Part 20 §20.6). † |
 | split | split | The merchant pays a share of the amount reduced (Part 20 §20.6). † |
 
-### A.3.123 The <<D2Enumeration>> "ValidationStatement.lines.lineKind"
+### A.3.124 The <<D2Enumeration>> "ValidationStatement.lines.lineKind"
 
 `redemption` (default when absent) — a redemption applied in the period. `credit` — a redemption billed on an earlier closed statement and reversed since; `billable` is negative.
 
 Defined inline on `ValidationStatement`; the API names it by its owner and attribute.
 
-*Table A.184 -- Values contained in the enumeration "ValidationStatement.lines.lineKind"*
+*Table A.185 -- Values contained in the enumeration "ValidationStatement.lines.lineKind"*
 
 | Enumerated value name | Designation | Definition |
 | --- | --- | --- |
 | redemption | redemption | default when absent) — a redemption applied in |
 | credit | credit | a redemption billed on an earlier |
 
-### A.3.124 The <<D2Enumeration>> "ValidationStatement.statementStatus"
+### A.3.125 The <<D2Enumeration>> "ValidationStatement.statementStatus"
 
 Values of statementStatus on ValidationStatement.
 
 Defined inline on `ValidationStatement`; the API names it by its owner and attribute.
 
-*Table A.185 -- Values contained in the enumeration "ValidationStatement.statementStatus"*
+*Table A.186 -- Values contained in the enumeration "ValidationStatement.statementStatus"*
 
 | Enumerated value name | Designation | Definition |
 | --- | --- | --- |
 | preview | preview | A computed preview for a period, with no identifier (Part 20 §20.6). † |
 | closed | closed | An immutable statement for a closed period that the operator invoices from (Part 20 §20.6). † |
 
-### A.3.125 The <<D2Enumeration>> "Violation.amountHistory.reason"
+### A.3.126 The <<D2Enumeration>> "Violation.amountHistory.reason"
 
 Values of amountHistory.reason on Violation.
 
 Defined inline on `Violation`; the API names it by its owner and attribute.
 
-*Table A.186 -- Values contained in the enumeration "Violation.amountHistory.reason"*
+*Table A.187 -- Values contained in the enumeration "Violation.amountHistory.reason"*
 
 | Enumerated value name | Designation | Definition |
 | --- | --- | --- |
@@ -4354,26 +4394,26 @@ Defined inline on `Violation`; the API names it by its owner and attribute.
 | appealReduced | appeal reduced | An appeal resolved as reduced lowered the amount. † |
 | cap | cap | The amount asked for at issue exceeded the penalty cap and was clamped to it (Part 19 §19.10). † |
 
-### A.3.126 The <<D2Enumeration>> "Violation.appeal.openedFrom"
+### A.3.127 The <<D2Enumeration>> "Violation.appeal.openedFrom"
 
 The state the appeal was opened from; `paid` is a pay-then-appeal (Part 19 §19.6). `upheld` and `reduced` return the violation to this state.
 
 Defined inline on `Violation`; the API names it by its owner and attribute.
 
-*Table A.187 -- Values contained in the enumeration "Violation.appeal.openedFrom"*
+*Table A.188 -- Values contained in the enumeration "Violation.appeal.openedFrom"*
 
 | Enumerated value name | Designation | Definition |
 | --- | --- | --- |
 | issued | issued | The appeal was opened while the violation was issued and unpaid. † |
 | paid | paid | The appeal was opened after payment, a pay-then-appeal (Part 19 §19.6). † |
 
-### A.3.127 The <<D2Enumeration>> "Violation.violationStatus"
+### A.3.128 The <<D2Enumeration>> "Violation.violationStatus"
 
 Current lifecycle state (see schema description for transitions).
 
 Defined inline on `Violation`; the API names it by its owner and attribute.
 
-*Table A.188 -- Values contained in the enumeration "Violation.violationStatus"*
+*Table A.189 -- Values contained in the enumeration "Violation.violationStatus"*
 
 | Enumerated value name | Designation | Definition |
 | --- | --- | --- |
@@ -4386,13 +4426,13 @@ Defined inline on `Violation`; the API names it by its owner and attribute.
 | closed | closed | The violation is finished, after payment or a successful appeal; this is final. † |
 | voided | voided | The violation was withdrawn, for example as issued in error or a duplicate; this is final (Part 19 §19.1). † |
 
-### A.3.128 The <<D2Enumeration>> "ViolationDetection.mode"
+### A.3.129 The <<D2Enumeration>> "ViolationDetection.mode"
 
 `automated` — a camera/sensor pipeline created the violation with no human in the loop. `guided` — the system surfaced a candidate (typically to a handheld) and an officer confirms on site. `manual` — an officer created the violation directly.
 
 Defined inline on `ViolationDetection`; the API names it by its owner and attribute.
 
-*Table A.189 -- Values contained in the enumeration "ViolationDetection.mode"*
+*Table A.190 -- Values contained in the enumeration "ViolationDetection.mode"*
 
 | Enumerated value name | Designation | Definition |
 | --- | --- | --- |
@@ -4400,13 +4440,13 @@ Defined inline on `ViolationDetection`; the API names it by its owner and attrib
 | guided | guided | the system surfaced a candidate |
 | manual | manual | an officer created the violation directly. |
 
-### A.3.129 The <<D2Enumeration>> "ViolationImport.violationStatus"
+### A.3.130 The <<D2Enumeration>> "ViolationImport.violationStatus"
 
 The APX state the source's status maps to. `paid` requires `amountPaid` at least `amount`; a part-paid violation is `issued` (Part 19 §19.6a). The source's own wording goes in the decoration's `sourceStatus`.
 
 Defined inline on `ViolationImport`; the API names it by its owner and attribute.
 
-*Table A.190 -- Values contained in the enumeration "ViolationImport.violationStatus"*
+*Table A.191 -- Values contained in the enumeration "ViolationImport.violationStatus"*
 
 | Enumerated value name | Designation | Definition |
 | --- | --- | --- |
@@ -4419,13 +4459,13 @@ Defined inline on `ViolationImport`; the API names it by its owner and attribute
 | closed | closed | The source reports the violation as finished; this is final. † |
 | voided | voided | The source reports the violation as withdrawn; this is final. † |
 
-### A.3.130 The <<D2Enumeration>> "ViolationReview.decision"
+### A.3.131 The <<D2Enumeration>> "ViolationReview.decision"
 
 Values of decision on ViolationReview.
 
 Defined inline on `ViolationReview`; the API names it by its owner and attribute.
 
-*Table A.191 -- Values contained in the enumeration "ViolationReview.decision"*
+*Table A.192 -- Values contained in the enumeration "ViolationReview.decision"*
 
 | Enumerated value name | Designation | Definition |
 | --- | --- | --- |
@@ -4440,7 +4480,7 @@ These lists extend APX string members without changing the schema, in the same w
 
 Used by: `LaneStatus.monthlyCredential.denialReason`, `CredentialAccessEvent.denialReason`, `AccessEvent.denialReason`. Seeds the APDS proposal AccessDenialReasonEnum (Tier 1). Published as an APDS `UserDefinedCodeList` at `spec/registries/apx-access-denial-reasons.json` (Part 11).
 
-*Table A.192 -- Entries in the code list "apx-access-denial-reasons"*
+*Table A.193 -- Entries in the code list "apx-access-denial-reasons"*
 
 | definedValue | Description |
 | --- | --- |
@@ -4460,7 +4500,7 @@ Used by: `LaneStatus.monthlyCredential.denialReason`, `CredentialAccessEvent.den
 
 Used by: `SubscriptionFilters.alertTypes`. Seeds the APDS proposal AlertTypeEnum (Tier 2). Published as an APDS `UserDefinedCodeList` at `spec/registries/apx-alert-types.json` (Part 11).
 
-*Table A.193 -- Entries in the code list "apx-alert-types"*
+*Table A.194 -- Entries in the code list "apx-alert-types"*
 
 | definedValue | Description |
 | --- | --- |
@@ -4493,7 +4533,7 @@ Used by: `SubscriptionFilters.alertTypes`. Seeds the APDS proposal AlertTypeEnum
 
 Used by: Not referenced by a schema description. Seeds the APDS proposal AreaTypeEnum (Tier 2). Published as an APDS `UserDefinedCodeList` at `spec/registries/apx-area-types.json` (Part 11).
 
-*Table A.194 -- Entries in the code list "apx-area-types"*
+*Table A.195 -- Entries in the code list "apx-area-types"*
 
 | definedValue | Description |
 | --- | --- |
@@ -4521,7 +4561,7 @@ Used by: Not referenced by a schema description. Seeds the APDS proposal AreaTyp
 
 Used by: Not referenced by a schema description. Published as an APDS `UserDefinedCodeList` at `spec/registries/apx-command-types.json` (Part 11).
 
-*Table A.195 -- Entries in the code list "apx-command-types"*
+*Table A.196 -- Entries in the code list "apx-command-types"*
 
 | definedValue | Description |
 | --- | --- |
@@ -4551,7 +4591,7 @@ Used by: Not referenced by a schema description. Published as an APDS `UserDefin
 
 Used by: Not referenced by a schema description. Seeds the APDS proposal CommsPointTypeEnum (Tier 3). Published as an APDS `UserDefinedCodeList` at `spec/registries/apx-comms-point-types.json` (Part 11).
 
-*Table A.196 -- Entries in the code list "apx-comms-point-types"*
+*Table A.197 -- Entries in the code list "apx-comms-point-types"*
 
 | definedValue | Description |
 | --- | --- |
@@ -4567,7 +4607,7 @@ Used by: Not referenced by a schema description. Seeds the APDS proposal CommsPo
 
 Used by: Not referenced by a schema description. Published as an APDS `UserDefinedCodeList` at `spec/registries/apx-conformance-classes.json` (Part 11).
 
-*Table A.197 -- Entries in the code list "apx-conformance-classes"*
+*Table A.198 -- Entries in the code list "apx-conformance-classes"*
 
 | definedValue | Description |
 | --- | --- |
@@ -4598,7 +4638,7 @@ Used by: Not referenced by a schema description. Published as an APDS `UserDefin
 
 Used by: Not referenced by a schema description. Seeds the APDS proposal EquipmentStatusEnum (Tier 1). Published as an APDS `UserDefinedCodeList` at `spec/registries/apx-device-states.json` (Part 11).
 
-*Table A.198 -- Entries in the code list "apx-device-states"*
+*Table A.199 -- Entries in the code list "apx-device-states"*
 
 | definedValue | Description |
 | --- | --- |
@@ -4609,11 +4649,29 @@ Used by: Not referenced by a schema description. Seeds the APDS proposal Equipme
 | fault | Device reports an error condition requiring attention. |
 | unknown | Device state cannot be determined (e.g. communication lost). |
 
-### A.4.8 External code list "apx-equipment-roles"
+### A.4.8 External code list "apx-display-message-kinds"
+
+Used by: Not referenced by a schema description. Published as an APDS `UserDefinedCodeList` at `spec/registries/apx-display-message-kinds.json` (Part 11).
+
+*Table A.200 -- Entries in the code list "apx-display-message-kinds"*
+
+| definedValue | Description |
+| --- | --- |
+| transientEntrance | Entrance sign: welcome for a vehicle with no standing right, which pays for its stay (Part 26 §26.9). |
+| monthlyEntrance | Entrance sign: welcome for a vehicle a permit or monthly right covers. |
+| entranceRefused | Entrance sign: service refused, the vend withheld (a plate list with refuseService, Part 24 §24.4). The record is the proof of display. |
+| transientExitPaid | Exit sign: the stay is paid; thank you. |
+| transientExitUnpaid | Exit sign: no payment found for the stay. Also shown for an overstay or a late start until kinds for those are added. |
+| monthlyExit | Exit sign: goodbye for a vehicle a permit or monthly right covers. |
+| monthlyExitBalanceDue | Exit sign: a permit or monthly holder with a balance due on the account. |
+| idle | Either sign: the resting message shown when no vehicle is being served. |
+| fallback | Either sign: the message shown when the system that drives the sign cannot decide which message applies (no read, no rights data). |
+
+### A.4.9 External code list "apx-equipment-roles"
 
 Used by: Not referenced by a schema description. Seeds the APDS proposal EquipmentRoleEnum (Tier 2). Published as an APDS `UserDefinedCodeList` at `spec/registries/apx-equipment-roles.json` (Part 11).
 
-*Table A.199 -- Entries in the code list "apx-equipment-roles"*
+*Table A.201 -- Entries in the code list "apx-equipment-roles"*
 
 | definedValue | Description |
 | --- | --- |
@@ -4648,11 +4706,11 @@ Used by: Not referenced by a schema description. Seeds the APDS proposal Equipme
 | videoGateway | On-site infrastructure: the gateway that issues short-lived camera links (Part 26 §26.4). |
 | other | Hardware none of the other codes fit. A code, not free text; propose a new code rather than describing the item in prose. |
 
-### A.4.9 External code list "apx-escalation-roles"
+### A.4.10 External code list "apx-escalation-roles"
 
 Used by: Not referenced by a schema description. Published as an APDS `UserDefinedCodeList` at `spec/registries/apx-escalation-roles.json` (Part 11).
 
-*Table A.200 -- Entries in the code list "apx-escalation-roles"*
+*Table A.202 -- Entries in the code list "apx-escalation-roles"*
 
 | definedValue | Description |
 | --- | --- |
@@ -4663,11 +4721,11 @@ Used by: Not referenced by a schema description. Published as an APDS `UserDefin
 | maintenance | The maintenance or service provider for the equipment. |
 | other | A role none of the other codes fit. A code, not free text. |
 
-### A.4.10 External code list "apx-features"
+### A.4.11 External code list "apx-features"
 
 Used by: `DiscoveryDocument.features`, `ApxConfiguration.features`. Published as an APDS `UserDefinedCodeList` at `spec/registries/apx-features.json` (Part 11).
 
-*Table A.201 -- Entries in the code list "apx-features"*
+*Table A.203 -- Entries in the code list "apx-features"*
 
 | definedValue | Description |
 | --- | --- |
@@ -4677,11 +4735,11 @@ Used by: `DiscoveryDocument.features`, `ApxConfiguration.features`. Published as
 | cameraViews | apx-site-config optional feature: POST /v1/cameras/{id}/views issues short-lived live and snapshot links bound to the agent (Part 26 §26.4). |
 | cameraPlayback | apx-site-config optional feature, offered only with cameraViews: a view of kind playback over a from/to range within the camera's retention (Part 26 §26.4). |
 
-### A.4.11 External code list "apx-interaction-outcomes"
+### A.4.12 External code list "apx-interaction-outcomes"
 
 Used by: Not referenced by a schema description. Published as an APDS `UserDefinedCodeList` at `spec/registries/apx-interaction-outcomes.json` (Part 11).
 
-*Table A.202 -- Entries in the code list "apx-interaction-outcomes"*
+*Table A.204 -- Entries in the code list "apx-interaction-outcomes"*
 
 | definedValue | Description |
 | --- | --- |
@@ -4693,11 +4751,11 @@ Used by: Not referenced by a schema description. Published as an APDS `UserDefin
 | abandoned | The customer left or the contact ended before a resolution. |
 | callbackScheduled | The customer will be called back; raises customerCallbackRequested when the site must do it. |
 
-### A.4.12 External code list "apx-issue-types"
+### A.4.13 External code list "apx-issue-types"
 
 Used by: Not referenced by a schema description. Seeds the APDS proposal SupportIssueTypeEnum (Tier 3). Published as an APDS `UserDefinedCodeList` at `spec/registries/apx-issue-types.json` (Part 11).
 
-*Table A.203 -- Entries in the code list "apx-issue-types"*
+*Table A.205 -- Entries in the code list "apx-issue-types"*
 
 | definedValue | Description |
 | --- | --- |
@@ -4736,11 +4794,11 @@ Used by: Not referenced by a schema description. Seeds the APDS proposal Support
 | vehicleIncident | A vehicle was damaged, broken into or towed at the place; raises a damageReported alert. |
 | equipmentTest | A technician testing the equipment, not a customer; excluded from service figures. |
 
-### A.4.13 External code list "apx-payment-line-codes"
+### A.4.14 External code list "apx-payment-line-codes"
 
 Used by: `PaymentDetail.lines`. Seeds the APDS proposal PaymentTypeEnum (Tier 2). Published as an APDS `UserDefinedCodeList` at `spec/registries/apx-payment-line-codes.json` (Part 11).
 
-*Table A.204 -- Entries in the code list "apx-payment-line-codes"*
+*Table A.206 -- Entries in the code list "apx-payment-line-codes"*
 
 | definedValue | Description |
 | --- | --- |
@@ -4753,11 +4811,11 @@ Used by: `PaymentDetail.lines`. Seeds the APDS proposal PaymentTypeEnum (Tier 2)
 | idle | An EV charging idle charge (Part 23 §23.5). A paymentType payment line. |
 | energy | An EV charging energy charge (Part 23 §23.5). A paymentType payment line. |
 
-### A.4.14 External code list "apx-plate-list-categories"
+### A.4.15 External code list "apx-plate-list-categories"
 
 Used by: `PlateList.category`. Seeds the APDS proposal PlateListCategoryEnum (Tier 2). Published as an APDS `UserDefinedCodeList` at `spec/registries/apx-plate-list-categories.json` (Part 11).
 
-*Table A.205 -- Entries in the code list "apx-plate-list-categories"*
+*Table A.207 -- Entries in the code list "apx-plate-list-categories"*
 
 | definedValue | Description |
 | --- | --- |
@@ -4766,11 +4824,11 @@ Used by: `PlateList.category`. Seeds the APDS proposal PlateListCategoryEnum (Ti
 | scofflaw | Credentials with unpaid notices or a standing refusal from the list owner; a match raises scofflawArrival and, where refuseService, refuses service at the lane. |
 | enforcementVehicle | The list owner's own enforcement and service vehicles, whose visits are recorded but never enforced or screened. |
 
-### A.4.15 External code list "apx-read-review-reasons"
+### A.4.16 External code list "apx-read-review-reasons"
 
 Used by: `LprReadDetail.review.reasons`. Seeds the APDS proposal ReadReviewReasonEnum (Tier 2). Published as an APDS `UserDefinedCodeList` at `spec/registries/apx-read-review-reasons.json` (Part 11).
 
-*Table A.206 -- Entries in the code list "apx-read-review-reasons"*
+*Table A.208 -- Entries in the code list "apx-read-review-reasons"*
 
 | definedValue | Description |
 | --- | --- |
@@ -4781,11 +4839,11 @@ Used by: `LprReadDetail.review.reasons`. Seeds the APDS proposal ReadReviewReaso
 | enforcementHandoff | The read is about to be handed to an enforcement system that requires reviewed evidence. |
 | conflictingReads | Reads of the same passage (one captureGroup) disagree on the plate, country, or state/province. |
 
-### A.4.16 External code list "apx-refund-reasons"
+### A.4.17 External code list "apx-refund-reasons"
 
 Used by: Not referenced by a schema description. Published as an APDS `UserDefinedCodeList` at `spec/registries/apx-refund-reasons.json` (Part 11).
 
-*Table A.207 -- Entries in the code list "apx-refund-reasons"*
+*Table A.209 -- Entries in the code list "apx-refund-reasons"*
 
 | definedValue | Description |
 | --- | --- |
@@ -4795,11 +4853,11 @@ Used by: Not referenced by a schema description. Published as an APDS `UserDefin
 | serviceFailure | The customer paid for something the facility did not deliver (a reservation not honoured, a stay cut short by a fault). |
 | courtesy | A goodwill refund with no fault found. |
 
-### A.4.17 External code list "apx-session-end-reasons"
+### A.4.18 External code list "apx-session-end-reasons"
 
 Used by: `SessionClosure.endReason`. Seeds the APDS proposal SessionEndReasonEnum (Tier 1). Published as an APDS `UserDefinedCodeList` at `spec/registries/apx-session-end-reasons.json` (Part 11).
 
-*Table A.208 -- Entries in the code list "apx-session-end-reasons"*
+*Table A.210 -- Entries in the code list "apx-session-end-reasons"*
 
 | definedValue | Description |
 | --- | --- |
@@ -4814,11 +4872,50 @@ Used by: `SessionClosure.endReason`. Seeds the APDS proposal SessionEndReasonEnu
 | operator | A person closed the Session. |
 | review | A reviewer paired the exit read that closed the Session. |
 
-### A.4.18 External code list "apx-toll-dispute-reasons"
+### A.4.19 External code list "apx-stay-compliance-flags"
+
+Used by: Not referenced by a schema description. Published as an APDS `UserDefinedCodeList` at `spec/registries/apx-stay-compliance-flags.json` (Part 11).
+
+*Table A.211 -- Entries in the code list "apx-stay-compliance-flags"*
+
+| definedValue | Description |
+| --- | --- |
+| paidAfterExit | A payment for the stay arrived after the vehicle left. |
+| matchedFuzzy | A right or payment was matched to the stay on an inexact plate match (Part 5 §5.8 rule 5). |
+| endInferred | The stay's end was set by a rule, not observed (Part 5 §5.8 rule 3). |
+| onList | The plate was on a plate list at the place during the stay (Part 24). |
+| paid | A payment covered part of the stay; set beside a status such as lateStart whose coverage began too late. |
+
+### A.4.20 External code list "apx-stay-compliance-statuses"
+
+Used by: Not referenced by a schema description. Published as an APDS `UserDefinedCodeList` at `spec/registries/apx-stay-compliance-statuses.json` (Part 11).
+
+*Table A.212 -- Entries in the code list "apx-stay-compliance-statuses"*
+
+| definedValue | Description |
+| --- | --- |
+| unscored | Family: withheld. No evaluation has run for the stay yet. |
+| stale | Family: withheld. An open stay with no further read, closed with an inferred end; left out of compliance rates. |
+| fromList | Family: compliant. Exempt by a plate list entry (Part 24) that covered the entry time. |
+| permit | Family: compliant. Covered by rights, and a permit contributed to the coverage. |
+| reservation | Family: compliant. Covered by rights, and a reservation contributed to the coverage (no permit did). |
+| paid | Family: compliant. Covered by payments only. |
+| grace | Family: compliant. Nothing paid, and the whole stay fell within the grace (Part 19 §19.10 rule 7). |
+| valet | Family: compliant. The stay was in a valet area that is not enforced. |
+| earlyArrival | Family: violation. Arrived before a reservation's start, beyond its early grace, and the time before the start was not otherwise covered. |
+| reservationOverstay | Family: violation. Stayed past a reservation's end by more than the grace, and the time after it was not otherwise covered. |
+| unpaid | Family: violation. Closed, nothing paid, and the stay was longer than the grace. |
+| lateStart | Family: violation. Coverage began more than the entry grace after entry, or, while the stay is open, has not begun at all. |
+| overstay | Family: violation. Coverage began in time, but the stay outlasted it by more than the exit grace. |
+| policyOverstay | Family: violation. Longer than the place's maximum stay. Never overrides fromList. |
+| reviewRequired | Family: withheld. Would be a violation, but a person must look first; pendingStatus names which (Part 5 §5.9 rule 2). |
+| paidLate | Family: other. Paid after exit, settling the amount: paid, but not compliant. |
+
+### A.4.21 External code list "apx-toll-dispute-reasons"
 
 Used by: `TollTransaction.dispute.reason`, `TollDisputeOpen.reason`. Seeds the APDS proposal TollDisputeReasonEnum (Tier 2). Published as an APDS `UserDefinedCodeList` at `spec/registries/apx-toll-dispute-reasons.json` (Part 11).
 
-*Table A.209 -- Entries in the code list "apx-toll-dispute-reasons"*
+*Table A.213 -- Entries in the code list "apx-toll-dispute-reasons"*
 
 | definedValue | Description |
 | --- | --- |
@@ -4828,11 +4925,11 @@ Used by: `TollTransaction.dispute.reason`, `TollDisputeOpen.reason`. Seeds the A
 | notLiable | The party is not liable for the passage (exempt vehicle, sold or stolen vehicle, rental transfer). |
 | other | Any other reason; the dispute `detail` explains it. |
 
-### A.4.19 External code list "apx-toll-dispute-resolutions"
+### A.4.22 External code list "apx-toll-dispute-resolutions"
 
 Used by: `TollTransaction.dispute.resolution`, `TollDisputeResolution.resolution`. Seeds the APDS proposal TollDisputeResolutionEnum (Tier 2). Published as an APDS `UserDefinedCodeList` at `spec/registries/apx-toll-dispute-resolutions.json` (Part 11).
 
-*Table A.210 -- Entries in the code list "apx-toll-dispute-resolutions"*
+*Table A.214 -- Entries in the code list "apx-toll-dispute-resolutions"*
 
 | definedValue | Description |
 | --- | --- |
@@ -4841,11 +4938,11 @@ Used by: `TollTransaction.dispute.resolution`, `TollDisputeResolution.resolution
 | adjusted | A new amount is owed; the resolution carries `adjustedPricing` and the original is kept in `dispute.originalPricing`. |
 | withdrawn | The disputing party abandoned the dispute; the charge stands. |
 
-### A.4.20 External code list "apx-topics"
+### A.4.23 External code list "apx-topics"
 
 Used by: Not referenced by a schema description. Published as an APDS `UserDefinedCodeList` at `spec/registries/apx-topics.json` (Part 11).
 
-*Table A.211 -- Entries in the code list "apx-topics"*
+*Table A.215 -- Entries in the code list "apx-topics"*
 
 | definedValue | Description |
 | --- | --- |
@@ -4880,15 +4977,16 @@ Used by: Not referenced by a schema description. Published as an APDS `UserDefin
 | apx.platelists.changed.v1 | A plate list or one of its entries was created, changed, or removed (data: PlateList with entryCount; subject: the list). Consumers resync entries through the Part 5 feed on /v1/plate-lists/{id}/entries. Required for apx-plate-lists (Part 24 §24.3). |
 | apx.ui.launch.changed.v1 | A UI launch was issued, opened, closed, or expired (data: UiLaunch without url; subject: the launch; place-bound on UiLaunch.place). Required for apx-ui-launch (Part 25 §25.3). |
 | apx.ui.action.recorded.v1 | An action done in a launched vendor screen was recorded as a UiActionRecord because no native resource could express it (data: UiActionRecord; subject: the launch; carries the launch's correlationId). Required for apx-ui-launch (Part 25 §25.4). |
-| apx.equipment.changed.v1 | A piece of equipment or its APX decorations (equipment-detail, camera, external-ids) was added, changed, or removed (data: EquipmentRecord; subject: the SupplementalEquipment; place-bound). Lets other systems stay in sync without re-reading the place. Required for apx-site-config (Part 26 §26.8). |
-| apx.commspoints.changed.v1 | A comms point was added, changed, or removed (data: CommsPoint; subject: the comms point; place-bound). Required for apx-site-config (Part 26 §26.8). |
+| apx.equipment.changed.v1 | A piece of equipment or its APX decorations (equipment-detail, camera, external-ids) was added, changed, or removed (data: EquipmentRecord; subject: the SupplementalEquipment; place-bound). Lets other systems stay in sync without re-reading the place. Required for apx-site-config (Part 26 §26.7). |
+| apx.commspoints.changed.v1 | A comms point was added, changed, or removed (data: CommsPoint; subject: the comms point; place-bound). Required for apx-site-config (Part 26 §26.7). |
 | apx.approvals.changed.v1 | An approval request was created, decided, or expired (data: ApprovalRequest; subject: the request; place-bound). An approver's system subscribes to it for its queue. Required for apx-resolution when approvals are offered (Part 17 §17.8). |
+| apx.displays.shown.v1 | A sign showed a message and the system that drove it recorded it (data: DisplayRecord; subject: the display; place-bound on its place). Carries no message text and no plate. Required for apx-site-config (Part 26 §26.9). |
 
-### A.4.21 External code list "apx-ui-surfaces"
+### A.4.24 External code list "apx-ui-surfaces"
 
 Used by: Not referenced by a schema description. Published as an APDS `UserDefinedCodeList` at `spec/registries/apx-ui-surfaces.json` (Part 11).
 
-*Table A.212 -- Entries in the code list "apx-ui-surfaces"*
+*Table A.216 -- Entries in the code list "apx-ui-surfaces"*
 
 | definedValue | Description |
 | --- | --- |
@@ -4908,11 +5006,11 @@ Used by: Not referenced by a schema description. Published as an APDS `UserDefin
 | place.console | The vendor's console for one place: lanes, devices, counts. Subject: HierarchyElement (the place). |
 | module.home | The vendor's home screen for a module, with no subject. General surface. |
 
-### A.4.22 External code list "apx-violation-types"
+### A.4.25 External code list "apx-violation-types"
 
 Used by: `Violation.violationType`, `EligibilityResult.suggestedViolationType`, `ViolationSource.violationCode`, `ViolationImport.violationType`. Seeds the APDS proposal ViolationTypeEnum (Tier 1). Published as an APDS `UserDefinedCodeList` at `spec/registries/apx-violation-types.json` (Part 11).
 
-*Table A.213 -- Entries in the code list "apx-violation-types"*
+*Table A.217 -- Entries in the code list "apx-violation-types"*
 
 | definedValue | Description |
 | --- | --- |

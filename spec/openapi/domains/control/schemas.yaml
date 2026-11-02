@@ -149,28 +149,38 @@ CommandResult:
       description: The RateTable at the exact version applied (pushNegotiatedRate with a table; absent for a stated amount).
       $ref: "../../../vendor/apds/4.1/apds-api-4.1.yaml#/components/schemas/VersionedReference"
     display:
-      type: object
       description: |-
         Proof of display for `displayMessage` (Part 6 §6.1a): what the
         device confirmed it showed, when, and whether the player or an
-        operator acknowledged it.
-      properties:
-        shownTime:
-          $ref: "../../../vendor/apds/4.1/apds-api-4.1.yaml#/components/schemas/DateTime"
-        contentHash:
-          type: string
-          description: Hash of the rendered content, so a dispute can prove what was shown.
-        wordingVersion:
-          type: string
-          description: The wording version the template was rendered under.
-        screenshot:
-          description: Access-controlled link to a capture of the display (Part 9 §9.6).
-          $ref: "../../../vendor/apds/4.1/apds-api-4.1.yaml#/components/schemas/Url"
-        acknowledgedBy:
-          type: string
-          enum: [player, operator, none]
+        operator acknowledged it. A Part 26 §26.9 DisplayRecord that names
+        this command MUST agree with it.
+      $ref: "#/DisplayProof"
     extensions:
       $ref: "../common/schemas.yaml#/Extensions"
+
+DisplayProof:
+  title: DisplayProof
+  description: |-
+    What a sign or display confirmed it showed, and when (Part 6 §6.1a):
+    `CommandResult.display` for a commanded message, and the proof members
+    of a Part 26 §26.9 DisplayRecord for any message. Carries a hash and
+    the wording version, never the message text.
+  type: object
+  properties:
+    shownTime:
+      $ref: "../../../vendor/apds/4.1/apds-api-4.1.yaml#/components/schemas/DateTime"
+    contentHash:
+      type: string
+      description: Hash of the rendered content, so a dispute can prove what was shown.
+    wordingVersion:
+      type: string
+      description: The wording version the template was rendered under.
+    screenshot:
+      description: Access-controlled link to a capture of the display (Part 9 §9.6).
+      $ref: "../../../vendor/apds/4.1/apds-api-4.1.yaml#/components/schemas/Url"
+    acknowledgedBy:
+      type: string
+      enum: [player, operator, none]
 
 Approval:
   title: Approval

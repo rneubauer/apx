@@ -29,9 +29,12 @@ for (const file of readdirSync(join(APX_DIR, 'spec', 'registries'))) {
     version: doc.version,
     locator: doc.locator,
     values: doc.userDefinedCodeListEntries.map((e) => e.definedValue),
+    descriptions: new Map(doc.userDefinedCodeListEntries.map((e) => [e.definedValue, e.entryDescription ?? ''])),
   });
 }
 export const registryValues = (name) => REGISTRIES.get(name)?.values ?? [];
+/** The entryDescription of a registry value, or undefined for an implementer code. */
+export const registryDescription = (name, value) => REGISTRIES.get(name)?.descriptions.get(value);
 
 // APDS EventTypeEnum values are the native topics (Part 8 §8.1).
 export const APDS_EVENT_TYPES = BUNDLE.components.schemas.EventTypeEnum?.enum ?? [];

@@ -2,7 +2,7 @@
   "openapi": "3.1.0",
   "info": {
     "title": "APX — PARCS Starter Profile",
-    "version": "0.15.0",
+    "version": "0.16.0",
     "summary": "An open companion standard to APDS 4.1",
     "license": {
       "name": "MIT",
@@ -37,7 +37,7 @@
     },
     {
       "name": "Data",
-      "description": "**Reading and writing parking data, and staying in sync.**\n\nThe data routes themselves are APDS 4.1's own, mounted verbatim:\n`/places`, `/sessions`, `/rates`, `/rights/specs`, `/rights/assigned`,\n`/observations`, `/contacts`, `/quotes`. APX invents nothing here on\npurpose, because data exchange is the part the industry already\nagreed on.\n\nWhat APX adds is a **profile** over those routes, all of it additive\nand invisible to a client that ignores it: full versus change update\nsemantics, tombstones for deletions, and a cursor-based change feed\nthat is ordered, gapless, and exactly-once, so a partner that goes\noffline for an hour replays precisely what it missed. Partial writes\nmake `null` mean *clear this field* and omission mean *leave it\nalone*, which retires the oldest bug in data integration.\n\nThe one net-new read here is the occupancy snapshot: how full a\ngarage, level, or zone is right now, without walking the whole Place\nhierarchy.\n\nWritten standard:\n[Part 5](https://github.com/rneubauer/apx/blob/main/docs/standard/05-data.md)."
+      "description": "**Reading and writing parking data, and staying in sync.**\n\nThe data routes themselves are APDS 4.1's own, mounted verbatim:\n`/places`, `/sessions`, `/rates`, `/rights/specs`, `/rights/assigned`,\n`/observations`, `/contacts`, `/quotes`. APX invents nothing here on\npurpose, because data exchange is the part the industry already\nagreed on.\n\nWhat APX adds is a **profile** over those routes, all of it additive\nand invisible to a client that ignores it: full versus change update\nsemantics, tombstones for deletions, and a cursor-based change feed\nthat is ordered, gapless, and exactly-once, so a partner that goes\noffline for an hour replays precisely what it missed. Partial writes\nmake `null` mean *clear this field* and omission mean *leave it\nalone*, which retires the oldest bug in data integration.\n\nThe one net-new read here is the occupancy snapshot: how full a\ngarage, level, or zone is right now, without walking the whole Place\nhierarchy.\n\nTwo decorations on the APDS Session carry what other systems\ndecided about a stay: the pairing of reads behind it\n(`session-detail`), and the compliance outcome an engine scored for\nit (`stay-compliance`), which is served only under its own scope.\n\nWritten standard:\n[Part 5](https://github.com/rneubauer/apx/blob/main/docs/standard/05-data.md)."
     },
     {
       "name": "Subscription",
@@ -101,7 +101,7 @@
     },
     {
       "name": "Site configuration",
-      "description": "**A location, described by APX alone.** Before a call, an agent or\na system should be able to learn what a site has without data from\nany other system: which hardware is on each lane and what each\npiece does, what it is, what runs on it, where the cameras are and\nwhat they see, how a parker reaches help from each lane or door,\nand who to escalate to.\n\nAPDS already models the place, its lanes and its equipment. This\ndomain adds what APDS leaves open: a fixed list of **equipment\nroles** (gate, exit verifier, access door, camera, intercom…), the\nmake, model, firmware, serial and MAC of every unit, where it is by\n**area** and level, what it is built into and what it controls; a\n**camera** description for any camera on the site, with views\nissued as short-lived links so a password never leaves the site; a\n**comms point** for every way help is reached, whether an intercom,\nan analog dialer, a posted number or a QR code; typed **external\nids** so other systems' identifiers resolve to APX records; and\nchange topics so a copy of the setup stays current. IP addresses\nand SIP details are deliberately left out.\n\nWritten standard:\n[Part 26](https://github.com/rneubauer/apx/blob/main/docs/standard/26-site-configuration.md)."
+      "description": "**A location, described by APX alone.** Before a call, an agent or\na system should be able to learn what a site has without data from\nany other system: which hardware is on each lane and what each\npiece does, what it is, what runs on it, where the cameras are and\nwhat they see, how a parker reaches help from each lane or door,\nand who to escalate to.\n\nAPDS already models the place, its lanes and its equipment. This\ndomain adds what APDS leaves open: a fixed list of **equipment\nroles** (gate, exit verifier, access door, camera, intercom…), the\nmake, model, firmware, serial and MAC of every unit, where it is by\n**area** and level, what it is built into and what it controls; a\n**camera** description for any camera on the site, with views\nissued as short-lived links so a password never leaves the site; a\n**comms point** for every way help is reached, whether an intercom,\nan analog dialer, a posted number or a QR code; typed **external\nids** so other systems' identifiers resolve to APX records;\n**display records**, the proof that a sign showed a message for a\nread or a stay, written by whichever system drove the sign; and\nchange topics so a copy of the setup stays current. IP addresses\nand SIP details are deliberately left out.\n\nWritten standard:\n[Part 26](https://github.com/rneubauer/apx/blob/main/docs/standard/26-site-configuration.md)."
     }
   ],
   "paths": {
@@ -6111,9 +6111,12 @@
               "apx.ui:launch": "Open a vendor screen for an agent and read the launches it issued (Part 25)",
               "apx.ui:read": "Read UI launches and the actions recorded in them (Part 25)",
               "apx.ui:record": "The surface's own scope; record actions done in a launched screen and close it (Part 25)",
-              "apx.siteconfig:read": "Read a place's equipment, cameras, comms points and external ids; resolve another system's id (Part 26)",
+              "apx.siteconfig:read": "Read a place's equipment, cameras, comms points, display records and external ids; resolve another system's id (Part 26)",
               "apx.siteconfig:manage": "Add, replace and remove comms points (Part 26)",
               "apx.cameras:view": "Obtain short-lived camera view links, logged against the agent (Part 26)",
+              "apx.displays:record": "The scope of the system that drives a sign; record that a message was shown (Part 26 §26.9)",
+              "apx.compliance:read": "Read the stay-compliance status on Sessions; without it the decoration is left out (Part 5 §5.9)",
+              "apx.compliance:write": "Write the stay-compliance status on Sessions, beside the Session write scope (Part 5 §5.9)",
               "apx.digest:use": "Receive the credential digest keys (Part 9 §9.6 rule 6)",
               "apx.replication:write": "Replay another implementation's records with their original provenance and lifecycle times (Part 18 §18.6)",
               "apx.charging:read": "read charging-point status (with bay presence) and charging sessions",
@@ -6146,7 +6149,7 @@
             "type": "string",
             "description": "The APX edition implemented (Part 3 §3.4), as named in its `spec/edition.json`.",
             "examples": [
-              "0.15.0"
+              "0.16.0"
             ]
           },
           "apdsVersion": {
@@ -9942,6 +9945,9 @@
           "apds-ext:apx:match-evidence@1.0": {
             "$ref": "#/components/schemas/MatchEvidence"
           },
+          "apds-ext:apx:stay-compliance@1.0": {
+            "$ref": "#/components/schemas/StayCompliance"
+          },
           "apds-ext:apx:violation-source@1.0": {
             "$ref": "#/components/schemas/ViolationSource"
           },
@@ -11632,33 +11638,8 @@
             "$ref": "#/components/schemas/VersionedReference"
           },
           "display": {
-            "type": "object",
-            "description": "Proof of display for `displayMessage` (Part 6 §6.1a): what the\ndevice confirmed it showed, when, and whether the player or an\noperator acknowledged it.",
-            "properties": {
-              "shownTime": {
-                "$ref": "#/components/schemas/DateTime"
-              },
-              "contentHash": {
-                "type": "string",
-                "description": "Hash of the rendered content, so a dispute can prove what was shown."
-              },
-              "wordingVersion": {
-                "type": "string",
-                "description": "The wording version the template was rendered under."
-              },
-              "screenshot": {
-                "description": "Access-controlled link to a capture of the display (Part 9 §9.6).",
-                "$ref": "#/components/schemas/Url"
-              },
-              "acknowledgedBy": {
-                "type": "string",
-                "enum": [
-                  "player",
-                  "operator",
-                  "none"
-                ]
-              }
-            }
+            "description": "Proof of display for `displayMessage` (Part 6 §6.1a): what the\ndevice confirmed it showed, when, and whether the player or an\noperator acknowledged it. A Part 26 §26.9 DisplayRecord that names\nthis command MUST agree with it.",
+            "$ref": "#/components/schemas/DisplayProof"
           },
           "extensions": {
             "$ref": "#/components/schemas/Extensions"
@@ -12429,6 +12410,89 @@
             "$ref": "#/components/schemas/DateTime"
           }
         }
+      },
+      "StayCompliance": {
+        "title": "StayCompliance",
+        "description": "The `apds-ext:apx:stay-compliance@1.0` decoration on an APDS Session\n(Part 5 §5.9): the outcome a compliance engine scored for the stay,\nand the policy it measured against. Written with the native Session\nPOST/PUT by the engine; a server that scores stays itself SHOULD write\nthe same block. The rules that produce the outcome stay in the engine.\n\nA status is not a Violation: a `violation`-family status issues\nnothing (Part 19 issues violations). Served only to tokens with\n`apx.compliance:read`, and written only with `apx.compliance:write`\n(403 `insufficient-scope`); a write that omits it keeps the stored\nblock. It carries no plate characters.",
+        "type": "object",
+        "required": [
+          "status",
+          "family",
+          "evaluatedTime",
+          "sequence"
+        ],
+        "properties": {
+          "status": {
+            "type": "string",
+            "description": "definedValue of apx-stay-compliance-statuses, or an implementer code.",
+            "examples": [
+              "overstay"
+            ]
+          },
+          "family": {
+            "type": "string",
+            "enum": [
+              "compliant",
+              "violation",
+              "withheld",
+              "other"
+            ],
+            "description": "The family of the status. For a registry status it MUST be the\nfamily the registry gives (422 `request-unprocessable`).\n`compliant` — rights or an exemption covered the stay\n`violation` — the stay was not covered as the policy requires\n`withheld` — not scored, or held back for review\n`other` — an outcome none of the other families fits, for example paid after exit"
+          },
+          "pendingStatus": {
+            "type": "string",
+            "description": "The status the stay would have once a person confirms it; present only with `status` `reviewRequired` (422 `request-unprocessable` otherwise).",
+            "examples": [
+              "overstay"
+            ]
+          },
+          "flags": {
+            "type": "array",
+            "description": "Facts behind the status — definedValues of apx-stay-compliance-flags, or implementer codes.",
+            "items": {
+              "type": "string"
+            },
+            "examples": [
+              [
+                "paidAfterExit"
+              ]
+            ]
+          },
+          "evaluatedTime": {
+            "description": "When the evaluation ran.",
+            "$ref": "#/components/schemas/DateTime"
+          },
+          "sequence": {
+            "type": "integer",
+            "minimum": 1,
+            "description": "Orders the evaluations of one Session. A write with a lower `sequence` than the one held is 409 `evaluation-out-of-order`; an equal one replaces it."
+          },
+          "final": {
+            "type": "boolean",
+            "description": "The writer's statement that no further evaluation is expected; never a lock."
+          },
+          "policy": {
+            "description": "The EnforcementPolicy, at its version, the evaluation used (Part 19 §19.10), whose `stayGrace` explains the result. Naming no policy visible to the caller is 422 `reference-unknown`.",
+            "$ref": "#/components/schemas/VersionedReference"
+          }
+        },
+        "examples": [
+          {
+            "status": "overstay",
+            "family": "violation",
+            "flags": [
+              "paidAfterExit"
+            ],
+            "evaluatedTime": "2026-10-21T14:05:00Z",
+            "sequence": 3,
+            "final": false,
+            "policy": {
+              "id": "d1900000-0000-4000-8000-000000000010",
+              "className": "EnforcementPolicy",
+              "version": 4
+            }
+          }
+        ]
       },
       "ViolationSource": {
         "title": "ViolationSource",
@@ -13718,6 +13782,36 @@
           "expected",
           "verified"
         ]
+      },
+      "DisplayProof": {
+        "title": "DisplayProof",
+        "description": "What a sign or display confirmed it showed, and when (Part 6 §6.1a):\n`CommandResult.display` for a commanded message, and the proof members\nof a Part 26 §26.9 DisplayRecord for any message. Carries a hash and\nthe wording version, never the message text.",
+        "type": "object",
+        "properties": {
+          "shownTime": {
+            "$ref": "#/components/schemas/DateTime"
+          },
+          "contentHash": {
+            "type": "string",
+            "description": "Hash of the rendered content, so a dispute can prove what was shown."
+          },
+          "wordingVersion": {
+            "type": "string",
+            "description": "The wording version the template was rendered under."
+          },
+          "screenshot": {
+            "description": "Access-controlled link to a capture of the display (Part 9 §9.6).",
+            "$ref": "#/components/schemas/Url"
+          },
+          "acknowledgedBy": {
+            "type": "string",
+            "enum": [
+              "player",
+              "operator",
+              "none"
+            ]
+          }
+        }
       },
       "SupplementalFacility": {
         "title": "SupplementalFacility",

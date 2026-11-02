@@ -159,6 +159,33 @@ so another system keeps a copy of a site's setup current without
 re-reading the whole place, and catches up after an outage (APX Part 26
 §26.7).
 
+### Display records
+
+A **DisplayRecord** is the record that a sign showed a message: which
+sign, which kind of message, when, and for which read or stay (APX Part
+26 §26.9). Whichever system drove the sign writes it, the edge
+controller, the parking system or the sign's own player, and often no
+APX command was involved: the edge decided from its own copy of the
+rights. The record is immutable once written.
+
+The sign is a piece of equipment with role `laneDisplay` or `countSign`,
+and the place is derived from it. `messageKind` comes from the
+`apx-display-message-kinds` code list, seeded with nine messages
+(`transientEntrance`, `monthlyEntrance`, `entranceRefused`,
+`transientExitPaid`, `transientExitUnpaid`, `monthlyExit`,
+`monthlyExitBalanceDue`, `idle`, `fallback`), or is an implementer code
+for a location's own messages. The proof members are the **DisplayProof**
+the Control module already records for a commanded message: the time
+shown, a hash of the content, the wording version, an access-controlled
+screenshot link and who acknowledged it. When a command drove the sign,
+the record names it and must agree with its result. No message text and
+no plate are stored, even when the sign showed the plate.
+
+A display record is the proof of display for a refused-service message
+(Plate lists module), and the data an operator measures the signs by.
+Every record publishes `apx.displays.shown.v1`, and the list serves the
+Data module's change feed.
+
 ### After-hours access
 
 Both transient parkers and permit holders may have to authenticate at an
@@ -187,7 +214,8 @@ module has no state machine of its own. A record is created, changed by
 versioned replacement (the comms point by its own `PUT`, the equipment
 through the native place routes) and removed with a tombstone on the
 feed; every step publishes its change topic. A camera view has a short
-life of its own: issued, used once, expired within five minutes.
+life of its own: issued, used once, expired within five minutes. A display record is
+written once and never changed.
 
 ## Relationship to APDS
 
@@ -222,4 +250,5 @@ APX-only: ExternalIdentifiers (APDS already has untyped external
 identifiers; the typed form is an APX decoration until the committee
 decides), PlaceOperations (call-platform and escalation workflow),
 CameraView and its request (a delivery mechanism), IdentifierResolution
-and its request (a lookup), and the change topics.
+and its request (a lookup), the change topics, and, for now, the
+DisplayRecord, whose message kinds come from one deployment's signs.

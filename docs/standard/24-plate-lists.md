@@ -83,7 +83,9 @@ decision:
 - A match on a list with `refuseService` at a gated lane withholds the
   vend and shows the refused-service message through a Part 6
   `displayMessage` command, whose `result.display` is the proof of what
-  was shown (Part 6 §6.1a); the alert is `refusedServiceArrival`.
+  was shown (Part 6 §6.1a); the alert is `refusedServiceArrival`. Where
+  the edge drove the sign itself, with no command, the proof is a Part 26
+  §26.9 `DisplayRecord` of kind `entranceRefused`.
 - A match on an `allow` list with `enforced` satisfies the Part 19 §19.3
   eligibility check at that place; the eligibility result names the list
   entry as its basis.

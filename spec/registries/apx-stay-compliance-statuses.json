@@ -1,0 +1,25 @@
+{
+  "id": "6e7f8091-a2b3-4c4d-9e5f-60718293a415",
+  "version": 1,
+  "name": "apx-stay-compliance-statuses",
+  "creator": { "id": "a1000000-0000-4000-8000-000000000001", "className": "Organisation" },
+  "locator": "https://apx-standard.org/registries/apx-stay-compliance-statuses.json",
+  "userDefinedCodeListEntries": [
+    {"definedValue": "unscored", "entryDescription": "Family: withheld. No evaluation has run for the stay yet.", "entryIndex": 0},
+    {"definedValue": "stale", "entryDescription": "Family: withheld. An open stay with no further read, closed with an inferred end; left out of compliance rates.", "entryIndex": 1},
+    {"definedValue": "fromList", "entryDescription": "Family: compliant. Exempt by a plate list entry (Part 24) that covered the entry time.", "entryIndex": 2},
+    {"definedValue": "permit", "entryDescription": "Family: compliant. Covered by rights, and a permit contributed to the coverage.", "entryIndex": 3},
+    {"definedValue": "reservation", "entryDescription": "Family: compliant. Covered by rights, and a reservation contributed to the coverage (no permit did).", "entryIndex": 4},
+    {"definedValue": "paid", "entryDescription": "Family: compliant. Covered by payments only.", "entryIndex": 5},
+    {"definedValue": "grace", "entryDescription": "Family: compliant. Nothing paid, and the whole stay fell within the grace (Part 19 §19.10 rule 7).", "entryIndex": 6},
+    {"definedValue": "valet", "entryDescription": "Family: compliant. The stay was in a valet area that is not enforced.", "entryIndex": 7},
+    {"definedValue": "earlyArrival", "entryDescription": "Family: violation. Arrived before a reservation's start, beyond its early grace, and the time before the start was not otherwise covered.", "entryIndex": 8},
+    {"definedValue": "reservationOverstay", "entryDescription": "Family: violation. Stayed past a reservation's end by more than the grace, and the time after it was not otherwise covered.", "entryIndex": 9},
+    {"definedValue": "unpaid", "entryDescription": "Family: violation. Closed, nothing paid, and the stay was longer than the grace.", "entryIndex": 10},
+    {"definedValue": "lateStart", "entryDescription": "Family: violation. Coverage began more than the entry grace after entry, or, while the stay is open, has not begun at all.", "entryIndex": 11},
+    {"definedValue": "overstay", "entryDescription": "Family: violation. Coverage began in time, but the stay outlasted it by more than the exit grace.", "entryIndex": 12},
+    {"definedValue": "policyOverstay", "entryDescription": "Family: violation. Longer than the place's maximum stay. Never overrides fromList.", "entryIndex": 13},
+    {"definedValue": "reviewRequired", "entryDescription": "Family: withheld. Would be a violation, but a person must look first; pendingStatus names which (Part 5 §5.9 rule 2).", "entryIndex": 14},
+    {"definedValue": "paidLate", "entryDescription": "Family: other. Paid after exit, settling the amount: paid, but not compliant.", "entryIndex": 15}
+  ]
+}

@@ -29,7 +29,18 @@ export class EventFabric {
     this.receivers = new Map(); // endpoint url → { codes: [], inbox: [], default: 200 }
     this.sseClients = new Map(); // subId → Set(writer)
     this.listeners = new Set();
+    this.redactors = [];
     this.network = false;
+  }
+
+  /**
+   * Register `fn(sub, envelope) → envelope`: what one subscription may
+   * receive of an event its topic matched (a member its creating token
+   * could not read is left out, Part 5 §5.9 rule 7). Domains register at
+   * load; the outbox keeps the event whole.
+   */
+  addRedactor(fn) {
+    this.redactors.push(fn);
   }
 
   get subs() {
@@ -85,7 +96,7 @@ export class EventFabric {
     for (const sub of this.subs.all()) {
       if (excludeSubscription && sub.id === excludeSubscription) continue;
       if (!this.matches(sub, envelope, binding, org)) continue;
-      this.enqueue(sub, envelope, binding);
+      this.enqueue(sub, this.redactors.reduce((env, fn) => fn(sub, env) ?? env, envelope), binding);
       record.deliveries.push(sub.id);
     }
     for (const l of this.listeners) l(envelope, record);

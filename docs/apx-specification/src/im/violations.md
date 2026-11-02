@@ -119,7 +119,15 @@ policy whose effective window covers the instant. It holds:
 - `penaltyCap`: absolute and relative ceilings on the issued amount,
   with `onExceed` `refuse` or `clamp`;
 - `escalation[]` and `overallCeiling`: server-applied penalty steps;
-- `appealWindowDays`, `paymentGraceDays` and `signageRequired`.
+- `appealWindowDays`, `paymentGraceDays` and `signageRequired`;
+- `stayGrace`: how long a stay may go uncovered after entry
+  (`entryMinutes`) and after its last right ends (`exitMinutes`),
+  independent and optional, where `0` means none (APX Part 19 §19.10
+  rule 7). The policy states the minutes only; how they combine with the
+  rights into a stay's outcome is the evaluating system's rule. The
+  eligibility check's `graceUntil` is derived from it, so a handheld and a
+  lane sign agree, and the policy's versions show which grace applied on
+  a given day.
 
 The policy is binding on the server, as allowed actions are in APX Part
 17. At issue the server checks the violation against it and refuses what
@@ -236,7 +244,7 @@ APX Data Specification.
 | `NoticeKindEnum` | New enumeration | 1 |
 | `NoticeDeliveryMethodEnum` | New enumeration | 1 |
 | `Appeal` | New class | 2 |
-| `EnforcementPolicy` | New class | 2 |
+| `EnforcementPolicy` | New class, with the entry and exit grace periods | 2 |
 | `NoticeDeliveryRule` | New class | 2 |
 | `EscalationStep` | New class | 2 |
 | `AppealReasonEnum` | New enumeration | 2 |
@@ -253,6 +261,9 @@ gives notice of it, rather than the other way round, so the Place
 additions do not depend on the new Enforcement domain. Notice kinds,
 delivery methods and appeal reasons are offered as a first draft, since
 they vary by jurisdiction and would benefit from members' experience.
+The stay grace is proposed as two Duration attributes,
+`entryGracePeriod` and `exitGracePeriod`, where APX carries whole
+minutes.
 
 APX-only: `statusHistory[]` and `amountHistory[]` stay in the APX
 profile as audit detail. The EligibilityResult is a convenience read over

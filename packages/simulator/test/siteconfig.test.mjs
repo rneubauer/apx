@@ -35,7 +35,7 @@ beforeEach(() => {
 test('the equipment of a lane, with roles, make, model, versions, serial, MAC, and what controls what; never an address or a secret', async () => {
   const r = await call('GET', `/v1/equipment?place=${GARAGE}&lane=${LANE_2}`);
   assert.equal(r.status, 200);
-  assert.deepEqual(r.body.data.map((e) => e.extensions[DETAIL].role), ['gate', 'exitVerifier', 'intercom', 'camera']);
+  assert.deepEqual(r.body.data.map((e) => e.extensions[DETAIL].role), ['gate', 'exitVerifier', 'intercom', 'camera', 'laneDisplay']);
   const verifier = r.body.data[1];
   assert.equal(verifier.equipmentType, 'paymentMachine', 'the APDS type stays APDS');
   assert.deepEqual(verifier.extensions[DETAIL].controls, [ref(id('c1', 2), 'SupplementalEquipment')]);

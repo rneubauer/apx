@@ -46,7 +46,7 @@ an APX implementation without changes. APX adds only what APDS lacks:
 | EV charging | The parking-side view: live charging-point status with camera bay-presence fusion (vehicle not plugged in, bay blocked), ChargingSession on the parking stay with OCPP-aligned state, idle after complete, cost and three settlement modes (one bill at exit), customer status scope; charger control via the command plane; OCPP/OCPI ids carried opaquely | `ElectricChargingEquipment`, `ElectricChargingPoint`, `Connector`, `AuthenticationAndIdentificationEnum`, `Session`, `Space`, `Observation`, `Payment` |
 | Plate lists | Watch, scofflaw, allow, and enforcement-vehicle lists with per-place flags (alert on arrival, refuse service), their entries, and the change feed that keeps an edge copy current (Part 24) |
 | UI launch | A vendor's own screens, per module, opened for an agent with automatic login (one-time URL or signed token, 60 s, single use); everything done there comes back as the native APX record or a `UiActionRecord` with the fields the host asked for (Part 25) | OAuth2 scopes + place grants, `Command.agent`, Part 17 `AllowedAction` |
-| Site configuration | A location described from APX alone: a fixed list of equipment roles (gate, access door, ticket dispenser, reader, camera, intercom…) with make, model, versions, serial and MAC on every device; areas; cameras with what they look at and short-lived view links; comms points (intercom, dialer, posted number) with caller id and dialed number; escalation roles; typed ids in other systems; change notices (Part 26) | `SupplementalEquipment`, `EquipmentTypeEnum`, `VehicularAccess`, `HierarchyElement`, `Period` |
+| Site configuration | A location described from APX alone: a fixed list of equipment roles (gate, access door, ticket dispenser, reader, camera, intercom…) with make, model, versions, serial and MAC on every device; areas; cameras with what they look at and short-lived view links; comms points (intercom, dialer, posted number) with caller id and dialed number; escalation roles; typed ids in other systems; display records (which sign showed which message, for which stay); change notices (Part 26) | `SupplementalEquipment`, `EquipmentTypeEnum`, `VehicularAccess`, `HierarchyElement`, `Period` |
 
 Extension identity follows the official APDS convention (Use Case §C.2.5):
 `apds-ext:apx:<class>@<version>`.
@@ -101,11 +101,12 @@ Version history: [CHANGELOG.md](CHANGELOG.md).
 
 ## Status
 
-**v0.15.0 — complete v1 draft, vetted.** All domains specified: data profile,
+**v0.16.0 — complete v1 draft, vetted.** All domains specified: data profile,
 delivery fabric, control, alerts, discovery, accounts & payments, LPR,
 reservations, permits, tolling, customer service & resolution, violations
 (enforcement), validation programs, credential lifecycle, valet, EV charging,
-plate lists, UI launch and site configuration. This repository contains the specification,
+plate lists, UI launch and site configuration, with display records,
+stay compliance and separate entry and exit grace. This repository contains the specification,
 the written standard, and a non-normative simulator for trying them out;
 production implementations live elsewhere.
 

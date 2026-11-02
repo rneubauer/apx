@@ -11,12 +11,12 @@
     },
     {
       "name": "Everything on exit lane 2",
-      "narration": "Four APDS SupplementalEquipment records, each with the equipment-detail decoration: the barrier, the pay-in-lane terminal that is the exit verifier (it controls the barrier), the intercom built into it, and the overhead camera. The APDS equipment type stays APDS; the role says what each one is. No IP address, no username, no password anywhere (§26.1).",
+      "narration": "Five APDS SupplementalEquipment records, each with the equipment-detail decoration: the barrier, the pay-in-lane terminal that is the exit verifier (it controls the barrier), the intercom built into it, the overhead camera, and the exit sign. The APDS equipment type stays APDS; the role says what each one is. No IP address, no username, no password anywhere (§26.1).",
       "request": { "method": "GET", "path": "/v1/equipment?place=b1000000-0000-4000-8000-000000000001&lane=b2000000-0000-4000-8000-000000000002" },
       "expect": {
         "status": 200,
         "body": {
-          "meta": { "total": 4 },
+          "meta": { "total": 5 },
           "data": [
             { "extensions": { "apds-ext:apx:equipment-detail@1.0": { "role": "gate", "manufacturer": "Gatewise", "macAddresses": ["3c7a1e00b2a1"] } } },
             { "extensions": { "apds-ext:apx:equipment-detail@1.0": { "role": "exitVerifier", "controls": [ { "id": "c1000000-0000-4000-8000-000000000002" } ] } } },

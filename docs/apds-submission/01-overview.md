@@ -2,7 +2,7 @@
 
 # APX Data Specification: Overview
 
-*Proposed additions to the APDS data model · Draft for the APDS committee · based on APDS 4.1 (2026-01-14) · APX 0.15.0*
+*Proposed additions to the APDS data model · Draft for the APDS committee · based on APDS 4.1 (2026-01-14) · APX 0.16.0*
 
 ## Introduction
 

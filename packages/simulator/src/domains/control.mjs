@@ -8,6 +8,7 @@
  * placeRates{}, validationProviders[], sessions[] (with `_` hints),
  * accessCredentials[], resolutionPolicies{}, actors{}, control.timing{}.
  */
+import { createHash } from 'node:crypto';
 import { registryValues } from '../kernel/spec.mjs';
 import { fail } from '../kernel/problems.mjs';
 import { paginate, entry, refOf, placeOfTarget, requireNode, money, wire, text, shortId, isRef } from './common.mjs';
@@ -250,9 +251,13 @@ export default {
           if (devices().has(cmd.target.id)) devices().update(cmd.target.id, (d) => ({ ...d, lastCommunication: sim.clock.now() }), { bump: false });
           detail = 'device restarted';
           break;
-        case 'displayMessage':
-          detail = `message displayed: ${text(p.message) ?? ''}`.trim();
+        case 'displayMessage': {
+          // Part 6 §6.1a proof of display: a hash of what was shown, never the text (a §26.9 record names it).
+          const shown = text(p.message) ?? '';
+          detail = `message displayed: ${shown}`.trim();
+          result = { display: { shownTime: sim.clock.now(), contentHash: `sha256:${createHash('sha256').update(shown).digest('hex').slice(0, 12)}`, acknowledgedBy: 'player' } };
           break;
+        }
         case 'resetPassback':
         case 'forceIn':
         case 'forceOut':

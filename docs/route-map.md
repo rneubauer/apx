@@ -120,5 +120,8 @@ response is `202` — poll `GET /v1/commands/{id}` or subscribe to
 | `GET /intercoms` · `GET /lanes/{id}/phone` | `GET /v1/comms-points?place=` — intercoms, analog dialers, posted numbers, kiosks, QR codes, with caller id, dialed number and the gate or door they serve; `?callerId=` or `?dialedNumber=` finds the lane from a call (Part 26 §26.4) |
 | `GET /cameras/{id}/stream` (an RTSP URL with the password in it) | `POST /v1/cameras/{id}/views {kind: live\|snapshot\|playback}` — a single-use link that lasts 5 minutes; the password never leaves the site (Part 26 §26.3) |
 | `GET /lookup?externalId=…` | `POST /v1/identifiers:resolve {system, id}` — the APX record for an id another system holds (Part 26 §26.6) |
+| `POST /signs/{id}/log` · a sign player's own play log | `POST /v1/display-records` — which sign showed which message kind, when, for which read or stay; `GET /v1/display-records?place=&messageKind=&since=` to measure (Part 26 §26.9) |
+| `GET /stays/{id}/compliance` · a nightly compliance export | `apds-ext:apx:stay-compliance@1.0` on the native Session — status, family, flags, the policy version; read under `apx.compliance:read` (Part 5 §5.9) |
+| `grace_minutes` in a site config file | `EnforcementPolicy.stayGrace {entryMinutes, exitMinutes}` — inherits down the place tree and keeps versions for appeals (Part 19 §19.10) |
 | `POST /escalations` · "called the manager" in a note | `POST /v1/approvals` · `…/{id}/decide` — the ask, the answer and the evidence a gated action cites (Part 17 §17.3a) |
 | `POST /receipts/resend` | `POST /v1/payments/{id}/receipt {channel, destination}` (Part 13 §13.1a) |

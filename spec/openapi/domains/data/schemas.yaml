@@ -457,6 +457,70 @@ SessionDetail:
       type: boolean
       description: An area stay shorter than the area's minimum dwell — never scored or billed.
 
+StayCompliance:
+  title: StayCompliance
+  description: |-
+    The `apds-ext:apx:stay-compliance@1.0` decoration on an APDS Session
+    (Part 5 §5.9): the outcome a compliance engine scored for the stay,
+    and the policy it measured against. Written with the native Session
+    POST/PUT by the engine; a server that scores stays itself SHOULD write
+    the same block. The rules that produce the outcome stay in the engine.
+
+    A status is not a Violation: a `violation`-family status issues
+    nothing (Part 19 issues violations). Served only to tokens with
+    `apx.compliance:read`, and written only with `apx.compliance:write`
+    (403 `insufficient-scope`); a write that omits it keeps the stored
+    block. It carries no plate characters.
+  type: object
+  required: [status, family, evaluatedTime, sequence]
+  properties:
+    status:
+      type: string
+      description: definedValue of apx-stay-compliance-statuses, or an implementer code.
+      examples: [overstay]
+    family:
+      type: string
+      enum: [compliant, violation, withheld, other]
+      description: |-
+        The family of the status. For a registry status it MUST be the
+        family the registry gives (422 `request-unprocessable`).
+        `compliant` — rights or an exemption covered the stay
+        `violation` — the stay was not covered as the policy requires
+        `withheld` — not scored, or held back for review
+        `other` — an outcome none of the other families fits, for example paid after exit
+    pendingStatus:
+      type: string
+      description: The status the stay would have once a person confirms it; present only with `status` `reviewRequired` (422 `request-unprocessable` otherwise).
+      examples: [overstay]
+    flags:
+      type: array
+      description: Facts behind the status — definedValues of apx-stay-compliance-flags, or implementer codes.
+      items: { type: string }
+      examples: [[paidAfterExit]]
+    evaluatedTime:
+      description: When the evaluation ran.
+      $ref: "../../../vendor/apds/4.1/apds-api-4.1.yaml#/components/schemas/DateTime"
+    sequence:
+      type: integer
+      minimum: 1
+      description: Orders the evaluations of one Session. A write with a lower `sequence` than the one held is 409 `evaluation-out-of-order`; an equal one replaces it.
+    final:
+      type: boolean
+      description: The writer's statement that no further evaluation is expected; never a lock.
+    policy:
+      description: The EnforcementPolicy, at its version, the evaluation used (Part 19 §19.10), whose `stayGrace` explains the result. Naming no policy visible to the caller is 422 `reference-unknown`.
+      $ref: "../../../vendor/apds/4.1/apds-api-4.1.yaml#/components/schemas/VersionedReference"
+  examples:
+    - {
+        "status": "overstay",
+        "family": "violation",
+        "flags": ["paidAfterExit"],
+        "evaluatedTime": "2026-10-21T14:05:00Z",
+        "sequence": 3,
+        "final": false,
+        "policy": { "id": "d1900000-0000-4000-8000-000000000010", "className": "EnforcementPolicy", "version": 4 }
+      }
+
 # --- Reusable additive parameters (applied by implementations to native list routes) ---
 
 ModeParam:

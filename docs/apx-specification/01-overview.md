@@ -257,6 +257,7 @@ Polling full lists does not scale to live occupancy or thousands of sessions. Wi
 - **Occupancy snapshot.** `GET /v1/places/{id}/occupancy` answers "how full is it now" for one garage, level or zone: the verbatim APDS `Supply`, the latest `DemandType` record and a derived `available` count. It is a read model derived from the Place hierarchy, never written directly. Material changes publish `apx.data.occupancy.v1` (APX Part 5 §5.5).
 - **Occupancy history.** `GET /v1/places/{id}/occupancy/history` returns one bucket per interval (default one hour) with the highest count, the time-weighted average, the supply in force and the number of demand records behind it. A bucket with no records carries no counts, never a guess (APX Part 5 §5.5a).
 - **Session detail.** When the system that pairs plate reads into visits is a separate client, it writes what it decided as the Level B decoration `apds-ext:apx:session-detail@1.0` on the APDS Session: which reads, why the visit ended, how each match was made, and the parent visit of an area stay (APX Part 5 §5.8).
+- **Stay compliance.** A compliance engine writes its verdict on a stay as the decoration `apds-ext:apx:stay-compliance@1.0`: one status with its family (compliant, violation, withheld, other), the facts behind it, the order of its evaluations, and the enforcement policy version it measured against. Other systems see the same answer without re-running the engine's rules. It is readable only under `apx.compliance:read` and is never a violation by itself (APX Part 5 §5.9).
 - **Aggregation and onboarding.** APX Part 18 covers a location that moves from its own APX implementation to an aggregating one that fronts many locations from many operators. It defines what survives the move (identifiers and provenance), the onboarding order, and cutover. It has no class of its own; its rules bind whichever classes the aggregator claims.
 
 ### Subscriptions and Events
@@ -407,7 +408,7 @@ Enforcement usually involves several parties: the operator that owns the rights 
 - **Detection modes.** `automated` (a camera or sensor pipeline; policy decides), `guided` (the system surfaces a candidate and an officer confirms on site) and `manual` (an officer alone). A guided detection cannot be issued without a person's confirmation on the audit trail (APX Part 19 §19.4).
 - **Eligibility check.** `GET /v1/enforcement/eligibility` answers whether a vehicle is entitled to be at a place now, and by what, with a body form `POST /v1/enforcement/eligibility:check` (APX Part 19 §19.3).
 - **Lifecycle.** Detect, review, issue a notice or citation, settle (including partial payment), appeal and void. The record and its history stay readable after void (APX Part 19 §19.1, §19.6, §19.6a).
-- **Enforcement policy.** The law at each location, machine-readable: lawful notice methods for each detection mode and by when, a penalty cap, an escalation schedule and the appeal window. The server applies it at issue and runs the escalation (APX Part 19 §19.10).
+- **Enforcement policy.** The law at each location, machine-readable: lawful notice methods for each detection mode and by when, a penalty cap, an escalation schedule, the appeal window, and the stay grace, with separate minutes after entry and after the paid time ends. The server applies it at issue and runs the escalation; the eligibility check's `graceUntil` comes from the stay grace (APX Part 19 §19.10, §19.3).
 - **Signage.** What the sign said: posted text in each language, a photo, where it stands and when it was in force. It is frozen onto each violation at issue, so an appeal sees the sign the officer saw (APX Part 19 §19.11).
 - **Imports.** Citations issued by another system can be imported in whatever state they are in, and linked to their session afterwards with the match evidence (APX Part 19 §19.13).
 
@@ -550,6 +551,7 @@ A system that joins a location today learns its layout from three places at once
 - **Comms points.** Any way a parker reaches help: an intercom, an analog dialer, a posted number, a kiosk, a QR code, an app. Each carries the number that is called when help is requested, the number the device calls out as, or the identifier the call systems use, and the barrier an agent opens for it. A posted number resolves to the place only; the agent asks which lane. No SIP data is held (APX Part 26 §26.4).
 - **Place operations and external identifiers.** The call platform's account for the site and the escalation roles in calling order, as roles only; typed identifiers from other systems, each naming the system that issued it, and a one-call lookup (APX Part 26 §26.5 and §26.6).
 - **Change notices.** `apx.equipment.changed.v1` and `apx.commspoints.changed.v1`, plus the change feed on both lists, so another system keeps a site's setup current without re-reading the place (APX Part 26 §26.7).
+- **Display records.** The system that drove a lane sign records which sign showed which kind of message, when, and for which read or stay, with the same proof of display a commanded message carries. It is the proof for a refused-service message and the data that shows whether signs change what parkers do. No message text or plate is stored (APX Part 26 §26.9).
 
 ## Security and Permissions
 
@@ -582,7 +584,8 @@ Scopes follow the pattern `apx.<domain>:<verb>`. A request whose token lacks the
 | Valet | `apx.valet:read`, `apx.valet:manage`, `apx.valet:request` (customer) |
 | Plate lists | `apx.platelists:read`, `apx.platelists:manage` |
 | UI launch | `apx.ui:launch` (host), `apx.ui:read`, `apx.ui:record` (the surface's back end) |
-| Site configuration | `apx.siteconfig:read`, `apx.siteconfig:manage` (whoever runs the calls), `apx.cameras:view` |
+| Site configuration | `apx.siteconfig:read`, `apx.siteconfig:manage` (whoever runs the calls), `apx.cameras:view`, `apx.displays:record` (whoever drives the signs) |
+| Stay compliance | `apx.compliance:read`, `apx.compliance:write` (the compliance engine) |
 | EV charging | `apx.charging:read`, `apx.charging:manage` (bridge), `apx.charging:status` (customer) |
 | Other | `apx.digest:use`, `apx.replication:write` |
 
@@ -613,6 +616,7 @@ Licence plates, plate images and payment records are personal data in many juris
 - **Purpose limitation.** A subscription cannot deliver a topic the credential could not read directly.
 - **Keys in bodies, not URLs.** Every plate-, card- or phone-keyed lookup has a body form, so the key never lands in an access log.
 - **Credential digests (optional).** A server may publish a keyed hash of a credential, so a consumer that only needs "is this the same plate?" can match without receiving plates.
+- **Per-stay outcomes.** A stay's compliance status is served only under its own scope, and a display record never stores the message text or the plate, even when the sign showed it.
 
 Regulatory compliance (lawful basis, data-subject rights, cross-border transfer) remains the Distributing Party's responsibility.
 

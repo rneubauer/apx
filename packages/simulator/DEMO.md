@@ -90,6 +90,7 @@ Pick the world in Present (or the header) and its demos are listed first.
 | 21 | `help-call-vendor-screen.json` | apx-ui-launch | Part 25: the PARCS has no `lostTicket` through APX, so Part 17 offers the vendor's screen (`execution.type: ui`); the host launches it signed in with a single-use url; what the agent does there comes back as the Command it would have been, carrying the call's `correlationId`; the launch record, the Command and the support interaction agree. Click "Open the vendor screen" on the launch step to drive the mock vendor console yourself | 14 |
 | 22 | `after-hours-access-door.json` | apx-site-config | Part 26 §26.4 and §26.8: the lobby-door intercom is a comms point that serves the door; a paid parker is let in with `vendGate` on the door after a camera still; a permit holder's card opens it with no call; an expired permit puts the on-call supervisor behind the door, asked and answered through `POST /v1/approvals` (Part 17 §17.3a) | 12 |
 | 23 | `site-configuration-tour.json` | apx-site-config | Part 26: a garage described from APX alone: equipment by lane, area and role with make, model, versions, serial and MAC; cameras and where they look; comms points by caller id and dialed number; another system's id resolved; a live view; per-place capabilities in discovery; a swapped terminal arriving as a change notice and through the change feed | 13 |
+| 24 | `exit-sign-and-stay-compliance.json` | apx-site-config | Part 26 §26.9 and Part 5 §5.9 (0.16): the exit sign shows "Payment not found" and the edge records it as a DisplayRecord (sign, message kind, read, stay, a hash, never the text or plate); the barrier refused as a sign; every message the stay was shown; the compliance engine's `lateStart` score on the Session, a delayed older evaluation refused (`evaluation-out-of-order`), and the block left out for a reader without `apx.compliance:read` | 8 |
 
 ### Analytics (world `analytics-lakeside`)
 
@@ -246,7 +247,7 @@ hosted copy, traffic in the Fabric view runs only while the tab is open,
 and SSE subscribers are simulated (a real SSE client cannot connect to a
 page).
 
-- The simulator implements every operation in the bundle (185 of 185;
+- The simulator implements every operation in the bundle (207 of 207;
   `node bin/apx-sim.mjs ops`). Where the standard leaves a choice open
   (how a rate table prices a quote, which place a multi-place plate list's
   event is bound to), the simulator makes one and it is not normative.

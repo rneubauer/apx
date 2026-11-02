@@ -32,6 +32,7 @@ export const TOPIC_READ_SCOPES = [
   // per-session restriction rides on the token's binding, not checked here.
   [/^apx\.charging\.(session|idle)\./, ['apx.charging:read', 'apx.charging:status'], 'GET /v1/charging/sessions/{id}'],
   [/^apx\.charging\./, ['apx.charging:read'], 'GET /v1/charging/points/{id}'],
+  [/^apx\.(equipment|commspoints|displays)\./, ['apx.siteconfig:read'], 'GET /v1/equipment, /v1/comms-points, /v1/display-records'],
 ];
 
 /** A registry topic the table does not know yet: apx.<domain>.… → apx.<domain>:read. */

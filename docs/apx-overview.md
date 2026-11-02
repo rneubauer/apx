@@ -107,6 +107,7 @@ APX adds three additive mechanisms to the routes above:
 | **Coarse catch-up** | `GET /places?modified_since=…` | Everything changed since a timestamp (for clients that lost their cursor) |
 | **Occupancy history** | `GET /v1/places/{id}/occupancy/history?from=&to=&interval=PT1H` | The same numbers per hour (or any interval), derived from the demand records — for dashboards that used to replay demand themselves |
 | **Session detail** | `apds-ext:apx:session-detail@1.0` on a native `PUT /sessions/{id}` | When the system that pairs reads into visits is a separate client, it writes what it decided: which reads, why the visit ended, how each match was made, and the parent visit of an area stay |
+| **Stay compliance** | `apds-ext:apx:stay-compliance@1.0` on a native `PUT /sessions/{id}` | The compliance engine's verdict on a stay — paid, in grace, overstay, waiting for review — with the facts behind it and the policy it measured against. Readable only under its own scope (`apx.compliance:read`), and never a violation by itself |
 | **Occupancy snapshot** | `GET /v1/places/{id}/occupancy` | "How full is it right now" for one garage/level/zone — supply, latest demand count, and a derived `available` — without pulling the whole Place hierarchy |
 
 **Why this way:** the cursor feed means a partner that goes offline for an
@@ -323,7 +324,7 @@ candidate, an officer with a handheld confirms on site).
 | `POST …/{id}/payment` | Attach the settling payment (taken through the Money section — nothing new to build) |
 | `POST …/{id}/appeals` · `…/appeals/resolve` | "That wasn't my car" — upheld, reduced, or dismissed, with audit |
 | `POST …/{id}/void` | Void; the record and its history stay readable |
-| `GET /v1/enforcement/policies/effective?place=` · `POST /v1/enforcement/policies` · `PUT …/policies/{id}` | **The law, machine-readable, per location:** which notice methods are lawful for which detections and by when, the penalty cap over the unpaid fee, the escalation schedule after 30/60 days with a ceiling, the appeal window. The server enforces it at issue and runs the escalation itself |
+| `GET /v1/enforcement/policies/effective?place=` · `POST /v1/enforcement/policies` · `PUT …/policies/{id}` | **The law, machine-readable, per location:** which notice methods are lawful for which detections and by when, the penalty cap over the unpaid fee, the escalation schedule after 30/60 days with a ceiling, the appeal window, and the stay grace — separate minutes on entry and on exit, which the handheld's `graceUntil` comes from. The server enforces it at issue and runs the escalation itself |
 | `GET /v1/enforcement/signage/effective?place=` · `POST /v1/enforcement/signage` · `PUT …/signage/{id}` | **What the sign said:** posted text (per language), a photo, where it stands, and when it was in force. Frozen onto every violation at issue, so the appeal sees the sign the officer saw |
 
 Every violation also carries where it happened and from where it was
@@ -495,7 +496,8 @@ source enough.
 | `GET /v1/comms-points?callerId=` | How a parker reaches help at any point: intercom, analog dialer, posted number, kiosk, QR code; the number called, the number it calls out as, the platform's device id, and the gate or door it serves |
 | `apds-ext:apx:external-ids@1.0` · `POST /v1/identifiers:resolve` | The ids other systems know the place, lane or device by, typed by the issuer's own URI, and the lookup from one of them to the APX record |
 | `apds-ext:apx:place-operations@1.0` | The call platform's account for the site and whom to escalate to, as roles, in order, with hours |
-| `apx.equipment.changed.v1` · `apx.commspoints.changed.v1` | A wake-up when the setup changes, so no one re-reads the whole place |
+| `POST /v1/display-records` · `GET /v1/display-records?place=&messageKind=` | **What the sign showed:** the system that drove a lane sign records which sign, which message (`transientExitUnpaid`, `entranceRefused`…), when, and for which read or stay. The proof of display for a refused car, and the data that shows whether signs change behaviour. Never the text or the plate |
+| `apx.equipment.changed.v1` · `apx.commspoints.changed.v1` · `apx.displays.shown.v1` | A wake-up when the setup changes or a sign shows a message, so no one re-reads the whole place |
 
 **Why this way:** no IP addresses, no SIP user names, no passwords,
 anywhere. Together with model and firmware they would map a site's

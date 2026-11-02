@@ -87,6 +87,8 @@ Extensions:
       $ref: "../data/schemas.yaml#/SessionDetail"
     "apds-ext:apx:match-evidence@1.0":
       $ref: "../data/schemas.yaml#/MatchEvidence"
+    "apds-ext:apx:stay-compliance@1.0":
+      $ref: "../data/schemas.yaml#/StayCompliance"
     "apds-ext:apx:violation-source@1.0":
       $ref: "../violations/schemas.yaml#/ViolationSource"
     "apds-ext:apx:payment-detail@1.0":

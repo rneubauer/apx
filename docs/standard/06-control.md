@@ -123,7 +123,7 @@ members are normative per command type:
 | `lostTicket` | `ticketNumber`, `session` (Reference), `amountDue` (the fee) |
 | `matchTicket` | `session` (the matched Session), `amountDue` (priced from its true entry) |
 | `pushNegotiatedRate` | `rateTable` (VersionedReference, the version applied), `amountDue` |
-| `displayMessage` | `display` — what the device confirmed it showed: `shownTime`, `contentHash`, `wordingVersion`, an access-controlled `screenshot` link, and `acknowledgedBy` (`player`, `operator`, `none`); written when the device confirms, and the proof of display for a refused-service sign (Part 24 §24.4). OPTIONAL: present where the display reports it |
+| `displayMessage` | `display` — what the device confirmed it showed: `shownTime`, `contentHash`, `wordingVersion`, an access-controlled `screenshot` link, and `acknowledgedBy` (`player`, `operator`, `none`); written when the device confirms, and the proof of display for a refused-service sign (Part 24 §24.4). OPTIONAL: present where the display reports it. The same shape is the Part 26 §26.9 `DisplayRecord`, which a sign driven without a command records, and which names the command when one drove it |
 
 Other command types leave `result` absent. `result` is server-assigned and
 absent before `succeeded`; it restates, and never contradicts, what the

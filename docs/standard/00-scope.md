@@ -1,6 +1,6 @@
 # APX Part 0 — Scope and Overview
 
-**Status:** Draft, edition 0.15.0. The exact set of artifacts this edition
+**Status:** Draft, edition 0.16.0. The exact set of artifacts this edition
 pins is `spec/edition.json` (Part 3 §3.4) · **Normative unless marked
 otherwise.** The key words
 MUST, MUST NOT, REQUIRED, SHALL, SHOULD, MAY are to be interpreted as
@@ -80,7 +80,7 @@ lists).
 | 23 | 23-charging.md | EV charging, the parking-side view: live point status with bay-presence fusion, ChargingSession on the APDS Session, idle after complete, settlement, charger control via Part 6 |
 | 24 | 24-plate-lists.md | Plate lists — watch, scofflaw, allow, and enforcement-vehicle lists with per-place flags, their entries, and the change feed |
 | 25 | 25-ui-launch.md | UI launch — a vendor's own screens opened for an agent with automatic login (one-time URL or signed token), and everything done there looped back as APX data |
-| 26 | 26-site-configuration.md | Site configuration — equipment roles and detail, areas, cameras and views, comms points, escalation roles, external identifiers, and the change notices that describe a location from APX alone |
+| 26 | 26-site-configuration.md | Site configuration — equipment roles and detail, areas, cameras and views, comms points, escalation roles, external identifiers, display records, and the change notices that describe a location from APX alone |
 | A | annex-a-ics.md | Conformance requirements and ICS template |
 
 The machine-readable OpenAPI 3.1 document (`spec/openapi/apx.yaml`, bundled

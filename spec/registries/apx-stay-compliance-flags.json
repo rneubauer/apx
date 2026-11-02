@@ -1,0 +1,14 @@
+{
+  "id": "7f8091a2-b3c4-4d5e-af60-718293a4b526",
+  "version": 1,
+  "name": "apx-stay-compliance-flags",
+  "creator": { "id": "a1000000-0000-4000-8000-000000000001", "className": "Organisation" },
+  "locator": "https://apx-standard.org/registries/apx-stay-compliance-flags.json",
+  "userDefinedCodeListEntries": [
+    {"definedValue": "paidAfterExit", "entryDescription": "A payment for the stay arrived after the vehicle left.", "entryIndex": 0},
+    {"definedValue": "matchedFuzzy", "entryDescription": "A right or payment was matched to the stay on an inexact plate match (Part 5 §5.8 rule 5).", "entryIndex": 1},
+    {"definedValue": "endInferred", "entryDescription": "The stay's end was set by a rule, not observed (Part 5 §5.8 rule 3).", "entryIndex": 2},
+    {"definedValue": "onList", "entryDescription": "The plate was on a plate list at the place during the stay (Part 24).", "entryIndex": 3},
+    {"definedValue": "paid", "entryDescription": "A payment covered part of the stay; set beside a status such as lateStart whose coverage began too late.", "entryIndex": 4}
+  ]
+}

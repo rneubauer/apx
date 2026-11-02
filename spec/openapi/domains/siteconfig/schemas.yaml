@@ -353,6 +353,63 @@ CommsPoint:
         "coverage": [{ "languages": ["en", "es"] }]
       }
 
+DisplayRecord:
+  title: DisplayRecord
+  description: |-
+    The record that a sign showed a message (Part 26 §26.9): which sign,
+    which kind of message, when, and for which read or stay. Written by
+    whichever system drove the display, the edge controller, the PARCS or
+    the sign's own player, often with no APX command involved; immutable
+    once written. It is the proof of display a refused-service message
+    needs (Part 24 §24.4), and the data an operator measures the signs by.
+
+    The proof members are the Part 6 §6.1a `CommandResult.display` shape,
+    unchanged. The message text is never stored, only its hash and wording
+    version, and the plate is never stored even when the sign shows it
+    (Part 9 §9.6 rule 8). When a `displayMessage` command drove the sign,
+    `command` names it and the record MUST agree with its result.
+  allOf:
+    - $ref: "../common/schemas.yaml#/ApxResourceCore"
+    - $ref: "../control/schemas.yaml#/DisplayProof"
+    - type: object
+      required: [display, messageKind, shownTime]
+      properties:
+        id: { type: string, format: uuid, readOnly: true }
+        version: { type: integer, minimum: 1, readOnly: true }
+        display:
+          description: The sign, a SupplementalEquipment of §26.1 (role `laneDisplay` or `countSign`).
+          $ref: "../../../vendor/apds/4.1/apds-api-4.1.yaml#/components/schemas/Reference"
+        place:
+          description: The place of the display; the server derives it from the device, and a body value that disagrees is 422 `request-unprocessable`.
+          $ref: "../../../vendor/apds/4.1/apds-api-4.1.yaml#/components/schemas/Reference"
+        messageKind:
+          type: string
+          description: definedValue of apx-display-message-kinds, or an implementer code for a location's own messages.
+          examples: [transientExitUnpaid]
+        observation:
+          description: The read that triggered the message (className `ObservationElement`), when there was one.
+          $ref: "../../../vendor/apds/4.1/apds-api-4.1.yaml#/components/schemas/Reference"
+        session:
+          description: The stay the message was for (className `Session`), when there was one.
+          $ref: "../../../vendor/apds/4.1/apds-api-4.1.yaml#/components/schemas/Reference"
+        command:
+          description: The Part 6 `displayMessage` command that drove the sign, when one did; `shownTime` and `contentHash` then agree with its `CommandResult.display`.
+          $ref: "../../../vendor/apds/4.1/apds-api-4.1.yaml#/components/schemas/Reference"
+  examples:
+    - {
+        "id": "c5000000-0000-4000-8000-000000000001",
+        "version": 1,
+        "display": { "id": "c2000000-0000-4000-8000-000000000041", "className": "SupplementalEquipment" },
+        "place": { "id": "b1000000-0000-4000-8000-000000000001", "className": "Place" },
+        "messageKind": "transientExitUnpaid",
+        "observation": { "id": "f3000000-0000-4000-8000-000000000140", "className": "ObservationElement" },
+        "session": { "id": "c4000000-0000-4000-8000-000000000077", "className": "Session" },
+        "shownTime": "2026-10-21T14:03:12Z",
+        "contentHash": "sha256:9f2c1e0b7a4d",
+        "wordingVersion": "exit-2026-10",
+        "acknowledgedBy": "player"
+      }
+
 IdentifierResolveRequest:
   title: IdentifierResolveRequest
   description: An external id to look up (Part 26 §26.6), as it appears in an ExternalIdentifiers entry.

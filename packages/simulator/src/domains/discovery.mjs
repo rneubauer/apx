@@ -54,6 +54,8 @@ const SCOPE_CLASSES = {
   'apx.ui': ['apx-ui-launch'],
   'apx.siteconfig': ['apx-site-config'],
   'apx.cameras': ['apx-site-config'],
+  'apx.displays': ['apx-site-config'],
+  'apx.compliance': ['apx-data'],
 };
 
 // Bundle operation tag → conformance class.
@@ -117,6 +119,7 @@ const TOPIC_RULES = [
   ['apx.ui.', ['apx.ui:read', 'apx.ui:launch'], 'apx-ui-launch'],
   ['apx.equipment.', ['apx.siteconfig:read'], 'apx-site-config'],
   ['apx.commspoints.', ['apx.siteconfig:read'], 'apx-site-config'],
+  ['apx.displays.', ['apx.siteconfig:read'], 'apx-site-config'],
   ['apx.approvals.', ['apx.resolution:read', 'apx.support:manage'], 'apx-resolution'],
 ];
 

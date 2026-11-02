@@ -4,7 +4,8 @@
  * and their by-id routes)
  * with client-supplied ids, full vs change update modes, the §5.1a error
  * dialect, the §5.2 change feed, the §5.4 native events, and the §5.5
- * occupancy snapshot at GET /v1/places/{id}/occupancy.
+ * occupancy snapshot at GET /v1/places/{id}/occupancy, and the §5.9
+ * stay-compliance decoration on Sessions (data/compliance.mjs).
  *
  * World sections read: places[] (+ apdsPlaces{} — the APDS document of an
  * element, keyed by id), sessions[], rateTables[], rightSpecs[],
@@ -28,6 +29,7 @@ import { createFeed } from './data/feed.mjs';
 import { createOccupancy } from './data/occupancy.mjs';
 import { priceTable } from './data/pricing.mjs';
 import { createRoutes } from './data/routes.mjs';
+import { createCompliance } from './data/compliance.mjs';
 
 /** How long a quoted price holds (the RSV-01 option expires thirty minutes after the response). */
 const QUOTE_TTL_MS = 30 * 60_000;
@@ -51,6 +53,7 @@ export default {
     const feed = createFeed(sim, engine);
     const occupancy = createOccupancy(sim, engine);
     const routes = createRoutes(sim, engine, feed);
+    const compliance = createCompliance(sim, engine);
     let directoryDown = false;
 
     // ---------- seeding ----------
@@ -113,14 +116,21 @@ export default {
 
     // ---------- the generic native CRUD routes ----------
 
+    // Sessions carry the §5.9 decoration: its write rules run before the write, its read scope after the read.
+    const guarded = (collection) =>
+      collection === 'sessions'
+        ? { read: compliance.guardRead, create: (fn) => compliance.guardWrite(fn, (ctx) => ctx.body?.id), update: (fn) => compliance.guardWrite(fn, (ctx) => ctx.params.id) }
+        : { read: (fn) => fn, create: (fn) => fn, update: (fn) => fn };
+
     for (const [collection, [listOp, createOp, readOp, updateOp, deleteOp]] of Object.entries(OPERATIONS)) {
       const cls = CLASSES[collection];
       const directory = collection === 'contacts';
+      const guard = guarded(collection);
       const down = () => (directory && directoryDown ? { status: 500, body: { status: 'error', code: 500, message: 'internal server error: contact directory unavailable' } } : null);
-      sim.on(listOp, route((ctx) => down() ?? routes.list(ctx, cls, { predicate: listFilter(collection, ctx) })));
-      sim.on(createOp, route((ctx) => routes.create(ctx, cls)));
-      sim.on(readOp, route((ctx) => down() ?? routes.read(ctx, cls)));
-      sim.on(updateOp, route((ctx) => routes.update(ctx, cls)), { skipBodyValidation: true });
+      sim.on(listOp, route(guard.read((ctx) => down() ?? routes.list(ctx, cls, { predicate: listFilter(collection, ctx) }))));
+      sim.on(createOp, route(guard.create((ctx) => routes.create(ctx, cls))));
+      sim.on(readOp, route(guard.read((ctx) => down() ?? routes.read(ctx, cls))));
+      sim.on(updateOp, route(guard.update((ctx) => routes.update(ctx, cls))), { skipBodyValidation: true });
       sim.on(deleteOp, route((ctx) => routes.remove(ctx, cls, { checkUuid: !directory })));
     }
 
