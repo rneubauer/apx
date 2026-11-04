@@ -21,6 +21,20 @@
 - [ ] Registry changes are **add-only** and bump the list `version`
 - [ ] The vendored APDS document under `spec/vendor/` is untouched
 
+## Docs
+
+Docs change in the same PR as the change they describe. List what you
+updated, or say in one line why nothing needed to change.
+
+- [ ] Written standard (`docs/standard/`) and Annex A rows for new testable requirements
+- [ ] Vetting scenario in `docs/scenarios/by-module/`, with simulator support
+- [ ] Generated document sets rebuilt (`npm run apxdocs:build`, `npm run submission:build`)
+- [ ] Decision record in `docs/decisions/` if this settles a design question
+- [ ] Guides updated if behaviour they describe changed (quickstart, PARCS profile, conformance and testing, developer guide)
+- [ ] `CHANGELOG.md` entry under `[Unreleased]`
+
+Docs changed:
+
 ## Compatibility
 
 - [ ] Additive only: no route, field, or enum value removed or re-typed
