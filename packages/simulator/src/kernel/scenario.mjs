@@ -20,6 +20,13 @@ export const SCENARIOS_DIR = process.env.APX_SIM_SCENARIOS_DIR
   : join(dirname(fileURLToPath(import.meta.url)), '..', '..', 'scenarios');
 const SCENARIO_NAME = /^[a-z0-9][a-z0-9-]{0,80}$/;
 
+/**
+ * Replaces `{name}` in every string of a value (deeply) with the saved variable of that name. A name with no saved value is left as written.
+ *
+ * @param {*} value A string, array or object.
+ * @param {object} vars The saved variables.
+ * @returns {*} A new value of the same shape.
+ */
 export function substitute(value, vars) {
   if (typeof value === 'string') return value.replace(/\{([a-zA-Z0-9_]+)\}/g, (m, k) => (k in vars ? String(vars[k]) : m));
   if (Array.isArray(value)) return value.map((v) => substitute(v, vars));
@@ -27,6 +34,13 @@ export function substitute(value, vars) {
   return value;
 }
 
+/**
+ * Reads a value from an object by a dotted path such as "$.items.0.id". Array parts are indexes.
+ *
+ * @param {*} obj The object to read.
+ * @param {string} path The path, with or without a leading `$`.
+ * @returns {*} The value, or undefined when any part of the path is missing.
+ */
 export function pick(obj, path) {
   return String(path)
     .replace(/^\$\.?/, '')
@@ -35,6 +49,13 @@ export function pick(obj, path) {
     .reduce((n, k) => (Array.isArray(n) ? n[Number(k)] : n?.[k]), obj);
 }
 
+/**
+ * Checks that `actual` contains everything in `expected`. Objects may have extra members, and arrays are compared position by position (extra items at the end are allowed). Other values must be equal.
+ *
+ * @param {*} expected The pattern.
+ * @param {*} actual The value to test.
+ * @returns {boolean} True when it matches.
+ */
 export function partialMatch(expected, actual) {
   if (expected === null || typeof expected !== 'object') return expected === actual;
   if (Array.isArray(expected)) return Array.isArray(actual) && expected.every((e, i) => partialMatch(e, actual[i]));
@@ -42,6 +63,9 @@ export function partialMatch(expected, actual) {
   return Object.entries(expected).every(([k, v]) => partialMatch(v, actual[k]));
 }
 
+/**
+ * The Authorization header value for a token: "Bearer …" when there is none, the token itself when it already starts with "Bearer ", otherwise the token with "Bearer " added.
+ */
 export const tokenOf = (t) => (!t ? 'Bearer …' : t.startsWith('Bearer ') ? t : `Bearer ${t}`);
 
 const STEP_KINDS = ['request', 'inject', 'clock', 'events', 'deliveries', 'state', 'receiver', 'reset', 'prepare'];
@@ -176,6 +200,12 @@ async function checkDeliveries(spec, out, io) {
 
 // ---------- scenario files ----------
 
+/**
+ * Tells whether a value is allowed as a scenario id: lower-case letters, digits and hyphens, starting with a letter or digit, at most 81 characters.
+ *
+ * @param {*} name The value to test.
+ * @returns {boolean} True when it is allowed.
+ */
 export function validScenarioName(name) {
   return typeof name === 'string' && SCENARIO_NAME.test(name);
 }
@@ -184,6 +214,11 @@ function requireName(id) {
   if (!validScenarioName(id)) throw new Error('scenario ids are lower-case letters, digits and hyphens (at most 81)');
 }
 
+/**
+ * Lists the saved scenario files, sorted by id.
+ *
+ * @returns {object[]} One entry per file: { id, name, world, steps, description }, or { id, name, error } when the file cannot be parsed. Empty when the folder does not exist.
+ */
 export function listScenarios() {
   if (!existsSync(SCENARIOS_DIR)) return [];
   return readdirSync(SCENARIOS_DIR)
@@ -200,6 +235,13 @@ export function listScenarios() {
     .sort((a, b) => a.id.localeCompare(b.id));
 }
 
+/**
+ * Reads one saved scenario.
+ *
+ * @param {string} id The scenario id.
+ * @returns {object|null} The scenario, or null when there is no such file.
+ * @throws {Error} When the id is not valid, or the file is not valid JSON.
+ */
 export function readScenario(id) {
   requireName(id);
   const file = join(SCENARIOS_DIR, `${id}.json`);
@@ -207,6 +249,14 @@ export function readScenario(id) {
   return JSON.parse(readFileSync(file, 'utf8'));
 }
 
+/**
+ * Saves a scenario as `<id>.json` in the scenarios folder, creating the folder if needed.
+ *
+ * @param {string} id The scenario id.
+ * @param {object} scenario The scenario. It must have a `steps` array.
+ * @returns {{id: string, steps: number}} The id and the number of steps saved.
+ * @throws {Error} When the id is not valid or the scenario has no steps array.
+ */
 export function writeScenario(id, scenario) {
   requireName(id);
   if (!scenario || typeof scenario !== 'object' || !Array.isArray(scenario.steps)) throw new Error('a scenario is an object with a steps array');

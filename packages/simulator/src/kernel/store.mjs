@@ -9,12 +9,21 @@
  */
 import { randomUUID, createHash } from 'node:crypto';
 
+/** A new random UUID. */
 export const uuid = () => randomUUID();
 
+/**
+ * The SHA-256 of a request body's JSON, in hex. A missing body counts as null. Used to tell whether a repeated Idempotency-Key came with the same body.
+ */
 export const hashBody = (body) => createHash('sha256').update(JSON.stringify(body ?? null)).digest('hex');
 
+/** A Reference object: { id, className }. */
 export const ref = (id, className) => ({ id, className });
 
+/**
+ * One in-memory collection of records, keyed by id, with the change log the change feed reads. `insert()` and the update methods follow the ApxResourceCore conventions described at the top of this file.
+ * The constructor takes the collection name and the store it belongs to.
+ */
 export class Collection {
   constructor(name, store) {
     this.name = name;
@@ -123,6 +132,10 @@ export class Collection {
   }
 }
 
+/**
+ * All the collections of one simulator, plus the idempotency ledger, counters and change sequence they share. The constructor takes the clock used to time-stamp records.
+ * Use `onChange()` to observe changes.
+ */
 export class Store {
   constructor(clock) {
     this.clock = clock;

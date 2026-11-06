@@ -51,6 +51,13 @@ function parseBody(raw) {
   return JSON.parse(raw);
 }
 
+/**
+ * Serves the /sim control routes listed at the top of this file.
+ *
+ * @param {object} sim The simulator.
+ * @param {{method: string, path: string, query: object, body: *}} request The request. `body` may be a JSON string or an object.
+ * @returns {Promise<object>} The response: { status, headers, body }, or a `stream` function for /sim/stream. A body that is not valid JSON gives a 400 response.
+ */
 export async function simApi(sim, { method, path, query, body: raw }) {
   const parts = path.split('/').filter(Boolean).slice(1); // after "sim"
   let body;

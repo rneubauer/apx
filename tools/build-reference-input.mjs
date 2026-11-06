@@ -12,6 +12,9 @@
  * schema APX defines, and the core APDS 4.1 classes it reuses verbatim. Docs
  * only: the output goes to node_modules/.cache/apx-reference-input.json,
  * and the bundle itself is not touched (the contract stays the contract).
+ *
+ * Runs as the first step of `npm run docs:build`, or by itself with
+ * `node tools/build-reference-input.mjs`.
  */
 import { readFileSync, writeFileSync, mkdirSync } from 'node:fs';
 import { join, dirname } from 'node:path';

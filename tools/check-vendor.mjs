@@ -5,6 +5,8 @@
  * The APDS 4.1 OpenAPI spec is vendored VERBATIM and must never be edited.
  * This script recomputes the SHA-256 of every vendored artifact and compares
  * it against the recorded CHECKSUM.sha256. CI fails on any drift.
+ *
+ * Run with `npm run vendor:check` (part of `npm test`).
  */
 import { createHash } from 'node:crypto';
 import { readFileSync, readdirSync } from 'node:fs';

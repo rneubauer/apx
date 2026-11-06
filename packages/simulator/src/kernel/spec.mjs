@@ -32,6 +32,7 @@ for (const file of readdirSync(join(APX_DIR, 'spec', 'registries'))) {
     descriptions: new Map(doc.userDefinedCodeListEntries.map((e) => [e.definedValue, e.entryDescription ?? ''])),
   });
 }
+/** The defined values of a registry, or an empty list when there is no registry of that name. */
 export const registryValues = (name) => REGISTRIES.get(name)?.values ?? [];
 /** The entryDescription of a registry value, or undefined for an implementer code. */
 export const registryDescription = (name, value) => REGISTRIES.get(name)?.descriptions.get(value);
@@ -85,7 +86,9 @@ function validator(ajv, id, pointer) {
   return compiled.get(key);
 }
 
+/** Escapes a JSON Pointer segment (`~` becomes `~0`, `/` becomes `~1`). */
 export const esc = (s) => s.replaceAll('~', '~0').replaceAll('/', '~1');
+/** Undoes esc(). */
 export const unesc = (s) => s.replaceAll('~1', '/').replaceAll('~0', '~');
 
 /** Follow local $refs; returns the resolved node and the pointer it lives at. */
@@ -98,6 +101,12 @@ export function deref(node) {
   return { node, pointer };
 }
 
+/**
+ * Looks up a component schema in the bundle.
+ *
+ * @param {string} name The schema name.
+ * @returns {object|undefined} The schema, or undefined when there is none.
+ */
 export function schema(name) {
   return BUNDLE.components.schemas[name];
 }
@@ -156,6 +165,13 @@ for (const [path, item] of Object.entries(BUNDLE.paths)) {
 
 export const OPS_BY_ID = new Map(OPS.map((o) => [o.operationId, o]));
 
+/**
+ * Finds the operation for a request. When several paths match, the one with the most literal characters wins.
+ *
+ * @param {string} method The HTTP method in upper case.
+ * @param {string} rawPath The request path. A query string is ignored.
+ * @returns {{op: object, params: Object<string, string>}|null} The operation and the decoded path parameters, or null when nothing matches.
+ */
 export function findOp(method, rawPath) {
   const path = rawPath.split('?')[0];
   const matches = OPS.filter((o) => o.method === method && o.regex.test(path)).sort((a, b) => b.literal - a.literal);
@@ -167,6 +183,12 @@ export function findOp(method, rawPath) {
   return { op, params };
 }
 
+/**
+ * Tells whether any operation has this path, whatever the method. Used to tell a wrong method from an unknown path.
+ *
+ * @param {string} rawPath The request path. A query string is ignored.
+ * @returns {boolean} True when some operation matches the path.
+ */
 export function pathExists(rawPath) {
   const path = rawPath.split('?')[0];
   return OPS.some((o) => o.regex.test(path));
@@ -174,6 +196,12 @@ export function pathExists(rawPath) {
 
 // ---------- request / response validation ----------
 
+/**
+ * Finds the request body schema of an operation.
+ *
+ * @param {object} op An entry from OPS.
+ * @returns {{contentType: string, pointer: string, required: boolean, schema: object}|null} JSON is preferred, otherwise the first declared type. Null when the operation has no request body.
+ */
 export function requestContent(op) {
   const d = op.op.requestBody ? deref(op.op.requestBody) : { node: null, pointer: null };
   const body = d.node;
@@ -184,6 +212,13 @@ export function requestContent(op) {
   return { contentType: ct, pointer: `${base}/content/${esc(ct)}/schema`, required: body.required === true, schema: body.content[ct].schema };
 }
 
+/**
+ * Checks a request body against the operation's request schema.
+ *
+ * @param {object} op An entry from OPS.
+ * @param {*} payload The parsed body.
+ * @returns {{errors: object[]|null, declared: boolean}} `errors` holds the ajv errors, or null when the body is valid. `declared` is false when the operation has no request body.
+ */
 export function validateRequestBody(op, payload) {
   const rc = requestContent(op);
   if (!rc) return { errors: null, declared: false };
@@ -199,6 +234,13 @@ export function validateRequestBranch(op, payload, branchIndex) {
   return v(payload) ? null : v.errors;
 }
 
+/**
+ * Finds what an operation declares for a response status.
+ *
+ * @param {object} op An entry from OPS.
+ * @param {number|string} status The HTTP status.
+ * @returns {{content: object, pointer: string, headers: object}|null} The declared content, the pointer to the response, and the declared headers. Null when the status is not declared.
+ */
 export function responseContent(op, status) {
   let resp = (op.op.responses ?? {})[String(status)];
   if (!resp) return null;
@@ -211,6 +253,14 @@ export function responseContent(op, status) {
 
 export const PROBLEM_BASE = 'https://apx-standard.org/problems/';
 
+/**
+ * Checks a response body against what the operation declares for that status. A body that looks like a problem is checked as `application/problem+json` when that is declared.
+ *
+ * @param {object} op An entry from OPS.
+ * @param {number|string} status The HTTP status.
+ * @param {*} payload The response body.
+ * @returns {{errors: object[]|null, declared: boolean, contentType?: string|null}} `errors` is null when the body is valid. `declared` is false when the status is not declared.
+ */
 export function validateResponseBody(op, status, payload) {
   const rc = responseContent(op, status);
   if (!rc) return { errors: [{ message: `${op.method} ${op.path} does not declare a ${status} response` }], declared: false };
@@ -234,6 +284,12 @@ export function ajvToErrors(errors) {
   }));
 }
 
+/**
+ * Writes ajv errors as one line for a message or header.
+ *
+ * @param {object[]} [errors] The ajv errors.
+ * @returns {string} Each error as "<pointer> <message>", joined with "; ".
+ */
 export function fmtErrors(errors) {
   return (errors ?? []).map((e) => `${e.instancePath || '/'} ${e.message}`).join('; ');
 }
