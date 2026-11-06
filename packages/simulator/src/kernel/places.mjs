@@ -8,6 +8,9 @@
  */
 import { fail } from './problems.mjs';
 
+/**
+ * The places, lanes and devices of the loaded world, indexed by id. `load(world)` fills it; the grant checks in this file use it to decide whether a caller's grant covers an element.
+ */
 export class Hierarchy {
   constructor() {
     this.nodes = new Map(); // id → { id, parentId, className, kind, name, operator, ... }

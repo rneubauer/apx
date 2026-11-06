@@ -86,6 +86,14 @@ function annexProposals(model) {
     table(['APX class', 'Proposed APDS element', 'Change', 'APDS domain', 'Tier'], rows), ''].join('\n');
 }
 
+/**
+ * Renders the whole 03 Data Dictionary document as Markdown.
+ *
+ * @param {object} model The model from loadModel().
+ * @param {string} intro The hand-written introduction text.
+ * @param {string} head The document header from header().
+ * @returns {string} The Markdown text.
+ */
 export function renderDataDictionary(model, intro, head) {
   let n = 0;
   const next = () => ++n;
@@ -108,6 +116,12 @@ export function renderDataDictionary(model, intro, head) {
   return out.join('\n');
 }
 
+/**
+ * Counts what the data dictionary covers: classes, attributes, associations, enumerations and code lists, and how many members or values have no definition in the spec.
+ *
+ * @param {object} model The model from loadModel().
+ * @returns {object} The counts, keyed by name.
+ */
 export function dataDictionaryStats(model) {
   const members = model.classes.flatMap((c) => [...c.attributes, ...c.associations]);
   return {

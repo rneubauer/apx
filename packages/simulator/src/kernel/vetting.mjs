@@ -171,6 +171,9 @@ export function parseScenarioText(text) {
   return { module, scenarios };
 }
 
+/**
+ * Reads a vetting suite scenarios.md file and parses it into { module, scenarios }. Throws if the file cannot be read.
+ */
 export const parseScenarios = (file) => parseScenarioText(readFileSync(file, 'utf8'));
 
 // ---------- the requests a scenario sends ----------
@@ -186,6 +189,9 @@ function collectInstants(value, out = [], key = '') {
   return out;
 }
 
+/**
+ * The problem type slug of a response body (its `type` without the base URL), or null when the body is not a problem.
+ */
 export const problemSlug = (body) => (typeof body?.type === 'string' && body.type.startsWith(PROBLEM_BASE) ? body.type.slice(PROBLEM_BASE.length) : null);
 
 const lowerKeys = (o) => Object.fromEntries(Object.entries(o).map(([k, v]) => [k.toLowerCase(), v]));
@@ -246,6 +252,13 @@ export async function applyDirection(control, d, worldName) {
 
 let cache = null;
 
+/**
+ * Reads the stage directions for a module from tools/directions/<module>.json.
+ *
+ * @param {string} module The module name.
+ * @returns {object} The directions, or an empty object when the module has no file.
+ * @throws {Error} When the file is not valid JSON.
+ */
 export function readDirections(module) {
   const file = join(DIRECTIONS_DIR, `${module}.json`);
   return existsSync(file) ? JSON.parse(readFileSync(file, 'utf8')) : {};
@@ -267,6 +280,7 @@ export function suite() {
 }
 
 const idOf = (module, scenarioId) => `${VETTING_PREFIX}${module}~${scenarioId}`;
+/** Tells whether a scenario id names a vetting suite scenario (it starts with "vetting~"). */
 export const isVettingId = (id) => String(id).startsWith(VETTING_PREFIX);
 
 function locate(id) {

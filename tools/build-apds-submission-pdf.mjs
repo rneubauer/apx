@@ -39,6 +39,12 @@ const { version } = JSON.parse(readFileSync(join(ROOT, 'package.json'), 'utf8'))
 const COPYRIGHT = '© 2026 Umojo, Inc. and APX contributors (MIT)';
 const today = new Date().toISOString().slice(0, 10);
 
+/**
+ * Builds the release label printed on the cover.
+ *
+ * @param {string} edition The edition string, for example "APX 0.16.0 ...".
+ * @returns {string} "Edition X.Y.Z (draft)", using the version in the edition string, or the package.json version when it has none.
+ */
 export function releaseLine(edition) {
   const m = edition.match(/APX (\d+\.\d+\.\d+)/);
   return `Edition ${m ? m[1] : version} (draft)`;

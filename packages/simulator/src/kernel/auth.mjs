@@ -24,10 +24,22 @@ export function expandId(short) {
   return `${m[1]}000000-0000-4000-8000-00000000${m[2]}`;
 }
 
+/**
+ * Makes a simulator bearer token from claims. The token is `sim.` plus the base64url JSON of the claims. It is not signed.
+ *
+ * @param {object} claims The claims, for example { sub, scopes, apx_org, apx_places, exp }.
+ * @returns {string} The token, without the `Bearer ` prefix.
+ */
 export function encodeToken(claims) {
   return 'sim.' + Buffer.from(JSON.stringify(claims)).toString('base64url');
 }
 
+/**
+ * Reads the claims back out of a token made by encodeToken().
+ *
+ * @param {string} token The token, without the `Bearer ` prefix.
+ * @returns {object|null} The claims, or null when the token does not start with `sim.` or cannot be decoded.
+ */
 export function decodeToken(token) {
   if (!token.startsWith('sim.')) return null;
   try {
@@ -37,6 +49,10 @@ export function decodeToken(token) {
   }
 }
 
+/**
+ * The caller behind a request, built from token claims: who it is, its scopes, its organisation, the places it is granted, and the resource it is bound to.
+ * A missing `apx_places` claim means no grant (see hasGrant); a list containing `*` covers everything (see wildcard).
+ */
 export class Principal {
   constructor(claims) {
     this.sub = claims.sub ?? 'anonymous';

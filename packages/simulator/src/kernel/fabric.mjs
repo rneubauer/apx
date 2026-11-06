@@ -128,6 +128,12 @@ function eventView(sim, record) {
   return { id: e.id, type: e.type, time: e.time, subject: e.subject ?? null, place: record.place, placeName: placeName(sim, record.place), deliveredTo: [...record.deliveries] };
 }
 
+/**
+ * One read of the delivery fabric for the UI: the world and clock, the traffic generator status, each subscription with its recent deliveries, and the most recent events.
+ *
+ * @param {object} sim The simulator.
+ * @returns {object} The view, as returned by GET /sim/fabric.
+ */
 export function fabricView(sim) {
   const rows = sim.events.ledger.all();
   const typeOf = new Map(sim.events.outbox.map((r) => [r.envelope.id, r.envelope.type]));
