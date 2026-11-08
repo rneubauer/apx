@@ -6,17 +6,19 @@ on:
   pull_request:
 
 jobs:
+  # Every job runs on the lab runner (umo-lab-app01-apx, one job at a time)
+  # while GitHub-hosted runners are unavailable. The runner allows no
+  # actions/cache and no upload-artifact, so setup-node runs without its npm
+  # cache. The Windows leg of verify is paused: the lab runner is Linux only.
+  # To go back, restore `runs-on: ubuntu-latest` (and the ubuntu/windows
+  # matrix on verify) and `cache: npm`.
   verify:
-    strategy:
-      matrix:
-        os: [ubuntu-latest, windows-latest]
-    runs-on: ${{ matrix.os }}
+    runs-on: [self-hosted, apx]
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
         with:
           node-version: 20
-          cache: npm
       - run: npm ci
       - name: Vendor integrity (APDS 4.1 verbatim)
         run: npm run vendor:check
@@ -43,13 +45,12 @@ jobs:
   # Ubuntu only: the redocly CLI throws a libuv assertion on exit under
   # Windows, which would fail this job for a reason that is not ours.
   docs-site:
-    runs-on: ubuntu-latest
+    runs-on: [self-hosted, apx]
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
         with:
           node-version: 20
-          cache: npm
       - run: npm ci
       - name: Rebuild bundles
         run: npm run spec:bundle && npm run spec:profile
@@ -73,7 +74,7 @@ jobs:
   # PR on an API-diff of the committed bundle against the base branch.
   breaking-changes:
     if: github.event_name == 'pull_request'
-    runs-on: ubuntu-latest
+    runs-on: [self-hosted, apx]
     steps:
       - uses: actions/checkout@v4
       # The oasdiff action runs in a Docker container that mounts only the
