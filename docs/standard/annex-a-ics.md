@@ -33,6 +33,8 @@ implementation has the named capability).
 | APX-CORE-18 | For each claimed class, every route of that class in the §5.2 rule 8 table accepts `mode=change&cursor=`: the route's own list envelope with `updateMode` (`change`, absent on a `mode=full` page), `cursor`, `deleted`, `grantAdditions`, `next`, and no `meta`; whole current representations, never an older state after a newer one; no cursor → an empty page with the head cursor; a change in a filtered feed when the resource matched before or after it; §5.2 rules 1, 2, 4–7 (a foreign or expired cursor is 404 `target-not-found`) | §5.2 r8 |
 | APX-CORE-19 **C** (replicated site implementation) | Authority per place and entity class declared in discovery `replication[]`; a write against it is 409 `not-authoritative`; replicated writes keep origin `id`, `RecordInfo.origin`, `creationTime`, and the original `statusHistory[]` times under `apx.replication:write`; idempotency keys origin-scoped | §18.6, §16.2 |
 | APX-CORE-20 | Every plate-, card-, or phone-keyed lookup served is also served in its body form (`…:search`, `…:check`) with the same rules and answers | §9.6 r7 |
+| APX-CORE-21 | The organisation running the implementation (server, data provider, or client that pushes data) has an `active` entry in the APX provider registry; when the bootstrap `providerId` is present it is that entry's `providerId` | §3.1a, §11.4, §16.1 |
+| APX-CORE-22 **C** (holds or relays records from more than one provider) | Every record keyed by the pair (`providerId`, local id), never the local id alone; a record whose provider cannot be established is not merged with another source's on local id; re-published records and events keep the original `RecordInfo.provider` and envelope `provider`, never the aggregator's | §4.1b r2–3, r5, §8.2, §18.2 |
 
 ## A.2 `apx-data`
 
@@ -264,6 +266,7 @@ MUST advertise exactly the classes the ICS claims.
 ```
 Implementation: <product, version>
 Supplier:       <organisation>
+providerId:     <UUID from the APX provider registry, §11.4>
 APX edition:    <e.g. 0.3.0>   APDS version: 4.1
 Date:           <ISO 8601>
 

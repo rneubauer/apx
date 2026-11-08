@@ -31,6 +31,19 @@ RecordInfo:
         `EventEnvelope.source` value. Absent on records the serving
         implementation created itself.
       examples: ["https://edge.lakeside-garage.example/v1"]
+    provider:
+      type: string
+      format: uuid
+      description: |-
+        The `providerId` (Part 11 §11.4 provider registry) of the
+        organisation that supplied the record, so a receiver can key it by
+        the pair (`provider`, local id) (Part 4 §4.1b). An aggregator or
+        replicator that re-publishes a record keeps the original provider:
+        this names the source, never the aggregator (Part 18 §18.2).
+        `origin` names an implementation; `provider` names an organisation.
+        OPTIONAL in this edition and SHOULD be set; a later edition is
+        expected to require it.
+      examples: ["8ddabe04-3d59-415d-a8ce-620d01b1a240"]
 
 CredentialDigest:
   title: CredentialDigest
@@ -193,6 +206,17 @@ EventEnvelope:
       type: string
       format: uri-reference
       description: Identifies the publishing implementation/site.
+    provider:
+      type: string
+      format: uuid
+      description: |-
+        The `providerId` (Part 11 §11.4 provider registry) of the
+        organisation that supplied the data the event is about. An
+        aggregator relaying an event keeps the original provider, so this
+        can differ from the provider behind `source` (Part 8 §8.2, Part 18
+        §18.2). OPTIONAL in this edition and SHOULD be set; a later edition
+        is expected to require it.
+      examples: ["8ddabe04-3d59-415d-a8ce-620d01b1a240"]
     time:
       $ref: "../../../vendor/apds/4.1/apds-api-4.1.yaml#/components/schemas/DateTime"
     subject:

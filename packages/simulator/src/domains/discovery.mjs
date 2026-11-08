@@ -2,7 +2,7 @@
  * apx-discovery (Part 16): the unauthenticated bootstrap document and the
  * credential-scoped capability document.
  *
- * World sections read: host, tokenEndpoint, apdsVersion, apiBase,
+ * World sections read: host, tokenEndpoint, apdsVersion, apiBase, providerId,
  * discovery{ conformanceClasses, features } (else the top-level members), registries | registryBase, rateLimits,
  * hosts{ <hostname>: { same members } } for the other hosts a scenario
  * reaches by its Host header (an aggregator, a PARCS starter host),
@@ -19,6 +19,10 @@ import { OPS, REGISTRIES, EDITION, APX_TOPICS, APDS_EVENT_TYPES, registryValues 
 import { fail } from '../kernel/problems.mjs';
 
 const BASE = ['apx-data', 'apx-events'];
+// The simulator is run by Umojo, so by default its bootstrap names Umojo's
+// entry in the provider registry (spec/providers/apx-providers.json, Part 11
+// §11.4). A world or host sets its own `providerId`, or null to leave it out.
+export const SIMULATOR_PROVIDER_ID = '8ddabe04-3d59-415d-a8ce-620d01b1a240';
 const KNOWN_CLASSES = registryValues('apx-conformance-classes');
 // Part 3 §3.1 dependency table; a class absent here requires the base classes.
 const REQUIRES = {
@@ -184,6 +188,7 @@ export default {
             tokenEndpoint: world.tokenEndpoint,
             apiBase: world.apiBase,
             apdsVersion: world.apdsVersion,
+            providerId: world.providerId,
             // world.discovery.{conformanceClasses,features} win: an `extends` chain concatenates
             // the loader-defaulted arrays of the base world into the top-level members.
             conformanceClasses: world.discovery?.conformanceClasses ?? world.conformanceClasses,
@@ -218,6 +223,7 @@ export default {
         apxVersion: EDITION.apiVersion ?? EDITION.edition,
         edition: EDITION.edition,
         apdsVersion: cfg.apdsVersion ?? EDITION.extension?.apdsVersion ?? '4.1',
+        ...(cfg.providerId === null ? {} : { providerId: cfg.providerId ?? SIMULATOR_PROVIDER_ID }),
         tokenEndpoint: cfg.tokenEndpoint ?? `${cfg.url}/oauth2/token`,
         ...(cfg.apiBase ? { apiBase: cfg.apiBase } : {}),
         conformanceClasses: closeClasses(cfg.conformanceClasses ?? BASE),

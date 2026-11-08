@@ -32,6 +32,11 @@ described in Part 1 §1.3 item 14.
   (Part 3), registered in `apx-conformance-classes`.
 - **Grant** — the pair of token claims (`apx_org`, `apx_places`) bounding
   what a client may see/do (Part 9).
+- **Provider** (Part 4 §4.1b): an organisation registered in the APX
+  provider registry (Part 11 §11.4), identified by its `providerId`. Every
+  APX implementation is run by one (Part 3 §3.1a).
+- **Interconnected or aggregating system** (Part 4 §4.1b): any system
+  that holds or relays records from more than one provider.
 - **Charging point** (Part 23) — an APDS
   `ElectricChargingEquipment` hierarchy element; APX overlays live
   availability and bay presence on it (`ChargingPointStatus`).

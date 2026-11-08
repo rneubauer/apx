@@ -10,6 +10,12 @@ contact_links:
     about: >
       Open a blank issue describing the use case first. Design discussion
       happens before spec text.
+  - name: Register as an APX provider
+    url: https://github.com/rneubauer/apx/blob/main/docs/registering-as-a-provider.md
+    about: >
+      Every APX implementation is registered (Part 3 §3.1a). Registration is
+      a pull request adding your entry to spec/providers/apx-providers.json,
+      not an issue. The guide has the steps.
   - name: Read the standard
     url: https://rneubauer.github.io/apx/
     about: The API reference, the written standard in one document, and the registries.

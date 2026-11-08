@@ -42,14 +42,63 @@ Part 18):
    subscription `filters.places`, and stored references DO NOT carry over
    automatically (Part 18 defines the onboarding sequence).
 
+## 4.1b Provider identity and global keying (normative)
+
+§4.1a keeps every id local. Two providers can therefore issue the same
+place id, location id, or any other id, and both are right. What makes a
+record globally unique is the pair of who supplied it and its local id.
+
+1. **Provider identity.** A provider is an organisation registered in the
+   APX provider registry (Part 11 §11.4; registration is required by
+   Part 3 §3.1a). Its `providerId` is a UUID that never changes and is
+   never reused. A provider names itself in data by that `providerId`:
+   in the bootstrap document (`providerId`, Part 16 §16.1), on a record
+   (`RecordInfo.provider`, §4.2), and on an event (`EventEnvelope.provider`,
+   Part 8 §8.2).
+2. **The pairing rule.** An interconnected or aggregating system, meaning
+   any system that holds or relays records from more than one provider,
+   MUST key each record by the pair (`providerId`, local id), never by the
+   local id alone. This holds for APDS entity ids (HierarchyElements and
+   every other class) and APX resource ids alike, and for every place a
+   key is stored: indexes, caches, warehouse tables, grants it issues,
+   and references it follows.
+3. **Finding the provider.** The `providerId` of a record is
+   `RecordInfo.provider` (or the envelope `provider` for an event) when
+   present. When it is absent, the receiver takes it from where the
+   record came from: the `providerId` in the source's bootstrap document,
+   or the registration it bound to the credential the source used
+   (Part 11 §11.4). A receiver that cannot establish a record's provider
+   MUST NOT merge that record with records from another source on local
+   id alone.
+4. **References stay local.** An APDS `Reference` carries `id` and
+   `className` only, and APX does not add a member to it (Part 0 §0.2).
+   A Reference in a record therefore resolves within the provider of the
+   record that carries it: the receiver pairs the referenced id with that
+   record's `providerId`.
+5. **Re-publishing keeps the source.** A system that re-publishes another
+   provider's record (an aggregator, a replicator, a relay) MUST keep the
+   original `providerId`: `RecordInfo.provider` and the envelope
+   `provider` name the source, never the system re-publishing it (Part 18
+   §18.2).
+6. **This edition.** Carrying `providerId` in data is OPTIONAL in this
+   edition and SHOULD be done, so rule 3's fallback is the common case
+   today. The pairing rule in rule 2 is REQUIRED now. A later edition is
+   expected to make the data members REQUIRED.
+
 ## 4.2 Provenance
 
 Every APX resource SHOULD carry `recordInfo` (`RecordInfo` schema), aligned
 with the APDS Information Model's RecordType: `creationTime`, `creator`
 (Reference to Organisation/Contact), `creationUser`, `lastUpdate`,
-`lastUpdateUser`. Where a resource has a lifecycle audit (Commands, Alerts,
-TollTransactions), the immutable `statusHistory[]` is the authoritative
-audit record and MUST NOT be truncated or rewritten.
+`lastUpdateUser`. It also carries two members of APX's own: `origin`, the
+implementation that first created a replicated record (Part 18 §18.6),
+and `provider`, the `providerId` of the organisation that supplied the
+record (§4.1b). `provider` is OPTIONAL in this edition and SHOULD be set
+by the implementation that creates the record; a system that re-publishes
+the record keeps it unchanged (§4.1b rule 5). A later edition is expected
+to make it REQUIRED. Where a resource has a lifecycle audit (Commands,
+Alerts, TollTransactions), the immutable `statusHistory[]` is the
+authoritative audit record and MUST NOT be truncated or rewritten.
 
 ## 4.3 The extensions container
 

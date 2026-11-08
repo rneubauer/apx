@@ -30,6 +30,15 @@ locations. This is how a client with nothing but a hostname gets started.
   the same way, gives the version of each list the implementation validates
   against (Part 11 §11.2). `apxVersion` is the edition implemented (Part 3
   §3.4); when `edition` is also present the two are equal.
+- **Provider.** `providerId` is the `providerId` of the organisation
+  running the implementation, as registered in the provider registry
+  (Part 11 §11.4; registration is required by Part 3 §3.1a). The document
+  SHOULD carry it. A client that reads it SHOULD check it against the
+  registry, and uses it as the provider of records and events from this
+  host that carry no `provider` of their own (Part 4 §4.1b rule 3). An
+  aggregator gives its own `providerId` here; the providers whose data it
+  fronts are named on their records (Part 18 §18.2). A later edition is
+  expected to make the member REQUIRED.
 - The document carries an optional `extensions` container (Part 4 §4.3),
   as does the discovery document.
 

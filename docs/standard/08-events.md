@@ -77,6 +77,16 @@ Every delivery carries exactly one `EventEnvelope` (Part 4 conventions;
 CloudEvents-aligned). For APDS EventTypeEnum topics, `data` is the APDS
 `EventData` shape and `subject` references the changed entity.
 
+**The provider (normative).** The envelope's optional `provider` member is
+the `providerId` (Part 11 §11.4) of the organisation that supplied the
+data the event is about. A publisher SHOULD set it. `source` names the
+publishing implementation and `provider` names the organisation behind
+the data; an aggregator relaying another provider's event MUST keep that
+provider in `provider` and puts itself in `source` (Part 4 §4.1b rule 5,
+Part 18 §18.2). A receiver keys the event's `subject` by the pair
+(`provider`, `subject.id`) (Part 4 §4.1b rule 2). The member is OPTIONAL
+in this edition; a later edition is expected to make it REQUIRED.
+
 ## 8.3 Webhook delivery (normative)
 
 - HTTP POST of the envelope JSON to the subscription endpoint.

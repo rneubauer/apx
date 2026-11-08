@@ -110,3 +110,57 @@ resolve does not conform.
    one edition; should APDS adopt APX, appeals escalate to the APDS change
    process, and any registry value APDS later standardizes is reconciled
    per Part 3 §3.3(8).
+5. **Provider registrations** (§11.4) are pull requests against
+   `spec/providers/apx-providers.json`, not issues. The APX maintainers
+   review and merge registration pull requests against published
+   criteria: the registrant is a real organisation; its `namespace` is
+   unique and is not `apx`, `apds`, or a name that implies another
+   organisation; its `contact` is organisational (a role mailbox or a
+   URL, never a named person); and the entry impersonates no one. A
+   registration that meets the criteria is merged; one that does not is
+   answered on the pull request with the criterion it misses. No
+   membership, fee, or edition is involved.
+
+## 11.4 The provider registry (normative)
+
+The provider registry lists every organisation that implements APX
+(Part 3 §3.1a). It is `spec/providers/apx-providers.json`, validated in CI
+against `spec/providers/provider.schema.json` by `npm run providers:check`,
+and served from the specification site at
+<https://rneubauer.github.io/apx/providers/> on the same terms as §11.2.
+It is not an APDS UserDefinedCodeList, because an entry carries more than
+a code, and it is not pinned by an edition (Part 3 §3.4).
+
+Each entry has:
+
+| Member | Required | Meaning |
+|---|---|---|
+| `providerId` | yes | A UUID the registrant generates (version 4), lowercase. The organisation's identity in APX data (Part 4 §4.1b). |
+| `name` | yes | The organisation's name. |
+| `namespace` | yes | The organisation's vendor namespace (Part 3 §3.3), lowercase, unique in the registry. One registration claims both the `providerId` and the namespace. |
+| `url` | no | The organisation's public web site (`https`). |
+| `roles` | yes | One or more of `parcs`, `lpr`, `enforcement`, `payments`, `reservations`, `permits`, `callCenter`, `analytics`, `charging`, `valet`, `platform`, `other`. |
+| `contact` | yes | An organisational email address or URL. Never a named person. |
+| `status` | yes | `active` or `retired`. |
+| `registeredDate` | yes | The date the registration was merged. |
+
+Rules:
+
+1. The registry is **add-only**, like the code-list registries (§11.1):
+   an entry is never deleted, reordered, or renumbered, and its
+   `providerId`, `namespace`, and `registeredDate` never change. The
+   organisation may update its own `name`, `url`, `roles`, and `contact`.
+   A provider that stops implementing APX, or is merged into another, is
+   **retired** (`status` `retired`), and a new organisation gets a new
+   entry. A retired `providerId` or `namespace` is never reused, and a
+   retired entry is never made active again.
+2. The file carries a top-level `version` that increments on every
+   change, an addition and a retirement alike.
+3. `providerId` and `namespace` are unique across every entry, retired
+   entries included.
+4. A receiver SHOULD bind a provider's `providerId` to the credentials it
+   issues to that provider, and SHOULD check that a `providerId` the
+   provider asserts in data (`RecordInfo.provider`, the envelope
+   `provider`) is its own or that of a provider whose data it is entitled
+   to relay (Part 18 §18.2).
+5. The steps to register are in `docs/registering-as-a-provider.md`.

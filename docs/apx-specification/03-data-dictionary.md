@@ -135,6 +135,7 @@ There are no specializations in the "Common" package.
 | EventEnvelope | id | Id | Unique event id (delivery-stable; retries reuse it). | 1..1 | Uuid |  |
 | EventEnvelope | type | Type | Event topic. Either an APX topic (`apx.<domain>.<event>.vN`) or an APDS EventTypeEnum value (e.g. `SessionCreated`). | 1..1 | String |  |
 | EventEnvelope | source | Source | Identifies the publishing implementation/site. | 1..1 | String |  |
+| EventEnvelope | provider | Provider | The `providerId` (Part 11 §11.4 provider registry) of the organisation that supplied the data the event is about. An aggregator relaying an event keeps the original provider, so this can differ from the provider behind `source` (Part 8 §8.2, Part 18 §18.2). OPTIONAL in this edition and SHOULD be set; a later edition is expected to require it. | 0..1 | Uuid |  |
 | EventEnvelope | time | Time | ISO-8601 format definition of a date and time - format YYYY-MM-DDTHH:MM:SSZ. | 1..1 | PkCommon.DateTime |  |
 | EventEnvelope | dataschema | Dataschema | Optional URI of the schema that `data` validates against. | 0..1 | Url |  |
 | EventEnvelope | data | Data | Event payload. For APDS EventTypeEnum topics this is the APDS EventData shape. | 1..1 | Object |  |
@@ -148,6 +149,7 @@ There are no specializations in the "Common" package.
 | RecordInfo | lastUpdate | Last update | ISO-8601 format definition of a date and time - format YYYY-MM-DDTHH:MM:SSZ. | 0..1 | PkCommon.DateTime |  |
 | RecordInfo | lastUpdateUser | Last update user | Human or system principal that last updated the record. | 0..1 | String |  |
 | RecordInfo | origin | Origin | The implementation that first created the record, when it differs from the one serving it (Part 18 §18.6 replication): the origin's `EventEnvelope.source` value. Absent on records the serving implementation created itself. | 0..1 | String |  |
+| RecordInfo | provider | Provider | The `providerId` (Part 11 §11.4 provider registry) of the organisation that supplied the record, so a receiver can key it by the pair (`provider`, local id) (Part 4 §4.1b). An aggregator or replicator that re-publishes a record keeps the original provider: this names the source, never the aggregator (Part 18 §18.2). `origin` names an implementation; `provider` names an organisation. OPTIONAL in this edition and SHOULD be set; a later edition is expected to require it. | 0..1 | Uuid |  |
 
 ### A.1.2 "Discovery" package
 
@@ -188,6 +190,7 @@ There are no specializations in the "Discovery" package.
 | ApxConfiguration | apxVersion | Apx version | APX standard version implemented (semver). This is the edition (Part 3 §3.4) whose Parts and registries the implementation follows; when `edition` is also present the two are equal. | 1..1 | String |  |
 | ApxConfiguration | edition | Edition | The APX edition implemented (Part 3 §3.4), as named in its `spec/edition.json`. | 0..1 | String |  |
 | ApxConfiguration | apdsVersion | Apds version | APDS version this implementation extends. | 1..1 | String |  |
+| ApxConfiguration | providerId | Provider id | The `providerId` under which the organisation running this implementation is registered in the APX provider registry (Part 11 §11.4; Part 16 §16.1). SHOULD be present in this edition; a later edition is expected to require it. | 0..1 | Uuid |  |
 | ApxConfiguration | tokenEndpoint | Token endpoint | OAuth2 token endpoint (client-credentials grant). | 1..1 | Url |  |
 | ApxConfiguration | apiBase | Api base | The URL every path in the bundle is relative to (APX `/v1/…` and APDS-native routes alike). Absent means the origin root that serves this document. REQUIRED when the API is mounted elsewhere (Part 16 §16.1). | 0..1 | Url |  |
 | ApxConfiguration | conformanceClasses | Conformance classes | APX conformance classes this implementation supports, closed under the Part 3 §3.1 dependency table, plus any vendor classes (`<vendor-ns>-<class>`). Clients ignore classes they do not recognise. | 0..* | String |  |

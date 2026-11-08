@@ -1,0 +1,96 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://apx-standard.org/schemas/provider.schema.json",
+  "title": "APX provider registry document",
+  "description": "The APX provider registry (Part 11 §11.4): every organisation that implements APX, as a server, a data provider, or a client that pushes data. Add-only: an entry is never deleted or renumbered, only retired. The top-level version increments on every change. Not an APDS UserDefinedCodeList, because an entry carries more than a code.",
+  "type": "object",
+  "required": ["name", "version", "locator", "providers"],
+  "properties": {
+    "$schema": { "type": "string" },
+    "name": { "const": "apx-providers" },
+    "version": {
+      "type": "integer",
+      "minimum": 1,
+      "description": "Increments by at least one on every change to the file."
+    },
+    "locator": { "type": "string", "format": "uri" },
+    "providers": {
+      "type": "array",
+      "minItems": 1,
+      "items": { "$ref": "#/$defs/provider" }
+    }
+  },
+  "additionalProperties": false,
+  "$defs": {
+    "provider": {
+      "type": "object",
+      "required": ["providerId", "name", "namespace", "roles", "contact", "status", "registeredDate"],
+      "properties": {
+        "providerId": {
+          "description": "A UUID the registrant generates (version 4 recommended), in lowercase canonical form. Permanent: never reused, never reassigned.",
+          "type": "string",
+          "format": "uuid",
+          "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$"
+        },
+        "name": {
+          "description": "The organisation's name, as it trades.",
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 200
+        },
+        "namespace": {
+          "description": "The organisation's partner-extension namespace (Part 3 §3.3): extension keys apds-ext:<namespace>:…, endpoints /apx/x/<namespace>/…, topics <namespace>.…, vendor classes <namespace>-<class>. Unique in the registry. The apx and apds namespaces are reserved.",
+          "type": "string",
+          "pattern": "^[a-z0-9](?:[a-z0-9-]{0,30}[a-z0-9])?$",
+          "not": { "enum": ["apx", "apds"] }
+        },
+        "url": {
+          "description": "The organisation's public web site.",
+          "type": "string",
+          "format": "uri",
+          "pattern": "^https://"
+        },
+        "roles": {
+          "description": "What the organisation does with APX. At least one.",
+          "type": "array",
+          "minItems": 1,
+          "uniqueItems": true,
+          "items": {
+            "enum": [
+              "parcs",
+              "lpr",
+              "enforcement",
+              "payments",
+              "reservations",
+              "permits",
+              "callCenter",
+              "analytics",
+              "charging",
+              "valet",
+              "platform",
+              "other"
+            ]
+          }
+        },
+        "contact": {
+          "description": "An organisational contact: a role mailbox (with or without mailto:) or an https URL. Never a named person.",
+          "type": "string",
+          "anyOf": [
+            { "pattern": "^https://[^\\s]+$" },
+            { "pattern": "^(mailto:)?[^@\\s]+@[^@\\s]+\\.[^@\\s]+$" }
+          ]
+        },
+        "status": {
+          "description": "active, or retired. A retired entry stays in the file; its providerId and namespace are never reused.",
+          "enum": ["active", "retired"]
+        },
+        "registeredDate": {
+          "description": "The date the registration was merged (YYYY-MM-DD).",
+          "type": "string",
+          "format": "date"
+        }
+      },
+      "additionalProperties": false
+    }
+  }
+}

@@ -8,6 +8,8 @@
  *   /apx-v1.yaml, /apx-v1.json, /apx-parcs.json   the bundles
  *   /registries/         the code-list registries, served as JSON, plus an
  *                        index generated from the files themselves
+ *   /providers/          the provider registry (Part 11 §11.4) and its schema,
+ *                        plus a page listing the providers
  *   /specification/      the APX Specification document set (APDS 4.1 form),
  *                        rendered by `npm run apxdocs:html`; linked, not built, here
  *
@@ -30,6 +32,8 @@ const SRC = join(ROOT, 'docs', 'site');
 const DIST = join(ROOT, 'spec', 'dist');
 const REG_SRC = join(ROOT, 'spec', 'registries');
 const REG_OUT = join(SITE, 'registries');
+const PROV_SRC = join(ROOT, 'spec', 'providers');
+const PROV_OUT = join(SITE, 'providers');
 
 const BUNDLES = ['apx-v1.yaml', 'apx-v1.json', 'apx-parcs.json'];
 const PAGES = ['index.html'];
@@ -140,11 +144,67 @@ ${rows
     <a href="https://github.com/rneubauer/apx/blob/main/docs/standard/11-registries.md">Part 11</a>
     of the written standard, which also describes how to request an entry.
   </p>
+  <p>
+    The organisations that implement APX are listed in the
+    <a href="../providers/">provider registry</a>.
+  </p>
 </div>
 </body>
 </html>
 `;
 writeFileSync(join(REG_OUT, 'index.html'), registryIndex);
+
+// ----- provider registry: copy, then list the providers ---------------------
+// Part 11 §11.4. Not a code list, so it gets its own directory and page; the
+// page reuses the registry index's look.
+{
+  const doc = JSON.parse(readFileSync(join(PROV_SRC, 'apx-providers.json'), 'utf8'));
+  mkdirSync(PROV_OUT, { recursive: true });
+  copyFileSync(join(PROV_SRC, 'apx-providers.json'), join(PROV_OUT, 'apx-providers.json'));
+  copyFileSync(join(PROV_SRC, 'provider.schema.json'), join(PROV_OUT, 'provider.schema.json'));
+  const link = (url) => (url ? `<a href="${escapeHtml(url)}">${escapeHtml(url.replace(/^https:\/\//, ''))}</a>` : '');
+  const providerRows = doc.providers
+    .map(
+      (p) =>
+        `      <tr><td>${escapeHtml(p.name)}${p.url ? `<br>${link(p.url)}` : ''}</td><td><code>${escapeHtml(p.namespace)}</code></td><td><code>${escapeHtml(p.providerId)}</code></td><td>${escapeHtml(p.roles.join(', '))}</td><td>${escapeHtml(p.status)}</td><td>${escapeHtml(p.registeredDate)}</td></tr>`
+    )
+    .join('\n');
+  const providerIndex = registryIndex
+    .replace('<title>APX registries</title>', '<title>APX providers</title>')
+    .replace(
+      /<meta name="description"[^>]*>/,
+      '<meta name="description" content="The APX provider registry: every organisation that implements APX.">'
+    )
+    .replace(
+      /<h1>Registries<\/h1>[\s\S]*<\/div>\n<\/body>/,
+      `<h1>Providers</h1>
+  <p>
+    Every APX implementation, whether a server, a data provider or a client
+    that pushes data, is registered here (Part 3 §3.1a). Version
+    ${escapeHtml(doc.version)} of
+    <a href="apx-providers.json"><code>apx-providers.json</code></a>,
+    validated in CI against
+    <a href="provider.schema.json"><code>provider.schema.json</code></a>.
+    Entries are add-only: an entry is never deleted or renumbered, only retired.
+  </p>
+  <table>
+    <thead><tr><th>Provider</th><th>Namespace</th><th>providerId</th><th>Roles</th><th>Status</th><th>Registered</th></tr></thead>
+    <tbody>
+${providerRows}
+    </tbody>
+  </table>
+  <p>
+    To register, follow
+    <a href="https://github.com/rneubauer/apx/blob/main/docs/registering-as-a-provider.md">Registering as an APX provider</a>.
+    The rules are in
+    <a href="https://github.com/rneubauer/apx/blob/main/docs/standard/11-registries.md">Part 11</a>
+    of the written standard.
+  </p>
+</div>
+</body>`
+    );
+  writeFileSync(join(PROV_OUT, 'index.html'), providerIndex);
+}
 
 // ----- module index, generated from the bundle -----------------------------
 // The landing page must not carry a hand-kept list of domains: it would drift

@@ -6159,6 +6159,14 @@
               "4.1"
             ]
           },
+          "providerId": {
+            "type": "string",
+            "format": "uuid",
+            "description": "The `providerId` under which the organisation running this\nimplementation is registered in the APX provider registry (Part 11\n§11.4; Part 16 §16.1). SHOULD be present in this edition; a later\nedition is expected to require it.",
+            "examples": [
+              "8ddabe04-3d59-415d-a8ce-620d01b1a240"
+            ]
+          },
           "tokenEndpoint": {
             "type": "string",
             "format": "uri",
@@ -9728,6 +9736,14 @@
             "format": "uri-reference",
             "description": "Identifies the publishing implementation/site."
           },
+          "provider": {
+            "type": "string",
+            "format": "uuid",
+            "description": "The `providerId` (Part 11 §11.4 provider registry) of the\norganisation that supplied the data the event is about. An\naggregator relaying an event keeps the original provider, so this\ncan differ from the provider behind `source` (Part 8 §8.2, Part 18\n§18.2). OPTIONAL in this edition and SHOULD be set; a later edition\nis expected to require it.",
+            "examples": [
+              "8ddabe04-3d59-415d-a8ce-620d01b1a240"
+            ]
+          },
           "time": {
             "$ref": "#/components/schemas/DateTime"
           },
@@ -11562,6 +11578,14 @@
             "description": "The implementation that first created the record, when it differs\nfrom the one serving it (Part 18 §18.6 replication): the origin's\n`EventEnvelope.source` value. Absent on records the serving\nimplementation created itself.",
             "examples": [
               "https://edge.lakeside-garage.example/v1"
+            ]
+          },
+          "provider": {
+            "type": "string",
+            "format": "uuid",
+            "description": "The `providerId` (Part 11 §11.4 provider registry) of the\norganisation that supplied the record, so a receiver can key it by\nthe pair (`provider`, local id) (Part 4 §4.1b). An aggregator or\nreplicator that re-publishes a record keeps the original provider:\nthis names the source, never the aggregator (Part 18 §18.2).\n`origin` names an implementation; `provider` names an organisation.\nOPTIONAL in this edition and SHOULD be set; a later edition is\nexpected to require it.",
+            "examples": [
+              "8ddabe04-3d59-415d-a8ce-620d01b1a240"
             ]
           }
         }
