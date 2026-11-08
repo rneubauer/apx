@@ -43,7 +43,7 @@ Each folder gets a short README that says what is in it.
 ## Decision records still to write
 
 - [x] APDS-first prime directive (ADR 0018) (Part 0 §0.2). The decision is foundational, but its date is not recorded anywhere. developer, S
-- [ ] (ADR 0019 reserved) The 2026-10-12 rulings, which need a source from Rick because the repo does not record them: the change feed is a MUST with no flag, the §19.4 issuance gates are MUSTs, the violations import route, and local records are canonical. developer, M
+- [x] ADR 0019: the 2026-10-12 rulings, from pull request #31. "Local records are canonical" has no source and is left out. developer, M
 - [x] Camera decoration (ADR 0020): whether `lane-cameras@1.0` was extended or a separate `apds-ext:apx:camera@1.0` was added. The design note and Part 26 §26.3 disagree with an older note. Confirm from the spec before writing it. developer, S
 
 ## Waiting on someone else

@@ -56,4 +56,5 @@ records the change, and the old one is marked Superseded.
 | [0016](0016-display-records.md) | Display records in Part 26 | 2026-10-22 | Accepted |
 | [0017](0017-stay-compliance.md) | Stay compliance on the Session, under its own scope | 2026-10-22 | Accepted |
 | [0018](0018-apds-first-prime-directive.md) | APDS-first is the prime directive | Foundational (since 0.1.0) | Accepted |
+| [0019](0019-gaps-rulings-2026-10-12.md) | Stricter rules adopted with gaps G1 to G21 | 2026-10-12 | Accepted |
 | [0020](0020-camera-decoration.md) | Cameras get their own decoration; lane-cameras stays unchanged | 2026-10-18 | Accepted |
