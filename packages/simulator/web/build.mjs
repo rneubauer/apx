@@ -101,11 +101,25 @@ const result = await build({
   sourcemap: 'linked',
   legalComments: 'none',
   inject: [join(WEB, 'shims', 'buffer.mjs')],
-  define: { 'process.env.APX_DIR': 'undefined' },
+  // The kernel reads these environment overrides under Node. In the browser
+  // there is no `process`, so each one is replaced by `undefined` at build
+  // time; the check after the build fails if a new one is left unhandled.
+  define: {
+    'process.env.APX_DIR': 'undefined',
+    'process.env.APX_SIM_SCENARIOS_DIR': 'undefined',
+  },
   plugins: [browserPlugin],
   logLevel: 'warning',
   metafile: true,
 });
+
+// A `process.env` read that reached the bundle throws on page load
+// ("process is not defined"), so the in-browser simulator would never start.
+const leftover = [...new Set(readFileSync(join(OUT, 'sim.js'), 'utf8').match(/\bprocess\.env\.\w+/g) ?? [])];
+if (leftover.length) {
+  console.error(`[sim:web] FAIL: the bundle still reads ${leftover.join(', ')}. Add each to \`define\` in web/build.mjs.`);
+  process.exit(1);
+}
 
 cpSync(join(SIM, 'ui'), OUT, { recursive: true });
 writeFileSync(join(OUT, 'boot.js'), BOOT);
