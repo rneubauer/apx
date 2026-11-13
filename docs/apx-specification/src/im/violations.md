@@ -229,7 +229,7 @@ Space (location of the finding), CredentialTypeEnum (the vehicle),
 Contact and Organisation (issuer and appellant), Payment, and
 AmountInCurrency. ViolationLocation follows the APDS Location shape.
 
-Proposed to APDS, as a new Enforcement package (Level C, because it adds
+Offered to APDS for later adoption, as a new Enforcement package (Level C, because it adds
 new root concepts), and Signage in the Place domain (Level B). See the
 APX Data Specification.
 

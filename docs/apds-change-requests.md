@@ -2,6 +2,15 @@
 
 *As of 2026-09-30 · APX 0.13.0 · Contact: rneubauer@umojo.com*
 
+> **Update 2026-11-13.** The request to APDS is now minimal: the
+> corrections in Part A (and the Data Dictionary candidates C-015 to
+> C-026), plus five `EquipmentTypeEnum` values (`barrier`, `gate`,
+> `ticketDispenser`, `intercom`, `exitVerifier`). The optional additions
+> in Part B below, apart from the lane equipment values, are now offered
+> for later adoption only and are not requested. APX carries all of them
+> already. The current list is
+> [APX Requests to APDS](apx-specification/06-apds-requests.md).
+
 ## Summary
 
 We are asking for fourteen small corrections to the published
@@ -70,7 +79,7 @@ a request and only `apds-api-4.1.yaml` lacks it, the row now says so.
 | **`country` optional in `VehicleAncillaryIdentification`** | A read whose plate country the engine could not place could still carry make, model, and colour — often the reads that most need them | The attributes ride in the APX `detail` decoration and the APDS object is omitted (Part 13 §13.3a(1)) |
 | **A Session end reason** | Consumers could tell an exit read from a stale closure or an exit with no observed entry, and compute the same dwell and occupancy figures from the same Sessions | `apds-ext:apx:session-detail@1.0` with registry `apx-session-end-reasons` (Part 5 §5.8) |
 | **Payment detail**: a shared code list for `PaymentLine.idCode` (or a fee value in `PaymentTypeEnum`), and a member on `Payment` naming the rate sold | `idCode` is bilateral, so two parties cannot tell a price line from a fee or a tax, and nothing says which rate a payment bought | Registry `apx-payment-line-codes` for `idCode`, and decoration `apds-ext:apx:payment-detail@1.0` with `rateSold` (Part 13 §13.6a) |
-| **Lane equipment in `EquipmentTypeEnum`**: perhaps `gate`, `barrier`, `ticketDispenser` and `intercom` | Off-street sites could type their access equipment with APDS names; today the closest fits are `paymentMachine`, `tollTerminal`, `dsrcReceiver` and `other`. (The Data Dictionary already has `lprCamera`, `securityCamera` and `occupancySensor`; only the API document lacks them.) | Device references (`DeviceStatus.device`, `Command.target`, `Alert.source.device`) point at `SupplementalEquipment` without setting an equipment type (Part 6 §6.4) |
+| **Lane equipment in `EquipmentTypeEnum`**: perhaps `gate`, `barrier`, `ticketDispenser`, `intercom` and `exitVerifier` | Off-street sites could type their access equipment with APDS names; today the closest fits are `paymentMachine`, `tollTerminal`, `dsrcReceiver` and `other`. (The Data Dictionary already has `lprCamera`, `securityCamera` and `occupancySensor`; only the API document lacks them.) | Device references (`DeviceStatus.device`, `Command.target`, `Alert.source.device`) point at `SupplementalEquipment` without setting an equipment type (Part 6 §6.4) |
 | **An identifiable holder** (see Part A, 014) | Rights, permits, accounts, and payments for one customer can be grouped. (The Data Dictionary already defines `RightHolder` as versioned identifiable; only the API document lacks it.) | `className: "RightHolder"`, local id (Part 1 §1.3 item 14) |
 
 APX also defines surfaces APDS does not yet cover — alerts, lane control,

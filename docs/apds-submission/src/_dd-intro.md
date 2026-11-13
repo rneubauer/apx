@@ -1,8 +1,9 @@
 ## Introduction
 
 This data dictionary gives the definitions and characteristics of the
-classes, attributes, association roles and enumerations that APX proposes
-for the APDS data model. It follows the APDS 4.1 Data Dictionary: the
+enumeration values APX requests for the APDS data model, and of the
+classes, attributes, association roles and enumerations APX carries as
+extensions and offers for later adoption. It follows the APDS 4.1 Data Dictionary: the
 first part is ordered by UML package, and each package lists its classes,
 specializations, associations and attributes; the third part lists the
 enumerations alphabetically. No new datatypes are proposed.

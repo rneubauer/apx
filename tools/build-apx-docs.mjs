@@ -8,7 +8,9 @@
  *   03 Data Dictionary          generated from spec/dist/apx-v1.yaml
  *   04 Use Case Document        src/uc-part1.md + src/uc-part2.md
  *   05 Interface Specification  generated from spec/dist/apx-v1.yaml
- *   06 Requests to APDS         src/06-apds-requests.md + generated proposal tables
+ *   06 Requests to APDS         src/06-apds-requests.md + generated proposal tables:
+ *                               the `ask: minimal` proposals at <!-- generate:minimal-ask -->,
+ *                               every other proposal, by tier, at <!-- generate:proposal-summary -->
  *
  *   node tools/build-apx-docs.mjs          write
  *   node tools/build-apx-docs.mjs --check  fail if any generated document is stale
@@ -28,7 +30,8 @@ const SRC = join(OUT, 'src');
 const CHECK = process.argv.includes('--check');
 const SELF = 'tools/build-apx-docs.mjs from spec/dist/apx-v1.yaml and docs/apx-specification/src/';
 const PROPOSAL_MARKER = '<!-- generate:proposal-summary -->';
-const TIER_NAMES = { 1: 'propose now', 2: 'proven in APX, propose next', 3: 'for discussion' };
+const ASK_MARKER = '<!-- generate:minimal-ask -->';
+const TIER_NAMES = { 1: 'ready to adopt', 2: 'proven in APX, could follow', 3: 'for discussion' };
 
 const errors = [];
 const read = (path) => readFileSync(path, 'utf8').replace(/\r\n/g, '\n');
@@ -50,13 +53,25 @@ function fragments() {
   }));
 }
 
+const label = (p) => (p.kind === 'enum' ? (p.change === 'new' ? 'New enumeration' : 'New values for an APDS enumeration') : (p.change === 'new' ? 'New class' : 'Additions to an APDS class'));
+
+// The proposals marked `ask: minimal`: the only data elements requested.
+function minimalAsk(model) {
+  const asks = model.proposals.all.filter((p) => p.ask);
+  return asks.flatMap((p) => [
+    `**${label(p)}: ${code(p.name)}** (${p.domain}, package ${p.pkg}). ${String(p.rationale ?? '').trim()} APX today: ${p.apx}.`, '',
+    p.kind === 'enum' ? table(['Value', 'Designation', 'Definition'], p.values.map((v) => [code(v.name), v.designation, v.definition])) : '', '',
+  ]).join('\n');
+}
+
+// Every other proposal: informative, offered for later adoption.
 function proposalSummary(model) {
-  const all = model.proposals.all;
-  const label = (p) => (p.kind === 'enum' ? (p.change === 'new' ? 'New enumeration' : 'New values for an APDS enumeration') : (p.change === 'new' ? 'New class' : 'Additions to an APDS class'));
-  const out = [`${all.length} data elements are proposed. The full text of each, in the APDS Data Dictionary format, is in \`docs/apds-submission/03-data-dictionary.md\`.`, ''];
+  const all = model.proposals.all.filter((p) => !p.ask);
+  const out = [`${all.length} data elements are described here. APX carries every one of them today, as an \`apds-ext:apx:*\` extension or as an APX resource, so it does not need any of them in APDS to operate. `
+    + 'The full text of each, in the APDS Data Dictionary format, is in `docs/apds-submission/03-data-dictionary.md`. The tiers are kept so the working groups could take them in steps, should they wish to.', ''];
   for (const tier of [1, 2, 3]) {
     const rows = all.filter((p) => p.tier === tier).map((p) => [code(p.name), label(p), p.domain, p.pkg, p.apx]);
-    out.push(`### Tier ${tier}: ${TIER_NAMES[tier]} (${rows.length})`, '', rows.length ? table(['Element', 'Change', 'APDS domain', 'Package', 'Comes from in APX'], rows) : 'None.', '');
+    out.push(`#### Tier ${tier}: ${TIER_NAMES[tier]} (${rows.length})`, '', rows.length ? table(['Element', 'Change', 'APDS domain', 'Package', 'Comes from in APX'], rows) : 'None.', '');
   }
   return out.join('\n');
 }
@@ -74,7 +89,9 @@ function build() {
   const model = loadModel(ROOT);
   const ed = edition(model);
   const requests = src('06-apds-requests.md');
-  if (requests && !requests.includes(PROPOSAL_MARKER)) errors.push(`src/06-apds-requests.md: marker ${PROPOSAL_MARKER} missing`);
+  for (const marker of [ASK_MARKER, PROPOSAL_MARKER]) {
+    if (requests && !requests.includes(marker)) errors.push(`src/06-apds-requests.md: marker ${marker} missing`);
+  }
   return {
     model,
     docs: {
@@ -82,7 +99,7 @@ function build() {
       '03-data-dictionary.md': renderDataDictionary(model, src('_dd-intro.md'), header('APX Data Dictionary', ed, SELF)),
       '04-use-cases.md': [header('APX Use Case Document', ed, SELF), stripTitle(src('uc-part1.md')), '', stripTitle(src('uc-part2.md'))].join('\n'),
       '05-interface-specification.md': renderInterface(model, src('_if-intro.md'), header('APX Interface Specification', ed, SELF)),
-      '06-apds-requests.md': [header('APX Requests to APDS', ed, SELF), stripTitle(requests).replace(PROPOSAL_MARKER, proposalSummary(model))].join('\n'),
+      '06-apds-requests.md': [header('APX Requests to APDS', ed, SELF), stripTitle(requests).replace(ASK_MARKER, minimalAsk(model)).replace(PROPOSAL_MARKER, proposalSummary(model))].join('\n'),
     },
   };
 }

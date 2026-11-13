@@ -104,7 +104,7 @@ Organisation and Contact (the disputing party), and the AmountInCurrency
 datatype. The credential type reuses the APDS CredentialTypeEnum. Toll
 reads themselves flow as ordinary APDS Observation data.
 
-Proposed to APDS, in a new `Tolling` sub-package of the Observation
+Offered to APDS for later adoption, in a new `Tolling` sub-package of the Observation
 package, as Level B additions (see the APX Data Specification):
 
 | Element | Change | Tier |

@@ -134,7 +134,7 @@ RightSpecification, RightPool, RightHolder, CredentialAssigned
 (CustomerCredential and VehicleCredential), QuoteRightRequest and
 QuoteRightResponse, Payment, and Session with its Segments.
 
-Proposed to APDS, as Level B additions to AssignedRight in the Right
+Offered to APDS for later adoption, as Level B additions to AssignedRight in the Right
 package (see the APX Data Specification):
 
 | Element | Change | Tier |

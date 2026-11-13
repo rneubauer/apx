@@ -20,7 +20,10 @@ export function header(title, edition, generatedBy) {
 // How APX relates each element to APDS, for the "APDS status" column.
 export function apdsStatus(cls) {
   if (!cls.proposedAs.length) return 'APX only';
-  return cls.proposedAs.map((p) => `Proposed: ${p.name} (Tier ${p.tier})`).join('; ');
+  const list = (ps) => ps.map((p) => `${p.name} (Tier ${p.tier})`).join(', ');
+  const asked = cls.proposedAs.filter((p) => p.ask);
+  const offered = cls.proposedAs.filter((p) => !p.ask);
+  return [asked.length && `Requested: ${list(asked)}`, offered.length && `Offered for later: ${list(offered)}`].filter(Boolean).join('; ');
 }
 
 // Pull per-value definitions out of prose such as "`detected` — the

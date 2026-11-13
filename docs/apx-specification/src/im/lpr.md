@@ -142,7 +142,7 @@ DateTime, Reference and Url. APDS 4.1 has no route that returns or
 replaces one Observation by id; APX adds read-back and revision routes
 under `/v1/lpr/reads/{observation}` (APX Part 13 §13.3, §13.3a(4)).
 
-Proposed to APDS (APX Data Specification, Observation and Place):
+Offered to APDS for later adoption (APX Data Specification, Observation and Place):
 
 | Element | Change | Tier |
 | --- | --- | --- |

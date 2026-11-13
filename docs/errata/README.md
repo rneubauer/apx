@@ -20,6 +20,13 @@ comment pointing at the erratum.
 The one-page summary for the APDS working group, with optional additions
 and a suggested order, is [Requested APDS changes](../apds-change-requests.md).
 
+**Not yet filed.** Drafts for the Data Dictionary candidates C-015 to
+C-026 (C-025 on hold) and for the one change request APX makes, five
+`EquipmentTypeEnum` values, are in [drafts/](drafts/README.md). They are
+files only; nothing there has been sent upstream. Together with the
+fourteen filed errata, they are the whole request APX makes of APDS
+(see [APX Requests to APDS](../apx-specification/06-apds-requests.md)).
+
 ## Status
 
 | # | Issue | Filed upstream |

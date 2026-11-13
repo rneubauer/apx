@@ -252,7 +252,8 @@ from the APX OpenAPI schemas. They are read as follows:
   of its attributes with their types. 03 Data Dictionary lists every
   member.
 - **Stereotype labels.** A box marked «proposed» is an APX class from
-  which a data element is proposed to APDS (06, Part D). A box with no
+  which a data element is offered to APDS for later adoption (06,
+  Appendix). A box with no
   members is a class from outside the module: «APDS» marks an APDS 4.1
   class, used as published apart from the overlay changes in 03 Annex B,
   and «APX» marks a class from another APX module.

@@ -130,7 +130,7 @@ response is preserved: a request without `Prefer: return=representation`
 receives the APDS `ResponseStatus`, with the new subscription's id in
 `ids[]` (APX Part 8 §8.1).
 
-Proposed to APDS: no data element. Delivery is interface behaviour, and
+Offered to APDS: no data element. Delivery is interface behaviour, and
 the APX Data Specification proposes data, not interface.
 
 Offered as a suggestion (`docs/apds-change-requests.md`, Part B): event

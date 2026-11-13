@@ -141,7 +141,7 @@ export function renderInformationModel(model, frags, intro, outro, head) {
       const first = figure + 1;
       const last = figure + figures.length;
       out.push(`#### Class diagrams`, '', (figures.length === 1 ? `Figure ${first} provides a UML class diagram` : `Figures ${first} to ${last} provide the UML class diagrams`)
-        + ` for the ${mod.title} package. A class marked «proposed» is proposed to APDS (06, Part D); one marked «APDS» is defined in APDS 4.1.`
+        + ` for the ${mod.title} package. A class marked «proposed» is offered to APDS for later adoption (06, Appendix); one marked «APDS» is defined in APDS 4.1.`
         + ` Up to ${MAX_DIAGRAM_MEMBERS} attributes are shown per class; 03 Data Dictionary lists them all.`, '');
       for (const fig of figures) out.push(fig.diagram, '', `*Figure ${++figure} - ${fig.name}*`, '');
     }
