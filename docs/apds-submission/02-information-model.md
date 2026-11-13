@@ -2,12 +2,15 @@
 
 # APX Data Specification: Information Model
 
-*Proposed additions to the APDS data model · Draft for the APDS committee · based on APDS 4.1 (2026-01-14) · APX 0.16.0*
+*A minimal request to APDS, with APX extensions offered for later · Draft for the APDS committee · based on APDS 4.1 (2026-01-14) · APX 0.16.0*
 
 ## Introduction
 
-This document describes the data concepts APX proposes for the APDS data
-model, and how they relate to the existing APDS 4.1 classes. It follows
+This document describes one small request to the APDS data model, five
+values for `EquipmentTypeEnum`, and then, for information only, the data
+concepts APX carries as extensions and offers for later adoption, with
+how they relate to the existing APDS 4.1 classes. APX does not need any
+of the extensions in APDS to operate. It follows
 the structure of the APDS 4.1 Information Model: for each domain, a
 narrative, a class diagram, the enumerations and any external code lists.
 The full definition of every class, attribute, association and value is
@@ -41,14 +44,19 @@ these additions. It is described in the Observation section and offered
 separately, with the other suggested changes to APDS 4.1.
 
 In the diagrams, classes that already exist in APDS 4.1 are marked
-`<<APDS>>`. Everything else is proposed.
+`<<APDS>>`. Everything else is an APX extension offered for later. In
+the tables, the Status column says whether an element is requested or
+offered for later.
 
 ### Tiers
 
+The tiers apply to the extensions offered for later. They are kept so
+the working groups could take them in steps, should they wish to.
+
 | Tier | Meaning |
 | --- | --- |
-| 1 | Propose now: data every access control, enforcement or LPR system already holds |
-| 2 | Proven in APX and widely useful: propose next |
+| 1 | Ready to adopt: data every access control, enforcement or LPR system already holds |
+| 2 | Proven in APX and widely useful: could follow |
 | 3 | For discussion: still settling, or possibly outside parking data |
 
 ### Consistency notes on APDS 4.1
@@ -60,160 +68,194 @@ not yet appear in the API document, for example `RefillPointStatusEnum`
 with `RefillPoint.status`, and some `EquipmentTypeEnum` values such as
 `lprCamera`. These proposals treat the Data Dictionary as authoritative
 and do not propose anything it already defines. The differences are
-offered to the Alliance separately, as suggestions, alongside the
-corrections already filed against the API document.
+offered to the Alliance as suggestions, alongside the corrections already
+filed against the API document; together they are the corrections in
+"What we ask of APDS".
 
-## Proposed changes at a glance
+## What we ask of APDS
 
-127 proposals: 49 new classes, 12 additions to existing APDS classes, 62 new enumerations and 4 sets of new values for existing APDS enumerations. Tier 1: 34, Tier 2: 65, Tier 3: 28.
+We leave the APDS model as it stands and ask for two things only, each offered as a suggestion for the working groups to
+take up if they agree:
 
-### Tier 1: propose now
+1. **Corrections to APDS 4.1 itself.** Fourteen errata in the published
+   API document (`apds-api-4.1.yaml`), filed on `parkingdata/spec` as
+   issues #33 to #35 and #37 to #47 ([APX errata](../errata/README.md)),
+   and twelve places where the API document and the APDS 4.1 Data
+   Dictionary differ, numbered C-015 to C-026. These twelve are not yet
+   filed; drafts are ready in [errata drafts](../errata/drafts/README.md).
+   C-025 is tentative and held until the intended type is confirmed. The
+   full list is in Parts A and B of
+   [APX Requests to APDS](../apx-specification/06-apds-requests.md).
+2. **Five values for `EquipmentTypeEnum`,** set out below.
 
-| Element | Change | Package | Tier | Level |
-| --- | --- | --- | --- | --- |
-| `EquipmentStatus` | New class | SupplementalFacility | 1 | B |
-| `EquipmentStatusEnum` | New enumeration | SupplementalFacility | 1 | — |
-| `EquipmentTypeEnum` | New values for an APDS enumeration | SupplementalFacility | 1 | — |
-| `CredentialAssigned` | Additions to an APDS class | Right | 1 | B |
-| `CredentialMedia` | New class | Right | 1 | B |
-| `CredentialSuspension` | New class | Right | 1 | B |
-| `PresentedCredential` | New class | Right | 1 | B |
-| `CredentialStatusEnum` | New enumeration | Right | 1 | — |
-| `CredentialMediaFormEnum` | New enumeration | Right | 1 | — |
-| `DepositStatusEnum` | New enumeration | Right | 1 | — |
-| `Session` | Additions to an APDS class | Session | 1 | B |
-| `SessionRead` | New class | Session | 1 | B |
-| `SessionClosure` | New class | Session | 1 | B |
-| `AccessEvent` | New class | Session | 1 | B |
-| `ValidationRedemption` | New class | Session | 1 | B |
-| `SessionReadRoleEnum` | New enumeration | Session | 1 | — |
-| `SessionEndReasonEnum` | New enumeration | Session | 1 | — |
-| `AccessOutcomeEnum` | New enumeration | Session | 1 | — |
-| `AccessDenialReasonEnum` | New enumeration | Session | 1 | — |
-| `ValidationRedemptionStatusEnum` | New enumeration | Session | 1 | — |
-| `ObservationElement` | Additions to an APDS class | Observation | 1 | B |
-| `AttributeRead` | New class | Observation | 1 | B |
-| `AlternateRead` | New class | Observation | 1 | B |
-| `ReadAttributeEnum` | New enumeration | Observation | 1 | — |
-| `VehicleMovementEnum` | New enumeration | Observation | 1 | — |
-| `InteractionChannelEnum` | New enumeration | CommonClasses | 1 | — |
-| `Violation` | New class | Enforcement | 1 | C |
-| `ViolationDetection` | New class | Enforcement | 1 | C |
-| `Notice` | New class | Enforcement | 1 | C |
-| `ViolationTypeEnum` | New enumeration | Enforcement | 1 | — |
-| `ViolationStatusEnum` | New enumeration | Enforcement | 1 | — |
-| `DetectionModeEnum` | New enumeration | Enforcement | 1 | — |
-| `NoticeKindEnum` | New enumeration | Enforcement | 1 | — |
-| `NoticeDeliveryMethodEnum` | New enumeration | Enforcement | 1 | — |
+Nothing else is requested. APX works today on APDS 4.1 as published,
+without any of these changes. Everything else in this document set is an
+informative annex of APX extensions, offered for later adoption.
 
-### Tier 2: proven in APX, propose next
+### New values for an APDS enumeration: `EquipmentTypeEnum` (Place)
 
-| Element | Change | Package | Tier | Level |
-| --- | --- | --- | --- | --- |
-| `VehicularAccess` | Additions to an APDS class | VehicularAccess | 2 | B |
-| `LaneCamera` | New class | VehicularAccess | 2 | B |
-| `CameraFacingEnum` | New enumeration | VehicularAccess | 2 | — |
-| `Signage` | New class | Signage | 2 | B |
-| `SignTypeEnum` | New enumeration | Signage | 2 | — |
-| `SupplementalEquipment` | Additions to an APDS class | EquipmentDetail | 2 | B |
-| `Camera` | New class | EquipmentDetail | 2 | B |
-| `EquipmentRoleEnum` | New enumeration | EquipmentDetail | 2 | — |
-| `AreaTypeEnum` | New enumeration | EquipmentDetail | 2 | — |
-| `CameraMountingEnum` | New enumeration | EquipmentDetail | 2 | — |
-| `CameraViewEnum` | New enumeration | EquipmentDetail | 2 | — |
-| `RateTable` | Additions to an APDS class | Rates | 2 | B |
-| `ValidationBenefit` | New class | Rates | 2 | B |
-| `AssignedRight` | Additions to an APDS class | Right | 2 | B |
-| `OverageBilling` | New class | Right | 2 | B |
-| `RightHolder` | Additions to an APDS class | Right | 2 | B |
-| `Payment` | Additions to an APDS class | Right | 2 | B |
-| `ReservationStateEnum` | New enumeration | Right | 2 | — |
-| `OverageBillingModeEnum` | New enumeration | Right | 2 | — |
-| `AccountStatusEnum` | New enumeration | Right | 2 | — |
-| `PaymentStatusEnum` | New enumeration | Right | 2 | — |
-| `CaptureStatusEnum` | New enumeration | Right | 2 | — |
-| `RightTypeEnum` | New values for an APDS enumeration | Right | 2 | — |
-| `PaymentTypeEnum` | New values for an APDS enumeration | Right | 2 | — |
-| `ValidationProgram` | New class | Validation | 2 | B |
-| `ValidationRules` | New class | Validation | 2 | B |
-| `ValidationIssuance` | New class | Validation | 2 | B |
-| `ValidationInstrument` | New class | Validation | 2 | B |
-| `ValidationIssuanceMethodEnum` | New enumeration | Validation | 2 | — |
-| `ValidationIssuanceStatusEnum` | New enumeration | Validation | 2 | — |
-| `ValidationInstrumentStatusEnum` | New enumeration | Validation | 2 | — |
-| `PlateList` | New class | PlateList | 2 | B |
-| `PlateListPlaceFlags` | New class | PlateList | 2 | B |
-| `PlateListEntry` | New class | PlateList | 2 | B |
-| `PlateListCategoryEnum` | New enumeration | PlateList | 2 | — |
-| `ValetTicket` | New class | Session | 2 | B |
-| `SessionLifecycleEnum` | New enumeration | Session | 2 | — |
-| `ValetStatusEnum` | New enumeration | Session | 2 | — |
-| `HandbackVerificationEnum` | New enumeration | Session | 2 | — |
-| `ReadReview` | New class | Observation | 2 | B |
-| `Image` | Additions to an APDS class | Observation | 2 | B |
-| `ImageRegion` | New class | Observation | 2 | B |
-| `ConditionReport` | New class | Observation | 2 | B |
-| `DamageItem` | New class | Observation | 2 | B |
-| `ImageTypeEnum` | New values for an APDS enumeration | Observation | 2 | — |
-| `PlateFaceEnum` | New enumeration | Observation | 2 | — |
-| `ReadReviewStateEnum` | New enumeration | Observation | 2 | — |
-| `ReadReviewReasonEnum` | New enumeration | Observation | 2 | — |
-| `DamageSeverityEnum` | New enumeration | Observation | 2 | — |
-| `TollTransaction` | New class | Tolling | 2 | B |
-| `TollDispute` | New class | Tolling | 2 | B |
-| `TollTransactionStatusEnum` | New enumeration | Tolling | 2 | — |
-| `TollDisputeReasonEnum` | New enumeration | Tolling | 2 | — |
-| `TollDisputeResolutionEnum` | New enumeration | Tolling | 2 | — |
-| `RecordEndReasonEnum` | New enumeration | CommonClasses | 2 | — |
-| `Appeal` | New class | Enforcement | 2 | C |
-| `EnforcementPolicy` | New class | Enforcement | 2 | C |
-| `NoticeDeliveryRule` | New class | Enforcement | 2 | C |
-| `EscalationStep` | New class | Enforcement | 2 | C |
-| `AppealReasonEnum` | New enumeration | Enforcement | 2 | — |
-| `AppealResolutionEnum` | New enumeration | Enforcement | 2 | — |
-| `Alert` | New class | Operations | 2 | C |
-| `AlertTypeEnum` | New enumeration | Operations | 2 | — |
-| `AlertSeverityEnum` | New enumeration | Operations | 2 | — |
-| `AlertStatusEnum` | New enumeration | Operations | 2 | — |
+Off-street sites could type their lane equipment with APDS names. APDS 4.1 already has lprCamera, occupancySensor, paymentMachine and the door values. Adding these five lets an entry lane and an exit lane both be typed with APDS names alone.
+
+| Value | Designation | Definition |
+| --- | --- | --- |
+| `barrier` | Barrier | A lifting arm or similar barrier that opens and closes a vehicular access lane. |
+| `gate` | Gate | A sliding, swinging or rolling gate or door that opens and closes a vehicular access point. |
+| `ticketDispenser` | Ticket dispenser | A machine at an entry lane that issues a ticket or other credential to start a Session. |
+| `intercom` | Intercom | A call point at a lane or machine that connects a customer with an attendant by voice or video. |
+| `exitVerifier` | Exit verifier | A machine at an exit lane that reads the ticket or credential presented and opens the barrier when the stay is paid or valid. |
+
+## APX extensions available for later adoption (informative)
+
+This annex is informative. It makes no request of APDS. It describes the 126 further proposals that APX offers for later adoption, should the working groups find them useful. APX already carries every one of them, as an `apds-ext:apx:*` extension on an APDS object or as an APX resource, so APX does not need any of them in APDS to operate.
+
+126 proposals: 49 new classes, 12 additions to existing APDS classes, 62 new enumerations and 3 sets of new values for existing APDS enumerations. Tier 1: 33, Tier 2: 65, Tier 3: 28.
+
+### Tier 1: ready to adopt
+
+| Element | Change | Package | Tier | Level | Status |
+| --- | --- | --- | --- | --- | --- |
+| `EquipmentStatus` | New class | SupplementalFacility | 1 | B | Offered for later |
+| `EquipmentStatusEnum` | New enumeration | SupplementalFacility | 1 | — | Offered for later |
+| `CredentialAssigned` | Additions to an APDS class | Right | 1 | B | Offered for later |
+| `CredentialMedia` | New class | Right | 1 | B | Offered for later |
+| `CredentialSuspension` | New class | Right | 1 | B | Offered for later |
+| `PresentedCredential` | New class | Right | 1 | B | Offered for later |
+| `CredentialStatusEnum` | New enumeration | Right | 1 | — | Offered for later |
+| `CredentialMediaFormEnum` | New enumeration | Right | 1 | — | Offered for later |
+| `DepositStatusEnum` | New enumeration | Right | 1 | — | Offered for later |
+| `Session` | Additions to an APDS class | Session | 1 | B | Offered for later |
+| `SessionRead` | New class | Session | 1 | B | Offered for later |
+| `SessionClosure` | New class | Session | 1 | B | Offered for later |
+| `AccessEvent` | New class | Session | 1 | B | Offered for later |
+| `ValidationRedemption` | New class | Session | 1 | B | Offered for later |
+| `SessionReadRoleEnum` | New enumeration | Session | 1 | — | Offered for later |
+| `SessionEndReasonEnum` | New enumeration | Session | 1 | — | Offered for later |
+| `AccessOutcomeEnum` | New enumeration | Session | 1 | — | Offered for later |
+| `AccessDenialReasonEnum` | New enumeration | Session | 1 | — | Offered for later |
+| `ValidationRedemptionStatusEnum` | New enumeration | Session | 1 | — | Offered for later |
+| `ObservationElement` | Additions to an APDS class | Observation | 1 | B | Offered for later |
+| `AttributeRead` | New class | Observation | 1 | B | Offered for later |
+| `AlternateRead` | New class | Observation | 1 | B | Offered for later |
+| `ReadAttributeEnum` | New enumeration | Observation | 1 | — | Offered for later |
+| `VehicleMovementEnum` | New enumeration | Observation | 1 | — | Offered for later |
+| `InteractionChannelEnum` | New enumeration | CommonClasses | 1 | — | Offered for later |
+| `Violation` | New class | Enforcement | 1 | C | Offered for later |
+| `ViolationDetection` | New class | Enforcement | 1 | C | Offered for later |
+| `Notice` | New class | Enforcement | 1 | C | Offered for later |
+| `ViolationTypeEnum` | New enumeration | Enforcement | 1 | — | Offered for later |
+| `ViolationStatusEnum` | New enumeration | Enforcement | 1 | — | Offered for later |
+| `DetectionModeEnum` | New enumeration | Enforcement | 1 | — | Offered for later |
+| `NoticeKindEnum` | New enumeration | Enforcement | 1 | — | Offered for later |
+| `NoticeDeliveryMethodEnum` | New enumeration | Enforcement | 1 | — | Offered for later |
+
+### Tier 2: proven in APX, could follow
+
+| Element | Change | Package | Tier | Level | Status |
+| --- | --- | --- | --- | --- | --- |
+| `VehicularAccess` | Additions to an APDS class | VehicularAccess | 2 | B | Offered for later |
+| `LaneCamera` | New class | VehicularAccess | 2 | B | Offered for later |
+| `CameraFacingEnum` | New enumeration | VehicularAccess | 2 | — | Offered for later |
+| `Signage` | New class | Signage | 2 | B | Offered for later |
+| `SignTypeEnum` | New enumeration | Signage | 2 | — | Offered for later |
+| `SupplementalEquipment` | Additions to an APDS class | EquipmentDetail | 2 | B | Offered for later |
+| `Camera` | New class | EquipmentDetail | 2 | B | Offered for later |
+| `EquipmentRoleEnum` | New enumeration | EquipmentDetail | 2 | — | Offered for later |
+| `AreaTypeEnum` | New enumeration | EquipmentDetail | 2 | — | Offered for later |
+| `CameraMountingEnum` | New enumeration | EquipmentDetail | 2 | — | Offered for later |
+| `CameraViewEnum` | New enumeration | EquipmentDetail | 2 | — | Offered for later |
+| `RateTable` | Additions to an APDS class | Rates | 2 | B | Offered for later |
+| `ValidationBenefit` | New class | Rates | 2 | B | Offered for later |
+| `AssignedRight` | Additions to an APDS class | Right | 2 | B | Offered for later |
+| `OverageBilling` | New class | Right | 2 | B | Offered for later |
+| `RightHolder` | Additions to an APDS class | Right | 2 | B | Offered for later |
+| `Payment` | Additions to an APDS class | Right | 2 | B | Offered for later |
+| `ReservationStateEnum` | New enumeration | Right | 2 | — | Offered for later |
+| `OverageBillingModeEnum` | New enumeration | Right | 2 | — | Offered for later |
+| `AccountStatusEnum` | New enumeration | Right | 2 | — | Offered for later |
+| `PaymentStatusEnum` | New enumeration | Right | 2 | — | Offered for later |
+| `CaptureStatusEnum` | New enumeration | Right | 2 | — | Offered for later |
+| `RightTypeEnum` | New values for an APDS enumeration | Right | 2 | — | Offered for later |
+| `PaymentTypeEnum` | New values for an APDS enumeration | Right | 2 | — | Offered for later |
+| `ValidationProgram` | New class | Validation | 2 | B | Offered for later |
+| `ValidationRules` | New class | Validation | 2 | B | Offered for later |
+| `ValidationIssuance` | New class | Validation | 2 | B | Offered for later |
+| `ValidationInstrument` | New class | Validation | 2 | B | Offered for later |
+| `ValidationIssuanceMethodEnum` | New enumeration | Validation | 2 | — | Offered for later |
+| `ValidationIssuanceStatusEnum` | New enumeration | Validation | 2 | — | Offered for later |
+| `ValidationInstrumentStatusEnum` | New enumeration | Validation | 2 | — | Offered for later |
+| `PlateList` | New class | PlateList | 2 | B | Offered for later |
+| `PlateListPlaceFlags` | New class | PlateList | 2 | B | Offered for later |
+| `PlateListEntry` | New class | PlateList | 2 | B | Offered for later |
+| `PlateListCategoryEnum` | New enumeration | PlateList | 2 | — | Offered for later |
+| `ValetTicket` | New class | Session | 2 | B | Offered for later |
+| `SessionLifecycleEnum` | New enumeration | Session | 2 | — | Offered for later |
+| `ValetStatusEnum` | New enumeration | Session | 2 | — | Offered for later |
+| `HandbackVerificationEnum` | New enumeration | Session | 2 | — | Offered for later |
+| `ReadReview` | New class | Observation | 2 | B | Offered for later |
+| `Image` | Additions to an APDS class | Observation | 2 | B | Offered for later |
+| `ImageRegion` | New class | Observation | 2 | B | Offered for later |
+| `ConditionReport` | New class | Observation | 2 | B | Offered for later |
+| `DamageItem` | New class | Observation | 2 | B | Offered for later |
+| `ImageTypeEnum` | New values for an APDS enumeration | Observation | 2 | — | Offered for later |
+| `PlateFaceEnum` | New enumeration | Observation | 2 | — | Offered for later |
+| `ReadReviewStateEnum` | New enumeration | Observation | 2 | — | Offered for later |
+| `ReadReviewReasonEnum` | New enumeration | Observation | 2 | — | Offered for later |
+| `DamageSeverityEnum` | New enumeration | Observation | 2 | — | Offered for later |
+| `TollTransaction` | New class | Tolling | 2 | B | Offered for later |
+| `TollDispute` | New class | Tolling | 2 | B | Offered for later |
+| `TollTransactionStatusEnum` | New enumeration | Tolling | 2 | — | Offered for later |
+| `TollDisputeReasonEnum` | New enumeration | Tolling | 2 | — | Offered for later |
+| `TollDisputeResolutionEnum` | New enumeration | Tolling | 2 | — | Offered for later |
+| `RecordEndReasonEnum` | New enumeration | CommonClasses | 2 | — | Offered for later |
+| `Appeal` | New class | Enforcement | 2 | C | Offered for later |
+| `EnforcementPolicy` | New class | Enforcement | 2 | C | Offered for later |
+| `NoticeDeliveryRule` | New class | Enforcement | 2 | C | Offered for later |
+| `EscalationStep` | New class | Enforcement | 2 | C | Offered for later |
+| `AppealReasonEnum` | New enumeration | Enforcement | 2 | — | Offered for later |
+| `AppealResolutionEnum` | New enumeration | Enforcement | 2 | — | Offered for later |
+| `Alert` | New class | Operations | 2 | C | Offered for later |
+| `AlertTypeEnum` | New enumeration | Operations | 2 | — | Offered for later |
+| `AlertSeverityEnum` | New enumeration | Operations | 2 | — | Offered for later |
+| `AlertStatusEnum` | New enumeration | Operations | 2 | — | Offered for later |
 
 ### Tier 3: for discussion
 
-| Element | Change | Package | Tier | Level |
-| --- | --- | --- | --- | --- |
-| `CommsPoint` | New class | CommsPoint | 3 | B |
-| `CommsPointTypeEnum` | New enumeration | CommsPoint | 3 | — |
-| `DemandType` | Additions to an APDS class | Demand | 3 | B |
-| `RateSold` | New class | Right | 3 | B |
-| `RateProductEnum` | New enumeration | Right | 3 | — |
-| `RateClassEnum` | New enumeration | Right | 3 | — |
-| `ValidationBilling` | New class | Validation | 3 | B |
-| `ValidationBillingModelEnum` | New enumeration | Validation | 3 | — |
-| `ValidationBillingCycleEnum` | New enumeration | Validation | 3 | — |
-| `MatchEvidence` | New class | Session | 3 | B |
-| `MatchTypeEnum` | New enumeration | Session | 3 | — |
-| `MatchDecisionEnum` | New enumeration | Session | 3 | — |
-| `ChargingPointStatus` | New class | EnergyInfrastructure | 3 | B |
-| `ConnectorStatus` | New class | EnergyInfrastructure | 3 | B |
-| `ChargingBayPresence` | New class | EnergyInfrastructure | 3 | B |
-| `ChargingSession` | New class | EnergyInfrastructure | 3 | B |
-| `ChargingCost` | New class | EnergyInfrastructure | 3 | B |
-| `ChargingIdleTerms` | New class | EnergyInfrastructure | 3 | B |
-| `BayPresenceEnum` | New enumeration | EnergyInfrastructure | 3 | — |
-| `BayPresenceSourceEnum` | New enumeration | EnergyInfrastructure | 3 | — |
-| `ChargingSessionStatusEnum` | New enumeration | EnergyInfrastructure | 3 | — |
-| `ChargingStopReasonEnum` | New enumeration | EnergyInfrastructure | 3 | — |
-| `ChargingSettlementModeEnum` | New enumeration | EnergyInfrastructure | 3 | — |
-| `RecordType` | Additions to an APDS class | CommonClasses | 3 | B |
-| `PenaltyLimit` | New class | Enforcement | 3 | C |
-| `SupportInteraction` | New class | Operations | 3 | C |
-| `SupportAgentTypeEnum` | New enumeration | Operations | 3 | — |
-| `SupportIssueTypeEnum` | New enumeration | Operations | 3 | — |
+| Element | Change | Package | Tier | Level | Status |
+| --- | --- | --- | --- | --- | --- |
+| `CommsPoint` | New class | CommsPoint | 3 | B | Offered for later |
+| `CommsPointTypeEnum` | New enumeration | CommsPoint | 3 | — | Offered for later |
+| `DemandType` | Additions to an APDS class | Demand | 3 | B | Offered for later |
+| `RateSold` | New class | Right | 3 | B | Offered for later |
+| `RateProductEnum` | New enumeration | Right | 3 | — | Offered for later |
+| `RateClassEnum` | New enumeration | Right | 3 | — | Offered for later |
+| `ValidationBilling` | New class | Validation | 3 | B | Offered for later |
+| `ValidationBillingModelEnum` | New enumeration | Validation | 3 | — | Offered for later |
+| `ValidationBillingCycleEnum` | New enumeration | Validation | 3 | — | Offered for later |
+| `MatchEvidence` | New class | Session | 3 | B | Offered for later |
+| `MatchTypeEnum` | New enumeration | Session | 3 | — | Offered for later |
+| `MatchDecisionEnum` | New enumeration | Session | 3 | — | Offered for later |
+| `ChargingPointStatus` | New class | EnergyInfrastructure | 3 | B | Offered for later |
+| `ConnectorStatus` | New class | EnergyInfrastructure | 3 | B | Offered for later |
+| `ChargingBayPresence` | New class | EnergyInfrastructure | 3 | B | Offered for later |
+| `ChargingSession` | New class | EnergyInfrastructure | 3 | B | Offered for later |
+| `ChargingCost` | New class | EnergyInfrastructure | 3 | B | Offered for later |
+| `ChargingIdleTerms` | New class | EnergyInfrastructure | 3 | B | Offered for later |
+| `BayPresenceEnum` | New enumeration | EnergyInfrastructure | 3 | — | Offered for later |
+| `BayPresenceSourceEnum` | New enumeration | EnergyInfrastructure | 3 | — | Offered for later |
+| `ChargingSessionStatusEnum` | New enumeration | EnergyInfrastructure | 3 | — | Offered for later |
+| `ChargingStopReasonEnum` | New enumeration | EnergyInfrastructure | 3 | — | Offered for later |
+| `ChargingSettlementModeEnum` | New enumeration | EnergyInfrastructure | 3 | — | Offered for later |
+| `RecordType` | Additions to an APDS class | CommonClasses | 3 | B | Offered for later |
+| `PenaltyLimit` | New class | Enforcement | 3 | C | Offered for later |
+| `SupportInteraction` | New class | Operations | 3 | C | Offered for later |
+| `SupportAgentTypeEnum` | New enumeration | Operations | 3 | — | Offered for later |
+| `SupportIssueTypeEnum` | New enumeration | Operations | 3 | — | Offered for later |
 
 ## Data model
 
 ### Place
 
-Adds what an operator needs to describe how the equipment in a Place is working right now, which way the licence plate cameras on an access lane face, and what is posted on the signs at a Place. It also suggests four lane-equipment values for EquipmentTypeEnum. Equipment status is kept in its own record, apart from the static Place description, for the same reason APDS keeps Demand apart from Supply: it changes far more often. A second group describes the equipment itself, so that a Place can be understood from the data alone: what each item does (its role), where it stands, what it is and what runs on it, which cameras look at what, and how a parker at any point of the Place reaches help (a comms point).
+Adds what an operator needs to describe how the equipment in a Place is working right now, which way the licence plate cameras on an access lane face, and what is posted on the signs at a Place. It also suggests five lane-equipment values for EquipmentTypeEnum. Equipment status is kept in its own record, apart from the static Place description, for the same reason APDS keeps Demand apart from Supply: it changes far more often. A second group describes the equipment itself, so that a Place can be understood from the data alone: what each item does (its role), where it stands, what it is and what runs on it, which cameras look at what, and how a parker at any point of the Place reaches help (a comms point).
 
 The Place additions sit in two existing packages, SupplementalFacility and
 VehicularAccess, and one new package, Signage, beneath the Place
@@ -388,7 +430,7 @@ notice of it, so these Level B additions stand on their own.
 | Enumeration | Change | Values |
 | --- | --- | --- |
 | EquipmentStatusEnum | New | available, occupied, blocked, closed, outOfService, faulted, unknown, other |
-| EquipmentTypeEnum | Add values | barrier, gate, ticketDispenser, intercom |
+| EquipmentTypeEnum | Add values (requested) | barrier, gate, ticketDispenser, intercom, exitVerifier |
 | CameraFacingEnum | New | inward, outward |
 | SignTypeEnum | New | entrance, paymentMachine, perSpace, ratesBoard, towAway, other |
 
@@ -400,26 +442,26 @@ States beyond EquipmentStatusEnum are carried in otherEquipmentStatus as a
 ReferencedCodeListEntry, pointing to a UserDefinedCodeList published by
 the operator or by APX. No new code list mechanism is needed.
 
-#### Elements proposed for Place
+#### Elements described for Place
 
-| Element | Change | Package | Tier | Level |
-| --- | --- | --- | --- | --- |
-| `EquipmentStatus` | New class | SupplementalFacility | 1 | B |
-| `EquipmentStatusEnum` | New enumeration | SupplementalFacility | 1 | — |
-| `EquipmentTypeEnum` | New values for an APDS enumeration | SupplementalFacility | 1 | — |
-| `VehicularAccess` | Additions to an APDS class | VehicularAccess | 2 | B |
-| `LaneCamera` | New class | VehicularAccess | 2 | B |
-| `CameraFacingEnum` | New enumeration | VehicularAccess | 2 | — |
-| `Signage` | New class | Signage | 2 | B |
-| `SignTypeEnum` | New enumeration | Signage | 2 | — |
-| `SupplementalEquipment` | Additions to an APDS class | EquipmentDetail | 2 | B |
-| `Camera` | New class | EquipmentDetail | 2 | B |
-| `EquipmentRoleEnum` | New enumeration | EquipmentDetail | 2 | — |
-| `AreaTypeEnum` | New enumeration | EquipmentDetail | 2 | — |
-| `CameraMountingEnum` | New enumeration | EquipmentDetail | 2 | — |
-| `CameraViewEnum` | New enumeration | EquipmentDetail | 2 | — |
-| `CommsPoint` | New class | CommsPoint | 3 | B |
-| `CommsPointTypeEnum` | New enumeration | CommsPoint | 3 | — |
+| Element | Change | Package | Tier | Level | Status |
+| --- | --- | --- | --- | --- | --- |
+| `EquipmentStatus` | New class | SupplementalFacility | 1 | B | Offered for later |
+| `EquipmentStatusEnum` | New enumeration | SupplementalFacility | 1 | — | Offered for later |
+| `EquipmentTypeEnum` | New values for an APDS enumeration | SupplementalFacility | 1 | — | Requested |
+| `VehicularAccess` | Additions to an APDS class | VehicularAccess | 2 | B | Offered for later |
+| `LaneCamera` | New class | VehicularAccess | 2 | B | Offered for later |
+| `CameraFacingEnum` | New enumeration | VehicularAccess | 2 | — | Offered for later |
+| `Signage` | New class | Signage | 2 | B | Offered for later |
+| `SignTypeEnum` | New enumeration | Signage | 2 | — | Offered for later |
+| `SupplementalEquipment` | Additions to an APDS class | EquipmentDetail | 2 | B | Offered for later |
+| `Camera` | New class | EquipmentDetail | 2 | B | Offered for later |
+| `EquipmentRoleEnum` | New enumeration | EquipmentDetail | 2 | — | Offered for later |
+| `AreaTypeEnum` | New enumeration | EquipmentDetail | 2 | — | Offered for later |
+| `CameraMountingEnum` | New enumeration | EquipmentDetail | 2 | — | Offered for later |
+| `CameraViewEnum` | New enumeration | EquipmentDetail | 2 | — | Offered for later |
+| `CommsPoint` | New class | CommsPoint | 3 | B | Offered for later |
+| `CommsPointTypeEnum` | New enumeration | CommsPoint | 3 | — | Offered for later |
 
 ### Occupancy
 
@@ -474,11 +516,11 @@ No new enumerations are proposed in Occupancy.
 
 No new external code lists are proposed in Occupancy.
 
-#### Elements proposed for Occupancy
+#### Elements described for Occupancy
 
-| Element | Change | Package | Tier | Level |
-| --- | --- | --- | --- | --- |
-| `DemandType` | Additions to an APDS class | Demand | 3 | B |
+| Element | Change | Package | Tier | Level | Status |
+| --- | --- | --- | --- | --- | --- |
+| `DemandType` | Additions to an APDS class | Demand | 3 | B | Offered for later |
 
 ### Rates
 
@@ -544,12 +586,12 @@ No new enumerations are proposed in `<Rates>`.
 
 No new external code lists are proposed in `<Rates>`.
 
-#### Elements proposed for Rates
+#### Elements described for Rates
 
-| Element | Change | Package | Tier | Level |
-| --- | --- | --- | --- | --- |
-| `RateTable` | Additions to an APDS class | Rates | 2 | B |
-| `ValidationBenefit` | New class | Rates | 2 | B |
+| Element | Change | Package | Tier | Level | Status |
+| --- | --- | --- | --- | --- | --- |
+| `RateTable` | Additions to an APDS class | Rates | 2 | B | Offered for later |
+| `ValidationBenefit` | New class | Rates | 2 | B | Offered for later |
 
 ### Right
 
@@ -769,45 +811,45 @@ starting set of values, and further values would be published as
 user-defined code lists (PkCommon UserDefinedCodeList), as APDS already
 does elsewhere. APX uses this starting set today.
 
-#### Elements proposed for Right
+#### Elements described for Right
 
-| Element | Change | Package | Tier | Level |
-| --- | --- | --- | --- | --- |
-| `CredentialAssigned` | Additions to an APDS class | Right | 1 | B |
-| `CredentialMedia` | New class | Right | 1 | B |
-| `CredentialSuspension` | New class | Right | 1 | B |
-| `PresentedCredential` | New class | Right | 1 | B |
-| `AssignedRight` | Additions to an APDS class | Right | 2 | B |
-| `OverageBilling` | New class | Right | 2 | B |
-| `RightHolder` | Additions to an APDS class | Right | 2 | B |
-| `Payment` | Additions to an APDS class | Right | 2 | B |
-| `RateSold` | New class | Right | 3 | B |
-| `CredentialStatusEnum` | New enumeration | Right | 1 | — |
-| `CredentialMediaFormEnum` | New enumeration | Right | 1 | — |
-| `DepositStatusEnum` | New enumeration | Right | 1 | — |
-| `ReservationStateEnum` | New enumeration | Right | 2 | — |
-| `OverageBillingModeEnum` | New enumeration | Right | 2 | — |
-| `AccountStatusEnum` | New enumeration | Right | 2 | — |
-| `PaymentStatusEnum` | New enumeration | Right | 2 | — |
-| `CaptureStatusEnum` | New enumeration | Right | 2 | — |
-| `RateProductEnum` | New enumeration | Right | 3 | — |
-| `RateClassEnum` | New enumeration | Right | 3 | — |
-| `RightTypeEnum` | New values for an APDS enumeration | Right | 2 | — |
-| `PaymentTypeEnum` | New values for an APDS enumeration | Right | 2 | — |
-| `ValidationProgram` | New class | Validation | 2 | B |
-| `ValidationRules` | New class | Validation | 2 | B |
-| `ValidationBilling` | New class | Validation | 3 | B |
-| `ValidationIssuance` | New class | Validation | 2 | B |
-| `ValidationInstrument` | New class | Validation | 2 | B |
-| `ValidationIssuanceMethodEnum` | New enumeration | Validation | 2 | — |
-| `ValidationIssuanceStatusEnum` | New enumeration | Validation | 2 | — |
-| `ValidationInstrumentStatusEnum` | New enumeration | Validation | 2 | — |
-| `ValidationBillingModelEnum` | New enumeration | Validation | 3 | — |
-| `ValidationBillingCycleEnum` | New enumeration | Validation | 3 | — |
-| `PlateList` | New class | PlateList | 2 | B |
-| `PlateListPlaceFlags` | New class | PlateList | 2 | B |
-| `PlateListEntry` | New class | PlateList | 2 | B |
-| `PlateListCategoryEnum` | New enumeration | PlateList | 2 | — |
+| Element | Change | Package | Tier | Level | Status |
+| --- | --- | --- | --- | --- | --- |
+| `CredentialAssigned` | Additions to an APDS class | Right | 1 | B | Offered for later |
+| `CredentialMedia` | New class | Right | 1 | B | Offered for later |
+| `CredentialSuspension` | New class | Right | 1 | B | Offered for later |
+| `PresentedCredential` | New class | Right | 1 | B | Offered for later |
+| `AssignedRight` | Additions to an APDS class | Right | 2 | B | Offered for later |
+| `OverageBilling` | New class | Right | 2 | B | Offered for later |
+| `RightHolder` | Additions to an APDS class | Right | 2 | B | Offered for later |
+| `Payment` | Additions to an APDS class | Right | 2 | B | Offered for later |
+| `RateSold` | New class | Right | 3 | B | Offered for later |
+| `CredentialStatusEnum` | New enumeration | Right | 1 | — | Offered for later |
+| `CredentialMediaFormEnum` | New enumeration | Right | 1 | — | Offered for later |
+| `DepositStatusEnum` | New enumeration | Right | 1 | — | Offered for later |
+| `ReservationStateEnum` | New enumeration | Right | 2 | — | Offered for later |
+| `OverageBillingModeEnum` | New enumeration | Right | 2 | — | Offered for later |
+| `AccountStatusEnum` | New enumeration | Right | 2 | — | Offered for later |
+| `PaymentStatusEnum` | New enumeration | Right | 2 | — | Offered for later |
+| `CaptureStatusEnum` | New enumeration | Right | 2 | — | Offered for later |
+| `RateProductEnum` | New enumeration | Right | 3 | — | Offered for later |
+| `RateClassEnum` | New enumeration | Right | 3 | — | Offered for later |
+| `RightTypeEnum` | New values for an APDS enumeration | Right | 2 | — | Offered for later |
+| `PaymentTypeEnum` | New values for an APDS enumeration | Right | 2 | — | Offered for later |
+| `ValidationProgram` | New class | Validation | 2 | B | Offered for later |
+| `ValidationRules` | New class | Validation | 2 | B | Offered for later |
+| `ValidationBilling` | New class | Validation | 3 | B | Offered for later |
+| `ValidationIssuance` | New class | Validation | 2 | B | Offered for later |
+| `ValidationInstrument` | New class | Validation | 2 | B | Offered for later |
+| `ValidationIssuanceMethodEnum` | New enumeration | Validation | 2 | — | Offered for later |
+| `ValidationIssuanceStatusEnum` | New enumeration | Validation | 2 | — | Offered for later |
+| `ValidationInstrumentStatusEnum` | New enumeration | Validation | 2 | — | Offered for later |
+| `ValidationBillingModelEnum` | New enumeration | Validation | 3 | — | Offered for later |
+| `ValidationBillingCycleEnum` | New enumeration | Validation | 3 | — | Offered for later |
+| `PlateList` | New class | PlateList | 2 | B | Offered for later |
+| `PlateListPlaceFlags` | New class | PlateList | 2 | B | Offered for later |
+| `PlateListEntry` | New class | PlateList | 2 | B | Offered for later |
+| `PlateListCategoryEnum` | New enumeration | PlateList | 2 | — | Offered for later |
 
 ### Session
 
@@ -975,27 +1017,27 @@ values, but we would be equally glad to see `endReason` and
 values published as the recommended initial list. We leave that choice to
 the group.
 
-#### Elements proposed for Session
+#### Elements described for Session
 
-| Element | Change | Package | Tier | Level |
-| --- | --- | --- | --- | --- |
-| `Session` | Additions to an APDS class | Session | 1 | B |
-| `SessionRead` | New class | Session | 1 | B |
-| `SessionClosure` | New class | Session | 1 | B |
-| `AccessEvent` | New class | Session | 1 | B |
-| `MatchEvidence` | New class | Session | 3 | B |
-| `ValidationRedemption` | New class | Session | 1 | B |
-| `ValetTicket` | New class | Session | 2 | B |
-| `SessionReadRoleEnum` | New enumeration | Session | 1 | — |
-| `SessionEndReasonEnum` | New enumeration | Session | 1 | — |
-| `SessionLifecycleEnum` | New enumeration | Session | 2 | — |
-| `AccessOutcomeEnum` | New enumeration | Session | 1 | — |
-| `AccessDenialReasonEnum` | New enumeration | Session | 1 | — |
-| `MatchTypeEnum` | New enumeration | Session | 3 | — |
-| `MatchDecisionEnum` | New enumeration | Session | 3 | — |
-| `ValidationRedemptionStatusEnum` | New enumeration | Session | 1 | — |
-| `ValetStatusEnum` | New enumeration | Session | 2 | — |
-| `HandbackVerificationEnum` | New enumeration | Session | 2 | — |
+| Element | Change | Package | Tier | Level | Status |
+| --- | --- | --- | --- | --- | --- |
+| `Session` | Additions to an APDS class | Session | 1 | B | Offered for later |
+| `SessionRead` | New class | Session | 1 | B | Offered for later |
+| `SessionClosure` | New class | Session | 1 | B | Offered for later |
+| `AccessEvent` | New class | Session | 1 | B | Offered for later |
+| `MatchEvidence` | New class | Session | 3 | B | Offered for later |
+| `ValidationRedemption` | New class | Session | 1 | B | Offered for later |
+| `ValetTicket` | New class | Session | 2 | B | Offered for later |
+| `SessionReadRoleEnum` | New enumeration | Session | 1 | — | Offered for later |
+| `SessionEndReasonEnum` | New enumeration | Session | 1 | — | Offered for later |
+| `SessionLifecycleEnum` | New enumeration | Session | 2 | — | Offered for later |
+| `AccessOutcomeEnum` | New enumeration | Session | 1 | — | Offered for later |
+| `AccessDenialReasonEnum` | New enumeration | Session | 1 | — | Offered for later |
+| `MatchTypeEnum` | New enumeration | Session | 3 | — | Offered for later |
+| `MatchDecisionEnum` | New enumeration | Session | 3 | — | Offered for later |
+| `ValidationRedemptionStatusEnum` | New enumeration | Session | 1 | — | Offered for later |
+| `ValetStatusEnum` | New enumeration | Session | 2 | — | Offered for later |
+| `HandbackVerificationEnum` | New enumeration | Session | 2 | — | Offered for later |
 
 ### Observation
 
@@ -1168,30 +1210,30 @@ as the recommended initial list. `DamageItem.vehicleArea` is left as a
 string from an operator code list; we do not propose standard values for
 it yet.
 
-#### Elements proposed for Observation
+#### Elements described for Observation
 
-| Element | Change | Package | Tier | Level |
-| --- | --- | --- | --- | --- |
-| `ObservationElement` | Additions to an APDS class | Observation | 1 | B |
-| `AttributeRead` | New class | Observation | 1 | B |
-| `AlternateRead` | New class | Observation | 1 | B |
-| `ReadReview` | New class | Observation | 2 | B |
-| `Image` | Additions to an APDS class | Observation | 2 | B |
-| `ImageRegion` | New class | Observation | 2 | B |
-| `ConditionReport` | New class | Observation | 2 | B |
-| `DamageItem` | New class | Observation | 2 | B |
-| `ImageTypeEnum` | New values for an APDS enumeration | Observation | 2 | — |
-| `ReadAttributeEnum` | New enumeration | Observation | 1 | — |
-| `VehicleMovementEnum` | New enumeration | Observation | 1 | — |
-| `PlateFaceEnum` | New enumeration | Observation | 2 | — |
-| `ReadReviewStateEnum` | New enumeration | Observation | 2 | — |
-| `ReadReviewReasonEnum` | New enumeration | Observation | 2 | — |
-| `DamageSeverityEnum` | New enumeration | Observation | 2 | — |
-| `TollTransaction` | New class | Tolling | 2 | B |
-| `TollDispute` | New class | Tolling | 2 | B |
-| `TollTransactionStatusEnum` | New enumeration | Tolling | 2 | — |
-| `TollDisputeReasonEnum` | New enumeration | Tolling | 2 | — |
-| `TollDisputeResolutionEnum` | New enumeration | Tolling | 2 | — |
+| Element | Change | Package | Tier | Level | Status |
+| --- | --- | --- | --- | --- | --- |
+| `ObservationElement` | Additions to an APDS class | Observation | 1 | B | Offered for later |
+| `AttributeRead` | New class | Observation | 1 | B | Offered for later |
+| `AlternateRead` | New class | Observation | 1 | B | Offered for later |
+| `ReadReview` | New class | Observation | 2 | B | Offered for later |
+| `Image` | Additions to an APDS class | Observation | 2 | B | Offered for later |
+| `ImageRegion` | New class | Observation | 2 | B | Offered for later |
+| `ConditionReport` | New class | Observation | 2 | B | Offered for later |
+| `DamageItem` | New class | Observation | 2 | B | Offered for later |
+| `ImageTypeEnum` | New values for an APDS enumeration | Observation | 2 | — | Offered for later |
+| `ReadAttributeEnum` | New enumeration | Observation | 1 | — | Offered for later |
+| `VehicleMovementEnum` | New enumeration | Observation | 1 | — | Offered for later |
+| `PlateFaceEnum` | New enumeration | Observation | 2 | — | Offered for later |
+| `ReadReviewStateEnum` | New enumeration | Observation | 2 | — | Offered for later |
+| `ReadReviewReasonEnum` | New enumeration | Observation | 2 | — | Offered for later |
+| `DamageSeverityEnum` | New enumeration | Observation | 2 | — | Offered for later |
+| `TollTransaction` | New class | Tolling | 2 | B | Offered for later |
+| `TollDispute` | New class | Tolling | 2 | B | Offered for later |
+| `TollTransactionStatusEnum` | New enumeration | Tolling | 2 | — | Offered for later |
+| `TollDisputeReasonEnum` | New enumeration | Tolling | 2 | — | Offered for later |
+| `TollDisputeResolutionEnum` | New enumeration | Tolling | 2 | — | Offered for later |
 
 ### EnergyInfrastructure
 
@@ -1306,21 +1348,21 @@ No external code lists are proposed. Identifiers from charging protocols
 (EVSE ids, charger transaction ids, roaming session and charge record ids)
 are carried as `ExternalIdentifier` values and are not interpreted.
 
-#### Elements proposed for EnergyInfrastructure
+#### Elements described for EnergyInfrastructure
 
-| Element | Change | Package | Tier | Level |
-| --- | --- | --- | --- | --- |
-| `ChargingPointStatus` | New class | EnergyInfrastructure | 3 | B |
-| `ConnectorStatus` | New class | EnergyInfrastructure | 3 | B |
-| `ChargingBayPresence` | New class | EnergyInfrastructure | 3 | B |
-| `ChargingSession` | New class | EnergyInfrastructure | 3 | B |
-| `ChargingCost` | New class | EnergyInfrastructure | 3 | B |
-| `ChargingIdleTerms` | New class | EnergyInfrastructure | 3 | B |
-| `BayPresenceEnum` | New enumeration | EnergyInfrastructure | 3 | — |
-| `BayPresenceSourceEnum` | New enumeration | EnergyInfrastructure | 3 | — |
-| `ChargingSessionStatusEnum` | New enumeration | EnergyInfrastructure | 3 | — |
-| `ChargingStopReasonEnum` | New enumeration | EnergyInfrastructure | 3 | — |
-| `ChargingSettlementModeEnum` | New enumeration | EnergyInfrastructure | 3 | — |
+| Element | Change | Package | Tier | Level | Status |
+| --- | --- | --- | --- | --- | --- |
+| `ChargingPointStatus` | New class | EnergyInfrastructure | 3 | B | Offered for later |
+| `ConnectorStatus` | New class | EnergyInfrastructure | 3 | B | Offered for later |
+| `ChargingBayPresence` | New class | EnergyInfrastructure | 3 | B | Offered for later |
+| `ChargingSession` | New class | EnergyInfrastructure | 3 | B | Offered for later |
+| `ChargingCost` | New class | EnergyInfrastructure | 3 | B | Offered for later |
+| `ChargingIdleTerms` | New class | EnergyInfrastructure | 3 | B | Offered for later |
+| `BayPresenceEnum` | New enumeration | EnergyInfrastructure | 3 | — | Offered for later |
+| `BayPresenceSourceEnum` | New enumeration | EnergyInfrastructure | 3 | — | Offered for later |
+| `ChargingSessionStatusEnum` | New enumeration | EnergyInfrastructure | 3 | — | Offered for later |
+| `ChargingStopReasonEnum` | New enumeration | EnergyInfrastructure | 3 | — | Offered for later |
+| `ChargingSettlementModeEnum` | New enumeration | EnergyInfrastructure | 3 | — | Offered for later |
 
 ### PkCommon
 
@@ -1386,13 +1428,13 @@ No new external code lists are proposed in PkCommon. The code lists APX
 publishes are UserDefinedCodeLists and can be cited through
 ReferencedCodeListEntry without change to APDS.
 
-#### Elements proposed for PkCommon
+#### Elements described for PkCommon
 
-| Element | Change | Package | Tier | Level |
-| --- | --- | --- | --- | --- |
-| `RecordType` | Additions to an APDS class | CommonClasses | 3 | B |
-| `RecordEndReasonEnum` | New enumeration | CommonClasses | 2 | — |
-| `InteractionChannelEnum` | New enumeration | CommonClasses | 1 | — |
+| Element | Change | Package | Tier | Level | Status |
+| --- | --- | --- | --- | --- | --- |
+| `RecordType` | Additions to an APDS class | CommonClasses | 3 | B | Offered for later |
+| `RecordEndReasonEnum` | New enumeration | CommonClasses | 2 | — | Offered for later |
+| `InteractionChannelEnum` | New enumeration | CommonClasses | 1 | — | Offered for later |
 
 ### Enforcement
 
@@ -1571,25 +1613,25 @@ elsewhere in APDS, an operation that needs a value not on these lists can
 publish it in a `UserDefinedCodeList` and use `other` in the enumeration.
 APX publishes its violation types as such a list today.
 
-#### Elements proposed for Enforcement
+#### Elements described for Enforcement
 
-| Element | Change | Package | Tier | Level |
-| --- | --- | --- | --- | --- |
-| `Violation` | New class | Enforcement | 1 | C |
-| `ViolationDetection` | New class | Enforcement | 1 | C |
-| `Notice` | New class | Enforcement | 1 | C |
-| `Appeal` | New class | Enforcement | 2 | C |
-| `EnforcementPolicy` | New class | Enforcement | 2 | C |
-| `NoticeDeliveryRule` | New class | Enforcement | 2 | C |
-| `PenaltyLimit` | New class | Enforcement | 3 | C |
-| `EscalationStep` | New class | Enforcement | 2 | C |
-| `ViolationTypeEnum` | New enumeration | Enforcement | 1 | — |
-| `ViolationStatusEnum` | New enumeration | Enforcement | 1 | — |
-| `DetectionModeEnum` | New enumeration | Enforcement | 1 | — |
-| `NoticeKindEnum` | New enumeration | Enforcement | 1 | — |
-| `NoticeDeliveryMethodEnum` | New enumeration | Enforcement | 1 | — |
-| `AppealReasonEnum` | New enumeration | Enforcement | 2 | — |
-| `AppealResolutionEnum` | New enumeration | Enforcement | 2 | — |
+| Element | Change | Package | Tier | Level | Status |
+| --- | --- | --- | --- | --- | --- |
+| `Violation` | New class | Enforcement | 1 | C | Offered for later |
+| `ViolationDetection` | New class | Enforcement | 1 | C | Offered for later |
+| `Notice` | New class | Enforcement | 1 | C | Offered for later |
+| `Appeal` | New class | Enforcement | 2 | C | Offered for later |
+| `EnforcementPolicy` | New class | Enforcement | 2 | C | Offered for later |
+| `NoticeDeliveryRule` | New class | Enforcement | 2 | C | Offered for later |
+| `PenaltyLimit` | New class | Enforcement | 3 | C | Offered for later |
+| `EscalationStep` | New class | Enforcement | 2 | C | Offered for later |
+| `ViolationTypeEnum` | New enumeration | Enforcement | 1 | — | Offered for later |
+| `ViolationStatusEnum` | New enumeration | Enforcement | 1 | — | Offered for later |
+| `DetectionModeEnum` | New enumeration | Enforcement | 1 | — | Offered for later |
+| `NoticeKindEnum` | New enumeration | Enforcement | 1 | — | Offered for later |
+| `NoticeDeliveryMethodEnum` | New enumeration | Enforcement | 1 | — | Offered for later |
+| `AppealReasonEnum` | New enumeration | Enforcement | 2 | — | Offered for later |
+| `AppealResolutionEnum` | New enumeration | Enforcement | 2 | — | Offered for later |
 
 ### Operations
 
@@ -1692,17 +1734,17 @@ operation can publish additional types in a `UserDefinedCodeList`, as APX
 does today. Severity is deliberately closed, so
 that every receiver ranks alerts the same way.
 
-#### Elements proposed for Operations
+#### Elements described for Operations
 
-| Element | Change | Package | Tier | Level |
-| --- | --- | --- | --- | --- |
-| `Alert` | New class | Operations | 2 | C |
-| `SupportInteraction` | New class | Operations | 3 | C |
-| `AlertTypeEnum` | New enumeration | Operations | 2 | — |
-| `AlertSeverityEnum` | New enumeration | Operations | 2 | — |
-| `AlertStatusEnum` | New enumeration | Operations | 2 | — |
-| `SupportAgentTypeEnum` | New enumeration | Operations | 3 | — |
-| `SupportIssueTypeEnum` | New enumeration | Operations | 3 | — |
+| Element | Change | Package | Tier | Level | Status |
+| --- | --- | --- | --- | --- | --- |
+| `Alert` | New class | Operations | 2 | C | Offered for later |
+| `SupportInteraction` | New class | Operations | 3 | C | Offered for later |
+| `AlertTypeEnum` | New enumeration | Operations | 2 | — | Offered for later |
+| `AlertSeverityEnum` | New enumeration | Operations | 2 | — | Offered for later |
+| `AlertStatusEnum` | New enumeration | Operations | 2 | — | Offered for later |
+| `SupportAgentTypeEnum` | New enumeration | Operations | 3 | — | Offered for later |
+| `SupportIssueTypeEnum` | New enumeration | Operations | 3 | — | Offered for later |
 
 ## Conformance with the APDS extension rules
 
@@ -1759,7 +1801,7 @@ Each proposal comes from a data element already used in APX. This annex lists wh
 | --- | --- | --- |
 | `EquipmentStatus` | Place | APX Part 6 §6.4 DeviceStatus |
 | `EquipmentStatusEnum` | Place | APX Part 11 code list (device states) |
-| `EquipmentTypeEnum` | Place | APX Part 6 §6.4 device references |
+| `EquipmentTypeEnum` | Place | APX Part 6 §6.4 device references; registry apx-equipment-roles |
 | `VehicularAccess` | Place | APX Part 13 §13.3a LaneCameras |
 | `LaneCamera` | Place | APX Part 13 §13.3a LaneCameras.cameras |
 | `CameraFacingEnum` | Place | APX Part 13 §13.3a LaneCameras |

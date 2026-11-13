@@ -90,7 +90,10 @@ function loadProposals(root, classNames, registryNames) {
     for (const p of d.packages ?? []) {
       for (const [kind, items] of [['class', p.classes ?? []], ['enum', p.enumerations ?? []]]) {
         for (const item of items) {
-          const entry = { name: item.name, change: item.change, tier: item.tier, kind, domain: d.domain, pkg: p.name, apx: item.apx };
+          const entry = {
+            name: item.name, change: item.change, tier: item.tier, ask: item.ask, kind, domain: d.domain, pkg: p.name, apx: item.apx,
+            rationale: item.rationale, values: item.values ?? [],
+          };
           all.push(entry);
           const text = String(item.apx ?? '');
           const words = text.match(/[A-Za-z][A-Za-z0-9-]*/g) ?? [];

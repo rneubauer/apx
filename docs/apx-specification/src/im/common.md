@@ -124,7 +124,7 @@ parkingdata/spec#43: declare `Extensions` once on `VersionedIdentity`).
 Until then, the APX data overlay declares it on the eight native entity
 schemas and on `Payment` (APX Part 1 §1.3 item 10).
 
-Proposed to APDS (APX Data Specification, PkCommon):
+Offered to APDS for later adoption (APX Data Specification, PkCommon):
 
 | Element | Change | Tier |
 | --- | --- | --- |

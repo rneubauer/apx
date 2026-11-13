@@ -2,13 +2,14 @@
 
 # APX Data Specification: Data Dictionary
 
-*Proposed additions to the APDS data model · Draft for the APDS committee · based on APDS 4.1 (2026-01-14) · APX 0.16.0*
+*A minimal request to APDS, with APX extensions offered for later · Draft for the APDS committee · based on APDS 4.1 (2026-01-14) · APX 0.16.0*
 
 ## Introduction
 
 This data dictionary gives the definitions and characteristics of the
-classes, attributes, association roles and enumerations that APX proposes
-for the APDS data model. It follows the APDS 4.1 Data Dictionary: the
+enumeration values APX requests for the APDS data model, and of the
+classes, attributes, association roles and enumerations APX carries as
+extensions and offers for later adoption. It follows the APDS 4.1 Data Dictionary: the
 first part is ordered by UML package, and each package lists its classes,
 specializations, associations and attributes; the third part lists the
 enumerations alphabetically. No new datatypes are proposed.
@@ -36,6 +37,8 @@ The tables use the columns of the APDS 4.1 Data Dictionary:
 10. **Type:** the datatype, class or enumeration of the attribute. Where
     an attribute is a reference, the referenced class follows in
     parentheses, as in APDS.
+
+**Status of the entries.** Only the entry for `EquipmentTypeEnum` is requested of APDS; the heading says so. Every other entry is informative: it is one of the APX extensions available for later adoption, which APX already carries and does not need in APDS to operate.
 
 ## A.1 Data dictionary of proposed packages for "Parking"
 
@@ -1472,7 +1475,7 @@ The operational state of an item of supplemental equipment.
 | unknown | Unknown | The state of the equipment cannot be determined, e.g. because communication with it has been lost. |
 | other | Other | Some other state. Use 'otherEquipmentStatus' to specify it. |
 
-### A.3.27 The <<D2Enumeration>> "EquipmentTypeEnum" (values proposed for addition)
+### A.3.27 The <<D2Enumeration>> "EquipmentTypeEnum" (values requested of APDS)
 
 Types of equipment.
 
@@ -1484,6 +1487,7 @@ Types of equipment.
 | gate | Gate | A sliding, swinging or rolling gate or door that opens and closes a vehicular access point. |
 | ticketDispenser | Ticket dispenser | A machine at an entry lane that issues a ticket or other credential to start a Session. |
 | intercom | Intercom | A call point at a lane or machine that connects a customer with an attendant by voice or video. |
+| exitVerifier | Exit verifier | A machine at an exit lane that reads the ticket or credential presented and opens the barrier when the stay is paid or valid. |
 
 ### A.3.28 The <<D2Enumeration>> "HandbackVerificationEnum"
 
@@ -1499,7 +1503,7 @@ How the person collecting a valeted vehicle was verified.
 | id | Identity document | An identity document was checked. |
 | attendant | Attendant | An attendant recognised the customer. |
 
-### A.3.29 The <<D2Enumeration>> "ImageTypeEnum" (values proposed for addition)
+### A.3.29 The <<D2Enumeration>> "ImageTypeEnum" (values offered for later adoption)
 
 The nature of the captured image.
 
@@ -1612,7 +1616,7 @@ The outcome of a payment as reported by the payment layer.
 | declined | Declined | The payment was refused by the payment layer. |
 | reversed | Reversed | An authorisation was voided, or the payment was refunded in full. |
 
-### A.3.37 The <<D2Enumeration>> "PaymentTypeEnum" (values proposed for addition)
+### A.3.37 The <<D2Enumeration>> "PaymentTypeEnum" (values offered for later adoption)
 
 Indicates the list of acceptable payment types against an AssignedRight. Values proposed for addition, so payment lines can tell a fee or a discount from the base charge.
 
@@ -1748,7 +1752,7 @@ The state of an AssignedRight that is a reservation.
 | checkedIn | Checked in | A Session has used the reservation. |
 | noShow | No show | The reservation was not used before its no-show time. |
 
-### A.3.47 The <<D2Enumeration>> "RightTypeEnum" (values proposed for addition)
+### A.3.47 The <<D2Enumeration>> "RightTypeEnum" (values offered for later adoption)
 
 Defines the type of Right Specification (existing APDS enumeration; the value below is a proposed addition).
 

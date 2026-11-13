@@ -38,7 +38,7 @@ The repository states the current arrangement (CONTRIBUTING.md):
 - **Registries.** New code-list entries follow the registration-authority policy in APX Part 11 §11.3: open to anyone, a 60-day decision, and an appeal path.
 - **Proposals.** Substantial proposals (new domains, new conformance classes) start as an issue describing the use case. Design discussion happens before spec text. Proposals from other vendors and operators are decided in the open on the issue tracker, with rejections reasoned in writing.
 - **Editions.** Maintainers cut editions. Every edition's normative artifacts are tagged in git and are immutable once published (APX Part 3 §3.4).
-- **Intended end state.** Shared industry governance on two tracks. APX's data elements are offered to APDS for its data model (06 Requests to APDS, Part D). The APX API stays APX's implementation specification, built on APDS. In the meantime, APX Part 3 §3.3(8) governs what happens when APDS standardises a concept APX already covers: the APDS construct wins.
+- **Intended end state.** Shared industry governance on two tracks. APDS stays as it is, with a minimal request from APX: corrections and five `EquipmentTypeEnum` values (06 Requests to APDS). APX stays the extension specification, built on APDS and outside ISO; its other data elements are offered to APDS for later adoption (06, Appendix), and APX does not need them in APDS to operate. In the meantime, APX Part 3 §3.3(8) governs what happens when APDS standardises a concept APX already covers: the APDS construct wins.
 - **Licence.** APX is MIT-licensed. Portions reference the APDS API Specification (MIT, © Alliance for Parking Data Standards).
 
 ### Guiding Principles

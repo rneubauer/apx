@@ -457,7 +457,7 @@ parkingdata/spec#43: declare `Extensions` once on `VersionedIdentity`).
 Until then, the APX data overlay declares it on the eight native entity
 schemas and on `Payment` (APX Part 1 §1.3 item 10).
 
-Proposed to APDS (APX Data Specification, PkCommon):
+Offered to APDS for later adoption (APX Data Specification, PkCommon):
 
 | Element | Change | Tier |
 | --- | --- | --- |
@@ -478,7 +478,7 @@ data, not interface. `CodeListValue` needs nothing new from APDS, because
 
 #### Class diagrams
 
-Figures 1 to 3 provide the UML class diagrams for the Common elements package. A class marked «proposed» is proposed to APDS (06, Part D); one marked «APDS» is defined in APDS 4.1. Up to 12 attributes are shown per class; 03 Data Dictionary lists them all.
+Figures 1 to 3 provide the UML class diagrams for the Common elements package. A class marked «proposed» is offered to APDS for later adoption (06, Appendix); one marked «APDS» is defined in APDS 4.1. Up to 12 attributes are shown per class; 03 Data Dictionary lists them all.
 
 ```mermaid
 classDiagram
@@ -613,7 +613,7 @@ classDiagram
 | `EventEnvelope` | The single envelope for all APX asynchronous delivery (webhooks and SSE). Attribute names are aligned with CloudEvents 1.0 (informative mapping in the standard's annex); `subject` carries an APDS Reference so events bind to APDS/APX entities natively. | 8 | APX only |
 | `Extensions` | The official APDS extension container (Use Case Document §C.2.5). Keys MUST follow `apds-ext:<namespace>:<class>@<major>.<minor>`. Implementations MUST preserve unknown extension keys on round-trip (tolerant reader, faithful writer). An APX decoration key, wherever the container appears, MUST carry a value valid against that decoration's schema (Part 4 §4.3); other keys are any object. | 17 | APX only |
 | `Problem` | RFC 9457 problem details. APX problem `type` URIs are registered in the APX problem-type registry. Used for all APX error responses; APDS-native routes may alternatively use the APDS ResponseStatus shape. | 5 | APX only |
-| `RecordInfo` | Provenance metadata for an APX resource, aligned to the APDS Information Model's RecordType (creationTime/creator/lastUpdate). All timestamps are RFC 3339 (APDS DateTime). | 6 | Proposed: RecordType (Tier 3) |
+| `RecordInfo` | Provenance metadata for an APX resource, aligned to the APDS Information Model's RecordType (creationTime/creator/lastUpdate). All timestamps are RFC 3339 (APDS DateTime). | 6 | Offered for later: RecordType (Tier 3) |
 
 #### Enumerations in Common elements
 
@@ -754,7 +754,7 @@ routes and APDS `EventTypeEnum` topics alongside APX ones, so a client
 learns both from one place. APDS 4.1 itself defines no discovery or
 bootstrap document; APX adds them without changing any APDS route.
 
-Proposed to APDS: no data element. Discovery describes the interface, not
+Offered to APDS: no data element. Discovery describes the interface, not
 the parking data, and the APX Data Specification proposes data only.
 
 APX-only: `ApxConfiguration` and `DiscoveryDocument`, together with the
@@ -762,7 +762,7 @@ APX-only: `ApxConfiguration` and `DiscoveryDocument`, together with the
 
 #### Class diagrams
 
-Figures 4 to 5 provide the UML class diagrams for the Discovery package. A class marked «proposed» is proposed to APDS (06, Part D); one marked «APDS» is defined in APDS 4.1. Up to 12 attributes are shown per class; 03 Data Dictionary lists them all.
+Figures 4 to 5 provide the UML class diagrams for the Discovery package. A class marked «proposed» is offered to APDS for later adoption (06, Appendix); one marked «APDS» is defined in APDS 4.1. Up to 12 attributes are shown per class; 03 Data Dictionary lists them all.
 
 ```mermaid
 classDiagram
@@ -1025,7 +1025,7 @@ DemandType without change. Session detail sits in the extensions
 container of the APDS Session, which the data overlay declares (APX Part
 1 §1.3 item 10).
 
-Proposed to APDS (APX Data Specification):
+Offered to APDS for later adoption (APX Data Specification):
 
 | Element | Change | Package | Tier |
 | --- | --- | --- | --- |
@@ -1057,7 +1057,7 @@ it can be proposed once a second engine shows which statuses are shared.
 
 #### Class diagrams
 
-Figures 6 to 19 provide the UML class diagrams for the Data exchange package. A class marked «proposed» is proposed to APDS (06, Part D); one marked «APDS» is defined in APDS 4.1. Up to 12 attributes are shown per class; 03 Data Dictionary lists them all.
+Figures 6 to 19 provide the UML class diagrams for the Data exchange package. A class marked «proposed» is offered to APDS for later adoption (06, Appendix); one marked «APDS» is defined in APDS 4.1. Up to 12 attributes are shown per class; 03 Data Dictionary lists them all.
 
 ```mermaid
 classDiagram
@@ -1420,16 +1420,16 @@ classDiagram
 | `ChangePayload` | A change-mode payload for any native APDS entity class (Part 5 §5.1): the entity's identity plus only the members that changed. An absent member is unchanged; an explicit `null` clears it. Nested objects that carry their own `id` (a Session segment, say) follow the same rule. | 2 | APX only |
 | `ContactPointChangePayload` | A change-mode body for native `PUT /contacts/{contactId}` (Part 5 §5.1a): `id` plus only the ContactPoint members that changed; an absent member is unchanged and an explicit `null` clears it. Every member present is checked against the class, and a member the class does not define is refused. Generated at build time (tools/change-payloads.mjs); the generic ChangePayload remains the shape of change-feed items. | 15 | APX only |
 | `HierarchyElementChangePayload` | A change-mode body for native `PUT /places/{id}` (Part 5 §5.1a): `id` plus only the HierarchyElement members that changed; an absent member is unchanged and an explicit `null` clears it. Every member present is checked against the class, and a member the class does not define is refused. Generated at build time (tools/change-payloads.mjs); the generic ChangePayload remains the shape of change-feed items. | 33 | APX only |
-| `MatchEvidence` | How a link to a Session was established and how sure it is (Part 5 §5.8; shared by the `matches[]` member of `apds-ext:apx:session-detail@1.0` and the decoration `apds-ext:apx:match-evidence@1.0` on a Violation or ValetTicket). Carries no plate characters and no vehicle attribute values (Part 9 §9.6). Where both ends of one link carry evidence (the Session's `matches[]` entry and the decoration on the Violation or ValetTicket), the two MUST agree. Evidence with `plate.method: lenient` or `applied: false` may excuse a stay but never accuse one: `issue` on a Violation resting on it is 409 `violation-not-issuable` (Part 19 §19.4 rule 5). | 13 | Proposed: MatchEvidence (Tier 3); Proposed: MatchTypeEnum (Tier 3); Proposed: MatchDecisionEnum (Tier 3) |
+| `MatchEvidence` | How a link to a Session was established and how sure it is (Part 5 §5.8; shared by the `matches[]` member of `apds-ext:apx:session-detail@1.0` and the decoration `apds-ext:apx:match-evidence@1.0` on a Violation or ValetTicket). Carries no plate characters and no vehicle attribute values (Part 9 §9.6). Where both ends of one link carry evidence (the Session's `matches[]` entry and the decoration on the Violation or ValetTicket), the two MUST agree. Evidence with `plate.method: lenient` or `applied: false` may excuse a stay but never accuse one: `issue` on a Violation resting on it is 409 `violation-not-issuable` (Part 19 §19.4 rule 5). | 13 | Offered for later: MatchEvidence (Tier 3), MatchTypeEnum (Tier 3), MatchDecisionEnum (Tier 3) |
 | `ObservationElementChangePayload` | A change-mode body for native `PUT /observations/{id}` (Part 5 §5.1a): `id` plus only the ObservationElement members that changed; an absent member is unchanged and an explicit `null` clears it. Every member present is checked against the class, and a member the class does not define is refused. Generated at build time (tools/change-payloads.mjs); the generic ChangePayload remains the shape of change-feed items. | 18 | APX only |
-| `OccupancyHistoryPage` | Occupancy per clock interval for one HierarchyElement (Part 5 §5.5a): the history behind the §5.5 snapshot, derived from the APDS DemandTable records the implementation holds. Buckets are aligned to the interval boundary in the place's time zone; a bucket with no demand record carries no counts, never a guess. | 11 | Proposed: DemandType (Tier 3) |
+| `OccupancyHistoryPage` | Occupancy per clock interval for one HierarchyElement (Part 5 §5.5a): the history behind the §5.5 snapshot, derived from the APDS DemandTable records the implementation holds. Buckets are aligned to the interval boundary in the place's time zone; a bucket with no demand record carries no counts, never a guess. | 11 | Offered for later: DemandType (Tier 3) |
 | `OccupancySnapshot` | Current occupancy for one HierarchyElement, computed from the APDS occupancy model (Supply + DemandTable) that natively lives in the Place hierarchy. A convenience READ (Part 5 §5.5): the Place payload remains the source of truth; this answers "how full is it right now" without pulling the hierarchy. Composed entirely of verbatim APDS occupancy classes — APX adds no parallel occupancy datatypes. | 13 | APX only |
 | `RateTableChangePayload` | A change-mode body for native `PUT /rates/{id}` (Part 5 §5.1a): `id` plus only the RateTable members that changed; an absent member is unchanged and an explicit `null` clears it. Every member present is checked against the class, and a member the class does not define is refused. Generated at build time (tools/change-payloads.mjs); the generic ChangePayload remains the shape of change-feed items. | 13 | APX only |
 | `RightSpecificationChangePayload` | A change-mode body for native `PUT /rights/specs/{id}` (Part 5 §5.1a): `id` plus only the RightSpecification members that changed; an absent member is unchanged and an explicit `null` clears it. Every member present is checked against the class, and a member the class does not define is refused. Generated at build time (tools/change-payloads.mjs); the generic ChangePayload remains the shape of change-feed items. | 16 | APX only |
 | `SessionChangePayload` | A change-mode body for native `PUT /sessions/{id}` (Part 5 §5.1a): `id` plus only the Session members that changed; an absent member is unchanged and an explicit `null` clears it. Every member present is checked against the class, and a member the class does not define is refused. Generated at build time (tools/change-payloads.mjs); the generic ChangePayload remains the shape of change-feed items. | 10 | APX only |
-| `SessionClosure` | Why and how a Session ended (Part 5 §5.8). | 4 | Proposed: SessionClosure (Tier 1) |
-| `SessionDetail` | The `apds-ext:apx:session-detail@1.0` decoration on an APDS Session (Part 5 §5.8): what the pairing of reads decided and APDS has no members for — the reads behind the visit, why and how it ended, the matches it rests on, and the parent visit of an area Session. Written with the native Session POST/PUT by an external pairing engine; a server that pairs reads itself SHOULD write the same block on its own Sessions. A plain APDS client ignores it. It adds no event topic and carries no plate characters. A write that breaks a consistency rule of §5.8 is 422 and nothing is written. | 8 | Proposed: Session (Tier 1); Proposed: SessionLifecycleEnum (Tier 2) |
-| `SessionReadBinding` | One LPR read attached to a Session by the pairing engine (Part 5 §5.8, member `reads[]` of `apds-ext:apx:session-detail@1.0`). | 3 | Proposed: SessionRead (Tier 1); Proposed: SessionReadRoleEnum (Tier 1) |
+| `SessionClosure` | Why and how a Session ended (Part 5 §5.8). | 4 | Offered for later: SessionClosure (Tier 1) |
+| `SessionDetail` | The `apds-ext:apx:session-detail@1.0` decoration on an APDS Session (Part 5 §5.8): what the pairing of reads decided and APDS has no members for — the reads behind the visit, why and how it ended, the matches it rests on, and the parent visit of an area Session. Written with the native Session POST/PUT by an external pairing engine; a server that pairs reads itself SHOULD write the same block on its own Sessions. A plain APDS client ignores it. It adds no event topic and carries no plate characters. A write that breaks a consistency rule of §5.8 is 422 and nothing is written. | 8 | Offered for later: Session (Tier 1), SessionLifecycleEnum (Tier 2) |
+| `SessionReadBinding` | One LPR read attached to a Session by the pairing engine (Part 5 §5.8, member `reads[]` of `apds-ext:apx:session-detail@1.0`). | 3 | Offered for later: SessionRead (Tier 1), SessionReadRoleEnum (Tier 1) |
 | `StayCompliance` | The `apds-ext:apx:stay-compliance@1.0` decoration on an APDS Session (Part 5 §5.9): the outcome a compliance engine scored for the stay, and the policy it measured against. Written with the native Session POST/PUT by the engine; a server that scores stays itself SHOULD write the same block. The rules that produce the outcome stay in the engine. | 8 | APX only |
 
 #### Enumerations in Data exchange
@@ -1587,7 +1587,7 @@ response is preserved: a request without `Prefer: return=representation`
 receives the APDS `ResponseStatus`, with the new subscription's id in
 `ids[]` (APX Part 8 §8.1).
 
-Proposed to APDS: no data element. Delivery is interface behaviour, and
+Offered to APDS: no data element. Delivery is interface behaviour, and
 the APX Data Specification proposes data, not interface.
 
 Offered as a suggestion (`docs/apds-change-requests.md`, Part B): event
@@ -1604,7 +1604,7 @@ delivery contract, the APDS construct wins and APX adopts it (APX Part 3
 
 #### Class diagrams
 
-Figures 20 to 21 provide the UML class diagrams for the Subscriptions and events package. A class marked «proposed» is proposed to APDS (06, Part D); one marked «APDS» is defined in APDS 4.1. Up to 12 attributes are shown per class; 03 Data Dictionary lists them all.
+Figures 20 to 21 provide the UML class diagrams for the Subscriptions and events package. A class marked «proposed» is offered to APDS for later adoption (06, Appendix); one marked «APDS» is defined in APDS 4.1. Up to 12 attributes are shown per class; 03 Data Dictionary lists them all.
 
 ```mermaid
 classDiagram
@@ -1894,13 +1894,14 @@ terms, as a Payment of type `validation` and the Segment's
 §6.3). A negotiated table is an ordinary RateTable, so the Session segment
 references it as it would any other rate.
 
-Proposed to APDS (APX Data Specification, Place and Rates):
+Offered to APDS for later adoption (APX Data Specification, Place and
+Rates), except the `EquipmentTypeEnum` values, which are requested:
 
 | Element | Change | Package | Tier |
 | --- | --- | --- | --- |
 | `EquipmentStatus` | New class (from `DeviceStatus`) | SupplementalFacility | 1 |
 | `EquipmentStatusEnum` | New enumeration (from `apx-device-states`) | SupplementalFacility | 1 |
-| `EquipmentTypeEnum` | New values: `barrier`, `gate`, `ticketDispenser`, `intercom` | SupplementalFacility | 1 |
+| `EquipmentTypeEnum` | New values, requested of APDS: `barrier`, `gate`, `ticketDispenser`, `intercom`, `exitVerifier` | SupplementalFacility | 1 |
 | `RateTable` | Additions to an APDS class: `negotiable`, `negotiatedRateLabel`, `negotiationNote` (from `RatePolicy`) | Rates | 2 |
 
 The proposed `EquipmentStatusEnum` reuses `RefillPointStatusEnum` names
@@ -1916,7 +1917,7 @@ and stay in the APX API.
 
 #### Class diagrams
 
-Figures 22 to 26 provide the UML class diagrams for the Control package. A class marked «proposed» is proposed to APDS (06, Part D); one marked «APDS» is defined in APDS 4.1. Up to 12 attributes are shown per class; 03 Data Dictionary lists them all.
+Figures 22 to 26 provide the UML class diagrams for the Control package. A class marked «proposed» is offered to APDS for later adoption (06, Appendix); one marked «APDS» is defined in APDS 4.1. Up to 12 attributes are shown per class; 03 Data Dictionary lists them all.
 
 ```mermaid
 classDiagram
@@ -2086,11 +2087,11 @@ classDiagram
 | `Approval` | Approval evidence, REQUIRED on a write whose AllowedAction said requiresApproval (Part 17 §17.3). Servers MUST reject a requires-approval action without it (403 approval-required). One shared shape for control commands and domain actions (e.g. refunds). | 4 | APX only |
 | `Command` | A request for an operational action against a lane/device/place. Perishable (expiryTime), idempotent (Idempotency-Key), fully audited (immutable statusHistory). | 25 | APX only |
 | `CommandResult` | The structured outcome of a command, populated by the server when the command reaches `succeeded` (Part 6 §6.1a) and absent before then. Members are normative per command type: `lostTicket` → `ticketNumber`, `session`, `amountDue`; `matchTicket` → `session`, `amountDue`; `pushNegotiatedRate` → `amountDue`, and `rateTable` when a table was selected (absent for a stated amount, which the lane inquiry reports as `currentTicket.negotiatedAmount`). Other command types leave it absent unless a registry entry says otherwise. It restates what the lane inquiry shows, so a console can continue (print, take payment) without parsing `statusHistory[].detail` or making a second call. | 6 | APX only |
-| `DeviceStatus` | Live state overlay keyed by Reference to an APDS SupplementalEquipment — never duplicates its descriptive fields. APDS 4.1 has no general equipment status list: its RefillPointStatusEnum (Data Dictionary A.3.53) covers refill points only and is absent from apds-api-4.1.yaml. deviceState values come from the APX registry apx-device-states, which follows that enumeration's style and shares its available, occupied, inoperative and unknown values. Attachable to APDS payloads as apds-ext:apx:devicestatus@1.0. | 13 | Proposed: EquipmentStatus (Tier 1) |
+| `DeviceStatus` | Live state overlay keyed by Reference to an APDS SupplementalEquipment — never duplicates its descriptive fields. APDS 4.1 has no general equipment status list: its RefillPointStatusEnum (Data Dictionary A.3.53) covers refill points only and is absent from apds-api-4.1.yaml. deviceState values come from the APX registry apx-device-states, which follows that enumeration's style and shares its available, occupied, inoperative and unknown values. Attachable to APDS payloads as apds-ext:apx:devicestatus@1.0. | 13 | Offered for later: EquipmentStatus (Tier 1) |
 | `DisplayProof` | What a sign or display confirmed it showed, and when (Part 6 §6.1a): `CommandResult.display` for a commanded message, and the proof members of a Part 26 §26.9 DisplayRecord for any message. Carries a hash and the wording version, never the message text. | 5 | APX only |
 | `LaneStatus` | The transaction context at a lane right now (the call-center screen-pop). Composes APDS references and data; adds no parallel entities. | 41 | APX only |
 | `MatchCandidate` | An open session at the place that plausibly belongs to the vehicle in the lane (Part 6 §6.7). Produced by the lane inquiry from the lane's own LPR read, a presented credential, the account registry (by plate or phone), or a checked-in reservation. Composes APDS references; adds no parallel session store. Advisory until a matchTicket command binds one. | 10 | APX only |
-| `RatePolicy` | Level B decoration on an APDS RateTable, carried in its `extensions` container as `apds-ext:apx:ratepolicy@1.0` (Part 6 §6.6). APDS models the rate deck completely; it has no way to say which tables an agent may offer as a negotiated rate. This is that flag — and because it rides inside the RateTable, every consumer mirroring the deck through the native `/rates` route (Part 5 §5.2) receives it with the table, no second query. APX deliberately defines NO selection rules here (length of stay, time of day, caller type): the system presenting the deck to an agent or a third party applies its own guardrails. The server's only rule is enforcement — a pushNegotiatedRate naming a table that is not flagged negotiable is refused (422 rate-not-negotiable). | 3 | Proposed: RateTable (Tier 2) |
+| `RatePolicy` | Level B decoration on an APDS RateTable, carried in its `extensions` container as `apds-ext:apx:ratepolicy@1.0` (Part 6 §6.6). APDS models the rate deck completely; it has no way to say which tables an agent may offer as a negotiated rate. This is that flag — and because it rides inside the RateTable, every consumer mirroring the deck through the native `/rates` route (Part 5 §5.2) receives it with the table, no second query. APX deliberately defines NO selection rules here (length of stay, time of day, caller type): the system presenting the deck to an agent or a third party applies its own guardrails. The server's only rule is enforcement — a pushNegotiatedRate naming a table that is not flagged negotiable is refused (422 rate-not-negotiable). | 3 | Offered for later: RateTable (Tier 2) |
 | `ValidationProvider` | A venue/organisation allowed to validate tickets at a place. | 9 | APX only |
 
 #### Enumerations in Control
@@ -2343,7 +2344,7 @@ specialisations Place, VehicularAccess and SupplementalEquipment
 still written as the nearest APDS value), Organisation (the service
 provider), Period (coverage and escalation hours) and Reference.
 
-Proposed to APDS, in the Place domain, as Level B additions (see the APX
+Offered to APDS for later adoption, in the Place domain, as Level B additions (see the APX
 Data Specification):
 
 | Element | Change | Tier |
@@ -2357,8 +2358,8 @@ Data Specification):
 | `CommsPointTypeEnum` | New enumeration | 3 |
 
 The lane-equipment values for EquipmentTypeEnum (barrier, gate, ticket
-dispenser, intercom) are proposed separately, as Tier 1, by the Control
-module. The equipment role is offered as an extensible code list beside
+dispenser, intercom, exit verifier) are listed separately, by the Control
+module; they are the one data request APX makes of APDS. The equipment role is offered as an extensible code list beside
 the equipment type, so APDS would fix the attribute and a starting set of
 values. CommsPoint is offered for discussion, because the numbers a
 parker calls sit between parking data and telephony; the proposal carries
@@ -2373,7 +2374,7 @@ DisplayRecord, whose message kinds come from one deployment's signs.
 
 #### Class diagrams
 
-Figures 27 to 32 provide the UML class diagrams for the Site configuration package. A class marked «proposed» is proposed to APDS (06, Part D); one marked «APDS» is defined in APDS 4.1. Up to 12 attributes are shown per class; 03 Data Dictionary lists them all.
+Figures 27 to 32 provide the UML class diagrams for the Site configuration package. A class marked «proposed» is offered to APDS for later adoption (06, Appendix); one marked «APDS» is defined in APDS 4.1. Up to 12 attributes are shown per class; 03 Data Dictionary lists them all.
 
 ```mermaid
 classDiagram
@@ -2554,12 +2555,12 @@ classDiagram
 
 | Class | Definition | Members | APDS status |
 | --- | --- | --- | --- |
-| `CameraDetail` | A camera anywhere on the site, not only on a lane (Part 26 §26.3). Carried on a SupplementalEquipment whose EquipmentDetail `role` is `camera`, as the Level B decoration `apds-ext:apx:camera@1.0`. Where the camera is (`area`, `level`, `lane`) and what it is built into (`builtInto`) are EquipmentDetail members, shared with every other piece of hardware; this decoration adds how it is mounted, what it looks at, and how it can be viewed. It holds no addresses, usernames or passwords: a view is obtained through `POST /v1/cameras/{id}/views` and the password never leaves the site (Part 26 §26.3). Camera models and stream profiles follow ONVIF (Profile S, Profile T) and are not redefined. `apds-ext:apx:lane-cameras@1.0` (Part 13) is unchanged. | 14 | Proposed: Camera (Tier 2); Proposed: CameraMountingEnum (Tier 2); Proposed: CameraViewEnum (Tier 2) |
+| `CameraDetail` | A camera anywhere on the site, not only on a lane (Part 26 §26.3). Carried on a SupplementalEquipment whose EquipmentDetail `role` is `camera`, as the Level B decoration `apds-ext:apx:camera@1.0`. Where the camera is (`area`, `level`, `lane`) and what it is built into (`builtInto`) are EquipmentDetail members, shared with every other piece of hardware; this decoration adds how it is mounted, what it looks at, and how it can be viewed. It holds no addresses, usernames or passwords: a view is obtained through `POST /v1/cameras/{id}/views` and the password never leaves the site (Part 26 §26.3). Camera models and stream profiles follow ONVIF (Profile S, Profile T) and are not redefined. `apds-ext:apx:lane-cameras@1.0` (Part 13) is unchanged. | 14 | Offered for later: Camera (Tier 2), CameraMountingEnum (Tier 2), CameraViewEnum (Tier 2) |
 | `CameraView` | A single-use, short-lived link to a camera's live stream, a still, or a recording (Part 26 §26.3). Bound to the agent it was issued to and logged against the `correlationId`; it expires at `expiresAt`, never more than 5 minutes after issue, and it never contains a camera credential. | 9 | APX only |
 | `CameraViewRequest` | Asks for a short-lived link to see a camera (Part 26 §26.3). Whoever holds the camera answers, the PARCS, the video system or an on-site gateway, and the camera's password never leaves the site. `playback` needs `from` and `to` and the `cameraPlayback` feature. | 7 | APX only |
-| `CommsPoint` | Any way a parker reaches help from a lane or a location (Part 26 §26.4): an intercom, an analog dialler, a posted phone number, a kiosk, a QR code, an app. A call platform matches an inbound contact to a comms point by the number it calls out as (`callerId`), the number it called (`phoneNumber`), or its own device id (`commsDeviceId`), and APX then answers with the lane, or with the location only when the comms point serves no single lane (a posted number shared by many lanes can never name the lane by itself). | 13 | Proposed: CommsPoint (Tier 3) |
+| `CommsPoint` | Any way a parker reaches help from a lane or a location (Part 26 §26.4): an intercom, an analog dialler, a posted phone number, a kiosk, a QR code, an app. A call platform matches an inbound contact to a comms point by the number it calls out as (`callerId`), the number it called (`phoneNumber`), or its own device id (`commsDeviceId`), and APX then answers with the lane, or with the location only when the comms point serves no single lane (a posted number shared by many lanes can never name the lane by itself). | 13 | Offered for later: CommsPoint (Tier 3) |
 | `DisplayRecord` | The record that a sign showed a message (Part 26 §26.9): which sign, which kind of message, when, and for which read or stay. Written by whichever system drove the display, the edge controller, the PARCS or the sign's own player, often with no APX command involved; immutable once written. It is the proof of display a refused-service message needs (Part 24 §24.4), and the data an operator measures the signs by. | 8 | APX only |
-| `EquipmentDetail` | What a piece of hardware is, where it is, and what it does (Part 26 §26.1). Carried on an APDS SupplementalEquipment as the Level B decoration `apds-ext:apx:equipment-detail@1.0` in its `extensions` container (Part 4 §4.3). The equipment TYPE stays the APDS `EquipmentTypeEnum` (often `paymentMachine` or `other`); `role` says what the item does on the site, from the fixed code list `apx-equipment-roles`. | 16 | Proposed: SupplementalEquipment (Tier 2) |
+| `EquipmentDetail` | What a piece of hardware is, where it is, and what it does (Part 26 §26.1). Carried on an APDS SupplementalEquipment as the Level B decoration `apds-ext:apx:equipment-detail@1.0` in its `extensions` container (Part 4 §4.3). The equipment TYPE stays the APDS `EquipmentTypeEnum` (often `paymentMachine` or `other`); `role` says what the item does on the site, from the fixed code list `apx-equipment-roles`. | 16 | Offered for later: SupplementalEquipment (Tier 2) |
 | `EquipmentRecord` | An APDS SupplementalEquipment as APX serves it (Part 26 §26.1): the stock APDS record plus its `extensions` container, which carries the `apds-ext:apx:equipment-detail@1.0` decoration (REQUIRED on every record this class serves), `apds-ext:apx:camera@1.0` on a camera, and `apds-ext:apx:external-ids@1.0` where other systems have ids for it. The APDS record itself is never reshaped. | 1 | APX only |
 | `ExternalIdentifiers` | The ids other systems use for the same place, lane or equipment (Part 26 §26.6). Carried on any HierarchyElement as the Level B decoration `apds-ext:apx:external-ids@1.0`. APDS `SupplementalFacility.externalIdentifiers` holds untyped strings; here each id says which system issued it. `system` is a URI the issuer owns, usually its own domain, so APX names no products or platforms. `POST /v1/identifiers:resolve` finds the APX record from such an id. | 3 | APX only |
 | `IdentifierResolution` | The APX record an external id names (Part 26 §26.6). | 3 | APX only |
@@ -2722,7 +2723,7 @@ device), HierarchyElements (the source place), any identifiable entity as
 MultilingualString and Reference. The seed values of the alert types
 come from APDS Use Case §C.2.2.
 
-Proposed to APDS, in a new Operations package (APX Data Specification,
+Offered to APDS for later adoption, in a new Operations package (APX Data Specification,
 Operations):
 
 | Element | Change | Level | Tier |
@@ -2750,7 +2751,7 @@ binding of place-less alerts.
 
 #### Class diagrams
 
-Figures 33 to 34 provide the UML class diagrams for the Alerts package. A class marked «proposed» is proposed to APDS (06, Part D); one marked «APDS» is defined in APDS 4.1. Up to 12 attributes are shown per class; 03 Data Dictionary lists them all.
+Figures 33 to 34 provide the UML class diagrams for the Alerts package. A class marked «proposed» is offered to APDS for later adoption (06, Appendix); one marked «APDS» is defined in APDS 4.1. Up to 12 attributes are shown per class; 03 Data Dictionary lists them all.
 
 ```mermaid
 classDiagram
@@ -2806,7 +2807,7 @@ classDiagram
 
 | Class | Definition | Members | APDS status |
 | --- | --- | --- | --- |
-| `Alert` | An operational condition requiring attention. Alert types are OPEN (UserDefinedCodeList `apx-alert-types`, seeded from APDS Use Case C.2.2 transaction exceptions and space statuses); severity is CLOSED. | 21 | Proposed: Alert (Tier 2); Proposed: AlertSeverityEnum (Tier 2); Proposed: AlertStatusEnum (Tier 2) |
+| `Alert` | An operational condition requiring attention. Alert types are OPEN (UserDefinedCodeList `apx-alert-types`, seeded from APDS Use Case C.2.2 transaction exceptions and space statuses); severity is CLOSED. | 21 | Offered for later: Alert (Tier 2), AlertSeverityEnum (Tier 2), AlertStatusEnum (Tier 2) |
 | `AlertTransition` | Optional body of `POST /v1/alerts/{id}/acknowledge` and `/resolve` (Part 7 §7.2). Annotates the `statusHistory[]` entry the transition appends. Sending no body is equivalent to sending `{}`. | 3 | APX only |
 
 #### Enumerations in Alerts
@@ -2996,7 +2997,7 @@ consumers see the money without speaking APX (APX Part 13 §13.6).
 Declined and reversed records exist only on the APX surface, because APDS
 has no vocabulary for them.
 
-Proposed to APDS (APX Data Specification, Right and PkCommon):
+Offered to APDS for later adoption (APX Data Specification, Right and PkCommon):
 
 | Element | Change | Tier |
 | --- | --- | --- |
@@ -3025,7 +3026,7 @@ stay on the APX surface (APX Part 13 §13.6).
 
 #### Class diagrams
 
-Figures 35 to 39 provide the UML class diagrams for the Accounts and payments package. A class marked «proposed» is proposed to APDS (06, Part D); one marked «APDS» is defined in APDS 4.1. Up to 12 attributes are shown per class; 03 Data Dictionary lists them all.
+Figures 35 to 39 provide the UML class diagrams for the Accounts and payments package. A class marked «proposed» is offered to APDS for later adoption (06, Appendix); one marked «APDS» is defined in APDS 4.1. Up to 12 attributes are shown per class; 03 Data Dictionary lists them all.
 
 ```mermaid
 classDiagram
@@ -3206,12 +3207,12 @@ classDiagram
 
 | Class | Definition | Members | APDS status |
 | --- | --- | --- | --- |
-| `Account` | A billable parking account (monthly parker, fleet…), anchored on an APDS RightHolder. | 14 | Proposed: RightHolder (Tier 2); Proposed: AccountStatusEnum (Tier 2) |
+| `Account` | A billable parking account (monthly parker, fleet…), anchored on an APDS RightHolder. | 14 | Offered for later: RightHolder (Tier 2), AccountStatusEnum (Tier 2) |
 | `AccountSearch` | Request body of `POST /v1/accounts:search` (Part 13 §13.1): the same keys as the `GET` lookup, carried in a body so personal data never enters a URL (Part 9 §9.6). | 7 | APX only |
-| `PaymentDetail` | The `apds-ext:apx:payment-detail@1.0` decoration (Part 13 §13.6a) on a `PaymentRecord` or an APDS `Payment`: the rate sold and the lines that sum to the total, so revenue reports and the deck price check have the base amount, the fee, and the product without a bilateral code. On a `PaymentRecord` it carries `rateSold` and `lines`; on a native APDS `Payment` it carries `rateSold` only, because the Payment's own `paymentLines` are the itemization there. | 7 | Proposed: RateSold (Tier 3); Proposed: RateProductEnum (Tier 3); Proposed: RateClassEnum (Tier 3) |
+| `PaymentDetail` | The `apds-ext:apx:payment-detail@1.0` decoration (Part 13 §13.6a) on a `PaymentRecord` or an APDS `Payment`: the rate sold and the lines that sum to the total, so revenue reports and the deck price check have the base amount, the fee, and the product without a bilateral code. On a `PaymentRecord` it carries `rateSold` and `lines`; on a native APDS `Payment` it carries `rateSold` only, because the Payment's own `paymentLines` are the itemization there. | 7 | Offered for later: RateSold (Tier 3), RateProductEnum (Tier 3), RateClassEnum (Tier 3) |
 | `PaymentLink` | A hosted payment link sent to a customer (Part 13 §13.1a) — the customer-service payment action of first resort. APX carries the link's lifecycle, never card data; the hosted page is the implementer's PCI scope. | 18 | APX only |
 | `PaymentLinkCancel` | Request body cancelling a payment link before the customer pays (Part 13 §13.1a). The body is optional; `reason` is recorded on the link's audit trail. | 2 | APX only |
-| `PaymentRecord` | A payment taken through APX (maps to the APDS Payment concept; card capture stays in the implementer's PCI scope). | 16 | Proposed: Payment (Tier 2); Proposed: PaymentStatusEnum (Tier 2); Proposed: CaptureStatusEnum (Tier 2) |
+| `PaymentRecord` | A payment taken through APX (maps to the APDS Payment concept; card capture stays in the implementer's PCI scope). | 16 | Offered for later: Payment (Tier 2), PaymentStatusEnum (Tier 2), CaptureStatusEnum (Tier 2) |
 | `PaymentSearch` | Request body of `POST /v1/payments:search` (Part 13 §13.2): the same keys and rules as the `GET` lookup, in a body (Part 9 §9.6). | 8 | APX only |
 | `Posting` | An accounting write-back of a payment to a monthly-parking/AR system. | 5 | APX only |
 | `PostingRequest` | Request body for the accounting write-back of a payment. | 3 | APX only |
@@ -3388,7 +3389,7 @@ DateTime, Reference and Url. APDS 4.1 has no route that returns or
 replaces one Observation by id; APX adds read-back and revision routes
 under `/v1/lpr/reads/{observation}` (APX Part 13 §13.3, §13.3a(4)).
 
-Proposed to APDS (APX Data Specification, Observation and Place):
+Offered to APDS for later adoption (APX Data Specification, Observation and Place):
 
 | Element | Change | Tier |
 | --- | --- | --- |
@@ -3420,7 +3421,7 @@ are not part of the proposal and remain in the APX decoration.
 
 #### Class diagrams
 
-Figures 40 to 42 provide the UML class diagrams for the License plate recognition package. A class marked «proposed» is proposed to APDS (06, Part D); one marked «APDS» is defined in APDS 4.1. Up to 12 attributes are shown per class; 03 Data Dictionary lists them all.
+Figures 40 to 42 provide the UML class diagrams for the License plate recognition package. A class marked «proposed» is offered to APDS for later adoption (06, Appendix); one marked «APDS» is defined in APDS 4.1. Up to 12 attributes are shown per class; 03 Data Dictionary lists them all.
 
 ```mermaid
 classDiagram
@@ -3528,10 +3529,10 @@ classDiagram
 
 | Class | Definition | Members | APDS status |
 | --- | --- | --- | --- |
-| `AttributeRead` | One recognized attribute with its own confidence (0–1, APDS Confidence scale). | 2 | Proposed: AttributeRead (Tier 1) |
-| `LaneCameras` | The LPR cameras on a lane and which way each one faces (Part 13 §13.3a(5)). Carried on an APDS VehicularAccess as the Level B decoration `apds-ext:apx:lane-cameras@1.0` in its `extensions` container (Part 4 §4.3). Facing is relative to the facility, not to the lane's mode, so it holds on `reversible` lanes. Describes the setup only; APX derives nothing from it. | 3 | Proposed: VehicularAccess (Tier 2); Proposed: LaneCamera (Tier 2); Proposed: CameraFacingEnum (Tier 2) |
-| `LprRead` | One plate read joined with its ticket/session context. | 20 | Proposed: ImageTypeEnum (Tier 2) |
-| `LprReadDetail` | What a modern LPR camera knows beyond the plate string and one overall score (Part 13 §13.3a). Carried on the ingested APDS Observation as the Level B decoration `apds-ext:apx:lpr-read@1.0` in its `extensions` container (Part 4 §4.3 — plain APDS consumers ignore it), and projected on `LprRead.detail` and `PlateCandidate.detail`. Every field optional; each recognized attribute carries its own confidence. APDS's `vehicleAncillaryIdentification` (country, stateProvince, make, model, color) remains the APDS-visible copy of the winning values; this block adds the per-attribute confidence, the candidates that lost, and the passage geometry APDS has no fields for. | 34 | Proposed: ObservationElement (Tier 1); Proposed: AlternateRead (Tier 1); Proposed: ReadReview (Tier 2); Proposed: Image (Tier 2); Proposed: ImageRegion (Tier 2); Proposed: ReadAttributeEnum (Tier 1); Proposed: VehicleMovementEnum (Tier 1); Proposed: PlateFaceEnum (Tier 2); Proposed: ReadReviewStateEnum (Tier 2) |
+| `AttributeRead` | One recognized attribute with its own confidence (0–1, APDS Confidence scale). | 2 | Offered for later: AttributeRead (Tier 1) |
+| `LaneCameras` | The LPR cameras on a lane and which way each one faces (Part 13 §13.3a(5)). Carried on an APDS VehicularAccess as the Level B decoration `apds-ext:apx:lane-cameras@1.0` in its `extensions` container (Part 4 §4.3). Facing is relative to the facility, not to the lane's mode, so it holds on `reversible` lanes. Describes the setup only; APX derives nothing from it. | 3 | Offered for later: VehicularAccess (Tier 2), LaneCamera (Tier 2), CameraFacingEnum (Tier 2) |
+| `LprRead` | One plate read joined with its ticket/session context. | 20 | Offered for later: ImageTypeEnum (Tier 2) |
+| `LprReadDetail` | What a modern LPR camera knows beyond the plate string and one overall score (Part 13 §13.3a). Carried on the ingested APDS Observation as the Level B decoration `apds-ext:apx:lpr-read@1.0` in its `extensions` container (Part 4 §4.3 — plain APDS consumers ignore it), and projected on `LprRead.detail` and `PlateCandidate.detail`. Every field optional; each recognized attribute carries its own confidence. APDS's `vehicleAncillaryIdentification` (country, stateProvince, make, model, color) remains the APDS-visible copy of the winning values; this block adds the per-attribute confidence, the candidates that lost, and the passage geometry APDS has no fields for. | 34 | Offered for later: ObservationElement (Tier 1), AlternateRead (Tier 1), ReadReview (Tier 2), Image (Tier 2), ImageRegion (Tier 2), ReadAttributeEnum (Tier 1), VehicleMovementEnum (Tier 1), PlateFaceEnum (Tier 2), ReadReviewStateEnum (Tier 2) |
 | `LprReadSearch` | Request body of `POST /v1/lpr/reads:search` (Part 13 §13.3): the same keys as the `GET` lookup, carried in a body so a plate never enters a URL that proxies and access logs keep (Part 9 §9.6). At least one of `plate`, `ticket`, `observation`, or `session` is REQUIRED. | 6 | APX only |
 | `PlateCorrection` | Request body of `PUT /v1/lpr/reads/{observation}/plate` (Part 13 §13.3a(4a)): a reviewer's decision on one read. `confirmed` keeps the engine's values; `corrected` replaces them with the ones given; `rejected` marks the read unusable for pairing and enforcement. `plate`, `country`, and `stateProvince` belong to `corrected` only: sent with another decision they are 422 `request-unprocessable`. | 7 | APX only |
 
@@ -3693,7 +3694,7 @@ RightSpecification, RightPool, RightHolder, CredentialAssigned
 (CustomerCredential and VehicleCredential), QuoteRightRequest and
 QuoteRightResponse, Payment, and Session with its Segments.
 
-Proposed to APDS, as Level B additions to AssignedRight in the Right
+Offered to APDS for later adoption, as Level B additions to AssignedRight in the Right
 package (see the APX Data Specification):
 
 | Element | Change | Tier |
@@ -3717,7 +3718,7 @@ are not proposed. The waitlist is not standardised at all (APX Part 14
 
 #### Class diagrams
 
-Figures 43 to 47 provide the UML class diagrams for the Reservations and permits package. A class marked «proposed» is proposed to APDS (06, Part D); one marked «APDS» is defined in APDS 4.1. Up to 12 attributes are shown per class; 03 Data Dictionary lists them all.
+Figures 43 to 47 provide the UML class diagrams for the Reservations and permits package. A class marked «proposed» is offered to APDS for later adoption (06, Appendix); one marked «APDS» is defined in APDS 4.1. Up to 12 attributes are shown per class; 03 Data Dictionary lists them all.
 
 ```mermaid
 classDiagram
@@ -3819,10 +3820,10 @@ classDiagram
 
 | Class | Definition | Members | APDS status |
 | --- | --- | --- | --- |
-| `PermitExtension` | The `apds-ext:apx:permit@1.1` extension object (Part 14 §14.2; `@1.0` remains valid and carries the first two members only): links a renewal permit to the one it renews, so a portal can follow the chain, and caps how many of a multi-vehicle permit's vehicles may be parked at once (§14.2d). | 6 | Proposed: OverageBilling (Tier 2); Proposed: OverageBillingModeEnum (Tier 2) |
+| `PermitExtension` | The `apds-ext:apx:permit@1.1` extension object (Part 14 §14.2; `@1.0` remains valid and carries the first two members only): links a renewal permit to the one it renews, so a portal can follow the chain, and caps how many of a multi-vehicle permit's vehicles may be parked at once (§14.2d). | 6 | Offered for later: OverageBilling (Tier 2), OverageBillingModeEnum (Tier 2) |
 | `PermitIssueRequest` | Issue a permit from a pooled RightSpecification — creates a native AssignedRight with (possibly multiple) vehicle credentials, per the APDS annual-permit use case (one right, multiple vehicles). | 10 | APX only |
 | `PoolAvailability` | Availability of one RightPool of a pooled RightSpecification (APDS RightPool profile, Part 14 §14.2). `issued` = `RightPool.distributedAssignedRights`, `available` = `RightPool.availableAssignedRights`, `capacity` = their sum. | 7 | APX only |
-| `ReservationExtension` | The apds-ext:apx:reservation@1.0 extension object attached to a native AssignedRight. Presence of this extension marks the AssignedRight as a reservation; state transitions follow Part 14 §14.1 (transition table). `plannedStart`/`plannedEnd` MUST mirror the AssignedRight's `plannedUses[0].startTime`/`endTime`, which is authoritative. | 5 | Proposed: AssignedRight (Tier 2); Proposed: ReservationStateEnum (Tier 2) |
+| `ReservationExtension` | The apds-ext:apx:reservation@1.0 extension object attached to a native AssignedRight. Presence of this extension marks the AssignedRight as a reservation; state transitions follow Part 14 §14.1 (transition table). `plannedStart`/`plannedEnd` MUST mirror the AssignedRight's `plannedUses[0].startTime`/`endTime`, which is authoritative. | 5 | Offered for later: AssignedRight (Tier 2), ReservationStateEnum (Tier 2) |
 | `ReservationSummary` | Compact view of one past/current reservation, for customer-history lookups. Also the `data` of `apx.reservation.noshow.v1` (Part 14 §14.1 step 6). | 7 | APX only |
 
 #### Enumerations in Reservations and permits
@@ -3947,7 +3948,7 @@ Organisation and Contact (the disputing party), and the AmountInCurrency
 datatype. The credential type reuses the APDS CredentialTypeEnum. Toll
 reads themselves flow as ordinary APDS Observation data.
 
-Proposed to APDS, in a new `Tolling` sub-package of the Observation
+Offered to APDS for later adoption, in a new `Tolling` sub-package of the Observation
 package, as Level B additions (see the APX Data Specification):
 
 | Element | Change | Tier |
@@ -3972,7 +3973,7 @@ are not proposed. The void reason is an implementer code list.
 
 #### Class diagrams
 
-Figures 48 to 53 provide the UML class diagrams for the Tolling package. A class marked «proposed» is proposed to APDS (06, Part D); one marked «APDS» is defined in APDS 4.1. Up to 12 attributes are shown per class; 03 Data Dictionary lists them all.
+Figures 48 to 53 provide the UML class diagrams for the Tolling package. A class marked «proposed» is offered to APDS for later adoption (06, Appendix); one marked «APDS» is defined in APDS 4.1. Up to 12 attributes are shown per class; 03 Data Dictionary lists them all.
 
 ```mermaid
 classDiagram
@@ -4088,7 +4089,7 @@ classDiagram
 | `TollDisputeResolution` | Request body resolving an open dispute. | 3 | APX only |
 | `TollPaymentAttachment` | Request body attaching the settling Payment to a toll transaction. | 2 | APX only |
 | `TollPricing` | Request body pricing a `created` toll transaction (Part 15 §15.1), for operators whose pricing engine runs outside the APX server. | 2 | APX only |
-| `TollTransaction` | A toll charge assembled from plate/transponder reads: Observation refs → pricing → Payment ref, with a dispute lifecycle. | 24 | Proposed: TollTransaction (Tier 2); Proposed: TollDispute (Tier 2); Proposed: TollTransactionStatusEnum (Tier 2) |
+| `TollTransaction` | A toll charge assembled from plate/transponder reads: Observation refs → pricing → Payment ref, with a dispute lifecycle. | 24 | Offered for later: TollTransaction (Tier 2), TollDispute (Tier 2), TollTransactionStatusEnum (Tier 2) |
 | `TollVoid` | Request body voiding a toll transaction that should never have been charged (Part 15 §15.1). | 2 | APX only |
 
 #### Enumerations in Tolling
@@ -4339,7 +4340,7 @@ Space (location of the finding), CredentialTypeEnum (the vehicle),
 Contact and Organisation (issuer and appellant), Payment, and
 AmountInCurrency. ViolationLocation follows the APDS Location shape.
 
-Proposed to APDS, as a new Enforcement package (Level C, because it adds
+Offered to APDS for later adoption, as a new Enforcement package (Level C, because it adds
 new root concepts), and Signage in the Place domain (Level B). See the
 APX Data Specification.
 
@@ -4386,7 +4387,7 @@ construct wins and this Part migrates to it (APX Part 3 §3.3(8)).
 
 #### Class diagrams
 
-Figures 54 to 61 provide the UML class diagrams for the Violations and enforcement package. A class marked «proposed» is proposed to APDS (06, Part D); one marked «APDS» is defined in APDS 4.1. Up to 12 attributes are shown per class; 03 Data Dictionary lists them all.
+Figures 54 to 61 provide the UML class diagrams for the Violations and enforcement package. A class marked «proposed» is offered to APDS for later adoption (06, Appendix); one marked «APDS» is defined in APDS 4.1. Up to 12 attributes are shown per class; 03 Data Dictionary lists them all.
 
 ```mermaid
 classDiagram
@@ -4698,13 +4699,13 @@ classDiagram
 | Class | Definition | Members | APDS status |
 | --- | --- | --- | --- |
 | `EligibilityResult` | "Is this vehicle entitled to be here right now?" — the guided-enforcement screen-pop (Part 19 §19.3). A convenience READ composed from the APDS entities that natively answer the question: AssignedRights (APDS's own enforcement source of truth), Sessions, and reservation/permit profiles. Adds no parallel entitlement entity; the AssignedRight remains authoritative. | 21 | APX only |
-| `EnforcementPolicy` | The jurisdictional rules that govern issuing and escalating violations at a place (Part 19 §19.10): lawful notice delivery per detection mode, the initial penalty cap, the escalation schedule, windows, and whether posted signage is required. Bound to a HierarchyElement with subtree inheritance — the nearest ancestor's policy applies unless a descendant overrides it. A machine-readable summary an operator configures from the governing statute; never the statute itself. Edits use versioned `PUT` with the version last read as `If-Match` or body `version` (Part 4 §4.2a; 409 `version-conflict` when stale). | 50 | Proposed: EnforcementPolicy (Tier 2); Proposed: NoticeDeliveryRule (Tier 2); Proposed: PenaltyLimit (Tier 3); Proposed: EscalationStep (Tier 2) |
-| `Signage` | A record of what is posted at a place — the text, a photo, the sign's position, and when it was in force (Part 19 §19.11). Bound to a HierarchyElement with subtree inheritance. Versioned so an appeal can show the sign as it stood on the day: superseding a sign is a new version or a new record with `effectiveTo` set, never an edit in place of historical text. Edits use versioned `PUT` (Part 4 §4.2a). | 18 | Proposed: Signage (Tier 2); Proposed: SignTypeEnum (Tier 2) |
-| `Violation` | An enforcement finding against a vehicle at a place: the detection (automated, guided, or manual), the eligibility check that justified it, the evidence, the issued notice/citation, settlement, and any appeal — with the immutable lifecycle audit (Part 4 §4.2). | 53 | Proposed: Violation (Tier 1); Proposed: Notice (Tier 1); Proposed: Appeal (Tier 2); Proposed: ViolationStatusEnum (Tier 1); Proposed: NoticeKindEnum (Tier 1); Proposed: NoticeDeliveryMethodEnum (Tier 1); Proposed: AppealReasonEnum (Tier 2); Proposed: AppealResolutionEnum (Tier 2) |
+| `EnforcementPolicy` | The jurisdictional rules that govern issuing and escalating violations at a place (Part 19 §19.10): lawful notice delivery per detection mode, the initial penalty cap, the escalation schedule, windows, and whether posted signage is required. Bound to a HierarchyElement with subtree inheritance — the nearest ancestor's policy applies unless a descendant overrides it. A machine-readable summary an operator configures from the governing statute; never the statute itself. Edits use versioned `PUT` with the version last read as `If-Match` or body `version` (Part 4 §4.2a; 409 `version-conflict` when stale). | 50 | Offered for later: EnforcementPolicy (Tier 2), NoticeDeliveryRule (Tier 2), PenaltyLimit (Tier 3), EscalationStep (Tier 2) |
+| `Signage` | A record of what is posted at a place — the text, a photo, the sign's position, and when it was in force (Part 19 §19.11). Bound to a HierarchyElement with subtree inheritance. Versioned so an appeal can show the sign as it stood on the day: superseding a sign is a new version or a new record with `effectiveTo` set, never an edit in place of historical text. Edits use versioned `PUT` (Part 4 §4.2a). | 18 | Offered for later: Signage (Tier 2), SignTypeEnum (Tier 2) |
+| `Violation` | An enforcement finding against a vehicle at a place: the detection (automated, guided, or manual), the eligibility check that justified it, the evidence, the issued notice/citation, settlement, and any appeal — with the immutable lifecycle audit (Part 4 §4.2). | 53 | Offered for later: Violation (Tier 1), Notice (Tier 1), Appeal (Tier 2), ViolationStatusEnum (Tier 1), NoticeKindEnum (Tier 1), NoticeDeliveryMethodEnum (Tier 1), AppealReasonEnum (Tier 2), AppealResolutionEnum (Tier 2) |
 | `ViolationAppealOpen` | Request body opening an appeal on an issued violation, or on a paid one within the policy's appeal window (pay-then-appeal). | 4 | APX only |
 | `ViolationAppealResolution` | Request body resolving an open appeal. | 4 | APX only |
 | `ViolationAppliedPayment` | One payment applied to a violation (Part 19 §19.6a): a partial payment or the settling one. `payment` references the Part 13 record (APDS Payment or APX PaymentRecord) when the money moved through this server; a payment an import source took itself (§19.13) may carry only the source's own `reference`. | 4 | APX only |
-| `ViolationDetection` | How and when the candidate was found. | 6 | Proposed: ViolationDetection (Tier 1); Proposed: DetectionModeEnum (Tier 1) |
+| `ViolationDetection` | How and when the candidate was found. | 6 | Offered for later: ViolationDetection (Tier 1), DetectionModeEnum (Tier 1) |
 | `ViolationEvidence` | Evidence media, as access-controlled LINKS (Part 9 §9.6 — never inline). Each item points at an APDS Image reachable under the same authentication and place grant as this resource. | 5 | APX only |
 | `ViolationImport` | Request body of `POST /v1/enforcement/violation-imports` (Part 19 §19.13): a violation as an external enforcement system reports it — in any state, with the `statusHistory[]` times the source recorded, the notice, the amounts and payments, and the `apds-ext:apx:violation-source@1.0` decoration that keys it. The members mean what they mean on `Violation`; the difference is that `violationStatus`, `notice`, `amountPaid`, `payments`, and `statusHistory` are written by the caller here, because the source, not this server, decided them. A state at or past issuance (`issued`, `paid`, `appealed`, `closed`) REQUIRES `notice` (with `noticeNumber` and `issuedTime`) and `amount` (400 `invalid-request` otherwise); `paid` with `amountPaid` below `amount` is 422 `request-unprocessable`. A warning with no fine is `issued` (or `closed`) with `notice.noticeKind` `warning` and a zero `amount`. | 28 | APX only |
 | `ViolationIssue` | Request body issuing the notice/citation for a confirmed (or, under automated policy, detected) violation. | 7 | APX only |
@@ -4901,7 +4902,7 @@ merchant), HierarchyElement (the place), Session and Segment
 `validation`, RateTable (`validation`), RateDiscount (`discountRate`
 semantics), AmountInCurrency and Duration.
 
-Proposed to APDS (see the APX Data Specification). Programme classes sit
+Offered to APDS for later adoption (see the APX Data Specification). Programme classes sit
 in a new `Validation` sub-package of the Right package; the benefit sits
 in Rates; the redemption sits in Session. All are Level B.
 
@@ -4935,7 +4936,7 @@ them (APX Part 20 §20.6).
 
 #### Class diagrams
 
-Figures 62 to 65 provide the UML class diagrams for the Validations package. A class marked «proposed» is proposed to APDS (06, Part D); one marked «APDS» is defined in APDS 4.1. Up to 12 attributes are shown per class; 03 Data Dictionary lists them all.
+Figures 62 to 65 provide the UML class diagrams for the Validations package. A class marked «proposed» is offered to APDS for later adoption (06, Appendix); one marked «APDS» is defined in APDS 4.1. Up to 12 attributes are shown per class; 03 Data Dictionary lists them all.
 
 ```mermaid
 classDiagram
@@ -5128,12 +5129,12 @@ classDiagram
 
 | Class | Definition | Members | APDS status |
 | --- | --- | --- | --- |
-| `ValidationBenefit` | What a validation is worth. Exactly one of `amount` (money off), `duration` (comped time, valued at the applicable rate), or `percentage` (proportionate discount — the APDS RateDiscount `discountRate` semantics) applies; `description` is always present so agents can answer disputes in plain language. A program body whose benefit carries none or more than one of the three is refused with 422 `request-unprocessable` (Part 20 §20.1); the rule is stated here rather than as a schema `oneOf` so that existing request bodies keep validating. | 4 | Proposed: ValidationBenefit (Tier 2) |
-| `ValidationInstrument` | The current state of one validation code — the pay-station / merchant-app "is this code good?" read. | 10 | Proposed: ValidationInstrument (Tier 2); Proposed: ValidationInstrumentStatusEnum (Tier 2) |
-| `ValidationIssuance` | A batch of validation instruments issued to a program — printed codes, QR codes, stamp stock, digital tokens. `codes[]` is returned EXACTLY ONCE, in the creation response (the webhook-secret convention, Part 8 §8.1); later reads omit it. `stamp` and `api` batches carry no codes. | 14 | Proposed: ValidationIssuance (Tier 2); Proposed: ValidationIssuanceMethodEnum (Tier 2); Proposed: ValidationIssuanceStatusEnum (Tier 2) |
+| `ValidationBenefit` | What a validation is worth. Exactly one of `amount` (money off), `duration` (comped time, valued at the applicable rate), or `percentage` (proportionate discount — the APDS RateDiscount `discountRate` semantics) applies; `description` is always present so agents can answer disputes in plain language. A program body whose benefit carries none or more than one of the three is refused with 422 `request-unprocessable` (Part 20 §20.1); the rule is stated here rather than as a schema `oneOf` so that existing request bodies keep validating. | 4 | Offered for later: ValidationBenefit (Tier 2) |
+| `ValidationInstrument` | The current state of one validation code — the pay-station / merchant-app "is this code good?" read. | 10 | Offered for later: ValidationInstrument (Tier 2), ValidationInstrumentStatusEnum (Tier 2) |
+| `ValidationIssuance` | A batch of validation instruments issued to a program — printed codes, QR codes, stamp stock, digital tokens. `codes[]` is returned EXACTLY ONCE, in the creation response (the webhook-secret convention, Part 8 §8.1); later reads omit it. `stamp` and `api` batches carry no codes. | 14 | Offered for later: ValidationIssuance (Tier 2), ValidationIssuanceMethodEnum (Tier 2), ValidationIssuanceStatusEnum (Tier 2) |
 | `ValidationIssuanceRequest` | Request body for `POST /v1/validations/programs/{id}/issuances`: the writable members of `ValidationIssuance`. The program is the one the path names; `program` MAY be repeated in the body, and a value that differs from the path is 422 `request-unprocessable` (Part 20 §20.2). Server-assigned members (`id`, `version`, `codes`, `issuanceStatus`) are ignored if sent. | 13 | APX only |
-| `ValidationProgram` | A merchant's enrolment to validate parking at a place: who the provider is, what the validation is worth, the rules that bound it, how the merchant is billed, and how instruments are issued. Active programs ARE the source of the Part 6 `GET /v1/validations/providers` list when `apx-validations` is claimed. | 27 | Proposed: ValidationProgram (Tier 2); Proposed: ValidationRules (Tier 2); Proposed: ValidationBilling (Tier 3); Proposed: ValidationBillingModelEnum (Tier 3); Proposed: ValidationBillingCycleEnum (Tier 3) |
-| `ValidationRedemption` | One validation applied to one ticket/session — the ledger entry every channel writes: a pay station scanning a code, a merchant app, an agent's `applyValidation` command (Part 6), or a lane device. `validationId` is the APDS `Segment.validationId`, so APDS consumers see the same redemption without speaking APX. `amountReduced` is the ACTUAL value removed from the amount due (dispute evidence), never the nominal benefit. | 29 | Proposed: ValidationRedemption (Tier 1); Proposed: ValidationRedemptionStatusEnum (Tier 1) |
+| `ValidationProgram` | A merchant's enrolment to validate parking at a place: who the provider is, what the validation is worth, the rules that bound it, how the merchant is billed, and how instruments are issued. Active programs ARE the source of the Part 6 `GET /v1/validations/providers` list when `apx-validations` is claimed. | 27 | Offered for later: ValidationProgram (Tier 2), ValidationRules (Tier 2), ValidationBilling (Tier 3), ValidationBillingModelEnum (Tier 3), ValidationBillingCycleEnum (Tier 3) |
+| `ValidationRedemption` | One validation applied to one ticket/session — the ledger entry every channel writes: a pay station scanning a code, a merchant app, an agent's `applyValidation` command (Part 6), or a lane device. `validationId` is the APDS `Segment.validationId`, so APDS consumers see the same redemption without speaking APX. `amountReduced` is the ACTUAL value removed from the amount due (dispute evidence), never the nominal benefit. | 29 | Offered for later: ValidationRedemption (Tier 1), ValidationRedemptionStatusEnum (Tier 1) |
 | `ValidationRedemptionReversal` | Request body reversing a redemption (wrong ticket, merchant dispute, fraud). | 2 | APX only |
 | `ValidationStatement` | A program's redemptions and billable total for a period. Returned as a computed preview by `GET …/statement`, and as an IMMUTABLE record once a period is closed by `POST …/statements` (`statementStatus: closed`; the operator's accounting system invoices from it). Closed periods MUST NOT overlap (409 `statement-overlap`). | 26 | APX only |
 | `ValidationStatementClose` | Request body closing a billing period for a program. | 3 | APX only |
@@ -5314,7 +5315,7 @@ APDS classes used as they stand: AssignedRight and CredentialAssigned
 CredentialAssignedTypeEnum, RightHolder and Contact (the holder),
 HierarchyElement, VehicularAccess, SupplementalEquipment and Session.
 
-Proposed to APDS, in the Right and Session packages, as Level B additions
+Offered to APDS for later adoption, in the Right and Session packages, as Level B additions
 (see the APX Data Specification):
 
 | Element | Package | Change | Tier |
@@ -5346,7 +5347,7 @@ the CredentialAssigned additions above rather than as a separate record.
 
 #### Class diagrams
 
-Figures 66 to 67 provide the UML class diagrams for the Credentials package. A class marked «proposed» is proposed to APDS (06, Part D); one marked «APDS» is defined in APDS 4.1. Up to 12 attributes are shown per class; 03 Data Dictionary lists them all.
+Figures 66 to 67 provide the UML class diagrams for the Credentials package. A class marked «proposed» is offered to APDS for later adoption (06, Appendix); one marked «APDS» is defined in APDS 4.1. Up to 12 attributes are shown per class; 03 Data Dictionary lists them all.
 
 ```mermaid
 classDiagram
@@ -5460,12 +5461,12 @@ classDiagram
 
 | Class | Definition | Members | APDS status |
 | --- | --- | --- | --- |
-| `AccessEvent` | One access attempt at a lane, whether or not the presented credential matched a CredentialRecord — the item of `GET /v1/access-events` and the data of `apx.credentials.access.v1`. `credential` is REQUIRED whenever a record matched; it is absent only for `denialReason: unknownCredential`, where `presented` is REQUIRED instead (Part 21 §21.4). Every `CredentialAccessEvent` is a valid `AccessEvent`; this schema exists because `CredentialAccessEvent.credential` is required and relaxing it would break clients of the per-credential history. | 12 | Proposed: AccessEvent (Tier 1); Proposed: AccessOutcomeEnum (Tier 1) |
+| `AccessEvent` | One access attempt at a lane, whether or not the presented credential matched a CredentialRecord — the item of `GET /v1/access-events` and the data of `apx.credentials.access.v1`. `credential` is REQUIRED whenever a record matched; it is absent only for `denialReason: unknownCredential`, where `presented` is REQUIRED instead (Part 21 §21.4). Every `CredentialAccessEvent` is a valid `AccessEvent`; this schema exists because `CredentialAccessEvent.credential` is required and relaxing it would break clients of the per-credential history. | 12 | Offered for later: AccessEvent (Tier 1), AccessOutcomeEnum (Tier 1) |
 | `CredentialAccessEvent` | One access attempt with a credential at a lane — granted or denied, and why. Fills the gap that APDS EventTypeEnum has no access events (published as `apx.credentials.access.v1`). | 12 | APX only |
-| `CredentialRecord` | One access credential — keycard, fob, RFID tag or transponder, mobile credential, hangtag, or a plate used as the credential — with its holder, validity, physical media, and lifecycle. `credentialType` is the APDS read technology; `media.form` is the physical form. | 33 | Proposed: CredentialAssigned (Tier 1); Proposed: CredentialMedia (Tier 1); Proposed: CredentialSuspension (Tier 1); Proposed: CredentialStatusEnum (Tier 1); Proposed: CredentialMediaFormEnum (Tier 1); Proposed: DepositStatusEnum (Tier 1) |
+| `CredentialRecord` | One access credential — keycard, fob, RFID tag or transponder, mobile credential, hangtag, or a plate used as the credential — with its holder, validity, physical media, and lifecycle. `credentialType` is the APDS read technology; `media.form` is the physical form. | 33 | Offered for later: CredentialAssigned (Tier 1), CredentialMedia (Tier 1), CredentialSuspension (Tier 1), CredentialStatusEnum (Tier 1), CredentialMediaFormEnum (Tier 1), DepositStatusEnum (Tier 1) |
 | `CredentialReplaceRequest` | Request body issuing a successor credential. The new record inherits holder, account, assigned rights, places, and validity unless overridden; the old record becomes `replaced` and is removed from the APDS AssignedRights at the same instant the successor is materialized. | 10 | APX only |
 | `CredentialTransition` | Request body for activate / suspend / resume / report-lost / revoke. | 3 | APX only |
-| `PresentedCredential` | What the reader actually read at the lane. Carried on an access event when no CredentialRecord matched (`denialReason: unknownCredential`), and MAY be carried otherwise. Personal data under Part 21 §21.5: returned only under `apx.credentials:*` scopes. | 2 | Proposed: PresentedCredential (Tier 1) |
+| `PresentedCredential` | What the reader actually read at the lane. Carried on an access event when no CredentialRecord matched (`denialReason: unknownCredential`), and MAY be carried otherwise. Personal data under Part 21 §21.5: returned only under `apx.credentials:*` scopes. | 2 | Offered for later: PresentedCredential (Tier 1) |
 
 #### Enumerations in Credentials
 
@@ -5635,7 +5636,7 @@ claim ticket, when used), Space (the parked position), VehicularAccess
 customer, or an APX Part 13 Account), and rate lines on the Session for
 the fee.
 
-Proposed to APDS (see the APX Data Specification), as Level B additions:
+Offered to APDS for later adoption (see the APX Data Specification), as Level B additions:
 
 | Element | Package | Change | Tier |
 | --- | --- | --- | --- |
@@ -5663,7 +5664,7 @@ stage, retrieval, cancel and handback request bodies are API operations.
 
 #### Class diagrams
 
-Figures 68 to 71 provide the UML class diagrams for the Valet package. A class marked «proposed» is proposed to APDS (06, Part D); one marked «APDS» is defined in APDS 4.1. Up to 12 attributes are shown per class; 03 Data Dictionary lists them all.
+Figures 68 to 71 provide the UML class diagrams for the Valet package. A class marked «proposed» is offered to APDS for later adoption (06, Appendix); one marked «APDS» is defined in APDS 4.1. Up to 12 attributes are shown per class; 03 Data Dictionary lists them all.
 
 ```mermaid
 classDiagram
@@ -5780,7 +5781,7 @@ classDiagram
 
 | Class | Definition | Members | APDS status |
 | --- | --- | --- | --- |
-| `ConditionReport` | The vehicle's condition as recorded by an attendant (or a scanning device) at drop-off or handback: free-text notes, per-area damage entries, and access-controlled image links (Part 9 §9.6). The drop-off report is the evidence a damage claim is answered with. | 12 | Proposed: ConditionReport (Tier 2); Proposed: DamageItem (Tier 2); Proposed: DamageSeverityEnum (Tier 2) |
+| `ConditionReport` | The vehicle's condition as recorded by an attendant (or a scanning device) at drop-off or handback: free-text notes, per-area damage entries, and access-controlled image links (Part 9 §9.6). The drop-off report is the evidence a damage claim is answered with. | 12 | Offered for later: ConditionReport (Tier 2), DamageItem (Tier 2), DamageSeverityEnum (Tier 2) |
 | `ValetCancelRequest` | Request body abandoning a drop-off before custody was taken; the ticket becomes `cancelled` (terminal). | 2 | APX only |
 | `ValetCancelRetrievalRequest` | Request body cancelling an open retrieval request; the vehicle returns to `parked`. | 2 | APX only |
 | `ValetHandbackRequest` | Request body handing the vehicle to a verified customer, with the handback condition report. | 6 | APX only |
@@ -5788,7 +5789,7 @@ classDiagram
 | `ValetPickupRequest` | Request body recording that a runner has gone to fetch the car (`requested → retrieving`). | 2 | APX only |
 | `ValetRetrievalRequest` | Request body asking for the car — from the customer (text, app, web, voice bot) or an attendant. | 4 | APX only |
 | `ValetStageRequest` | Request body recording the vehicle at the staging lane, ready for handback. | 2 | APX only |
-| `ValetTicket` | The custody record for one valeted vehicle: drop-off (with condition evidence), where it is parked and where the keys are, the retrieval request and its ETA, staging, and handback — with the immutable lifecycle audit. The APDS Session remains the stay and the money; this record is what the attendant board, the customer's phone, and a damage claim look at. | 70 | Proposed: RightTypeEnum (Tier 2); Proposed: ValetTicket (Tier 2); Proposed: ValetStatusEnum (Tier 2); Proposed: HandbackVerificationEnum (Tier 2) |
+| `ValetTicket` | The custody record for one valeted vehicle: drop-off (with condition evidence), where it is parked and where the keys are, the retrieval request and its ETA, staging, and handback — with the immutable lifecycle audit. The APDS Session remains the stay and the money; this record is what the attendant board, the customer's phone, and a damage claim look at. | 70 | Offered for later: RightTypeEnum (Tier 2), ValetTicket (Tier 2), ValetStatusEnum (Tier 2), HandbackVerificationEnum (Tier 2) |
 
 #### Enumerations in Valet
 
@@ -5921,7 +5922,7 @@ APDS classes used as they stand: CredentialTypeEnum (the listed
 credential), Organisation (the owner), HierarchyElement (the places) and
 AmountInCurrency (amount owed).
 
-Proposed to APDS, in a new `PlateList` sub-package of the Right package,
+Offered to APDS for later adoption, in a new `PlateList` sub-package of the Right package,
 as Level B additions (see the APX Data Specification):
 
 | Element | Change | Tier |
@@ -5946,7 +5947,7 @@ left to implementations.
 
 #### Class diagrams
 
-Figure 72 provides a UML class diagram for the Plate lists package. A class marked «proposed» is proposed to APDS (06, Part D); one marked «APDS» is defined in APDS 4.1. Up to 12 attributes are shown per class; 03 Data Dictionary lists them all.
+Figure 72 provides a UML class diagram for the Plate lists package. A class marked «proposed» is offered to APDS for later adoption (06, Appendix); one marked «APDS» is defined in APDS 4.1. Up to 12 attributes are shown per class; 03 Data Dictionary lists them all.
 
 ```mermaid
 classDiagram
@@ -6000,9 +6001,9 @@ classDiagram
 
 | Class | Definition | Members | APDS status |
 | --- | --- | --- | --- |
-| `PlateList` | A list of credentials with a category and per-place behaviour (Part 24). Entries are kept separately (`PlateListEntry`); the list carries the policy. | 11 | Proposed: PlateList (Tier 2) |
-| `PlateListEntry` | One credential on a list (Part 24 §24.2). The plate value appears only under `apx.platelists:read`/`:manage`; a consumer that only screens may hold the `apds-ext:apx:credential-digest@1.0` decoration instead (Part 9 §9.6 rule 6). | 19 | Proposed: PlateListEntry (Tier 2) |
-| `PlateListPlaceFlags` | What the list does at one place (Part 24 §24.1). | 4 | Proposed: PlateListPlaceFlags (Tier 2) |
+| `PlateList` | A list of credentials with a category and per-place behaviour (Part 24). Entries are kept separately (`PlateListEntry`); the list carries the policy. | 11 | Offered for later: PlateList (Tier 2) |
+| `PlateListEntry` | One credential on a list (Part 24 §24.2). The plate value appears only under `apx.platelists:read`/`:manage`; a consumer that only screens may hold the `apds-ext:apx:credential-digest@1.0` decoration instead (Part 9 §9.6 rule 6). | 19 | Offered for later: PlateListEntry (Tier 2) |
+| `PlateListPlaceFlags` | What the list does at one place (Part 24 §24.1). | 4 | Offered for later: PlateListPlaceFlags (Tier 2) |
 
 #### Enumerations in Plate lists
 
@@ -6212,7 +6213,7 @@ entity is referenced, never redefined, and every write goes through an
 existing module (Part 6 control, Part 13 payments, the Session plate and
 right links).
 
-Proposed to APDS, in the new Operations package (Level C), for discussion
+Offered to APDS for later adoption, in the new Operations package (Level C), for discussion
 (see the APX Data Specification):
 
 | Element | Change | Tier |
@@ -6236,7 +6237,7 @@ proposed.
 
 #### Class diagrams
 
-Figures 73 to 76 provide the UML class diagrams for the Resolution and customer support package. A class marked «proposed» is proposed to APDS (06, Part D); one marked «APDS» is defined in APDS 4.1. Up to 12 attributes are shown per class; 03 Data Dictionary lists them all.
+Figures 73 to 76 provide the UML class diagrams for the Resolution and customer support package. A class marked «proposed» is offered to APDS for later adoption (06, Appendix); one marked «APDS» is defined in APDS 4.1. Up to 12 attributes are shown per class; 03 Data Dictionary lists them all.
 
 ```mermaid
 classDiagram
@@ -6453,7 +6454,7 @@ classDiagram
 | `ResolutionContext` | The aggregated customer-service context (Part 17): everything the server could resolve about one interaction, plus the policy-decided allowed actions. Every section beyond the required core is OPTIONAL — implementations include what they know and omit what they don't (graceful degradation), and MUST NOT include sections the caller's scopes/grants could not read directly. | 41 | APX only |
 | `ResolutionIssue` | The machine-classified issue this context describes. `code` is a definedValue from the apx-issue-types registry (open, per Part 11); `display` is the human-readable summary shown to agents. | 2 | APX only |
 | `ResolutionResolveRequest` | Whatever PARKING-DOMAIN identifiers are currently known — the server resolves every relationship it can (Part 17 §17.2). At least one IDENTIFYING member is required — `device`, `place`, `lane`, `session`, `holder`, `credential`, `plate`, `ticketNumber`, `reservationCode`, `guestReference`, `commsPoint`, `callerId`, `dialedNumber`, or `commsDeviceId`; all are optional individually. `interactionId`, `correlationId`, `channel`, and `reservationIssuer` are metadata and do not count: a body without an identifying member is 400 `invalid-request` (Part 17 §17.1). Unknown members are ignored (tolerant reader) and never used for resolution. (`minProperties: 1` is the only part of this rule the schema states; the full rule is enforced by the server.) | 20 | APX only |
-| `SupportInteraction` | One customer-service interaction (human or AI agent), recorded so future resolution contexts can surface "they called twice yesterday". | 25 | Proposed: SupportInteraction (Tier 3); Proposed: SupportAgentTypeEnum (Tier 3) |
+| `SupportInteraction` | One customer-service interaction (human or AI agent), recorded so future resolution contexts can surface "they called twice yesterday". | 25 | Offered for later: SupportInteraction (Tier 3), SupportAgentTypeEnum (Tier 3) |
 
 #### Enumerations in Resolution and customer support
 
@@ -6644,7 +6645,7 @@ informative UiLaunchToken claim set.
 
 #### Class diagrams
 
-Figures 77 to 78 provide the UML class diagrams for the UI launch package. A class marked «proposed» is proposed to APDS (06, Part D); one marked «APDS» is defined in APDS 4.1. Up to 12 attributes are shown per class; 03 Data Dictionary lists them all.
+Figures 77 to 78 provide the UML class diagrams for the UI launch package. A class marked «proposed» is offered to APDS for later adoption (06, Appendix); one marked «APDS» is defined in APDS 4.1. Up to 12 attributes are shown per class; 03 Data Dictionary lists them all.
 
 ```mermaid
 classDiagram
@@ -6934,7 +6935,7 @@ parking stay), AssignedRight, ObservationElement (bay evidence),
 DeliveryUnitEnum, AuthenticationAndIdentificationEnum and
 AmountInCurrency.
 
-Proposed to APDS, in the existing EnergyInfrastructure package, as Level
+Offered to APDS for later adoption, in the existing EnergyInfrastructure package, as Level
 B additions offered for discussion (see the APX Data Specification):
 
 | Element | Change | Tier |
@@ -6968,7 +6969,7 @@ rules.
 
 #### Class diagrams
 
-Figures 79 to 81 provide the UML class diagrams for the EV charging package. A class marked «proposed» is proposed to APDS (06, Part D); one marked «APDS» is defined in APDS 4.1. Up to 12 attributes are shown per class; 03 Data Dictionary lists them all.
+Figures 79 to 81 provide the UML class diagrams for the EV charging package. A class marked «proposed» is offered to APDS for later adoption (06, Appendix); one marked «APDS» is defined in APDS 4.1. Up to 12 attributes are shown per class; 03 Data Dictionary lists them all.
 
 ```mermaid
 classDiagram
@@ -7091,11 +7092,11 @@ classDiagram
 
 | Class | Definition | Members | APDS status |
 | --- | --- | --- | --- |
-| `ChargingBayPresence` | Part 23 — what the bay in front of a charging point physically contains, as observed by an overhead camera, a ground sensor, the charger's own connector state, or an attendant — fused by the server (Part 23 §23.3). Distinguishes the cases the charger alone cannot: a vehicle parked in the bay but not plugged in (an ICE vehicle, or an EV not charging), and a bay blocked by something that is not a vehicle. Also the request body a camera analytics system POSTs to `…/points/{id}/bay`. | 13 | Proposed: ChargingBayPresence (Tier 3); Proposed: BayPresenceEnum (Tier 3); Proposed: BayPresenceSourceEnum (Tier 3) |
+| `ChargingBayPresence` | Part 23 — what the bay in front of a charging point physically contains, as observed by an overhead camera, a ground sensor, the charger's own connector state, or an attendant — fused by the server (Part 23 §23.3). Distinguishes the cases the charger alone cannot: a vehicle parked in the bay but not plugged in (an ICE vehicle, or an EV not charging), and a bay blocked by something that is not a vehicle. Also the request body a camera analytics system POSTs to `…/points/{id}/bay`. | 13 | Offered for later: ChargingBayPresence (Tier 3), BayPresenceEnum (Tier 3), BayPresenceSourceEnum (Tier 3) |
 | `ChargingEvent` | Part 23 — one physical-timeline event the charging-network bridge reports for a session — the APX counterpart of an OCPP 2.0.1 TransactionEvent. The server applies the lifecycle transition (Part 23 §23.2) and appends `statusHistory`. `meterValue` events update `energy` without a state change. Idempotent by `Idempotency-Key` (bridges retry). | 11 | APX only |
 | `ChargingPaymentAttachment` | Part 23 — request body attaching the settling payment to an `unplugged` `directPayment` session, or recording the network's charge detail record for a `chargingNetwork` one. | 3 | APX only |
-| `ChargingPointStatus` | Part 23 — live state overlay keyed by Reference to an APDS ElectricChargingEquipment — the dynamic counterpart of the static ElectricChargingPoint (APDS `refillPointIndex` exists precisely "to link static and dynamic publications"). Never duplicates the static descriptive fields (connector types, power ratings live in APDS). Carries availability per point and per connector, the current session, a reservation, and what the bay camera sees. Same pattern as Part 6 DeviceStatus. Also the request body the charging-network bridge PUTs to `…/points/{id}/status`. | 18 | Proposed: ChargingPointStatus (Tier 3); Proposed: ConnectorStatus (Tier 3) |
-| `ChargingSession` | Part 23 — one charge of one vehicle at one charging point, as the parking system sees it: who was authorized and how, the timeline from plug-in to unplug, energy delivered, the idle period after charging completed, cost, and how it settles — while the APDS Session remains the parking stay and is only referenced. The charging network's own identifiers (OCPP transaction, OCPI session/CDR) ride along opaquely so the two records can be reconciled without APX redefining either protocol. | 75 | Proposed: ChargingSession (Tier 3); Proposed: ChargingCost (Tier 3); Proposed: ChargingIdleTerms (Tier 3); Proposed: ChargingSessionStatusEnum (Tier 3); Proposed: ChargingStopReasonEnum (Tier 3); Proposed: ChargingSettlementModeEnum (Tier 3) |
+| `ChargingPointStatus` | Part 23 — live state overlay keyed by Reference to an APDS ElectricChargingEquipment — the dynamic counterpart of the static ElectricChargingPoint (APDS `refillPointIndex` exists precisely "to link static and dynamic publications"). Never duplicates the static descriptive fields (connector types, power ratings live in APDS). Carries availability per point and per connector, the current session, a reservation, and what the bay camera sees. Same pattern as Part 6 DeviceStatus. Also the request body the charging-network bridge PUTs to `…/points/{id}/status`. | 18 | Offered for later: ChargingPointStatus (Tier 3), ConnectorStatus (Tier 3) |
+| `ChargingSession` | Part 23 — one charge of one vehicle at one charging point, as the parking system sees it: who was authorized and how, the timeline from plug-in to unplug, energy delivered, the idle period after charging completed, cost, and how it settles — while the APDS Session remains the parking stay and is only referenced. The charging network's own identifiers (OCPP transaction, OCPI session/CDR) ride along opaquely so the two records can be reconciled without APX redefining either protocol. | 75 | Offered for later: ChargingSession (Tier 3), ChargingCost (Tier 3), ChargingIdleTerms (Tier 3), ChargingSessionStatusEnum (Tier 3), ChargingStopReasonEnum (Tier 3), ChargingSettlementModeEnum (Tier 3) |
 
 #### Enumerations in EV charging
 
@@ -7372,7 +7373,8 @@ from the APX OpenAPI schemas. They are read as follows:
   of its attributes with their types. 03 Data Dictionary lists every
   member.
 - **Stereotype labels.** A box marked «proposed» is an APX class from
-  which a data element is proposed to APDS (06, Part D). A box with no
+  which a data element is offered to APDS for later adoption (06,
+  Appendix). A box with no
   members is a class from outside the module: «APDS» marks an APDS 4.1
   class, used as published apart from the overlay changes in 03 Annex B,
   and «APX» marks a class from another APX module.

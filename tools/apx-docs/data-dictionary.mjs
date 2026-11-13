@@ -81,8 +81,8 @@ function annexApds(model) {
 function annexProposals(model) {
   const rows = model.classes.filter((c) => c.proposedAs.length).sort(byName)
     .flatMap((c) => c.proposedAs.map((p) => [c.name, p.name, p.change === 'new' ? `new ${p.kind === 'enum' ? 'enumeration' : 'class'}` : `extends APDS ${p.name}`, p.domain, p.tier]));
-  return ['## Annex C (informative) APX elements proposed to APDS', '',
-    'Each row links an APX class to the APDS data element proposed from it. The full proposals, in APDS Data Dictionary format, are in `docs/apds-submission/03-data-dictionary.md`; 06 Requests to APDS summarizes them.', '',
+  return ['## Annex C (informative) APX elements offered to APDS', '',
+    'Each row links an APX class to the APDS data element offered from it. Apart from the five `EquipmentTypeEnum` values, none is requested: they are APX extensions available for later adoption (06 Requests to APDS, Appendix). The full text, in APDS Data Dictionary format, is in `docs/apds-submission/03-data-dictionary.md`.', '',
     table(['APX class', 'Proposed APDS element', 'Change', 'APDS domain', 'Tier'], rows), ''].join('\n');
 }
 

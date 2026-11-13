@@ -8,6 +8,37 @@ The machine-readable spec (`spec/openapi/apx.yaml`, bundled as
 
 ## [Unreleased]
 
+A minimal request to APDS. APX now asks APDS only for corrections and
+five equipment values, and offers everything else for later. No change
+to the OpenAPI spec or the wire format.
+
+### Changed
+- **The APDS documents make a minimal request.** The submission
+  (`docs/apds-submission/`) and 06 Requests to APDS open with "What we
+  ask of APDS": the errata 001 to 014 (filed), the Data Dictionary
+  candidates C-015 to C-026 (not filed; C-025 tentative), and five
+  `EquipmentTypeEnum` values. Every other proposal moves to an
+  informative annex, "APX extensions available for later adoption",
+  which makes no request: APX already carries each one as an
+  `apds-ext:apx:*` extension or an APX resource. Tiers are kept in the
+  annex (Tier 1 is now "ready to adopt"). Design note:
+  `docs/apx-additional-functions/APX-apds-minimal-ask-2026-11-13.md`.
+- **Generators.** `ask: minimal` on a proposal entry marks it as
+  requested. `tools/build-apds-submission.mjs` validates it and renders
+  the request first; `tools/build-apx-docs.mjs` fills the new
+  `<!-- generate:minimal-ask -->` marker in 06. The APX Data Dictionary's
+  APDS status column says "Requested" or "Offered for later".
+
+### Added
+- **`exitVerifier`** in the proposed `EquipmentTypeEnum` values (Place,
+  Tier 1): a machine at an exit lane that reads the ticket or credential
+  presented and opens the barrier when the stay is paid or valid. With
+  `paymentMachine`, entry and exit lanes can both be typed with APDS
+  names alone.
+- **Ticket drafts** in `docs/errata/drafts/`: one per Data Dictionary
+  candidate (C-015 to C-024, C-026), a hold note for C-025, and change
+  request CR-001 for the five values. Files only; nothing filed.
+
 ## [0.16.0] — 2026-11-01
 
 Three additions asked for by an edge-and-cloud deployment after its first

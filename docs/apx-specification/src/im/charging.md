@@ -170,7 +170,7 @@ parking stay), AssignedRight, ObservationElement (bay evidence),
 DeliveryUnitEnum, AuthenticationAndIdentificationEnum and
 AmountInCurrency.
 
-Proposed to APDS, in the existing EnergyInfrastructure package, as Level
+Offered to APDS for later adoption, in the existing EnergyInfrastructure package, as Level
 B additions offered for discussion (see the APX Data Specification):
 
 | Element | Change | Tier |

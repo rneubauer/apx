@@ -123,7 +123,7 @@ routes and APDS `EventTypeEnum` topics alongside APX ones, so a client
 learns both from one place. APDS 4.1 itself defines no discovery or
 bootstrap document; APX adds them without changing any APDS route.
 
-Proposed to APDS: no data element. Discovery describes the interface, not
+Offered to APDS: no data element. Discovery describes the interface, not
 the parking data, and the APX Data Specification proposes data only.
 
 APX-only: `ApxConfiguration` and `DiscoveryDocument`, together with the
