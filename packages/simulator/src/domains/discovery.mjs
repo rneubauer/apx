@@ -2,7 +2,7 @@
  * apx-discovery (Part 16): the unauthenticated bootstrap document and the
  * credential-scoped capability document.
  *
- * World sections read: host, tokenEndpoint, apdsVersion, apiBase, providerId,
+ * World sections read: host, tokenEndpoint, apdsVersion, apiBase, providerId, installationId,
  * discovery{ conformanceClasses, features } (else the top-level members), registries | registryBase, rateLimits,
  * hosts{ <hostname>: { same members } } for the other hosts a scenario
  * reaches by its Host header (an aggregator, a PARCS starter host),
@@ -23,6 +23,10 @@ const BASE = ['apx-data', 'apx-events'];
 // entry in the provider registry (spec/providers/apx-providers.json, Part 11
 // §11.4). A world or host sets its own `providerId`, or null to leave it out.
 export const SIMULATOR_PROVIDER_ID = '8ddabe04-3d59-415d-a8ce-620d01b1a240';
+// The installation (Part 16 §16.1): generated once for the simulator, never
+// registered, and fixed so scenarios and tests can rely on it. A world or host
+// sets its own `installationId`, or null to leave it out.
+export const SIMULATOR_INSTALLATION_ID = 'e2e76ac7-ae2f-4590-81a0-85aa6aedeea7';
 const KNOWN_CLASSES = registryValues('apx-conformance-classes');
 // Part 3 §3.1 dependency table; a class absent here requires the base classes.
 const REQUIRES = {
@@ -189,6 +193,7 @@ export default {
             apiBase: world.apiBase,
             apdsVersion: world.apdsVersion,
             providerId: world.providerId,
+            installationId: world.installationId,
             // world.discovery.{conformanceClasses,features} win: an `extends` chain concatenates
             // the loader-defaulted arrays of the base world into the top-level members.
             conformanceClasses: world.discovery?.conformanceClasses ?? world.conformanceClasses,
@@ -224,6 +229,7 @@ export default {
         edition: EDITION.edition,
         apdsVersion: cfg.apdsVersion ?? EDITION.extension?.apdsVersion ?? '4.1',
         ...(cfg.providerId === null ? {} : { providerId: cfg.providerId ?? SIMULATOR_PROVIDER_ID }),
+        ...(cfg.installationId === null ? {} : { installationId: cfg.installationId ?? SIMULATOR_INSTALLATION_ID }),
         tokenEndpoint: cfg.tokenEndpoint ?? `${cfg.url}/oauth2/token`,
         ...(cfg.apiBase ? { apiBase: cfg.apiBase } : {}),
         conformanceClasses: closeClasses(cfg.conformanceClasses ?? BASE),

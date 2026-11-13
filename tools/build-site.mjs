@@ -163,10 +163,14 @@ writeFileSync(join(REG_OUT, 'index.html'), registryIndex);
   copyFileSync(join(PROV_SRC, 'apx-providers.json'), join(PROV_OUT, 'apx-providers.json'));
   copyFileSync(join(PROV_SRC, 'provider.schema.json'), join(PROV_OUT, 'provider.schema.json'));
   const link = (url) => (url ? `<a href="${escapeHtml(url)}">${escapeHtml(url.replace(/^https:\/\//, ''))}</a>` : '');
+  // A product entry (Part 11 §11.4) names its company entry as `parent`.
+  const companyName = new Map(doc.providers.filter((p) => !p.parent).map((p) => [p.providerId, p.name]));
+  const productOf = (p) =>
+    p.parent ? `<br><small>product of ${escapeHtml(companyName.get(p.parent) ?? p.parent)}</small>` : '';
   const providerRows = doc.providers
     .map(
       (p) =>
-        `      <tr><td>${escapeHtml(p.name)}${p.url ? `<br>${link(p.url)}` : ''}</td><td><code>${escapeHtml(p.namespace)}</code></td><td><code>${escapeHtml(p.providerId)}</code></td><td>${escapeHtml(p.roles.join(', '))}</td><td>${escapeHtml(p.status)}</td><td>${escapeHtml(p.registeredDate)}</td></tr>`
+        `      <tr><td>${escapeHtml(p.name)}${productOf(p)}${p.url ? `<br>${link(p.url)}` : ''}</td><td><code>${escapeHtml(p.namespace)}</code></td><td><code>${escapeHtml(p.providerId)}</code></td><td>${escapeHtml(p.roles.join(', '))}</td><td>${escapeHtml(p.status)}</td><td>${escapeHtml(p.registeredDate)}</td></tr>`
     )
     .join('\n');
   const providerIndex = registryIndex
@@ -185,7 +189,9 @@ writeFileSync(join(REG_OUT, 'index.html'), registryIndex);
     <a href="apx-providers.json"><code>apx-providers.json</code></a>,
     validated in CI against
     <a href="provider.schema.json"><code>provider.schema.json</code></a>.
-    Entries are add-only: an entry is never deleted or renumbered, only retired.
+    An organisation has one company entry and may add product entries,
+    each naming its company. Entries are add-only: an entry is never
+    deleted or renumbered, only retired.
   </p>
   <table>
     <thead><tr><th>Provider</th><th>Namespace</th><th>providerId</th><th>Roles</th><th>Status</th><th>Registered</th></tr></thead>

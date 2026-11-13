@@ -83,9 +83,13 @@ data the event is about. A publisher SHOULD set it. `source` names the
 publishing implementation and `provider` names the organisation behind
 the data; an aggregator relaying another provider's event MUST keep that
 provider in `provider` and puts itself in `source` (Part 4 §4.1b rule 5,
-Part 18 §18.2). A receiver keys the event's `subject` by the pair
-(`provider`, `subject.id`) (Part 4 §4.1b rule 2). The member is OPTIONAL
-in this edition; a later edition is expected to make it REQUIRED.
+Part 18 §18.2). Beside it, the optional `installation` member is the
+`installationId` (Part 16 §16.1) of the installation whose data the event
+is about; a publisher SHOULD set it, and an aggregator relaying an event
+MUST keep the original installation. A receiver keys the event's
+`subject` by (`provider`, `installation`, `subject.id`) (Part 4 §4.1b
+rule 2). Both members are OPTIONAL in this edition; a later edition is
+expected to make them REQUIRED.
 
 ## 8.3 Webhook delivery (normative)
 

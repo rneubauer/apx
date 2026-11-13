@@ -2,7 +2,7 @@
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "$id": "https://apx-standard.org/schemas/provider.schema.json",
   "title": "APX provider registry document",
-  "description": "The APX provider registry (Part 11 §11.4): every organisation that implements APX, as a server, a data provider, or a client that pushes data. Add-only: an entry is never deleted or renumbered, only retired. The top-level version increments on every change. Not an APDS UserDefinedCodeList, because an entry carries more than a code.",
+  "description": "The APX provider registry (Part 11 §11.4): every organisation that implements APX, as a server, a data provider, or a client that pushes data. An organisation has one company entry and MAY add product entries, one per product, each naming the company entry as its parent. Add-only: an entry is never deleted or renumbered, only retired. The top-level version increments on every change. Not an APDS UserDefinedCodeList, because an entry carries more than a code.",
   "type": "object",
   "required": ["name", "version", "locator", "providers"],
   "properties": {
@@ -32,14 +32,20 @@
           "format": "uuid",
           "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$"
         },
+        "parent": {
+          "description": "On a product entry only: the providerId of the company entry this product belongs to. Absent on a company entry. The parent is itself a company entry (it has no parent of its own), and a product entry's namespace equals its parent's.",
+          "type": "string",
+          "format": "uuid",
+          "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$"
+        },
         "name": {
-          "description": "The organisation's name, as it trades.",
+          "description": "The organisation's name, as it trades. On a product entry, the product's name.",
           "type": "string",
           "minLength": 1,
           "maxLength": 200
         },
         "namespace": {
-          "description": "The organisation's partner-extension namespace (Part 3 §3.3): extension keys apds-ext:<namespace>:…, endpoints /apx/x/<namespace>/…, topics <namespace>.…, vendor classes <namespace>-<class>. Unique in the registry. The apx and apds namespaces are reserved.",
+          "description": "The organisation's partner-extension namespace (Part 3 §3.3): extension keys apds-ext:<namespace>:…, endpoints /apx/x/<namespace>/…, topics <namespace>.…, vendor classes <namespace>-<class>. Unique among company entries. A product entry shares its company's namespace: it MUST equal the namespace of its parent. The apx and apds namespaces are reserved.",
           "type": "string",
           "pattern": "^[a-z0-9](?:[a-z0-9-]{0,30}[a-z0-9])?$",
           "not": { "enum": ["apx", "apds"] }

@@ -32,13 +32,28 @@ locations. This is how a client with nothing but a hostname gets started.
   §3.4); when `edition` is also present the two are equal.
 - **Provider.** `providerId` is the `providerId` of the organisation
   running the implementation, as registered in the provider registry
-  (Part 11 §11.4; registration is required by Part 3 §3.1a). The document
+  (Part 11 §11.4; registration is required by Part 3 §3.1a): its company
+  entry's, or the entry of the product this implementation is when the
+  organisation registered that product separately. The document
   SHOULD carry it. A client that reads it SHOULD check it against the
   registry, and uses it as the provider of records and events from this
   host that carry no `provider` of their own (Part 4 §4.1b rule 3). An
   aggregator gives its own `providerId` here; the providers whose data it
   fronts are named on their records (Part 18 §18.2). A later edition is
   expected to make the member REQUIRED.
+- **Installation.** `installationId` identifies this installation: one
+  deployment or instance of the provider's implementation (Part 4 §4.1b
+  rule 1). The installation generates it as a UUID (version 4
+  recommended); it is not registered. It MUST NOT change for the life of
+  the installation, across restarts and upgrades alike, and is never
+  reused; a new installation, such as a second site or a rebuilt server
+  that does not keep the old one's data, generates a new one. Ids are
+  local to an installation, so a client uses it, with `providerId`, to
+  scope records and events from this host that carry no `installation`
+  of their own (Part 4 §4.1b rule 3). The document SHOULD carry it; a
+  later edition is expected to make the member REQUIRED. An aggregator
+  gives its own `installationId` here; the installations whose data it
+  fronts are named on their records (Part 18 §18.2).
 - The document carries an optional `extensions` container (Part 4 §4.3),
   as does the discovery document.
 

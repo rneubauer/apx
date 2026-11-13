@@ -16,8 +16,8 @@
   },
   "normativeArtifacts": {
     "bundle": {
-      "spec/dist/apx-v1.yaml": "1c208e58e2f58774c7750aceb3a8ca94ed185d7582775088f442303dc3a33beb",
-      "spec/dist/apx-v1.json": "32106fdf72a04096174890404848c7071cdaeb4f707bfd8a93e404a927724f32"
+      "spec/dist/apx-v1.yaml": "4819f44f3da513a3da55910871aae4315032e8ab45c911c75d79788be1d98fbb",
+      "spec/dist/apx-v1.json": "e200c40aa962da4a9f564a368bb832bad1c7ff19658e1f8c3d605878698f76a3"
     },
     "overlays": {
       "spec/openapi/overlays/apx-data-overlay.yaml": "b5b3669d9212ec51690fb46d76d50d03f572fdd06b796003b8e599ac6854cf3a",

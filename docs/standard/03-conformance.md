@@ -58,17 +58,26 @@ precondition of conformance to every class, base classes included.
    and a client that pushes data into an APX implementation alike. An
    implementation run by an organisation that has no active entry in the
    registry does not conform to any class, whatever it implements.
-2. One registration covers every implementation the organisation runs.
-   The entry's `providerId` is the organisation's identity in APX (Part 4
-   §4.1b) and its `namespace` is the organisation's vendor namespace
-   (§3.3), so one registration claims both.
+2. The organisation's company entry is required, and it covers every
+   implementation the organisation runs. Its `providerId` is the
+   organisation's identity in APX (Part 4 §4.1b) and its `namespace` is
+   the organisation's vendor namespace (§3.3), so one registration claims
+   both. The organisation MAY add product entries, one per product, each
+   with its own `providerId` and naming the company entry as its
+   `parent`; they are optional, and a product entry shares the company's
+   namespace (Part 11 §11.4). A product's implementations may then use
+   the product's `providerId` in data instead of the company's.
 3. A registration can be as small as a name: the required members are
    listed in Part 11 §11.4, and none of them asks for anything beyond who
    the organisation is and how to reach it.
 4. Carrying the `providerId` in the data (the bootstrap `providerId`,
    `RecordInfo.provider`, and the event envelope `provider`) is OPTIONAL
    in this edition and SHOULD be done (Part 4 §4.2, Part 8 §8.2, Part 16
-   §16.1). A later edition is expected to make these members REQUIRED.
+   §16.1). The same holds for the installation (the bootstrap
+   `installationId`, `RecordInfo.installation`, and the envelope
+   `installation`), which the installation generates and does not
+   register (Part 4 §4.1b rule 1). A later edition is expected to make
+   these members REQUIRED.
 
 ## 3.2 Versioning
 

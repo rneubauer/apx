@@ -19,10 +19,11 @@ The published copy is at <https://rneubauer.github.io/apx/providers/>.
    issued them (Part 4 §4.1a). Two providers can both have a place with
    the same id, and both are right. A system that brings data from
    several providers together, such as an aggregator, a call center, or
-   an analytics platform, keys every record by the pair (`providerId`,
-   local id), never by the local id alone (Part 4 §4.1b). The registry is
-   where a `providerId` comes from, and the one place it is guaranteed
-   unique.
+   an analytics platform, keys every record by (`providerId`,
+   `installationId`, local id), never by the local id alone (Part 4
+   §4.1b). The registry is where a `providerId` comes from, and the one
+   place it is guaranteed unique. The `installationId` is not registered:
+   each deployment generates its own (see "Your installation id" below).
 
 ## Who must register
 
@@ -36,15 +37,21 @@ Every APX implementation, whatever its role:
 A client that only reads is not an implementation in this sense, but it
 may register too, and we would like to hear from you.
 
-One registration covers every product and deployment your organisation
-runs. Register the organisation, not each server.
+Your organisation registers once, with a **company entry**. It covers
+every product and deployment you run. Register the organisation, not
+each server.
+
+If you want receivers to tell your products apart by `providerId`, you
+MAY also add a **product entry** for each product (see "Registering a
+product" below). Product entries are optional.
 
 ## What an entry holds
 
 | Member | Required | What to put |
 |---|---|---|
 | `providerId` | yes | A UUID v4 you generate, in lowercase (step 1). |
-| `name` | yes | Your organisation's name, as it trades. |
+| `parent` | product entries only | Leave it out on your company entry. On a product entry, your company entry's `providerId`. |
+| `name` | yes | Your organisation's name, as it trades (on a product entry, the product's name). |
 | `namespace` | yes | Your vendor namespace (step 2). |
 | `url` | no | Your public web site, `https://…`. |
 | `roles` | yes | One or more of `parcs`, `lpr`, `enforcement`, `payments`, `reservations`, `permits`, `callCenter`, `analytics`, `charging`, `valet`, `platform`, `other`. |
@@ -83,8 +90,9 @@ The first entry, Umojo's, is an example:
    `<namespace>-<class>`. Registering it claims it, so nobody else can
    use it. Rules: lowercase letters, digits and hyphens, starting and
    ending with a letter or digit, at most 32 characters; not `apx` or
-   `apds`; not already in the registry; and not a name that suggests
-   another organisation. Your company name, shortened, is usually right.
+   `apds`; not already used by another company entry; and not a name
+   that suggests another organisation. Your company name, shortened, is
+   usually right.
 3. **Add your entry by pull request.** Fork the repository, append your
    entry at the end of `providers` in `spec/providers/apx-providers.json`,
    and increment the top-level `version` by one. Do not change any other
@@ -104,12 +112,73 @@ The first entry, Umojo's, is an example:
 5. **Use your `providerId`.** Once merged, put it in your
    implementation's data (see the next section).
 
+## Registering a product
+
+A product entry is optional. Add one when you want data from one of your
+products to carry its own `providerId`, so a receiver can tell it from
+your other products without looking further. It is an ordinary entry
+with three differences:
+
+- `parent` is your company entry's `providerId`. The parent must be a
+  company entry, not another product: products do not nest.
+- `namespace` is your company's namespace, exactly. A product does not
+  get a namespace of its own; your extensions stay under the company's.
+- `name` is the product's name.
+
+For example, a product entry under Umojo's company entry would look like
+this (the `providerId` is illustrative):
+
+```json
+{
+  "providerId": "<a new UUID v4>",
+  "parent": "8ddabe04-3d59-415d-a8ce-620d01b1a240",
+  "name": "Umojo NexPark",
+  "namespace": "umojo",
+  "roles": ["parcs", "lpr"],
+  "contact": "https://umojo.com",
+  "status": "active",
+  "registeredDate": "2026-11-13"
+}
+```
+
+Add it by pull request like any other entry: append it, increment
+`version`, and run `npm run providers:check`, which checks that the
+parent exists, that it is a company entry, and that the namespaces
+match. Only the organisation that owns the company entry adds products
+under it. Implementations of that product then put the product's
+`providerId` in their data instead of the company's.
+
+## Your installation id
+
+Ids in APX are local to the installation that issues them, and a vendor
+that runs its product at many sites usually issues ids per site. Two of
+your own sites can therefore hold the same id. So that receivers can
+still tell them apart, each installation (one site's server, one tenant
+of a hosted service, one edge box) has an `installationId`:
+
+- The installation generates it, as a UUID v4. It is **not** registered.
+- It never changes for the life of the installation, across restarts and
+  upgrades alike. Store it with the installation's data, so a restore
+  keeps it. A new installation generates a new one.
+- Publish it in `/.well-known/apx-configuration` as `installationId`,
+  and SHOULD set it on records (`RecordInfo.installation`) and event
+  envelopes (`installation`) beside `provider` (Part 4 §4.1b, Part 16
+  §16.1).
+
+A receiver keys your records by (`providerId`, `installationId`, local
+id). It may key them by the pair (`providerId`, local id) only if you
+guarantee that your ids are unique across your whole estate, every
+installation included. If you give that guarantee, say so in your
+documentation; most vendors cannot, and should publish the
+`installationId`.
+
 ## Changing or retiring an entry
 
 The registry is add-only, like the code-list registries:
 
 - An entry is never deleted, reordered, or renumbered. Its `providerId`,
-  `namespace`, and `registeredDate` never change.
+  `parent`, `namespace`, and `registeredDate` never change, so a company
+  entry never becomes a product entry or the reverse.
 - `name`, `url`, `roles`, and `contact` may be updated by pull request
   from the organisation. Increment `version`.
 - **Retiring.** When an organisation stops implementing APX, or is
@@ -118,7 +187,9 @@ The registry is add-only, like the code-list registries:
   carry its `providerId` can still be traced. A retired `providerId` or
   `namespace` is never reused, and a retired entry is never made active
   again. An organisation that comes back, or a renamed one that wants a
-  new namespace, registers a new entry.
+  new namespace, registers a new entry. When a company entry is retired,
+  its product entries are retired with it; a product can be retired on
+  its own.
 
 `npm run providers:check` enforces these rules against the base branch.
 
@@ -128,24 +199,27 @@ The registry is add-only, like the code-list registries:
 
 - registration, for every implementation (Part 3 §3.1a; Annex A
   APX-CORE-21);
-- the pairing rule: any system holding records from more than one
-  provider keys them by (`providerId`, local id), and an aggregator that
-  re-publishes a record keeps the original provider (Part 4 §4.1b,
-  Part 18 §18.2; Annex A APX-CORE-22).
+- the keying rule: any system holding records from more than one
+  provider or installation keys them by (`providerId`, `installationId`,
+  local id), or by (`providerId`, local id) only for a provider that
+  guarantees its ids are unique across its whole estate, and an
+  aggregator that re-publishes a record keeps the original provider and
+  installation (Part 4 §4.1b, Part 18 §18.2; Annex A APX-CORE-22).
 
 **Optional today, and SHOULD be done:**
 
-- `providerId` in your `/.well-known/apx-configuration` document
-  (Part 16 §16.1);
-- `RecordInfo.provider` on the records you create (Part 4 §4.2);
-- `provider` on the webhook and SSE event envelopes you publish (Part 8
-  §8.2).
+- `providerId` and `installationId` in your
+  `/.well-known/apx-configuration` document (Part 16 §16.1);
+- `RecordInfo.provider` and `RecordInfo.installation` on the records you
+  create (Part 4 §4.2);
+- `provider` and `installation` on the webhook and SSE event envelopes
+  you publish (Part 8 §8.2).
 
 Receivers SHOULD also bind your `providerId` to the credentials they issue
 you, so a `providerId` you assert in data can be checked against the
-credential it arrived with (Part 11 §11.4 rule 4).
+credential it arrived with (Part 11 §11.4 rule 5).
 
 **Expected later:** a later edition of the standard is expected to make
-the three data members above REQUIRED. No version has been set. Adding
+the data members above REQUIRED. No version has been set. Adding
 them now costs nothing and means that edition will need no change from
 you.

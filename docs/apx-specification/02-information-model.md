@@ -500,6 +500,7 @@ classDiagram
     +String type
     +String source
     +Uuid provider
+    +Uuid installation
     +DateTime time
     +Url dataschema
     +Object data
@@ -515,6 +516,7 @@ classDiagram
     +String lastUpdateUser
     +String origin
     +Uuid provider
+    +Uuid installation
     +Reference creator
   }
   <<proposed>> RecordInfo
@@ -612,10 +614,10 @@ classDiagram
 | `ApxResourceCore` | Identity core shared by every APX-defined resource. Shaped so any APX resource can itself be the target of an APDS Reference or VersionedReference (RFC 4122 UUID identifier + integer version). | 4 | APX only |
 | `CodeListValue` | A value drawn from an APX or implementer UserDefinedCodeList — carries the defined value plus an optional ReferencedCodeListEntry-style pointer to the list that defines it. | 2 | APX only |
 | `CredentialDigest` | The `apds-ext:apx:credential-digest@1.0` decoration (Part 9 §9.6 rule 6): a keyed digest of a normalized credential identification (a plate), so a consumer that only needs "same plate?" can match without the plate itself. `value` is base64url(HMAC-SHA-256(key, normalized identification)); the key is named by `keyId` and distributed through `GET /v1/digest-keys`. Visible under `apx.data:read`. | 4 | APX only |
-| `EventEnvelope` | The single envelope for all APX asynchronous delivery (webhooks and SSE). Attribute names are aligned with CloudEvents 1.0 (informative mapping in the standard's annex); `subject` carries an APDS Reference so events bind to APDS/APX entities natively. | 9 | APX only |
+| `EventEnvelope` | The single envelope for all APX asynchronous delivery (webhooks and SSE). Attribute names are aligned with CloudEvents 1.0 (informative mapping in the standard's annex); `subject` carries an APDS Reference so events bind to APDS/APX entities natively. | 10 | APX only |
 | `Extensions` | The official APDS extension container (Use Case Document §C.2.5). Keys MUST follow `apds-ext:<namespace>:<class>@<major>.<minor>`. Implementations MUST preserve unknown extension keys on round-trip (tolerant reader, faithful writer). An APX decoration key, wherever the container appears, MUST carry a value valid against that decoration's schema (Part 4 §4.3); other keys are any object. | 17 | APX only |
 | `Problem` | RFC 9457 problem details. APX problem `type` URIs are registered in the APX problem-type registry. Used for all APX error responses; APDS-native routes may alternatively use the APDS ResponseStatus shape. | 5 | APX only |
-| `RecordInfo` | Provenance metadata for an APX resource, aligned to the APDS Information Model's RecordType (creationTime/creator/lastUpdate). All timestamps are RFC 3339 (APDS DateTime). | 7 | Proposed: RecordType (Tier 3) |
+| `RecordInfo` | Provenance metadata for an APX resource, aligned to the APDS Information Model's RecordType (creationTime/creator/lastUpdate). All timestamps are RFC 3339 (APDS DateTime). | 8 | Proposed: RecordType (Tier 3) |
 
 #### Enumerations in Common elements
 
@@ -802,6 +804,7 @@ classDiagram
     +String edition
     +String apdsVersion
     +Uuid providerId
+    +Uuid installationId
     +Url tokenEndpoint
     +Url apiBase
     +String[] conformanceClasses
@@ -821,7 +824,7 @@ classDiagram
 
 | Class | Definition | Members | APDS status |
 | --- | --- | --- | --- |
-| `ApxConfiguration` | Unauthenticated bootstrap configuration document. | 11 | APX only |
+| `ApxConfiguration` | Unauthenticated bootstrap configuration document. | 12 | APX only |
 | `DiscoveryDocument` | What THIS credential can do: exactly the endpoints, commands, topics, and places reachable with the presented token's scopes and grants. Two clients with different grants receive different documents; a client can call everything its document lists and nothing more. | 24 | APX only |
 
 #### Enumerations in Discovery

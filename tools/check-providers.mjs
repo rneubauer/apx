@@ -4,21 +4,27 @@
  * (Part 11 §11.4):
  *
  *   1. the file against spec/providers/provider.schema.json;
- *   2. providerId and namespace unique across every entry, retired ones
- *      included (a retired id or namespace is never reused);
- *   3. add-only against the base branch: every base entry is still there,
- *      in the same position, with the same providerId, namespace and
- *      registeredDate; a status may go from active to retired, never back;
- *      and when the file changed, `version` went up.
+ *   2. providerId unique across every entry, and namespace unique among
+ *      company entries (entries with no `parent`), retired ones included
+ *      (a retired id or namespace is never reused);
+ *   3. product entries: a `parent` names another entry that exists and is
+ *      itself a company entry, the product's namespace equals its
+ *      parent's, and an active product never sits under a retired company;
+ *   4. add-only against the base branch: every base entry is still there,
+ *      in the same position, with the same providerId, parent, namespace
+ *      and registeredDate; a status may go from active to retired, never
+ *      back; and when the file changed, `version` went up.
  *
  * The base is $APX_PROVIDERS_BASE when set, else origin/$GITHUB_BASE_REF
  * (set by GitHub Actions on pull requests), else origin/main. The add-only
  * check needs that ref and git. When either is missing (a shallow clone
  * with no base fetched, a push build, a tarball) the check says so and
- * skips step 3 instead of failing: locally it compares against whatever
+ * skips step 4 instead of failing: locally it compares against whatever
  * origin/main your clone last fetched, and CI fetches the PR's base first.
  * A base without the file (the commit that introduces it) also skips.
- * $APX_PROVIDERS_BASE_FILE names a file to compare against instead of a ref.
+ * $APX_PROVIDERS_BASE_FILE names a file to compare against instead of a ref,
+ * and $APX_PROVIDERS_FILE a file to check instead of the registry itself
+ * (tools/check-providers.test.mjs uses both).
  */
 import { readFileSync } from 'node:fs';
 import { execFileSync } from 'node:child_process';
@@ -36,7 +42,7 @@ const failures = [];
 const fail = (msg) => failures.push(msg);
 
 const schema = JSON.parse(readFileSync(join(DIR, 'provider.schema.json'), 'utf8'));
-const doc = JSON.parse(readFileSync(join(ROOT, FILE), 'utf8'));
+const doc = JSON.parse(readFileSync(process.env.APX_PROVIDERS_FILE ?? join(ROOT, FILE), 'utf8'));
 
 // 1. schema
 const ajv = new Ajv2020({ allErrors: true, strict: false });
@@ -48,19 +54,41 @@ if (!validate(doc)) {
 
 // 2. uniqueness
 const providers = Array.isArray(doc.providers) ? doc.providers : [];
-function checkUnique(field) {
+const isCompany = (p) => p?.parent === undefined;
+function checkUnique(field, entries, scope) {
   const seen = new Map();
-  providers.forEach((p, i) => {
+  entries.forEach(({ p, i }) => {
     const value = p?.[field];
     if (value === undefined) return;
-    if (seen.has(value)) fail(`duplicate ${field} "${value}" (entries ${seen.get(value)} and ${i})`);
+    if (seen.has(value)) fail(`duplicate ${field} "${value}"${scope} (entries ${seen.get(value)} and ${i})`);
     else seen.set(value, i);
   });
 }
-checkUnique('providerId');
-checkUnique('namespace');
+const indexed = providers.map((p, i) => ({ p, i }));
+checkUnique('providerId', indexed, '');
+checkUnique('namespace', indexed.filter(({ p }) => isCompany(p)), ' among company entries');
 
-// 3. add-only against the base branch
+// 3. product entries and their parents
+const byId = new Map();
+for (const p of providers) if (p?.providerId && !byId.has(p.providerId)) byId.set(p.providerId, p);
+providers.forEach((p, i) => {
+  if (isCompany(p)) return;
+  const label = `entry ${i} (${p.providerId})`;
+  if (p.parent === p.providerId) return fail(`parent: ${label} names itself as its parent`);
+  const parent = byId.get(p.parent);
+  if (!parent) return fail(`parent: ${label} names parent ${p.parent}, which is not in the registry`);
+  if (!isCompany(parent)) {
+    return fail(`parent: ${label} names parent ${p.parent}, which is a product entry; a parent must be a company entry`);
+  }
+  if (p.namespace !== parent.namespace) {
+    fail(`parent: ${label} has namespace "${p.namespace}" but its parent's is "${parent.namespace}"; a product entry shares its company's namespace`);
+  }
+  if (parent.status === 'retired' && p.status === 'active') {
+    fail(`parent: ${label} is active but its parent ${p.parent} is retired; retire the product with its company`);
+  }
+});
+
+// 4. add-only against the base branch
 function baseRef() {
   if (process.env.APX_PROVIDERS_BASE) return process.env.APX_PROVIDERS_BASE;
   if (process.env.GITHUB_BASE_REF) return `origin/${process.env.GITHUB_BASE_REF}`;
@@ -81,7 +109,7 @@ function readBase(ref) {
   }
 }
 
-const IMMUTABLE = ['providerId', 'namespace', 'registeredDate'];
+const IMMUTABLE = ['providerId', 'parent', 'namespace', 'registeredDate'];
 
 function checkAddOnly(base) {
   const before = Array.isArray(base.providers) ? base.providers : [];
@@ -93,7 +121,8 @@ function checkAddOnly(base) {
     if (!now) return;
     for (const field of IMMUTABLE) {
       if (now[field] !== old[field]) {
-        fail(`add-only: entry ${i} (${old.providerId}) changed ${field} from "${old[field]}" to "${now[field]}"; entries are never renumbered, reordered or re-keyed`);
+        const show = (v) => (v === undefined ? '(absent)' : `"${v}"`);
+        fail(`add-only: entry ${i} (${old.providerId}) changed ${field} from ${show(old[field])} to ${show(now[field])}; entries are never renumbered, reordered or re-keyed`);
       }
     }
     if (old.status === 'retired' && now.status !== 'retired') {
@@ -122,7 +151,8 @@ if (failures.length > 0) {
   process.exit(1);
 }
 const active = providers.filter((p) => p.status === 'active').length;
+const products = providers.filter((p) => !isCompany(p)).length;
 console.log(
-  `${TAG} ${FILE} v${doc.version}: ${providers.length} provider(s), ${active} active` +
+  `${TAG} ${process.env.APX_PROVIDERS_FILE ?? FILE} v${doc.version}: ${providers.length} provider(s) (${products} product entr${products === 1 ? 'y' : 'ies'}), ${active} active` +
     (base.skip ? '' : `; add-only against ${ref} ok`)
 );

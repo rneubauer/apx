@@ -114,8 +114,10 @@ resolve does not conform.
    `spec/providers/apx-providers.json`, not issues. The APX maintainers
    review and merge registration pull requests against published
    criteria: the registrant is a real organisation; its `namespace` is
-   unique and is not `apx`, `apds`, or a name that implies another
-   organisation; its `contact` is organisational (a role mailbox or a
+   unique among company entries and is not `apx`, `apds`, or a name that
+   implies another organisation (a product entry's namespace is its
+   company's, and a product entry is added only by the organisation that
+   owns the company entry); its `contact` is organisational (a role mailbox or a
    URL, never a named person); and the entry impersonates no one. A
    registration that meets the criteria is merged; one that does not is
    answered on the pull request with the criterion it misses. No
@@ -131,13 +133,21 @@ and served from the specification site at
 It is not an APDS UserDefinedCodeList, because an entry carries more than
 a code, and it is not pinned by an edition (Part 3 §3.4).
 
+An organisation registers once, with a **company entry**. It MAY add
+further **product entries**, one per product, each with its own
+`providerId` and naming the company entry as its `parent`. A product
+entry lets a receiver tell one product's data from another's by
+`providerId` alone. Product entries are optional: the company entry is
+all that registration requires.
+
 Each entry has:
 
 | Member | Required | Meaning |
 |---|---|---|
-| `providerId` | yes | A UUID the registrant generates (version 4), lowercase. The organisation's identity in APX data (Part 4 §4.1b). |
-| `name` | yes | The organisation's name. |
-| `namespace` | yes | The organisation's vendor namespace (Part 3 §3.3), lowercase, unique in the registry. One registration claims both the `providerId` and the namespace. |
+| `providerId` | yes | A UUID the registrant generates (version 4), lowercase. The organisation's identity in APX data (Part 4 §4.1b), or on a product entry the product's. |
+| `parent` | product entries only | The `providerId` of the company entry the product belongs to. Absent on a company entry. |
+| `name` | yes | The organisation's name, or on a product entry the product's. |
+| `namespace` | yes | The organisation's vendor namespace (Part 3 §3.3), lowercase, unique among company entries. One registration claims both the `providerId` and the namespace. A product entry's namespace MUST equal its parent's. |
 | `url` | no | The organisation's public web site (`https`). |
 | `roles` | yes | One or more of `parcs`, `lpr`, `enforcement`, `payments`, `reservations`, `permits`, `callCenter`, `analytics`, `charging`, `valet`, `platform`, `other`. |
 | `contact` | yes | An organisational email address or URL. Never a named person. |
@@ -148,19 +158,26 @@ Rules:
 
 1. The registry is **add-only**, like the code-list registries (§11.1):
    an entry is never deleted, reordered, or renumbered, and its
-   `providerId`, `namespace`, and `registeredDate` never change. The
-   organisation may update its own `name`, `url`, `roles`, and `contact`.
+   `providerId`, `parent`, `namespace`, and `registeredDate` never
+   change, so a company entry never becomes a product entry or the
+   reverse. The organisation may update its own `name`, `url`, `roles`,
+   and `contact`.
    A provider that stops implementing APX, or is merged into another, is
    **retired** (`status` `retired`), and a new organisation gets a new
    entry. A retired `providerId` or `namespace` is never reused, and a
    retired entry is never made active again.
 2. The file carries a top-level `version` that increments on every
    change, an addition and a retirement alike.
-3. `providerId` and `namespace` are unique across every entry, retired
-   entries included.
-4. A receiver SHOULD bind a provider's `providerId` to the credentials it
+3. `providerId` is unique across every entry, and `namespace` across
+   every company entry, retired entries included.
+4. A product entry's `parent` MUST name a company entry (one with no
+   `parent` of its own) that is in the registry, and the product entry's
+   `namespace` MUST equal that company entry's. Products do not nest.
+   When a company entry is retired, its product entries are retired with
+   it.
+5. A receiver SHOULD bind a provider's `providerId` to the credentials it
    issues to that provider, and SHOULD check that a `providerId` the
    provider asserts in data (`RecordInfo.provider`, the envelope
-   `provider`) is its own or that of a provider whose data it is entitled
-   to relay (Part 18 §18.2).
-5. The steps to register are in `docs/registering-as-a-provider.md`.
+   `provider`) is its own, that of one of its own product entries, or
+   that of a provider whose data it is entitled to relay (Part 18 §18.2).
+6. The steps to register are in `docs/registering-as-a-provider.md`.

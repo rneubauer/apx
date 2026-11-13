@@ -6162,9 +6162,17 @@
           "providerId": {
             "type": "string",
             "format": "uuid",
-            "description": "The `providerId` under which the organisation running this\nimplementation is registered in the APX provider registry (Part 11\n§11.4; Part 16 §16.1). SHOULD be present in this edition; a later\nedition is expected to require it.",
+            "description": "The `providerId` under which the organisation running this\nimplementation is registered in the APX provider registry (Part 11\n§11.4; Part 16 §16.1): its company entry's, or that of the\nproduct entry for this implementation when it has one. SHOULD be present in this edition; a later\nedition is expected to require it.",
             "examples": [
               "8ddabe04-3d59-415d-a8ce-620d01b1a240"
+            ]
+          },
+          "installationId": {
+            "type": "string",
+            "format": "uuid",
+            "description": "Identifies this installation: one deployment or instance of the\nprovider's implementation (Part 16 §16.1). The installation\ngenerates it (a UUID, version 4 recommended) and it is not\nregistered. It never changes for the life of the installation,\nacross restarts and upgrades alike, and is never reused. Ids are\nlocal to an installation, so a receiver keys records from this\nhost by (`providerId`, `installationId`, local id) (Part 4 §4.1b).\nSHOULD be present in this edition; a later edition is expected to\nrequire it.",
+            "examples": [
+              "e2e76ac7-ae2f-4590-81a0-85aa6aedeea7"
             ]
           },
           "tokenEndpoint": {
@@ -9744,6 +9752,14 @@
               "8ddabe04-3d59-415d-a8ce-620d01b1a240"
             ]
           },
+          "installation": {
+            "type": "string",
+            "format": "uuid",
+            "description": "The `installationId` (Part 16 §16.1) of the installation whose data\nthe event is about, so a receiver can key `subject` by\n(`provider`, `installation`, `subject.id`) (Part 4 §4.1b). An\naggregator relaying an event keeps the original installation\n(Part 8 §8.2, Part 18 §18.2). OPTIONAL in this edition and SHOULD\nbe set; a later edition is expected to require it.",
+            "examples": [
+              "e2e76ac7-ae2f-4590-81a0-85aa6aedeea7"
+            ]
+          },
           "time": {
             "$ref": "#/components/schemas/DateTime"
           },
@@ -11583,9 +11599,17 @@
           "provider": {
             "type": "string",
             "format": "uuid",
-            "description": "The `providerId` (Part 11 §11.4 provider registry) of the\norganisation that supplied the record, so a receiver can key it by\nthe pair (`provider`, local id) (Part 4 §4.1b). An aggregator or\nreplicator that re-publishes a record keeps the original provider:\nthis names the source, never the aggregator (Part 18 §18.2).\n`origin` names an implementation; `provider` names an organisation.\nOPTIONAL in this edition and SHOULD be set; a later edition is\nexpected to require it.",
+            "description": "The `providerId` (Part 11 §11.4 provider registry) of the\norganisation that supplied the record, so a receiver can key it by\n(`provider`, `installation`, local id) (Part 4 §4.1b). An aggregator or\nreplicator that re-publishes a record keeps the original provider:\nthis names the source, never the aggregator (Part 18 §18.2).\n`origin` names an implementation; `provider` names an organisation.\nOPTIONAL in this edition and SHOULD be set; a later edition is\nexpected to require it.",
             "examples": [
               "8ddabe04-3d59-415d-a8ce-620d01b1a240"
+            ]
+          },
+          "installation": {
+            "type": "string",
+            "format": "uuid",
+            "description": "The `installationId` (Part 16 §16.1) of the installation that\ncreated the record: the one deployment or instance of the\nprovider's implementation whose local ids the record's ids are.\nWith `provider` it scopes the record's local ids (Part 4 §4.1b).\nAn aggregator or replicator that re-publishes a record keeps the\noriginal installation, never its own (Part 18 §18.2). OPTIONAL in\nthis edition and SHOULD be set; a later edition is expected to\nrequire it.",
+            "examples": [
+              "e2e76ac7-ae2f-4590-81a0-85aa6aedeea7"
             ]
           }
         }
