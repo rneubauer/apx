@@ -1,0 +1,17 @@
+{
+  "name": "apx-providers",
+  "version": 1,
+  "locator": "https://apx-standard.org/providers/apx-providers.json",
+  "providers": [
+    {
+      "providerId": "8ddabe04-3d59-415d-a8ce-620d01b1a240",
+      "name": "Umojo, Inc.",
+      "namespace": "umojo",
+      "url": "https://umojo.com",
+      "roles": ["platform", "callCenter", "analytics"],
+      "contact": "https://umojo.com",
+      "status": "active",
+      "registeredDate": "2026-11-08"
+    }
+  ]
+}

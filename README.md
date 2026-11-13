@@ -18,7 +18,7 @@ for the data model. The [APX Specification documents](docs/apx-specification/REA
 describe both tracks in the same form: everything the API defines, and
 everything APX asks APDS to add or change.
 
-**New here?** Read the [executive summary](docs/executive-summary.md) (shareable, non-technical), the [complete API overview](docs/apx-overview.md) (every route + the reasoning, no APDS knowledge needed), the [sample scenarios](docs/scenarios/README.md) (real wire exchanges, story first), or the [quickstart](docs/quickstart.md). **Want to see it run?** Open the [simulator](https://rneubauer.github.io/apx/simulator/) in your browser — every APX route, narrated demos, and the full vetting suite, nothing to install ([about the simulator](packages/simulator/README.md)). **PARCS vendor?** Start with the [PARCS Starter Profile](docs/parcs-starter-profile.md) — the minimum 26-endpoint surface, with a slim importable spec (`spec/dist/apx-parcs.json`).
+**New here?** Read the [executive summary](docs/executive-summary.md) (shareable, non-technical), the [complete API overview](docs/apx-overview.md) (every route + the reasoning, no APDS knowledge needed), the [sample scenarios](docs/scenarios/README.md) (real wire exchanges, story first), or the [quickstart](docs/quickstart.md). **Want to see it run?** Open the [simulator](https://rneubauer.github.io/apx/simulator/) in your browser — every APX route, narrated demos, and the full vetting suite, nothing to install ([about the simulator](packages/simulator/README.md)). **PARCS vendor?** Start with the [PARCS Starter Profile](docs/parcs-starter-profile.md) — the minimum 26-endpoint surface, with a slim importable spec (`spec/dist/apx-parcs.json`). **Implementing APX?** Every implementation is registered in the provider registry: see [Registering as an APX provider](docs/registering-as-a-provider.md).
 
 ## Prime directive: APDS-first
 
@@ -58,6 +58,7 @@ Extension identity follows the official APDS convention (Use Case §C.2.5):
 | `spec/openapi/` | **The standard** — modular OpenAPI 3.1 (`apx.yaml` root; one directory per domain) |
 | `spec/vendor/apds/4.1/` | APDS 4.1 vendored verbatim (MIT) — never edited, checksum-guarded |
 | `spec/registries/` | UserDefinedCodeList registries (alert types, command types, device states, topics, conformance classes) |
+| `spec/providers/` | The provider registry: every organisation that implements APX, with its `providerId` and namespace ([how to register](docs/registering-as-a-provider.md)) |
 | `docs/standard/` | The written standard (normative, RFC 2119) |
 | `docs/scenarios/` | End-to-end sample scenarios with spec-validated wire payloads |
 | `tools/` | Spec tooling — lint/bundle configs, vendor integrity check, registry + example + scenario validators |
@@ -71,6 +72,7 @@ npm run vendor:check   # verify vendored APDS artifacts are untouched
 npm run spec:lint      # Redocly lint (modular source)
 npm run spec:bundle    # produce spec/dist/apx-v1.{yaml,json}
 npm run spec:style     # Spectral APX conventions (bundled artifact)
+npm run providers:check # provider registry: schema, unique ids, add-only
 npm test               # all of the above + registry, profile, and example validation
 npm run mock           # Prism mock server on :4010 — schema-valid fake responses
 npm run docs:build     # assemble the documentation site into site/
@@ -87,7 +89,7 @@ with a link to its section of the reference and to the part that governs it.
 profile, and `/apx-standard.md` the whole written standard compiled into one
 document. Served alongside them: the bundles at `/apx-v1.yaml`,
 `/apx-v1.json`, and `/apx-parcs.json`, the code-list registries under
-`/registries/`, and `/edition.json`, which pins by checksum exactly what
+`/registries/`, the provider registry under `/providers/`, and `/edition.json`, which pins by checksum exactly what
 this edition comprises. `/simulator/` is the
 [simulator](https://rneubauer.github.io/apx/simulator/), running entirely
 in the browser: each visitor gets their own copy, and a reload starts over.

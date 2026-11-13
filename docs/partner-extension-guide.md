@@ -5,7 +5,11 @@ in the written standard Part 3 §3.3 and Part 10; this is the practical tour.
 
 ## Your namespace
 
-Pick a short lowercase namespace (your company): `acmecorp`. Then:
+Pick a short lowercase namespace (your company): `acmecorp`. You claim it
+by registering as an APX provider, which every implementation does anyway
+(Part 3 §3.1a): one entry in the provider registry gives you both your
+`providerId` and your namespace. See
+[Registering as an APX provider](registering-as-a-provider.md). Then:
 
 | Surface | Pattern | Example |
 |---|---|---|
@@ -57,6 +61,8 @@ shows the whole round trip.
 
 ## What gets you rejected
 
+- Using a namespace you have not registered, or one registered to someone
+  else.
 - Unregistered keys outside `extensions` containers.
 - Squatting `apx.` topics, `/v1` paths, or the `apx` namespace.
 - Changing semantics of existing fields/values.

@@ -49,6 +49,36 @@ The numbered requirements for each class, and the Implementation
 Conformance Statement (ICS) template a certification body or implementer
 fills in, are in **Annex A**.
 
+## 3.1a Registration (normative)
+
+Registration in the APX provider registry (Part 11 §11.4) is a
+precondition of conformance to every class, base classes included.
+
+1. Every APX implementation MUST be registered: a server, a data provider,
+   and a client that pushes data into an APX implementation alike. An
+   implementation run by an organisation that has no active entry in the
+   registry does not conform to any class, whatever it implements.
+2. The organisation's company entry is required, and it covers every
+   implementation the organisation runs. Its `providerId` is the
+   organisation's identity in APX (Part 4 §4.1b) and its `namespace` is
+   the organisation's vendor namespace (§3.3), so one registration claims
+   both. The organisation MAY add product entries, one per product, each
+   with its own `providerId` and naming the company entry as its
+   `parent`; they are optional, and a product entry shares the company's
+   namespace (Part 11 §11.4). A product's implementations may then use
+   the product's `providerId` in data instead of the company's.
+3. A registration can be as small as a name: the required members are
+   listed in Part 11 §11.4, and none of them asks for anything beyond who
+   the organisation is and how to reach it.
+4. Carrying the `providerId` in the data (the bootstrap `providerId`,
+   `RecordInfo.provider`, and the event envelope `provider`) is OPTIONAL
+   in this edition and SHOULD be done (Part 4 §4.2, Part 8 §8.2, Part 16
+   §16.1). The same holds for the installation (the bootstrap
+   `installationId`, `RecordInfo.installation`, and the envelope
+   `installation`), which the installation generates and does not
+   register (Part 4 §4.1b rule 1). A later edition is expected to make
+   these members REQUIRED.
+
 ## 3.2 Versioning
 
 - The APX major version is carried in the URL (`/v1`). APDS-native routes
@@ -71,7 +101,9 @@ Companies extending APX (the "extension-of-the-extension" path):
 
 1. Vendors MUST use their own namespace in extension keys:
    `apds-ext:<vendor-ns>:<class>@<M.m>`. The `apx` namespace is reserved for
-   this standard.
+   this standard. The namespace is the `namespace` of the vendor's entry in
+   the provider registry (§3.1a, Part 11 §11.4), which is how a vendor
+   claims it.
 2. Vendors MUST NOT add unregistered keys outside an `extensions` container.
 3. Vendor-specific endpoints MUST live under `/apx/x/<vendor-ns>/…`.
 4. Vendor event topics MUST be prefixed `<vendor-ns>.` — never `apx.`.
@@ -105,6 +137,11 @@ APDS release and its checksum, the Parts, and the conformance classes. The
 manifest is generated from the artifacts themselves and CI fails if it goes
 stale, so an edition is a fixed set of files rather than the state of a
 branch. Cite it when proposing adoption.
+
+The provider registry (`spec/providers/apx-providers.json`, Part 11
+§11.4) is published with the standard but is not pinned by an edition:
+it is a live list of who implements APX, and a registration never waits
+for an edition.
 
 The documentation overlays (`apx-docs-overlay.yaml`,
 `apx-examples-overlay.yaml`) appear in the manifest for completeness but are
