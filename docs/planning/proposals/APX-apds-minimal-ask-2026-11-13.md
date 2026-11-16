@@ -1,6 +1,15 @@
+---
+title: Design note: a minimal request to APDS
+audience: staff
+product: APX
+status: current
+reviewed: 2026-11-16
+source: Design note written 2026-11-13; implemented in PR #62 (merged 2026-11-16)
+---
+
 # Design note: a minimal request to APDS
 
-- **Status:** Recommended 2026-11-13. Rick confirms the options below before anything is filed.
+- **Status:** Adopted. Rick confirmed the minimal ask by merging PR #62 on 2026-11-16. Nothing is filed upstream without his OK.
 - **Date:** 2026-11-13
 - **Checked against:** `rneubauer/apx` main, edition **0.16.0**.
 - **Direction (Rick, 2026-11-13):** leave the root APDS alone and add only what is absolutely necessary, with APX as

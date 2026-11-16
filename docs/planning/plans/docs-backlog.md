@@ -1,3 +1,12 @@
+---
+title: Documentation backlog
+audience: staff
+product: APX
+status: current
+reviewed: 2026-11-16
+source: Created 2026-11-03 for the lab documentation standard; moved from docs/docs-backlog.md
+---
+
 # Documentation backlog
 
 These are the gaps between APX's documentation and the lab documentation
@@ -7,7 +16,7 @@ and its box is ticked here in the same pull request.
 Type is who the doc is for: **developer** (people changing this
 repository), **API** (implementers and integrators), or **user** (people
 running the simulator). APX is a specification, so it has no admin guide
-(see [docs/README.md](README.md)). Size is S (under an hour), M (a few
+(see [docs/README.md](../../README.md)). Size is S (under an hour), M (a few
 hours) or L (a day or more).
 
 ## Done

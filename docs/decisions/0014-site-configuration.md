@@ -50,6 +50,4 @@ with no data from any third-party system, and APX names no products.
 
 - Part 26 §26.1 (equipment), §26.3 (cameras), §26.4 (comms points), §26.6
   (external ids); Part 17 §17.1 (layering rule)
-- `docs/apx-additional-functions/APX-ui-launch-and-field-gaps-2026-10-17.md`,
-  B11, B12, B16–B18
 - CHANGELOG 0.15.0 (2026-10-21)

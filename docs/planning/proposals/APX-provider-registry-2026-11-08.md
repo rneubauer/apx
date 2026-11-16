@@ -1,8 +1,16 @@
+---
+title: Design note: the APX provider registry
+audience: staff
+product: APX
+status: current
+reviewed: 2026-11-16
+source: Design note written 2026-11-08; implemented in PR #60 (merged 2026-11-16)
+---
+
 # Design note: the APX provider registry
 
-- **Status:** Decided 2026-11-08 by Rick Neubauer (project owner and architect). Implemented on branch
-  `feat/provider-registry`, for the next edition after 0.16.0. Amended 2026-11-13 by three recommended options
-  that are adopted in the branch but **pending Rick's confirmation** (see "Decisions adopted 2026-11-13" below).
+- **Status:** Decided 2026-11-08 by Rick Neubauer (project owner and architect). Implemented in PR #60, merged 2026-11-16 for the next edition after 0.16.0. Amended 2026-11-13 by three options
+  (see "Decisions adopted 2026-11-13" below), which Rick confirmed by merging #60.
 - **Date:** 2026-11-08
 - **Checked against:** `rneubauer/apx` main, edition **0.16.0** (Parts 0–26, Annex A).
 - **Decision record:** `docs/decisions/` does not exist on `main` yet (the PRs that add it are not merged), so the ADR
