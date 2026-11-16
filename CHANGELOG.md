@@ -8,6 +8,17 @@ The machine-readable spec (`spec/openapi/apx.yaml`, bundled as
 
 ## [Unreleased]
 
+### Added (documentation)
+- `docs/README.md`: where to start, and which folders of the lab
+  documentation standard apply to a specification.
+- Developer guide (`docs/developer/`), API reference guide (`docs/api/`),
+  conformance and testing guide (`docs/conformance-and-testing.md`), 17
+  decision records (`docs/decisions/`) and a documentation backlog
+  (`docs/docs-backlog.md`).
+- `npm run docs:links`, part of `npm test` and CI: fails on a relative
+  Markdown link that points at nothing. The pull request template gains a
+  Docs section.
+
 ## [0.16.0] — 2026-11-01
 
 Three additions asked for by an edge-and-cloud deployment after its first

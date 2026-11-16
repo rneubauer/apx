@@ -34,6 +34,8 @@ jobs:
         run: npm run submission:check
       - name: APX Specification documents match the API and their sources
         run: npm run apxdocs:check
+      - name: Relative links in the Markdown docs resolve
+        run: npm run docs:links
       - name: Committed artifacts are fresh (bundle and edition manifest match source)
         run: git diff --exit-code spec/dist spec/edition.json
 

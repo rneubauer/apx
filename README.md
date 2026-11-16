@@ -60,6 +60,10 @@ Extension identity follows the official APDS convention (Use Case §C.2.5):
 | `spec/registries/` | UserDefinedCodeList registries (alert types, command types, device states, topics, conformance classes) |
 | `docs/standard/` | The written standard (normative, RFC 2119) |
 | `docs/scenarios/` | End-to-end sample scenarios with spec-validated wire payloads |
+| `docs/` | All documentation; [docs/README.md](docs/README.md) says where to start and which folders apply |
+| `docs/decisions/` | Architecture decision records: why APX is the way it is |
+| `docs/developer/` | Developer guide: architecture, code map, build, test, release |
+| `docs/api/` | Where the generated API reference lives and how it is built |
 | `tools/` | Spec tooling — lint/bundle configs, vendor integrity check, registry + example + scenario validators |
 | `packages/simulator/` | The APX simulator (non-normative) — a stateful server for every route in the bundle, with a browser UI, narrated demos, and the vetting suite; see [its README](packages/simulator/README.md) and the [demo runbook](packages/simulator/DEMO.md) |
 
