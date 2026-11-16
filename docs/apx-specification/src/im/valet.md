@@ -141,7 +141,7 @@ claim ticket, when used), Space (the parked position), VehicularAccess
 customer, or an APX Part 13 Account), and rate lines on the Session for
 the fee.
 
-Proposed to APDS (see the APX Data Specification), as Level B additions:
+Offered to APDS for later adoption (see the APX Data Specification), as Level B additions:
 
 | Element | Package | Change | Tier |
 | --- | --- | --- | --- |

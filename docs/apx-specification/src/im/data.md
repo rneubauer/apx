@@ -186,7 +186,7 @@ DemandType without change. Session detail sits in the extensions
 container of the APDS Session, which the data overlay declares (APX Part
 1 §1.3 item 10).
 
-Proposed to APDS (APX Data Specification):
+Offered to APDS for later adoption (APX Data Specification):
 
 | Element | Change | Package | Tier |
 | --- | --- | --- | --- |

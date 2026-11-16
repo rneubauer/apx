@@ -190,7 +190,7 @@ entity is referenced, never redefined, and every write goes through an
 existing module (Part 6 control, Part 13 payments, the Session plate and
 right links).
 
-Proposed to APDS, in the new Operations package (Level C), for discussion
+Offered to APDS for later adoption, in the new Operations package (Level C), for discussion
 (see the APX Data Specification):
 
 | Element | Change | Tier |

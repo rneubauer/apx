@@ -133,7 +133,7 @@ device), HierarchyElements (the source place), any identifiable entity as
 MultilingualString and Reference. The seed values of the alert types
 come from APDS Use Case §C.2.2.
 
-Proposed to APDS, in a new Operations package (APX Data Specification,
+Offered to APDS for later adoption, in a new Operations package (APX Data Specification,
 Operations):
 
 | Element | Change | Level | Tier |

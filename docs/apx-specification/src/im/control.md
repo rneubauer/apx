@@ -173,13 +173,14 @@ terms, as a Payment of type `validation` and the Segment's
 §6.3). A negotiated table is an ordinary RateTable, so the Session segment
 references it as it would any other rate.
 
-Proposed to APDS (APX Data Specification, Place and Rates):
+Offered to APDS for later adoption (APX Data Specification, Place and
+Rates), except the `EquipmentTypeEnum` values, which are requested:
 
 | Element | Change | Package | Tier |
 | --- | --- | --- | --- |
 | `EquipmentStatus` | New class (from `DeviceStatus`) | SupplementalFacility | 1 |
 | `EquipmentStatusEnum` | New enumeration (from `apx-device-states`) | SupplementalFacility | 1 |
-| `EquipmentTypeEnum` | New values: `barrier`, `gate`, `ticketDispenser`, `intercom` | SupplementalFacility | 1 |
+| `EquipmentTypeEnum` | New values, requested of APDS: `barrier`, `gate`, `ticketDispenser`, `intercom`, `exitVerifier` | SupplementalFacility | 1 |
 | `RateTable` | Additions to an APDS class: `negotiable`, `negotiatedRateLabel`, `negotiationNote` (from `RatePolicy`) | Rates | 2 |
 
 The proposed `EquipmentStatusEnum` reuses `RefillPointStatusEnum` names

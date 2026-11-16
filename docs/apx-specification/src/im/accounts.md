@@ -170,7 +170,7 @@ consumers see the money without speaking APX (APX Part 13 §13.6).
 Declined and reversed records exist only on the APX surface, because APDS
 has no vocabulary for them.
 
-Proposed to APDS (APX Data Specification, Right and PkCommon):
+Offered to APDS for later adoption (APX Data Specification, Right and PkCommon):
 
 | Element | Change | Tier |
 | --- | --- | --- |

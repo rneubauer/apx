@@ -157,7 +157,7 @@ merchant), HierarchyElement (the place), Session and Segment
 `validation`, RateTable (`validation`), RateDiscount (`discountRate`
 semantics), AmountInCurrency and Duration.
 
-Proposed to APDS (see the APX Data Specification). Programme classes sit
+Offered to APDS for later adoption (see the APX Data Specification). Programme classes sit
 in a new `Validation` sub-package of the Right package; the benefit sits
 in Rates; the redemption sits in Session. All are Level B.
 

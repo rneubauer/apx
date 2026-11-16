@@ -109,7 +109,7 @@ APDS classes used as they stand: CredentialTypeEnum (the listed
 credential), Organisation (the owner), HierarchyElement (the places) and
 AmountInCurrency (amount owed).
 
-Proposed to APDS, in a new `PlateList` sub-package of the Right package,
+Offered to APDS for later adoption, in a new `PlateList` sub-package of the Right package,
 as Level B additions (see the APX Data Specification):
 
 | Element | Change | Tier |

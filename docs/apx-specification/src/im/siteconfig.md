@@ -225,7 +225,7 @@ specialisations Place, VehicularAccess and SupplementalEquipment
 still written as the nearest APDS value), Organisation (the service
 provider), Period (coverage and escalation hours) and Reference.
 
-Proposed to APDS, in the Place domain, as Level B additions (see the APX
+Offered to APDS for later adoption, in the Place domain, as Level B additions (see the APX
 Data Specification):
 
 | Element | Change | Tier |
@@ -239,8 +239,8 @@ Data Specification):
 | `CommsPointTypeEnum` | New enumeration | 3 |
 
 The lane-equipment values for EquipmentTypeEnum (barrier, gate, ticket
-dispenser, intercom) are proposed separately, as Tier 1, by the Control
-module. The equipment role is offered as an extensible code list beside
+dispenser, intercom, exit verifier) are listed separately, by the Control
+module; they are the one data request APX makes of APDS. The equipment role is offered as an extensible code list beside
 the equipment type, so APDS would fix the attribute and a starting set of
 values. CommsPoint is offered for discussion, because the numbers a
 parker calls sit between parking data and telephony; the proposal carries

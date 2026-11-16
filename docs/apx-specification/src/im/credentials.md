@@ -145,7 +145,7 @@ APDS classes used as they stand: AssignedRight and CredentialAssigned
 CredentialAssignedTypeEnum, RightHolder and Contact (the holder),
 HierarchyElement, VehicularAccess, SupplementalEquipment and Session.
 
-Proposed to APDS, in the Right and Session packages, as Level B additions
+Offered to APDS for later adoption, in the Right and Session packages, as Level B additions
 (see the APX Data Specification):
 
 | Element | Package | Change | Tier |

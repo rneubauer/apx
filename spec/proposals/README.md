@@ -1,9 +1,16 @@
 # Proposed additions to the APDS data model
 
 This folder is the single source for the data elements and enumerations
-APX asks APDS to add to the APDS data model (ISO TS 5206-1). It contains
-data only: no routes, scopes, delivery or command workflow. Those stay in
-the APX API, which is the preferred implementation spec built on APDS.
+APX offers to the APDS data model (ISO TS 5206-1). It contains data only:
+no routes, scopes, delivery or command workflow. Those stay in the APX
+API, the extension specification built on APDS, outside ISO.
+
+Only entries marked `ask: minimal` are requested of APDS. Today that is
+one entry: the five `EquipmentTypeEnum` values in `place.yaml`. Every
+other entry is an APX extension offered for later adoption, which APX
+already carries and does not need in APDS to operate. The generated
+documents put the request first and the rest in an informative annex
+(design note: `docs/apx-additional-functions/APX-apds-minimal-ask-2026-11-13.md`).
 
 The committee documents in [`docs/apds-submission/`](../../docs/apds-submission/README.md)
 are generated from these files by `node tools/build-apds-submission.mjs`.
@@ -62,6 +69,7 @@ packages:
         designation: Session end reason
         definition: Why a Session ended.
         tier: 1
+        ask: minimal                # optional; marks one of the few entries requested of APDS
         apx: registry apx-session-end-reasons
         rationale: ...
         values:
@@ -83,3 +91,6 @@ Rules the generator enforces:
   names must exist, and their new attributes or values must not.
 - Multiplicities match `m..n`. Names use the APDS casing rules.
 - Each proposed name is defined once across all files.
+- `ask`, when present, is `minimal`, and only on a Tier 1 entry. Leave it
+  out for everything offered for later. Adding `ask` to an entry widens
+  the request to APDS, so it needs a maintainer's approval.

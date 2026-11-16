@@ -1,7 +1,10 @@
 ## Introduction
 
-This document describes the data concepts APX proposes for the APDS data
-model, and how they relate to the existing APDS 4.1 classes. It follows
+This document describes one small request to the APDS data model, five
+values for `EquipmentTypeEnum`, and then, for information only, the data
+concepts APX carries as extensions and offers for later adoption, with
+how they relate to the existing APDS 4.1 classes. APX does not need any
+of the extensions in APDS to operate. It follows
 the structure of the APDS 4.1 Information Model: for each domain, a
 narrative, a class diagram, the enumerations and any external code lists.
 The full definition of every class, attribute, association and value is
@@ -35,14 +38,19 @@ these additions. It is described in the Observation section and offered
 separately, with the other suggested changes to APDS 4.1.
 
 In the diagrams, classes that already exist in APDS 4.1 are marked
-`<<APDS>>`. Everything else is proposed.
+`<<APDS>>`. Everything else is an APX extension offered for later. In
+the tables, the Status column says whether an element is requested or
+offered for later.
 
 ### Tiers
 
+The tiers apply to the extensions offered for later. They are kept so
+the working groups could take them in steps, should they wish to.
+
 | Tier | Meaning |
 | --- | --- |
-| 1 | Propose now: data every access control, enforcement or LPR system already holds |
-| 2 | Proven in APX and widely useful: propose next |
+| 1 | Ready to adopt: data every access control, enforcement or LPR system already holds |
+| 2 | Proven in APX and widely useful: could follow |
 | 3 | For discussion: still settling, or possibly outside parking data |
 
 ### Consistency notes on APDS 4.1
@@ -54,5 +62,6 @@ not yet appear in the API document, for example `RefillPointStatusEnum`
 with `RefillPoint.status`, and some `EquipmentTypeEnum` values such as
 `lprCamera`. These proposals treat the Data Dictionary as authoritative
 and do not propose anything it already defines. The differences are
-offered to the Alliance separately, as suggestions, alongside the
-corrections already filed against the API document.
+offered to the Alliance as suggestions, alongside the corrections already
+filed against the API document; together they are the corrections in
+"What we ask of APDS".

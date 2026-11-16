@@ -3,7 +3,7 @@ order: 1
 summary: >-
   Adds what an operator needs to describe how the equipment in a Place is working right now, which
   way the licence plate cameras on an access lane face, and what is posted on the signs at a Place.
-  It also suggests four lane-equipment values for EquipmentTypeEnum. Equipment status is kept in its
+  It also suggests five lane-equipment values for EquipmentTypeEnum. Equipment status is kept in its
   own record, apart from the static Place description, for the same reason APDS keeps Demand apart
   from Supply: it changes far more often. A second group describes the equipment itself, so that a
   Place can be understood from the data alone: what each item does (its role), where it stands, what
@@ -109,11 +109,12 @@ packages:
         designation: Equipment type
         definition: Types of equipment.
         tier: 1
-        apx: APX Part 6 §6.4 device references
+        ask: minimal
+        apx: APX Part 6 §6.4 device references; registry apx-equipment-roles
         rationale: >-
           Off-street sites could type their lane equipment with APDS names. APDS 4.1 already has
-          lprCamera, occupancySensor, paymentMachine and the door values; these four complete a
-          typical access lane.
+          lprCamera, occupancySensor, paymentMachine and the door values. Adding these five lets an
+          entry lane and an exit lane both be typed with APDS names alone.
         values:
           - name: barrier
             designation: Barrier
@@ -133,6 +134,11 @@ packages:
             definition: >-
               A call point at a lane or machine that connects a customer with an attendant by voice
               or video.
+          - name: exitVerifier
+            designation: Exit verifier
+            definition: >-
+              A machine at an exit lane that reads the ticket or credential presented and opens the
+              barrier when the stay is paid or valid.
   - name: VehicularAccess
     location: D2Payload/Extension/Parking/Place/PlaceHierarchy/IdentifiedArea/VehicularAccess
     status: existing

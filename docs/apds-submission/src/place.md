@@ -40,10 +40,12 @@ whenever it changes.
 ### Lane equipment types
 
 APDS 4.1 EquipmentTypeEnum already includes lprCamera, occupancySensor,
-paymentMachine and several door types. Four values would complete a
-typical off-street access lane: barrier, gate, ticketDispenser and
-intercom. We suggest adding them so that lane equipment need not be typed
-as 'other'.
+paymentMachine and several door types. Five values would complete a
+typical off-street access lane: barrier, gate, ticketDispenser, intercom
+and exitVerifier. With paymentMachine, they let an entry lane and an exit
+lane both be typed with APDS names alone, so lane equipment need not be
+typed as 'other'. These five values are the one data request in this
+document set; the rest of the Place additions are offered for later.
 
 ### Lane cameras
 
@@ -275,7 +277,7 @@ notice of it, so these Level B additions stand on their own.
 | Enumeration | Change | Values |
 | --- | --- | --- |
 | EquipmentStatusEnum | New | available, occupied, blocked, closed, outOfService, faulted, unknown, other |
-| EquipmentTypeEnum | Add values | barrier, gate, ticketDispenser, intercom |
+| EquipmentTypeEnum | Add values (requested) | barrier, gate, ticketDispenser, intercom, exitVerifier |
 | CameraFacingEnum | New | inward, outward |
 | SignTypeEnum | New | entrance, paymentMachine, perSpace, ratesBoard, towAway, other |
 
