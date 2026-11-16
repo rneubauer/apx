@@ -51,8 +51,18 @@ export class ProblemError extends Error {
   }
 }
 
+/**
+ * Throws a ProblemError for a Part 12 problem type.
+ *
+ * @param {string} slug The problem type, for example "target-not-found".
+ * @param {string} [detail] A sentence for the `detail` member.
+ * @param {object} [extra] Extra problem members. `extra.status` overrides the registered status.
+ * @param {object} [headers] Response headers to send with the problem.
+ * @throws {ProblemError} Always.
+ */
 export const fail = (slug, detail, extra, headers) => {
   throw new ProblemError(slug, detail, extra, headers);
 };
 
+/** The HTTP status Part 12 gives a problem type, or undefined when the type is not registered. */
 export const problemStatus = (slug) => PROBLEMS.get(slug)?.status;

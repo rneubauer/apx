@@ -27,6 +27,21 @@ stored keys resolve old → new by querying `/places` and matching
 subscriptions, contexts) are NEVER migrated — they are historical records
 of the source implementation.
 
+**Global keying and the original provider.** An aggregator holds records
+from many providers and installations, whose local ids may collide. It
+MUST key every record by (`providerId`, `installationId`, local id),
+never by the local id alone (Part 4 §4.1b rule 2). When it re-publishes
+another provider's record or event, it MUST preserve the original
+provider and installation: `RecordInfo.provider`,
+`RecordInfo.installation`, `EventEnvelope.provider`, and
+`EventEnvelope.installation` name the source, never the aggregator (Part
+4 §4.1b rule 5, Part 8 §8.2). The aggregator names itself only where the
+standard asks for the publishing implementation: `EventEnvelope.source`
+and its own bootstrap `providerId` and `installationId` (Part 16 §16.1).
+When §4.1a makes it mint a new id for a colliding element, `provider` and
+`installation` still name the source and the source id stays in
+`operatorDefinedReference`.
+
 ## 18.3 The onboarding sequence (normative)
 
 When a place moves from implementation A to aggregator B, the third-party
@@ -97,7 +112,9 @@ when the link is down, and an air-gapped site may never connect.
 2. **Provenance survives replication.** A replicator (a client holding
    `apx.replication:write`) writing the other side's records keeps the
    origin `id`, sets `RecordInfo.origin` to the origin's
-   `EventEnvelope.source`, keeps the original `creationTime`, and replays
+   `EventEnvelope.source`, keeps `RecordInfo.provider` and
+   `RecordInfo.installation` as they are (§18.2),
+   keeps the original `creationTime`, and replays
    lifecycle transitions with their original `statusHistory[].time` and
    `actor`. Without that scope, a write is stamped by the receiver as
    usual, and a write carrying `RecordInfo.origin` is 400

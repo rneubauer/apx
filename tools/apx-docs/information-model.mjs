@@ -127,6 +127,16 @@ function moduleTables(mod, classes, model) {
 
 const demote = (md) => md.replace(/^(#{1,4}) /gm, '##$1 ');
 
+/**
+ * Renders the 02 Information Model document as Markdown: the module narratives, class diagrams and member tables, one section per module.
+ *
+ * @param {object} model The model from loadModel().
+ * @param {Object<string, object>} frags The hand-written narrative sections, keyed by module directory.
+ * @param {string} intro The text before the data model.
+ * @param {string} outro The text after the last module.
+ * @param {string} head The document header from header().
+ * @returns {string} The Markdown text.
+ */
 export function renderInformationModel(model, frags, intro, outro, head) {
   const out = [head, intro, '', '## Data model', ''];
   const known = new Set([...Object.keys(model.apds), ...model.classes.map((c) => c.name)]);

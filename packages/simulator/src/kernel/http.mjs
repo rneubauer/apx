@@ -32,6 +32,10 @@ function lowerHeaders(headers = {}) {
   return out;
 }
 
+/**
+ * A read-only view of a request's query string. `get` returns undefined (not null) for a missing name; `list` splits comma-separated values; `int` converts to a number.
+ * The constructor takes the search string.
+ */
 export class Query {
   constructor(search) {
     this.params = new URLSearchParams(search ?? '');
@@ -80,6 +84,14 @@ function renderProblem(err, op, headers, instance) {
   return { status: err.status, headers: { 'content-type': PROBLEM_CT, ...err.headers }, body: err.toProblem(instance) };
 }
 
+/**
+ * Serves one request against the simulator, going through the pipeline described at the top of this file.
+ * A problem raised by a handler becomes an error response, and any other exception becomes a 500 response, so it does not throw.
+ *
+ * @param {object} sim The simulator.
+ * @param {{method: string, path: string, headers?: object, body?: string|object, transport?: string}} request The request, including the query string in `path`.
+ * @returns {Promise<{status: number, headers: object, body?: *, stream?: Function}>} The response.
+ */
 export async function dispatch(sim, request) {
   const headers = lowerHeaders(request.headers);
   const url = new URL(request.path, 'http://sim.local');
@@ -298,6 +310,12 @@ function tokenEndpoint(sim, method, headers, rawBody) {
 
 // ---------- the HTTP server ----------
 
+/**
+ * Makes a Node HTTP server that serves the UI and passes every other request to dispatch(). It adds permissive CORS headers and streams SSE responses. The caller starts it with `listen()`.
+ *
+ * @param {object} sim The simulator.
+ * @returns {import('node:http').Server} The server, not yet listening.
+ */
 export function createHttpServer(sim) {
   return createServer(async (req, res) => {
     const chunks = [];

@@ -17,6 +17,10 @@ request against `main`.
 4. **Registries are add-only** (Part 11): new code-list entries append with
    the next `entryIndex` and bump the registry `version`; entries are never
    removed or renumbered.
+5. **Every implementation is registered** (Part 3 §3.1a): one entry per
+   organisation in `spec/providers/apx-providers.json`, added by pull
+   request and add-only like the registries. See
+   [Registering as an APX provider](docs/registering-as-a-provider.md).
 
 ## The mechanics
 
