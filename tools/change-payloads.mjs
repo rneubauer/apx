@@ -95,6 +95,14 @@ function changeMember(schemas, key, schema) {
   return { anyOf: [schema, { type: 'null' }] };
 }
 
+/**
+ * Adds one `<Class>ChangePayload` schema to the bundle for each native PUT route, and points that route's request body at it.
+ * Edits `doc` in place.
+ *
+ * @param {object} doc The parsed OpenAPI document, with `components.schemas` and `paths`.
+ * @returns {string[]} The names of the schemas that were created.
+ * @throws {Error} When a native PUT route does not have the expected `anyOf [Class, ChangePayload]` request body.
+ */
 export function deriveChangePayloads(doc) {
   const schemas = doc.components.schemas;
   const made = [];

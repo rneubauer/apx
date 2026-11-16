@@ -47,11 +47,23 @@ const REGISTRY_REF = /`(apx-[a-z-]+)`/g;
 const load = (path) => yaml.load(readFileSync(path, 'utf8').replace(/\r\n/g, '\n'));
 const refName = (ref) => ref.split('/').pop();
 
+/**
+ * Turns a schema or member name into words: splits at case changes, underscores and dots, capitalizes the first word and lower-cases the rest (words that start with two capitals stay as they are).
+ *
+ * @param {string} name For example "ParkingSession".
+ * @returns {string} For example "Parking session".
+ */
 export function humanize(name) {
   const words = name.replace(/([a-z0-9])([A-Z])/g, '$1 $2').replace(/([A-Z]+)([A-Z][a-z])/g, '$1 $2').split(/[\s_.]+/);
   return words.map((w, i) => (i === 0 ? w[0].toUpperCase() + w.slice(1) : /^[A-Z]{2,}/.test(w) ? w : w.toLowerCase())).join(' ');
 }
 
+/**
+ * The first paragraph of a description, on one line.
+ *
+ * @param {string} [text] The description. A missing value counts as empty.
+ * @returns {string} The paragraph with runs of white space collapsed to single spaces.
+ */
 export function firstParagraph(text) {
   return String(text ?? '').trim().split(/\n\s*\n/)[0].replace(/\s+/g, ' ').trim();
 }
@@ -109,6 +121,13 @@ function loadProposals(root, classNames, registryNames) {
   return { all, bySchema, byRegistry };
 }
 
+/**
+ * Reads the bundled APX spec, the vendored APDS 4.1 spec, the registries, proposals and supplement files, and builds the model the document renderers use.
+ *
+ * @param {string} root The repository root.
+ * @returns {object} The model: classes, enumerations, registries, proposals, operations and helpers such as qualify() and isApds().
+ * @throws {Error} When a spec file cannot be read or parsed.
+ */
 export function loadModel(root) {
   const dist = load(join(root, 'spec', 'dist', 'apx-v1.yaml'));
   const apdsDoc = load(join(root, 'spec', 'vendor', 'apds', '4.1', 'apds-api-4.1.yaml'));

@@ -30,6 +30,11 @@ export function expandIds(value) {
   return value;
 }
 
+/**
+ * Lists the worlds on disk.
+ *
+ * @returns {string[]} The world names (file names without .json), sorted. Empty when the folder does not exist.
+ */
 export function listWorlds() {
   if (!existsSync(WORLDS_DIR)) return [];
   return readdirSync(WORLDS_DIR)
@@ -91,6 +96,14 @@ export function loadWorld(spec = 'default') {
 // Lists a child world states as a whole, not as additions to the base's.
 const REPLACE_KEYS = new Set(['conformanceClasses', 'features', 'clock', 'vendorCommandTypes']);
 
+/**
+ * Layers a child world over a base world and returns the result. The base is not changed.
+ * Lists in `conformanceClasses`, `features`, `clock` and `vendorCommandTypes` are replaced by the child's. Other lists are joined (base items first), other objects are merged one level deep, and anything else is replaced.
+ *
+ * @param {object} base The base world.
+ * @param {object} over The child world.
+ * @returns {object} The merged world.
+ */
 export function mergeWorlds(base, over) {
   const out = structuredClone(base);
   for (const [k, v] of Object.entries(over)) {

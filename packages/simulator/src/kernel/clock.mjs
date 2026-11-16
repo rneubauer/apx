@@ -11,6 +11,13 @@
 
 const ISO_DURATION = /^P(?:(\d+)D)?(?:T(?:(\d+)H)?(?:(\d+)M)?(?:(\d+(?:\.\d+)?)S)?)?$/;
 
+/**
+ * Turns a duration into milliseconds.
+ *
+ * @param {number|string} value A number (taken as milliseconds), an ISO 8601 duration such as "PT30M" or "P1DT2H", or a short form such as "500ms", "30s", "5m", "2h" or "1d".
+ * @returns {number} The length in milliseconds.
+ * @throws {Error} When the value is not in one of these forms.
+ */
 export function parseDuration(value) {
   if (typeof value === 'number') return value;
   if (typeof value !== 'string') throw new Error(`bad duration ${value}`);
@@ -27,6 +34,10 @@ export function parseDuration(value) {
   throw new Error(`bad duration ${value}`);
 }
 
+/**
+ * The simulated clock and its timer queue. It is frozen unless `realtime` is on. `set()` and `advance()` move it and fire every timer that comes due, in order.
+ * The constructor takes `{ start, realtime }`; `start` is an ISO instant.
+ */
 export class Clock {
   constructor({ start, realtime = false } = {}) {
     this.realtime = realtime;

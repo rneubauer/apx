@@ -51,6 +51,14 @@ async function runWhole(sim, scenario) {
   return { world, steps: (scenario.steps ?? []).length, ran: results.length, passed, failed: results.length - passed, results };
 }
 
+/**
+ * Serves the scenario routes listed at the top of this file.
+ * An error while serving becomes a 400 response, and a route it does not know gives a 404 response, so it does not throw.
+ *
+ * @param {object} sim The simulator.
+ * @param {{method: string, parts: string[], body: object}} request The route parts after /sim, and the parsed body.
+ * @returns {Promise<{status: number, headers: object, body: *}>} The response.
+ */
 export async function scenarioApi(sim, { method, parts, body }) {
   const [head, id] = parts;
   try {
@@ -126,6 +134,12 @@ function injectorExamples() {
   return found;
 }
 
+/**
+ * Lists the injectors the loaded domains offer, with the parameter names of each and an example taken from the scenario files when one exists.
+ *
+ * @param {object} sim The simulator.
+ * @returns {{kind: string, params: string[], example: object|null}[]} The catalog, sorted by kind.
+ */
 export function injectorCatalog(sim) {
   const examples = injectorExamples();
   return [...sim.injectors.entries()]
@@ -137,6 +151,11 @@ export function injectorCatalog(sim) {
 
 const TOPICS_FILE = join(ROOT, '..', '..', 'spec', 'registries', 'apx-topics.json');
 let topicCache = null;
+/**
+ * Lists the event topics in the apx-topics registry. The result is read once and then kept.
+ *
+ * @returns {{type: string, description: string}[]} The topics, or an empty list when the registry cannot be read.
+ */
 export function topics() {
   if (topicCache) return topicCache;
   try {
