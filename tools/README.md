@@ -18,6 +18,7 @@ Files here:
 - `change-payloads.mjs`: derives a typed change payload for each native APDS PUT.
 - `check-apx-docs-coverage.mjs`: checks the Data Dictionary covers every APX class, member and code-list entry.
 - `check-doc-links.mjs`: fails on a relative Markdown link that points at nothing.
+- `sim-screenshots.mjs`: retakes the screenshots in `docs/user-guide/images/` from a local simulator.
 - `check-registries.mjs`: validates the registries.
 - `check-vendor.mjs`: fails if the vendored APDS files changed.
 - `redocly.yaml`: configuration for the bundler.

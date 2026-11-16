@@ -65,6 +65,7 @@ flowchart LR
 | `build-apx-docs.mjs`, `check-apx-docs-coverage.mjs` | `apxdocs:build`, `apxdocs:check` | Generates and checks `docs/apx-specification/` |
 | `build-apds-submission.mjs` | `submission:build`, `submission:check` | Generates and checks `docs/apds-submission/` |
 | `check-doc-links.mjs` | `docs:links` | Fails if a relative link in any Markdown file points at nothing |
+| `sim-screenshots.mjs` | `docs:screenshots` | Retakes the user-guide screenshots from a local simulator with headless Chromium (Node 22 or later) |
 | `build-apds-submission-pdf.mjs` | `apxdocs:pdf` | Prints either document set to PDF (needs Chrome or Edge) |
 | `build-reference-input.mjs`, `build-standard.mjs`, `build-site.mjs`, `build-apx-docs-html.mjs` | `docs:build` | Build the GitHub Pages site into `site/` |
 

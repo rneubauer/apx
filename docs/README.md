@@ -12,6 +12,7 @@ right document for what you need to do.
 | Build an implementation | [Quickstart](quickstart.md), then the [PARCS Starter Profile](parcs-starter-profile.md) if you make PARCS equipment |
 | Add your own fields or codes without breaking anyone | [Partner extension guide](partner-extension-guide.md) |
 | Prove your implementation conforms | [Conformance and testing guide](conformance-and-testing.md) |
+| Learn the simulator's browser UI, with screenshots | [Simulator user guide](user-guide/README.md) |
 | Look up an operation, schema or field | [API reference](api/README.md) |
 | Know why something is the way it is | [Decision records](decisions/README.md) |
 | Work on this repository | [Developer guide](developer/README.md) |
@@ -34,11 +35,11 @@ right document for what you need to do.
 
 ## Folders from the lab documentation standard that do not apply
 
-APX is a specification, not an application someone installs or uses
-through screens, so it has no `user-guide/` or `admin-guide/`. The nearest
-equivalents are:
+APX is a specification, not an application someone installs, so it has
+no `admin-guide/`. A `user-guide/` now exists and covers the simulator's
+browser UI, the only runnable part. The nearest equivalents elsewhere are:
 
-- **Using the simulator** (the only runnable part): the
+- **Using the simulator**: the [user guide](user-guide/README.md), the
   [simulator README](../packages/simulator/README.md) and the
   [demo runbook](../packages/simulator/DEMO.md).
 - **Running the docs site**: the "Development" section of the
