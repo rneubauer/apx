@@ -25,15 +25,15 @@ hours) or L (a day or more).
 
 Each folder gets a short README that says what is in it.
 
-- [ ] `spec/` and `spec/openapi/`: the source layout, root file, and how domains are added. developer, S
-- [ ] `spec/openapi/domains/`: one line per domain, with its conformance class and Part. developer, S
-- [ ] `spec/openapi/overlays/`: what each of the three overlays changes and in what order. developer, S
-- [ ] `spec/registries/`: each registry, its Part, and the add-only rule. developer, S
-- [ ] `spec/vendor/` and `spec/oasdiff/`: why APDS is vendored and checksum-guarded, and how the breaking-change gate and its ignore list work. developer, S
-- [ ] `tools/` and `tools/apx-docs/`: a short README pointing at the tools table in the developer guide. developer, S
-- [ ] `docs/standard/`: the list of Parts and annexes with one line each. API, S
-- [ ] `docs/apx-additional-functions/` and `docs/site/`: what the design notes are, and what the site sources build. developer, S
-- [ ] `packages/simulator/src/kernel/`, `src/domains/`, `worlds/`, `web/`, `tools/`, `ui/`: one README each, or one section each in the simulator README. developer, M
+- [x] `spec/` and `spec/openapi/`: the source layout, root file, and how domains are added. developer, S
+- [x] `spec/openapi/domains/`: one line per domain, with its conformance class and Part. developer, S
+- [x] `spec/openapi/overlays/`: what each of the three overlays changes and in what order. developer, S
+- [x] `spec/registries/`: each registry, its Part, and the add-only rule. developer, S
+- [x] `spec/vendor/` and `spec/oasdiff/`: why APDS is vendored and checksum-guarded, and how the breaking-change gate and its ignore list work. developer, S
+- [x] `tools/` and `tools/apx-docs/`: a short README pointing at the tools table in the developer guide. developer, S
+- [x] `docs/standard/`: the list of Parts and annexes with one line each. API, S
+- [x] `docs/apx-additional-functions/` and `docs/site/`: what the design notes are, and what the site sources build. developer, S
+- [x] `packages/simulator/src/kernel/`, `src/domains/`, `worlds/`, `web/`, `tools/`, `ui/`: one README each, or one section each in the simulator README. developer, M
 
 ## Guides
 

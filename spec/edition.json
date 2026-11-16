@@ -286,6 +286,10 @@
         "title": "APX Part 26 — Site Configuration (optional class `apx-site-config`)"
       },
       {
+        "file": "README.md",
+        "title": "docs/standard"
+      },
+      {
         "file": "annex-a-ics.md",
         "title": "APX Annex A — Conformance Requirements and ICS Template (normative)"
       }
