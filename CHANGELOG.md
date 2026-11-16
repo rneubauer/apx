@@ -430,8 +430,7 @@ growing additively.
   `charging-transition-illegal`, `charging-point-unavailable`,
   `charging-settlement-conflict`; Annex A.21 rows are claimable.
 - **What an external pairing engine needs to write back.** Twenty-one gaps
-  found splitting an edge pairing engine from a cloud core
-  (`docs/apx-additional-functions/APX-gaps-2026-10-08.md`, G1–G21),
+  found splitting an edge pairing engine from a cloud core (G1–G21),
   adopted as follows. All additive.
   - Session detail (G1–G4, Part 5 §5.8): decoration
     `apds-ext:apx:session-detail@1.0` (`SessionDetail`) on the APDS

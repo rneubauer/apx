@@ -42,5 +42,4 @@ edge system drives the sign locally, so no APX command exists.
 ## References
 
 - Part 26 §26.9; Part 6 §6.1a
-- `docs/apx-additional-functions/APX-nexus-core-needs-2026-10-22.md`, N2
 - CHANGELOG 0.16.0 (2026-11-01)
