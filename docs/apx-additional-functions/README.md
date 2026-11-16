@@ -7,6 +7,7 @@ source. Nothing here is normative.
 
 | File | Request |
 |---|---|
-| [`APX-gaps-2026-10-08.md`](APX-gaps-2026-10-08.md) | Gaps found when splitting NexPark Edge OS from Nexus Core. |
-| [`APX-ui-launch-and-field-gaps-2026-10-17.md`](APX-ui-launch-and-field-gaps-2026-10-17.md) | UI launch and field gaps, from a review of how remote-assistance call centers work. |
-| [`APX-nexus-core-needs-2026-10-22.md`](APX-nexus-core-needs-2026-10-22.md) | What Nexus Core needs for APX 0.16. |
+| [`APX-provider-registry-2026-11-08.md`](APX-provider-registry-2026-11-08.md) | The provider registry: required registration and keying by provider, installation and local id. |
+| [`APX-apds-minimal-ask-2026-11-13.md`](APX-apds-minimal-ask-2026-11-13.md) | Making the request to APDS minimal: corrections plus five equipment values. |
+
+Earlier notes about Umojo's own products and internal call-centre data are kept privately, outside this public repository.

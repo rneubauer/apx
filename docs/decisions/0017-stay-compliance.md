@@ -39,6 +39,4 @@ same answer without re-running the engine's rules.
 ## References
 
 - Part 5 §5.9; Part 9 §9.6 rule 8
-- `docs/apx-additional-functions/APX-nexus-core-needs-2026-10-22.md`, N4 and
-  the appendix
 - CHANGELOG 0.16.0 (2026-11-01)

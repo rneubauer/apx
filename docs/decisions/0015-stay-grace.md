@@ -36,5 +36,4 @@ it.
 ## References
 
 - Part 19 §19.10 rule 7, §19.3 rule 5
-- `docs/apx-additional-functions/APX-nexus-core-needs-2026-10-22.md`, N1
 - CHANGELOG 0.16.0 (2026-11-01)

@@ -132,7 +132,7 @@ this (the `providerId` is illustrative):
 {
   "providerId": "<a new UUID v4>",
   "parent": "8ddabe04-3d59-415d-a8ce-620d01b1a240",
-  "name": "Umojo NexPark",
+  "name": "Example Parking Edge",
   "namespace": "umojo",
   "roles": ["parcs", "lpr"],
   "contact": "https://umojo.com",
