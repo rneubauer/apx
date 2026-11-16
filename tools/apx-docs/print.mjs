@@ -195,6 +195,12 @@ export function stripTitle(body) {
   return body.replace(/<h1[^>]*>.*?<\/h1>\s*(<p><em>.*?<\/em><\/p>)?/s, '');
 }
 
+/**
+ * The cover page HTML: the APX wordmark, the title, the document set, the release and the update date.
+ *
+ * @param {{title: string, set: string, release: string, updated: string, edition?: string}} meta The text to print. A title of the form "A: B" shows only "B".
+ * @returns {string} A `<section class="cover">` element. All text is escaped.
+ */
 export function coverHtml({ title, set, release, updated, edition }) {
   const [main, sub] = title.includes(': ') ? title.split(': ') : [title.replace(/^APX /, ''), ''];
   return `<section class="cover">
@@ -207,8 +213,14 @@ export function coverHtml({ title, set, release, updated, edition }) {
 </section>`;
 }
 
+/** Escapes `& < > "` for use in HTML. A missing value becomes an empty string. */
 export const escapeHtml = (s) => String(s ?? '').replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' })[c]);
 
+/**
+ * The script tags that load Mermaid from the CDN and start it with MERMAID_INIT.
+ *
+ * @returns {string} HTML to place at the end of the page body.
+ */
 export function mermaidScript() {
   return `<script src="${MERMAID}"></script>
 <script>
@@ -243,6 +255,12 @@ const BROWSERS = [
   '/Applications/Google Chrome.app/Contents/MacOS/Google Chrome',
 ].filter(Boolean);
 
+/**
+ * Finds a Chrome or Edge to print PDFs with: the path in the BROWSER environment variable, or the first known install location that exists.
+ *
+ * @returns {string} The path to the browser program.
+ * @throws {Error} When no browser is found.
+ */
 export function findBrowser() {
   const found = BROWSERS.find((b) => existsSync(b));
   if (!found) throw new Error('No Edge or Chrome found; set BROWSER to its path.');
@@ -378,6 +396,13 @@ export async function printJobs(jobs) {
   }
 }
 
+/**
+ * Reads a UTF-8 text file with Windows line endings changed to newlines.
+ *
+ * @param {string} path The file to read.
+ * @returns {string} The text.
+ * @throws {Error} When the file cannot be read.
+ */
 export function readText(path) {
   return readFileSync(path, 'utf8').replace(/\r\n/g, '\n');
 }

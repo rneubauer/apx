@@ -278,6 +278,12 @@ function normaliseMix(mix) {
   return out;
 }
 
+/**
+ * Gets the traffic generator for a simulator, creating it on first use.
+ *
+ * @param {object} sim The simulator.
+ * @returns {TrafficGenerator} The same generator on every call for that simulator.
+ */
 export function trafficOf(sim) {
   if (!GENERATORS.has(sim)) GENERATORS.set(sim, new TrafficGenerator(sim));
   return GENERATORS.get(sim);

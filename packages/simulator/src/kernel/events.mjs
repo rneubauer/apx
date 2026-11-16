@@ -20,8 +20,13 @@ export const SSE_BUFFER_MIN = 1000;
 export const SSE_BUFFER_MS = 15 * 60_000;
 export const SECRET_MIN_BYTES = 32;
 
+/** Signs a webhook delivery: HMAC-SHA256 over `<timestamp>.<body>`, returned as `v1=<hex>`. */
 export const sign = (secret, timestamp, body) => 'v1=' + createHmac('sha256', secret).update(`${timestamp}.${body}`).digest('hex');
 
+/**
+ * The delivery fabric for one simulator (Part 8). `publish()` records an event in the outbox, matches it to subscriptions, and queues webhook or SSE delivery for each match.
+ * It also holds the simulated receivers and their inboxes, and the SSE buffers. The constructor takes the simulator it belongs to.
+ */
 export class EventFabric {
   constructor(sim) {
     this.sim = sim;

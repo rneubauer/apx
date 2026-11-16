@@ -3,6 +3,9 @@
  * Validates every spec/registries/apx-*.json against registry.schema.json
  * (APDS UserDefinedCodeList shape) and enforces uniqueness of definedValue
  * and entryIndex within each list.
+ *
+ * Run with `npm run registries:check` (part of `npm test`). Exits non-zero on
+ * the first problem found.
  */
 import { readFileSync, readdirSync } from 'node:fs';
 import { join, dirname } from 'node:path';

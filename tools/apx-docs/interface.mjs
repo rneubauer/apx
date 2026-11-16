@@ -51,6 +51,14 @@ function operationDetail(model, op, num) {
   return out.join('\n');
 }
 
+/**
+ * Renders the 05 Interface Specification as Markdown: an overview table, then every operation and webhook by group and tag, then the security annex.
+ *
+ * @param {object} model The model from loadModel().
+ * @param {string} intro The hand-written introduction text.
+ * @param {string} head The document header from header().
+ * @returns {string} The Markdown text.
+ */
 export function renderInterface(model, intro, head) {
   const out = [head, intro, ''];
   const all = model.operations;
