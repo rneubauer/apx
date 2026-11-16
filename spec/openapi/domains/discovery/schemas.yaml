@@ -180,6 +180,30 @@ ApxConfiguration:
       type: string
       description: APDS version this implementation extends.
       examples: ["4.1"]
+    providerId:
+      type: string
+      format: uuid
+      description: |-
+        The `providerId` under which the organisation running this
+        implementation is registered in the APX provider registry (Part 11
+        §11.4; Part 16 §16.1): its company entry's, or that of the
+        product entry for this implementation when it has one. SHOULD be present in this edition; a later
+        edition is expected to require it.
+      examples: ["8ddabe04-3d59-415d-a8ce-620d01b1a240"]
+    installationId:
+      type: string
+      format: uuid
+      description: |-
+        Identifies this installation: one deployment or instance of the
+        provider's implementation (Part 16 §16.1). The installation
+        generates it (a UUID, version 4 recommended) and it is not
+        registered. It never changes for the life of the installation,
+        across restarts and upgrades alike, and is never reused. Ids are
+        local to an installation, so a receiver keys records from this
+        host by (`providerId`, `installationId`, local id) (Part 4 §4.1b).
+        SHOULD be present in this edition; a later edition is expected to
+        require it.
+      examples: ["e2e76ac7-ae2f-4590-81a0-85aa6aedeea7"]
     tokenEndpoint:
       type: string
       format: uri
