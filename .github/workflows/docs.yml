@@ -51,10 +51,24 @@ jobs:
       # block the site, so this step may fail.
       - name: Render the document sets to PDF
         continue-on-error: true
+        # Each set is tried up to three times on its own: headless Chrome
+        # sometimes fails to start ("browser did not answer", 2026-11-17),
+        # and one failed set must not stop the other from being published.
         run: |
-          node tools/build-apds-submission-pdf.mjs apds-submission
-          npm run apxdocs:pdf
+          render() {
+            for attempt in 1 2 3; do
+              node tools/build-apds-submission-pdf.mjs "$1" && return 0
+              echo "::warning::PDF render of $1 failed (attempt $attempt of 3)"
+              sleep 10
+            done
+            echo "::error::PDF render of $1 failed three times; the site publishes without its PDFs"
+            return 1
+          }
+          status=0
+          render apds-submission || status=1
+          render apx-specification || status=1
           npm run apxdocs:html
+          exit $status
       - uses: actions/configure-pages@v5
         with:
           enablement: true
