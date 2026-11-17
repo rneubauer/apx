@@ -8,7 +8,21 @@ The machine-readable spec (`spec/openapi/apx.yaml`, bundled as
 
 ## [Unreleased]
 
-A minimal request to APDS. APX now asks APDS only for corrections and
+## [0.17.0] — 2026-11-17
+
+Three things in this edition, all additive:
+
+- **The provider registry.** Every APX implementation registers once, by pull request, and gets a
+  `providerId`. Records from different providers are keyed by provider, installation and local id, so
+  ids can never collide when systems interconnect (Part 3 §3.1a, Part 4 §4.1b, Part 11 §11.4).
+- **A minimal request to APDS.** APX asks APDS only for corrections and five `EquipmentTypeEnum`
+  values; every other proposal is offered for later.
+- **Documentation.** Developer, API, conformance and simulator user guides, decision records,
+  folder READMEs, planning docs and doc comments; a link check runs in CI.
+
+### A minimal request to APDS
+
+APX now asks APDS only for corrections and
 five equipment values, and offers everything else for later. No change
 to the OpenAPI spec or the wire format.
 

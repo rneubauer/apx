@@ -2,7 +2,7 @@
 
 # APX Data Specification: Information Model
 
-*A minimal request to APDS, with APX extensions offered for later · Draft for the APDS committee · based on APDS 4.1 (2026-01-14) · APX 0.16.0*
+*A minimal request to APDS, with APX extensions offered for later · Draft for the APDS committee · based on APDS 4.1 (2026-01-14) · APX 0.17.0*
 
 ## Introduction
 
