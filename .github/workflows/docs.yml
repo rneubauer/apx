@@ -35,6 +35,10 @@ jobs:
         run: npm run spec:bundle && npm run spec:profile
       - name: Render API reference docs and the specification documents (site/specification/)
         run: npm run docs:build
+        # Redoc renders the whole reference in one process; it now sits near Node's
+        # default ~2 GB heap and ran out of memory once on 2026-11-16.
+        env:
+          NODE_OPTIONS: --max-old-space-size=4096
       - name: Build the in-browser simulator (site/simulator/)
         run: npm run sim:web
       # Print editions of both document sets: site/apx-specification/ (the
