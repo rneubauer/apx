@@ -42,6 +42,4 @@ implement every APX module, but they already have good screens.
 
 - Part 25 §25.1–25.8
 - Part 17 §17.3 rule 6
-- `docs/apx-additional-functions/APX-ui-launch-and-field-gaps-2026-10-17.md`,
-  Part A
 - CHANGELOG 0.15.0 (2026-10-21)

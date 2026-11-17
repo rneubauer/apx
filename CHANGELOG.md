@@ -22,7 +22,7 @@ to the OpenAPI spec or the wire format.
   which makes no request: APX already carries each one as an
   `apds-ext:apx:*` extension or an APX resource. Tiers are kept in the
   annex (Tier 1 is now "ready to adopt"). Design note:
-  `docs/apx-additional-functions/APX-apds-minimal-ask-2026-11-13.md`.
+  `docs/planning/proposals/APX-apds-minimal-ask-2026-11-13.md`.
 - **Generators.** `ask: minimal` on a proposal entry marks it as
   requested. `tools/build-apds-submission.mjs` validates it and renders
   the request first; `tools/build-apx-docs.mjs` fills the new
@@ -41,7 +41,7 @@ to the OpenAPI spec or the wire format.
 
 A provider registry, so we know who implements APX and so data from many
 providers can be keyed without collisions. Design note:
-`docs/apx-additional-functions/APX-provider-registry-2026-11-08.md`.
+`docs/planning/proposals/APX-provider-registry-2026-11-08.md`.
 
 ### Added
 - **Provider registry** (Part 11 §11.4). New file
@@ -95,7 +95,7 @@ providers can be keyed without collisions. Design note:
 - Developer guide (`docs/developer/`), API reference guide (`docs/api/`),
   conformance and testing guide (`docs/conformance-and-testing.md`), 17
   decision records (`docs/decisions/`) and a documentation backlog
-  (`docs/docs-backlog.md`).
+  (`docs/planning/plans/docs-backlog.md`).
 - `npm run docs:links`, part of `npm test` and CI: fails on a relative
   Markdown link that points at nothing. The pull request template gains a
   Docs section.

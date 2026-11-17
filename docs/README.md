@@ -30,7 +30,7 @@ right document for what you need to do.
 | `decisions/` | Everyone | Architecture decision records (ADRs). |
 | `developer/` | People changing this repository | Architecture, code map, build and test, conventions. |
 | `errata/` | The APDS maintainers | Corrections APX has filed against APDS 4.1. |
-| `apx-additional-functions/` | Reviewers | Design notes for features requested by deployments, written before the change. |
+| `planning/` | Staff and reviewers | Plans, design notes, the docs backlog and the record of decisions. Not normative. |
 | `site/` | Site builders | Sources for the GitHub Pages landing page. |
 
 ## Folders from the lab documentation standard that do not apply

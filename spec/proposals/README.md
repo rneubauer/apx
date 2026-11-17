@@ -10,7 +10,7 @@ one entry: the five `EquipmentTypeEnum` values in `place.yaml`. Every
 other entry is an APX extension offered for later adoption, which APX
 already carries and does not need in APDS to operate. The generated
 documents put the request first and the rest in an informative annex
-(design note: `docs/apx-additional-functions/APX-apds-minimal-ask-2026-11-13.md`).
+(design note: `docs/planning/proposals/APX-apds-minimal-ask-2026-11-13.md`).
 
 The committee documents in [`docs/apds-submission/`](../../docs/apds-submission/README.md)
 are generated from these files by `node tools/build-apds-submission.mjs`.

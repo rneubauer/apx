@@ -11,7 +11,7 @@ a short, polite body citing the APDS 4.1 Data Dictionary table.
 The background for each item is in Parts B and C of
 [APX Requests to APDS](../../apx-specification/06-apds-requests.md). The
 decision to keep the request this small is recorded in
-[the design note](../../apx-additional-functions/APX-apds-minimal-ask-2026-11-13.md).
+[the design note](../../planning/proposals/APX-apds-minimal-ask-2026-11-13.md).
 
 ## Corrections: Data Dictionary vs API document (C-015 to C-026)
 
